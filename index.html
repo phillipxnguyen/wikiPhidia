@@ -359,6 +359,8 @@ window.onYouTubeIframeAPIReady = function(){
   #editDict.has-dict{margin-top:10px;height:280px;}
   tbody tr:nth-child(even){background:var(--row-alt);}
   tbody tr.row-playing{background:var(--row-playing) !important;}
+  tbody tr.slot-gap{background:transparent !important;}
+  tbody tr.slot-gap td{padding:0;border-bottom:0;}
   tbody td{padding:0;border-bottom:1px solid var(--border);vertical-align:middle;}
   tbody tr:last-child td{border-bottom:none;}
   td.edit-col, td.del-col{width:40px;text-align:center;padding:5px 0;}
@@ -2011,7 +2013,7 @@ function showSessionCompletePanel() {
 }
 
 function render() {
-  releaseHeldPage();
+  releaseHeldSlots();
   hideTooltip();
   renderImportInfo();
   if (document.getElementById("importText").value.trim()) scheduleImportPreview();
@@ -2080,18 +2082,19 @@ function render() {
     if (!tbody.contains(activeEditTr)) {
       tbody.appendChild(activeEditTr);
     }
-    const idx = visibleRows.findIndex(r => r.id === activeEdit.row.id);
+    const items = withHeldSlots(visibleRows);
+    const idx = items.findIndex(r => r.id === activeEdit.row.id);
     for (let i = 0; i < idx; i++) {
-      tbody.insertBefore(buildRowTr(visibleRows[i]), activeEditTr);
+      tbody.insertBefore(buildItemTr(items[i]), activeEditTr);
     }
-    for (let i = idx + 1; i < visibleRows.length; i++) {
-      tbody.appendChild(buildRowTr(visibleRows[i]));
+    for (let i = idx + 1; i < items.length; i++) {
+      tbody.appendChild(buildItemTr(items[i]));
     }
     return;
   }
   tbody.innerHTML = "";
-  visibleRows.forEach(r => {
-    tbody.appendChild(buildRowTr(r));
+  withHeldSlots(visibleRows).forEach(item => {
+    tbody.appendChild(buildItemTr(item));
   });
 }
 
@@ -3434,7 +3437,7 @@ function gradeCard(row, isAgain) {
   const mode = modeKey();
   const ids = mode === "Table" ? groupState.groups[groupState.index] : null;
   if (ids && !ids.includes(row.id)) return;
-  const pageHeight = document.documentElement.scrollHeight;
+  if (ids) holdRowSlot(row);
   stopPlaybackForRemovedRow(row.id);
   adjustSequenceIndexForRemoval(row.id);
   pushUndo(gradeLabel(isAgain) + " — " + cardSummary(row));
@@ -3447,19 +3450,45 @@ function gradeCard(row, isAgain) {
     if (ids.length === 0) advanceToNextGroup(); else updateGroupUI();
   }
   render();
-  if (ids && ids.length && groupState) {
-    heldPage = currentLessonId + ":" + groupState.index;
-    document.documentElement.style.minHeight = pageHeight + "px";
-  }
 }
 
-let heldPage = null;
+let heldSlots = null;
 
-function releaseHeldPage() {
-  if (!heldPage) return;
-  if (currentView === "study" && groupState && groupViewStyle === "table" && heldPage === currentLessonId + ":" + groupState.index) return;
-  heldPage = null;
-  document.documentElement.style.minHeight = "";
+function heldSlotsKey() {
+  return currentView === "study" && groupState && groupViewStyle === "table" ? currentLessonId + ":" + groupState.index : null;
+}
+
+function holdRowSlot(row) {
+  const key = heldSlotsKey();
+  const trs = Array.from(document.getElementById("tbody").children);
+  if (!heldSlots || heldSlots.key !== key) heldSlots = {
+    key: key,
+    order: trs.map(tr => tr.dataset.id).filter(Boolean),
+    heights: {}
+  };
+  const tr = trs.find(t => t.dataset.id === String(row.id));
+  if (tr) heldSlots.heights[row.id] = tr.getBoundingClientRect().height;
+}
+
+function releaseHeldSlots() {
+  if (heldSlots && heldSlots.key !== heldSlotsKey()) heldSlots = null;
+}
+
+function withHeldSlots(visibleRows) {
+  if (!heldSlots) return visibleRows;
+  const byId = new Map(visibleRows.map(r => [ String(r.id), r ]));
+  const items = heldSlots.order.map(id => byId.get(id) || (heldSlots.heights[id] ? {
+    gap: heldSlots.heights[id]
+  } : null)).filter(Boolean);
+  return items.concat(visibleRows.filter(r => !heldSlots.order.includes(String(r.id))));
+}
+
+function buildItemTr(item) {
+  if (!item.gap) return buildRowTr(item);
+  const tr = document.createElement("tr");
+  tr.className = "slot-gap";
+  tr.innerHTML = `<td colspan="4" style="height:${item.gap}px"></td>`;
+  return tr;
 }
 
 let ttsPlaying = false;
@@ -5134,7 +5163,7 @@ function renderLessonList() {
 function showView(view) {
   if (view === "study" && !currentLessonId) view = "empty";
   currentView = view;
-  releaseHeldPage();
+  releaseHeldSlots();
   document.getElementById("viewStudy").hidden = view !== "study";
   document.getElementById("viewStats").hidden = view !== "stats";
   document.getElementById("viewEmpty").hidden = view !== "empty";
