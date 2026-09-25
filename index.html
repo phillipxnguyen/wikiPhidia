@@ -360,8 +360,7 @@ window.onYouTubeIframeAPIReady = function(){
   #editDict.has-dict{margin-top:10px;height:280px;}
   tbody tr:nth-child(even){background:var(--row-alt);}
   tbody tr.row-playing{background:var(--row-playing) !important;}
-  tbody tr.slot-gap{background:transparent !important;}
-  tbody tr.slot-gap td{padding:0;border-bottom:0;}
+  tbody tr.passed-row > td{opacity:.25;}
   tbody td{padding:0;border-bottom:1px solid var(--border);vertical-align:middle;}
   tbody tr:last-child td{border-bottom:none;}
   td.edit-col, td.del-col{width:40px;text-align:center;padding:5px 0;}
@@ -3461,14 +3460,10 @@ function heldSlotsKey() {
 
 function holdRowSlot(row) {
   const key = heldSlotsKey();
-  const trs = Array.from(document.getElementById("tbody").children);
   if (!heldSlots || heldSlots.key !== key) heldSlots = {
     key: key,
-    order: trs.map(tr => tr.dataset.id).filter(Boolean),
-    heights: {}
+    order: Array.from(document.getElementById("tbody").children).map(tr => tr.dataset.id).filter(Boolean)
   };
-  const tr = trs.find(t => t.dataset.id === String(row.id));
-  if (tr) heldSlots.heights[row.id] = tr.getBoundingClientRect().height;
 }
 
 function releaseHeldSlots() {
@@ -3478,17 +3473,23 @@ function releaseHeldSlots() {
 function withHeldSlots(visibleRows) {
   if (!heldSlots) return visibleRows;
   const byId = new Map(visibleRows.map(r => [ String(r.id), r ]));
-  const items = heldSlots.order.map(id => byId.get(id) || (heldSlots.heights[id] ? {
-    gap: heldSlots.heights[id]
-  } : null)).filter(Boolean);
+  const items = heldSlots.order.map(id => {
+    if (byId.has(id)) return byId.get(id);
+    const row = rows.find(r => String(r.id) === id);
+    return row ? {
+      passed: row
+    } : null;
+  }).filter(Boolean);
   return items.concat(visibleRows.filter(r => !heldSlots.order.includes(String(r.id))));
 }
 
 function buildItemTr(item) {
-  if (!item.gap) return buildRowTr(item);
-  const tr = document.createElement("tr");
-  tr.className = "slot-gap";
-  tr.innerHTML = `<td colspan="4" style="height:${item.gap}px"></td>`;
+  if (!item.passed) return buildRowTr(item);
+  const tr = buildRowTr(item.passed);
+  tr.removeAttribute("data-id");
+  tr.classList.remove("row-playing");
+  tr.classList.add("passed-row");
+  tr.inert = true;
   return tr;
 }
 
