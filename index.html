@@ -360,7 +360,6 @@ window.onYouTubeIframeAPIReady = function(){
   #editDict.has-dict{margin-top:10px;height:280px;}
   tbody tr:nth-child(even){background:var(--row-alt);}
   tbody tr.row-playing{background:var(--row-playing) !important;}
-  tbody tr.passed-row > td{opacity:.25;}
   tbody td{padding:0;border-bottom:1px solid var(--border);vertical-align:middle;}
   tbody tr:last-child td{border-bottom:none;}
   td.edit-col, td.del-col{width:40px;text-align:center;padding:5px 0;}
@@ -2013,7 +2012,7 @@ function showSessionCompletePanel() {
 }
 
 function render() {
-  releaseHeldSlots();
+  releaseHeldPage();
   hideTooltip();
   renderImportInfo();
   if (document.getElementById("importText").value.trim()) scheduleImportPreview();
@@ -2082,19 +2081,18 @@ function render() {
     if (!tbody.contains(activeEditTr)) {
       tbody.appendChild(activeEditTr);
     }
-    const items = withHeldSlots(visibleRows);
-    const idx = items.findIndex(r => r.id === activeEdit.row.id);
+    const idx = visibleRows.findIndex(r => r.id === activeEdit.row.id);
     for (let i = 0; i < idx; i++) {
-      tbody.insertBefore(buildItemTr(items[i]), activeEditTr);
+      tbody.insertBefore(buildRowTr(visibleRows[i]), activeEditTr);
     }
-    for (let i = idx + 1; i < items.length; i++) {
-      tbody.appendChild(buildItemTr(items[i]));
+    for (let i = idx + 1; i < visibleRows.length; i++) {
+      tbody.appendChild(buildRowTr(visibleRows[i]));
     }
     return;
   }
   tbody.innerHTML = "";
-  withHeldSlots(visibleRows).forEach(item => {
-    tbody.appendChild(buildItemTr(item));
+  visibleRows.forEach(r => {
+    tbody.appendChild(buildRowTr(r));
   });
 }
 
@@ -3437,7 +3435,8 @@ function gradeCard(row, isAgain) {
   const mode = modeKey();
   const ids = mode === "Table" ? groupState.groups[groupState.index] : null;
   if (ids && !ids.includes(row.id)) return;
-  if (ids) holdRowSlot(row);
+  const shell = document.querySelector(".shell");
+  const pageHeight = shell.offsetHeight;
   stopPlaybackForRemovedRow(row.id);
   adjustSequenceIndexForRemoval(row.id);
   pushUndo(gradeLabel(isAgain) + " — " + cardSummary(row));
@@ -3450,47 +3449,19 @@ function gradeCard(row, isAgain) {
     if (ids.length === 0) advanceToNextGroup(); else updateGroupUI();
   }
   render();
+  if (ids && ids.length && groupState) {
+    heldPage = currentLessonId + ":" + groupState.index;
+    shell.style.minHeight = pageHeight + "px";
+  }
 }
 
-let heldSlots = null;
+let heldPage = null;
 
-function heldSlotsKey() {
-  return currentView === "study" && groupState && groupViewStyle === "table" ? currentLessonId + ":" + groupState.index : null;
-}
-
-function holdRowSlot(row) {
-  const key = heldSlotsKey();
-  if (!heldSlots || heldSlots.key !== key) heldSlots = {
-    key: key,
-    order: Array.from(document.getElementById("tbody").children).map(tr => tr.dataset.id).filter(Boolean)
-  };
-}
-
-function releaseHeldSlots() {
-  if (heldSlots && heldSlots.key !== heldSlotsKey()) heldSlots = null;
-}
-
-function withHeldSlots(visibleRows) {
-  if (!heldSlots) return visibleRows;
-  const byId = new Map(visibleRows.map(r => [ String(r.id), r ]));
-  const items = heldSlots.order.map(id => {
-    if (byId.has(id)) return byId.get(id);
-    const row = rows.find(r => String(r.id) === id);
-    return row ? {
-      passed: row
-    } : null;
-  }).filter(Boolean);
-  return items.concat(visibleRows.filter(r => !heldSlots.order.includes(String(r.id))));
-}
-
-function buildItemTr(item) {
-  if (!item.passed) return buildRowTr(item);
-  const tr = buildRowTr(item.passed);
-  tr.removeAttribute("data-id");
-  tr.classList.remove("row-playing");
-  tr.classList.add("passed-row");
-  tr.inert = true;
-  return tr;
+function releaseHeldPage() {
+  if (!heldPage) return;
+  if (currentView === "study" && groupState && groupViewStyle === "table" && heldPage === currentLessonId + ":" + groupState.index) return;
+  heldPage = null;
+  document.querySelector(".shell").style.minHeight = "";
 }
 
 let ttsPlaying = false;
@@ -5165,7 +5136,7 @@ function renderLessonList() {
 function showView(view) {
   if (view === "study" && !currentLessonId) view = "empty";
   currentView = view;
-  releaseHeldSlots();
+  releaseHeldPage();
   document.getElementById("viewStudy").hidden = view !== "study";
   document.getElementById("viewStats").hidden = view !== "stats";
   document.getElementById("viewEmpty").hidden = view !== "empty";
