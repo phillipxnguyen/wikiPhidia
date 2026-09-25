@@ -586,7 +586,6 @@ window.onYouTubeIframeAPIReady = function(){
   .empty-state h2{font-size:22px;margin:14px 0 6px;}
   .empty-state p{color:var(--text-2);margin:0 0 20px;}
   .empty-state .row-flex{justify-content:center;}
-  .address-note{max-width:520px;margin:0 auto 20px !important;padding:10px 14px;border-radius:var(--radius-sm);background:color-mix(in srgb, var(--due-color) 14%, transparent);color:var(--text) !important;font-size:13.5px;}
 
   .stats-title{font-size:24px;font-weight:700;letter-spacing:-.015em;margin:4px 0 18px;}
   .lesson-totals{display:flex;gap:16px;font-size:13px;color:var(--text-2);font-variant-numeric:tabular-nums;}
@@ -683,7 +682,7 @@ window.onYouTubeIframeAPIReady = function(){
     <button id="btnAddCards" class="ghost" title="Paste new cards into a lesson, with a live preview">➕ Add cards</button>
     <button id="btnOpenFile" class="ghost" title="Import one or more lesson .json files, or a full backup">📥 Import file</button>
     <input type="file" id="fileInput" class="file-input-hidden" accept=".json" multiple>
-    <button id="btnBackupAll" class="ghost" title="Save every lesson and your review history as flashcards-backup-YYYY-MM-DD.json. The first time you pick a folder; after that it saves there directly (one file per day). Shift-click to pick a different folder.">💾 Back up</button>
+    <button id="btnBackupAll" class="ghost" title="Save every lesson and your review history as YYYY-MM-DD-flashcards.json. The first time you pick a folder; after that it saves there directly (one file per day). Shift-click to pick a different folder.">💾 Back up</button>
     <button id="btnStats" class="ghost">📊 Statistics</button>
     <button id="btnTheme" class="ghost" title="Switch between light ☀️ and dark 🌙. Starts with your computer's setting." aria-label="Theme: light">🌓 Theme: ☀️</button>
   </div>
@@ -714,7 +713,6 @@ window.onYouTubeIframeAPIReady = function(){
     <div class="emoji">📚</div>
     <h2>Welcome to Flashcards</h2>
     <p>Create a lesson and paste your cards, or import lesson files you saved before.</p>
-    <p id="otherAddressNote" class="address-note" hidden></p>
     <div class="row-flex">
       <button id="btnEmptyNew" class="primary">+ New lesson</button>
       <button id="btnEmptyImport">📥 Import file</button>
@@ -4568,7 +4566,7 @@ document.addEventListener("visibilitychange", () => {
 
 function backupFileName() {
   const d = new Date;
-  return "flashcards-backup-" + d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0") + ".json";
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0") + "-flashcards.json";
 }
 
 function backupText() {
@@ -5678,19 +5676,9 @@ async function initApp() {
     showView("study");
   } else {
     showView("empty");
-    showOtherAddressNote();
   }
   if (!dbAvailable) showToast("Browser storage is unavailable here — click Save to keep your work");
   if (navigator.storage && navigator.storage.persist) navigator.storage.persisted().then(done => done || navigator.storage.persist()).catch(() => {});
-}
-
-const HOME_ADDRESS = "http://127.0.0.1:5500";
-
-function showOtherAddressNote() {
-  if (location.origin === HOME_ADDRESS) return;
-  const note = document.getElementById("otherAddressNote");
-  note.textContent = "Your lessons may be stored at another address. This page is " + location.origin + ", and each address keeps its own lessons. If you usually study at " + HOME_ADDRESS + "/flashcard.html, open that address instead (check that Live Server is on port 5500).";
-  note.hidden = false;
 }
 
 function isTypingInField() {
