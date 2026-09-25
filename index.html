@@ -2011,6 +2011,7 @@ function showSessionCompletePanel() {
 }
 
 function render() {
+  releaseHeldPage();
   hideTooltip();
   renderImportInfo();
   if (document.getElementById("importText").value.trim()) scheduleImportPreview();
@@ -3433,6 +3434,7 @@ function gradeCard(row, isAgain) {
   const mode = modeKey();
   const ids = mode === "Table" ? groupState.groups[groupState.index] : null;
   if (ids && !ids.includes(row.id)) return;
+  const pageHeight = document.documentElement.scrollHeight;
   stopPlaybackForRemovedRow(row.id);
   adjustSequenceIndexForRemoval(row.id);
   pushUndo(gradeLabel(isAgain) + " — " + cardSummary(row));
@@ -3445,6 +3447,19 @@ function gradeCard(row, isAgain) {
     if (ids.length === 0) advanceToNextGroup(); else updateGroupUI();
   }
   render();
+  if (ids && ids.length && groupState) {
+    heldPage = currentLessonId + ":" + groupState.index;
+    document.documentElement.style.minHeight = pageHeight + "px";
+  }
+}
+
+let heldPage = null;
+
+function releaseHeldPage() {
+  if (!heldPage) return;
+  if (currentView === "study" && groupState && groupViewStyle === "table" && heldPage === currentLessonId + ":" + groupState.index) return;
+  heldPage = null;
+  document.documentElement.style.minHeight = "";
 }
 
 let ttsPlaying = false;
@@ -5119,6 +5134,7 @@ function renderLessonList() {
 function showView(view) {
   if (view === "study" && !currentLessonId) view = "empty";
   currentView = view;
+  releaseHeldPage();
   document.getElementById("viewStudy").hidden = view !== "study";
   document.getElementById("viewStats").hidden = view !== "stats";
   document.getElementById("viewEmpty").hidden = view !== "empty";
