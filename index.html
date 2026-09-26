@@ -2,7 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Flashcards">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>Flashcards</title>
 <script>
 try {
@@ -256,12 +260,43 @@ window.onYouTubeIframeAPIReady = function(){
   .sidebar-footer button.active{background:var(--accent-soft);color:var(--accent);}
   .main{min-width:0;padding:26px 36px 64px;display:flex;justify-content:center;}
   .main-inner{width:100%;max-width:900px;display:flex;flex-direction:column;}
+  .drawer-btn{display:none;min-width:38px;padding:4px 8px;font-size:18px;line-height:1;}
   @media (max-width:820px){
     .shell{grid-template-columns:1fr;}
-    .sidebar{position:static;height:auto;max-height:none;border-right:0;border-bottom:1px solid var(--border);}
-    .lesson-list{max-height:220px;}
-    .main{padding:16px;}
+    .sidebar{position:fixed;top:0;left:0;right:0;height:auto;z-index:1000;border-right:0;border-bottom:1px solid var(--border);padding:calc(8px + env(safe-area-inset-top)) 12px 8px;}
+    .shell.drawer-open .sidebar{bottom:0;padding-bottom:calc(14px + env(safe-area-inset-bottom));}
+    .shell:not(.drawer-open) .sidebar > :not(.brand){display:none;}
+    .drawer-btn{display:inline-block;}
+    .shell.bare .drawer-btn{display:none;}
+    .main{padding:calc(66px + env(safe-area-inset-top)) 12px 16px;}
+    .shell.bare .main{padding-top:16px;}
+    .shell .media-container{top:calc(58px + env(safe-area-inset-top));}
   }
+  @media (max-width:600px){
+    .shell .lesson-header{flex-wrap:wrap;}
+    .shell .lesson-name-input{flex-basis:100%;font-size:20px !important;}
+    .shell .header-actions{margin-left:auto;}
+    .shell .link-bar{min-width:0;flex-basis:100%;}
+    #cardTable col:nth-child(1), #cardTable col:nth-child(2){width:26px !important;}
+    #cardTable col:nth-child(3), #cardTable col:nth-child(4){width:calc(50% - 26px) !important;}
+    .shell #cardTable .cell{margin:6px 4px;padding:3px 4px;}
+    .shell .single-card-body{padding:16px 12px;}
+    .shell .single-card-field{padding:14px 10px;}
+    .shell .single-card-field .cell{font-size:21px;padding:2px 6px;}
+  }
+  html.touch input[type=text], html.touch input[type=search], html.touch textarea, html.touch select{font-size:16px;}
+  html.touch .segmented button{min-width:46px;padding:8px 12px;}
+  html.touch .main{padding-bottom:calc(92px + env(safe-area-inset-bottom));}
+  html.touch .toast-container{bottom:calc(84px + env(safe-area-inset-bottom));}
+  html.touch tbody tr.row-selected{background:var(--accent-soft) !important;}
+  .touch-bar{position:fixed;left:0;right:0;bottom:0;z-index:950;display:flex;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:var(--surface);border-top:1px solid var(--border);box-shadow:0 -4px 16px rgba(20,30,50,.06);}
+  @media (min-width:821px){.touch-bar{left:268px;}}
+  .touch-bar button{flex:1;min-height:48px;font-size:15px;font-weight:600;border-radius:12px;}
+  .touch-bar .tb-icon{flex:0 0 48px;font-size:20px;padding:0;}
+  .touch-bar .tb-again{background:var(--danger-soft);color:var(--danger);border-color:transparent;}
+  .touch-bar .tb-good{background:var(--a-bg);color:var(--a-label);border-color:transparent;}
+  .single-card-body{position:relative;}
+  .single-card-body > .edit-btn{position:absolute;top:8px;right:8px;}
 
   .lesson-header{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
   .lesson-name-input{
@@ -683,7 +718,7 @@ window.onYouTubeIframeAPIReady = function(){
 <div class="shell">
 
 <aside class="sidebar">
-  <div class="brand"><span class="brand-mark">字</span>Flashcards<span id="streakChip" class="streak-chip" hidden><span class="streak-chip-flame">🔥</span><span id="streakChipCount">0</span></span></div>
+  <div class="brand"><button id="btnDrawer" class="ghost drawer-btn" aria-label="Menu">☰</button><span class="brand-mark">字</span>Flashcards<span id="streakChip" class="streak-chip" hidden><span class="streak-chip-flame">🔥</span><span id="streakChipCount">0</span></span></div>
   <button id="btnNewLesson" class="primary">+ New lesson</button>
   <input type="search" id="lessonSearch" placeholder="Search lessons…" aria-label="Search lessons">
   <nav id="lessonList" class="lesson-list" aria-label="Lessons"></nav>
@@ -712,6 +747,13 @@ window.onYouTubeIframeAPIReady = function(){
     <div class="streak-pop-count" id="streakPopCount"></div>
     <div class="streak-pop-sub" id="streakPopSub"></div>
   </div>
+</div>
+
+<div id="touchBar" class="touch-bar" hidden>
+  <button id="tbUndo" class="tb-icon" aria-label="Undo">↶</button>
+  <button id="tbShow">Show</button>
+  <button id="tbAgain" class="tb-again">Again</button>
+  <button id="tbGood" class="tb-good">Good</button>
 </div>
 
 <main class="main">
@@ -884,6 +926,16 @@ window.onYouTubeIframeAPIReady = function(){
 
 <script>
 let rows = [];
+
+const touchQuery = matchMedia("(hover: none) and (pointer: coarse)");
+
+function isTouch() {
+  return touchQuery.matches;
+}
+
+document.documentElement.classList.toggle("touch", isTouch());
+
+let selectedRowId = null;
 
 let groupState = null;
 
@@ -1981,10 +2033,11 @@ function buildRowTr(r) {
   const tr = document.createElement("tr");
   tr.dataset.id = r.id;
   if (loopingRowId === r.id) tr.classList.add("row-playing");
+  if (selectedRowId === r.id) tr.classList.add("row-selected");
   const cells = `<td><div class="cell ${r.qHidden ? "hidden" : "shown"}" data-field="q">${qCellContent(r)}</div></td><td class="a-col"><div class="cell ${r.aHidden ? "hidden" : "shown"}" data-field="a">${aCellContent(r)}</div></td>`;
   let lead;
   if (groupState) {
-    lead = `<td class="del-col" colspan="2"></td>`;
+    lead = `<td class="del-col" colspan="2">${isTouch() ? '<button class="edit-btn">&#9998;</button>' : ""}</td>`;
   } else {
     lead = `<td class="edit-col"><button class="edit-btn">&#9998;</button></td><td class="del-col"><button class="del-btn del-forever">&#10005;</button></td>`;
   }
@@ -2021,6 +2074,7 @@ function showSessionCompletePanel() {
 
 function render() {
   releaseHeldPage();
+  setTimeout(updateTouchBar, 0);
   hideTooltip();
   renderImportInfo();
   if (document.getElementById("importText").value.trim()) scheduleImportPreview();
@@ -2128,6 +2182,7 @@ function renderSingleCard(visibleRows) {
   const qField = `<div class="single-card-field single-card-q"><div class="cell ${row.qHidden ? "hidden" : "shown"}" data-field="q">${qCellContent(row)}</div></div>`;
   const aField = `<div class="single-card-field single-card-a"><div class="cell ${row.aHidden ? "hidden" : "shown"}" data-field="a">${aCellContent(row)}</div></div>`;
   if (!hasAnswer(row)) bodyEl.innerHTML = qField; else bodyEl.innerHTML = groupViewStyle === "write" ? aField + qField : qField + aField;
+  if (isTouch()) bodyEl.insertAdjacentHTML("afterbegin", '<button class="ghost edit-btn" aria-label="Edit card">&#9998;</button>');
   dictPreloadObserver.observe(bodyEl);
   if (autoPlay) playListenCardAudio(row);
 }
@@ -2678,6 +2733,10 @@ function handleCardAreaClick(e) {
     toggleLoopForRow(row);
     return;
   }
+  if (isTouch() && groupState && !e.target.classList.contains("edit-btn")) {
+    if (isSingleCard) revealAction(); else selectRow(id);
+    return;
+  }
   if (e.target.classList.contains("cell")) {
     if (groupState) {
       if (isSingleCard) openSingleCardEdit(row); else openEdit(container, row);
@@ -2703,6 +2762,41 @@ function handleCardAreaClick(e) {
     return;
   }
 }
+
+function selectRow(id) {
+  selectedRowId = selectedRowId === id ? null : id;
+  document.querySelectorAll("#tbody tr[data-id]").forEach(tr => tr.classList.toggle("row-selected", Number(tr.dataset.id) === selectedRowId));
+}
+
+function updateTouchBar() {
+  const bar = document.getElementById("touchBar");
+  bar.hidden = !isTouch() || currentView !== "study" || !rows.length;
+  const inSession = !!groupState && document.getElementById("sessionCompletePanel").style.display !== "block";
+  [ "tbShow", "tbAgain", "tbGood" ].forEach(id => {
+    document.getElementById(id).hidden = !inSession;
+  });
+  document.getElementById("tbUndo").disabled = !undoStack.length;
+}
+
+document.getElementById("tbUndo").onclick = () => undo();
+
+document.getElementById("tbShow").onclick = () => revealAction();
+
+document.getElementById("tbAgain").onclick = () => gradeAction(true);
+
+document.getElementById("tbGood").onclick = () => gradeAction(false);
+
+touchQuery.addEventListener("change", () => {
+  document.documentElement.classList.toggle("touch", isTouch());
+  if (currentView === "study") render();
+  updateTouchBar();
+});
+
+document.getElementById("btnDrawer").onclick = () => document.querySelector(".shell").classList.toggle("drawer-open");
+
+document.querySelector(".sidebar").addEventListener("click", e => {
+  if (e.target.closest(".lesson-item, #btnNewLesson, .sidebar-footer button:not(#btnTheme)")) document.querySelector(".shell").classList.remove("drawer-open");
+});
 
 [ "tbody", "singleCardBody" ].forEach(id => {
   const el = document.getElementById(id);
@@ -2915,7 +3009,7 @@ rowInsert.addEventListener("click", e => {
 
 document.addEventListener("mousemove", e => {
   let place = null, y = 0, box = null;
-  if (currentView === "study" && !groupState && !isVirtualLesson() && !tabPaused) {
+  if (currentView === "study" && !groupState && !isVirtualLesson() && !tabPaused && !isTouch()) {
     const table = document.getElementById("cardTable");
     box = table.getBoundingClientRect();
     if (table.style.display !== "none" && e.clientX >= box.left && e.clientX <= box.right) {
@@ -5250,6 +5344,7 @@ function showView(view) {
   if (view === "study" && !currentLessonId) view = "empty";
   currentView = view;
   releaseHeldPage();
+  setTimeout(updateTouchBar, 0);
   document.getElementById("viewStudy").hidden = view !== "study";
   document.getElementById("viewStats").hidden = view !== "stats";
   document.getElementById("viewEmpty").hidden = view !== "empty";
@@ -5855,68 +5950,13 @@ document.addEventListener("keydown", e => {
     if (e.repeat) return;
     if (!groupState) return;
     e.preventDefault();
-    if (groupViewStyle === "listen" || groupViewStyle === "write") {
-      gradeCard(getCurrentSingleCardRow(), e.shiftKey);
-      return;
-    }
-    const ids = groupState.groups[groupState.index];
-    const hoveredRow = hoveredRowId !== null ? rows.find(r => r.id === hoveredRowId) : null;
-    if (hoveredRow && ids.includes(hoveredRow.id)) {
-      gradeCard(hoveredRow, e.shiftKey);
-    } else {
-      gradeCurrentGroupAndAdvance(e.shiftKey);
-    }
+    gradeAction(e.shiftKey);
     return;
   }
   if (e.code === "Space" || e.key === " ") {
     if (!groupState) return;
     e.preventDefault();
-    if (groupViewStyle === "listen" || groupViewStyle === "write") {
-      const current = getCurrentSingleCardRow();
-      if (current) {
-        current.qHidden = false;
-        current.aHidden = false;
-      }
-      if (groupViewStyle === "listen" && isSequencePlaying) {
-        stopSequenceLoop();
-      } else {
-        render();
-      }
-      return;
-    }
-    loopingRowData = null;
-    stopLoop();
-    const ids = groupState.groups[groupState.index];
-    const groupCards = rows.filter(r => ids.includes(r.id));
-    const videoAvailable = !!ytPlayer && ytReady && ytHasVideo && !ytHasError;
-    const allShown = groupCards.every(r => !r.qHidden && !r.aHidden);
-    if (allShown) {
-      rows.forEach(r => {
-        if (ids.includes(r.id)) {
-          r.qHidden = true;
-          r.aHidden = false;
-        }
-      });
-      stopTts();
-    } else {
-      rows.forEach(r => {
-        if (ids.includes(r.id)) {
-          r.qHidden = false;
-          r.aHidden = false;
-        }
-      });
-      if (videoAvailable) {
-        stopTts();
-        if (!isSequencePlaying) toggleSequenceLoop();
-      } else {
-        if (ttsPlaying && ttsField === "q") {
-          stopTts();
-        } else {
-          startTts("q");
-        }
-      }
-    }
-    render();
+    revealAction();
     return;
   }
   if ([ "Digit1", "Digit2", "Digit3", "Digit4", "Digit5" ].includes(e.code)) {
@@ -5972,6 +6012,73 @@ document.addEventListener("keydown", e => {
     return;
   }
 });
+
+function gradeAction(isAgain) {
+  if (!groupState) return;
+  if (groupViewStyle === "listen" || groupViewStyle === "write") {
+    gradeCard(getCurrentSingleCardRow(), isAgain);
+    return;
+  }
+  const ids = groupState.groups[groupState.index];
+  const pickedId = selectedRowId !== null ? selectedRowId : isTouch() ? null : hoveredRowId;
+  const picked = pickedId !== null ? rows.find(r => r.id === pickedId) : null;
+  selectedRowId = null;
+  if (picked && ids.includes(picked.id)) {
+    gradeCard(picked, isAgain);
+  } else {
+    gradeCurrentGroupAndAdvance(isAgain);
+  }
+}
+
+function revealAction() {
+  if (!groupState) return;
+  if (groupViewStyle === "listen" || groupViewStyle === "write") {
+    const current = getCurrentSingleCardRow();
+    if (current) {
+      current.qHidden = false;
+      current.aHidden = false;
+    }
+    if (groupViewStyle === "listen" && isSequencePlaying) {
+      stopSequenceLoop();
+    } else {
+      render();
+    }
+    return;
+  }
+  loopingRowData = null;
+  stopLoop();
+  const ids = groupState.groups[groupState.index];
+  const groupCards = rows.filter(r => ids.includes(r.id));
+  const videoAvailable = !!ytPlayer && ytReady && ytHasVideo && !ytHasError;
+  const allShown = groupCards.every(r => !r.qHidden && !r.aHidden);
+  if (allShown) {
+    rows.forEach(r => {
+      if (ids.includes(r.id)) {
+        r.qHidden = true;
+        r.aHidden = false;
+      }
+    });
+    stopTts();
+  } else {
+    rows.forEach(r => {
+      if (ids.includes(r.id)) {
+        r.qHidden = false;
+        r.aHidden = false;
+      }
+    });
+    if (videoAvailable) {
+      stopTts();
+      if (!isSequencePlaying) toggleSequenceLoop();
+    } else {
+      if (ttsPlaying && ttsField === "q") {
+        stopTts();
+      } else {
+        startTts("q");
+      }
+    }
+  }
+  render();
+}
 
 initApp();
 </script>
