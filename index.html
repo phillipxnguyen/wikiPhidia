@@ -3854,7 +3854,8 @@ function studyAreaTop() {
   head.style.position = "static";
   const naturalTop = head.getBoundingClientRect().top + window.scrollY;
   head.style.position = "";
-  return Math.max(0, naturalTop - stickyTop);
+  const dpr = window.devicePixelRatio || 1;
+  return Math.max(0, Math.round((naturalTop - stickyTop) * dpr) / dpr);
 }
 
 function glideAfter(update, toTop) {
@@ -3867,7 +3868,7 @@ function glideAfter(update, toTop) {
   const maxY = document.documentElement.scrollHeight - window.innerHeight;
   const top = toTop ? studyAreaTop() : maxY;
   if (y <= top) return;
-  const floor = top > maxY ? shell.offsetHeight + top - maxY : 0;
+  const floor = top > maxY ? Math.ceil(shell.getBoundingClientRect().height + top - maxY) + 2 : 0;
   shell.style.minHeight = Math.max(height, floor) + "px";
   window.scrollTo(0, y);
   window.scrollTo({
@@ -3876,7 +3877,7 @@ function glideAfter(update, toTop) {
   });
   let timer = null;
   const done = e => {
-    if (e && Math.abs(window.scrollY - top) > 1) return;
+    if (e && Math.abs(window.scrollY - top) > 0.5) return;
     clearTimeout(timer);
     window.removeEventListener("scrollend", done);
     if (heldPage) return;
@@ -3884,7 +3885,7 @@ function glideAfter(update, toTop) {
     glideFloor = !!floor;
   };
   window.addEventListener("scrollend", done);
-  timer = setTimeout(done, 1500);
+  timer = setTimeout(done, 3000);
 }
 
 let glideFloor = false;
