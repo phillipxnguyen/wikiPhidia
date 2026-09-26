@@ -2131,18 +2131,31 @@ function render() {
 
 function renderDictPanels() {
   const host = document.getElementById("dictPanels");
-  const table = document.getElementById("cardTable");
-  const singleCardView = document.getElementById("singleCardView");
+  const inTable = document.getElementById("cardTable").style.display !== "none";
+  const inSingle = document.getElementById("singleCardView").style.display !== "none";
   let list = [];
+  let upcoming = [];
   if (groupState && currentView === "study" && rows.length) {
-    if (table.style.display !== "none") list = getVisibleRows(); else if (singleCardView.style.display !== "none") list = rows.filter(r => r.id === Number(document.getElementById("singleCardBody").dataset.id));
+    if (inTable) {
+      list = getVisibleRows();
+      const next = groupState.groups[groupState.index + 1] || [];
+      upcoming = rows.filter(r => next.includes(r.id));
+    } else if (inSingle) {
+      const queue = singleCardQueue();
+      list = queue.slice(0, 1);
+      upcoming = queue.slice(1, 2);
+    }
   }
-  const wanted = list.filter(r => !r.qHidden).map(r => ({
+  const wanted = list.map(r => ({
     row: r,
-    url: dictUrlFor((r.q || "").trim()),
-    source: table.style.display !== "none"
+    show: !r.qHidden
+  })).concat(upcoming.map(r => ({
+    row: r,
+    show: false
+  }))).map(w => Object.assign(w, {
+    url: dictUrlFor((w.row.q || "").trim())
   })).filter(w => w.url);
-  const keyOf = w => w.row.id + "|" + w.url + "|" + (w.source ? w.row.q : "");
+  const keyOf = w => w.row.id + "|" + w.url + "|" + (inTable ? w.row.q : "");
   const keep = new Set(wanted.map(keyOf));
   Array.from(host.children).forEach(el => {
     if (!keep.has(el.dataset.key)) el.remove();
@@ -2155,10 +2168,11 @@ function renderDictPanels() {
       el = document.createElement("div");
       el.className = "stroke-order-panel";
       el.dataset.key = key;
-      el.innerHTML = (w.source ? `<div class="dict-source">${escapeHtml(w.row.q)}</div>` : "") + '<iframe class="dict-frame"></iframe>';
+      el.innerHTML = (inTable ? `<div class="dict-source">${escapeHtml(w.row.q)}</div>` : "") + '<iframe class="dict-frame"></iframe>';
       el.querySelector("iframe").src = w.url;
       host.insertBefore(el, prev ? prev.nextSibling : host.firstChild);
     }
+    el.hidden = !w.show;
     prev = el;
   });
 }
