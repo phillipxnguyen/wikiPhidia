@@ -1796,7 +1796,7 @@ function deleteRow(id) {
   } else {
     skipEmptyGroups();
   }
-  render();
+  glideAfter(render);
   showToast("Deleted — " + cardSummary(row));
   scheduleAutoSave();
 }
@@ -3812,9 +3812,11 @@ function gradeCurrentGroupAndAdvance(isAgain) {
   });
   showToast(gradeLabel(isAgain));
   scheduleAutoSave();
-  groupState.groups[groupState.index] = [];
-  advanceToNextGroup();
-  render();
+  glideAfter(() => {
+    groupState.groups[groupState.index] = [];
+    advanceToNextGroup();
+    render();
+  }, true);
 }
 
 function gradeCard(row, isAgain) {
@@ -3831,18 +3833,47 @@ function gradeCard(row, isAgain) {
   showToast(gradeLabel(isAgain) + " — " + cardSummary(row));
   scheduleAutoSave();
   if (hoveredRowId === row.id) hoveredRowId = null;
-  if (ids) {
-    ids.splice(ids.indexOf(row.id), 1);
-    if (ids.length === 0) advanceToNextGroup(); else updateGroupUI();
-  }
-  render();
-  if (ids && ids.length && groupState) {
-    heldPage = currentLessonId + ":" + groupState.index;
-    shell.style.minHeight = pageHeight + "px";
-  }
+  glideAfter(() => {
+    if (ids) {
+      ids.splice(ids.indexOf(row.id), 1);
+      if (ids.length === 0) advanceToNextGroup(); else updateGroupUI();
+    }
+    render();
+    if (ids && ids.length && groupState) {
+      heldPage = currentLessonId + ":" + groupState.index;
+      shell.style.minHeight = pageHeight + "px";
+    }
+  }, true);
 }
 
 let heldPage = null;
+
+function glideAfter(update, toTop) {
+  const shell = document.querySelector(".shell");
+  const y = window.scrollY;
+  const height = shell.offsetHeight;
+  update();
+  if (heldPage) return;
+  shell.style.minHeight = "";
+  const maxY = document.documentElement.scrollHeight - window.innerHeight;
+  const top = toTop ? 0 : maxY;
+  if (y <= top) return;
+  shell.style.minHeight = height + "px";
+  window.scrollTo(0, y);
+  window.scrollTo({
+    top: top,
+    behavior: "smooth"
+  });
+  let timer = null;
+  const done = e => {
+    if (e && Math.abs(window.scrollY - top) > 1) return;
+    clearTimeout(timer);
+    window.removeEventListener("scrollend", done);
+    if (!heldPage) shell.style.minHeight = "";
+  };
+  window.addEventListener("scrollend", done);
+  timer = setTimeout(done, 1500);
+}
 
 function releaseHeldPage() {
   if (!heldPage) return;
