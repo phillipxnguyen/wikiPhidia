@@ -613,6 +613,8 @@ window.onYouTubeIframeAPIReady = function(){
   .stroke-order-box{position:relative;width:72px;}
   .stroke-target{width:72px;height:72px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);}
   .stroke-fallback{display:flex;align-items:center;justify-content:center;font-size:34px;color:var(--text);}
+  .dict-source{font-size:15px;color:var(--text);margin:-4px 0 10px;overflow-wrap:break-word;}
+  .dict-frame{display:block;width:100%;height:360px;border:1px solid var(--border);border-radius:8px;background:#fff;}
   .stroke-replay{
     position:absolute;bottom:3px;right:3px;
     width:20px;height:20px;padding:0;line-height:18px;
@@ -958,6 +960,8 @@ window.onYouTubeIframeAPIReady = function(){
     <div id="singleCardBody" class="single-card-body"></div>
     <div id="strokeOrderPanel" class="stroke-order-panel" style="display:none;"></div>
   </div>
+
+  <div id="dictPanels"></div>
 
   <div id="inlineAddSlot" hidden></div>
 
@@ -2122,6 +2126,45 @@ function showSessionCompletePanel() {
 }
 
 function render() {
+  renderStudy();
+  renderDictPanels();
+}
+
+function renderDictPanels() {
+  const host = document.getElementById("dictPanels");
+  const table = document.getElementById("cardTable");
+  const singleCardView = document.getElementById("singleCardView");
+  let list = [];
+  if (groupState && currentView === "study" && rows.length) {
+    if (table.style.display !== "none") list = getVisibleRows(); else if (singleCardView.style.display !== "none") list = rows.filter(r => r.id === Number(document.getElementById("singleCardBody").dataset.id));
+  }
+  const wanted = list.filter(r => !r.qHidden).map(r => ({
+    row: r,
+    url: dictUrlFor((r.q || "").trim()),
+    source: table.style.display !== "none"
+  })).filter(w => w.url);
+  const keyOf = w => w.row.id + "|" + w.url + "|" + (w.source ? w.row.q : "");
+  const keep = new Set(wanted.map(keyOf));
+  Array.from(host.children).forEach(el => {
+    if (!keep.has(el.dataset.key)) el.remove();
+  });
+  let prev = null;
+  wanted.forEach(w => {
+    const key = keyOf(w);
+    let el = Array.from(host.children).find(c => c.dataset.key === key);
+    if (!el) {
+      el = document.createElement("div");
+      el.className = "stroke-order-panel";
+      el.dataset.key = key;
+      el.innerHTML = '<div class="stroke-order-label">📖 Dictionary</div>' + (w.source ? `<div class="dict-source">${escapeHtml(w.row.q)}</div>` : "") + '<iframe class="dict-frame"></iframe>';
+      el.querySelector("iframe").src = w.url;
+      host.insertBefore(el, prev ? prev.nextSibling : host.firstChild);
+    }
+    prev = el;
+  });
+}
+
+function renderStudy() {
   releaseHeldPage();
   setTimeout(updateTouchBar, 0);
   hideTooltip();
@@ -2949,6 +2992,7 @@ const dictPreloadObserver = new IntersectionObserver(entries => {
   entries.forEach(entry => {
     if (!entry.isIntersecting) return;
     dictPreloadObserver.unobserve(entry.target);
+    if (groupState) return;
     const row = rows.find(r => r.id === Number(entry.target.dataset.id));
     if (row) preloadDictFor(row.q);
   });
@@ -3187,7 +3231,7 @@ function wireEditBox(host, row) {
   let dictDebounce = null;
   function refreshDict() {
     const text = (editQ.textContent || "").trim();
-    const url = dictUrlFor(text);
+    const url = groupState ? null : dictUrlFor(text);
     if (!url) {
       editDict.classList.remove("has-dict");
       if (activeDictOverlay && activeDictOverlay.placeholder === editDict) hideDictOverlay();
