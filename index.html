@@ -2154,7 +2154,7 @@ function renderDictPanels() {
         nextOrderReady = true;
       }
       const saved = savedGroupState && !isFinishedState(savedGroupState) ? savedGroupState : null;
-      const ids = saved ? saved.groups[saved.index] : makeGroups()[0];
+      const ids = (saved ? saved.groups[saved.index] : makeGroups()[0]) || [];
       preload = rows.filter(r => ids.includes(r.id)).concat(dueRows("Write").slice(0, 1), dueRows("Listen").slice(0, 1));
     }
   }
@@ -3115,8 +3115,9 @@ document.addEventListener("click", e => {
 
 function reclaimKeyboardFocus() {
   setTimeout(() => {
-    const stillFocusedOwnDictIframe = activeDictOverlay && document.activeElement === activeDictOverlay.iframe;
-    if (document.activeElement && document.activeElement.tagName === "IFRAME" && !stillFocusedOwnDictIframe) {
+    const active = document.activeElement;
+    const stillFocusedOwnDictIframe = activeDictOverlay && active === activeDictOverlay.iframe || !!(active && active.closest("#dictPanels"));
+    if (active && active.tagName === "IFRAME" && !stillFocusedOwnDictIframe) {
       document.body.tabIndex = -1;
       document.body.focus();
     }
