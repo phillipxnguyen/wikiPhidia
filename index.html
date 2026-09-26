@@ -299,6 +299,12 @@ window.onYouTubeIframeAPIReady = function(){
   .add-target{display:flex;align-items:center;gap:8px;color:var(--text-2);font-size:14px;}
   .add-target select{max-width:420px;font-weight:600;}
   #importText{min-height:180px;}
+  #addForm{position:relative;}
+  .add-single{position:absolute;top:22px;right:24px;z-index:1;width:30px;height:30px;padding:0;border-radius:50%;font-size:16px;line-height:1;background:var(--surface);color:var(--accent);border:1px solid var(--border);box-shadow:var(--shadow-sm);}
+  .add-single:hover{background:var(--accent);color:var(--on-accent);border-color:var(--accent);}
+  .row-insert{position:fixed;z-index:50;height:0;display:flex;align-items:center;cursor:pointer;}
+  .row-insert::before{content:"";position:absolute;left:0;right:0;top:-1px;height:2px;background:var(--accent);border-radius:1px;}
+  .row-insert span{position:relative;margin-left:10px;width:20px;height:20px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;}
   .row-flex{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
   .muted-label{font-size:13px;color:var(--text-2);}
   .split-btn{display:inline-flex;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;}
@@ -733,6 +739,7 @@ window.onYouTubeIframeAPIReady = function(){
   </div>
   <div id="addUnavailable" class="panel stats-empty" hidden></div>
   <div id="addForm" class="panel">
+    <button id="btnSingleCard" class="add-single" title="Add a single card" aria-label="Add a single card">＋</button>
     <textarea id="importText" rows="8" placeholder="Paste here!"></textarea>
     <div id="importPreview" class="import-preview" hidden aria-live="polite"></div>
     <div class="row-flex" style="margin-top:10px;">
@@ -1004,6 +1011,8 @@ function pushUndo(label) {
 }
 
 function discardActiveEdit() {
+  if (activeEdit && activeEdit.row.id === draftRowId) rows = rows.filter(r => r.id !== draftRowId);
+  draftRowId = null;
   activeEdit = null;
   hideDictOverlay();
 }
@@ -2784,6 +2793,29 @@ function commitActiveEdit() {
   const newAHtml = stripVocabHighlights(activeEdit.editA.innerHTML || "");
   const newNotes = activeEdit.editNotes.textContent || "";
   const newNotesHtml = activeEdit.editNotes.innerHTML || "";
+  if (activeEdit.row.id === draftRowId) {
+    const row = activeEdit.row;
+    const at = rows.indexOf(row);
+    draftRowId = null;
+    if (at !== -1) rows.splice(at, 1);
+    if (newQ.trim() || newA.trim()) {
+      Object.assign(row, {
+        q: newQ,
+        qHtml: newQHtml,
+        a: newA,
+        aHtml: newAHtml,
+        notes: newNotes,
+        notesHtml: newNotesHtml
+      });
+      pushUndo("Added — " + cardSummary(row));
+      rows.splice(at === -1 ? rows.length : at, 0, row);
+      recordImport(1);
+    }
+    scheduleAutoSave();
+    hideDictOverlay();
+    activeEdit = null;
+    return;
+  }
   const changed = newQ !== activeEdit.originalQ || newQHtml !== activeEdit.originalQHtml || newA !== activeEdit.originalA || newAHtml !== activeEdit.originalAHtml || newNotes !== activeEdit.originalNotes || newNotesHtml !== activeEdit.originalNotesHtml;
   if (changed) {
     pushUndo("Edited — " + cardSummary(activeEdit.row));
@@ -2835,6 +2867,86 @@ window.addEventListener("blur", () => {
 function buildEditBoxInner(row) {
   return `\n    <div style="display:flex;gap:10px;">\n      <div style="flex:1;">\n        <div id="editQ" class="rich-editor" contenteditable="true" data-placeholder="Question">${getEditInitialHtml(row.q, row.qHtml, row.id)}</div>\n      </div>\n      <div style="flex:1;">\n        <div id="editA" class="rich-editor" contenteditable="true" data-placeholder="Answer">${row.aHtml || escapeHtml(row.a)}</div>\n      </div>\n    </div>\n    <div id="editNotes" class="rich-editor" contenteditable="true" data-placeholder="Optional notes" style="margin-bottom:8px;">${row.notesHtml || escapeHtml(row.notes || "")}</div>\n    <div class="edit-actions">\n      <button id="editSave" class="primary">Save</button>\n    </div>\n    <div id="editDict"></div>\n  `;
 }
+
+let draftRowId = null;
+
+function addSingleCard(place) {
+  if (!currentLessonId || isVirtualLesson()) return;
+  if (currentView !== "study") showView("study");
+  if (groupState) goToReviewMode("full");
+  commitActiveEdit();
+  const anchor = place && rows.findIndex(r => r.id === place.id);
+  const at = anchor == null || anchor === -1 ? rows.length : anchor + (place.after ? 1 : 0);
+  const row = newRow("", "", null);
+  rows.splice(at, 0, row);
+  draftRowId = row.id;
+  render();
+  const tr = document.querySelector(`#tbody tr[data-id="${row.id}"]`);
+  if (!tr) return;
+  openEdit(tr, row);
+  tr.scrollIntoView({
+    block: "nearest"
+  });
+  activeEdit.editQ.focus();
+}
+
+document.getElementById("btnSingleCard").onclick = e => {
+  e.stopPropagation();
+  addSingleCard(null);
+};
+
+const rowInsert = document.createElement("div");
+
+rowInsert.className = "row-insert";
+
+rowInsert.hidden = true;
+
+rowInsert.title = "Add a card here";
+
+rowInsert.innerHTML = "<span>+</span>";
+
+document.body.appendChild(rowInsert);
+
+rowInsert.addEventListener("click", e => {
+  e.stopPropagation();
+  const place = rowInsert.place;
+  rowInsert.hidden = true;
+  addSingleCard(place);
+});
+
+document.addEventListener("mousemove", e => {
+  let place = null, y = 0, box = null;
+  if (currentView === "study" && !groupState && !isVirtualLesson() && !tabPaused) {
+    const table = document.getElementById("cardTable");
+    box = table.getBoundingClientRect();
+    if (table.style.display !== "none" && e.clientX >= box.left && e.clientX <= box.right) {
+      Array.from(document.querySelectorAll("#tbody tr[data-id]")).some((tr, i) => {
+        const r = tr.getBoundingClientRect();
+        const before = i === 0 && Math.abs(e.clientY - r.top) <= 6;
+        if (!before && Math.abs(e.clientY - r.bottom) > 6) return false;
+        place = {
+          id: Number(tr.dataset.id),
+          after: !before
+        };
+        y = before ? r.top : r.bottom;
+        return true;
+      });
+    }
+  }
+  if (!place) {
+    if (!rowInsert.contains(e.target)) rowInsert.hidden = true;
+    return;
+  }
+  rowInsert.place = place;
+  rowInsert.style.left = box.left + "px";
+  rowInsert.style.width = box.width + "px";
+  rowInsert.style.top = y + "px";
+  rowInsert.hidden = false;
+});
+
+window.addEventListener("scroll", () => {
+  rowInsert.hidden = true;
+}, true);
 
 function openEdit(tr, row) {
   hideTooltip();
