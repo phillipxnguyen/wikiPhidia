@@ -295,6 +295,8 @@ window.onYouTubeIframeAPIReady = function(){
   html.touch #copyGroupBtn{display:none !important;}
   html.touch .main{padding-bottom:calc(92px + env(safe-area-inset-bottom));}
   html.touch .toast-container{bottom:calc(84px + env(safe-area-inset-bottom));}
+  html.touch .cell.shown:hover{background:none;}
+  html.touch .cell.hidden:hover{color:var(--text-3);}
   html.touch tbody tr.row-selected{background:color-mix(in srgb, var(--due-color) 18%, var(--surface)) !important;}
   html.touch .edit-btn, html.touch .del-btn{width:32px;height:36px;line-height:36px;font-size:20px;}
   html.touch #cardTable col:nth-child(1), html.touch #cardTable col:nth-child(2){width:34px !important;}
@@ -983,8 +985,6 @@ function isTouch() {
 document.documentElement.classList.toggle("touch", isTouch());
 
 let selectedRowId = null;
-
-let selectedField = null;
 
 let groupState = null;
 
@@ -2768,6 +2768,11 @@ function showCellPinyin(cellEl) {
   const key = cacheKey(id, field);
   if (!transliterationCache.has(key)) transliterationCache.set(key, getPinyin(text) || "");
   showTooltip(cellEl, transliterationCache.get(key));
+  return true;
+}
+
+function showRowPinyin(container) {
+  if (container) Array.from(container.querySelectorAll(".cell.shown")).some(cell => showCellPinyin(cell));
 }
 
 function handleCardAreaMouseout(e) {
@@ -2791,15 +2796,10 @@ function handleCardAreaClick(e) {
     return;
   }
   if (isTouch() && !e.target.closest(".edit-btn, .del-forever") && !(activeEdit && activeEdit.tr === container)) {
-    const shownCell = e.target.closest(".cell.shown");
     if (isSingleCard) {
-      if (!shownCell) {
-        if (groupState) revealAction();
-      } else if (hoverTooltip && hoverTooltip.style.display === "block" && hoverTooltip.anchor === shownCell) hideTooltip(); else showCellPinyin(shownCell);
+      if (groupState && container.querySelector(".cell.hidden")) revealAction(); else if (hoverTooltip && hoverTooltip.style.display === "block" && container.contains(hoverTooltip.anchor)) hideTooltip(); else showRowPinyin(container);
       if (groupState) return;
     } else if (groupState || !isVirtualLesson()) {
-      const cell = e.target.closest(".cell");
-      selectedField = cell ? cell.dataset.field : null;
       selectRow(id);
       hideTooltip();
       refreshTouchSelection();
@@ -2864,7 +2864,7 @@ window.addEventListener("resize", () => requestAnimationFrame(refreshTouchSelect
 
 function refreshTouchSelection() {
   addTouchInsertRows();
-  if (isTouch() && selectedRowId !== null && selectedField) showCellPinyin(document.querySelector(`#tbody tr[data-id="${selectedRowId}"] .cell.shown[data-field="${selectedField}"]`));
+  if (isTouch() && selectedRowId !== null) showRowPinyin(document.querySelector(`#tbody tr[data-id="${selectedRowId}"]`));
 }
 
 function selectRow(id) {
