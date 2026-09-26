@@ -6087,11 +6087,11 @@ async function cloudFlush() {
     if (reviews.length) await cloudPushReviews(reviews);
     setCloudStatus(cloudPendingLessons.size || cloudPendingReviews.size ? "syncing" : "synced");
   } catch (e) {
+    cloudFailed(e);
     ids.forEach(id => cloudPendingLessons.add(id));
     reviews.forEach(([key, value]) => {
       if (!cloudPendingReviews.has(key)) cloudPendingReviews.set(key, value);
     });
-    setCloudStatus("error");
     clearTimeout(cloudFlushTimer);
     cloudFlushTimer = setTimeout(cloudFlush, 3e4);
   }
@@ -6346,8 +6346,8 @@ function startCloudListeners() {
         }
       }
       if (cloudPendingLessons.size) scheduleCloudFlush(wasFirst ? 0 : null); else if (wasFirst) setCloudStatus("synced");
-    }).catch(() => setCloudStatus("error"));
-  }, () => setCloudStatus("error")));
+    }).catch(cloudFailed);
+  }, cloudFailed));
   cloudUnsubs.push(f.onSnapshot(f.collection(cloud.db, "users", uid, "reviews"), snap => {
     if (tabPaused) return;
     const remoteKeys = new Set;
@@ -6362,7 +6362,17 @@ function startCloudListeners() {
       });
       if (cloudPendingReviews.size) scheduleCloudFlush(0);
     }
-  }, () => setCloudStatus("error")));
+  }, cloudFailed));
+}
+
+let cloudRetryTimer = null;
+
+function cloudFailed(e) {
+  setCloudStatus(String(e && e.code || "").includes("permission-denied") ? "denied" : "error");
+  clearTimeout(cloudRetryTimer);
+  cloudRetryTimer = setTimeout(() => {
+    if (cloudSignedIn() && (cloudStatus === "denied" || cloudStatus === "error")) startCloudListeners();
+  }, 2e4);
 }
 
 function stopCloudListeners() {
@@ -6420,7 +6430,8 @@ function setCloudStatus(status) {
     off: "☁️ Sign in to sync",
     syncing: "☁️ Syncing…",
     synced: "☁️ Synced",
-    error: "☁️ Sync paused — offline?"
+    error: "☁️ Sync paused — offline?",
+    denied: "☁️ Sync blocked — check Firestore Rules"
   };
   btn.textContent = labels[cloudStatus];
   btn.title = cloudSignedIn() ? "Signed in as " + (cloud.user.email || "your account") + " — click to sign out" : "Sign in to keep lessons in sync on all your devices";
@@ -6432,7 +6443,7 @@ function cloudErrorText(e) {
   if (code.includes("popup-closed") || code.includes("cancelled-popup")) return "";
   if (code.includes("popup-blocked")) return "The sign-in window was blocked — allow pop-ups, or use email below.";
   if (code.includes("invalid-credential") || code.includes("wrong-password") || code.includes("user-not-found")) return "Email or password is not right.";
-  if (code.includes("email-already-in-use")) return "That email already has an account — tap Sign in.";
+  if (code.includes("email-already-in-use")) return "That email already has an account — tap Sign in, or Continue with Google if you made it with Google.";
   if (code.includes("weak-password")) return "Use a password with at least 6 characters.";
   if (code.includes("invalid-email")) return "That email doesn't look right.";
   if (code.includes("network")) return "No connection — check the internet and try again.";
