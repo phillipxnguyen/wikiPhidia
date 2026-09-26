@@ -295,7 +295,14 @@ window.onYouTubeIframeAPIReady = function(){
   html.touch #copyGroupBtn{display:none !important;}
   html.touch .main{padding-bottom:calc(92px + env(safe-area-inset-bottom));}
   html.touch .toast-container{bottom:calc(84px + env(safe-area-inset-bottom));}
-  html.touch tbody tr.row-selected{background:var(--accent-soft) !important;}
+  html.touch tbody tr.row-selected{background:color-mix(in srgb, var(--due-color) 18%, var(--surface)) !important;}
+  html.touch .edit-btn, html.touch .del-btn{width:40px;height:40px;line-height:40px;font-size:30px;}
+  html.touch #cardTable col:nth-child(1), html.touch #cardTable col:nth-child(2){width:44px !important;}
+  html.touch #cardTable col:nth-child(3), html.touch #cardTable col:nth-child(4){width:calc(50% - 44px) !important;}
+  html.touch #cardTable.no-answer-col col:nth-child(3){width:calc(100% - 88px) !important;}
+  html.touch #cardTable.no-answer-col col:nth-child(4){width:0 !important;}
+  tbody tr.insert-row td{padding:0;border:0;}
+  .insert-btn{display:block;width:100%;min-height:32px;padding:0;border:0;border-radius:0;font-size:20px;line-height:1;color:var(--a-label);background:var(--a-bg);}
   .touch-bar{position:fixed;left:0;right:0;bottom:0;z-index:950;display:flex;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:var(--surface);border-top:1px solid var(--border);box-shadow:0 -4px 16px rgba(20,30,50,.06);}
   @media (min-width:821px){.touch-bar{left:268px;}}
   .touch-bar.tools-only{justify-content:center;}
@@ -2187,12 +2194,14 @@ function render() {
     for (let i = idx + 1; i < visibleRows.length; i++) {
       tbody.appendChild(buildRowTr(visibleRows[i]));
     }
+    addTouchInsertRows();
     return;
   }
   tbody.innerHTML = "";
   visibleRows.forEach(r => {
     tbody.appendChild(buildRowTr(r));
   });
+  addTouchInsertRows();
 }
 
 function renderSingleCard(visibleRows) {
@@ -2758,6 +2767,15 @@ function handleCardAreaMouseout(e) {
 }
 
 function handleCardAreaClick(e) {
+  const insertBtn = e.target.closest(".insert-btn");
+  if (insertBtn) {
+    selectedRowId = null;
+    addSingleCard({
+      id: Number(insertBtn.dataset.id),
+      after: insertBtn.dataset.after === "1"
+    });
+    return;
+  }
   const container = e.target.closest("[data-id]");
   if (!container || !container.dataset.id) return;
   const id = Number(container.dataset.id);
@@ -2770,9 +2788,16 @@ function handleCardAreaClick(e) {
     toggleLoopForRow(row);
     return;
   }
-  if (isTouch() && groupState && !e.target.closest(".edit-btn, .del-forever")) {
-    if (isSingleCard) revealAction(); else selectRow(id);
-    return;
+  if (isTouch() && !e.target.closest(".edit-btn, .del-forever") && !(activeEdit && activeEdit.tr === container)) {
+    if (groupState) {
+      if (isSingleCard) revealAction(); else selectRow(id);
+      return;
+    }
+    if (!isSingleCard && !isVirtualLesson()) {
+      selectedRowId = selectedRowId === id ? null : id;
+      render();
+      return;
+    }
   }
   if (e.target.classList.contains("cell")) {
     if (groupState) {
@@ -2798,6 +2823,21 @@ function handleCardAreaClick(e) {
     deleteRow(id);
     return;
   }
+}
+
+function addTouchInsertRows() {
+  if (!isTouch() || groupState || selectedRowId === null || isVirtualLesson()) return;
+  if (activeEdit && activeEdit.row.id === draftRowId) return;
+  const tr = document.querySelector(`#tbody tr[data-id="${selectedRowId}"]`);
+  if (!tr || tr.classList.contains("edit-row")) return;
+  const make = after => {
+    const row = document.createElement("tr");
+    row.className = "insert-row";
+    row.innerHTML = `<td colspan="4"><button class="insert-btn" data-id="${selectedRowId}" data-after="${after ? 1 : 0}" aria-label="Add a card here">+</button></td>`;
+    return row;
+  };
+  tr.before(make(false));
+  tr.after(make(true));
 }
 
 function selectRow(id) {
@@ -3548,6 +3588,7 @@ function saveVirtualLesson() {
 }
 
 function goToReviewMode(style) {
+  selectedRowId = null;
   const alreadyThere = style === "full" ? !groupState : !!groupState && groupViewStyle === style;
   if (alreadyThere) return;
   setReviewMode(style);
