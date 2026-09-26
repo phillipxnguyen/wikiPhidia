@@ -3848,6 +3848,14 @@ function gradeCard(row, isAgain) {
 
 let heldPage = null;
 
+function studyAreaTop() {
+  const area = [ "tableProgress", "cardTable", "singleCardView", "sessionCompletePanel" ].map(id => document.getElementById(id)).find(el => el.offsetParent);
+  if (!area) return 0;
+  const head = document.querySelector(".study-head");
+  const covered = parseFloat(getComputedStyle(head).top) + head.offsetHeight;
+  return Math.max(0, area.getBoundingClientRect().top + window.scrollY - covered - 8);
+}
+
 function glideAfter(update, toTop) {
   const shell = document.querySelector(".shell");
   const y = window.scrollY;
@@ -3856,9 +3864,10 @@ function glideAfter(update, toTop) {
   if (heldPage) return;
   shell.style.minHeight = "";
   const maxY = document.documentElement.scrollHeight - window.innerHeight;
-  const top = toTop ? 0 : maxY;
+  const top = toTop ? studyAreaTop() : maxY;
   if (y <= top) return;
-  shell.style.minHeight = height + "px";
+  const floor = top > maxY ? shell.offsetHeight + top - maxY : 0;
+  shell.style.minHeight = Math.max(height, floor) + "px";
   window.scrollTo(0, y);
   window.scrollTo({
     top: top,
@@ -3869,13 +3878,21 @@ function glideAfter(update, toTop) {
     if (e && Math.abs(window.scrollY - top) > 1) return;
     clearTimeout(timer);
     window.removeEventListener("scrollend", done);
-    if (!heldPage) shell.style.minHeight = "";
+    if (heldPage) return;
+    shell.style.minHeight = floor ? floor + "px" : "";
+    glideFloor = !!floor;
   };
   window.addEventListener("scrollend", done);
   timer = setTimeout(done, 1500);
 }
 
+let glideFloor = false;
+
 function releaseHeldPage() {
+  if (glideFloor && !(currentView === "study" && groupState)) {
+    glideFloor = false;
+    if (!heldPage) document.querySelector(".shell").style.minHeight = "";
+  }
   if (!heldPage) return;
   if (currentView === "study" && groupState && groupViewStyle === "table" && !isSessionFinished() && heldPage === currentLessonId + ":" + groupState.index) return;
   heldPage = null;
