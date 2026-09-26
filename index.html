@@ -690,6 +690,13 @@ window.onYouTubeIframeAPIReady = function(){
   .paused-card .emoji{font-size:40px;}
   .paused-card h2{font-size:19px;margin:10px 0 6px;}
   .paused-card p{color:var(--text-2);margin:0 0 18px;}
+  .cloud-card{width:100%;display:flex;flex-direction:column;gap:10px;}
+  .cloud-card h2, .cloud-card p{margin:0;}
+  .cloud-card input{width:100%;}
+  .cloud-or{font-size:12px;color:var(--text-3);}
+  .cloud-row{display:flex;gap:8px;}
+  .cloud-row button{flex:1;}
+  .cloud-error{min-height:18px;font-size:13px;color:var(--danger);}
 
   .import-preview{margin-top:10px;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;background:var(--surface);}
   .ip-summary{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;padding:8px 12px;background:var(--surface-2);border-bottom:1px solid var(--border);font-size:12.5px;color:var(--text-2);}
@@ -728,9 +735,28 @@ window.onYouTubeIframeAPIReady = function(){
     <input type="file" id="fileInput" class="file-input-hidden" accept=".json" multiple>
     <button id="btnBackupAll" class="ghost" title="Save every lesson and your review history as YYYY-MM-DD-flashcards.json. The first time you pick a folder; after that it saves there directly (one file per day). Shift-click to pick a different folder.">💾 Back up</button>
     <button id="btnStats" class="ghost">📊 Statistics</button>
+    <button id="btnCloud" class="ghost" hidden>☁️ Sign in to sync</button>
     <button id="btnTheme" class="ghost" title="Switch between light ☀️ and dark 🌙. Starts with your computer's setting." aria-label="Theme: light">🌓 Theme: ☀️</button>
   </div>
 </aside>
+
+<div id="cloudDialog" class="paused-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="cloudTitle">
+  <div class="paused-card cloud-card">
+    <div class="emoji">☁️</div>
+    <h2 id="cloudTitle">Sync your lessons</h2>
+    <p>Sign in with the same account on every device. Lessons and progress stay in sync.</p>
+    <button id="cloudGoogle" class="primary">Continue with Google</button>
+    <div class="cloud-or">or use email</div>
+    <input type="email" id="cloudEmail" placeholder="Email" autocomplete="email" aria-label="Email">
+    <input type="password" id="cloudPassword" placeholder="Password (6+ characters)" autocomplete="current-password" aria-label="Password">
+    <div class="cloud-row">
+      <button id="cloudSignIn">Sign in</button>
+      <button id="cloudSignUp">Create account</button>
+    </div>
+    <div id="cloudError" class="cloud-error" aria-live="polite"></div>
+    <button id="cloudClose" class="ghost">Not now</button>
+  </div>
+</div>
 
 <div id="pausedOverlay" class="paused-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="pausedTitle">
   <div class="paused-card">
@@ -767,6 +793,7 @@ window.onYouTubeIframeAPIReady = function(){
     <div class="row-flex">
       <button id="btnEmptyNew" class="primary">+ New lesson</button>
       <button id="btnEmptyImport">📥 Import file</button>
+      <button id="btnEmptyCloud" hidden>☁️ Sign in</button>
     </div>
   </div>
 </section>
@@ -1120,7 +1147,7 @@ function restoreFrom(fromStack, toStack, verb) {
   if (toStack.length > 50) toStack.shift();
   if (entry.reviewCount != null && reviewLog.length > entry.reviewCount) {
     oppositeEntry.reviewsRemoved = reviewLog.splice(entry.reviewCount);
-    oppositeEntry.reviewsRemoved.forEach(e => dbDelete("reviews", e.key));
+    oppositeEntry.reviewsRemoved.forEach(e => dbDelete("reviews", e.key, e));
   } else if (entry.reviewsRemoved) {
     entry.reviewsRemoved.forEach(e => {
       reviewLog.push(e);
@@ -4554,10 +4581,12 @@ async function dbTx(store, mode, fn) {
 }
 
 function dbPut(store, value) {
+  cloudNoteWrite(store, value, false);
   return dbTx(store, "readwrite", os => os.put(value));
 }
 
-function dbDelete(store, key) {
+function dbDelete(store, key, entry) {
+  cloudNoteWrite(store, entry || key, true);
   return dbTx(store, "readwrite", os => os.delete(key)).catch(() => {});
 }
 
@@ -5872,6 +5901,618 @@ function showBlockedNotice(state) {
 
 document.getElementById("btnUseHere").onclick = () => location.reload();
 
+const FIREBASE_CONFIG = null;
+
+const FIREBASE_SDK = "https://www.gstatic.com/firebasejs/10.12.2/";
+
+const CLOUD_KEY = "flashcards.cloud";
+
+const CLOUD_PART_CHARS = 3e5;
+
+const CLOUD_FLUSH_MS = 2500;
+
+let cloud = null;
+
+let cloudLoading = null;
+
+let cloudApplying = false;
+
+let cloudFlushTimer = null;
+
+let cloudFlushing = false;
+
+let cloudChain = Promise.resolve();
+
+let cloudUnsubs = [];
+
+const cloudPendingLessons = new Set;
+
+const cloudPendingReviews = new Map;
+
+function readCloudState() {
+  const st = readLocal(CLOUD_KEY) || {};
+  return {
+    uid: st.uid || null,
+    synced: st.synced && typeof st.synced === "object" ? st.synced : {},
+    deleted: st.deleted && typeof st.deleted === "object" ? st.deleted : {}
+  };
+}
+
+function writeCloudState(update) {
+  const st = readCloudState();
+  update(st);
+  try {
+    localStorage.setItem(CLOUD_KEY, JSON.stringify(st));
+  } catch (e) {}
+}
+
+function cloudSignedIn() {
+  return !!(cloud && cloud.user);
+}
+
+function cloudNoteWrite(store, value, removed) {
+  if (cloudApplying || !FIREBASE_CONFIG) return;
+  if (store === "lessons") {
+    const id = removed ? value : value.id;
+    if (!id || id === HARD_LESSON_ID) return;
+    if (removed) writeCloudState(st => {
+      if (st.synced[id]) st.deleted[id] = Date.now();
+    });
+    cloudPendingLessons.add(id);
+  } else if (store === "reviews") {
+    if (!value || !value.key) return;
+    cloudPendingReviews.set(value.key, removed ? {
+      ts: value.ts,
+      removed: true
+    } : value);
+  } else {
+    return;
+  }
+  scheduleCloudFlush();
+}
+
+function scheduleCloudFlush(delay) {
+  if (!cloudSignedIn()) return;
+  clearTimeout(cloudFlushTimer);
+  cloudFlushTimer = setTimeout(cloudFlush, delay == null ? CLOUD_FLUSH_MS : delay);
+  setCloudStatus("syncing");
+}
+
+function cloudRef(...path) {
+  return cloud.fs.doc(cloud.db, "users", cloud.user.uid, ...path);
+}
+
+function monthKey(ts) {
+  const d = new Date(ts);
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+}
+
+function splitForCloud(text) {
+  const parts = [];
+  let i = 0;
+  while (i < text.length) {
+    let end = Math.min(i + CLOUD_PART_CHARS, text.length);
+    const code = text.charCodeAt(end - 1);
+    if (end < text.length && code >= 55296 && code <= 56319) end--;
+    parts.push(text.slice(i, end));
+    i = end;
+  }
+  return parts.length ? parts : [ "" ];
+}
+
+async function cloudPushLesson(id) {
+  const f = cloud.fs;
+  const st = readCloudState();
+  const lesson = library.find(l => l.id === id);
+  if (!lesson) {
+    if (!st.deleted[id]) return;
+    const at = st.deleted[id];
+    await f.setDoc(cloudRef("lessons", id), {
+      updatedAt: at,
+      deleted: true,
+      parts: 0,
+      data: null
+    });
+    writeCloudState(s => {
+      s.synced[id] = at;
+      delete s.deleted[id];
+    });
+    return;
+  }
+  if (isEmptyLesson(lesson)) return;
+  const at = lesson.updatedAt || 0;
+  const data = JSON.stringify(Object.assign({}, lesson, {
+    cards: lesson.cards.filter(c => (c.q || "").trim() || (c.a || "").trim())
+  }));
+  const parts = splitForCloud(data);
+  const batch = f.writeBatch(cloud.db);
+  if (parts.length > 1) parts.forEach((part, i) => batch.set(cloudRef("lessons", id, "parts", String(i)), {
+    data: part
+  }));
+  batch.set(cloudRef("lessons", id), {
+    updatedAt: at,
+    deleted: false,
+    parts: parts.length,
+    data: parts.length > 1 ? null : parts[0]
+  });
+  await batch.commit();
+  writeCloudState(s => {
+    s.synced[id] = Math.max(s.synced[id] || 0, at);
+    delete s.deleted[id];
+  });
+}
+
+async function cloudPushReviews(entries) {
+  const f = cloud.fs;
+  const byMonth = new Map;
+  entries.forEach(([key, e]) => {
+    const month = monthKey(e.ts);
+    if (!byMonth.has(month)) byMonth.set(month, {});
+    byMonth.get(month)[key] = e.removed ? f.deleteField() : {
+      ts: e.ts,
+      lessonId: e.lessonId,
+      cardUid: e.cardUid,
+      mode: e.mode,
+      grade: e.grade
+    };
+  });
+  const batch = f.writeBatch(cloud.db);
+  byMonth.forEach((fields, month) => batch.set(cloudRef("reviews", month), fields, {
+    merge: true
+  }));
+  await batch.commit();
+}
+
+async function cloudFlush() {
+  clearTimeout(cloudFlushTimer);
+  if (!cloudSignedIn() || tabPaused) return;
+  if (cloudFlushing) {
+    scheduleCloudFlush();
+    return;
+  }
+  cloudFlushing = true;
+  const ids = [ ...cloudPendingLessons ];
+  const reviews = [ ...cloudPendingReviews.entries() ];
+  cloudPendingLessons.clear();
+  cloudPendingReviews.clear();
+  try {
+    for (const id of ids) await cloudPushLesson(id);
+    if (reviews.length) await cloudPushReviews(reviews);
+    setCloudStatus(cloudPendingLessons.size || cloudPendingReviews.size ? "syncing" : "synced");
+  } catch (e) {
+    ids.forEach(id => cloudPendingLessons.add(id));
+    reviews.forEach(([key, value]) => {
+      if (!cloudPendingReviews.has(key)) cloudPendingReviews.set(key, value);
+    });
+    setCloudStatus("error");
+    clearTimeout(cloudFlushTimer);
+    cloudFlushTimer = setTimeout(cloudFlush, 3e4);
+  }
+  cloudFlushing = false;
+}
+
+function mergeLessons(a, b) {
+  const [base, other] = (a.updatedAt || 0) >= (b.updatedAt || 0) ? [ a, b ] : [ b, a ];
+  const otherCards = new Map(other.cards.map(c => [ c.uid, c ]));
+  const cards = base.cards.map(c => {
+    const o = otherCards.get(c.uid);
+    if (!o || !o.srs || !c.srs) return c;
+    const srs = {};
+    MODES.forEach(m => {
+      const x = c.srs[m], y = o.srs[m];
+      srs[m] = y && (!x || (y.last || 0) > (x.last || 0)) ? y : x;
+    });
+    return Object.assign({}, c, {
+      srs: srs
+    });
+  });
+  const known = new Set(cards.map(c => c.uid));
+  other.cards.forEach((c, i) => {
+    if (known.has(c.uid)) return;
+    let at = 0;
+    for (let j = i - 1; j >= 0; j--) {
+      if (!known.has(other.cards[j].uid)) continue;
+      at = cards.findIndex(x => x.uid === other.cards[j].uid) + 1;
+      break;
+    }
+    cards.splice(at, 0, c);
+    known.add(c.uid);
+  });
+  return Object.assign({}, base, {
+    cards: cards,
+    updatedAt: Date.now()
+  });
+}
+
+function storeFromCloud(store, value) {
+  cloudApplying = true;
+  try {
+    return dbPut(store, value).catch(() => {});
+  } finally {
+    cloudApplying = false;
+  }
+}
+
+function applyLessonToOpenRows(lesson) {
+  const byUid = new Map(rows.map(r => [ r.uid, r ]));
+  const editing = activeEdit && activeEdit.row;
+  const next = lesson.cards.map(raw => {
+    const card = normalizeCard(raw);
+    let r = byUid.get(card.uid);
+    if (r) {
+      byUid.delete(card.uid);
+      if (r !== editing && (r.q !== card.q || r.a !== card.a)) {
+        transliterationCache.delete(cacheKey(r.id, "q"));
+        transliterationCache.delete(cacheKey(r.id, "a"));
+      }
+      if (r !== editing) Object.assign(r, {
+        q: card.q,
+        a: card.a,
+        qHtml: card.qHtml,
+        aHtml: card.aHtml,
+        notes: card.notes,
+        notesHtml: card.notesHtml,
+        time: card.time
+      });
+      r.srs = card.srs;
+    } else {
+      r = newRow(card.q, card.a, card.time);
+      Object.assign(r, card);
+      if (groupState) {
+        r.qHidden = true;
+        r.aHidden = true;
+      }
+    }
+    return r;
+  });
+  byUid.forEach(r => {
+    if (r === editing && r.id === draftRowId) {
+      const at = Math.min(rows.indexOf(r), next.length);
+      next.splice(at, 0, r);
+      return;
+    }
+    if (r === editing) discardActiveEdit();
+    pruneIdFromGroupState(groupState, r.id);
+    pruneIdFromGroupState(savedGroupState, r.id);
+  });
+  rows = next;
+  importHistory = Array.isArray(lesson.importHistory) ? lesson.importHistory.slice() : [];
+  const nameInput = document.getElementById("lessonName");
+  if (document.activeElement !== nameInput) setLessonTitle(lesson.name || "");
+  if (VALID_STUDY_LANGS.includes(lesson.studyLang) && lesson.studyLang !== studyLang) {
+    studyLang = lesson.studyLang;
+    document.getElementById("studyLang").value = studyLang;
+  }
+  const urlInput = document.getElementById("mediaUrl");
+  if ((lesson.mediaUrl || "") !== urlInput.value.trim() && document.activeElement !== urlInput) {
+    urlInput.value = lesson.mediaUrl || "";
+    if (lesson.mediaUrl) applyMediaUrl(true); else destroyYtPlayer();
+  }
+  if (!rows.length) {
+    groupState = null;
+    savedGroupState = null;
+  } else {
+    skipEmptyGroups();
+  }
+  updateGroupUI();
+}
+
+function applyCloudLesson(lesson) {
+  upsertLibrary(lesson);
+  storeFromCloud("lessons", lesson);
+  if (lesson.id === currentLessonId && !isVirtualLesson()) {
+    applyLessonToOpenRows(lesson);
+    if (currentView === "study") render();
+  }
+  renderLessonList();
+  refreshSaveReminders();
+  if (currentView === "stats") renderStats();
+}
+
+function removeLessonFromCloud(id) {
+  library = library.filter(l => l.id !== id);
+  cloudApplying = true;
+  dbDelete("lessons", id);
+  cloudApplying = false;
+  dbDelete("handles", "lesson:" + id);
+  if (id === currentLessonId) {
+    clearTimeout(autoSaveDebounceTimer);
+    autoSaveDebounceTimer = null;
+    resetStudyState();
+    currentLessonId = null;
+    rows = [];
+    const next = sortedLibrary()[0];
+    if (next) {
+      openLesson(next);
+      if (currentView === "study") showView("study");
+    } else {
+      setLessonTitle("");
+      showView("empty");
+    }
+  }
+  renderLessonList();
+  if (currentView === "stats") renderStats();
+}
+
+async function readCloudLessonData(id, d) {
+  if (d.parts > 1) {
+    const snaps = await Promise.all(Array.from({
+      length: d.parts
+    }, (_, i) => cloud.fs.getDoc(cloudRef("lessons", id, "parts", String(i)))));
+    return snaps.map(snap => snap.exists() ? snap.data().data || "" : "").join("");
+  }
+  return d.data || "";
+}
+
+async function receiveCloudLesson(id, d) {
+  const syncedAt = readCloudState().synced[id] || 0;
+  const remoteAt = d.updatedAt || 0;
+  if (remoteAt <= syncedAt) return;
+  if (id === currentLessonId && autoSaveDebounceTimer) saveCurrentLesson();
+  const local = library.find(l => l.id === id);
+  const markSynced = at => writeCloudState(st => {
+    st.synced[id] = Math.max(st.synced[id] || 0, at);
+  });
+  if (d.deleted) {
+    if (local && (local.updatedAt || 0) > remoteAt) {
+      cloudPendingLessons.add(id);
+    } else if (local) {
+      removeLessonFromCloud(id);
+    }
+    markSynced(remoteAt);
+    return;
+  }
+  const deletedAt = readCloudState().deleted[id];
+  if (deletedAt && deletedAt >= remoteAt) {
+    cloudPendingLessons.add(id);
+    return;
+  }
+  let remote;
+  try {
+    remote = normalizeLesson(JSON.parse(await readCloudLessonData(id, d)));
+  } catch (e) {
+    return;
+  }
+  remote.id = id;
+  if (deletedAt) writeCloudState(st => {
+    delete st.deleted[id];
+  });
+  const current = library.find(l => l.id === id);
+  if (!current || (current.updatedAt || 0) <= syncedAt) {
+    applyCloudLesson(remote);
+    markSynced(remoteAt);
+    return;
+  }
+  const merged = mergeLessons(current, remote);
+  applyCloudLesson(merged);
+  markSynced(remoteAt);
+  cloudPendingLessons.add(id);
+}
+
+function receiveCloudReviews(month, fields) {
+  const known = new Set(reviewLog.map(e => e.key));
+  let added = 0;
+  Object.keys(fields).forEach(key => {
+    const e = fields[key];
+    if (!e || known.has(key) || !isFinite(e.ts)) return;
+    const entry = {
+      key: key,
+      ts: e.ts,
+      lessonId: e.lessonId,
+      cardUid: e.cardUid,
+      mode: e.mode,
+      grade: e.grade
+    };
+    reviewLog.push(entry);
+    storeFromCloud("reviews", entry);
+    added++;
+  });
+  if (!added) return;
+  reviewLog.sort((a, b) => a.ts - b.ts);
+  renderStreakChip();
+  if (currentView === "stats") renderStats();
+}
+
+function startCloudListeners() {
+  stopCloudListeners();
+  const f = cloud.fs;
+  const uid = cloud.user.uid;
+  let firstLessons = true;
+  let firstReviews = true;
+  cloudUnsubs.push(f.onSnapshot(f.collection(cloud.db, "users", uid, "lessons"), snap => {
+    const changes = snap.docChanges().filter(ch => ch.type !== "removed" && !ch.doc.metadata.hasPendingWrites);
+    const remoteIds = new Set(snap.docs.map(docSnap => docSnap.id));
+    const wasFirst = firstLessons;
+    firstLessons = false;
+    cloudChain = cloudChain.then(async () => {
+      if (tabPaused) return;
+      for (const ch of changes) await receiveCloudLesson(ch.doc.id, ch.doc.data());
+      if (wasFirst) {
+        const st = readCloudState();
+        library.forEach(l => {
+          if (!isEmptyLesson(l) && (!remoteIds.has(l.id) || (l.updatedAt || 0) > (st.synced[l.id] || 0))) cloudPendingLessons.add(l.id);
+        });
+        Object.keys(st.deleted).forEach(id => cloudPendingLessons.add(id));
+        if (currentView === "empty" && library.length) {
+          openLesson(sortedLibrary()[0]);
+          showView("study");
+        }
+      }
+      if (cloudPendingLessons.size) scheduleCloudFlush(wasFirst ? 0 : null); else if (wasFirst) setCloudStatus("synced");
+    }).catch(() => setCloudStatus("error"));
+  }, () => setCloudStatus("error")));
+  cloudUnsubs.push(f.onSnapshot(f.collection(cloud.db, "users", uid, "reviews"), snap => {
+    if (tabPaused) return;
+    const remoteKeys = new Set;
+    snap.docs.forEach(docSnap => Object.keys(docSnap.data()).forEach(k => remoteKeys.add(k)));
+    snap.docChanges().forEach(ch => {
+      if (ch.type !== "removed" && !ch.doc.metadata.hasPendingWrites) receiveCloudReviews(ch.doc.id, ch.doc.data());
+    });
+    if (firstReviews) {
+      firstReviews = false;
+      reviewLog.forEach(e => {
+        if (!remoteKeys.has(e.key)) cloudPendingReviews.set(e.key, e);
+      });
+      if (cloudPendingReviews.size) scheduleCloudFlush(0);
+    }
+  }, () => setCloudStatus("error")));
+}
+
+function stopCloudListeners() {
+  cloudUnsubs.forEach(unsub => unsub());
+  cloudUnsubs = [];
+}
+
+function loadCloud() {
+  if (!FIREBASE_CONFIG) return Promise.reject(new Error("not configured"));
+  if (cloudLoading) return cloudLoading;
+  cloudLoading = Promise.all([ import(FIREBASE_SDK + "firebase-app.js"), import(FIREBASE_SDK + "firebase-auth.js"), import(FIREBASE_SDK + "firebase-firestore.js") ]).then(([appMod, authMod, fsMod]) => {
+    const app = appMod.initializeApp(FIREBASE_CONFIG);
+    cloud = {
+      auth: authMod.getAuth(app),
+      authMod: authMod,
+      db: fsMod.getFirestore(app),
+      fs: fsMod,
+      user: null
+    };
+    authMod.onAuthStateChanged(cloud.auth, user => {
+      cloud.user = user;
+      if (user) {
+        writeCloudState(st => {
+          if (st.uid !== user.uid) {
+            st.synced = {};
+            st.deleted = {};
+          }
+          st.uid = user.uid;
+        });
+        document.getElementById("cloudDialog").hidden = true;
+        setCloudStatus("syncing");
+        startCloudListeners();
+      } else {
+        stopCloudListeners();
+        writeCloudState(st => {
+          st.uid = null;
+        });
+        setCloudStatus("off");
+      }
+    });
+    return cloud;
+  }).catch(e => {
+    cloudLoading = null;
+    throw e;
+  });
+  return cloudLoading;
+}
+
+let cloudStatus = "off";
+
+function setCloudStatus(status) {
+  cloudStatus = cloudSignedIn() ? status : "off";
+  const btn = document.getElementById("btnCloud");
+  const labels = {
+    off: "☁️ Sign in to sync",
+    syncing: "☁️ Syncing…",
+    synced: "☁️ Synced",
+    error: "☁️ Sync paused — offline?"
+  };
+  btn.textContent = labels[cloudStatus];
+  btn.title = cloudSignedIn() ? "Signed in as " + (cloud.user.email || "your account") + " — click to sign out" : "Sign in to keep lessons in sync on all your devices";
+  document.getElementById("btnEmptyCloud").hidden = !FIREBASE_CONFIG || cloudSignedIn();
+}
+
+function cloudErrorText(e) {
+  const code = e && e.code || "";
+  if (code.includes("popup-closed") || code.includes("cancelled-popup")) return "";
+  if (code.includes("popup-blocked")) return "The sign-in window was blocked — allow pop-ups, or use email below.";
+  if (code.includes("invalid-credential") || code.includes("wrong-password") || code.includes("user-not-found")) return "Email or password is not right.";
+  if (code.includes("email-already-in-use")) return "That email already has an account — tap Sign in.";
+  if (code.includes("weak-password")) return "Use a password with at least 6 characters.";
+  if (code.includes("invalid-email")) return "That email doesn't look right.";
+  if (code.includes("network")) return "No connection — check the internet and try again.";
+  if (code.includes("unauthorized-domain")) return "This address isn't allowed yet — add it under Authentication › Settings › Authorized domains.";
+  return "Couldn't sign in (" + (code || "unknown error") + ").";
+}
+
+function openCloudDialog() {
+  const dialog = document.getElementById("cloudDialog");
+  document.getElementById("cloudError").textContent = "";
+  dialog.hidden = false;
+  const google = document.getElementById("cloudGoogle");
+  google.disabled = !cloud;
+  loadCloud().then(() => {
+    google.disabled = false;
+  }).catch(() => {
+    document.getElementById("cloudError").textContent = "Couldn't reach the sync service — check the internet.";
+  });
+}
+
+async function cloudEmailAuth(create) {
+  const email = document.getElementById("cloudEmail").value.trim();
+  const password = document.getElementById("cloudPassword").value;
+  const errorEl = document.getElementById("cloudError");
+  errorEl.textContent = "";
+  if (!email || !password) {
+    errorEl.textContent = "Enter your email and a password.";
+    return;
+  }
+  try {
+    await loadCloud();
+    const fn = create ? cloud.authMod.createUserWithEmailAndPassword : cloud.authMod.signInWithEmailAndPassword;
+    await fn(cloud.auth, email, password);
+    document.getElementById("cloudPassword").value = "";
+  } catch (e) {
+    errorEl.textContent = cloudErrorText(e);
+  }
+}
+
+function initCloudUi() {
+  if (!FIREBASE_CONFIG) return;
+  document.getElementById("btnCloud").hidden = false;
+  setCloudStatus("off");
+  if (readCloudState().uid) loadCloud().catch(() => setCloudStatus("error"));
+}
+
+document.getElementById("btnCloud").onclick = async () => {
+  if (!cloudSignedIn()) {
+    openCloudDialog();
+    return;
+  }
+  if (!confirm("Signed in as " + (cloud.user.email || "your account") + ".\n\nSign out on this device? Your lessons stay here and in the cloud.")) return;
+  await cloudFlush();
+  await cloud.authMod.signOut(cloud.auth);
+  showToast("Signed out — this device no longer syncs");
+};
+
+document.getElementById("btnEmptyCloud").onclick = openCloudDialog;
+
+document.getElementById("cloudClose").onclick = () => {
+  document.getElementById("cloudDialog").hidden = true;
+};
+
+document.getElementById("cloudGoogle").onclick = () => {
+  if (!cloud) return;
+  document.getElementById("cloudError").textContent = "";
+  cloud.authMod.signInWithPopup(cloud.auth, new cloud.authMod.GoogleAuthProvider).catch(e => {
+    document.getElementById("cloudError").textContent = cloudErrorText(e);
+  });
+};
+
+document.getElementById("cloudSignIn").onclick = () => cloudEmailAuth(false);
+
+document.getElementById("cloudSignUp").onclick = () => cloudEmailAuth(true);
+
+document.getElementById("cloudPassword").addEventListener("keydown", e => {
+  if (e.key === "Enter") cloudEmailAuth(false);
+});
+
+window.addEventListener("online", () => {
+  if (cloudSignedIn() && (cloudPendingLessons.size || cloudPendingReviews.size)) scheduleCloudFlush(0);
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden" && cloudSignedIn() && (cloudPendingLessons.size || cloudPendingReviews.size)) cloudFlush();
+});
+
 async function initApp() {
   updateThemeButton();
   await claimActiveTab();
@@ -5908,6 +6549,7 @@ async function initApp() {
     showView("empty");
   }
   if (!dbAvailable) showToast("Browser storage is unavailable here — click Save to keep your work");
+  initCloudUi();
   if (navigator.storage && navigator.storage.persist) navigator.storage.persisted().then(done => done || navigator.storage.persist()).catch(() => {});
 }
 
