@@ -149,7 +149,7 @@ window.onYouTubeIframeAPIReady = function(){
     cursor:default;
   }
   [hidden]{display:none !important;}
-  input[type=text], input[type=search], textarea, select{
+  input[type=text], input[type=search], input[type=email], input[type=password], textarea, select{
     font-family:inherit;
     font-size:14px;
     color:var(--text);
@@ -159,8 +159,8 @@ window.onYouTubeIframeAPIReady = function(){
     background:var(--surface);
     transition:border-color .12s, box-shadow .12s;
   }
-  input[type=text], input[type=search], textarea{cursor:text;}
-  input[type=text]:focus, input[type=search]:focus, textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);}
+  input[type=text], input[type=search], input[type=email], input[type=password], textarea{cursor:text;}
+  input[type=text]:focus, input[type=search]:focus, input[type=email]:focus, input[type=password]:focus, textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);}
   textarea{width:100%;resize:vertical;}
   select{
     appearance:none;
@@ -289,7 +289,7 @@ window.onYouTubeIframeAPIReady = function(){
     .shell .single-card-field{padding:14px 10px;}
     .shell .single-card-field .cell{font-size:21px;padding:2px 6px;}
   }
-  html.touch input[type=text], html.touch input[type=search], html.touch textarea, html.touch select{font-size:16px;}
+  html.touch input[type=text], html.touch input[type=search], html.touch input[type=email], html.touch input[type=password], html.touch textarea, html.touch select{font-size:16px;}
   html.touch .segmented button{min-width:46px;padding:8px 12px;}
   html.touch .main{padding-bottom:calc(92px + env(safe-area-inset-bottom));}
   html.touch .toast-container{bottom:calc(84px + env(safe-area-inset-bottom));}
@@ -732,7 +732,7 @@ window.onYouTubeIframeAPIReady = function(){
 <aside class="sidebar">
   <div class="brand"><button id="btnDrawer" class="ghost drawer-btn" aria-label="Menu">☰</button><span class="brand-mark">字</span>Flashcards<span id="streakChip" class="streak-chip" hidden><span class="streak-chip-flame">🔥</span><span id="streakChipCount">0</span></span><button id="btnCloud" class="cloud-chip" hidden>☁️</button></div>
   <button id="btnNewLesson" class="primary">+ New lesson</button>
-  <input type="search" id="lessonSearch" placeholder="Search lessons…" aria-label="Search lessons">
+  <input type="search" id="lessonSearch" name="lesson-search" autocomplete="off" placeholder="Search lessons…" aria-label="Search lessons">
   <nav id="lessonList" class="lesson-list" aria-label="Lessons"></nav>
   <div class="sidebar-footer">
     <button id="btnAddCards" class="ghost" title="Paste new cards into a lesson, with a live preview">➕ Add cards</button>
@@ -751,12 +751,14 @@ window.onYouTubeIframeAPIReady = function(){
     <p>Sign in with the same account on every device. Lessons and progress stay in sync.</p>
     <button id="cloudGoogle" class="primary">Continue with Google</button>
     <div class="cloud-or">or use email</div>
-    <input type="email" id="cloudEmail" placeholder="Email" autocomplete="email" aria-label="Email">
-    <input type="password" id="cloudPassword" placeholder="Password (6+ characters)" autocomplete="current-password" aria-label="Password">
-    <div class="cloud-row">
-      <button id="cloudSignIn">Sign in</button>
-      <button id="cloudSignUp">Create account</button>
-    </div>
+    <form id="cloudForm" class="cloud-card">
+      <input type="email" id="cloudEmail" name="username" placeholder="Email" autocomplete="username" aria-label="Email">
+      <input type="password" id="cloudPassword" name="password" placeholder="Password (6+ characters)" autocomplete="current-password" aria-label="Password">
+      <div class="cloud-row">
+        <button type="submit" id="cloudSignIn">Sign in</button>
+        <button type="button" id="cloudSignUp">Create account</button>
+      </div>
+    </form>
     <div id="cloudError" class="cloud-error" aria-live="polite"></div>
     <button id="cloudClose" class="ghost">Not now</button>
   </div>
@@ -865,7 +867,7 @@ window.onYouTubeIframeAPIReady = function(){
 
 <section id="viewStudy" hidden>
   <header class="lesson-header">
-    <input type="text" id="lessonName" class="lesson-name-input" placeholder="Lesson name" aria-label="Lesson name">
+    <input type="text" id="lessonName" name="lesson-name" autocomplete="off" class="lesson-name-input" placeholder="Lesson name" aria-label="Lesson name">
     <div class="header-actions">
       <button id="btnSaveFile" class="ghost" title="Save this lesson as a .json file. The first time you pick the file; after that it is overwritten in place. Shift-click to pick a different file.">Save</button>
       <button id="btnResetLesson" class="ghost" title="Make every card in this lesson New again in all modes, to study it from the start. Cards, notes and statistics stay.">Reset</button>
@@ -884,7 +886,7 @@ window.onYouTubeIframeAPIReady = function(){
       <option value="vi">🇻🇳 Vietnamese</option>
     </select>
     <div class="link-bar">
-      <input type="text" id="mediaUrl" placeholder="Paste a YouTube, TikTok, or Douyin link…" aria-label="Video link">
+      <input type="text" id="mediaUrl" name="media-url" autocomplete="off" placeholder="Paste a YouTube, TikTok, or Douyin link…" aria-label="Video link">
       <button id="btnEmbedMedia" class="primary">Open</button>
       <button id="btnClearMedia" class="ghost">Clear</button>
     </div>
@@ -6524,13 +6526,12 @@ document.getElementById("cloudGoogle").onclick = () => {
   });
 };
 
-document.getElementById("cloudSignIn").onclick = () => cloudEmailAuth(false);
+document.getElementById("cloudForm").onsubmit = e => {
+  e.preventDefault();
+  cloudEmailAuth(false);
+};
 
 document.getElementById("cloudSignUp").onclick = () => cloudEmailAuth(true);
-
-document.getElementById("cloudPassword").addEventListener("keydown", e => {
-  if (e.key === "Enter") cloudEmailAuth(false);
-});
 
 window.addEventListener("online", () => {
   if (cloudSignedIn() && (cloudPendingLessons.size || cloudPendingReviews.size)) scheduleCloudFlush(0);
