@@ -964,6 +964,7 @@ window.onYouTubeIframeAPIReady = function(){
   </div>
 
   <div id="dictPanels"></div>
+  <div id="studySpacer"></div>
 
   <div id="inlineAddSlot" hidden></div>
 
@@ -2130,7 +2131,16 @@ function showSessionCompletePanel() {
 function render() {
   renderStudy();
   renderDictPanels();
+  sizeStudySpacer();
 }
+
+function sizeStudySpacer() {
+  const head = document.querySelector(".study-head");
+  const room = window.innerHeight - (parseFloat(getComputedStyle(head).top) || 0) - head.offsetHeight;
+  document.getElementById("studySpacer").style.height = groupState && currentView === "study" ? Math.max(0, room) + "px" : "0";
+}
+
+window.addEventListener("resize", sizeStudySpacer);
 
 let nextOrderReady = false;
 
@@ -3868,8 +3878,7 @@ function glideAfter(update, toTop) {
   const maxY = document.documentElement.scrollHeight - window.innerHeight;
   const top = toTop ? studyAreaTop() : maxY;
   if (y <= top) return;
-  const floor = top > maxY ? Math.ceil(shell.getBoundingClientRect().height + top - maxY) + 2 : 0;
-  shell.style.minHeight = Math.max(height, floor) + "px";
+  shell.style.minHeight = height + "px";
   window.scrollTo(0, y);
   window.scrollTo({
     top: top,
@@ -3880,21 +3889,13 @@ function glideAfter(update, toTop) {
     if (e && Math.abs(window.scrollY - top) > 0.5) return;
     clearTimeout(timer);
     window.removeEventListener("scrollend", done);
-    if (heldPage) return;
-    shell.style.minHeight = floor ? floor + "px" : "";
-    glideFloor = !!floor;
+    if (!heldPage) shell.style.minHeight = "";
   };
   window.addEventListener("scrollend", done);
   timer = setTimeout(done, 3000);
 }
 
-let glideFloor = false;
-
 function releaseHeldPage() {
-  if (glideFloor && !(currentView === "study" && groupState)) {
-    glideFloor = false;
-    if (!heldPage) document.querySelector(".shell").style.minHeight = "";
-  }
   if (!heldPage) return;
   if (currentView === "study" && groupState && groupViewStyle === "table" && !isSessionFinished() && heldPage === currentLessonId + ":" + groupState.index) return;
   heldPage = null;
