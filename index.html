@@ -3045,20 +3045,21 @@ document.addEventListener("mousemove", e => {
   if (currentView === "study" && !groupState && !isVirtualLesson() && !tabPaused && !isTouch()) {
     const table = document.getElementById("cardTable");
     box = table.getBoundingClientRect();
-    if (table.style.display !== "none" && e.clientX >= box.left && e.clientX <= box.right) {
+    const tr = table.style.display !== "none" && e.target.closest ? e.target.closest("#tbody tr[data-id]") : null;
+    if (tr) {
+      const r = tr.getBoundingClientRect();
+      const nearTop = e.clientY - r.top <= 8, nearBottom = r.bottom - e.clientY <= 8;
+      const rowOf = el => el && el.dataset && el.dataset.id ? el : null;
+      const above = nearTop ? rowOf(tr.previousElementSibling) : nearBottom ? tr : null;
+      const below = nearTop ? tr : nearBottom ? rowOf(tr.nextElementSibling) : null;
       const drafting = activeEdit && activeEdit.row.id === draftRowId && activeEdit.tr;
-      Array.from(document.querySelectorAll("#tbody tr[data-id]")).some((tr, i, all) => {
-        const r = tr.getBoundingClientRect();
-        const before = i === 0 && Math.abs(e.clientY - r.top) <= 8;
-        if (!before && Math.abs(e.clientY - r.bottom) > 8) return false;
-        if (drafting && (tr === drafting || !before && all[i + 1] === drafting)) return false;
+      if ((nearTop || nearBottom) && !(drafting && (above === drafting || below === drafting))) {
         place = {
-          id: Number(tr.dataset.id),
-          after: !before
+          id: Number((above || below).dataset.id),
+          after: !!above
         };
-        y = before ? r.top : r.bottom;
-        return true;
-      });
+        y = nearTop ? r.top : r.bottom;
+      }
     }
   }
   if (!place) {
@@ -5995,9 +5996,8 @@ function cloudRef(...path) {
   return cloud.fs.doc(cloud.db, "users", cloud.user.uid, ...path);
 }
 
-function monthKey(ts) {
-  const d = new Date(ts);
-  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+function dayKey(ts) {
+  return new Date(ts).toISOString().slice(0, 10);
 }
 
 function splitForCloud(text) {
@@ -6057,11 +6057,11 @@ async function cloudPushLesson(id) {
 
 async function cloudPushReviews(entries) {
   const f = cloud.fs;
-  const byMonth = new Map;
+  const byDay = new Map;
   entries.forEach(([key, e]) => {
-    const month = monthKey(e.ts);
-    if (!byMonth.has(month)) byMonth.set(month, {});
-    byMonth.get(month)[key] = e.removed ? f.deleteField() : {
+    const day = dayKey(e.ts);
+    if (!byDay.has(day)) byDay.set(day, {});
+    byDay.get(day)[key] = e.removed ? f.deleteField() : {
       ts: e.ts,
       lessonId: e.lessonId,
       cardUid: e.cardUid,
@@ -6069,11 +6069,14 @@ async function cloudPushReviews(entries) {
       grade: e.grade
     };
   });
-  const batch = f.writeBatch(cloud.db);
-  byMonth.forEach((fields, month) => batch.set(cloudRef("reviews", month), fields, {
-    merge: true
-  }));
-  await batch.commit();
+  const days = [ ...byDay.entries() ];
+  for (let i = 0; i < days.length; i += 400) {
+    const batch = f.writeBatch(cloud.db);
+    days.slice(i, i + 400).forEach(([day, fields]) => batch.set(cloudRef("reviews", day), fields, {
+      merge: true
+    }));
+    await batch.commit();
+  }
 }
 
 async function cloudFlush() {
@@ -6302,7 +6305,7 @@ async function receiveCloudLesson(id, d) {
   cloudPendingLessons.add(id);
 }
 
-function receiveCloudReviews(month, fields) {
+function receiveCloudReviews(fields) {
   const known = new Set(reviewLog.map(e => e.key));
   let added = 0;
   Object.keys(fields).forEach(key => {
@@ -6359,7 +6362,7 @@ function startCloudListeners() {
     const remoteKeys = new Set;
     snap.docs.forEach(docSnap => Object.keys(docSnap.data()).forEach(k => remoteKeys.add(k)));
     snap.docChanges().forEach(ch => {
-      if (ch.type !== "removed" && !ch.doc.metadata.hasPendingWrites) receiveCloudReviews(ch.doc.id, ch.doc.data());
+      if (ch.type !== "removed" && !ch.doc.metadata.hasPendingWrites) receiveCloudReviews(ch.doc.data());
     });
     if (firstReviews) {
       firstReviews = false;
