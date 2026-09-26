@@ -1797,7 +1797,7 @@ function deleteRow(id) {
   } else {
     skipEmptyGroups();
   }
-  glideAfter(render);
+  swipe([ document.querySelector(`#tbody tr[data-id="${id}"]`) || document.querySelector(`#singleCardBody[data-id="${id}"]`) ], -1, render, false);
   showToast("Deleted — " + cardSummary(row));
   scheduleAutoSave();
 }
@@ -3822,7 +3822,7 @@ function gradeCurrentGroupAndAdvance(isAgain) {
   });
   showToast(gradeLabel(isAgain));
   scheduleAutoSave();
-  glideAfter(() => {
+  swipe(studyBlocks(), isAgain ? -1 : 1, () => {
     groupState.groups[groupState.index] = [];
     advanceToNextGroup();
     render();
@@ -3843,7 +3843,8 @@ function gradeCard(row, isAgain) {
   showToast(gradeLabel(isAgain) + " — " + cardSummary(row));
   scheduleAutoSave();
   if (hoveredRowId === row.id) hoveredRowId = null;
-  glideAfter(() => {
+  const next = !ids || ids.length === 1;
+  swipe(next ? studyBlocks() : [ document.querySelector(`#tbody tr[data-id="${row.id}"]`) ], isAgain ? -1 : 1, () => {
     if (ids) {
       ids.splice(ids.indexOf(row.id), 1);
       if (ids.length === 0) advanceToNextGroup(); else updateGroupUI();
@@ -3853,7 +3854,7 @@ function gradeCard(row, isAgain) {
       heldPage = currentLessonId + ":" + groupState.index;
       shell.style.minHeight = pageHeight + "px";
     }
-  }, true);
+  }, next);
 }
 
 let heldPage = null;
@@ -3868,31 +3869,80 @@ function studyAreaTop() {
   return Math.max(0, Math.round((naturalTop - stickyTop) * dpr) / dpr);
 }
 
-function glideAfter(update, toTop) {
-  const shell = document.querySelector(".shell");
-  const y = window.scrollY;
-  const height = shell.offsetHeight;
-  update();
-  if (heldPage) return;
-  shell.style.minHeight = "";
-  const maxY = document.documentElement.scrollHeight - window.innerHeight;
-  const top = toTop ? studyAreaTop() : maxY;
-  if (y <= top) return;
-  shell.style.minHeight = height + "px";
-  window.scrollTo(0, y);
-  window.scrollTo({
-    top: top,
-    behavior: "smooth"
+function studyBlocks() {
+  return [ "tableProgress", "cardTable", "singleCardView", "sessionCompletePanel" ].map(id => document.getElementById(id)).concat(Array.from(document.querySelectorAll("#dictPanels > :not(.dict-pending)"))).filter(el => el.offsetParent);
+}
+
+function ghostOf(el) {
+  const rect = el.getBoundingClientRect();
+  let ghost = el.cloneNode(true);
+  if (el.tagName === "TR") {
+    const table = el.closest("table").cloneNode(false);
+    const body = document.createElement("tbody");
+    table.appendChild(el.closest("table").querySelector("colgroup").cloneNode(true));
+    body.appendChild(ghost);
+    table.appendChild(body);
+    table.style.border = "none";
+    table.style.boxShadow = "none";
+    ghost = table;
+  } else {
+    ghost.removeAttribute("id");
+  }
+  ghost.querySelectorAll("[id]").forEach(n => n.removeAttribute("id"));
+  ghost.querySelectorAll("iframe").forEach(f => f.remove());
+  Object.assign(ghost.style, {
+    position: "fixed",
+    left: rect.left + "px",
+    top: rect.top + "px",
+    width: rect.width + "px",
+    height: rect.height + "px",
+    margin: "0",
+    pointerEvents: "none",
+    zIndex: "998"
   });
-  let timer = null;
-  const done = e => {
-    if (e && Math.abs(window.scrollY - top) > 0.5) return;
-    clearTimeout(timer);
-    window.removeEventListener("scrollend", done);
-    if (!heldPage) shell.style.minHeight = "";
-  };
-  window.addEventListener("scrollend", done);
-  timer = setTimeout(done, 3000);
+  document.body.appendChild(ghost);
+  return ghost;
+}
+
+function swipe(sources, dir, update, next) {
+  const motion = !matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const ghosts = motion ? sources.filter(el => el && el.offsetParent).map(ghostOf) : [];
+  const y = window.scrollY;
+  update();
+  ghosts.forEach(g => g.animate([ {
+    transform: "translateX(0)",
+    opacity: 1
+  }, {
+    transform: `translateX(${dir * 45}%)`,
+    opacity: 0
+  } ], {
+    duration: 220,
+    easing: "ease-in"
+  }).finished.then(() => g.remove()));
+  if (!next || heldPage) {
+    if (window.scrollY !== y) window.scrollTo({
+      top: y,
+      behavior: "instant"
+    });
+    return;
+  }
+  const target = studyAreaTop();
+  if (window.scrollY > target) window.scrollTo({
+    top: target,
+    behavior: "instant"
+  });
+  if (motion) studyBlocks().forEach(el => el.animate([ {
+    transform: `translateX(${-dir * 24}px)`,
+    opacity: 0
+  }, {
+    transform: "translateX(0)",
+    opacity: 1
+  } ], {
+    duration: 220,
+    delay: 60,
+    easing: "ease-out",
+    fill: "backwards"
+  }));
 }
 
 function releaseHeldPage() {
