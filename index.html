@@ -204,8 +204,13 @@ window.onYouTubeIframeAPIReady = function(){
     border-right:1px solid var(--border);
     overflow:hidden;
   }
-  .brand{display:flex;align-items:center;gap:9px;font-size:16px;font-weight:700;padding:0 6px;letter-spacing:-.01em;}
-  .streak-chip{margin-left:auto;display:inline-flex;align-items:center;gap:3px;padding:2px 9px;border-radius:12px;font-size:13px;font-weight:700;color:var(--due-color);background:color-mix(in srgb, var(--due-color) 14%, transparent);font-variant-numeric:tabular-nums;}
+  .brand{display:flex;align-items:center;gap:7px;font-size:15px;font-weight:700;padding:0 4px;letter-spacing:-.01em;}
+  .streak-chip{flex-shrink:0;margin-left:auto;display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:12px;font-size:12px;font-weight:700;color:var(--due-color);background:color-mix(in srgb, var(--due-color) 14%, transparent);font-variant-numeric:tabular-nums;}
+  .cloud-chip{flex-shrink:0;margin-left:6px;min-height:0;padding:2px 8px;border:0;border-radius:12px;font-size:12px;font-weight:700;line-height:1.45;color:var(--accent);background:var(--accent-soft);white-space:nowrap;}
+  #streakChip[hidden] + .cloud-chip{margin-left:auto;}
+  .cloud-chip.synced{color:var(--a-label);background:var(--a-bg);}
+  .cloud-chip.syncing{color:var(--text-2);background:var(--surface-2);}
+  .cloud-chip.error, .cloud-chip.denied{color:var(--due-color);background:color-mix(in srgb, var(--due-color) 14%, transparent);}
   .streak-chip.cold{color:var(--text-3);background:var(--surface-2);}
   .streak-chip.cold .streak-chip-flame{filter:grayscale(1);opacity:.6;}
   .streak-card{display:grid;grid-template-columns:auto auto 1fr auto;align-items:center;gap:6px 22px;}
@@ -237,7 +242,7 @@ window.onYouTubeIframeAPIReady = function(){
   @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
   @keyframes fadeOut{to{opacity:0;}}
   @media (prefers-reduced-motion: reduce){.streak-flame, .streak-pop, .streak-pop-flame, .streak-celebration{animation:none !important;}}
-  .brand-mark{width:28px;height:28px;border-radius:8px;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center;font-size:15px;}
+  .brand-mark{flex-shrink:0;width:28px;height:28px;border-radius:8px;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center;font-size:15px;}
   .sidebar .primary{width:100%;}
   #lessonSearch{width:100%;}
   .lesson-list{flex:1;overflow-y:auto;margin:0 -4px;padding:0 4px;display:flex;flex-direction:column;gap:2px;}
@@ -725,7 +730,7 @@ window.onYouTubeIframeAPIReady = function(){
 <div class="shell">
 
 <aside class="sidebar">
-  <div class="brand"><button id="btnDrawer" class="ghost drawer-btn" aria-label="Menu">☰</button><span class="brand-mark">字</span>Flashcards<span id="streakChip" class="streak-chip" hidden><span class="streak-chip-flame">🔥</span><span id="streakChipCount">0</span></span></div>
+  <div class="brand"><button id="btnDrawer" class="ghost drawer-btn" aria-label="Menu">☰</button><span class="brand-mark">字</span>Flashcards<span id="streakChip" class="streak-chip" hidden><span class="streak-chip-flame">🔥</span><span id="streakChipCount">0</span></span><button id="btnCloud" class="cloud-chip" hidden>☁️</button></div>
   <button id="btnNewLesson" class="primary">+ New lesson</button>
   <input type="search" id="lessonSearch" placeholder="Search lessons…" aria-label="Search lessons">
   <nav id="lessonList" class="lesson-list" aria-label="Lessons"></nav>
@@ -735,7 +740,6 @@ window.onYouTubeIframeAPIReady = function(){
     <input type="file" id="fileInput" class="file-input-hidden" accept=".json" multiple>
     <button id="btnBackupAll" class="ghost" title="Save every lesson and your review history as YYYY-MM-DD-flashcards.json. The first time you pick a folder; after that it saves there directly (one file per day). Shift-click to pick a different folder.">💾 Back up</button>
     <button id="btnStats" class="ghost">📊 Statistics</button>
-    <button id="btnCloud" class="ghost" hidden>☁️ Sign in to sync</button>
     <button id="btnTheme" class="ghost" title="Switch between light ☀️ and dark 🌙. Starts with your computer's setting." aria-label="Theme: light">🌓 Theme: ☀️</button>
   </div>
 </aside>
@@ -793,7 +797,6 @@ window.onYouTubeIframeAPIReady = function(){
     <div class="row-flex">
       <button id="btnEmptyNew" class="primary">+ New lesson</button>
       <button id="btnEmptyImport">📥 Import file</button>
-      <button id="btnEmptyCloud" hidden>☁️ Sign in</button>
     </div>
   </div>
 </section>
@@ -6427,15 +6430,23 @@ function setCloudStatus(status) {
   cloudStatus = cloudSignedIn() ? status : "off";
   const btn = document.getElementById("btnCloud");
   const labels = {
-    off: "☁️ Sign in to sync",
-    syncing: "☁️ Syncing…",
-    synced: "☁️ Synced",
-    error: "☁️ Sync paused — offline?",
-    denied: "☁️ Sync blocked — check Firestore Rules"
+    off: "☁️",
+    syncing: "☁️…",
+    synced: "☁️✓",
+    error: "☁️!",
+    denied: "☁️!"
+  };
+  const hints = {
+    off: "Sign in to keep lessons in sync on all your devices",
+    syncing: "Syncing…",
+    synced: "Synced",
+    error: "Sync paused — offline? It retries by itself",
+    denied: "Sync blocked — check the Firestore Rules"
   };
   btn.textContent = labels[cloudStatus];
-  btn.title = cloudSignedIn() ? "Signed in as " + (cloud.user.email || "your account") + " — click to sign out" : "Sign in to keep lessons in sync on all your devices";
-  document.getElementById("btnEmptyCloud").hidden = !FIREBASE_CONFIG || cloudSignedIn();
+  btn.className = "cloud-chip " + cloudStatus;
+  btn.title = hints[cloudStatus] + (cloudSignedIn() ? " · Signed in as " + (cloud.user.email || "your account") + " — click to sign out" : "");
+  btn.setAttribute("aria-label", btn.title);
 }
 
 function cloudErrorText(e) {
@@ -6500,8 +6511,6 @@ document.getElementById("btnCloud").onclick = async () => {
   await cloud.authMod.signOut(cloud.auth);
   showToast("Signed out — this device no longer syncs");
 };
-
-document.getElementById("btnEmptyCloud").onclick = openCloudDialog;
 
 document.getElementById("cloudClose").onclick = () => {
   document.getElementById("cloudDialog").hidden = true;
