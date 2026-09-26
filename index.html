@@ -3849,11 +3849,12 @@ function gradeCard(row, isAgain) {
 let heldPage = null;
 
 function studyAreaTop() {
-  const area = [ "tableProgress", "cardTable", "singleCardView", "sessionCompletePanel" ].map(id => document.getElementById(id)).find(el => el.offsetParent);
-  if (!area) return 0;
   const head = document.querySelector(".study-head");
-  const covered = parseFloat(getComputedStyle(head).top) + head.offsetHeight;
-  return Math.max(0, area.getBoundingClientRect().top + window.scrollY - covered - 8);
+  const stickyTop = parseFloat(getComputedStyle(head).top) || 0;
+  head.style.position = "static";
+  const naturalTop = head.getBoundingClientRect().top + window.scrollY;
+  head.style.position = "";
+  return Math.max(0, naturalTop - stickyTop);
 }
 
 function glideAfter(update, toTop) {
