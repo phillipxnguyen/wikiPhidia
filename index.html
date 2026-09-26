@@ -964,6 +964,7 @@ window.onYouTubeIframeAPIReady = function(){
   </div>
 
   <div id="dictPanels"></div>
+  <div id="studySpacer"></div>
 
   <div id="inlineAddSlot" hidden></div>
 
@@ -2130,7 +2131,16 @@ function showSessionCompletePanel() {
 function render() {
   renderStudy();
   renderDictPanels();
+  sizeStudySpacer();
 }
+
+function sizeStudySpacer() {
+  const head = document.querySelector(".study-head");
+  const room = window.innerHeight - (parseFloat(getComputedStyle(head).top) || 0) - head.offsetHeight;
+  document.getElementById("studySpacer").style.height = groupState && currentView === "study" ? Math.max(0, room) + "px" : "0";
+}
+
+window.addEventListener("resize", sizeStudySpacer);
 
 let nextOrderReady = false;
 
@@ -3689,6 +3699,7 @@ function goToReviewMode(style) {
   const alreadyThere = style === "full" ? !groupState : !!groupState && groupViewStyle === style;
   if (alreadyThere) return;
   setReviewMode(style);
+  pinStudyArea();
 }
 
 document.getElementById("fullModeBtn").onclick = () => goToReviewMode("full");
@@ -3858,6 +3869,14 @@ function studyAreaTop() {
   return Math.max(0, Math.round((naturalTop - stickyTop) * dpr) / dpr);
 }
 
+function pinStudyArea() {
+  const target = studyAreaTop();
+  if (window.scrollY > target) window.scrollTo({
+    top: target,
+    behavior: "instant"
+  });
+}
+
 function studyBlocks() {
   return [ "tableProgress", "cardTable", "singleCardView", "sessionCompletePanel" ].map(id => document.getElementById(id)).concat(Array.from(document.querySelectorAll("#dictPanels > :not(.dict-pending)"))).filter(el => el.offsetParent);
 }
@@ -3908,11 +3927,7 @@ function swipe(sources, dir, update, next) {
     easing: "ease-in"
   }).finished.then(() => g.remove()));
   if (!next) return;
-  const target = studyAreaTop();
-  if (window.scrollY > target) window.scrollTo({
-    top: target,
-    behavior: "instant"
-  });
+  pinStudyArea();
   if (motion) studyBlocks().forEach(el => el.animate([ {
     transform: `translateX(${-dir * 24}px)`,
     opacity: 0
