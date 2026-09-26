@@ -206,8 +206,9 @@ window.onYouTubeIframeAPIReady = function(){
   }
   .brand{display:flex;align-items:center;gap:7px;font-size:15px;font-weight:700;padding:0 4px;letter-spacing:-.01em;}
   .streak-chip{flex-shrink:0;margin-left:auto;display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:12px;font-size:12px;font-weight:700;color:var(--due-color);background:color-mix(in srgb, var(--due-color) 14%, transparent);font-variant-numeric:tabular-nums;}
-  .cloud-chip{flex-shrink:0;margin-left:6px;min-height:0;padding:2px 8px;border:0;border-radius:12px;font-size:12px;font-weight:700;line-height:1.45;color:var(--accent);background:var(--accent-soft);white-space:nowrap;}
+  .cloud-chip{flex-shrink:0;display:inline-flex;align-items:center;margin-left:6px;min-height:0;padding:2px 8px;border:0;border-radius:12px;font-size:12px;font-weight:700;line-height:1.45;color:var(--accent);background:var(--accent-soft);white-space:nowrap;}
   #streakChip[hidden] + .cloud-chip{margin-left:auto;}
+  .cloud-chip svg{display:block;}
   .cloud-chip.synced{color:var(--a-label);background:var(--a-bg);}
   .cloud-chip.syncing{color:var(--text-2);background:var(--surface-2);}
   .cloud-chip.error, .cloud-chip.denied{color:var(--due-color);background:color-mix(in srgb, var(--due-color) 14%, transparent);}
@@ -730,7 +731,7 @@ window.onYouTubeIframeAPIReady = function(){
 <div class="shell">
 
 <aside class="sidebar">
-  <div class="brand"><button id="btnDrawer" class="ghost drawer-btn" aria-label="Menu">☰</button><span class="brand-mark">字</span>Flashcards<span id="streakChip" class="streak-chip" hidden><span class="streak-chip-flame">🔥</span><span id="streakChipCount">0</span></span><button id="btnCloud" class="cloud-chip" hidden>☁️</button></div>
+  <div class="brand"><button id="btnDrawer" class="ghost drawer-btn" aria-label="Menu">☰</button><span class="brand-mark">字</span>Flashcards<span id="streakChip" class="streak-chip" hidden><span class="streak-chip-flame">🔥</span><span id="streakChipCount">0</span></span><button id="btnCloud" class="cloud-chip" hidden></button></div>
   <button id="btnNewLesson" class="primary">+ New lesson</button>
   <input type="search" id="lessonSearch" name="lesson-search" autocomplete="off" placeholder="Search lessons…" aria-label="Search lessons">
   <nav id="lessonList" class="lesson-list" aria-label="Lessons"></nav>
@@ -6431,12 +6432,13 @@ let cloudStatus = "off";
 function setCloudStatus(status) {
   cloudStatus = cloudSignedIn() ? status : "off";
   const btn = document.getElementById("btnCloud");
-  const labels = {
-    off: "☁️",
-    syncing: "☁️…",
-    synced: "☁️✓",
-    error: "☁️!",
-    denied: "☁️!"
+  const cloudPath = "M11 18h-4.343c-2.572 0 -4.657 -2.011 -4.657 -4.487c0 -2.475 2.085 -4.482 4.657 -4.482c.393 -1.762 1.794 -3.2 3.675 -3.773c1.88 -.572 3.956 -.193 5.444 1c1.488 1.19 2.162 3.007 1.77 4.769h.99c1.388 0 2.585 .82 3.138 2.007";
+  const icons = {
+    off: "M3 3l18 18|M18 18h-11c-2.598 0 -4.705 -2.015 -4.705 -4.5s2.107 -4.5 4.705 -4.5c.112 -.5 .305 -.973 .568 -1.408m2.094 -1.948c.329 -.174 .68 -.319 1.05 -.43c1.9 -.576 4 -.194 5.5 1c1.503 1.192 2.185 3.017 1.788 4.786h1a3.5 3.5 0 0 1 2.212 6.212",
+    syncing: "M7 18a4.6 4.4 0 0 1 0 -9a5 4.5 0 0 1 11 2h1a3.5 3.5 0 0 1 0 7h-1|M9 15l3 -3l3 3|M12 12l0 9",
+    synced: cloudPath + "|M15 19l2 2l4 -4",
+    error: cloudPath + "|M22 22l-5 -5|M17 22l5 -5",
+    denied: cloudPath + "|M22 22l-5 -5|M17 22l5 -5"
   };
   const hints = {
     off: "Sign in to keep lessons in sync on all your devices",
@@ -6445,7 +6447,7 @@ function setCloudStatus(status) {
     error: "Sync paused — offline? It retries by itself",
     denied: "Sync blocked — check the Firestore Rules"
   };
-  btn.textContent = labels[cloudStatus];
+  btn.innerHTML = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + icons[cloudStatus].split("|").map(d => '<path d="' + d + '"/>').join("") + "</svg>";
   btn.className = "cloud-chip " + cloudStatus;
   btn.title = hints[cloudStatus] + (cloudSignedIn() ? " · Signed in as " + (cloud.user.email || "your account") + " — click to sign out" : "");
   btn.setAttribute("aria-label", btn.title);
