@@ -964,7 +964,6 @@ window.onYouTubeIframeAPIReady = function(){
   </div>
 
   <div id="dictPanels"></div>
-  <div id="studySpacer"></div>
 
   <div id="inlineAddSlot" hidden></div>
 
@@ -2131,16 +2130,7 @@ function showSessionCompletePanel() {
 function render() {
   renderStudy();
   renderDictPanels();
-  sizeStudySpacer();
 }
-
-function sizeStudySpacer() {
-  const head = document.querySelector(".study-head");
-  const room = window.innerHeight - (parseFloat(getComputedStyle(head).top) || 0) - head.offsetHeight;
-  document.getElementById("studySpacer").style.height = groupState && currentView === "study" ? Math.max(0, room) + "px" : "0";
-}
-
-window.addEventListener("resize", sizeStudySpacer);
 
 let nextOrderReady = false;
 
@@ -3834,8 +3824,6 @@ function gradeCard(row, isAgain) {
   const mode = modeKey();
   const ids = mode === "Table" ? groupState.groups[groupState.index] : null;
   if (ids && !ids.includes(row.id)) return;
-  const shell = document.querySelector(".shell");
-  const pageHeight = shell.offsetHeight;
   stopPlaybackForRemovedRow(row.id);
   adjustSequenceIndexForRemoval(row.id);
   pushUndo(gradeLabel(isAgain) + " — " + cardSummary(row));
@@ -3844,16 +3832,17 @@ function gradeCard(row, isAgain) {
   scheduleAutoSave();
   if (hoveredRowId === row.id) hoveredRowId = null;
   const next = !ids || ids.length === 1;
+  if (!next) {
+    const shell = document.querySelector(".shell");
+    shell.style.minHeight = shell.offsetHeight + "px";
+    heldPage = currentLessonId + ":" + groupState.index;
+  }
   swipe(next ? studyBlocks() : [ document.querySelector(`#tbody tr[data-id="${row.id}"]`) ], isAgain ? -1 : 1, () => {
     if (ids) {
       ids.splice(ids.indexOf(row.id), 1);
       if (ids.length === 0) advanceToNextGroup(); else updateGroupUI();
     }
     render();
-    if (ids && ids.length && groupState) {
-      heldPage = currentLessonId + ":" + groupState.index;
-      shell.style.minHeight = pageHeight + "px";
-    }
   }, next);
 }
 
@@ -3907,7 +3896,6 @@ function ghostOf(el) {
 function swipe(sources, dir, update, next) {
   const motion = !matchMedia("(prefers-reduced-motion: reduce)").matches;
   const ghosts = motion ? sources.filter(el => el && el.offsetParent).map(ghostOf) : [];
-  const y = window.scrollY;
   update();
   ghosts.forEach(g => g.animate([ {
     transform: "translateX(0)",
@@ -3919,13 +3907,7 @@ function swipe(sources, dir, update, next) {
     duration: 220,
     easing: "ease-in"
   }).finished.then(() => g.remove()));
-  if (!next || heldPage) {
-    if (window.scrollY !== y) window.scrollTo({
-      top: y,
-      behavior: "instant"
-    });
-    return;
-  }
+  if (!next) return;
   const target = studyAreaTop();
   if (window.scrollY > target) window.scrollTo({
     top: target,
