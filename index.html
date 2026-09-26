@@ -2919,10 +2919,12 @@ document.addEventListener("mousemove", e => {
     const table = document.getElementById("cardTable");
     box = table.getBoundingClientRect();
     if (table.style.display !== "none" && e.clientX >= box.left && e.clientX <= box.right) {
-      Array.from(document.querySelectorAll("#tbody tr[data-id]")).some((tr, i) => {
+      const editing = activeEdit && activeEdit.tr;
+      Array.from(document.querySelectorAll("#tbody tr[data-id]")).some((tr, i, all) => {
         const r = tr.getBoundingClientRect();
         const before = i === 0 && Math.abs(e.clientY - r.top) <= 8;
         if (!before && Math.abs(e.clientY - r.bottom) > 8) return false;
+        if (tr === editing || !before && all[i + 1] === editing) return false;
         place = {
           id: Number(tr.dataset.id),
           after: !before
