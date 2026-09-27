@@ -618,7 +618,7 @@ window.onYouTubeIframeAPIReady = function(){
   #viewStudy.focus-study > .lesson-header, #viewStudy.focus-study > .save-status, #viewStudy.focus-study > .lesson-meta{display:none;}
   #swipeDeck{position:relative;}
   #swipeDeck.swipeable{touch-action:pan-y;}
-  .swipe-hint{position:absolute;inset:0;z-index:1;display:flex;align-items:center;justify-content:center;border:3px solid currentColor;border-radius:14px;background:color-mix(in srgb, currentColor 8%, transparent);font-size:34px;font-weight:700;pointer-events:none;}
+  .swipe-hint{position:absolute;inset:-1px;z-index:1;display:flex;align-items:center;justify-content:center;border:3px solid currentColor;border-radius:inherit;background:var(--surface);font-size:34px;font-weight:700;pointer-events:none;}
   .swipe-hint.good{color:var(--a-label);}
   .swipe-hint.again{color:var(--danger);}
   .dict-source{font-size:22px;color:var(--text);margin:0 0 10px;overflow-wrap:break-word;}
@@ -3910,9 +3910,11 @@ function ghostOf(el) {
 
 let dragGhost = null;
 
-function swipeHint(el, dir) {
+function swipeHint(ghost, dir) {
+  const el = ghost.tagName === "TABLE" ? ghost : Array.from(ghost.querySelectorAll(".single-card-body, table")).find(e => !e.closest('[style*="display: none"]')) || ghost;
   let hint = el.querySelector(":scope > .swipe-hint");
   if (!hint) {
+    if (el !== ghost) el.style.position = "relative";
     hint = document.createElement("div");
     el.appendChild(hint);
   }
@@ -3989,7 +3991,7 @@ window.addEventListener("pointermove", e => {
     hideTooltip();
   }
   drag.ghost.style.transform = `translate(${dx}px, ${dy}px) rotate(${dx * 0.05}deg)`;
-  swipeHint(drag.ghost, dx).style.opacity = Math.min(1, Math.abs(dx) / 120);
+  swipeHint(drag.ghost, dx).style.opacity = Math.min(1, Math.abs(dx) / 60);
   drag.lastX = dx;
   drag.speed = dx / Math.max(1, e.timeStamp - drag.t);
 });
