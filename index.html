@@ -3823,7 +3823,7 @@ function gradeCurrentGroupAndAdvance(isAgain) {
   });
   showToast(gradeLabel(isAgain));
   scheduleAutoSave();
-  swipe([ document.getElementById("swipeDeck") ], isAgain ? -1 : 1, () => {
+  swipe(studyView(), isAgain ? -1 : 1, () => {
     groupState.groups[groupState.index] = [];
     advanceToNextGroup();
     render();
@@ -3848,7 +3848,7 @@ function gradeCard(row, isAgain) {
     shell.style.minHeight = shell.offsetHeight + "px";
     heldPage = currentLessonId + ":" + groupState.index;
   }
-  swipe([ next ? document.getElementById("swipeDeck") : document.querySelector(`#tbody tr[data-id="${row.id}"]`) ], isAgain ? -1 : 1, () => {
+  swipe(next ? studyView() : [ document.querySelector(`#tbody tr[data-id="${row.id}"]`) ], isAgain ? -1 : 1, () => {
     if (ids) {
       ids.splice(ids.indexOf(row.id), 1);
       if (ids.length === 0) advanceToNextGroup(); else updateGroupUI();
@@ -3910,6 +3910,41 @@ function ghostOf(el) {
 
 let dragGhost = null;
 
+function studyView() {
+  return [ document.querySelector(".study-head"), document.getElementById("swipeDeck") ];
+}
+
+function ghostGroup(els) {
+  const rects = els.map(el => el.getBoundingClientRect());
+  const left = Math.min(...rects.map(r => r.left));
+  const top = Math.min(...rects.map(r => r.top));
+  const box = document.createElement("div");
+  Object.assign(box.style, {
+    position: "fixed",
+    left: left + "px",
+    top: top + "px",
+    width: Math.max(...rects.map(r => r.right)) - left + "px",
+    height: Math.max(...rects.map(r => r.bottom)) - top + "px",
+    pointerEvents: "none",
+    zIndex: "1000"
+  });
+  els.forEach((el, i) => {
+    const g = ghostOf(el);
+    g.style.position = "absolute";
+    g.style.left = rects[i].left - left + "px";
+    g.style.top = rects[i].top - top + "px";
+    box.appendChild(g);
+  });
+  document.body.appendChild(box);
+  return box;
+}
+
+function ghostFor(els) {
+  const shown = els.filter(el => el && el.offsetParent);
+  if (!shown.length) return null;
+  return shown.length > 1 ? ghostGroup(shown) : ghostOf(shown[0]);
+}
+
 function swipeHint(ghost, dir) {
   const el = ghost.tagName === "TABLE" ? ghost : Array.from(ghost.querySelectorAll(".single-card-body, table")).find(e => !e.closest('[style*="display: none"]')) || ghost;
   let hint = el.querySelector(":scope > .swipe-hint");
@@ -3925,11 +3960,12 @@ function swipeHint(ghost, dir) {
 
 function swipe(sources, dir, update, next, hinted = true) {
   const motion = !matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const ghosts = dragGhost ? [ dragGhost ] : motion ? sources.filter(el => el && el.offsetParent).map(ghostOf) : [];
+  const ghost = dragGhost || (motion ? ghostFor(sources) : null);
   const from = dragGhost ? dragGhost.style.transform : "none";
   dragGhost = null;
   update();
-  ghosts.forEach(g => {
+  if (ghost) {
+    const g = ghost;
     if (hinted) swipeHint(g, dir).style.opacity = 1;
     g.animate([ {
       transform: from,
@@ -3941,10 +3977,10 @@ function swipe(sources, dir, update, next, hinted = true) {
       duration: 500,
       easing: "ease-in"
     }).finished.then(() => g.remove());
-  });
+  }
   if (!next) return;
   pinStudyArea();
-  if (motion) document.getElementById("swipeDeck").animate([ {
+  if (motion) studyView().forEach(el => el.animate([ {
     transform: "scale(0.96)",
     opacity: 0
   }, {
@@ -3955,7 +3991,7 @@ function swipe(sources, dir, update, next, hinted = true) {
     delay: 120,
     easing: "ease-out",
     fill: "backwards"
-  });
+  }));
 }
 
 let drag = null;
@@ -3966,12 +4002,10 @@ document.getElementById("swipeDeck").addEventListener("pointerdown", e => {
   swallowClick = false;
   if (!groupState || e.button !== 0 || activeEdit || drag) return;
   if (e.target.closest("button, a, input, select, textarea, [contenteditable], .loop-time, .tts-icon, .col-toggle, .stroke-order-panel")) return;
-  const deck = document.getElementById("swipeDeck");
   const row = groupViewStyle === "table" ? e.target.closest("#tbody tr[data-id]") : null;
-  const target = row || deck;
   if (!row && document.getElementById("cardTable").style.display === "none" && document.getElementById("singleCardView").style.display === "none") return;
   drag = {
-    target: target,
+    targets: row ? [ row ] : studyView(),
     rowId: row ? Number(row.dataset.id) : null,
     x: e.clientX,
     y: e.clientY,
@@ -3986,8 +4020,12 @@ window.addEventListener("pointermove", e => {
   const dy = e.clientY - drag.y;
   if (!drag.ghost) {
     if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy)) return;
-    drag.ghost = ghostOf(drag.target);
-    drag.target.style.visibility = "hidden";
+    drag.ghost = ghostFor(drag.targets);
+    if (!drag.ghost) {
+      drag = null;
+      return;
+    }
+    drag.targets.forEach(el => el.style.visibility = "hidden");
     hideTooltip();
   }
   drag.ghost.style.transform = `translate(${dx}px, ${dy}px) rotate(${dx * 0.05}deg)`;
@@ -4004,7 +4042,7 @@ function endDrag(cancelled) {
   const dx = d.lastX || 0;
   const commit = !cancelled && (Math.abs(dx) > 100 || Math.abs(dx) > 30 && Math.abs(d.speed) > 0.6);
   if (commit) {
-    d.target.style.visibility = "";
+    d.targets.forEach(el => el.style.visibility = "");
     dragGhost = d.ghost;
     selectedRowId = d.rowId;
     hoveredRowId = null;
@@ -4021,7 +4059,7 @@ function endDrag(cancelled) {
     easing: "ease-out"
   }).finished.then(() => {
     d.ghost.remove();
-    d.target.style.visibility = "";
+    d.targets.forEach(el => el.style.visibility = "");
   });
 }
 
