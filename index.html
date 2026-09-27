@@ -615,6 +615,12 @@ window.onYouTubeIframeAPIReady = function(){
   #dictPanels{display:flex;flex-direction:column;position:relative;overflow:hidden;}
   #dictPanels .dict-pending{position:absolute;top:0;left:0;right:0;visibility:hidden;pointer-events:none;}
   #dictPanels:not(.with-source) .dict-source{display:none;}
+  #viewStudy.focus-study > .lesson-header, #viewStudy.focus-study > .save-status, #viewStudy.focus-study > .lesson-meta{display:none;}
+  #swipeDeck{position:relative;}
+  #swipeDeck.swipeable{touch-action:pan-y;}
+  .swipe-hint{position:absolute;inset:0;z-index:1;display:flex;align-items:center;justify-content:center;border:3px solid currentColor;border-radius:14px;background:color-mix(in srgb, currentColor 8%, transparent);font-size:34px;font-weight:700;pointer-events:none;}
+  .swipe-hint.good{color:var(--a-label);}
+  .swipe-hint.again{color:var(--danger);}
   .dict-source{font-size:22px;color:var(--text);margin:0 0 10px;overflow-wrap:break-word;}
   .dict-frame{display:block;width:100%;height:360px;border:1px solid var(--border);border-radius:8px;background:#fff;}
   .stroke-replay{
@@ -939,6 +945,7 @@ window.onYouTubeIframeAPIReady = function(){
   </div>
   </div>
 
+  <div id="swipeDeck">
   <div id="tableProgress" class="single-card-progress" style="display:none;"></div>
   <table id="cardTable">
     <colgroup>
@@ -961,6 +968,7 @@ window.onYouTubeIframeAPIReady = function(){
     <div id="singleCardProgress" class="single-card-progress"></div>
     <div id="singleCardBody" class="single-card-body"></div>
     <div id="strokeOrderPanel" class="stroke-order-panel" style="display:none;"></div>
+  </div>
   </div>
 
   <div id="dictPanels"></div>
@@ -1796,7 +1804,7 @@ function deleteRow(id) {
   } else {
     skipEmptyGroups();
   }
-  swipe([ document.querySelector(`#tbody tr[data-id="${id}"]`) || document.querySelector(`#singleCardBody[data-id="${id}"]`) ], -1, render, false);
+  swipe([ document.querySelector(`#tbody tr[data-id="${id}"]`) || document.querySelector(`#singleCardBody[data-id="${id}"]`) ], -1, render, false, false);
   showToast("Deleted — " + cardSummary(row));
   scheduleAutoSave();
 }
@@ -3504,6 +3512,8 @@ function updateGroupUI() {
   syncModeButtonHighlights();
   updateGroupBtnFlag();
   const inTable = !!groupState && groupViewStyle === "table";
+  document.getElementById("viewStudy").classList.toggle("focus-study", !!groupState);
+  document.getElementById("swipeDeck").classList.toggle("swipeable", !!groupState);
   if (groupState) {
     copyBtn.style.display = inTable ? "" : "none";
     table.classList.add("group-mode");
@@ -3813,7 +3823,7 @@ function gradeCurrentGroupAndAdvance(isAgain) {
   });
   showToast(gradeLabel(isAgain));
   scheduleAutoSave();
-  swipe(studyBlocks(), isAgain ? -1 : 1, () => {
+  swipe([ document.getElementById("swipeDeck") ], isAgain ? -1 : 1, () => {
     groupState.groups[groupState.index] = [];
     advanceToNextGroup();
     render();
@@ -3838,7 +3848,7 @@ function gradeCard(row, isAgain) {
     shell.style.minHeight = shell.offsetHeight + "px";
     heldPage = currentLessonId + ":" + groupState.index;
   }
-  swipe(next ? studyBlocks() : [ document.querySelector(`#tbody tr[data-id="${row.id}"]`) ], isAgain ? -1 : 1, () => {
+  swipe([ next ? document.getElementById("swipeDeck") : document.querySelector(`#tbody tr[data-id="${row.id}"]`) ], isAgain ? -1 : 1, () => {
     if (ids) {
       ids.splice(ids.indexOf(row.id), 1);
       if (ids.length === 0) advanceToNextGroup(); else updateGroupUI();
@@ -3867,10 +3877,6 @@ function pinStudyArea() {
   });
 }
 
-function studyBlocks() {
-  return [ "tableProgress", "cardTable", "singleCardView", "sessionCompletePanel" ].map(id => document.getElementById(id)).concat(Array.from(document.querySelectorAll("#dictPanels > :not(.dict-pending)"))).filter(el => el.offsetParent);
-}
-
 function ghostOf(el) {
   const rect = el.getBoundingClientRect();
   let ghost = el.cloneNode(true);
@@ -3886,7 +3892,7 @@ function ghostOf(el) {
   } else {
     ghost.removeAttribute("id");
   }
-  ghost.querySelectorAll("[id]").forEach(n => n.removeAttribute("id"));
+  ghost.querySelectorAll("[id]:not(#cardTable)").forEach(n => n.removeAttribute("id"));
   ghost.querySelectorAll("iframe").forEach(f => f.remove());
   Object.assign(ghost.style, {
     position: "fixed",
@@ -3902,35 +3908,131 @@ function ghostOf(el) {
   return ghost;
 }
 
-function swipe(sources, dir, update, next) {
+let dragGhost = null;
+
+function swipeHint(el, dir) {
+  let hint = el.querySelector(":scope > .swipe-hint");
+  if (!hint) {
+    hint = document.createElement("div");
+    el.appendChild(hint);
+  }
+  hint.className = "swipe-hint " + (dir > 0 ? "good" : "again");
+  hint.textContent = dir > 0 ? "Good" : "Again";
+  return hint;
+}
+
+function swipe(sources, dir, update, next, hinted = true) {
   const motion = !matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const ghosts = motion ? sources.filter(el => el && el.offsetParent).map(ghostOf) : [];
+  const ghosts = dragGhost ? [ dragGhost ] : motion ? sources.filter(el => el && el.offsetParent).map(ghostOf) : [];
+  const from = dragGhost ? dragGhost.style.transform : "none";
+  dragGhost = null;
   update();
-  ghosts.forEach(g => g.animate([ {
-    transform: "translateX(0)",
-    opacity: 1
-  }, {
-    transform: `translateX(${dir * 45}%)`,
-    opacity: 0
-  } ], {
-    duration: 400,
-    easing: "ease-in"
-  }).finished.then(() => g.remove()));
+  ghosts.forEach(g => {
+    if (hinted) swipeHint(g, dir).style.opacity = 1;
+    g.animate([ {
+      transform: from,
+      opacity: 1
+    }, {
+      transform: `translate(${dir * 110}vw, 25vh) rotate(${dir * 24}deg)`,
+      opacity: 0.4
+    } ], {
+      duration: 500,
+      easing: "ease-in"
+    }).finished.then(() => g.remove());
+  });
   if (!next) return;
   pinStudyArea();
-  if (motion) studyBlocks().forEach(el => el.animate([ {
-    transform: `translateX(${-dir * 24}px)`,
+  if (motion) document.getElementById("swipeDeck").animate([ {
+    transform: "scale(0.96)",
     opacity: 0
   }, {
-    transform: "translateX(0)",
+    transform: "none",
     opacity: 1
   } ], {
-    duration: 400,
-    delay: 150,
+    duration: 350,
+    delay: 120,
     easing: "ease-out",
     fill: "backwards"
-  }));
+  });
 }
+
+let drag = null;
+
+let swallowClick = false;
+
+document.getElementById("swipeDeck").addEventListener("pointerdown", e => {
+  swallowClick = false;
+  if (!groupState || e.button !== 0 || activeEdit || drag) return;
+  if (e.target.closest("button, a, input, select, textarea, [contenteditable], .loop-time, .tts-icon, .col-toggle, .stroke-order-panel")) return;
+  const deck = document.getElementById("swipeDeck");
+  const row = groupViewStyle === "table" ? e.target.closest("#tbody tr[data-id]") : null;
+  const target = row || deck;
+  if (!row && document.getElementById("cardTable").style.display === "none" && document.getElementById("singleCardView").style.display === "none") return;
+  drag = {
+    target: target,
+    rowId: row ? Number(row.dataset.id) : null,
+    x: e.clientX,
+    y: e.clientY,
+    t: e.timeStamp,
+    ghost: null
+  };
+});
+
+window.addEventListener("pointermove", e => {
+  if (!drag) return;
+  const dx = e.clientX - drag.x;
+  const dy = e.clientY - drag.y;
+  if (!drag.ghost) {
+    if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy)) return;
+    drag.ghost = ghostOf(drag.target);
+    drag.target.style.visibility = "hidden";
+    hideTooltip();
+  }
+  drag.ghost.style.transform = `translate(${dx}px, ${dy}px) rotate(${dx * 0.05}deg)`;
+  swipeHint(drag.ghost, dx).style.opacity = Math.min(1, Math.abs(dx) / 120);
+  drag.lastX = dx;
+  drag.speed = dx / Math.max(1, e.timeStamp - drag.t);
+});
+
+function endDrag(cancelled) {
+  const d = drag;
+  drag = null;
+  if (!d || !d.ghost) return;
+  swallowClick = true;
+  const dx = d.lastX || 0;
+  const commit = !cancelled && (Math.abs(dx) > 100 || Math.abs(dx) > 30 && Math.abs(d.speed) > 0.6);
+  if (commit) {
+    d.target.style.visibility = "";
+    dragGhost = d.ghost;
+    selectedRowId = d.rowId;
+    hoveredRowId = null;
+    gradeAction(dx < 0);
+    if (!dragGhost) return;
+    dragGhost = null;
+  }
+  d.ghost.animate([ {
+    transform: d.ghost.style.transform
+  }, {
+    transform: "none"
+  } ], {
+    duration: 250,
+    easing: "ease-out"
+  }).finished.then(() => {
+    d.ghost.remove();
+    d.target.style.visibility = "";
+  });
+}
+
+window.addEventListener("pointerup", () => endDrag(false));
+
+window.addEventListener("pointercancel", () => endDrag(true));
+
+document.getElementById("swipeDeck").addEventListener("click", e => {
+  if (!swallowClick) return;
+  swallowClick = false;
+  e.stopPropagation();
+  e.preventDefault();
+}, true);
 
 function releaseHeldPage() {
   if (!heldPage) return;
