@@ -1800,7 +1800,7 @@ function deleteRow(id) {
   } else {
     skipEmptyGroups();
   }
-  swipe([ document.querySelector(`#tbody tr[data-id="${id}"]`) || document.querySelector(`#singleCardBody[data-id="${id}"]`) ], -1, render, false, false);
+  swipe([ document.querySelector(`#tbody tr[data-id="${id}"]`) || document.querySelector(`#singleCardBody[data-id="${id}"]`) ], -1, render, false, "Delete");
   showToast("Deleted — " + cardSummary(row));
   scheduleAutoSave();
 }
@@ -3906,22 +3906,17 @@ function ghostFor(parts) {
   return ghost;
 }
 
-function swipeHint(ghost, dir) {
-  ghost.classList.toggle("good", dir > 0);
-  ghost.classList.toggle("again", dir <= 0);
-  ghost.textContent = dir > 0 ? "Good" : "Again";
-}
-
-function swipe(parts, dir, update, next, hinted = true) {
+function swipe(parts, dir, update, next, label = dir > 0 ? "Good" : "Again") {
   const ghost = matchMedia("(prefers-reduced-motion: reduce)").matches ? null : ghostFor(parts);
   update();
   if (ghost) {
-    if (hinted) swipeHint(ghost, dir);
+    ghost.classList.add(dir > 0 ? "good" : "again");
+    ghost.textContent = label;
     ghost.animate([ {
       transform: "none",
       opacity: 1
     }, {
-      transform: hinted ? `translate(${dir * 110}vw, 25vh) rotate(${dir * 24}deg)` : `translateX(${dir * 110}vw)`,
+      transform: label === "Delete" ? `translateX(${dir * 110}vw)` : `translate(${dir * 110}vw, 25vh) rotate(${dir * 24}deg)`,
       opacity: 0.4
     } ], {
       duration: 1250,
