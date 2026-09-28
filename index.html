@@ -310,6 +310,7 @@ window.onYouTubeIframeAPIReady = function(){
   html.touch tbody tr.row-selected > td:first-child{box-shadow:inset 4px 0 0 var(--accent);}
   html.touch tbody tr.row-selected .cell.shown[data-field="q"]{color:var(--accent);}
   html.touch #tbody{-webkit-tap-highlight-color:transparent;}
+  html.touch #viewStudy.focus-study{touch-action:pan-y;}
   html.touch .edit-btn, html.touch .del-btn{width:32px;height:36px;line-height:36px;font-size:20px;}
   html.touch #cardTable col:nth-child(1), html.touch #cardTable col:nth-child(2){width:34px !important;}
   html.touch #cardTable col:nth-child(3), html.touch #cardTable col:nth-child(4){width:calc(50% - 34px) !important;}
@@ -3956,14 +3957,21 @@ function ghostFor(parts) {
   return ghost;
 }
 
+let dragGhost = null;
+
 function swipe(parts, dir, update, next, label = dir > 0 ? "Good" : "Again") {
-  const ghost = matchMedia("(prefers-reduced-motion: reduce)").matches ? null : ghostFor(parts);
+  const motion = !matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const ghost = dragGhost || (motion ? ghostFor(parts) : null);
+  const from = dragGhost ? dragGhost.style.transform : "none";
+  dragGhost = null;
   update();
   if (ghost) {
+    ghost.classList.remove("good", "again");
     ghost.classList.add(label === "Delete" ? "delete" : dir > 0 ? "good" : "again");
     ghost.textContent = label === "Delete" ? "✕" : label;
+    ghost.style.opacity = "";
     ghost.animate([ {
-      transform: "none"
+      transform: from
     }, {
       transform: `translate(${dir * 110}vw, ${label === "Delete" ? -25 : 25}vh) rotate(${dir * 24}deg)`
     } ], {
@@ -3978,6 +3986,93 @@ function swipe(parts, dir, update, next, label = dir > 0 ? "Good" : "Again") {
     behavior: "instant"
   });
 }
+
+let drag = null;
+
+let dragSuppressClick = false;
+
+function swipePass() {
+  return Math.min(100, window.innerWidth / 4);
+}
+
+document.addEventListener("pointerdown", e => {
+  drag = null;
+  if (e.pointerType !== "touch" || !groupState || currentView !== "study" || activeEdit || tabPaused) return;
+  if (e.clientX < 20 || e.clientX > window.innerWidth - 20) return;
+  if (!e.target.closest("#viewStudy") || e.target.closest("button, input, select, textarea, [contenteditable], iframe, .loop-time")) return;
+  if (document.getElementById("sessionCompletePanel").style.display === "block") return;
+  const row = groupViewStyle === "table" ? e.target.closest("#tbody tr[data-id]") : null;
+  drag = {
+    row: row,
+    parts: row ? [ row ] : studyParts(),
+    x: e.clientX,
+    y: e.clientY,
+    dx: 0,
+    ghost: null
+  };
+});
+
+window.addEventListener("pointermove", e => {
+  if (!drag) return;
+  const dx = e.clientX - drag.x;
+  const dy = e.clientY - drag.y;
+  if (!drag.ghost) {
+    if (Math.abs(dx) < 12 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    drag.ghost = ghostFor(drag.parts);
+    if (!drag.ghost) {
+      drag = null;
+      return;
+    }
+    getSelection().removeAllRanges();
+    hideTooltip();
+  }
+  drag.dx = dx;
+  const again = dx < 0;
+  drag.ghost.classList.toggle("again", again);
+  drag.ghost.classList.toggle("good", !again);
+  drag.ghost.textContent = again ? "Again" : "Good";
+  drag.ghost.style.opacity = Math.min(1, Math.abs(dx) / swipePass());
+  drag.ghost.style.transform = `translate(${dx}px, ${dy / 4}px) rotate(${dx / 20}deg)`;
+});
+
+function endDrag() {
+  const d = drag;
+  drag = null;
+  if (!d || !d.ghost) return;
+  dragSuppressClick = true;
+  setTimeout(() => dragSuppressClick = false, 0);
+  if (Math.abs(d.dx) >= swipePass()) {
+    dragGhost = d.ghost;
+    selectedRowId = d.row ? Number(d.row.dataset.id) : null;
+    hoveredRowId = null;
+    gradeAction(d.dx < 0);
+    if (!dragGhost) return;
+    dragGhost = null;
+  }
+  d.ghost.animate([ {
+    transform: d.ghost.style.transform,
+    opacity: d.ghost.style.opacity
+  }, {
+    transform: "none",
+    opacity: 0
+  } ], {
+    duration: 200,
+    easing: "ease-out",
+    fill: "forwards"
+  });
+  setTimeout(() => d.ghost.remove(), 200);
+}
+
+window.addEventListener("pointerup", endDrag);
+
+window.addEventListener("pointercancel", endDrag);
+
+window.addEventListener("click", e => {
+  if (!dragSuppressClick) return;
+  dragSuppressClick = false;
+  e.stopPropagation();
+  e.preventDefault();
+}, true);
 
 function holdPage() {
   const shell = document.querySelector(".shell");
