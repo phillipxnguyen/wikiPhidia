@@ -325,6 +325,7 @@ window.onYouTubeIframeAPIReady = function(){
   .lesson-name-input:hover{background:var(--surface) !important;border-color:var(--border) !important;}
   .lesson-name-input:focus{background:var(--surface) !important;border-color:var(--accent) !important;}
   .header-actions{display:flex;align-items:center;gap:4px;flex-shrink:0;}
+  .save-status:empty{display:none;}
   .save-status{font-size:12px;color:var(--text-3);min-height:17px;margin:-6px 0 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .lesson-meta{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:18px;}
   .link-bar{display:flex;gap:6px;flex:1;min-width:260px;}
@@ -4830,8 +4831,9 @@ function refreshSaveReminders() {
   const lesson = !isVirtualLesson() && library.find(l => l.id === currentLessonId);
   const lessonSave = lesson && saves.lessons[lesson.id];
   const lessonSafeAt = Math.max(backupAt, lessonSave ? lessonSave.at : 0);
-  const lessonBehind = !!lesson && lesson.cards.length > 0 && (lesson.updatedAt || 0) > lessonSafeAt;
-  const backupBehind = library.some(l => l.cards.length > 0 && (l.updatedAt || 0) > backupAt);
+  const quiet = cloudSignedIn();
+  const lessonBehind = !quiet && !!lesson && lesson.cards.length > 0 && (lesson.updatedAt || 0) > lessonSafeAt;
+  const backupBehind = !quiet && library.some(l => l.cards.length > 0 && (l.updatedAt || 0) > backupAt);
   const saveBtn = document.getElementById("btnSaveFile");
   const backupBtn = document.getElementById("btnBackupAll");
   saveBtn.classList.toggle("needs-save", lessonBehind);
@@ -4843,6 +4845,10 @@ function refreshSaveReminders() {
 
 function renderFileNote(behind) {
   if (!currentLessonId || isVirtualLesson()) return;
+  if (cloudSignedIn()) {
+    setFileNote("");
+    return;
+  }
   const saves = readFileSaves();
   const lessonSave = saves.lessons[currentLessonId];
   const parts = [];
@@ -6490,7 +6496,9 @@ function loadCloud() {
 let cloudStatus = "off";
 
 function setCloudStatus(status) {
+  const wasQuiet = cloudStatus !== "off";
   cloudStatus = cloudSignedIn() ? status : "off";
+  if (wasQuiet !== (cloudStatus !== "off")) refreshSaveReminders();
   const btn = document.getElementById("btnCloud");
   const cloudPath = "M11 18h-4.343c-2.572 0 -4.657 -2.011 -4.657 -4.487c0 -2.475 2.085 -4.482 4.657 -4.482c.393 -1.762 1.794 -3.2 3.675 -3.773c1.88 -.572 3.956 -.193 5.444 1c1.488 1.19 2.162 3.007 1.77 4.769h.99c1.388 0 2.585 .82 3.138 2.007";
   const icons = {
