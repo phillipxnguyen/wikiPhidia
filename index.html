@@ -3962,7 +3962,7 @@ function restDrag(d) {
     el.style.opacity = "";
     el.style.clipPath = "";
   });
-  if (d.row) d.row.closest("table").style.overflow = "";
+  if (d.table) d.table.style.overflow = "";
 }
 
 document.addEventListener("pointerdown", e => {
@@ -3975,6 +3975,7 @@ document.addEventListener("pointerdown", e => {
   if (!row && document.getElementById("cardTable").style.display === "none" && document.getElementById("singleCardView").style.display === "none") return;
   drag = {
     row: row,
+    table: row ? row.closest("table") : null,
     parts: row ? [ row ] : studyParts(),
     moving: row ? [ row ] : studyView(),
     x: e.clientX,
@@ -3991,13 +3992,17 @@ window.addEventListener("pointermove", e => {
   if (!drag.ghost) {
     if (Math.abs(dx) < 10 || Math.abs(dx) < Math.abs(dy)) return;
     drag.ghost = ghostFor(drag.parts);
+    if (!drag.ghost) {
+      drag = null;
+      return;
+    }
     const box = drag.ghost.getBoundingClientRect();
     drag.moving.forEach(el => {
       const r = el.getBoundingClientRect();
       el.style.transformOrigin = `${box.left + box.width / 2 - r.left}px ${box.top + box.height / 2 - r.top}px`;
     });
     if (drag.row) {
-      drag.row.closest("table").style.overflow = "visible";
+      drag.table.style.overflow = "visible";
       drag.row.style.clipPath = "inset(0 round 16px)";
     }
     getSelection().removeAllRanges();
