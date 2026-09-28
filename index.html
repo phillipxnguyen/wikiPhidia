@@ -3259,8 +3259,12 @@ function openEdit(tr, row) {
 function showEditBox(el) {
   const head = document.querySelector(".study-head");
   const covered = (parseFloat(getComputedStyle(head).top) || 0) + head.offsetHeight;
-  window.scrollBy({
-    top: el.getBoundingClientRect().top - covered - 8,
+  const rect = el.getBoundingClientRect();
+  const toTop = rect.top - covered - 8;
+  const toBottom = rect.bottom - window.innerHeight + 8;
+  const delta = toTop < 0 ? toTop : toBottom > 0 ? Math.min(toBottom, toTop) : 0;
+  if (delta) window.scrollBy({
+    top: delta,
     behavior: "smooth"
   });
 }
