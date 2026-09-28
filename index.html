@@ -615,7 +615,8 @@ window.onYouTubeIframeAPIReady = function(){
   #dictPanels .dict-pending{position:absolute;top:0;left:0;right:0;visibility:hidden;pointer-events:none;}
   #dictPanels:not(.with-source) .dict-source{display:none;}
   #viewStudy.focus-study > .lesson-header, #viewStudy.focus-study > .save-status, #viewStudy.focus-study > .lesson-meta{display:none;}
-  #viewStudy.focus-study .study-head, #viewStudy.focus-study #swipeDeck, #viewStudy.focus-study #dictPanels{touch-action:pan-y;}
+  #viewStudy.focus-study{touch-action:pan-y;}
+  html.touch #viewStudy.focus-study iframe{pointer-events:none;}
   .swipe-ghost{position:fixed;z-index:1000;box-sizing:border-box;display:flex;justify-content:center;border:3px solid var(--border);border-radius:28px;background:var(--surface);box-shadow:var(--shadow-md);font-size:34px;font-weight:700;pointer-events:none;}
   .swipe-ghost.good{color:var(--a-label);border-color:currentColor;}
   .swipe-ghost.again{color:var(--danger);border-color:currentColor;}
@@ -3937,66 +3938,13 @@ function swipe(parts, dir, update, next, hinted = true) {
   });
 }
 
+const SWIPE_PASS = 100;
+
 let drag = null;
 
-let settling = null;
+let snapBack = null;
 
-let swallowUntil = 0;
-
-function startDrag(e) {
-  if (!groupState || e.button !== 0 || activeEdit || drag) return;
-  if (e.pointerType === "touch" && (e.clientX < 30 || e.clientX > window.innerWidth - 30)) return;
-  if (e.target.closest("button, a, input, select, textarea, [contenteditable], .loop-time, .tts-icon, .col-toggle")) return;
-  const row = groupViewStyle === "table" ? e.target.closest("#tbody tr[data-id]") : null;
-  if (!row && document.getElementById("cardTable").style.display === "none" && document.getElementById("singleCardView").style.display === "none") return;
-  if (settling) settling();
-  drag = {
-    parts: row ? [ row ] : studyParts(),
-    moving: row ? [ row ] : studyView(),
-    rowId: row ? Number(row.dataset.id) : null,
-    x: e.clientX,
-    y: e.clientY,
-    t: e.timeStamp,
-    ghost: null
-  };
-}
-
-window.addEventListener("pointermove", e => {
-  if (!drag) return;
-  const dx = e.clientX - drag.x;
-  const dy = e.clientY - drag.y;
-  if (!drag.ghost) {
-    if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy)) return;
-    drag.ghost = ghostFor(drag.parts);
-    if (!drag.ghost) {
-      drag = null;
-      return;
-    }
-    const box = drag.ghost.getBoundingClientRect();
-    drag.ghost.style.opacity = 0;
-    drag.moving.forEach(el => {
-      const r = el.getBoundingClientRect();
-      el.style.transformOrigin = `${box.left + box.width / 2 - r.left}px ${box.top + box.height / 2 - r.top}px`;
-    });
-    if (drag.rowId !== null) {
-      drag.moving[0].closest("table").style.overflow = "visible";
-      drag.moving[0].style.clipPath = "inset(0 round 16px)";
-    }
-    getSelection().removeAllRanges();
-    hideTooltip();
-  }
-  const move = `translate(${dx}px, ${dy}px) rotate(${dx * 0.05}deg)`;
-  drag.ghost.style.transform = move;
-  const cover = Math.min(1, Math.abs(dx) / 80);
-  drag.ghost.style.opacity = cover;
-  drag.moving.forEach(el => {
-    el.style.transform = move;
-    el.style.opacity = 1 - cover;
-  });
-  swipeHint(drag.ghost, dx);
-  drag.lastX = dx;
-  drag.speed = dx / Math.max(1, e.timeStamp - drag.t);
-});
+let dragged = false;
 
 function restDrag(d) {
   d.moving.forEach(el => {
@@ -4005,66 +3953,115 @@ function restDrag(d) {
     el.style.opacity = "";
     el.style.clipPath = "";
   });
-  if (d.rowId !== null) d.moving[0].closest("table").style.overflow = "";
+  if (d.row) d.row.closest("table").style.overflow = "";
 }
 
-function endDrag(e) {
+document.addEventListener("pointerdown", e => {
+  dragged = false;
+  if (snapBack) snapBack();
+  if (!groupState || currentView !== "study" || activeEdit || e.button !== 0) return;
+  if (e.pointerType === "touch" && (e.clientX < window.innerWidth / 4 || e.clientX > window.innerWidth * 3 / 4)) return;
+  if (!e.target.closest("#viewStudy") || e.target.closest("input, select, textarea, [contenteditable]")) return;
+  const row = groupViewStyle === "table" ? e.target.closest("#tbody tr[data-id]") : null;
+  if (!row && document.getElementById("cardTable").style.display === "none" && document.getElementById("singleCardView").style.display === "none") return;
+  drag = {
+    row: row,
+    parts: row ? [ row ] : studyParts(),
+    moving: row ? [ row ] : studyView(),
+    x: e.clientX,
+    y: e.clientY,
+    dx: 0,
+    ghost: null
+  };
+});
+
+window.addEventListener("pointermove", e => {
+  if (!drag) return;
+  const dx = e.clientX - drag.x;
+  const dy = e.clientY - drag.y;
+  if (!drag.ghost) {
+    if (Math.abs(dx) < 10 || Math.abs(dx) < Math.abs(dy)) return;
+    drag.ghost = ghostFor(drag.parts);
+    const box = drag.ghost.getBoundingClientRect();
+    drag.moving.forEach(el => {
+      const r = el.getBoundingClientRect();
+      el.style.transformOrigin = `${box.left + box.width / 2 - r.left}px ${box.top + box.height / 2 - r.top}px`;
+    });
+    if (drag.row) {
+      drag.row.closest("table").style.overflow = "visible";
+      drag.row.style.clipPath = "inset(0 round 16px)";
+    }
+    getSelection().removeAllRanges();
+    hideTooltip();
+  }
+  const move = `translate(${dx}px, ${dy}px) rotate(${dx / 20}deg)`;
+  const cover = Math.min(1, Math.abs(dx) / SWIPE_PASS);
+  drag.ghost.style.transform = move;
+  drag.ghost.style.opacity = cover;
+  drag.moving.forEach(el => {
+    el.style.transform = move;
+    el.style.opacity = 1 - cover;
+  });
+  swipeHint(drag.ghost, dx);
+  drag.dx = dx;
+});
+
+function endDrag() {
   const d = drag;
   drag = null;
   if (!d || !d.ghost) return;
-  swallowUntil = e.timeStamp + 400;
-  const dx = d.lastX || 0;
-  if (Math.abs(dx) > 100 || Math.abs(dx) > 30 && Math.abs(d.speed) > 0.6) {
-    d.ghost.style.opacity = 1;
+  dragged = true;
+  setTimeout(() => dragged = false);
+  if (Math.abs(d.dx) >= SWIPE_PASS) {
     restDrag(d);
     dragGhost = d.ghost;
-    selectedRowId = d.rowId;
+    selectedRowId = d.row ? Number(d.row.dataset.id) : null;
     hoveredRowId = null;
-    gradeAction(dx < 0);
+    gradeAction(d.dx < 0);
     if (!dragGhost) return;
     dragGhost = null;
   }
+  const from = d.ghost.style.transform;
+  const cover = Number(d.ghost.style.opacity);
   const timing = {
     duration: 250,
     easing: "ease-out",
     fill: "forwards"
   };
   const anims = d.moving.map(el => el.animate([ {
-    transform: d.ghost.style.transform,
-    opacity: 1 - d.ghost.style.opacity
+    transform: from,
+    opacity: 1 - cover
   }, {
     transform: "none",
     opacity: 1
   } ], timing)).concat(d.ghost.animate([ {
-    transform: d.ghost.style.transform,
-    opacity: d.ghost.style.opacity
+    transform: from,
+    opacity: cover
   }, {
     transform: "none",
     opacity: 0
   } ], timing));
-  const finish = () => {
-    if (settling !== finish) return;
-    settling = null;
+  const done = () => {
+    if (snapBack !== done) return;
+    snapBack = null;
     anims.forEach(a => a.cancel());
     d.ghost.remove();
     restDrag(d);
   };
-  settling = finish;
-  setTimeout(finish, 260);
+  snapBack = done;
+  setTimeout(done, 250);
 }
 
 window.addEventListener("pointerup", endDrag);
 
 window.addEventListener("pointercancel", endDrag);
 
-studyView().forEach(el => {
-  el.addEventListener("pointerdown", startDrag);
-  el.addEventListener("click", e => {
-    if (e.timeStamp > swallowUntil) return;
-    e.stopPropagation();
-    e.preventDefault();
-  }, true);
-});
+document.addEventListener("click", e => {
+  if (!dragged) return;
+  dragged = false;
+  e.stopPropagation();
+  e.preventDefault();
+}, true);
 
 function releaseHeldPage() {
   if (!heldPage) return;
