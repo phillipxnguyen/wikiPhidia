@@ -3923,8 +3923,10 @@ function swipe(parts, dir, update, next, hinted = true) {
       opacity: 0.4
     } ], {
       duration: 500,
-      easing: "ease-in"
-    }).finished.then(() => ghost.remove());
+      easing: "ease-in",
+      fill: "forwards"
+    });
+    setTimeout(() => ghost.remove(), 520);
   }
   if (next) window.scrollTo({
     top: 0,
@@ -3934,10 +3936,12 @@ function swipe(parts, dir, update, next, hinted = true) {
 
 let drag = null;
 
+let settling = null;
+
 let swallowUntil = 0;
 
 function startDrag(e) {
-  if (!groupState || e.button !== 0 || activeEdit || drag) return;
+  if (!groupState || e.button !== 0 || activeEdit || drag || settling) return;
   if (e.target.closest("button, a, input, select, textarea, [contenteditable], .loop-time, .tts-icon, .col-toggle")) return;
   const row = groupViewStyle === "table" ? e.target.closest("#tbody tr[data-id]") : null;
   if (!row && document.getElementById("cardTable").style.display === "none" && document.getElementById("singleCardView").style.display === "none") return;
@@ -3970,6 +3974,7 @@ window.addEventListener("pointermove", e => {
       el.style.transformOrigin = `${box.left + box.width / 2 - r.left}px ${box.top + box.height / 2 - r.top}px`;
     });
     if (drag.rowId !== null) drag.moving[0].closest("table").style.overflow = "visible";
+    getSelection().removeAllRanges();
     hideTooltip();
   }
   const move = `translate(${dx}px, ${dy}px) rotate(${dx * 0.05}deg)`;
@@ -4011,6 +4016,13 @@ function endDrag(e, cancelled) {
     if (!dragGhost) return;
     dragGhost = null;
   }
+  settling = d;
+  const finish = () => {
+    if (settling !== d) return;
+    settling = null;
+    d.ghost.remove();
+    restDrag(d);
+  };
   const back = [ {
     transform: d.ghost.style.transform,
     opacity: 1 - d.ghost.style.opacity
@@ -4031,10 +4043,8 @@ function endDrag(e, cancelled) {
   } ], {
     duration: 250,
     easing: "ease-out"
-  }).finished.then(() => {
-    d.ghost.remove();
-    restDrag(d);
-  });
+  }).finished.then(finish);
+  setTimeout(finish, 400);
 }
 
 window.addEventListener("pointerup", e => endDrag(e, false));
