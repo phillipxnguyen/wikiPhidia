@@ -2970,6 +2970,22 @@ function selectRow(id) {
   document.querySelectorAll("#tbody tr[data-id]").forEach(tr => tr.classList.toggle("row-selected", Number(tr.dataset.id) === selectedRowId));
 }
 
+function clearRowSelection() {
+  if (selectedRowId === null) return;
+  selectedRowId = null;
+  document.querySelectorAll("#tbody tr.row-selected").forEach(tr => tr.classList.remove("row-selected"));
+  addTouchInsertRows();
+  hideTooltip();
+}
+
+document.addEventListener("click", e => {
+  if (selectedRowId === null || !e.target.closest) return;
+  if (e.target.closest("#tbAgain, #tbGood, .insert-btn")) return;
+  const tr = e.target.closest("#tbody tr[data-id]");
+  if (tr && Number(tr.dataset.id) === selectedRowId && !e.target.closest(".edit-btn, .del-forever")) return;
+  clearRowSelection();
+}, true);
+
 function updateTouchBar() {
   const bar = document.getElementById("touchBar");
   bar.hidden = !isTouch() || currentView !== "study" || !rows.length;
