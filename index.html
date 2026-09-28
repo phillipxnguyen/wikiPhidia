@@ -2979,7 +2979,10 @@ function clearRowSelection() {
 }
 
 document.addEventListener("click", e => {
-  if (selectedRowId === null || !e.target.closest) return;
+  if (!e.target.closest) return;
+  const tipHost = hoverTooltip && hoverTooltip.style.display === "block" && hoverTooltip.anchor ? hoverTooltip.anchor.closest("[data-id]") : null;
+  if (isTouch() && tipHost && !tipHost.contains(e.target)) hideTooltip();
+  if (selectedRowId === null) return;
   if (e.target.closest("#tbAgain, #tbGood, .insert-btn")) return;
   const tr = e.target.closest("#tbody tr[data-id]");
   if (tr && Number(tr.dataset.id) === selectedRowId && !e.target.closest(".edit-btn, .del-forever")) return;
@@ -3179,6 +3182,7 @@ window.addEventListener("blur", () => {
     render();
   }
   clearRowSelection();
+  hideTooltip();
   reclaimKeyboardFocus();
 });
 
