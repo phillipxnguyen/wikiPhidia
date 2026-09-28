@@ -617,7 +617,7 @@ window.onYouTubeIframeAPIReady = function(){
   #dictPanels:not(.with-source) .dict-source{display:none;}
   #viewStudy.focus-study > .lesson-header, #viewStudy.focus-study > .save-status, #viewStudy.focus-study > .lesson-meta{display:none;}
   #viewStudy.focus-study .study-head, #viewStudy.focus-study #swipeDeck, #viewStudy.focus-study #dictPanels{touch-action:pan-y;}
-  .swipe-ghost{position:fixed;z-index:1000;box-sizing:border-box;display:flex;justify-content:center;border:3px solid var(--border);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow-md);font-size:34px;font-weight:700;pointer-events:none;}
+  .swipe-ghost{position:fixed;z-index:1000;box-sizing:border-box;display:flex;justify-content:center;border:3px solid var(--border);border-radius:28px;background:var(--surface);box-shadow:var(--shadow-md);font-size:34px;font-weight:700;pointer-events:none;}
   .swipe-ghost.good{color:var(--a-label);border-color:currentColor;}
   .swipe-ghost.again{color:var(--danger);border-color:currentColor;}
   .dict-source{font-size:22px;color:var(--text);margin:0 0 10px;overflow-wrap:break-word;}
@@ -3976,8 +3976,12 @@ window.addEventListener("pointermove", e => {
   }
   const move = `translate(${dx}px, ${dy}px) rotate(${dx * 0.05}deg)`;
   drag.ghost.style.transform = move;
-  drag.moving.forEach(el => el.style.transform = move);
-  drag.ghost.style.opacity = Math.min(1, Math.abs(dx) / 80);
+  const cover = Math.min(1, Math.abs(dx) / 80);
+  drag.ghost.style.opacity = cover;
+  drag.moving.forEach(el => {
+    el.style.transform = move;
+    el.style.opacity = 1 - cover;
+  });
   swipeHint(drag.ghost, dx);
   drag.lastX = dx;
   drag.speed = dx / Math.max(1, e.timeStamp - drag.t);
@@ -3987,6 +3991,7 @@ function restDrag(d) {
   d.moving.forEach(el => {
     el.style.transform = "";
     el.style.transformOrigin = "";
+    el.style.opacity = "";
   });
   if (d.rowId !== null) d.moving[0].closest("table").style.overflow = "";
 }
@@ -4009,9 +4014,11 @@ function endDrag(e, cancelled) {
     dragGhost = null;
   }
   const back = [ {
-    transform: d.ghost.style.transform
+    transform: d.ghost.style.transform,
+    opacity: 1 - d.ghost.style.opacity
   }, {
-    transform: "none"
+    transform: "none",
+    opacity: 1
   } ];
   d.moving.forEach(el => el.animate(back, {
     duration: 250,
