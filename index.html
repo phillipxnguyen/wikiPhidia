@@ -984,6 +984,8 @@ document.documentElement.classList.toggle("touch", isTouch());
 
 let selectedRowId = null;
 
+let selectedField = null;
+
 let groupState = null;
 
 let savedGroupState = null;
@@ -2197,14 +2199,14 @@ function render() {
     for (let i = idx + 1; i < visibleRows.length; i++) {
       tbody.appendChild(buildRowTr(visibleRows[i]));
     }
-    requestAnimationFrame(addTouchInsertRows);
+    requestAnimationFrame(refreshTouchSelection);
     return;
   }
   tbody.innerHTML = "";
   visibleRows.forEach(r => {
     tbody.appendChild(buildRowTr(r));
   });
-  requestAnimationFrame(addTouchInsertRows);
+  requestAnimationFrame(refreshTouchSelection);
 }
 
 function renderSingleCard(visibleRows) {
@@ -2444,6 +2446,7 @@ function showTooltip(cellEl, text) {
   if (!text) return;
   const tip = getTooltipEl();
   tip.textContent = text;
+  tip.anchor = cellEl;
   const rect = cellEl.getBoundingClientRect();
   tip.style.left = rect.left + window.scrollX + "px";
   tip.style.top = rect.bottom + window.scrollY + 4 + "px";
@@ -2750,8 +2753,12 @@ let hoveredRowId = null;
 function handleCardAreaMouseover(e) {
   const container = e.target.closest("[data-id]");
   hoveredRowId = container && container.dataset.id ? Number(container.dataset.id) : null;
-  const cellEl = e.target.closest(".cell.shown");
-  if (!cellEl || !container || !container.dataset.id) return;
+  if (!isTouch()) showCellPinyin(e.target.closest(".cell.shown"));
+}
+
+function showCellPinyin(cellEl) {
+  const container = cellEl && cellEl.closest("[data-id]");
+  if (!container || !container.dataset.id) return;
   const id = Number(container.dataset.id);
   const field = cellEl.dataset.field;
   const row = rows.find(r => r.id === id);
@@ -2764,6 +2771,7 @@ function handleCardAreaMouseover(e) {
 }
 
 function handleCardAreaMouseout(e) {
+  if (isTouch()) return;
   const cellEl = e.target.closest(".cell.shown");
   if (!cellEl) return;
   hideTooltip();
@@ -2783,13 +2791,18 @@ function handleCardAreaClick(e) {
     return;
   }
   if (isTouch() && !e.target.closest(".edit-btn, .del-forever") && !(activeEdit && activeEdit.tr === container)) {
-    if (groupState) {
-      if (!isSingleCard) selectRow(id); else if (!e.target.closest(".cell.shown")) revealAction();
-      return;
-    }
-    if (!isSingleCard && !isVirtualLesson()) {
+    const shownCell = e.target.closest(".cell.shown");
+    if (isSingleCard) {
+      if (!shownCell) {
+        if (groupState) revealAction();
+      } else if (hoverTooltip && hoverTooltip.style.display === "block" && hoverTooltip.anchor === shownCell) hideTooltip(); else showCellPinyin(shownCell);
+      if (groupState) return;
+    } else if (groupState || !isVirtualLesson()) {
+      const cell = e.target.closest(".cell");
+      selectedField = cell ? cell.dataset.field : null;
       selectRow(id);
-      addTouchInsertRows();
+      hideTooltip();
+      refreshTouchSelection();
       return;
     }
   }
@@ -2847,7 +2860,12 @@ function addTouchInsertRows() {
   });
 }
 
-window.addEventListener("resize", () => requestAnimationFrame(addTouchInsertRows));
+window.addEventListener("resize", () => requestAnimationFrame(refreshTouchSelection));
+
+function refreshTouchSelection() {
+  addTouchInsertRows();
+  if (isTouch() && selectedRowId !== null && selectedField) showCellPinyin(document.querySelector(`#tbody tr[data-id="${selectedRowId}"] .cell.shown[data-field="${selectedField}"]`));
+}
 
 function selectRow(id) {
   selectedRowId = selectedRowId === id ? null : id;
