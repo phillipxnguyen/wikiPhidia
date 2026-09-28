@@ -3944,11 +3944,12 @@ let settling = null;
 let swallowUntil = 0;
 
 function startDrag(e) {
-  if (!groupState || e.button !== 0 || activeEdit || drag || settling) return;
+  if (!groupState || e.button !== 0 || activeEdit || drag) return;
   if (e.pointerType === "touch" && (e.clientX < 30 || e.clientX > window.innerWidth - 30)) return;
   if (e.target.closest("button, a, input, select, textarea, [contenteditable], .loop-time, .tts-icon, .col-toggle")) return;
   const row = groupViewStyle === "table" ? e.target.closest("#tbody tr[data-id]") : null;
   if (!row && document.getElementById("cardTable").style.display === "none" && document.getElementById("singleCardView").style.display === "none") return;
+  if (settling) settling();
   drag = {
     parts: row ? [ row ] : studyParts(),
     moving: row ? [ row ] : studyView(),
@@ -4007,14 +4008,13 @@ function restDrag(d) {
   if (d.rowId !== null) d.moving[0].closest("table").style.overflow = "";
 }
 
-function endDrag(e, cancelled) {
+function endDrag(e) {
   const d = drag;
   drag = null;
   if (!d || !d.ghost) return;
   swallowUntil = e.timeStamp + 400;
   const dx = d.lastX || 0;
-  const commit = !cancelled && (Math.abs(dx) > 100 || Math.abs(dx) > 30 && Math.abs(d.speed) > 0.6);
-  if (commit) {
+  if (Math.abs(dx) > 100 || Math.abs(dx) > 30 && Math.abs(d.speed) > 0.6) {
     d.ghost.style.opacity = 1;
     restDrag(d);
     dragGhost = d.ghost;
@@ -4024,40 +4024,38 @@ function endDrag(e, cancelled) {
     if (!dragGhost) return;
     dragGhost = null;
   }
-  settling = d;
-  const finish = () => {
-    if (settling !== d) return;
-    settling = null;
-    d.ghost.remove();
-    restDrag(d);
+  const timing = {
+    duration: 250,
+    easing: "ease-out",
+    fill: "forwards"
   };
-  const back = [ {
+  const anims = d.moving.map(el => el.animate([ {
     transform: d.ghost.style.transform,
     opacity: 1 - d.ghost.style.opacity
   }, {
     transform: "none",
     opacity: 1
-  } ];
-  d.moving.forEach(el => el.animate(back, {
-    duration: 250,
-    easing: "ease-out"
-  }));
-  d.ghost.animate([ {
+  } ], timing)).concat(d.ghost.animate([ {
     transform: d.ghost.style.transform,
     opacity: d.ghost.style.opacity
   }, {
     transform: "none",
     opacity: 0
-  } ], {
-    duration: 250,
-    easing: "ease-out"
-  }).finished.then(finish);
-  setTimeout(finish, 400);
+  } ], timing));
+  const finish = () => {
+    if (settling !== finish) return;
+    settling = null;
+    anims.forEach(a => a.cancel());
+    d.ghost.remove();
+    restDrag(d);
+  };
+  settling = finish;
+  setTimeout(finish, 260);
 }
 
-window.addEventListener("pointerup", e => endDrag(e, false));
+window.addEventListener("pointerup", endDrag);
 
-window.addEventListener("pointercancel", e => endDrag(e, true));
+window.addEventListener("pointercancel", endDrag);
 
 studyView().forEach(el => {
   el.addEventListener("pointerdown", startDrag);
