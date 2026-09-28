@@ -616,11 +616,10 @@ window.onYouTubeIframeAPIReady = function(){
   #dictPanels .dict-pending{position:absolute;top:0;left:0;right:0;visibility:hidden;pointer-events:none;}
   #dictPanels:not(.with-source) .dict-source{display:none;}
   #viewStudy.focus-study > .lesson-header, #viewStudy.focus-study > .save-status, #viewStudy.focus-study > .lesson-meta{display:none;}
-  #swipeDeck{position:relative;}
-  #swipeDeck.swipeable{touch-action:pan-y;}
-  .swipe-hint{position:absolute;inset:-1px;z-index:1;display:flex;align-items:flex-start;justify-content:center;border:3px solid currentColor;border-radius:inherit;background:var(--surface);font-size:34px;font-weight:700;pointer-events:none;}
-  .swipe-hint.good{color:var(--a-label);}
-  .swipe-hint.again{color:var(--danger);}
+  #viewStudy.focus-study .study-head, #viewStudy.focus-study #swipeDeck, #viewStudy.focus-study #dictPanels{touch-action:pan-y;}
+  .swipe-ghost{position:fixed;z-index:1000;box-sizing:border-box;display:flex;justify-content:center;border:3px solid var(--border);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow-md);font-size:34px;font-weight:700;pointer-events:none;}
+  .swipe-ghost.good{color:var(--a-label);border-color:currentColor;}
+  .swipe-ghost.again{color:var(--danger);border-color:currentColor;}
   .dict-source{font-size:22px;color:var(--text);margin:0 0 10px;overflow-wrap:break-word;}
   .dict-frame{display:block;width:100%;height:360px;border:1px solid var(--border);border-radius:8px;background:#fff;}
   .stroke-replay{
@@ -3513,7 +3512,6 @@ function updateGroupUI() {
   updateGroupBtnFlag();
   const inTable = !!groupState && groupViewStyle === "table";
   document.getElementById("viewStudy").classList.toggle("focus-study", !!groupState);
-  document.getElementById("swipeDeck").classList.toggle("swipeable", !!groupState);
   if (groupState) {
     copyBtn.style.display = inTable ? "" : "none";
     table.classList.add("group-mode");
@@ -3823,7 +3821,7 @@ function gradeCurrentGroupAndAdvance(isAgain) {
   });
   showToast(gradeLabel(isAgain));
   scheduleAutoSave();
-  swipe(studyView(), isAgain ? -1 : 1, () => {
+  swipe(studyParts(), isAgain ? -1 : 1, () => {
     groupState.groups[groupState.index] = [];
     advanceToNextGroup();
     render();
@@ -3848,7 +3846,7 @@ function gradeCard(row, isAgain) {
     shell.style.minHeight = shell.offsetHeight + "px";
     heldPage = currentLessonId + ":" + groupState.index;
   }
-  swipe(next ? studyView() : [ document.querySelector(`#tbody tr[data-id="${row.id}"]`) ], isAgain ? -1 : 1, () => {
+  swipe(next ? studyParts() : [ document.querySelector(`#tbody tr[data-id="${row.id}"]`) ], isAgain ? -1 : 1, () => {
     if (ids) {
       ids.splice(ids.indexOf(row.id), 1);
       if (ids.length === 0) advanceToNextGroup(); else updateGroupUI();
@@ -3877,106 +3875,48 @@ function pinStudyArea() {
   });
 }
 
-function ghostOf(el) {
-  const rect = el.getBoundingClientRect();
-  let ghost = el.cloneNode(true);
-  const originals = el.querySelectorAll("*");
-  Array.from(ghost.querySelectorAll("*")).filter((n, i) => getComputedStyle(originals[i]).display === "none").forEach(n => n.remove());
-  if (el.tagName === "TR") {
-    const table = el.closest("table").cloneNode(false);
-    const body = document.createElement("tbody");
-    table.appendChild(el.closest("table").querySelector("colgroup").cloneNode(true));
-    body.appendChild(ghost);
-    table.appendChild(body);
-    table.style.border = "none";
-    table.style.boxShadow = "none";
-    ghost = table;
-  } else {
-    ghost.removeAttribute("id");
-  }
-  ghost.querySelectorAll("[id]:not(#cardTable)").forEach(n => n.removeAttribute("id"));
-  ghost.querySelectorAll("iframe").forEach(f => {
-    const blank = document.createElement("div");
-    blank.className = f.className;
-    f.replaceWith(blank);
-  });
+function studyView() {
+  return [ document.querySelector(".study-head"), document.getElementById("swipeDeck"), document.getElementById("dictPanels") ];
+}
+
+function studyParts() {
+  return [ "mediaContainer", "tableProgress", "cardTable", "singleCardView" ].map(id => document.getElementById(id)).concat(document.querySelector(".study-head .toolbar"), Array.from(document.querySelectorAll("#dictPanels > :not(.dict-pending)")));
+}
+
+function ghostFor(parts) {
+  const rects = parts.filter(el => el && el.offsetParent).map(el => el.getBoundingClientRect()).filter(r => r.height > 1);
+  if (!rects.length) return null;
+  const left = Math.min(...rects.map(r => r.left));
+  const top = Math.min(...rects.map(r => r.top));
+  const bottom = Math.max(...rects.map(r => r.bottom));
+  const ghost = document.createElement("div");
+  ghost.className = "swipe-ghost";
   Object.assign(ghost.style, {
-    position: "fixed",
-    left: rect.left + "px",
-    top: rect.top + "px",
-    width: rect.width + "px",
-    height: rect.height + "px",
-    margin: "0",
-    pointerEvents: "none",
-    zIndex: "998"
+    left: left + "px",
+    top: top + "px",
+    width: Math.max(...rects.map(r => r.right)) - left + "px",
+    height: bottom - top + "px",
+    paddingTop: (Math.max(top, 0) + Math.min(bottom, window.innerHeight)) / 2 - top - 25 + "px"
   });
   document.body.appendChild(ghost);
   return ghost;
 }
 
+function swipeHint(ghost, dir) {
+  ghost.className = "swipe-ghost " + (dir > 0 ? "good" : "again");
+  ghost.textContent = dir > 0 ? "Good" : "Again";
+}
+
 let dragGhost = null;
 
-function studyView() {
-  return [ document.querySelector(".study-head"), document.getElementById("swipeDeck"), document.getElementById("dictPanels") ];
-}
-
-function ghostGroup(els) {
-  const pad = 12;
-  const rects = els.map(el => el.getBoundingClientRect());
-  const left = Math.min(...rects.map(r => r.left)) - pad;
-  const top = Math.min(...rects.map(r => r.top)) - pad;
-  const box = document.createElement("div");
-  Object.assign(box.style, {
-    position: "fixed",
-    left: left + "px",
-    top: top + "px",
-    width: Math.max(...rects.map(r => r.right)) + pad - left + "px",
-    height: Math.max(...rects.map(r => r.bottom)) + pad - top + "px",
-    background: "var(--bg)",
-    border: "1px solid var(--border)",
-    borderRadius: "18px",
-    boxShadow: "var(--shadow-md)",
-    pointerEvents: "none",
-    zIndex: "1000"
-  });
-  els.forEach((el, i) => {
-    const g = ghostOf(el);
-    g.style.position = "absolute";
-    g.style.left = rects[i].left - left + "px";
-    g.style.top = rects[i].top - top + "px";
-    box.appendChild(g);
-  });
-  document.body.appendChild(box);
-  return box;
-}
-
-function ghostFor(els) {
-  const shown = els.filter(el => el && el.offsetParent);
-  if (!shown.length) return null;
-  return shown.length > 1 ? ghostGroup(shown) : ghostOf(shown[0]);
-}
-
-function swipeHint(ghost, dir) {
-  let hint = ghost.querySelector(":scope > .swipe-hint");
-  if (!hint) {
-    const rect = ghost.getBoundingClientRect();
-    hint = document.createElement("div");
-    hint.style.paddingTop = (Math.max(rect.top, 0) + Math.min(rect.bottom, window.innerHeight)) / 2 - rect.top - 25 + "px";
-    ghost.appendChild(hint);
-  }
-  hint.className = "swipe-hint " + (dir > 0 ? "good" : "again");
-  hint.textContent = dir > 0 ? "Good" : "Again";
-  return hint;
-}
-
-function swipe(sources, dir, update, next, hinted = true) {
+function swipe(parts, dir, update, next, hinted = true) {
   const motion = !matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const ghost = dragGhost || (motion ? ghostFor(sources) : null);
+  const ghost = dragGhost || (motion ? ghostFor(parts) : null);
   const from = dragGhost ? dragGhost.style.transform : "none";
   dragGhost = null;
   update();
   if (ghost) {
-    if (hinted) swipeHint(ghost, dir).style.opacity = 1;
+    if (hinted) swipeHint(ghost, dir);
     ghost.animate([ {
       transform: from,
       opacity: 1
@@ -3998,21 +3938,22 @@ let drag = null;
 
 let swallowClick = false;
 
-document.getElementById("swipeDeck").addEventListener("pointerdown", e => {
+function startDrag(e) {
   swallowClick = false;
   if (!groupState || e.button !== 0 || activeEdit || drag) return;
-  if (e.target.closest("button, a, input, select, textarea, [contenteditable], .loop-time, .tts-icon, .col-toggle, .stroke-order-panel")) return;
+  if (e.target.closest("button, a, input, select, textarea, [contenteditable], .loop-time, .tts-icon, .col-toggle")) return;
   const row = groupViewStyle === "table" ? e.target.closest("#tbody tr[data-id]") : null;
   if (!row && document.getElementById("cardTable").style.display === "none" && document.getElementById("singleCardView").style.display === "none") return;
   drag = {
-    targets: row ? [ row ] : studyView(),
+    parts: row ? [ row ] : studyParts(),
+    hide: row ? [ row ] : studyView(),
     rowId: row ? Number(row.dataset.id) : null,
     x: e.clientX,
     y: e.clientY,
     t: e.timeStamp,
     ghost: null
   };
-});
+}
 
 window.addEventListener("pointermove", e => {
   if (!drag) return;
@@ -4020,16 +3961,16 @@ window.addEventListener("pointermove", e => {
   const dy = e.clientY - drag.y;
   if (!drag.ghost) {
     if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy)) return;
-    drag.ghost = ghostFor(drag.targets);
+    drag.ghost = ghostFor(drag.parts);
     if (!drag.ghost) {
       drag = null;
       return;
     }
-    drag.targets.forEach(el => el.style.visibility = "hidden");
+    drag.hide.forEach(el => el.style.visibility = "hidden");
     hideTooltip();
   }
   drag.ghost.style.transform = `translate(${dx}px, ${dy}px) rotate(${dx * 0.05}deg)`;
-  swipeHint(drag.ghost, dx).style.opacity = Math.min(1, Math.abs(dx) / 60);
+  swipeHint(drag.ghost, dx);
   drag.lastX = dx;
   drag.speed = dx / Math.max(1, e.timeStamp - drag.t);
 });
@@ -4042,7 +3983,7 @@ function endDrag(cancelled) {
   const dx = d.lastX || 0;
   const commit = !cancelled && (Math.abs(dx) > 100 || Math.abs(dx) > 30 && Math.abs(d.speed) > 0.6);
   if (commit) {
-    d.targets.forEach(el => el.style.visibility = "");
+    d.hide.forEach(el => el.style.visibility = "");
     dragGhost = d.ghost;
     selectedRowId = d.rowId;
     hoveredRowId = null;
@@ -4059,7 +4000,7 @@ function endDrag(cancelled) {
     easing: "ease-out"
   }).finished.then(() => {
     d.ghost.remove();
-    d.targets.forEach(el => el.style.visibility = "");
+    d.hide.forEach(el => el.style.visibility = "");
   });
 }
 
@@ -4067,12 +4008,15 @@ window.addEventListener("pointerup", () => endDrag(false));
 
 window.addEventListener("pointercancel", () => endDrag(true));
 
-document.getElementById("swipeDeck").addEventListener("click", e => {
-  if (!swallowClick) return;
-  swallowClick = false;
-  e.stopPropagation();
-  e.preventDefault();
-}, true);
+studyView().forEach(el => {
+  el.addEventListener("pointerdown", startDrag);
+  el.addEventListener("click", e => {
+    if (!swallowClick) return;
+    swallowClick = false;
+    e.stopPropagation();
+    e.preventDefault();
+  }, true);
+});
 
 function releaseHeldPage() {
   if (!heldPage) return;
