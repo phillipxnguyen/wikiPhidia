@@ -552,7 +552,6 @@ window.onYouTubeIframeAPIReady = function(){
   .media-container iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:0;}
   #mediaSubtitleMask{display:none;position:absolute;inset:0;background:radial-gradient(circle, transparent 20%, black 20%);pointer-events:none;z-index:3;}
   .media-container.listen-mask #mediaSubtitleMask{display:block;}
-  .media-container.write-hide{display:none !important;}
   .loop-time{
     display:inline-block;margin-right:8px;
     font-size:12px;font-variant-numeric:tabular-nums;
@@ -1455,8 +1454,8 @@ function isListenMode() {
   return !!groupState && groupViewStyle === "listen";
 }
 
-function isWriteMode() {
-  return !!groupState && groupViewStyle === "write";
+function isCardMode() {
+  return !!groupState && (groupViewStyle === "listen" || groupViewStyle === "write");
 }
 
 function onPlayerReady() {
@@ -1570,7 +1569,7 @@ function onPlayerStateChange(event) {
     } else if (!segmentArmed && (isSequencePlaying || loopingRowId !== null)) {
       return;
     } else if (event.data === YT.PlayerState.ENDED && isSequencePlaying) {
-      if (isListenMode() && listenAutoPlayOnce) {
+      if (isCardMode() && listenAutoPlayOnce) {
         listenAutoPlayCount++;
         if (listenAutoPlayCount >= LISTEN_AUTO_PLAY_REPEATS) {
           stopSequenceLoop();
@@ -1651,8 +1650,8 @@ function timeSortedRows() {
 }
 
 function toggleLoopForRow(row) {
-  if (ytHasError || isWriteMode()) return;
-  if (isListenMode()) {
+  if (ytHasError) return;
+  if (isCardMode()) {
     toggleSequenceLoop();
     return;
   }
@@ -1742,7 +1741,7 @@ function stopLoop() {
 
 function stopPlaybackForRemovedRow(id) {
   if (loopingRowId !== id) return;
-  const shouldContinueSequence = !isListenMode() && (isSequencePlaying || (loopingRowData ? loopingRowData.wasSequencePlaying : false));
+  const shouldContinueSequence = !isCardMode() && (isSequencePlaying || (loopingRowData ? loopingRowData.wasSequencePlaying : false));
   if (loopInterval) {
     clearInterval(loopInterval);
     loopInterval = null;
@@ -1909,7 +1908,7 @@ const ENTRY_HIDDEN = {
 };
 
 function toggleSequenceLoop() {
-  if (ytHasError || isWriteMode()) return;
+  if (ytHasError) return;
   if (!ytPlayer || !ytReady || !ytHasVideo) {
     showToast(ytHasVideo ? "Video is still loading…" : "Add a YouTube video first");
     return;
@@ -1917,21 +1916,21 @@ function toggleSequenceLoop() {
   if (isSequencePlaying) {
     stopSequenceLoop();
   } else {
-    const currentRow = isListenMode() ? getCurrentSingleCardRow() : null;
+    const currentRow = isCardMode() ? getCurrentSingleCardRow() : null;
     const stillInQuizPhase = !!currentRow && currentRow.qHidden;
     startSequenceLoop(stillInQuizPhase);
   }
 }
 
 function sequencePlaybackRows() {
-  return isListenMode() ? singleCardQueue() : getVisibleRows();
+  return isCardMode() ? singleCardQueue() : getVisibleRows();
 }
 
 function startSequenceLoop(auto) {
   if (ytHasError || !ytPlayer || !ytReady || !ytHasVideo) return;
   const visible = sequencePlaybackRows();
   if (visible.length === 0) {
-    showToast(isListenMode() ? "No YouTube sentences due right now" : "No cards to play");
+    showToast(isCardMode() ? "No YouTube sentences due right now" : "No cards to play");
     return;
   }
   stopTts();
@@ -1968,7 +1967,7 @@ function stopSequenceLoop() {
 function updateSequenceBtnUI() {
   const btn = document.getElementById("btnPlaySequence");
   const speedSel = document.getElementById("playbackSpeed");
-  if (isWriteMode() || !ytPlayer || !ytReady || !ytHasVideo || ytHasError) {
+  if (!ytPlayer || !ytReady || !ytHasVideo || ytHasError) {
     btn.style.display = "none";
     btn.disabled = true;
     speedSel.style.display = "none";
@@ -1994,7 +1993,7 @@ function playNextSequenceStep() {
     stopSequenceLoop();
     return;
   }
-  if (isListenMode()) {
+  if (isCardMode()) {
     sequenceIndex = 0;
   } else if (sequenceIndex >= visible.length) {
     sequenceIndex = 0;
@@ -2017,7 +2016,7 @@ function playNextSequenceStep() {
         clearInterval(loopInterval);
         loopInterval = null;
         pauseVideoProgrammatically();
-        if (isListenMode()) {
+        if (isCardMode()) {
           if (listenAutoPlayOnce) {
             listenAutoPlayCount++;
             if (listenAutoPlayCount >= LISTEN_AUTO_PLAY_REPEATS) {
@@ -3485,8 +3484,7 @@ function rowIsCjk(row) {
 
 function updateMediaModeClasses() {
   const c = mediaBox();
-  c.classList.toggle("listen-mask", !!groupState && groupViewStyle === "listen");
-  c.classList.toggle("write-hide", !!groupState && groupViewStyle === "write");
+  c.classList.toggle("listen-mask", isCardMode());
 }
 
 function syncModeButtonHighlights() {
