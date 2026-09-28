@@ -1780,19 +1780,25 @@ function pruneIdFromGroupState(state, id) {
   }
 }
 
-function deleteRow(id) {
+function deleteRows(ids, parts, next) {
   if (isVirtualLesson()) return;
-  const row = rows.find(r => r.id === id);
-  if (!row) return;
-  if (activeEdit && activeEdit.row.id === id) discardActiveEdit();
+  ids = ids.slice();
+  const gone = rows.filter(r => ids.includes(r.id));
+  if (!gone.length) return;
+  if (activeEdit && ids.includes(activeEdit.row.id)) discardActiveEdit();
   if (ttsPlaying) cancelSpeechOnly();
-  stopPlaybackForRemovedRow(id);
-  adjustSequenceIndexForRemoval(id);
-  pushDeleteUndo("Deleted — " + cardSummary(row));
-  rows = rows.filter(r => r.id !== id);
-  if (hoveredRowId === id) hoveredRowId = null;
-  pruneIdFromGroupState(groupState, id);
-  pruneIdFromGroupState(savedGroupState, id);
+  ids.forEach(id => {
+    stopPlaybackForRemovedRow(id);
+    adjustSequenceIndexForRemoval(id);
+  });
+  const label = "Deleted — " + (gone.length === 1 ? cardSummary(gone[0]) : gone.length + " cards");
+  pushDeleteUndo(label);
+  rows = rows.filter(r => !ids.includes(r.id));
+  if (ids.includes(hoveredRowId)) hoveredRowId = null;
+  ids.forEach(id => {
+    pruneIdFromGroupState(groupState, id);
+    pruneIdFromGroupState(savedGroupState, id);
+  });
   if (rows.length === 0) {
     groupState = null;
     savedGroupState = null;
@@ -1800,9 +1806,30 @@ function deleteRow(id) {
   } else {
     skipEmptyGroups();
   }
-  swipe([ document.querySelector(`#tbody tr[data-id="${id}"]`) || document.querySelector(`#singleCardBody[data-id="${id}"]`) ], -1, render, false, "Delete");
-  showToast("Deleted — " + cardSummary(row));
+  swipe(parts, -1, render, next, "Delete");
+  showToast(label);
   scheduleAutoSave();
+}
+
+function deleteRow(id) {
+  const full = !!groupState && (groupViewStyle !== "table" || (groupState.groups[groupState.index] || []).length <= 1);
+  deleteRows([ id ], full ? studyParts() : [ document.querySelector(`#tbody tr[data-id="${id}"]`) || document.querySelector(`#singleCardBody[data-id="${id}"]`) ], full);
+}
+
+function deleteAction() {
+  if (!groupState) {
+    if (hoveredRowId !== null) deleteRow(hoveredRowId);
+    return;
+  }
+  if (groupViewStyle !== "table") {
+    const current = getCurrentSingleCardRow();
+    if (current) deleteRow(current.id);
+    return;
+  }
+  const ids = groupState.groups[groupState.index] || [];
+  const pickedId = selectedRowId !== null ? selectedRowId : isTouch() ? null : hoveredRowId;
+  selectedRowId = null;
+  if (ids.includes(pickedId)) deleteRow(pickedId); else if (ids.length) deleteRows(ids, studyParts(), true);
 }
 
 function getVisibleRows() {
@@ -3916,7 +3943,7 @@ function swipe(parts, dir, update, next, label = dir > 0 ? "Good" : "Again") {
       transform: "none",
       opacity: 1
     }, {
-      transform: label === "Delete" ? `translateX(${dir * 110}vw)` : `translate(${dir * 110}vw, 25vh) rotate(${dir * 24}deg)`,
+      transform: label === "Delete" ? `translate(${dir * 110}vw, -25vh) rotate(${dir * 24}deg)` : `translate(${dir * 110}vw, 25vh) rotate(${dir * 24}deg)`,
       opacity: 0.4
     } ], {
       duration: 1250,
@@ -6922,9 +6949,9 @@ document.addEventListener("keydown", e => {
     return;
   }
   if (e.code === "Backspace" || e.code === "Delete") {
-    if (hoveredRowId === null) return;
+    if (e.repeat) return;
     e.preventDefault();
-    deleteRow(hoveredRowId);
+    deleteAction();
     return;
   }
 });
