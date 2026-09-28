@@ -3523,9 +3523,11 @@ function cardKind(r, mode, now) {
 
 function dueScoreCompare(mode) {
   const now = Date.now();
+  const position = new Map(rows.map((r, i) => [ r.id, i ]));
   return (a, b) => {
     const ka = cardKind(a, mode, now), kb = cardKind(b, mode, now);
     if (ka !== kb) return ka - kb;
+    if (ka === 2) return position.get(a.id) - position.get(b.id);
     if (ka === 3) return srsOf(a, mode).due - srsOf(b, mode).due;
     return (a["shuffleKey" + mode] || 0) - (b["shuffleKey" + mode] || 0);
   };
