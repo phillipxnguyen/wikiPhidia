@@ -65,6 +65,9 @@ window.onYouTubeIframeAPIReady = function(){
     --popup-text:#e7ecf3;
     --popup-muted:#aeb9c7;
     --mark-bg:#ffd76b;
+    --vocab-bg:#dff0cf;
+    --vocab-bg-hover:#cde5b6;
+    --vocab-text:#2f5a14;
     --stroke-outline:#d8dee6;
     --shadow-sm:0 1px 2px rgba(20,30,50,.06);
     --shadow-md:0 6px 20px rgba(20,30,50,.10);
@@ -99,6 +102,9 @@ window.onYouTubeIframeAPIReady = function(){
       --row-alt:#1a202a;
       --row-playing:#223352;
       --popup-bg:#0b0f15;
+      --vocab-bg:#3a4a2e;
+      --vocab-bg-hover:#4a5e3a;
+      --vocab-text:#d7f0b8;
       --stroke-outline:#3a4452;
       --shadow-sm:0 1px 2px rgba(0,0,0,.3);
       --shadow-md:0 8px 24px rgba(0,0,0,.45);
@@ -131,6 +137,9 @@ window.onYouTubeIframeAPIReady = function(){
     --row-alt:#1a202a;
     --row-playing:#223352;
     --popup-bg:#0b0f15;
+    --vocab-bg:#3a4a2e;
+    --vocab-bg-hover:#4a5e3a;
+    --vocab-text:#d7f0b8;
     --stroke-outline:#3a4452;
     --shadow-sm:0 1px 2px rgba(0,0,0,.3);
     --shadow-md:0 8px 24px rgba(0,0,0,.45);
@@ -468,8 +477,8 @@ window.onYouTubeIframeAPIReady = function(){
   .edit-row .rich-editor{margin-bottom:8px;display:block;}
   .rich-editor:empty::before{content:attr(data-placeholder);color:var(--text-3);font-style:italic;}
   #editNotes:empty::before{font-style:normal;}
-  .rich-editor mark.vocab-hit{background:#3a4a2e;color:#d7f0b8;border-radius:3px;padding:0 1px;cursor:pointer;}
-  .rich-editor mark.vocab-hit:hover{background:#4a5e3a;}
+  .rich-editor mark.vocab-hit{background:var(--vocab-bg);color:var(--vocab-text);border-radius:3px;padding:0 1px;cursor:pointer;}
+  .rich-editor mark.vocab-hit:hover{background:var(--vocab-bg-hover);}
   .rich-editor ul, .vocab-popup ul{margin:2px 0;padding-left:20px;}
   .rich-editor li, .vocab-popup li{margin:2px 0;}
   .hover-tooltip{
@@ -4296,7 +4305,7 @@ async function convertZhAndImport(targetScript, sourceBtn) {
         prefix = ts.prefix;
         qText = ts.rest;
         suffix = "";
-      } else if (parts.length === 3 && parseTimeToSeconds(parts[0].trim()) !== null) {
+      } else if (parts.length === 3 && looksLikeExplicitTimestamp(parts[0])) {
         qText = parts[1];
         prefix = parts[0] + delim;
         suffix = delim + parts[2];
@@ -4449,7 +4458,7 @@ function parseImportLine(line, delim) {
   };
   const parts = splitCols(line, delim, 4);
   let time;
-  if (parts.length >= 3 && (time = parseTimeToSeconds(parts[0].trim())) !== null) {
+  if (parts.length >= 3 && looksLikeExplicitTimestamp(parts[0]) && (time = parseTimeToSeconds(parts[0].trim())) !== null) {
     return {
       time: time,
       q: parts[1].trim(),
@@ -5836,9 +5845,9 @@ function celebrateStreak() {
   };
 }
 
-function cardInMode(c, mode) {
+function cardInMode(c, mode, lang) {
   if (mode === "Listen") return c.time != null;
-  if (mode === "Write") return hasAnswer(c) && CJK_CHAR_RE.test((c.q || "") + (c.a || ""));
+  if (mode === "Write") return hasAnswer(c) && ([ "zh-CN", "zh-TW", "ja" ].includes(lang) || CJK_CHAR_RE.test((c.q || "") + (c.a || "")));
   return hasAnswer(c);
 }
 
@@ -5952,6 +5961,7 @@ function renderHeatmap() {
 function renderStats() {
   const now = Date.now();
   const lessons = library.map(l => l.id === currentLessonId ? Object.assign({}, l, {
+    studyLang: studyLang,
     cards: rows.map(serializeCard)
   }) : l);
   const today = new Date;
@@ -5961,7 +5971,7 @@ function renderStats() {
   const lessonRows = lessons.map(l => {
     let fresh = 0, due = 0, done = 0;
     l.cards.forEach(c => {
-      const modes = MODES.filter(m => cardInMode(c, m));
+      const modes = MODES.filter(m => cardInMode(c, m, l.studyLang));
       const buckets = modes.map(m => cardBucket(c, m, now));
       if (!MODES.some(m => srsOf(c, m).reps)) newCards++;
       if (buckets.includes("due")) dueCards++;
