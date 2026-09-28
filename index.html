@@ -1814,6 +1814,7 @@ function deleteRows(ids, parts, next) {
 
 function deleteRow(id) {
   const full = !!groupState && (groupViewStyle !== "table" || (groupState.groups[groupState.index] || []).length <= 1);
+  if (groupState && !full) holdPage();
   deleteRows([ id ], full ? studyParts() : [ document.querySelector(`#tbody tr[data-id="${id}"]`) || document.querySelector(`#singleCardBody[data-id="${id}"]`) ], full);
 }
 
@@ -3875,11 +3876,7 @@ function gradeCard(row, isAgain) {
   scheduleAutoSave();
   if (hoveredRowId === row.id) hoveredRowId = null;
   const next = !ids || ids.length === 1;
-  if (!next) {
-    const shell = document.querySelector(".shell");
-    shell.style.minHeight = shell.offsetHeight + "px";
-    heldPage = currentLessonId + ":" + groupState.index;
-  }
+  if (!next) holdPage();
   swipe(next ? studyParts() : [ document.querySelector(`#tbody tr[data-id="${row.id}"]`) ], isAgain ? -1 : 1, () => {
     if (ids) {
       ids.splice(ids.indexOf(row.id), 1);
@@ -3955,6 +3952,12 @@ function swipe(parts, dir, update, next, label = dir > 0 ? "Good" : "Again") {
     top: 0,
     behavior: "instant"
   });
+}
+
+function holdPage() {
+  const shell = document.querySelector(".shell");
+  shell.style.minHeight = shell.offsetHeight + "px";
+  heldPage = currentLessonId + ":" + groupState.index;
 }
 
 function releaseHeldPage() {
