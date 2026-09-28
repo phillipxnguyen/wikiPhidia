@@ -615,8 +615,6 @@ window.onYouTubeIframeAPIReady = function(){
   #dictPanels .dict-pending{position:absolute;top:0;left:0;right:0;visibility:hidden;pointer-events:none;}
   #dictPanels:not(.with-source) .dict-source{display:none;}
   #viewStudy.focus-study > .lesson-header, #viewStudy.focus-study > .save-status, #viewStudy.focus-study > .lesson-meta{display:none;}
-  #viewStudy.focus-study{touch-action:pan-y;}
-  html.touch #viewStudy.focus-study iframe{pointer-events:none;}
   .swipe-ghost{position:fixed;z-index:1000;box-sizing:border-box;display:flex;justify-content:center;border:3px solid var(--border);border-radius:28px;background:var(--surface);box-shadow:var(--shadow-md);font-size:34px;font-weight:700;pointer-events:none;}
   .swipe-ghost.row{align-items:center;border-radius:16px;font-size:30px;}
   .swipe-ghost.good{color:var(--a-label);border-color:currentColor;}
@@ -945,7 +943,6 @@ window.onYouTubeIframeAPIReady = function(){
   </div>
   </div>
 
-  <div id="swipeDeck">
   <div id="tableProgress" class="single-card-progress" style="display:none;"></div>
   <table id="cardTable">
     <colgroup>
@@ -968,7 +965,6 @@ window.onYouTubeIframeAPIReady = function(){
     <div id="singleCardProgress" class="single-card-progress"></div>
     <div id="singleCardBody" class="single-card-body"></div>
     <div id="strokeOrderPanel" class="stroke-order-panel" style="display:none;"></div>
-  </div>
   </div>
 
   <div id="dictPanels"></div>
@@ -3883,10 +3879,6 @@ function pinStudyArea() {
   });
 }
 
-function studyView() {
-  return [ document.querySelector(".study-head"), document.getElementById("swipeDeck"), document.getElementById("dictPanels") ];
-}
-
 function studyParts() {
   return [ "mediaContainer", "tableProgress", "cardTable", "singleCardView" ].map(id => document.getElementById(id)).concat(document.querySelector(".study-head .toolbar"), Array.from(document.querySelectorAll("#dictPanels > :not(.dict-pending)")));
 }
@@ -3918,21 +3910,16 @@ function swipeHint(ghost, dir) {
   ghost.textContent = dir > 0 ? "Good" : "Again";
 }
 
-let dragGhost = null;
-
 function swipe(parts, dir, update, next, hinted = true) {
-  const motion = !matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const ghost = dragGhost || (motion ? ghostFor(parts) : null);
-  const from = dragGhost ? dragGhost.style.transform : "none";
-  dragGhost = null;
+  const ghost = matchMedia("(prefers-reduced-motion: reduce)").matches ? null : ghostFor(parts);
   update();
   if (ghost) {
     if (hinted) swipeHint(ghost, dir);
     ghost.animate([ {
-      transform: from,
+      transform: "none",
       opacity: 1
     }, {
-      transform: `translate(${dir * 110}vw, 25vh) rotate(${dir * 24}deg)`,
+      transform: `translateX(${dir * 110}vw)`,
       opacity: 0.4
     } ], {
       duration: 500,
@@ -3946,136 +3933,6 @@ function swipe(parts, dir, update, next, hinted = true) {
     behavior: "instant"
   });
 }
-
-const SWIPE_PASS = 100;
-
-let drag = null;
-
-let snapBack = null;
-
-let dragged = false;
-
-function restDrag(d) {
-  d.moving.forEach(el => {
-    el.style.transform = "";
-    el.style.transformOrigin = "";
-    el.style.opacity = "";
-    el.style.clipPath = "";
-  });
-  if (d.table) d.table.style.overflow = "";
-}
-
-document.addEventListener("pointerdown", e => {
-  dragged = false;
-  if (snapBack) snapBack();
-  if (!groupState || currentView !== "study" || activeEdit || e.button !== 0) return;
-  if (e.pointerType === "touch" && (e.clientX < window.innerWidth / 4 || e.clientX > window.innerWidth * 3 / 4)) return;
-  if (!e.target.closest("#viewStudy") || e.target.closest("input, select, textarea, [contenteditable]")) return;
-  const row = groupViewStyle === "table" ? e.target.closest("#tbody tr[data-id]") : null;
-  if (!row && document.getElementById("cardTable").style.display === "none" && document.getElementById("singleCardView").style.display === "none") return;
-  drag = {
-    row: row,
-    table: row ? row.closest("table") : null,
-    parts: row ? [ row ] : studyParts(),
-    moving: row ? [ row ] : studyView(),
-    x: e.clientX,
-    y: e.clientY,
-    dx: 0,
-    ghost: null
-  };
-});
-
-window.addEventListener("pointermove", e => {
-  if (!drag) return;
-  const dx = e.clientX - drag.x;
-  const dy = e.clientY - drag.y;
-  if (!drag.ghost) {
-    if (Math.abs(dx) < 10 || Math.abs(dx) < Math.abs(dy)) return;
-    drag.ghost = ghostFor(drag.parts);
-    if (!drag.ghost) {
-      drag = null;
-      return;
-    }
-    const box = drag.ghost.getBoundingClientRect();
-    drag.moving.forEach(el => {
-      const r = el.getBoundingClientRect();
-      el.style.transformOrigin = `${box.left + box.width / 2 - r.left}px ${box.top + box.height / 2 - r.top}px`;
-    });
-    if (drag.row) {
-      drag.table.style.overflow = "visible";
-      drag.row.style.clipPath = "inset(0 round 16px)";
-    }
-    getSelection().removeAllRanges();
-    hideTooltip();
-  }
-  const move = `translate(${dx}px, ${dy}px) rotate(${dx / 20}deg)`;
-  const cover = Math.min(1, Math.abs(dx) / SWIPE_PASS);
-  drag.ghost.style.transform = move;
-  drag.ghost.style.opacity = cover;
-  drag.moving.forEach(el => {
-    el.style.transform = move;
-    el.style.opacity = 1 - cover;
-  });
-  swipeHint(drag.ghost, dx);
-  drag.dx = dx;
-});
-
-function endDrag() {
-  const d = drag;
-  drag = null;
-  if (!d || !d.ghost) return;
-  dragged = true;
-  setTimeout(() => dragged = false);
-  if (Math.abs(d.dx) >= SWIPE_PASS) {
-    restDrag(d);
-    dragGhost = d.ghost;
-    selectedRowId = d.row ? Number(d.row.dataset.id) : null;
-    hoveredRowId = null;
-    gradeAction(d.dx < 0);
-    if (!dragGhost) return;
-    dragGhost = null;
-  }
-  const from = d.ghost.style.transform;
-  const cover = Number(d.ghost.style.opacity);
-  const timing = {
-    duration: 250,
-    easing: "ease-out",
-    fill: "forwards"
-  };
-  const anims = d.moving.map(el => el.animate([ {
-    transform: from,
-    opacity: 1 - cover
-  }, {
-    transform: "none",
-    opacity: 1
-  } ], timing)).concat(d.ghost.animate([ {
-    transform: from,
-    opacity: cover
-  }, {
-    transform: "none",
-    opacity: 0
-  } ], timing));
-  const done = () => {
-    if (snapBack !== done) return;
-    snapBack = null;
-    anims.forEach(a => a.cancel());
-    d.ghost.remove();
-    restDrag(d);
-  };
-  snapBack = done;
-  setTimeout(done, 250);
-}
-
-window.addEventListener("pointerup", endDrag);
-
-window.addEventListener("pointercancel", endDrag);
-
-document.addEventListener("click", e => {
-  if (!dragged) return;
-  dragged = false;
-  e.stopPropagation();
-  e.preventDefault();
-}, true);
 
 function releaseHeldPage() {
   if (!heldPage) return;
