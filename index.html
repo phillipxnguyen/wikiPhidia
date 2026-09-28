@@ -3936,17 +3936,16 @@ function swipe(parts, dir, update, next, hinted = true) {
 
 let drag = null;
 
-let swallowClick = false;
+let swallowUntil = 0;
 
 function startDrag(e) {
-  swallowClick = false;
   if (!groupState || e.button !== 0 || activeEdit || drag) return;
   if (e.target.closest("button, a, input, select, textarea, [contenteditable], .loop-time, .tts-icon, .col-toggle")) return;
   const row = groupViewStyle === "table" ? e.target.closest("#tbody tr[data-id]") : null;
   if (!row && document.getElementById("cardTable").style.display === "none" && document.getElementById("singleCardView").style.display === "none") return;
   drag = {
     parts: row ? [ row ] : studyParts(),
-    hide: row ? [ row ] : studyView(),
+    moving: row ? [ row ] : studyView(),
     rowId: row ? Number(row.dataset.id) : null,
     x: e.clientX,
     y: e.clientY,
@@ -3966,24 +3965,42 @@ window.addEventListener("pointermove", e => {
       drag = null;
       return;
     }
-    drag.hide.forEach(el => el.style.visibility = "hidden");
+    const box = drag.ghost.getBoundingClientRect();
+    drag.ghost.style.opacity = 0;
+    drag.moving.forEach(el => {
+      const r = el.getBoundingClientRect();
+      el.style.transformOrigin = `${box.left + box.width / 2 - r.left}px ${box.top + box.height / 2 - r.top}px`;
+    });
+    if (drag.rowId !== null) drag.moving[0].closest("table").style.overflow = "visible";
     hideTooltip();
   }
-  drag.ghost.style.transform = `translate(${dx}px, ${dy}px) rotate(${dx * 0.05}deg)`;
+  const move = `translate(${dx}px, ${dy}px) rotate(${dx * 0.05}deg)`;
+  drag.ghost.style.transform = move;
+  drag.moving.forEach(el => el.style.transform = move);
+  drag.ghost.style.opacity = Math.min(1, Math.abs(dx) / 80);
   swipeHint(drag.ghost, dx);
   drag.lastX = dx;
   drag.speed = dx / Math.max(1, e.timeStamp - drag.t);
 });
 
-function endDrag(cancelled) {
+function restDrag(d) {
+  d.moving.forEach(el => {
+    el.style.transform = "";
+    el.style.transformOrigin = "";
+  });
+  if (d.rowId !== null) d.moving[0].closest("table").style.overflow = "";
+}
+
+function endDrag(e, cancelled) {
   const d = drag;
   drag = null;
   if (!d || !d.ghost) return;
-  swallowClick = true;
+  swallowUntil = e.timeStamp + 400;
   const dx = d.lastX || 0;
   const commit = !cancelled && (Math.abs(dx) > 100 || Math.abs(dx) > 30 && Math.abs(d.speed) > 0.6);
   if (commit) {
-    d.hide.forEach(el => el.style.visibility = "");
+    d.ghost.style.opacity = 1;
+    restDrag(d);
     dragGhost = d.ghost;
     selectedRowId = d.rowId;
     hoveredRowId = null;
@@ -3991,28 +4008,38 @@ function endDrag(cancelled) {
     if (!dragGhost) return;
     dragGhost = null;
   }
-  d.ghost.animate([ {
+  const back = [ {
     transform: d.ghost.style.transform
   }, {
     transform: "none"
+  } ];
+  d.moving.forEach(el => el.animate(back, {
+    duration: 250,
+    easing: "ease-out"
+  }));
+  d.ghost.animate([ {
+    transform: d.ghost.style.transform,
+    opacity: d.ghost.style.opacity
+  }, {
+    transform: "none",
+    opacity: 0
   } ], {
     duration: 250,
     easing: "ease-out"
   }).finished.then(() => {
     d.ghost.remove();
-    d.hide.forEach(el => el.style.visibility = "");
+    restDrag(d);
   });
 }
 
-window.addEventListener("pointerup", () => endDrag(false));
+window.addEventListener("pointerup", e => endDrag(e, false));
 
-window.addEventListener("pointercancel", () => endDrag(true));
+window.addEventListener("pointercancel", e => endDrag(e, true));
 
 studyView().forEach(el => {
   el.addEventListener("pointerdown", startDrag);
   el.addEventListener("click", e => {
-    if (!swallowClick) return;
-    swallowClick = false;
+    if (e.timeStamp > swallowUntil) return;
     e.stopPropagation();
     e.preventDefault();
   }, true);
