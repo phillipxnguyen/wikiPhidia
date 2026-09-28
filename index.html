@@ -311,10 +311,7 @@ window.onYouTubeIframeAPIReady = function(){
   html.touch tbody tr.row-selected .cell.shown[data-field="q"]{color:var(--accent);}
   html.touch #tbody{-webkit-tap-highlight-color:transparent;}
   html.touch #viewStudy.focus-study{touch-action:pan-y;}
-  html.touch #viewStudy.focus-study iframe:not(.live){pointer-events:none;}
-  .dict-frame.live{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft);}
-  html.touch #viewStudy.focus-study #dictPanels > .stroke-order-panel{position:relative;}
-  html.touch #viewStudy.focus-study #dictPanels > .stroke-order-panel:has(> .dict-frame:not(.live))::after{content:"Tap to use";position:absolute;right:22px;top:22px;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;color:var(--on-accent);background:var(--accent);opacity:.85;pointer-events:none;}
+  html.touch #viewStudy.focus-study #dictPanels iframe:not(.live){pointer-events:none;}
   html.touch .edit-btn, html.touch .del-btn{width:32px;height:36px;line-height:36px;font-size:20px;}
   html.touch #cardTable col:nth-child(1), html.touch #cardTable col:nth-child(2){width:34px !important;}
   html.touch #cardTable col:nth-child(3), html.touch #cardTable col:nth-child(4){width:calc(50% - 34px) !important;}
@@ -1649,26 +1646,6 @@ document.getElementById("dictPanels").addEventListener("click", e => {
   const panel = e.target.closest(".stroke-order-panel");
   const frame = panel && panel.querySelector("iframe");
   if (frame && isTouch()) frame.classList.add("live");
-});
-
-let mediaTapTimer = null;
-
-document.getElementById("mediaContainer").addEventListener("click", e => {
-  if (!ytPlayer || !ytReady || !ytHasVideo || ytHasError) return;
-  if (mediaTapTimer) {
-    clearTimeout(mediaTapTimer);
-    mediaTapTimer = null;
-    const box = mediaBox().getBoundingClientRect();
-    const step = e.clientX < box.left + box.width / 2 ? -5 : 5;
-    ytPlayer.seekTo(Math.max(0, ytPlayer.getCurrentTime() + step), true);
-    showToast(step < 0 ? "⏪ 5s" : "5s ⏩");
-    return;
-  }
-  mediaTapTimer = setTimeout(() => {
-    mediaTapTimer = null;
-    if (!ytPlayer || !ytReady) return;
-    if (ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) ytPlayer.pauseVideo(); else ytPlayer.playVideo();
-  }, 250);
 });
 
 function segmentReached(start, end) {
