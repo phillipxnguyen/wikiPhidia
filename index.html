@@ -269,6 +269,8 @@ window.onYouTubeIframeAPIReady = function(){
   .lesson-item-meta{display:flex;gap:8px;font-size:12px;color:var(--text-3);}
   .lesson-item-meta .due{color:var(--due-color);font-weight:600;}
   .lesson-item-meta .new{color:var(--new-color);font-weight:600;}
+  .lesson-group-label{padding:10px 10px 4px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3);}
+  .lesson-group-label:first-child{padding-top:2px;}
   .lesson-list-empty{padding:10px;color:var(--text-3);font-size:13px;}
   .sidebar-footer{display:flex;flex-direction:column;gap:2px;border-top:1px solid var(--border);padding-top:10px;}
   .sidebar-footer button{text-align:left;width:100%;}
@@ -5251,6 +5253,7 @@ async function switchToLesson(id) {
   await flushAutoSave();
   const lesson = library.find(l => l.id === id);
   if (!lesson) return;
+  noteRecentLesson(id);
   openLesson(lesson);
   showView("study");
 }
@@ -5280,6 +5283,7 @@ async function createLesson() {
   };
   upsertLibrary(lesson);
   dbPut("lessons", lesson).catch(() => {});
+  noteRecentLesson(lesson.id);
   openLesson(lesson);
   showView("study");
   nameInput.focus();
@@ -5575,6 +5579,7 @@ async function importLessonFiles(files) {
   }
   const restored = restoredIds.length;
   if (lastImported) {
+    noteRecentLesson(lastImported.id);
     openLesson(lastImported);
     showView("study");
   } else if (isVirtualLesson() && restoredIds.length) {
@@ -5663,10 +5668,32 @@ function renderLessonList() {
     list.innerHTML = '<div class="lesson-list-empty">No matching lessons.</div>';
     return;
   }
-  list.innerHTML = items.map(l => {
+  const itemHtml = l => {
     const active = l.id === currentLessonId && currentView === "study";
     return `<button class="lesson-item${active ? " active" : ""}" data-lesson-id="${escapeAttr(l.id)}"${active ? ' aria-current="page"' : ""}>` + `<span class="lesson-item-name">${escapeHtml(l.name || "Untitled lesson")}</span>` + `<span class="lesson-item-meta">${lessonItemMeta(l)}</span></button>`;
-  }).join("");
+  };
+  const recent = q || library.length <= RECENT_MAX + 2 ? [] : recentLessonIds().map(id => library.find(l => l.id === id)).filter(Boolean).slice(0, RECENT_MAX);
+  if (!recent.length) {
+    list.innerHTML = items.map(itemHtml).join("");
+    return;
+  }
+  list.innerHTML = '<div class="lesson-group-label">Recent</div>' + recent.map(itemHtml).join("") + '<div class="lesson-group-label">All lessons</div>' + items.filter(l => !recent.includes(l)).map(itemHtml).join("");
+}
+
+const RECENT_KEY = "flashcards.recentLessons";
+
+const RECENT_MAX = 3;
+
+function recentLessonIds() {
+  const ids = readLocal(RECENT_KEY);
+  return Array.isArray(ids) ? ids : [];
+}
+
+function noteRecentLesson(id) {
+  if (!id || id === HARD_LESSON_ID) return;
+  try {
+    localStorage.setItem(RECENT_KEY, JSON.stringify([ id ].concat(recentLessonIds().filter(x => x !== id)).slice(0, 10)));
+  } catch (e) {}
 }
 
 function showView(view) {
@@ -5733,6 +5760,7 @@ async function changeAddTarget(id) {
   await flushAutoSave();
   const lesson = library.find(l => l.id === id);
   if (!lesson) return;
+  noteRecentLesson(id);
   openLesson(lesson);
   ta.value = pasted;
   showView("add");
@@ -6871,6 +6899,7 @@ async function initApp() {
   renderStreakChip();
   const first = library.find(l => l.id === lastId) || sortedLibrary()[0];
   if (first) {
+    if (!recentLessonIds().length) noteRecentLesson(first.id);
     openLesson(first);
     showView("study");
   } else {
