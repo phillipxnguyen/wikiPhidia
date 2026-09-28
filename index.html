@@ -764,6 +764,8 @@ window.onYouTubeIframeAPIReady = function(){
   .ip-status.update{color:var(--accent);background:var(--accent-soft);}
   .ip-status.dup{color:var(--text-2);background:var(--surface-3);}
   .ip-status.skip{color:var(--danger);background:var(--danger-soft);}
+  .ip-table td.ip-result{text-align:center;}
+  .ip-table td.ip-result .ip-status{padding:1px 6px;}
   .ip-more{padding:8px 12px;font-size:12.5px;color:var(--text-3);}
 </style>
 </head>
@@ -4916,12 +4918,12 @@ document.getElementById("importBtn").onclick = () => {
 const IMPORT_PREVIEW_MAX_ROWS = 300;
 
 const IMPORT_KIND_LABELS = {
-  new: [ "new", "🆕 New card" ],
-  update: [ "update", "✏️ Fill in" ],
-  merged: [ "update", "🔗 Merged" ],
-  duplicate: [ "dup", "⏭ Duplicate" ],
-  empty: [ "skip", "⚠️ Empty" ],
-  invalid: [ "skip", "⚠️ Not read" ]
+  new: [ "new", "🆕", "New card" ],
+  update: [ "update", "✏️", "Fill in" ],
+  merged: [ "update", "🔗", "Merged" ],
+  duplicate: [ "dup", "⏭", "Duplicate" ],
+  empty: [ "skip", "⚠️", "Empty" ],
+  invalid: [ "skip", "⚠️", "Not read" ]
 };
 
 let importPreviewTimer = null;
@@ -4957,18 +4959,18 @@ function renderImportPreview() {
   const delimName = analysis.delim === "\t" ? "Tab" : "Equal sign ( = )";
   const summary = [];
   summary.push(`<span><b>${analysis.lines.length}</b> line${analysis.lines.length === 1 ? "" : "s"}</span>`);
-  if (counts.new) summary.push(`<span class="ip-status new">🆕 ${counts.new} new</span>`);
-  if (counts.update) summary.push(`<span class="ip-status update">✏️ ${counts.update} fill in</span>`);
-  if (counts.merged) summary.push(`<span class="ip-status update">🔗 ${counts.merged} merged</span>`);
-  if (counts.duplicate) summary.push(`<span class="ip-status dup">⏭ ${counts.duplicate} duplicate</span>`);
-  if (counts.empty || counts.invalid) summary.push(`<span class="ip-status skip">⚠️ ${(counts.empty || 0) + (counts.invalid || 0)} skipped</span>`);
+  if (counts.new) summary.push(`<span class="ip-status new">🆕 ${counts.new}</span>`);
+  if (counts.update) summary.push(`<span class="ip-status update">${counts.update} fill in</span>`);
+  if (counts.merged) summary.push(`<span class="ip-status update">${counts.merged} merged</span>`);
+  if (counts.duplicate) summary.push(`<span class="ip-status dup">${counts.duplicate} duplicate</span>`);
+  if (counts.empty || counts.invalid) summary.push(`<span class="ip-status skip">${(counts.empty || 0) + (counts.invalid || 0)} skipped</span>`);
   summary.push(`<span>Delimiter: <b>${delimName}</b>${analysis.delim !== currentDelim() ? " (auto-detected)" : ""}</span>`);
   if (analysis.title) summary.push(`<span>Title: <b>${escapeHtml(analysis.title)}</b></span>`);
   if (analysis.mediaUrl) summary.push(`<span>Video link: <b>${escapeHtml(truncate(analysis.mediaUrl, 48))}</b></span>`);
   const body = analysis.lines.slice(0, IMPORT_PREVIEW_MAX_ROWS).map((l, i) => {
     const o = lineOutcomes[i];
-    const [cls, label] = IMPORT_KIND_LABELS[o.kind];
-    const status = `<td><span class="ip-status ${cls}">${label}</span></td>`;
+    const [cls, icon, label] = IMPORT_KIND_LABELS[o.kind];
+    const status = `<td class="ip-result"><span class="ip-status ${cls}" title="${label}" aria-label="${label}">${icon}</span></td>`;
     const num = `<td class="ip-num">${l.lineNo}</td>`;
     if (!l.entry) {
       return `<tr class="ip-dim">${num}${status}<td colspan="4" class="ip-raw" title="No ${escapeAttr(delimName)} found on this line">${escapeHtml(l.text)}</td></tr>`;
@@ -4989,7 +4991,7 @@ function renderImportPreview() {
     return `<tr${rowCls}>${num}${status}${previewCell(e.time != null ? formatTime(e.time) : "", "ip-time")}${previewCell(e.q)}${previewCell(e.a, aCls, aTitle)}${previewCell(e.notes, nCls, nTitle)}</tr>`;
   }).join("");
   const more = analysis.lines.length > IMPORT_PREVIEW_MAX_ROWS ? `<div class="ip-more">…and ${analysis.lines.length - IMPORT_PREVIEW_MAX_ROWS} more line(s)</div>` : "";
-  box.innerHTML = `<div class="ip-summary">${summary.join("")}</div>` + '<div class="ip-scroll"><table class="ip-table"><colgroup><col style="width:44px"><col style="width:118px"><col style="width:62px"><col><col><col></colgroup>' + "<thead><tr><th>#</th><th>Result</th><th>Time</th><th>Question</th><th>Answer</th><th>Notes</th></tr></thead>" + `<tbody>${body}</tbody></table>${more}</div>`;
+  box.innerHTML = `<div class="ip-summary">${summary.join("")}</div>` + '<div class="ip-scroll"><table class="ip-table"><colgroup><col style="width:44px"><col style="width:52px"><col style="width:62px"><col><col><col></colgroup>' + "<thead><tr><th>#</th><th aria-label='Result'></th><th>Time</th><th>Question</th><th>Answer</th><th>Notes</th></tr></thead>" + `<tbody>${body}</tbody></table>${more}</div>`;
   box.hidden = false;
 }
 
