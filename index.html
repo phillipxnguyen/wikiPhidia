@@ -313,8 +313,6 @@ window.onYouTubeIframeAPIReady = function(){
   .touch-bar .tb-icon{flex:0 0 48px;display:flex;align-items:center;justify-content:center;padding:0;}
   .touch-bar .tb-again{background:var(--danger-soft);color:var(--danger);border-color:transparent;}
   .touch-bar .tb-good{background:var(--a-bg);color:var(--a-label);border-color:transparent;}
-  .single-card-body{position:relative;}
-  .single-card-field{position:relative;}
   .single-card-field > .card-actions{position:absolute;top:6px;right:6px;display:flex;gap:2px;}
 
   .lesson-header{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
@@ -347,9 +345,8 @@ window.onYouTubeIframeAPIReady = function(){
     letter-spacing:.06em;
     color:var(--text-2);
     font-weight:700;
-    margin:0;
+    margin:0 0 10px;
   }
-  .panel h2{margin-bottom:10px;}
   .add-head{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:4px;}
   .add-target{display:flex;align-items:center;gap:8px;color:var(--text-2);font-size:14px;}
   .add-target select{max-width:420px;font-weight:600;}
@@ -575,6 +572,7 @@ window.onYouTubeIframeAPIReady = function(){
   .progress-badge.active.done{background:color-mix(in srgb, var(--done-color) 15%, transparent);box-shadow:0 0 0 1px color-mix(in srgb, var(--done-color) 50%, transparent) inset;}
 
   .single-card-body{
+    position:relative;
     background:var(--surface);
     border:1px solid var(--border);
     border-radius:14px;
@@ -586,6 +584,7 @@ window.onYouTubeIframeAPIReady = function(){
   .single-card-body.row-playing{box-shadow:0 0 0 3px var(--accent-soft), var(--shadow-sm);}
   .single-card-body:not(.edit-row){display:flex;flex-direction:column;gap:14px;}
   .single-card-field{
+    position:relative;
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
     min-height:72px;border-radius:10px;padding:18px 18px;
   }
@@ -1035,10 +1034,6 @@ let pinnedCardId = null;
 
 let listenAutoPlayOnce = false;
 
-let listenAutoPlayCount = 0;
-
-const LISTEN_AUTO_PLAY_REPEATS = 1;
-
 let isSequencePlaying = false;
 
 let sequenceIndex = 0;
@@ -1100,13 +1095,15 @@ let undoStack = [];
 
 let redoStack = [];
 
+let localReviewKeys = [];
+
 function takeSnapshot(label, expiresAt) {
   return {
     snapshot: JSON.stringify(rows),
     groupSnapshot: JSON.stringify(groupState || savedGroupState),
     inSession: !!groupState,
     importHistory: JSON.stringify(importHistory),
-    reviewCount: reviewLog.length,
+    reviewCount: localReviewKeys.length,
     pinned: pinnedCardId,
     label: label,
     expiresAt: expiresAt
@@ -1178,14 +1175,18 @@ function restoreFrom(fromStack, toStack, verb) {
   const oppositeEntry = takeSnapshot(entry.label, entry.expiresAt);
   toStack.push(oppositeEntry);
   if (toStack.length > 50) toStack.shift();
-  if (entry.reviewCount != null && reviewLog.length > entry.reviewCount) {
-    oppositeEntry.reviewsRemoved = reviewLog.splice(entry.reviewCount);
+  if (entry.reviewCount != null && localReviewKeys.length > entry.reviewCount) {
+    const keys = new Set(localReviewKeys.splice(entry.reviewCount));
+    oppositeEntry.reviewsRemoved = reviewLog.filter(e => keys.has(e.key));
+    reviewLog = reviewLog.filter(e => !keys.has(e.key));
     oppositeEntry.reviewsRemoved.forEach(e => dbDelete("reviews", e.key, e));
   } else if (entry.reviewsRemoved) {
     entry.reviewsRemoved.forEach(e => {
       reviewLog.push(e);
+      localReviewKeys.push(e.key);
       dbPut("reviews", e);
     });
+    reviewLog.sort((a, b) => a.ts - b.ts);
   }
   renderStreakChip();
   const prevHidden = new Map(rows.map(r => [ r.id, {
@@ -1569,11 +1570,8 @@ function onPlayerStateChange(event) {
       return;
     } else if (event.data === YT.PlayerState.ENDED && isSequencePlaying) {
       if (isCardMode() && listenAutoPlayOnce) {
-        listenAutoPlayCount++;
-        if (listenAutoPlayCount >= LISTEN_AUTO_PLAY_REPEATS) {
-          stopSequenceLoop();
-          return;
-        }
+        stopSequenceLoop();
+        return;
       }
       sequenceIndex++;
       playNextSequenceStep();
@@ -1968,7 +1966,6 @@ function startSequenceLoop(auto) {
   loopingRowId = null;
   loopingRowData = null;
   listenAutoPlayOnce = !!auto;
-  listenAutoPlayCount = 0;
   isSequencePlaying = true;
   sequenceIndex = 0;
   updateSequenceBtnUI();
@@ -2045,11 +2042,8 @@ function playNextSequenceStep() {
         pauseVideoProgrammatically();
         if (isCardMode()) {
           if (listenAutoPlayOnce) {
-            listenAutoPlayCount++;
-            if (listenAutoPlayCount >= LISTEN_AUTO_PLAY_REPEATS) {
-              stopSequenceLoop();
-              return;
-            }
+            stopSequenceLoop();
+            return;
           }
           playNextSequenceStep();
           return;
@@ -2123,12 +2117,7 @@ function buildRowTr(r) {
   if (loopingRowId === r.id) tr.classList.add("row-playing");
   if (selectedRowId === r.id) tr.classList.add("row-selected");
   const cells = `<td><div class="cell ${r.qHidden ? "hidden" : "shown"}" data-field="q">${qCellContent(r)}</div></td><td class="a-col"><div class="cell ${r.aHidden ? "hidden" : "shown"}" data-field="a">${aCellContent(r)}</div></td>`;
-  let lead;
-  if (groupState) {
-    lead = isTouch() ? `<td class="edit-col"><button class="edit-btn">&#9998;</button></td><td class="del-col"><button class="del-btn del-forever">&#10005;</button></td>` : `<td class="del-col" colspan="2"></td>`;
-  } else {
-    lead = `<td class="edit-col"><button class="edit-btn">&#9998;</button></td><td class="del-col"><button class="del-btn del-forever">&#10005;</button></td>`;
-  }
+  const lead = groupState && !isTouch() ? `<td class="del-col" colspan="2"></td>` : `<td class="edit-col"><button class="edit-btn">&#9998;</button></td><td class="del-col"><button class="del-btn del-forever">&#10005;</button></td>`;
   tr.innerHTML = lead + cells;
   dictPreloadObserver.observe(tr);
   return tr;
@@ -2247,7 +2236,7 @@ function renderStudy() {
   updateGroupBtnFlag();
   const tbody = document.getElementById("tbody");
   const copyBtn = document.getElementById("copyGroupBtn");
-  const singleCard = !!groupState && (groupViewStyle === "listen" || groupViewStyle === "write");
+  const singleCard = isCardMode();
   if (groupState && groupViewStyle === "table" && isSessionFinished()) {
     commitActiveEdit();
     table.style.display = "none";
@@ -3515,8 +3504,7 @@ function applyGroupEntryHiddenState(ids) {
 function rowIsCjk(row) {
   const mode = effectiveScriptMode();
   if (mode === "zh" || mode === "ja") return true;
-  const cjkRe = /[぀-ゟ゠-ヿ一-鿿]/;
-  return cjkRe.test(row && row.a || "") || cjkRe.test(row && row.q || "");
+  return CJK_CHAR_RE.test(row && row.a || "") || CJK_CHAR_RE.test(row && row.q || "");
 }
 
 function updateMediaModeClasses() {
@@ -4883,6 +4871,7 @@ function logReview(r, mode, grade, now) {
   };
   const firstToday = !streakInfo().studiedToday;
   reviewLog.push(entry);
+  localReviewKeys.push(entry.key);
   dbPut("reviews", entry).catch(() => {});
   if (firstToday) {
     renderStreakChip();
@@ -5573,6 +5562,7 @@ async function importLessonFiles(files) {
   if (imported) parts.push("Imported " + imported + " lesson(s)");
   if (restored) parts.push("Restored " + restored + " lesson(s) from backup");
   if (failed.length) parts.push("Could not read " + failed.join(", "));
+  renderStreakChip();
   refreshSaveReminders();
   if (parts.length) showToast(parts.join(" · "));
 }
@@ -5994,14 +5984,14 @@ function renderStats() {
   if (!lessonRows.length) {
     lessonsEl.innerHTML = '<div class="stats-empty">No lessons yet.</div>';
   } else {
-    lessonsEl.innerHTML = '<table class="stats-table"><thead><tr><th>Lesson</th><th class="num" title="Total cards" aria-label="Total cards">Σ</th><th class="num" title="New — never studied in Table mode" aria-label="New">🆕</th><th class="num" title="Due — ready to review now" aria-label="Due">⏳</th><th class="num" title="Done — 5 Good in a row" aria-label="Done">✅</th><th class="num" title="Reviews in the last 30 days" aria-label="Reviews in the last 30 days">🔁</th></tr></thead><tbody>' + lessonRows.sort((a, b) => (a.l.name || "").localeCompare(b.l.name || "", undefined, {
+    lessonsEl.innerHTML = '<table class="stats-table"><thead><tr><th>Lesson</th><th class="num" title="Total cards" aria-label="Total cards">Σ</th><th class="num" title="New — never studied in Table mode" aria-label="New">🆕</th><th class="num" title="Due — ready to review now" aria-label="Due">⏳</th><th class="num" title="Done — ' + DONE_STREAK + ' Good in a row" aria-label="Done">✅</th><th class="num" title="Reviews in the last 30 days" aria-label="Reviews in the last 30 days">🔁</th></tr></thead><tbody>' + lessonRows.sort((a, b) => (a.l.name || "").localeCompare(b.l.name || "", undefined, {
       numeric: true
     })).map(x => `<tr><td title="${escapeAttr(x.l.name || "Untitled lesson")}"><span class="clamp">${escapeHtml(x.l.name || "Untitled lesson")}</span></td><td class="num">${x.l.cards.length}</td><td class="num">${x.fresh}</td><td class="num">${x.due}</td><td class="num">${x.done}</td><td class="num">${x.reviews30}</td></tr>`).join("") + "</tbody></table>";
   }
 
   const hardest = [];
   lessons.forEach(l => l.cards.forEach(c => {
-    const lapses = MODES.reduce((sum, m) => sum + (c.srs && c.srs[m] ? c.srs[m].lapses : 0), 0);
+    const lapses = totalLapses(c);
     if (lapses > 0) hardest.push({
       c: c,
       l: l,
@@ -6233,7 +6223,7 @@ function cloudSignedIn() {
 }
 
 function cloudNoteWrite(store, value, removed) {
-  if (cloudApplying || !FIREBASE_CONFIG) return;
+  if (cloudApplying) return;
   if (store === "lessons") {
     const id = removed ? value : value.id;
     if (!id || id === HARD_LESSON_ID) return;
@@ -6658,7 +6648,6 @@ function stopCloudListeners() {
 }
 
 function loadCloud() {
-  if (!FIREBASE_CONFIG) return Promise.reject(new Error("not configured"));
   if (cloudLoading) return cloudLoading;
   cloudLoading = Promise.all([ import(FIREBASE_SDK + "firebase-app.js"), import(FIREBASE_SDK + "firebase-auth.js"), import(FIREBASE_SDK + "firebase-firestore.js") ]).then(([appMod, authMod, fsMod]) => {
     const app = appMod.initializeApp(FIREBASE_CONFIG);
@@ -6772,7 +6761,6 @@ async function cloudEmailAuth(create) {
 }
 
 function initCloudUi() {
-  if (!FIREBASE_CONFIG) return;
   document.getElementById("btnCloud").hidden = false;
   setCloudStatus("off");
   if (readCloudState().uid) loadCloud().catch(() => setCloudStatus("error"));
