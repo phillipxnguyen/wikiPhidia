@@ -618,6 +618,7 @@ window.onYouTubeIframeAPIReady = function(){
   #viewStudy.focus-study{touch-action:pan-y;}
   html.touch #viewStudy.focus-study iframe{pointer-events:none;}
   .swipe-ghost{position:fixed;z-index:1000;box-sizing:border-box;display:flex;justify-content:center;border:3px solid var(--border);border-radius:28px;background:var(--surface);box-shadow:var(--shadow-md);font-size:34px;font-weight:700;pointer-events:none;}
+  .swipe-ghost.row{align-items:center;border-radius:16px;font-size:30px;}
   .swipe-ghost.good{color:var(--a-label);border-color:currentColor;}
   .swipe-ghost.again{color:var(--danger);border-color:currentColor;}
   .dict-source{font-size:22px;color:var(--text);margin:0 0 10px;overflow-wrap:break-word;}
@@ -3161,9 +3162,6 @@ function addSingleCard(place) {
   const tr = document.querySelector(`#tbody tr[data-id="${row.id}"]`);
   if (!tr) return;
   openEdit(tr, row);
-  tr.scrollIntoView({
-    block: "nearest"
-  });
   activeEdit.editQ.focus();
 }
 
@@ -3239,6 +3237,16 @@ function openEdit(tr, row) {
   tr.classList.add("edit-row");
   tr.innerHTML = `<td></td><td colspan="3">${buildEditBoxInner(row)}</td>`;
   wireEditBox(tr, row);
+  showEditBox(tr);
+}
+
+function showEditBox(el) {
+  const head = document.querySelector(".study-head");
+  const covered = (parseFloat(getComputedStyle(head).top) || 0) + head.offsetHeight;
+  window.scrollBy({
+    top: el.getBoundingClientRect().top - covered - 8,
+    behavior: "instant"
+  });
 }
 
 function openSingleCardEdit(row) {
@@ -3253,6 +3261,7 @@ function openSingleCardEdit(row) {
   host.dataset.id = row.id;
   host.innerHTML = buildEditBoxInner(row);
   wireEditBox(host, row);
+  showEditBox(host);
 }
 
 function wireEditBox(host, row) {
@@ -3891,21 +3900,21 @@ function ghostFor(parts) {
   const top = Math.min(...rects.map(r => r.top)) - pad;
   const bottom = Math.max(...rects.map(r => r.bottom)) + pad;
   const ghost = document.createElement("div");
-  ghost.className = "swipe-ghost";
-  if (row) ghost.style.borderRadius = "16px";
+  ghost.className = "swipe-ghost" + (row ? " row" : "");
   Object.assign(ghost.style, {
     left: left + "px",
     top: top + "px",
     width: Math.max(...rects.map(r => r.right)) + pad - left + "px",
-    height: bottom - top + "px",
-    paddingTop: (Math.max(top, 0) + Math.min(bottom, window.innerHeight)) / 2 - top - 25 + "px"
+    height: bottom - top + "px"
   });
+  if (!row) ghost.style.paddingTop = (Math.max(top, 0) + Math.min(bottom, window.innerHeight)) / 2 - top - 25 + "px";
   document.body.appendChild(ghost);
   return ghost;
 }
 
 function swipeHint(ghost, dir) {
-  ghost.className = "swipe-ghost " + (dir > 0 ? "good" : "again");
+  ghost.classList.toggle("good", dir > 0);
+  ghost.classList.toggle("again", dir <= 0);
   ghost.textContent = dir > 0 ? "Good" : "Again";
 }
 
