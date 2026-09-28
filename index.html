@@ -3884,15 +3884,16 @@ function studyParts() {
 function ghostFor(parts) {
   const rects = parts.filter(el => el && el.offsetParent).map(el => el.getBoundingClientRect()).filter(r => r.height > 1);
   if (!rects.length) return null;
-  const left = Math.min(...rects.map(r => r.left));
-  const top = Math.min(...rects.map(r => r.top));
-  const bottom = Math.max(...rects.map(r => r.bottom));
+  const pad = 14;
+  const left = Math.min(...rects.map(r => r.left)) - pad;
+  const top = Math.min(...rects.map(r => r.top)) - pad;
+  const bottom = Math.max(...rects.map(r => r.bottom)) + pad;
   const ghost = document.createElement("div");
   ghost.className = "swipe-ghost";
   Object.assign(ghost.style, {
     left: left + "px",
     top: top + "px",
-    width: Math.max(...rects.map(r => r.right)) - left + "px",
+    width: Math.max(...rects.map(r => r.right)) + pad - left + "px",
     height: bottom - top + "px",
     paddingTop: (Math.max(top, 0) + Math.min(bottom, window.innerHeight)) / 2 - top - 25 + "px"
   });
