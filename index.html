@@ -3882,14 +3882,16 @@ function studyParts() {
 }
 
 function ghostFor(parts) {
+  const row = parts.length === 1 && parts[0] && parts[0].tagName === "TR";
+  const pad = row ? 0 : 14;
   const rects = parts.filter(el => el && el.offsetParent).map(el => el.getBoundingClientRect()).filter(r => r.height > 1);
   if (!rects.length) return null;
-  const pad = 14;
   const left = Math.min(...rects.map(r => r.left)) - pad;
   const top = Math.min(...rects.map(r => r.top)) - pad;
   const bottom = Math.max(...rects.map(r => r.bottom)) + pad;
   const ghost = document.createElement("div");
   ghost.className = "swipe-ghost";
+  if (row) ghost.style.borderRadius = "16px";
   Object.assign(ghost.style, {
     left: left + "px",
     top: top + "px",
@@ -3974,7 +3976,10 @@ window.addEventListener("pointermove", e => {
       const r = el.getBoundingClientRect();
       el.style.transformOrigin = `${box.left + box.width / 2 - r.left}px ${box.top + box.height / 2 - r.top}px`;
     });
-    if (drag.rowId !== null) drag.moving[0].closest("table").style.overflow = "visible";
+    if (drag.rowId !== null) {
+      drag.moving[0].closest("table").style.overflow = "visible";
+      drag.moving[0].style.clipPath = "inset(0 round 16px)";
+    }
     getSelection().removeAllRanges();
     hideTooltip();
   }
@@ -3996,6 +4001,7 @@ function restDrag(d) {
     el.style.transform = "";
     el.style.transformOrigin = "";
     el.style.opacity = "";
+    el.style.clipPath = "";
   });
   if (d.rowId !== null) d.moving[0].closest("table").style.overflow = "";
 }
