@@ -3545,12 +3545,81 @@ function findDuplicateCard(q, a, time, except) {
   return rows.find(r => r !== except && r.id !== draftRowId && (!except || r.srcLessonId === except.srcLessonId) && normalizeImportText(r.q || "") === nq && (time == null || r.time == null || r.time === time) && (!na || !(r.a || "").trim() || normalizeImportText(r.a) === na)) || null;
 }
 
+const NOTE_VOCAB_ITEM_RE = /^(\s*([^:：=＝\n]{1,40}?)\s*(?:[:：]|={1,2}|＝)\s*)(\S[\s\S]*?)\s*$/;
+
+function ownLiTextNodes(li) {
+  const nodes = [];
+  const walker = document.createTreeWalker(li, NodeFilter.SHOW_TEXT, {
+    acceptNode: n => n.parentElement.closest("li") === li ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT
+  });
+  let n;
+  while (n = walker.nextNode()) nodes.push(n);
+  return nodes;
+}
+
+function boldVocabItem(li) {
+  const nodes = ownLiTextNodes(li);
+  const text = nodes.map(n => n.nodeValue).join("").replace(/\u00a0/g, " ");
+  const m = text.match(NOTE_VOCAB_ITEM_RE);
+  if (!m) return false;
+  const term = m[2].trim();
+  if (!term) return false;
+  const first = li.firstChild;
+  if (first && first.nodeName === "B" && first.textContent === term && m[1] === term + ": ") return false;
+  let left = m[1].length;
+  let endNode = null;
+  let endOff = 0;
+  for (const n of nodes) {
+    if (left <= n.nodeValue.length) {
+      endNode = n;
+      endOff = left;
+      break;
+    }
+    left -= n.nodeValue.length;
+  }
+  if (!endNode) return false;
+  const range = document.createRange();
+  range.setStart(li, 0);
+  range.setEnd(endNode, endOff);
+  range.deleteContents();
+  const b = document.createElement("b");
+  b.textContent = term;
+  li.insertBefore(document.createTextNode(": "), li.firstChild);
+  li.insertBefore(b, li.firstChild);
+  Array.from(li.childNodes).forEach(c => {
+    if (c.nodeType === 1 && c !== b && !/^(UL|OL)$/.test(c.nodeName) && !c.textContent && !c.querySelector("img, br")) c.remove();
+  });
+  return true;
+}
+
+function boldVocabItemsInSelection(box) {
+  const sel = window.getSelection();
+  if (!sel.rangeCount) return;
+  const range = sel.getRangeAt(0);
+  const items = Array.from(box.querySelectorAll("li")).filter(li => range.intersectsNode(li));
+  let last = null;
+  items.forEach(li => {
+    if (boldVocabItem(li)) last = li;
+  });
+  box.querySelectorAll("ul:not([class])").forEach(ul => ul.className = "notes-list");
+  if (!last || !range.collapsed) return;
+  const nodes = ownLiTextNodes(last);
+  const tail = nodes[nodes.length - 1];
+  if (!tail) return;
+  const caret = document.createRange();
+  caret.setStart(tail, tail.nodeValue.length);
+  caret.collapse(true);
+  sel.removeAllRanges();
+  sel.addRange(caret);
+}
+
 function commitActiveEdit() {
   if (!activeEdit) return;
   let newQ = activeEdit.editQ.textContent || "";
   let newQHtml = stripVocabHighlights(activeEdit.editQ.innerHTML || "");
   let newA = activeEdit.editA.textContent || "";
   let newAHtml = stripVocabHighlights(activeEdit.editA.innerHTML || "");
+  activeEdit.editNotes.querySelectorAll("li").forEach(boldVocabItem);
   const newNotes = activeEdit.editNotes.textContent || "";
   const newNotesHtml = activeEdit.editNotes.innerHTML || "";
   if (activeEdit.row.id === draftRowId) {
@@ -3904,12 +3973,14 @@ function wireEditBox(host, row) {
         if (!li || !el.contains(li)) return;
         e.preventDefault();
         document.execCommand("insertParagraph");
+        if (el === editNotes && li.isConnected && !li.contains(window.getSelection().anchorNode)) boldVocabItem(li);
         autoResizeDiv(el);
         return;
       }
       if (!(e.metaKey || e.ctrlKey) || !e.shiftKey || e.code !== "Digit8") return;
       e.preventDefault();
       document.execCommand("insertUnorderedList");
+      if (el === editNotes) boldVocabItemsInSelection(el);
       autoResizeDiv(el);
     });
     el.addEventListener("paste", () => {
