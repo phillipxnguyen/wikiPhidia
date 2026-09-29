@@ -303,8 +303,6 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-editor{display:flex;flex-direction:column;gap:8px;padding:16px;margin-bottom:16px;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow-sm);}
   .vocab-list .vocab-editor{margin:4px 0;box-shadow:none;}
   .vocab-editor input{width:100%;font-size:16px;}
-  .vocab-editor.on-card{height:320px;margin-bottom:0;justify-content:center;gap:14px;padding:28px 24px;border-radius:16px;box-shadow:var(--shadow-md);}
-  .vocab-editor.on-card input{font-size:24px;text-align:center;padding:12px;}
   .vocab-editor-actions{display:flex;justify-content:flex-end;gap:8px;}
   html:not(.touch) .vocab-list-term, html:not(.touch) .vocab-list-meaning{cursor:pointer;}
   #viewStudy.offscreen{position:fixed;right:0;bottom:0;z-index:-1;width:356px;height:200px;overflow:hidden;opacity:.01;pointer-events:none;}
@@ -320,7 +318,7 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-add-popup{position:fixed;z-index:2000;width:min(340px, calc(100vw - 16px));padding:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);}
   .vocab-add-popup input{width:100%;}
   @media (prefers-reduced-motion: reduce){.vocab-card-inner{transition:none;}}
-  @media (max-width:600px){.vocab-card, .vocab-editor.on-card{height:260px;}.vocab-term{font-size:32px;}.vocab-meaning{font-size:24px;}}
+  @media (max-width:600px){.vocab-card{height:260px;}.vocab-term{font-size:32px;}.vocab-meaning{font-size:24px;}}
   .sidebar .primary{width:100%;}
   #lessonSearch{width:100%;}
   .lesson-list{flex:1;overflow-y:auto;margin:0 -4px;padding:0 4px;display:flex;flex-direction:column;gap:2px;}
@@ -7473,8 +7471,8 @@ function vocabControlsHtml() {
   return '<div class="vocab-controls">' + `<button class="tb-icon" id="vocabUndo" title="Undo (⌘Z)" aria-label="Undo"${undoStack.length ? "" : " disabled"}>${document.getElementById("tbUndo").innerHTML}</button>` + `<button class="tb-icon" id="vocabRedo" title="Redo (⇧⌘Z)" aria-label="Redo"${redoStack.length ? "" : " disabled"}>${document.getElementById("tbRedo").innerHTML}</button>` + '<button class="tb-icon vocab-show" id="vocabShow" title="Flip the card (Space)" aria-label="Flip the card"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.05 11a8 8 0 1 1 .5 4m-.5 5v-5h5"/></svg></button>' + '<button class="vocab-round again" id="vocabAgain" title="Again — still learning (← or Shift+Enter)" aria-label="Again">✕</button>' + '<button class="vocab-round good" id="vocabGood" title="Good — I know it (→ or Enter)" aria-label="Good">✓</button>' + "</div>";
 }
 
-function vocabEditorHtml(item, onCard) {
-  return `<div class="vocab-editor${onCard ? " on-card" : ""}">` + `<input type="text" id="vocabEditTerm" autocomplete="off" placeholder="Question" aria-label="Question" value="${escapeAttr(item.term)}">` + `<input type="text" id="vocabEditMeaning" autocomplete="off" placeholder="Answer" aria-label="Answer" value="${escapeAttr(item.meaning)}">` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
+function vocabEditorHtml(item) {
+  return '<div class="vocab-editor">' + `<input type="text" id="vocabEditTerm" autocomplete="off" placeholder="Question" aria-label="Question" value="${escapeAttr(item.term)}">` + `<input type="text" id="vocabEditMeaning" autocomplete="off" placeholder="Answer" aria-label="Answer" value="${escapeAttr(item.meaning)}">` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
 }
 
 function renderVocab() {
@@ -7524,7 +7522,7 @@ function renderVocab() {
   vocabShownRowId = item.card.id;
   vocabShownIsVideo = !!vocabVideoIdFor(item.card);
   if (vocabEditingKey === item.key && !vocabEditingInList) {
-    stage.innerHTML = vocabEditorHtml(item, true) + vocabControlsHtml();
+    stage.innerHTML = vocabEditorHtml(item) + vocabControlsHtml();
   } else {
     stage.innerHTML = vocabCardHtml(item) + vocabControlsHtml();
     wireVocabCard(item);
