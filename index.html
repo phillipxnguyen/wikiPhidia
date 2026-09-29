@@ -293,9 +293,6 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-actions{display:inline-flex;flex-shrink:0;}
   .vocab-actions button{width:32px;height:36px;line-height:36px;padding:0;border:0;border-radius:6px;background:none;font-size:20px;color:var(--text-3);}
   .vocab-card-actions{position:absolute;top:6px;left:6px;z-index:3;}
-  .vocab-drag-label{position:absolute;top:50%;left:50%;transform:translate(-50%, -50%);padding:6px 18px;border-radius:12px;background:var(--surface);font-size:34px;font-weight:700;opacity:0;pointer-events:none;z-index:4;}
-  .vocab-drag-label.good{color:var(--a-label);}
-  .vocab-drag-label.again{color:var(--danger);}
   .vocab-card.swipe-good .vocab-face{border:3px solid var(--a-label);}
   .vocab-card.swipe-again .vocab-face{border:3px solid var(--danger);}
   .vocab-controls{display:flex;align-items:center;justify-content:center;gap:8px;margin:18px auto 22px;}
@@ -1683,6 +1680,7 @@ function createYtPlayer(videoId) {
 whenYtApiReady(ensurePlayer);
 
 function onPlayerStateChange(event) {
+  if (event.data === YT.PlayerState.CUED) vocabCueDone();
   if (event.data === YT.PlayerState.PLAYING) {
     if (speechSynthesis.speaking || speechSynthesis.pending || ttsPlaying) {
       stopTts();
@@ -1715,6 +1713,7 @@ function onPlayerError(event) {
   ytHasError = true;
   stopSequenceLoop();
   vocabPendingKey = null;
+  vocabAwaitCue = false;
   syncVocabSound();
   showToast("YouTube Error: Unable to play video" + (event && event.data != null ? " (code " + event.data + ")" : ""));
 }
@@ -4081,7 +4080,7 @@ function studyParts() {
 }
 
 function ghostFor(parts) {
-  const row = parts.length === 1 && parts[0] && parts[0].tagName === "TR";
+  const row = parts.length === 1 && parts[0] && (parts[0].tagName === "TR" || parts[0].classList.contains("vocab-list-row"));
   const pad = row ? 0 : 14;
   const rects = parts.filter(el => el && el.offsetParent).map(el => el.getBoundingClientRect()).filter(r => r.height > 1);
   if (!rects.length) return null;
@@ -7270,6 +7269,12 @@ let vocabHoveredKey = null;
 
 let vocabShownIsVideo = false;
 
+let vocabAwaitCue = false;
+
+let vocabAwaitCueTimer = null;
+
+let vocabEditingInList = false;
+
 const vocabEntryCache = new Map;
 
 const VOCAB_LINE_RE = /^\s*([^:：]{1,40}?)\s*[:：]\s*(\S[\s\S]*?)\s*$/;
@@ -7460,7 +7465,7 @@ function vocabCardHtml(item) {
   const front = `<div class="vocab-face vocab-front"><div class="vocab-term">${escapeHtml(frontText)}</div></div>`;
   const main = inSentence ? `<div class="vocab-ctx">${vocabSentenceHtml(sentence, item.term)}</div>` : `<div class="vocab-ctx"><mark>${vocabSentenceHtml(item.term, "")}</mark></div>` + (sentence ? `<div class="vocab-ctx small">${vocabSentenceHtml(sentence, "")}</div>` : "");
   const back = `<div class="vocab-face vocab-back">${main}<div class="vocab-meaning">${escapeHtml(item.meaning)}</div></div>`;
-  return `<div class="vocab-card${vocabSession.flipped ? " flipped" : ""}" id="vocabCard">` + `<div class="vocab-card-inner">${front}${back}</div>` + '<span class="vocab-actions vocab-card-actions vocab-touch-only"><button class="vocab-act-edit" aria-label="Edit this word">&#9998;</button><button class="vocab-act-del" aria-label="Delete this word">&#10005;</button></span>' + '<button class="vocab-speak" aria-label="Play the sentence">🔊</button>' + '<div class="vocab-drag-label again">Again</div><div class="vocab-drag-label good">Good</div>' + "</div>";
+  return `<div class="vocab-card${vocabSession.flipped ? " flipped" : ""}" id="vocabCard">` + `<div class="vocab-card-inner">${front}${back}</div>` + '<span class="vocab-actions vocab-card-actions vocab-touch-only"><button class="vocab-act-edit" aria-label="Edit this word">&#9998;</button><button class="vocab-act-del" aria-label="Delete this word">&#10005;</button></span>' + '<button class="vocab-speak" aria-label="Play the sentence">🔊</button>' + "</div>";
 }
 
 function vocabControlsHtml() {
@@ -7485,7 +7490,7 @@ function renderVocab() {
   vocabShownRowId = null;
   if (vocabEditingKey && !items.some(i => i.key === vocabEditingKey)) vocabEditingKey = null;
   list.hidden = !items.length;
-  list.innerHTML = `<h2>${currentLessonId === VOCAB_ALL_ID ? "All words" : "Words in this lesson"} (${items.length})</h2>` + items.map(item => item.key === vocabEditingKey && !(currentVocabItemKey() === item.key) ? `<div class="vocab-list-row editing">${vocabEditorHtml(item)}</div>` : `<div class="vocab-list-row" data-key="${escapeAttr(item.key)}"><span class="vocab-actions vocab-touch-only"><button class="vocab-act-edit" aria-label="Edit this word">&#9998;</button><button class="vocab-act-del" aria-label="Delete this word">&#10005;</button></span><span class="vocab-list-term" title="Click to edit">${escapeHtml(item.term)}</span><span class="vocab-list-meaning" title="Click to edit">${escapeHtml(item.meaning)}</span><span class="vocab-list-status">${vocabStatusIcon(vocabStateOf(item))}</span></div>`).join("");
+  list.innerHTML = `<h2>${currentLessonId === VOCAB_ALL_ID ? "All words" : "Words in this lesson"} (${items.length})</h2>` + items.map(item => item.key === vocabEditingKey && vocabEditingInList ? `<div class="vocab-list-row editing">${vocabEditorHtml(item)}</div>` : `<div class="vocab-list-row" data-key="${escapeAttr(item.key)}"><span class="vocab-actions vocab-touch-only"><button class="vocab-act-edit" aria-label="Edit this word">&#9998;</button><button class="vocab-act-del" aria-label="Delete this word">&#10005;</button></span><span class="vocab-list-term" title="Click to edit">${escapeHtml(item.term)}</span><span class="vocab-list-meaning" title="Click to edit">${escapeHtml(item.meaning)}</span><span class="vocab-list-status">${vocabStatusIcon(vocabStateOf(item))}</span></div>`).join("");
   if (!items.length) {
     vocabSession = null;
     badges.innerHTML = "";
@@ -7517,7 +7522,7 @@ function renderVocab() {
   }
   vocabShownRowId = item.card.id;
   vocabShownIsVideo = !!vocabVideoIdFor(item.card);
-  if (vocabEditingKey === item.key) {
+  if (vocabEditingKey === item.key && !vocabEditingInList) {
     stage.innerHTML = vocabEditorHtml(item);
   } else {
     stage.innerHTML = vocabCardHtml(item) + vocabControlsHtml();
@@ -7526,10 +7531,6 @@ function renderVocab() {
   }
   wireVocabEditor(items);
   syncVocabSound();
-}
-
-function currentVocabItemKey() {
-  return vocabSession && vocabSession.queue.length ? vocabSession.queue[0] : null;
 }
 
 function wireVocabControls() {
@@ -7565,13 +7566,22 @@ function wireVocabEditor(items) {
       cancel();
     }
   }));
-  term.focus();
+  term.focus({
+    preventScroll: true
+  });
   term.setSelectionRange(term.value.length, term.value.length);
+  const r = term.closest(".vocab-editor").getBoundingClientRect();
+  const delta = r.top < 8 ? r.top - 8 : r.bottom > window.innerHeight - 8 ? Math.min(r.bottom - window.innerHeight + 8, r.top - 8) : 0;
+  if (delta) window.scrollBy({
+    top: delta,
+    behavior: "smooth"
+  });
 }
 
-function openVocabEditor(key) {
+function openVocabEditor(key, inList) {
   stopVocabSound();
   vocabEditingKey = key;
+  vocabEditingInList = !!inList;
   renderVocab();
 }
 
@@ -7580,7 +7590,7 @@ document.getElementById("vocabList").addEventListener("click", e => {
   if (!row) return;
   const item = lessonVocabItems(rows).find(i => i.key === row.dataset.key);
   if (!item) return;
-  if (e.target.closest(".vocab-act-del")) deleteVocabEntry(item); else if (e.target.closest(".vocab-act-edit") || !isTouch() && e.target.closest(".vocab-list-term, .vocab-list-meaning")) openVocabEditor(item.key);
+  if (e.target.closest(".vocab-act-del")) deleteVocabEntry(item, row); else if (e.target.closest(".vocab-act-edit") || !isTouch() && e.target.closest(".vocab-list-term, .vocab-list-meaning")) openVocabEditor(item.key, true);
 });
 
 document.getElementById("vocabList").addEventListener("mouseover", e => {
@@ -7688,7 +7698,7 @@ function vocabSoundOn() {
   return vocabTtsOn || vocabPendingKey !== null || loopingRowId !== null && loopingRowId === vocabShownRowId;
 }
 
-function deleteVocabEntry(item) {
+function deleteVocabEntry(item, part) {
   if (!item) return;
   const row = item.card;
   const next = rewrittenVocabNotes(row, item, null, null);
@@ -7709,9 +7719,11 @@ function deleteVocabEntry(item) {
   if (vocabEditingKey === item.key) vocabEditingKey = null;
   if (vocabHoveredKey === item.key) vocabHoveredKey = null;
   scheduleAutoSave();
-  render();
-  renderVocab();
-  renderLessonList();
+  swipe([ part || document.getElementById("vocabCard") ], -1, () => {
+    render();
+    renderVocab();
+    renderLessonList();
+  }, false, "Delete");
   showToast("Deleted — " + item.term);
 }
 
@@ -7729,19 +7741,31 @@ function stopVocabSound() {
   vocabTtsOn = false;
   vocabTtsToken++;
   vocabPendingKey = null;
+  vocabAwaitCue = false;
   if (wasTts || loopingRowId !== null) haltAllPlayback();
   syncVocabSound();
 }
 
-function vocabVideoIdFor(row) {
-  if (row.time == null) return null;
+function vocabVideoUrlFor(row) {
+  if (row.time == null) return "";
   const lesson = row.srcLessonId ? library.find(l => l.id === row.srcLessonId) : null;
-  const url = lesson ? lesson.mediaUrl : row.srcLessonId ? "" : document.getElementById("mediaUrl").value.trim();
+  return (lesson ? lesson.mediaUrl : row.srcLessonId ? "" : document.getElementById("mediaUrl").value).trim();
+}
+
+function vocabVideoIdFor(row) {
+  const url = vocabVideoUrlFor(row);
   return url ? extractYouTubeId(url) : null;
 }
 
+function vocabCueDone() {
+  if (!vocabAwaitCue) return;
+  vocabAwaitCue = false;
+  clearTimeout(vocabAwaitCueTimer);
+  startPendingVocabVideo();
+}
+
 function startPendingVocabVideo() {
-  if (vocabPendingKey === null || !ytPlayer || !ytReady || !ytHasVideo) return;
+  if (vocabPendingKey === null || vocabAwaitCue || !ytPlayer || !ytReady || !ytHasVideo) return;
   const item = lessonVocabItems(rows).find(i => i.key === vocabPendingKey);
   vocabPendingKey = null;
   if (item && !ytHasError) startLoop(item.card);
@@ -7756,18 +7780,11 @@ function playVocabSound(item) {
   if (videoId) {
     if (row.srcLessonId && (vocabVideoId !== videoId || !ytHasVideo)) {
       vocabVideoId = videoId;
-      if (ytPlayer && ytReady && typeof ytPlayer.loadVideoById === "function") {
-        ytHasError = false;
-        ytHasVideo = true;
-        setMediaState("shown");
-        ytPlayer.loadVideoById({
-          videoId: videoId,
-          startSeconds: row.time
-        });
-        updateSequenceBtnUI();
-      } else {
-        createYtPlayer(videoId);
-      }
+      vocabAwaitCue = true;
+      clearTimeout(vocabAwaitCueTimer);
+      vocabAwaitCueTimer = setTimeout(vocabCueDone, 4e3);
+      document.getElementById("mediaUrl").value = vocabVideoUrlFor(row);
+      applyMediaUrl(true);
     } else if (!row.srcLessonId && !ytHasVideo && !pendingVideoId) {
       applyMediaUrl(true);
     }
@@ -7827,7 +7844,6 @@ function flyVocab(isAgain) {
   const out = (isAgain ? -1 : 1) * (window.innerWidth + 200);
   card.style.transition = "transform .3s ease-in";
   card.style.transform = `translateX(${out}px) rotate(${out / 18}deg)`;
-  card.querySelector(".vocab-drag-label." + (isAgain ? "again" : "good")).style.opacity = 1;
   card.classList.add(isAgain ? "swipe-again" : "swipe-good");
   setTimeout(() => {
     vocabFlying = false;
@@ -7863,8 +7879,6 @@ setInterval(() => {
 
 function wireVocabCard(item) {
   const card = document.getElementById("vocabCard");
-  const goodLabel = card.querySelector(".vocab-drag-label.good");
-  const againLabel = card.querySelector(".vocab-drag-label.again");
   card.querySelector(".vocab-speak").onclick = e => {
     e.stopPropagation();
     toggleVocabSound(item);
@@ -7882,8 +7896,6 @@ function wireVocabCard(item) {
     card.style.transform = dx ? `translateX(${dx}px) rotate(${dx / 18}deg)` : "";
     card.classList.toggle("swipe-good", dx > 0);
     card.classList.toggle("swipe-again", dx < 0);
-    goodLabel.style.opacity = Math.max(0, Math.min(1, dx / 90));
-    againLabel.style.opacity = Math.max(0, Math.min(1, -dx / 90));
   };
   card.addEventListener("pointerdown", e => {
     if (e.button !== 0 || e.target.closest(".vocab-speak, .vocab-actions")) return;
@@ -7934,10 +7946,11 @@ function handleVocabKey(e) {
   if (e.metaKey || e.ctrlKey || e.altKey || e.repeat || vocabEditingKey) return;
   if (e.code === "Backspace" || e.code === "Delete") {
     const items = lessonVocabItems(rows);
-    const target = vocabHoveredKey && items.find(i => i.key === vocabHoveredKey) || currentVocabItem();
+    const hovered = vocabHoveredKey && items.find(i => i.key === vocabHoveredKey);
+    const target = hovered || currentVocabItem();
     if (!target) return;
     e.preventDefault();
-    deleteVocabEntry(target);
+    deleteVocabEntry(target, hovered ? document.querySelector(`#vocabList .vocab-list-row[data-key="${CSS.escape(hovered.key)}"]`) : null);
     return;
   }
   if (e.code === "Space" || e.code === "ArrowUp" || e.code === "ArrowDown") {
