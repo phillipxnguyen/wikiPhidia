@@ -3671,17 +3671,119 @@ function openEdit(tr, row) {
   showEditBox(tr);
 }
 
-function showEditBox(el) {
-  const head = document.querySelector(".study-head");
-  const covered = (parseFloat(getComputedStyle(head).top) || 0) + head.offsetHeight;
-  const rect = el.getBoundingClientRect();
-  const toTop = rect.top - covered - 8;
-  const toBottom = rect.bottom - window.innerHeight + 8;
-  const delta = toTop < 0 ? toTop : rect.top > window.innerHeight - 60 ? Math.min(toBottom, toTop) : 0;
-  if (delta) window.scrollBy({
+function visibleBand() {
+  const vv = window.visualViewport;
+  let top = vv ? vv.offsetTop : 0;
+  let bottom = top + (vv ? vv.height : window.innerHeight);
+  const sidebar = document.querySelector(".sidebar");
+  if (sidebar && getComputedStyle(sidebar).position === "fixed") top = Math.max(top, sidebar.getBoundingClientRect().bottom);
+  const head = currentView === "study" && document.querySelector(".study-head");
+  if (head && head.offsetHeight && getComputedStyle(head).position === "sticky") {
+    const r = head.getBoundingClientRect();
+    if (r.bottom > top && r.top <= top + 1) top = r.bottom;
+  }
+  const bar = document.getElementById("touchBar");
+  if (bar && !bar.hidden) {
+    const r = bar.getBoundingClientRect();
+    if (r.top > top && r.top < bottom) bottom = r.top;
+  }
+  return {
+    top: top + 8,
+    bottom: bottom - 8
+  };
+}
+
+function caretRect(field) {
+  const sel = window.getSelection();
+  if (!sel || !sel.rangeCount || !field.contains(sel.anchorNode)) return null;
+  const r = sel.getRangeAt(0).getBoundingClientRect();
+  return r.height ? r : null;
+}
+
+function scrollIntoBand(box) {
+  if (!box || !box.isConnected) return;
+  const band = visibleBand();
+  let r = box.getBoundingClientRect();
+  const focused = document.activeElement;
+  if (r.height > band.bottom - band.top && focused && box.contains(focused)) {
+    r = focused.getBoundingClientRect();
+    if (r.height > band.bottom - band.top) r = caretRect(focused) || r;
+  }
+  let delta = 0;
+  if (r.top < band.top) delta = r.top - band.top; else if (r.bottom > band.bottom) delta = Math.min(r.bottom - band.bottom, r.top - band.top);
+  if (delta > 0) {
+    const room = document.documentElement.scrollHeight - window.innerHeight - window.scrollY;
+    if (room < delta) setKeyboardSpacer(keyboardSpacer().offsetHeight + delta - room + 16);
+  }
+  if (Math.abs(delta) > 1) window.scrollBy({
     top: delta,
     behavior: "smooth"
   });
+}
+
+function keyboardSpacer() {
+  let el = document.getElementById("keyboardSpacer");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "keyboardSpacer";
+    el.setAttribute("aria-hidden", "true");
+    document.querySelector(".main-inner").appendChild(el);
+  }
+  return el;
+}
+
+function setKeyboardSpacer(px) {
+  keyboardSpacer().style.height = Math.max(0, Math.round(px)) + "px";
+}
+
+function keyboardOpen() {
+  const vv = window.visualViewport;
+  return !!vv && vv.height < window.innerHeight - 80;
+}
+
+let followedBox = null;
+
+let followTimer = null;
+
+function followInView(getBox) {
+  followedBox = getBox;
+  keepFollowedInView();
+  setTimeout(keepFollowedInView, 350);
+}
+
+function keepFollowedInView() {
+  const box = followedBox && followedBox();
+  if (!box || !box.isConnected) {
+    followedBox = null;
+    setKeyboardSpacer(0);
+    return;
+  }
+  if (!keyboardOpen()) setKeyboardSpacer(0);
+  scrollIntoBand(box);
+}
+
+function scheduleFollow() {
+  clearTimeout(followTimer);
+  followTimer = setTimeout(() => {
+    keepFollowedInView();
+    if (typeof vocabAddPopup !== "undefined" && vocabAddPopup) keepPopupInBand(vocabAddPopup);
+  }, 80);
+}
+
+function keepPopupInBand(popup) {
+  const band = visibleBand();
+  const r = popup.getBoundingClientRect();
+  if (r.bottom > band.bottom) popup.style.top = Math.max(band.top, band.bottom - r.height) + "px";
+}
+
+if (window.visualViewport) window.visualViewport.addEventListener("resize", scheduleFollow);
+
+document.addEventListener("focusin", e => {
+  if (followedBox && e.target.closest && e.target.closest(".edit-row, .vocab-editor")) scheduleFollow();
+});
+
+function showEditBox(el) {
+  followInView(() => activeEdit && activeEdit.tr === el ? el : null);
 }
 
 function openSingleCardEdit(row) {
@@ -7892,12 +7994,7 @@ function wireVocabEditor(items) {
     preventScroll: true
   });
   term.setSelectionRange(term.value.length, term.value.length);
-  const r = term.closest(".vocab-editor").getBoundingClientRect();
-  const delta = r.top < 8 ? r.top - 8 : r.bottom > window.innerHeight - 8 ? Math.min(r.bottom - window.innerHeight + 8, r.top - 8) : 0;
-  if (delta) window.scrollBy({
-    top: delta,
-    behavior: "smooth"
-  });
+  followInView(() => vocabEditingKey ? document.querySelector(".vocab-editor") : null);
 }
 
 function commitVocabEdit() {
