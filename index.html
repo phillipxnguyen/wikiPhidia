@@ -822,7 +822,6 @@ window.onYouTubeIframeAPIReady = function(){
   .hardest-table tbody tr{cursor:pointer;}
   @media (hover:hover){.hardest-table tbody tr:hover{background:var(--accent-soft);}}
   .practice-btn{padding:2px 6px;font-size:15px;}
-  .focus-label{font-size:12.5px;font-weight:600;color:var(--accent);margin-bottom:6px;}
   #btnSaveFile.needs-save, #btnBackupAll.needs-save{color:var(--due-color);font-weight:700;background:color-mix(in srgb, var(--due-color) 14%, transparent);}
   .panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;}
   .panel-head.end{justify-content:flex-end;}
@@ -1759,7 +1758,10 @@ function createYtPlayer(videoId) {
 whenYtApiReady(ensurePlayer);
 
 function onPlayerStateChange(event) {
-  if (event.data === YT.PlayerState.CUED) vocabCueDone();
+  if (event.data === YT.PlayerState.CUED) {
+    vocabCueDone();
+    rowCueDone();
+  }
   if (event.data === YT.PlayerState.PLAYING) {
     if (speechSynthesis.speaking || speechSynthesis.pending || ttsPlaying) {
       stopTts();
@@ -1855,7 +1857,9 @@ function segmentReached(start, end) {
 }
 
 function segmentEnd(row, fallbackSec) {
-  const next = timeSortedRows().find(r => r.time > row.time);
+  const src = row.srcLessonId && library.find(l => l.id === row.srcLessonId);
+  const pool = src ? src.cards.filter(c => c.time != null).sort((x, y) => x.time - y.time) : timeSortedRows();
+  const next = pool.find(r => r.time > row.time);
   if (next) return next.time;
   const end = row.time + fallbackSec;
   const dur = ytPlayer && typeof ytPlayer.getDuration === "function" ? ytPlayer.getDuration() : 0;
@@ -1879,8 +1883,37 @@ function toggleLoopForRow(row) {
   startLoop(row);
 }
 
+let rowCueWait = null;
+
+let rowCueTimer = null;
+
+function rowCueDone() {
+  const then = rowCueWait;
+  rowCueWait = null;
+  clearTimeout(rowCueTimer);
+  if (then) then();
+}
+
+function switchRowVideo(row, then) {
+  if (currentLessonId !== HARD_LESSON_ID || row.time == null) return false;
+  const lesson = library.find(l => l.id === row.srcLessonId);
+  const url = lesson ? (lesson.mediaUrl || "").trim() : "";
+  const id = url ? extractYouTubeId(url) : null;
+  if (!id || id === vocabVideoId && ytHasVideo && !ytHasError) return false;
+  vocabVideoId = id;
+  ytHasError = false;
+  document.getElementById("mediaUrl").value = url;
+  applyMediaUrl(true);
+  rowCueWait = then;
+  clearTimeout(rowCueTimer);
+  rowCueTimer = setTimeout(rowCueDone, 4e3);
+  return true;
+}
+
 function startLoop(row) {
-  if (row.time == null || ytHasError) return;
+  if (row.time == null) return;
+  if (switchRowVideo(row, () => startLoop(row))) return;
+  if (ytHasError) return;
   if (!ytPlayer || !ytReady || !ytHasVideo || typeof ytPlayer.seekTo !== "function") {
     showToast(ytHasVideo ? "Video is still loading…" : "Add a YouTube video first");
     return;
@@ -2143,8 +2176,7 @@ function currentBadgeIds() {
 function refreshBadges() {
   if (!groupState) return;
   const el = document.getElementById(groupViewStyle === "table" ? "tableProgress" : "singleCardProgress");
-  const focusLabel = groupState.focus === "hard" && groupViewStyle === "table" ? '<div class="focus-label">🎯 Practising hard cards — ☰ then 🌐 returns to normal review</div>' : "";
-  el.innerHTML = focusLabel + progressBadgesHtml(modeKey(), currentBadgeIds());
+  el.innerHTML = progressBadgesHtml(modeKey(), currentBadgeIds());
 }
 
 const ENTRY_HIDDEN = {
@@ -2244,6 +2276,16 @@ function playNextSequenceStep() {
     sequenceIndex = 0;
   }
   const currentRow = visible[sequenceIndex];
+  const resumeAt = sequenceIndex;
+  const resumeOnce = listenAutoPlayOnce;
+  if (switchRowVideo(currentRow, () => {
+    if (!ytPlayer || !ytReady || !ytHasVideo || ytHasError) return;
+    isSequencePlaying = true;
+    sequenceIndex = resumeAt;
+    listenAutoPlayOnce = resumeOnce;
+    updateSequenceBtnUI();
+    playNextSequenceStep();
+  })) return;
   loopingRowId = currentRow.id;
   markPlayingRow();
   if (currentRow.time != null && ytPlayer && ytReady && typeof ytPlayer.seekTo === "function") {
@@ -4497,10 +4539,12 @@ async function practiceAllHardCards() {
     return;
   }
   const langs = new Set(picks.map(p => p.lesson.studyLang || "auto"));
+  const firstVideo = picks.find(p => p.card.time != null && extractYouTubeId(p.lesson.mediaUrl || ""));
+  vocabVideoId = firstVideo ? extractYouTubeId(firstVideo.lesson.mediaUrl) : null;
   openLesson({
     id: HARD_LESSON_ID,
-    name: "🎯 Hard cards — all lessons",
-    mediaUrl: "",
+    name: "🎯 Hard cards",
+    mediaUrl: firstVideo ? firstVideo.lesson.mediaUrl : "",
     studyLang: langs.size === 1 ? Array.from(langs)[0] : "auto",
     importHistory: [],
     cards: picks.map(p => p.card)
@@ -4508,7 +4552,6 @@ async function practiceAllHardCards() {
   rows.forEach((r, i) => {
     r.srcLessonId = picks[i].lesson.id;
   });
-  setFileNote("Grades and edits here are saved to each card's own lesson");
   showView("study");
   startFocusSession(rows.map(r => r.id));
 }
