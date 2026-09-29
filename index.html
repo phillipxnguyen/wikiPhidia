@@ -2319,7 +2319,6 @@ function showSessionCompletePanel() {
 }
 
 function render() {
-  maybeLoadJapanese();
   renderStudy();
   renderDictPanels();
 }
@@ -2667,7 +2666,6 @@ function updateGroupBtnFlag() {
 document.getElementById("studyLang").addEventListener("change", e => {
   studyLang = e.target.value;
   transliterationCache.clear();
-  if (studyLang === "ja") ensureJapanese().catch(() => {});
   hideTooltip();
   if (activeEdit && typeof activeEdit.updateEditDict === "function") activeEdit.updateEditDict();
   render();
@@ -2695,57 +2693,180 @@ const KUROMOJI_BASE = "https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/";
 
 const WANAKANA_URL = "https://cdn.jsdelivr.net/npm/wanakana@5.3.1/wanakana.min.js";
 
-const JA_READING_FIXES = {
-  "一人": "ひとり",
-  "二人": "ふたり"
-};
-
 const KANA_RE = /[\u3040-\u30FF]/;
 
 const HAN_RE = /[\u4e00-\u9fff\u3400-\u4dbf]/;
 
-let jaTokenizer = null;
-
-let jaLoading = null;
-
-const jaUnitCache = new Map;
-
-function loadScript(src) {
-  return new Promise((resolve, reject) => {
-    const el = document.createElement("script");
-    el.src = src;
-    el.onload = resolve;
-    el.onerror = () => reject(new Error("Couldn't load " + src));
-    document.head.appendChild(el);
+function japaneseWorkerMain(cfg) {
+  importScripts(cfg.kuromoji, cfg.wanakana);
+  const FIXES = {
+    "一人": "ひとり",
+    "二人": "ふたり"
+  };
+  const KANA = /[\u3040-\u30FF]/;
+  const HAN = /[\u4e00-\u9fff\u3400-\u4dbf]/;
+  let tokenizer = null;
+  const queue = [];
+  function tokens(text) {
+    const raw = tokenizer.tokenize(text);
+    const out = [];
+    for (let i = 0; i < raw.length; i++) {
+      const pair = i + 1 < raw.length ? raw[i].surface_form + raw[i + 1].surface_form : "";
+      if (FIXES[pair]) {
+        out.push({
+          surface: pair,
+          reading: FIXES[pair],
+          pos: "名詞"
+        });
+        i++;
+        continue;
+      }
+      const t = raw[i];
+      out.push({
+        surface: t.surface_form,
+        reading: t.reading && t.reading !== "*" ? wanakana.toHiragana(t.reading) : "",
+        pos: t.pos
+      });
+    }
+    return out;
+  }
+  function units(list) {
+    const res = [];
+    const plain = ch => res.push({
+      s: ch,
+      r: ""
+    });
+    list.forEach(t => {
+      const chars = Array.from(t.surface);
+      if (!t.reading || !chars.some(ch => HAN.test(ch))) {
+        chars.forEach(plain);
+        return;
+      }
+      const reading = Array.from(t.reading);
+      const same = (a, b) => KANA.test(a) && wanakana.toHiragana(a) === b;
+      let pre = 0;
+      while (pre < chars.length && pre < reading.length && same(chars[pre], reading[pre])) pre++;
+      let suf = 0;
+      while (suf < chars.length - pre && suf < reading.length - pre && same(chars[chars.length - 1 - suf], reading[reading.length - 1 - suf])) suf++;
+      chars.slice(0, pre).forEach(plain);
+      const mid = chars.slice(pre, chars.length - suf).join("");
+      const midReading = reading.slice(pre, reading.length - suf).join("");
+      if (mid) res.push({
+        s: mid,
+        r: midReading !== mid ? midReading : ""
+      });
+      chars.slice(chars.length - suf).forEach(plain);
+    });
+    return res;
+  }
+  function readingText(list) {
+    const spoken = t => HAN.test(t.surface) && t.reading ? t.reading : t.surface;
+    const tidy = str => str.replace(/ ([、。！？!?,.」』）)])/g, "$1");
+    const hira = tidy(list.map(spoken).join(" "));
+    const romaji = tidy(list.map(t => {
+      if (t.pos === "助詞" && t.surface === "は") return "wa";
+      if (t.pos === "助詞" && t.surface === "へ") return "e";
+      if (t.pos === "助詞" && t.surface === "を") return "o";
+      return wanakana.toRomaji(spoken(t));
+    }).join(" "));
+    return hira + "\n" + romaji;
+  }
+  function handle(text) {
+    const list = tokens(text);
+    postMessage({
+      text: text,
+      units: units(list),
+      reading: readingText(list)
+    });
+  }
+  onmessage = e => tokenizer ? handle(e.data) : queue.push(e.data);
+  kuromoji.builder({
+    dicPath: cfg.dict
+  }).build((err, built) => {
+    if (err) {
+      postMessage({
+        error: String(err)
+      });
+      return;
+    }
+    tokenizer = built;
+    queue.splice(0).forEach(handle);
   });
 }
 
-function ensureJapanese() {
-  if (jaTokenizer) return Promise.resolve(jaTokenizer);
-  if (!jaLoading) {
-    jaLoading = Promise.all([ loadScript(KUROMOJI_BASE + "build/kuromoji.js"), loadScript(WANAKANA_URL) ]).then(() => new Promise((resolve, reject) => {
-      kuromoji.builder({
-        dicPath: KUROMOJI_BASE + "dict/"
-      }).build((err, tokenizer) => err ? reject(err) : resolve(tokenizer));
-    })).then(tokenizer => {
-      jaTokenizer = tokenizer;
-      transliterationCache.clear();
-      if (currentView === "vocab") renderVocab();
-      const tip = hoverTooltip;
-      if (tip && tip.style.display === "block" && tip.anchor && tip.anchor.isConnected) showCellPinyin(tip.anchor);
-      return tokenizer;
-    }).catch(err => {
-      jaLoading = null;
-      showToast("Couldn't load Japanese readings — check the connection");
-      throw err;
-    });
+let jaWorker = null;
+
+let jaFailed = false;
+
+const jaResults = new Map;
+
+const jaRequested = new Set;
+
+let jaRefreshTimer = null;
+
+let jaWatchdog = null;
+
+const JA_LOAD_TIMEOUT_MS = 12e4;
+
+function startJapaneseWorker() {
+  if (jaWorker || jaFailed) return;
+  const cfg = {
+    kuromoji: KUROMOJI_BASE + "build/kuromoji.js",
+    wanakana: WANAKANA_URL,
+    dict: KUROMOJI_BASE + "dict/"
+  };
+  const fail = () => {
+    if (jaFailed) return;
+    jaFailed = true;
+    clearTimeout(jaWatchdog);
+    if (jaWorker) jaWorker.terminate();
+    jaWorker = null;
+    if (hoverTooltip && hoverTooltip.textContent === "Loading readings…") hideTooltip();
+    showToast("Couldn't load Japanese readings — check the connection and reload");
+  };
+  try {
+    const src = "(" + japaneseWorkerMain.toString() + ")(" + JSON.stringify(cfg) + ");";
+    jaWorker = new Worker(URL.createObjectURL(new Blob([ src ], {
+      type: "text/javascript"
+    })));
+  } catch (e) {
+    fail();
+    return;
   }
-  return jaLoading;
+  jaWorker.onerror = fail;
+  jaWatchdog = setTimeout(fail, JA_LOAD_TIMEOUT_MS);
+  jaWorker.onmessage = e => {
+    const d = e.data;
+    clearTimeout(jaWatchdog);
+    if (d.error) {
+      fail();
+      return;
+    }
+    jaResults.set(d.text, d);
+    clearTimeout(jaRefreshTimer);
+    jaRefreshTimer = setTimeout(refreshJapaneseReadings, 30);
+  };
 }
 
-function maybeLoadJapanese() {
-  if (jaTokenizer || jaLoading) return;
-  if (studyLang === "ja" || rows.some(r => KANA_RE.test(r.q || ""))) ensureJapanese().catch(() => {});
+function japaneseFor(text) {
+  if (!text) return null;
+  if (jaResults.has(text)) return jaResults.get(text);
+  if (jaFailed) return null;
+  startJapaneseWorker();
+  if (jaWorker && !jaRequested.has(text)) {
+    jaRequested.add(text);
+    jaWorker.postMessage(text);
+  }
+  return null;
+}
+
+function refreshJapaneseReadings() {
+  const tip = hoverTooltip;
+  if (tip && tip.style.display === "block" && tip.anchor && tip.anchor.isConnected && tip.textContent === "Loading readings…") showCellPinyin(tip.anchor);
+  if (currentView !== "vocab" || vocabEditingKey) return;
+  const item = currentVocabItem();
+  const back = document.querySelector("#vocabCard .vocab-back");
+  if (item && back) back.innerHTML = vocabBackInner(item);
 }
 
 function lessonLooksJapanese(row) {
@@ -2762,81 +2883,6 @@ function cjkScriptFor(text, row) {
   if (lang === "ja") return "ja";
   if (lang === "zh-CN" || lang === "zh-TW") return "zh";
   return lessonLooksJapanese(row) ? "ja" : "zh";
-}
-
-function jaTokens(text) {
-  const raw = jaTokenizer.tokenize(text);
-  const out = [];
-  for (let i = 0; i < raw.length; i++) {
-    const pair = i + 1 < raw.length ? raw[i].surface_form + raw[i + 1].surface_form : "";
-    if (JA_READING_FIXES[pair]) {
-      out.push({
-        surface: pair,
-        reading: JA_READING_FIXES[pair],
-        pos: "名詞"
-      });
-      i++;
-      continue;
-    }
-    const t = raw[i];
-    out.push({
-      surface: t.surface_form,
-      reading: t.reading && t.reading !== "*" ? wanakana.toHiragana(t.reading) : "",
-      pos: t.pos
-    });
-  }
-  return out;
-}
-
-function jaUnits(text) {
-  if (!jaTokenizer || !text) return null;
-  if (jaUnitCache.has(text)) return jaUnitCache.get(text);
-  const units = [];
-  jaTokens(text).forEach(t => {
-    const chars = Array.from(t.surface);
-    if (!t.reading || !chars.some(ch => HAN_RE.test(ch))) {
-      chars.forEach(ch => units.push({
-        s: ch,
-        r: ""
-      }));
-      return;
-    }
-    const reading = Array.from(t.reading);
-    const same = (a, b) => KANA_RE.test(a) && wanakana.toHiragana(a) === b;
-    let pre = 0;
-    while (pre < chars.length && pre < reading.length && same(chars[pre], reading[pre])) pre++;
-    let suf = 0;
-    while (suf < chars.length - pre && suf < reading.length - pre && same(chars[chars.length - 1 - suf], reading[reading.length - 1 - suf])) suf++;
-    chars.slice(0, pre).forEach(ch => units.push({
-      s: ch,
-      r: ""
-    }));
-    const mid = chars.slice(pre, chars.length - suf).join("");
-    const midReading = reading.slice(pre, reading.length - suf).join("");
-    if (mid) units.push({
-      s: mid,
-      r: midReading !== mid ? midReading : ""
-    });
-    chars.slice(chars.length - suf).forEach(ch => units.push({
-      s: ch,
-      r: ""
-    }));
-  });
-  jaUnitCache.set(text, units);
-  return units;
-}
-
-function jaReadingText(text) {
-  const tokens = jaTokens(text);
-  const spoken = t => HAN_RE.test(t.surface) && t.reading ? t.reading : t.surface;
-  const hira = tokens.map(spoken).join(" ").replace(/ ([、。！？!?,.」』）)])/g, "$1");
-  const romaji = tokens.map(t => {
-    if (t.pos === "助詞" && t.surface === "は") return "wa";
-    if (t.pos === "助詞" && t.surface === "へ") return "e";
-    if (t.pos === "助詞" && t.surface === "を") return "o";
-    return wanakana.toRomaji(spoken(t));
-  }).join(" ").replace(/ ([、。！？!?,.」』）)])/g, "$1");
-  return hira + "\n" + romaji;
 }
 
 const transliterationCache = new Map;
@@ -3180,13 +3226,13 @@ function showCellPinyin(cellEl) {
   const text = field === "q" ? row.q : row.a;
   const script = cjkScriptFor(text || "", row);
   if (!script) return;
-  if (script === "ja" && !jaTokenizer) {
-    showTooltip(cellEl, "Loading readings…");
-    ensureJapanese().catch(() => {});
+  if (script === "ja") {
+    const ja = japaneseFor(text);
+    if (ja) showTooltip(cellEl, ja.reading); else if (!jaFailed) showTooltip(cellEl, "Loading readings…");
     return true;
   }
   const key = cacheKey(id, field);
-  if (!transliterationCache.has(key)) transliterationCache.set(key, (script === "ja" ? jaReadingText(text) : getPinyin(text)) || "");
+  if (!transliterationCache.has(key)) transliterationCache.set(key, getPinyin(text) || "");
   showTooltip(cellEl, transliterationCache.get(key));
   return true;
 }
@@ -5716,7 +5762,6 @@ function openLesson(lesson) {
     destroyYtPlayer();
   }
   setFileNote("");
-  maybeLoadJapanese();
   const virtual = isVirtualId(lesson.id);
   document.body.classList.toggle("virtual-lesson", virtual);
   document.getElementById("lessonName").readOnly = virtual;
@@ -7660,10 +7705,9 @@ function vocabSentenceHtml(sentence, term, row) {
   }
   const script = cjkScriptFor(text, row);
   if (script === "ja") {
-    const units = jaUnits(text);
-    if (!units) {
-      ensureJapanese().catch(() => {});
-    } else {
+    const ja = japaneseFor(text);
+    if (ja) {
+      const units = ja.units;
       let pos = 0, html = "", open = false;
       units.forEach(u => {
         const len = Array.from(u.s).length;
@@ -7699,13 +7743,17 @@ function vocabSentenceHtml(sentence, term, row) {
   return html;
 }
 
-function vocabCardHtml(item) {
+function vocabBackInner(item) {
   const sentence = (item.card.q || "").trim();
   const inSentence = sentence && sentence.normalize("NFC").toLowerCase().includes(item.term.normalize("NFC").toLowerCase());
+  const main = inSentence ? `<div class="vocab-ctx">${vocabSentenceHtml(sentence, item.term, item.card)}</div>` : `<div class="vocab-ctx"><mark>${vocabSentenceHtml(item.term, "", item.card)}</mark></div>` + (sentence ? `<div class="vocab-ctx small">${vocabSentenceHtml(sentence, "", item.card)}</div>` : "");
+  return main + `<div class="vocab-meaning">${escapeHtml(item.meaning)}</div>`;
+}
+
+function vocabCardHtml(item) {
   const frontText = vocabFront === "a" ? item.meaning : item.term;
   const front = `<div class="vocab-face vocab-front"><div class="vocab-term">${escapeHtml(frontText)}</div></div>`;
-  const main = inSentence ? `<div class="vocab-ctx">${vocabSentenceHtml(sentence, item.term, item.card)}</div>` : `<div class="vocab-ctx"><mark>${vocabSentenceHtml(item.term, "", item.card)}</mark></div>` + (sentence ? `<div class="vocab-ctx small">${vocabSentenceHtml(sentence, "", item.card)}</div>` : "");
-  const back = `<div class="vocab-face vocab-back">${main}<div class="vocab-meaning">${escapeHtml(item.meaning)}</div></div>`;
+  const back = `<div class="vocab-face vocab-back">${vocabBackInner(item)}</div>`;
   return `<div class="vocab-card${vocabSession.flipped ? " flipped" : ""}" id="vocabCard">` + `<div class="vocab-card-inner">${front}${back}</div>` + '<span class="vocab-actions vocab-card-actions vocab-touch-only"><button class="vocab-act-edit" aria-label="Edit this word">&#9998;</button><button class="vocab-act-del" aria-label="Delete this word">&#10005;</button></span>' + '<button class="vocab-speak" aria-label="Play the sentence">🔊</button>' + "</div>";
 }
 
