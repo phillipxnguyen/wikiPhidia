@@ -6220,14 +6220,11 @@ function openLesson(lesson) {
 }
 
 function isEmptyDraft() {
-  if (!currentLessonId || isVirtualLesson() || rows.length || vocabExtras) return false;
-  const name = document.getElementById("lessonName").value.trim().toLowerCase();
-  return (name === "" || name === "untitled lesson") && !document.getElementById("mediaUrl").value.trim();
+  return !!currentLessonId && !isVirtualLesson() && !rows.length && !vocabExtras;
 }
 
 function isEmptyLesson(lesson) {
-  const name = (lesson.name || "").trim().toLowerCase();
-  return !lesson.cards.length && !lesson.extraWords && (name === "" || name === "untitled lesson") && !lesson.mediaUrl;
+  return !lesson.cards.length && !lesson.extraWords;
 }
 
 async function discardIfEmptyDraft() {
@@ -6267,6 +6264,7 @@ async function createLesson() {
   if (isEmptyDraft()) {
     const draft = library.find(l => l.id === currentLessonId);
     if (draft) draft.vocabOnly = appMode === "vocab";
+    setLessonTitle("");
     renderLessonList();
     showView("study");
     focusLessonName();
@@ -6628,8 +6626,14 @@ function lessonInMode(l, mode) {
   return (mode || appMode) === "vocab" ? isVocabOnlyLesson(l) || lessonHasWords(l) : !isVocabOnlyLesson(l);
 }
 
+function lessonShown(l, mode) {
+  if ((mode || appMode) === "vocab") return lessonHasWords(l);
+  if (isVocabOnlyLesson(l)) return false;
+  return l.id === currentLessonId ? rows.some(r => r.id !== draftRowId) : l.cards.length > 0;
+}
+
 function modeLibrary(mode) {
-  return sortedLibrary().filter(l => lessonInMode(l, mode));
+  return sortedLibrary().filter(l => lessonShown(l, mode));
 }
 
 function sortedLibrary() {
@@ -6666,8 +6670,8 @@ function lessonItemMeta(lesson) {
 
 function updateLessonListItem(lesson) {
   const item = Array.from(document.querySelectorAll("#lessonList .lesson-item")).find(el => el.dataset.lessonId === lesson.id);
-  if (!item) {
-    renderLessonList();
+  if (!item || !lessonShown(lesson)) {
+    if (item || lessonShown(lesson)) renderLessonList();
     return;
   }
   const nameEl = item.querySelector(".lesson-item-name");
@@ -6686,7 +6690,7 @@ function updateLessonListItem(lesson) {
 function renderLessonList() {
   const list = document.getElementById("lessonList");
   document.querySelector(".shell").classList.toggle("bare", !library.length);
-  if (!library.length) {
+  if (!modeLibrary().length) {
     list.innerHTML = '<div class="lesson-list-empty">No lessons yet.</div>';
     return;
   }
@@ -6786,7 +6790,7 @@ function renderAddView() {
   placeAddForm("page");
   const select = document.getElementById("addTarget");
   const blocked = !currentLessonId ? "Create or open a lesson first, then add cards to it." : isVirtualLesson() ? "A mixed session can't take new cards — choose a lesson in the box above." : "";
-  select.innerHTML = (isVirtualLesson() || !currentLessonId ? '<option value="">Choose a lesson…</option>' : "") + modeLibrary().map(l => {
+  select.innerHTML = (isVirtualLesson() || !currentLessonId ? '<option value="">Choose a lesson…</option>' : "") + sortedLibrary().filter(l => l.id === currentLessonId && lessonInMode(l) || lessonShown(l)).map(l => {
     const name = l.id === currentLessonId ? document.getElementById("lessonName").value.trim() || l.name : l.name;
     return `<option value="${escapeAttr(l.id)}"${l.id === currentLessonId ? " selected" : ""}>${escapeHtml(name || "Untitled lesson")}</option>`;
   }).join("");
