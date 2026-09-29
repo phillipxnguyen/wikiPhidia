@@ -1391,7 +1391,7 @@ function restoreFrom(fromStack, toStack, verb) {
   if (sessionRestored) {
     if (groupState) groupState = snapGroup; else savedGroupState = snapGroup;
   } else if (groupState && groupViewStyle === "table" && rows.length) {
-    dropCardsStudiedElsewhere();
+    rebuildGroupsFromQueue();
   }
   pruneMissingIdsFromGroupState(groupState);
   pruneMissingIdsFromGroupState(savedGroupState);
@@ -2398,7 +2398,7 @@ function isFinishedState(state) {
 }
 
 function isResumableState(state) {
-  return !!state && !isFinishedState(state) && (state.groups.some(g => g.length) || (state.pendingAgain || []).length > 0);
+  return !!state && ((state.pendingAgain || []).length > 0 || !isFinishedState(state) && state.groups.some(g => g.length));
 }
 
 function isSessionFinished() {
@@ -4455,7 +4455,7 @@ function applyColumnLayout() {
   cols.forEach(c => c.style.width = "");
 }
 
-function dropCardsStudiedElsewhere() {
+function rebuildGroupsFromQueue() {
   groupState.groups = makeGroups();
   groupState.index = 0;
   const now = Date.now();
@@ -4473,7 +4473,7 @@ function setReviewMode(style) {
   pinnedCardId = null;
   if (style === "full") {
     if (groupState) {
-      savedGroupState = groupState.focus ? null : groupState;
+      savedGroupState = groupState;
       groupState = null;
       showAllCardsInFullMode();
     }
@@ -4489,19 +4489,15 @@ function setReviewMode(style) {
     nextOrderReady = false;
     groupState = resuming ? savedGroupState : {
       sessionId: ++sessionCounter,
-      groups: makeGroups(),
+      groups: [ [] ],
       index: 0,
       pendingAgain: []
     };
     savedGroupState = null;
-    groupViewStyle = style;
-    if (resuming) dropCardsStudiedElsewhere();
-    applyGroupEntryHiddenState(groupState.groups[groupState.index]);
-  } else {
-    groupViewStyle = style;
-    if (style === "table") dropCardsStudiedElsewhere();
-    applyGroupEntryHiddenState(groupState.groups[groupState.index]);
   }
+  groupViewStyle = style;
+  rebuildGroupsFromQueue();
+  applyGroupEntryHiddenState(groupState.groups[groupState.index]);
   updateGroupUI();
   render();
   if (!wasInSession && style === "table") {
@@ -4689,7 +4685,7 @@ setInterval(() => {
   }
   const now = Date.now();
   const hasReadyPending = (groupState.pendingAgain || []).some(e => e.readyAt <= now);
-  const newlyEligible = groupState.focus ? [] : sortIdsByDueScore(findNewlyEligibleTableIds());
+  const newlyEligible = sortIdsByDueScore(findNewlyEligibleTableIds());
   if (!hasReadyPending && !newlyEligible.length) return;
   groupState.groups.push([]);
   groupState.index = groupState.groups.length - 1;
@@ -9510,8 +9506,6 @@ let selPlusTimer = null;
 
 let selPlusHit = null;
 
-let selPlusShownAt = 0;
-
 function selPlusButton() {
   if (selPlusEl) return selPlusEl;
   selPlusEl = document.createElement("button");
@@ -9572,12 +9566,10 @@ document.addEventListener("selectionchange", () => {
       edit: true
     }, edit) : !isVirtualLesson() && selectionInDictSource();
     if (!hit) {
-      if (selPlusEl && selPlusEl.style.display === "block" && Date.now() - selPlusShownAt < 400) return;
       hideSelPlus();
       return;
     }
     selPlusHit = hit;
-    selPlusShownAt = Date.now();
     const btn = selPlusButton();
     btn.style.display = "block";
     const rects = window.getSelection().getRangeAt(0).getClientRects();
