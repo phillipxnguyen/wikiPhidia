@@ -4084,7 +4084,7 @@ function studyParts() {
 }
 
 function ghostFor(parts) {
-  const row = parts.length === 1 && parts[0] && (parts[0].tagName === "TR" || parts[0].classList.contains("vocab-list-row"));
+  const row = parts.length === 1 && parts[0] && parts[0].tagName === "TR" || parts.length > 0 && parts.every(el => el && el.parentElement && el.parentElement.classList.contains("vocab-list-row"));
   const pad = row ? 0 : 14;
   const rects = parts.filter(el => el && el.offsetParent).map(el => el.getBoundingClientRect()).filter(r => r.height > 1);
   if (!rects.length) return null;
@@ -7745,7 +7745,7 @@ function deleteVocabEntry(item, part) {
   if (vocabEditingKey === item.key) vocabEditingKey = null;
   if (vocabHoveredKey === item.key) vocabHoveredKey = null;
   scheduleAutoSave();
-  swipe([ part || document.getElementById("vocabCard") ], -1, () => {
+  swipe(part ? Array.from(part.children) : [ document.getElementById("vocabCard") ], -1, () => {
     render();
     renderVocab();
     renderLessonList();
