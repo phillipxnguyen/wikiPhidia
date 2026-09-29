@@ -1,63 +1,63 @@
 # wikiPhidia
 
-Flashcards for learning Chinese and Japanese, with spaced repetition, YouTube clips, dictionaries and a vocabulary deck built from your notes.
+Flashcards for learning Chinese and Japanese, with spaced repetition, video clips, dictionaries and a vocabulary trainer. The whole app is one file, `index.html`: no build step, no server code.
 
-The whole app is one file, `index.html`. There is no build step and nothing to install: open it in a browser, or host it anywhere that serves static files. On a phone it can be added to the home screen and runs full screen.
+## Run it
+
+Open `index.html` in a browser, or host it on any static site. On a phone, add it to the home screen to use it like an app.
 
 ## Lessons and cards
 
-- Paste cards into a lesson, one per line, as `question : answer` or tab-separated. The separator is detected and a preview shows what will be imported.
-- Start a line with a timestamp (`1:23 question : answer`) and set the lesson's YouTube link to tie each card to a moment in the video.
-- Each card has rich-text notes. Lines written as `word: meaning` become words in the vocabulary deck.
-- Lessons can be saved as `.json` files and opened again, one at a time or all at once.
+- **New lesson**, then paste cards as `question : answer` (or tab-separated), one per line. A preview shows what will be imported.
+- Put a YouTube link at the top and timestamps on the lines to tie each card to a clip of the video.
+- Each card has a question, an answer and notes. Lines in the notes written as `word: meaning` become vocabulary words.
+- **📥 Import file** opens lesson `.json` files or a full backup; **💾 Back up** saves every lesson and your review history.
 
-## Studying
+## Study modes
 
 | Mode | What it does |
 | --- | --- |
-| ☰ All cards | The whole lesson as a list, for browsing and editing. No spaced repetition. |
-| Group | Due cards five at a time. |
-| Listen | One card at a time, playing its video clip first. Shown when the lesson has video cards. |
-| Write | Answer first, so you recall and write the character, with stroke-order animation. Shown for Chinese and Japanese cards. |
+| ☰ All cards | Every card in a list, for browsing and editing |
+| Group | Due cards five at a time |
+| Listen | One card at a time, playing its video clip (lessons with a video) |
+| Write | Answer first, recall and write the character, then reveal |
 
 Group, Listen and Write share one queue: a card studied in one mode leaves the others until it is due again.
 
-**Scheduling.** *Again* brings a card back in 10 minutes. Each *Good* counts towards a streak; until the fifth Good in a row the card returns the next day. After five it is **done**, and the gaps grow to 1, 3 and then 7 days.
+## Scheduling
 
-**Done is done.** When nothing is left to study, the app shows 🎉 and stops. There is no button to study ahead; due cards wait for the next session. (**Reset** makes a whole lesson New again, if you want to start it over.)
+- **Good** adds one to a card's streak; it comes back in 1 day.
+- **Again** resets the streak; it comes back in 10 minutes.
+- After 5 Good in a row a card is **Done**, and comes back after 1, then 3, then every 7 days.
 
-### Keyboard
-
-| Key | Action |
-| --- | --- |
-| Space | Reveal |
-| Enter | Good |
-| Shift + Enter | Again |
-| ⌘/Ctrl + Z | Undo, including grades |
-
-On a phone, swipe a card right for Good and left for Again.
+Only due cards are studied. When nothing is due, the session ends with a congratulation, with no button to study more: done is done.
 
 ## Vocabulary
 
-Switch from **Lessons** to **Vocabulary** with the 字 button at the top. Words come from the `word: meaning` lines in your notes, or can be pasted in directly. They have their own review sessions and scheduling, one lesson at a time or all words together.
-
-Words already in your vocabulary are highlighted in questions and in the sentence above each dictionary; click one to see its notes.
+Switch with the **字** button at the top. Words from your card notes are studied as their own cards with the same scheduling, per lesson or all together.
 
 ## Language help
 
 - Pinyin on hover for Chinese
 - Stroke-order animations in Write mode
-- A dictionary panel under each card: chinesedictionary.mobi for Chinese, Bing Translator for Japanese
-- Reading aloud with the browser's own voices
-- Study languages: Chinese (Simplified and Traditional), Japanese, Korean, English, Vietnamese
+- Dictionary panel under each card: chinesedictionary.mobi for Chinese, Bing Translator for Japanese
+- Read aloud with the browser's voices
+- Words already in your vocabulary are marked in questions and sentences; click one to look it up
 
-## Progress and sync
+## Keyboard
 
-- **Stats** shows your daily streak, a review heatmap, progress per lesson, and your hardest cards. **🎯 Practise all** studies the hard cards from every lesson together (only the ones that are due).
-- Everything is stored in the browser; no account is needed.
-- Sign in with Google or email to sync lessons and reviews across devices through Firebase.
-- Light and dark themes.
+| Key | Action |
+| --- | --- |
+| Space | Show the hidden side |
+| Enter | Good |
+| Shift + Enter | Again |
+| ⌘/Ctrl + Z | Undo (add Shift to redo) |
+| ← / → | Again / Good in Vocabulary |
+| Delete | Delete the card |
+| Esc | Close a popup |
 
-## Libraries
+On a phone, swipe the card right for Good and left for Again.
 
-Loaded from CDNs at runtime: [pinyin-pro](https://github.com/zh-lx/pinyin-pro), [Hanzi Writer](https://hanziwriter.org), the YouTube IFrame API, and the Firebase SDK (only when you sign in).
+## Saving and sync
+
+Everything is saved in the browser (IndexedDB). Sign in with email or Google to sync lessons and review history across devices through Firebase. Stats show your daily streak, a review heatmap and your hardest cards; **🎯 Practise all** studies the due hard cards from every lesson together.
