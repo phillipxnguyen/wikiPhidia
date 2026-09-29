@@ -979,7 +979,8 @@ window.onYouTubeIframeAPIReady = function(){
 
 <div id="vocabAddForm" class="panel" hidden>
   <button id="vocabAddSingle" class="add-single" title="Add a single word" aria-label="Add a single word">＋</button>
-  <textarea id="vocabImportText" rows="8" placeholder="Paste words here — one per line: word, Tab, meaning (or word: meaning)"></textarea>
+  <textarea id="vocabImportText" rows="8" placeholder="Paste here!"></textarea>
+  <div id="vocabImportPreview" class="import-preview" hidden aria-live="polite"></div>
   <div class="row-flex" style="margin-top:10px;">
     <button id="vocabImportBtn" class="primary">Import</button>
     <span id="vocabImportStatus" class="muted-label"></span>
@@ -6481,6 +6482,7 @@ function renderAddView() {
   placeVocabAddForm("page");
   document.getElementById("vocabAddForm").hidden = !!blocked || !vocab;
   if (vocab) {
+    renderVocabImportPreview();
     if (!blocked) document.getElementById("vocabImportText").focus();
     return;
   }
@@ -8168,25 +8170,70 @@ function parseVocabPaste(line) {
   return term && meaning && !/[:：]/.test(term) ? [ term, meaning ] : null;
 }
 
-function importVocabText(text) {
-  const lines = text.split(/\r?\n/).filter(l => l.trim());
+function planVocabImport(text) {
   const seen = new Set;
-  const pairs = [];
-  let dup = 0, bad = 0;
-  lines.forEach(line => {
-    const pair = parseVocabPaste(line);
-    if (!pair) {
-      bad++;
-      return;
+  const lines = [];
+  text.split(/\r?\n/).forEach((raw, i) => {
+    if (!raw.trim()) return;
+    const pair = parseVocabPaste(raw);
+    let kind = "new";
+    if (!pair) kind = "invalid"; else {
+      const key = normalizeVocabText(pair[0]);
+      if (seen.has(key) || existingVocab(pair[0])) kind = "duplicate"; else seen.add(key);
     }
-    const key = normalizeVocabText(pair[0]);
-    if (seen.has(key) || existingVocab(pair[0])) {
-      dup++;
-      return;
-    }
-    seen.add(key);
-    pairs.push(pair);
+    lines.push({
+      lineNo: i + 1,
+      text: raw,
+      pair: pair,
+      kind: kind
+    });
   });
+  return lines;
+}
+
+function renderVocabImportPreview() {
+  const box = document.getElementById("vocabImportPreview");
+  const raw = document.getElementById("vocabImportText").value;
+  if (!raw.trim() || !currentLessonId || isVirtualLesson()) {
+    box.hidden = true;
+    box.innerHTML = "";
+    return;
+  }
+  const lines = planVocabImport(raw);
+  const count = kind => lines.filter(l => l.kind === kind).length;
+  const summary = [ `<span><b>${lines.length}</b> line${lines.length === 1 ? "" : "s"}</span>` ];
+  if (count("new")) summary.push(`<span class="ip-status new">🆕 ${count("new")}</span>`);
+  if (count("duplicate")) summary.push(`<span class="ip-status dup">${count("duplicate")} duplicate</span>`);
+  if (count("invalid")) summary.push(`<span class="ip-status skip">${count("invalid")} skipped</span>`);
+  const labels = {
+    new: [ "new", "🆕", "New word" ],
+    duplicate: [ "dup", "⏭", "Already in this lesson" ],
+    invalid: [ "skip", "⚠️", "Not read — write word, Tab, meaning or word: meaning" ]
+  };
+  const body = lines.slice(0, IMPORT_PREVIEW_MAX_ROWS).map(l => {
+    const [cls, icon, label] = labels[l.kind];
+    const status = `<td class="ip-result"><span class="ip-status ${cls}" title="${escapeAttr(label)}" aria-label="${escapeAttr(label)}">${icon}</span></td>`;
+    const num = `<td class="ip-num">${l.lineNo}</td>`;
+    if (!l.pair) return `<tr class="ip-dim">${num}${status}<td colspan="2" class="ip-raw" title="${escapeAttr(label)}">${escapeHtml(l.text)}</td></tr>`;
+    return `<tr${l.kind === "duplicate" ? ' class="ip-dim"' : ""}>${num}${status}${previewCell(l.pair[0])}${previewCell(l.pair[1])}</tr>`;
+  }).join("");
+  const more = lines.length > IMPORT_PREVIEW_MAX_ROWS ? `<div class="ip-more">…and ${lines.length - IMPORT_PREVIEW_MAX_ROWS} more line(s)</div>` : "";
+  box.innerHTML = `<div class="ip-summary">${summary.join("")}</div>` + '<div class="ip-scroll"><table class="ip-table"><colgroup><col style="width:44px"><col style="width:52px"><col><col></colgroup>' + "<thead><tr><th>#</th><th aria-label='Result'></th><th>Question</th><th>Answer</th></tr></thead>" + `<tbody>${body}</tbody></table>${more}</div>`;
+  box.hidden = false;
+}
+
+let vocabPreviewTimer = null;
+
+document.getElementById("vocabImportText").addEventListener("input", () => {
+  clearTimeout(vocabPreviewTimer);
+  vocabPreviewTimer = setTimeout(renderVocabImportPreview, 120);
+});
+
+function importVocabText(text) {
+  const plan = planVocabImport(text);
+  const pairs = plan.filter(l => l.kind === "new").map(l => l.pair);
+  const dup = plan.filter(l => l.kind === "duplicate").length;
+  const bad = plan.filter(l => l.kind === "invalid").length;
   if (pairs.length) {
     pushUndo("Added " + pairs.length + " word" + (pairs.length === 1 ? "" : "s"));
     const holder = ensureVocabExtras();
@@ -8225,6 +8272,7 @@ document.getElementById("vocabImportBtn").onclick = () => {
   if (r.bad) parts.push(r.bad + " not read — write word, Tab, meaning or word: meaning");
   document.getElementById("vocabImportStatus").textContent = parts.join(" · ");
   if (r.added && !r.bad && !r.dup) ta.value = "";
+  renderVocabImportPreview();
   if (currentView === "vocab") renderVocab();
 };
 
