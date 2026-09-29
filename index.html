@@ -3908,7 +3908,7 @@ function commitActiveEdit() {
 document.addEventListener("click", e => {
   if (!activeEdit) return;
   if (activeEdit.tr.contains(e.target)) return;
-  if (e.target.closest && e.target.closest(".edit-btn")) return;
+  if (e.target.closest && e.target.closest(".edit-btn, .sel-plus")) return;
   if (vocabPopupEl && vocabPopupEl.contains(e.target)) return;
   commitActiveEdit();
   setTimeout(() => {
@@ -4305,7 +4305,9 @@ function wireEditBox(host, row) {
     editQ: editQ,
     editA: editA,
     editNotes: editNotes,
-    updateEditDict: updateEditDict
+    updateEditDict: updateEditDict,
+    addWord: text => appendWordToNotes(text),
+    isWholeField: text => isWholeFieldSelection(editQ, text)
   };
   activeEdit.originalQ = editQ.textContent || "";
   activeEdit.originalQHtml = stripVocabHighlights(editQ.innerHTML || "");
@@ -9517,6 +9519,12 @@ function selPlusButton() {
   selPlusEl.setAttribute("aria-label", "Add the selected word");
   selPlusEl.addEventListener("pointerdown", e => e.preventDefault());
   selPlusEl.addEventListener("click", () => {
+    const edit = selectionInEditQuestion();
+    if (edit) {
+      hideSelPlus();
+      activeEdit.addWord(edit.text);
+      return;
+    }
     const hit = selectionInDictSource();
     hideSelPlus();
     if (!hit) return;
@@ -9527,6 +9535,19 @@ function selPlusButton() {
   return selPlusEl;
 }
 
+function selectionInEditQuestion() {
+  if (!activeEdit || !activeEdit.addWord) return null;
+  const sel = window.getSelection();
+  if (!sel || !sel.rangeCount) return null;
+  const text = sel.toString().trim();
+  const range = sel.getRangeAt(0);
+  if (!text || !activeEdit.editQ.contains(range.commonAncestorContainer) || activeEdit.isWholeField(text)) return null;
+  return {
+    text: text,
+    rect: range.getBoundingClientRect()
+  };
+}
+
 function hideSelPlus() {
   if (selPlusEl) selPlusEl.style.display = "none";
 }
@@ -9535,7 +9556,7 @@ document.addEventListener("selectionchange", () => {
   if (!isTouch()) return;
   clearTimeout(selPlusTimer);
   selPlusTimer = setTimeout(() => {
-    const hit = !isVirtualLesson() && selectionInDictSource();
+    const hit = selectionInEditQuestion() || !isVirtualLesson() && selectionInDictSource();
     if (!hit) {
       hideSelPlus();
       return;
