@@ -417,7 +417,7 @@ window.onYouTubeIframeAPIReady = function(){
   html.touch #viewStudy.focus-study #mediaContainer iframe:not(.live){pointer-events:none;}
   html.touch #dictPanels{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
   html.touch #dictPanels .dict-source{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default;}
-  .sel-plus{position:fixed;z-index:1200;display:none;width:40px;height:40px;padding:0;border:0;border-radius:50%;background:var(--accent);color:var(--on-accent);font-size:24px;line-height:40px;box-shadow:var(--shadow-md);-webkit-tap-highlight-color:transparent;}
+  .sel-plus{position:absolute;z-index:1200;display:none;width:40px;height:40px;padding:0;border:0;border-radius:50%;background:var(--accent);color:var(--on-accent);font-size:24px;line-height:40px;box-shadow:var(--shadow-md);-webkit-tap-highlight-color:transparent;}
   .media-container{transition:box-shadow .18s ease-out;}
   .media-container:has(iframe.live){box-shadow:0 0 0 8px color-mix(in srgb, var(--text) 14%, transparent);}
   html.touch .edit-btn, html.touch .del-btn{width:32px;height:36px;line-height:36px;font-size:20px;}
@@ -4276,7 +4276,7 @@ function wireEditBox(host, row) {
     const selectedText = sel.toString().trim();
     if (!selectedText) return;
     const range = sel.getRangeAt(0);
-    if (!editQ.contains(range.commonAncestorContainer)) return;
+    if (!editQ.contains(range.commonAncestorContainer) || repeatsHighlightedWord(editQ, range, selectedText)) return;
     const rect = range.getBoundingClientRect();
     const matches = findVocabMatches(selectedText, row.id);
     if (matches.length) {
@@ -9483,6 +9483,9 @@ document.getElementById("dictPanels").addEventListener("mouseup", e => {
   const hit = selectionInDictSource();
   if (!hit) return;
   if (!e.shiftKey) {
+    const range = window.getSelection().getRangeAt(0);
+    const box = range.commonAncestorContainer.nodeType === 1 ? range.commonAncestorContainer.closest(".dict-source") : range.commonAncestorContainer.parentElement.closest(".dict-source");
+    if (box && repeatsHighlightedWord(box, range, hit.text)) return;
     const matches = findVocabMatches(hit.text, hit.row.id);
     if (matches.length) showVocabPopup(matches, hit.rect);
     return;
@@ -9550,6 +9553,11 @@ function selectionInEditQuestion() {
   };
 }
 
+function repeatsHighlightedWord(box, range, text) {
+  const key = normalizeVocabText(text);
+  return Array.from(box.querySelectorAll("mark.vocab-hit")).some(m => normalizeVocabText(m.textContent) === key && !m.contains(range.commonAncestorContainer) && !range.intersectsNode(m));
+}
+
 function hideSelPlus() {
   selPlusHit = null;
   if (selPlusEl) selPlusEl.style.display = "none";
@@ -9577,12 +9585,12 @@ document.addEventListener("selectionchange", () => {
     const start = rects.length ? rects[0] : hit.rect;
     const fitsRight = end.right + 56 <= window.innerWidth;
     const line = fitsRight ? end : start;
-    btn.style.left = (fitsRight ? end.right + 10 : Math.max(8, start.left - 50)) + "px";
-    btn.style.top = line.top + line.height / 2 - 20 + "px";
+    btn.style.left = window.scrollX + (fitsRight ? end.right + 10 : Math.max(8, start.left - 50)) + "px";
+    btn.style.top = window.scrollY + line.top + line.height / 2 - 20 + "px";
   }, 150);
 });
 
-window.addEventListener("scroll", hideSelPlus, true);
+
 
 function fitTextarea(el) {
   if (!el || !el.offsetParent) return;
