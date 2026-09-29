@@ -9505,6 +9505,10 @@ let selPlusEl = null;
 
 let selPlusTimer = null;
 
+let selPlusHit = null;
+
+let selPlusShownAt = 0;
+
 function selPlusButton() {
   if (selPlusEl) return selPlusEl;
   selPlusEl = document.createElement("button");
@@ -9512,19 +9516,23 @@ function selPlusButton() {
   selPlusEl.textContent = "+";
   selPlusEl.setAttribute("aria-label", "Add the selected word");
   selPlusEl.addEventListener("pointerdown", e => e.preventDefault());
-  selPlusEl.addEventListener("click", () => {
-    const edit = selectionInEditQuestion();
-    if (edit) {
-      hideSelPlus();
-      activeEdit.addWord(edit.text);
-      return;
-    }
-    const hit = selectionInDictSource();
+  selPlusEl.addEventListener("touchstart", e => e.preventDefault(), {
+    passive: false
+  });
+  const act = e => {
+    e.preventDefault();
+    const hit = selPlusHit;
     hideSelPlus();
     if (!hit) return;
+    if (hit.edit) {
+      if (activeEdit && activeEdit.addWord) activeEdit.addWord(hit.text);
+      return;
+    }
     window.getSelection().removeAllRanges();
     if (existingVocab(hit.text)) warnVocabExists(hit.text); else showVocabAddPopup(hit.row, hit.text, hit.rect);
-  });
+  };
+  selPlusEl.addEventListener("touchend", act);
+  selPlusEl.addEventListener("click", act);
   document.body.appendChild(selPlusEl);
   return selPlusEl;
 }
@@ -9543,6 +9551,7 @@ function selectionInEditQuestion() {
 }
 
 function hideSelPlus() {
+  selPlusHit = null;
   if (selPlusEl) selPlusEl.style.display = "none";
 }
 
@@ -9550,11 +9559,17 @@ document.addEventListener("selectionchange", () => {
   if (!isTouch()) return;
   clearTimeout(selPlusTimer);
   selPlusTimer = setTimeout(() => {
-    const hit = selectionInEditQuestion() || !isVirtualLesson() && selectionInDictSource();
+    const edit = selectionInEditQuestion();
+    const hit = edit ? Object.assign({
+      edit: true
+    }, edit) : !isVirtualLesson() && selectionInDictSource();
     if (!hit) {
+      if (selPlusEl && selPlusEl.style.display === "block" && Date.now() - selPlusShownAt < 400) return;
       hideSelPlus();
       return;
     }
+    selPlusHit = hit;
+    selPlusShownAt = Date.now();
     const btn = selPlusButton();
     btn.style.display = "block";
     const rects = window.getSelection().getRangeAt(0).getClientRects();
