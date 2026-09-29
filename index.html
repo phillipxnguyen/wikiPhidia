@@ -253,6 +253,43 @@ window.onYouTubeIframeAPIReady = function(){
   @keyframes fadeOut{to{opacity:0;}}
   @media (prefers-reduced-motion: reduce){.streak-flame, .streak-pop, .streak-pop-flame, .streak-celebration{animation:none !important;}}
   .brand-mark{flex-shrink:0;width:28px;height:28px;border-radius:8px;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center;font-size:15px;}
+  .brand-switch{display:flex;align-items:center;gap:7px;min-width:0;padding:0;border:0;background:none;font:inherit;color:inherit;cursor:pointer;}
+  @media (hover:hover){.brand-switch:hover{background:none;}.brand-switch:hover .brand-mark{filter:brightness(1.1);}}
+  .brand-switch .brand-mark{transition:background .15s;}
+  html.vocab-mode .brand-switch .brand-mark{background:var(--new-color);}
+  .vocab-badges{margin:-8px 0 16px;}
+  .vocab-card{position:relative;height:300px;perspective:1200px;touch-action:pan-y;cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;}
+  .vocab-card-inner{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .45s cubic-bezier(.3,.7,.3,1);}
+  .vocab-card.flipped .vocab-card-inner{transform:rotateY(180deg);}
+  .vocab-face{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:28px 24px;text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow-md);backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:hidden;}
+  .vocab-back{transform:rotateY(180deg);background:var(--a-bg);}
+  .vocab-term{font-size:40px;font-weight:600;line-height:1.3;overflow-wrap:anywhere;}
+  .vocab-reading{font-size:16px;color:var(--text-2);}
+  .vocab-meaning{font-size:28px;font-weight:600;line-height:1.35;color:var(--a-text);overflow-wrap:anywhere;}
+  .vocab-sentence-ctx{font-size:15px;line-height:1.5;color:var(--text-2);max-width:560px;overflow-wrap:anywhere;}
+  .vocab-sentence-ctx mark{background:var(--mark-bg);color:inherit;border-radius:3px;padding:0 2px;}
+  .vocab-hint{position:absolute;bottom:12px;left:0;right:0;font-size:12px;color:var(--text-3);}
+  .vocab-speak{position:absolute;top:10px;right:10px;width:36px;height:36px;padding:0;border:0;border-radius:50%;background:transparent;font-size:18px;}
+  .vocab-drag-label{position:absolute;top:18px;padding:4px 12px;border:3px solid currentColor;border-radius:10px;font-size:20px;font-weight:700;opacity:0;pointer-events:none;z-index:2;}
+  .vocab-drag-label.good{right:18px;color:var(--a-label);transform:rotate(8deg);}
+  .vocab-drag-label.again{left:18px;color:var(--danger);transform:rotate(-8deg);}
+  .vocab-controls{display:flex;align-items:center;justify-content:center;gap:18px;margin:18px 0 22px;}
+  .vocab-btn{width:56px;height:56px;padding:0;border-radius:50%;font-size:22px;font-weight:700;background:var(--surface);}
+  .vocab-btn.again{color:var(--danger);border-color:color-mix(in srgb, var(--danger) 45%, transparent);}
+  .vocab-btn.good{color:var(--a-label);border-color:color-mix(in srgb, var(--a-label) 45%, transparent);}
+  .vocab-btn.undo{width:40px;height:40px;font-size:17px;color:var(--text-2);}
+  .vocab-count{min-width:64px;text-align:center;font-size:14px;font-weight:600;color:var(--text-2);font-variant-numeric:tabular-nums;}
+  .vocab-list h2{font-size:15px;margin:0 0 8px;}
+  .vocab-list-row{display:flex;gap:12px;padding:8px 2px;border-top:1px solid var(--border);font-size:14px;}
+  .vocab-list-row:first-of-type{border-top:0;}
+  .vocab-list-term{flex:0 0 40%;font-weight:600;overflow-wrap:anywhere;}
+  .vocab-list-meaning{flex:1;color:var(--text-2);overflow-wrap:anywhere;}
+  .vocab-list-status{flex-shrink:0;}
+  .vocab-add-popup{position:fixed;z-index:2000;width:min(340px, calc(100vw - 16px));padding:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);}
+  .vocab-add-popup input{width:100%;}
+  .vocab-add-popup div{margin-top:6px;font-size:12px;color:var(--text-3);}
+  @media (prefers-reduced-motion: reduce){.vocab-card-inner{transition:none;}}
+  @media (max-width:600px){.vocab-card{height:260px;}.vocab-term{font-size:32px;}.vocab-meaning{font-size:24px;}}
   .sidebar .primary{width:100%;}
   #lessonSearch{width:100%;}
   .lesson-list{flex:1;overflow-y:auto;margin:0 -4px;padding:0 4px;display:flex;flex-direction:column;gap:2px;}
@@ -776,7 +813,7 @@ window.onYouTubeIframeAPIReady = function(){
 <div class="shell">
 
 <aside class="sidebar">
-  <div class="brand"><button id="btnDrawer" class="ghost drawer-btn" aria-label="Menu">☰</button><span class="brand-mark">字</span>Flashcards<span id="streakChip" class="streak-chip" hidden><span class="streak-chip-flame">🔥</span><span id="streakChipCount">0</span></span><button id="btnCloud" class="cloud-chip" hidden></button></div>
+  <div class="brand"><button id="btnDrawer" class="ghost drawer-btn" aria-label="Menu">☰</button><button id="btnAppMode" class="brand-switch" title="Switch to Vocabulary"><span class="brand-mark">字</span><span id="brandName">Flashcards</span></button><span id="streakChip" class="streak-chip" hidden><span class="streak-chip-flame">🔥</span><span id="streakChipCount">0</span></span><button id="btnCloud" class="cloud-chip" hidden></button></div>
   <button id="btnNewLesson" class="primary">+ New lesson</button>
   <input type="search" id="lessonSearch" name="lesson-search" autocomplete="off" placeholder="Search lessons…" aria-label="Search lessons">
   <nav id="lessonList" class="lesson-list" aria-label="Lessons"></nav>
@@ -910,6 +947,13 @@ window.onYouTubeIframeAPIReady = function(){
     </div>
     <div id="statHardest"></div>
   </div>
+</section>
+
+<section id="viewVocab" hidden>
+  <h1 id="vocabTitle" class="stats-title"></h1>
+  <div id="vocabBadges" class="vocab-badges"></div>
+  <div id="vocabStage"></div>
+  <div id="vocabList" class="panel vocab-list" hidden></div>
 </section>
 
 <section id="viewStudy" hidden>
@@ -1129,6 +1173,7 @@ function takeSnapshot(label, expiresAt) {
     importHistory: JSON.stringify(importHistory),
     reviewCount: localReviewKeys.length,
     pinned: pinnedCardId,
+    vocabSnapshot: JSON.stringify(vocabSession),
     label: label,
     expiresAt: expiresAt
   };
@@ -1248,6 +1293,10 @@ function restoreFrom(fromStack, toStack, verb) {
   skipEmptyGroups();
   updateGroupUI();
   render();
+  if (currentView === "vocab") {
+    if (entry.vocabSnapshot) vocabSession = JSON.parse(entry.vocabSnapshot);
+    renderVocab();
+  }
   showToast(verb + " — " + entry.label);
   scheduleAutoSave();
 }
@@ -1395,6 +1444,7 @@ function newRow(q, a, time) {
     notes: "",
     notesHtml: "",
     srs: newSrs(),
+    vocab: {},
     shuffleKeyTable: Math.random(),
     shuffleKeyListen: Math.random(),
     shuffleKeyWrite: Math.random(),
@@ -2234,6 +2284,7 @@ function renderDictPanels() {
       host.appendChild(el);
     }
     el.dataset.used = now;
+    el.dataset.rowId = r.id;
     return el;
   };
   preload.forEach(panelFor);
@@ -5132,7 +5183,8 @@ function normalizeCard(c) {
     notes: String(c.notes || ""),
     notesHtml: c.notesHtml ? sanitizeHtml(String(c.notesHtml)) : "",
     time: time,
-    srs: c.srs ? normalizeSrs(c.srs) : migrateLegacySrs(c)
+    srs: c.srs ? normalizeSrs(c.srs) : migrateLegacySrs(c),
+    vocab: normalizeVocabSrs(c.vocab)
   };
 }
 
@@ -5178,7 +5230,8 @@ function serializeCard(r) {
     notes: r.notes || "",
     notesHtml: r.notesHtml || "",
     time: r.time,
-    srs: r.srs
+    srs: r.srs,
+    vocab: vocabForSave(r)
   };
 }
 
@@ -5489,6 +5542,7 @@ function resetLessonProgress() {
   pushUndo("Reset progress — " + name);
   rows.forEach(r => {
     r.srs = newSrs();
+    r.vocab = {};
     MODES.forEach(m => {
       r["shuffleKey" + m] = Math.random();
     });
@@ -5826,7 +5880,7 @@ function escapeAttr(s) {
 }
 
 function lessonItemMeta(lesson) {
-  const c = lessonCounts(lesson);
+  const c = appMode === "vocab" ? vocabCounts(lessonVocabItems(lesson.cards)) : lessonCounts(lesson);
   return `<span title="Cards">${c.total}</span><span class="sep">|</span>` + `<span class="new" title="New">🆕 ${c.fresh}</span>` + `<span class="due" title="Due">⏳ ${c.due}</span>` + `<span class="done" title="Done">✅ ${c.done}</span>`;
 }
 
@@ -5861,7 +5915,7 @@ function renderLessonList() {
     return;
   }
   const itemHtml = l => {
-    const active = l.id === currentLessonId && currentView === "study";
+    const active = l.id === currentLessonId && (currentView === "study" || currentView === "vocab");
     return `<button class="lesson-item${active ? " active" : ""}" data-lesson-id="${escapeAttr(l.id)}"${active ? ' aria-current="page"' : ""}>` + `<span class="lesson-item-name">${escapeHtml(l.name || "Untitled lesson")}</span>` + `<span class="lesson-item-meta">${lessonItemMeta(l)}</span></button>`;
   };
   if (q) {
@@ -5895,10 +5949,13 @@ function noteRecentLesson(id) {
 
 function showView(view) {
   if (view === "study" && !currentLessonId) view = "empty";
+  if (view === "study" && appMode === "vocab" && !isVirtualLesson()) view = "vocab";
+  if (view === "vocab" && currentView !== "vocab") vocabSession = null;
   currentView = view;
   releaseHeldPage();
   setTimeout(updateTouchBar, 0);
   document.getElementById("viewStudy").hidden = view !== "study";
+  document.getElementById("viewVocab").hidden = view !== "vocab";
   document.getElementById("viewStats").hidden = view !== "stats";
   document.getElementById("viewEmpty").hidden = view !== "empty";
   document.getElementById("viewAdd").hidden = view !== "add";
@@ -5913,6 +5970,7 @@ function showView(view) {
   }
   if (view === "stats") renderStats();
   if (view === "study") render();
+  if (view === "vocab") renderVocab();
   if (view === "add") renderAddView();
   renderLessonList();
 }
@@ -6337,7 +6395,7 @@ document.getElementById("lessonName").addEventListener("input", e => {
 });
 
 setInterval(() => {
-  if (currentView === "study" || currentView === "empty") renderLessonList();
+  if (currentView === "study" || currentView === "vocab" || currentView === "empty") renderLessonList();
   renderStreakChip();
 }, 60 * 1e3);
 
@@ -6638,8 +6696,14 @@ function mergeLessons(a, b) {
       const x = c.srs[m], y = o.srs[m];
       srs[m] = y && (!x || (y.last || 0) > (x.last || 0)) ? y : x;
     });
+    const vocab = Object.assign({}, o.vocab, c.vocab);
+    Object.keys(o.vocab || {}).forEach(k => {
+      const x = c.vocab && c.vocab[k], y = o.vocab[k];
+      if (y && (!x || (y.last || 0) > (x.last || 0))) vocab[k] = y;
+    });
     return Object.assign({}, c, {
-      srs: srs
+      srs: srs,
+      vocab: vocab
     });
   });
   const known = new Set(cards.map(c => c.uid));
@@ -6691,6 +6755,7 @@ function applyLessonToOpenRows(lesson) {
         time: card.time
       });
       r.srs = card.srs;
+      r.vocab = card.vocab;
     } else {
       r = newRow(card.q, card.a, card.time);
       Object.assign(r, card);
@@ -6739,6 +6804,7 @@ function applyCloudLesson(lesson) {
   if (lesson.id === currentLessonId && !isVirtualLesson()) {
     applyLessonToOpenRows(lesson);
     if (currentView === "study") render();
+    if (currentView === "vocab") renderVocab();
   }
   renderLessonList();
   refreshSaveReminders();
@@ -6760,7 +6826,7 @@ function removeLessonFromCloud(id) {
     const next = sortedLibrary()[0];
     if (next) {
       openLesson(next);
-      if (currentView === "study") showView("study");
+      if (currentView === "study" || currentView === "vocab") showView("study");
     } else {
       setLessonTitle("");
       showView("empty");
@@ -7107,6 +7173,458 @@ async function initApp() {
   if (navigator.storage && navigator.storage.persist) navigator.storage.persisted().then(done => done || navigator.storage.persist()).catch(() => {});
 }
 
+const APP_MODE_KEY = "flashcards.appMode";
+
+let appMode = readLocal(APP_MODE_KEY) === "vocab" ? "vocab" : "cards";
+
+let vocabSession = null;
+
+const vocabEntryCache = new Map;
+
+const VOCAB_LINE_RE = /^\s*([^:：]{1,40}?)\s*[:：]\s*(\S[\s\S]*?)\s*$/;
+
+function vocabEntriesOf(card) {
+  const html = card.notesHtml || escapeHtml(card.notes || "").replace(/\n/g, "<br>");
+  if (!html.trim()) return [];
+  if (vocabEntryCache.has(html)) return vocabEntryCache.get(html);
+  const box = document.createElement("div");
+  box.innerHTML = html;
+  const lines = [];
+  Array.from(box.querySelectorAll("li")).forEach(li => {
+    const own = li.cloneNode(true);
+    own.querySelectorAll("ul, ol").forEach(el => el.remove());
+    lines.push(own.textContent);
+  });
+  box.querySelectorAll("ul, ol").forEach(el => el.remove());
+  box.querySelectorAll("br").forEach(el => el.replaceWith("\n"));
+  box.querySelectorAll("div, p").forEach(el => el.append("\n"));
+  lines.push(...box.textContent.split("\n"));
+  const entries = [];
+  lines.forEach(line => {
+    const m = line.replace(/ /g, " ").match(VOCAB_LINE_RE);
+    if (!m) return;
+    entries.push({
+      key: normalizeVocabText(m[1]),
+      term: m[1],
+      meaning: m[2].replace(/\s+/g, " ")
+    });
+  });
+  vocabEntryCache.set(html, entries);
+  return entries;
+}
+
+function lessonVocabItems(cards) {
+  const seen = new Set;
+  const items = [];
+  cards.forEach(card => {
+    vocabEntriesOf(card).forEach(e => {
+      if (seen.has(e.key)) return;
+      seen.add(e.key);
+      items.push(Object.assign({
+        card: card
+      }, e));
+    });
+  });
+  return items;
+}
+
+function vocabStateOf(item) {
+  const card = item.card;
+  if (!card.vocab) card.vocab = {};
+  return card.vocab[item.key] || newSrsState();
+}
+
+function normalizeVocabSrs(vocab) {
+  const out = {};
+  if (!vocab || typeof vocab !== "object") return out;
+  Object.keys(vocab).forEach(k => {
+    const st = vocab[k];
+    if (!st || typeof st !== "object") return;
+    const clean = newSrsState();
+    Object.keys(clean).forEach(f => {
+      if (typeof st[f] === "number" && isFinite(st[f])) clean[f] = st[f];
+    });
+    out[k] = clean;
+  });
+  return out;
+}
+
+function vocabForSave(r) {
+  const out = {};
+  if (!r.vocab) return out;
+  vocabEntriesOf(r).forEach(e => {
+    if (r.vocab[e.key]) out[e.key] = r.vocab[e.key];
+  });
+  return out;
+}
+
+function vocabCounts(items) {
+  const now = Date.now();
+  const c = {
+    total: items.length,
+    due: 0,
+    fresh: 0,
+    done: 0
+  };
+  items.forEach(item => {
+    const st = vocabStateOf(item);
+    if (!st.reps) c.fresh++; else if (isDoneState(st)) c.done++; else if (st.due <= now) c.due++;
+  });
+  return c;
+}
+
+function vocabKind(st, now) {
+  if (isDoneState(st)) return 4;
+  if (!st.reps) return 2;
+  if (st.due > now) return 3;
+  return st.streak === 0 ? 0 : 1;
+}
+
+function startVocabSession(all) {
+  const now = Date.now();
+  const items = lessonVocabItems(rows);
+  const order = new Map(items.map((item, i) => [ item.key, i ]));
+  const picked = items.filter(item => all || vocabStateOf(item).due <= now);
+  picked.sort((a, b) => {
+    const sa = vocabStateOf(a), sb = vocabStateOf(b);
+    const ka = vocabKind(sa, now), kb = vocabKind(sb, now);
+    if (ka !== kb) return ka - kb;
+    if (ka === 2) return order.get(a.key) - order.get(b.key);
+    return sa.due - sb.due;
+  });
+  vocabSession = {
+    lessonId: currentLessonId,
+    queue: picked.map(item => item.key),
+    total: picked.length,
+    flipped: false
+  };
+}
+
+function currentVocabItem() {
+  if (!vocabSession || !vocabSession.queue.length) return null;
+  return lessonVocabItems(rows).find(item => item.key === vocabSession.queue[0]) || null;
+}
+
+function vocabBadgesHtml(items) {
+  const c = vocabCounts(items);
+  return '<div class="progress-badges">' + `<span class="progress-badge new active" title="New — not studied yet">🆕 ${c.fresh}</span>` + `<span class="progress-badge due active" title="Due — ready to review now">⏳ ${c.due}</span>` + `<span class="progress-badge done active" title="Done — ${DONE_STREAK} Good in a row">✅ ${c.done}</span>` + "</div>";
+}
+
+function vocabStatusIcon(st) {
+  if (!st.reps) return "🆕";
+  if (isDoneState(st)) return "✅";
+  return st.due <= Date.now() ? "⏳" : "🕒";
+}
+
+function formatDueIn(ts) {
+  const ms = ts - Date.now();
+  if (ms <= 6e4) return "now";
+  if (ms < 36e5) return "in " + Math.round(ms / 6e4) + " min";
+  if (ms < DAY_MS) return "in " + Math.round(ms / 36e5) + " h";
+  const days = Math.round(ms / DAY_MS);
+  return "in " + days + " day" + (days === 1 ? "" : "s");
+}
+
+function renderVocab() {
+  if (currentView !== "vocab") return;
+  const items = lessonVocabItems(rows);
+  document.getElementById("vocabTitle").textContent = document.getElementById("lessonName").value.trim() || "Untitled lesson";
+  document.getElementById("vocabBadges").innerHTML = items.length ? vocabBadgesHtml(items) : "";
+  const stage = document.getElementById("vocabStage");
+  const list = document.getElementById("vocabList");
+  list.hidden = !items.length;
+  list.innerHTML = `<h2>Words in this lesson (${items.length})</h2>` + items.map(item => `<div class="vocab-list-row"><span class="vocab-list-term">${escapeHtml(item.term)}</span><span class="vocab-list-meaning">${escapeHtml(item.meaning)}</span><span class="vocab-list-status">${vocabStatusIcon(vocabStateOf(item))}</span></div>`).join("");
+  if (!items.length) {
+    vocabSession = null;
+    stage.innerHTML = '<div class="empty-state"><div class="emoji">📖</div><h2>No words yet</h2><p>Words come from the notes of this lesson\'s cards, written as <b>word: meaning</b>.<br>Select a word in a question while editing a card and press Shift, or select a word in the sentence above a dictionary and press Shift.</p></div>';
+    return;
+  }
+  if (!vocabSession || vocabSession.lessonId !== currentLessonId) startVocabSession(false);
+  vocabSession.queue = vocabSession.queue.filter(key => items.some(item => item.key === key));
+  const item = currentVocabItem();
+  if (!item) {
+    const next = items.map(i => vocabStateOf(i)).filter(st => st.reps && !isDoneState(st)).map(st => st.due).sort((a, b) => a - b)[0];
+    const sub = vocabSession.total ? `You reviewed ${vocabSession.total} word${vocabSession.total === 1 ? "" : "s"}.` : "Nothing is due right now.";
+    const later = next ? ` Next review ${formatDueIn(next)}.` : "";
+    stage.innerHTML = `<div class="session-complete" style="display:block;"><div class="emoji">🎉</div><div class="session-complete-title">All caught up!</div><div class="session-complete-sub">${sub}${later}</div><div class="row-flex" style="justify-content:center;margin-top:18px;"><button id="vocabAgainAll" class="primary">Review all ${items.length} words</button></div></div>`;
+    document.getElementById("vocabAgainAll").onclick = () => {
+      startVocabSession(true);
+      renderVocab();
+    };
+    return;
+  }
+  const st = vocabStateOf(item);
+  const reading = CJK_CHAR_RE.test(item.term) ? getPinyin(item.term) || "" : "";
+  const done = vocabSession.total - vocabSession.queue.length;
+  const front = `<div class="vocab-face vocab-front"><button class="vocab-speak" title="Read aloud" aria-label="Read aloud">🔊</button><div class="vocab-term">${escapeHtml(item.term)}</div><div class="vocab-hint">${st.reps ? "" : "🆕 "}Tap or Space to flip</div></div>`;
+  const back = `<div class="vocab-face vocab-back">${reading ? `<div class="vocab-reading">${escapeHtml(reading)}</div>` : ""}<div class="vocab-meaning">${escapeHtml(item.meaning)}</div>${item.card.q ? `<div class="vocab-sentence-ctx">${highlightMatch(item.card.q, item.term)}</div>` : ""}</div>`;
+  const controls = '<div class="vocab-controls">' + `<button class="vocab-btn undo" id="vocabUndo" title="Undo (⌘Z)" aria-label="Undo"${undoStack.length ? "" : " disabled"}>↶</button>` + '<button class="vocab-btn again" id="vocabAgain" title="Again — still learning (← or Shift+Enter)" aria-label="Again">✕</button>' + `<span class="vocab-count">${Math.min(done + 1, vocabSession.total)} / ${vocabSession.total}</span>` + '<button class="vocab-btn good" id="vocabGood" title="Good — I know it (→ or Enter)" aria-label="Good">✓</button>' + "</div>";
+  stage.innerHTML = `<div class="vocab-card${vocabSession.flipped ? " flipped" : ""}" id="vocabCard">` + `<div class="vocab-card-inner">${front}${back}</div>` + '<div class="vocab-drag-label again">Again</div><div class="vocab-drag-label good">Good</div>' + "</div>" + controls;
+  wireVocabCard(item);
+}
+
+function flipVocab() {
+  if (!vocabSession || !currentVocabItem()) return;
+  vocabSession.flipped = !vocabSession.flipped;
+  const card = document.getElementById("vocabCard");
+  if (card) card.classList.toggle("flipped", vocabSession.flipped);
+}
+
+function speakVocab(text) {
+  if (!text) return;
+  stopTts();
+  const utter = new SpeechSynthesisUtterance(cleanForSpeech(text));
+  utter.lang = resolveSpeechLang(text);
+  const voice = pickVoice(utter.lang);
+  if (voice) utter.voice = voice;
+  speechSynthesis.speak(utter);
+}
+
+function gradeVocab(isAgain) {
+  const item = currentVocabItem();
+  if (!item) return;
+  pushUndo((isAgain ? "Again" : "Good") + " — " + item.term);
+  const now = Date.now();
+  const grade = isAgain ? GRADE_AGAIN : GRADE_GOOD;
+  const st = vocabStateOf(item);
+  scheduleReview(st, grade, now);
+  item.card.vocab[item.key] = st;
+  logReview(item.card, "Vocab", grade, now);
+  vocabSession.queue.shift();
+  vocabSession.flipped = false;
+  if (isAgain) vocabSession.queue.splice(Math.min(3, vocabSession.queue.length), 0, item.key);
+  scheduleAutoSave();
+  renderVocab();
+  renderLessonList();
+}
+
+function wireVocabCard(item) {
+  const card = document.getElementById("vocabCard");
+  const goodLabel = card.querySelector(".vocab-drag-label.good");
+  const againLabel = card.querySelector(".vocab-drag-label.again");
+  card.querySelector(".vocab-speak").onclick = e => {
+    e.stopPropagation();
+    speakVocab(item.term);
+  };
+  document.getElementById("vocabGood").onclick = () => gradeVocab(false);
+  document.getElementById("vocabAgain").onclick = () => gradeVocab(true);
+  document.getElementById("vocabUndo").onclick = () => undo();
+  let drag = null;
+  const place = dx => {
+    card.style.transform = dx ? `translateX(${dx}px) rotate(${dx / 18}deg)` : "";
+    goodLabel.style.opacity = Math.max(0, Math.min(1, dx / 90));
+    againLabel.style.opacity = Math.max(0, Math.min(1, -dx / 90));
+  };
+  card.addEventListener("pointerdown", e => {
+    if (e.button !== 0 || e.target.closest(".vocab-speak")) return;
+    drag = {
+      id: e.pointerId,
+      x: e.clientX,
+      y: e.clientY,
+      dx: 0,
+      moved: false
+    };
+  });
+  card.addEventListener("pointermove", e => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    if (!drag.moved) {
+      if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy)) return;
+      drag.moved = true;
+      try {
+        card.setPointerCapture(e.pointerId);
+      } catch (err) {}
+      card.style.transition = "none";
+    }
+    drag.dx = dx;
+    place(dx);
+  });
+  const end = e => {
+    const d = drag;
+    if (!d || e.pointerId !== d.id) return;
+    drag = null;
+    if (!d.moved) {
+      if (e.type === "pointerup") flipVocab();
+      return;
+    }
+    card.style.transition = "transform .25s ease-out";
+    if (e.type === "pointerup" && Math.abs(d.dx) >= 90) {
+      const out = Math.sign(d.dx) * (window.innerWidth + 200);
+      card.style.transform = `translateX(${out}px) rotate(${out / 18}deg)`;
+      setTimeout(() => gradeVocab(d.dx < 0), 180);
+    } else {
+      place(0);
+    }
+  };
+  card.addEventListener("pointerup", end);
+  card.addEventListener("pointercancel", end);
+}
+
+function handleVocabKey(e) {
+  if (isTypingInField()) return;
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z") {
+    e.preventDefault();
+    if (e.shiftKey) redo(); else undo();
+    return;
+  }
+  if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
+  if (e.code === "Space" || e.code === "ArrowUp" || e.code === "ArrowDown") {
+    if (!currentVocabItem()) return;
+    e.preventDefault();
+    if (document.activeElement && document.activeElement.tagName === "BUTTON") document.activeElement.blur();
+    flipVocab();
+    return;
+  }
+  const again = e.code === "ArrowLeft" || e.key === "Enter" && e.shiftKey;
+  const good = e.code === "ArrowRight" || e.key === "Enter" && !e.shiftKey;
+  if (!again && !good || !currentVocabItem()) return;
+  e.preventDefault();
+  if (document.activeElement && document.activeElement.tagName === "BUTTON") document.activeElement.blur();
+  gradeVocab(again);
+}
+
+function setAppMode(mode) {
+  appMode = mode;
+  try {
+    localStorage.setItem(APP_MODE_KEY, JSON.stringify(mode));
+  } catch (e) {}
+  document.documentElement.classList.toggle("vocab-mode", mode === "vocab");
+  document.getElementById("brandName").textContent = mode === "vocab" ? "Vocabulary" : "Flashcards";
+  document.getElementById("btnAppMode").title = mode === "vocab" ? "Switch to Flashcards" : "Switch to Vocabulary";
+}
+
+setAppMode(appMode);
+
+document.getElementById("btnAppMode").onclick = () => {
+  setAppMode(appMode === "vocab" ? "cards" : "vocab");
+  document.querySelector(".shell").classList.remove("drawer-open");
+  if (currentLessonId) showView("study"); else renderLessonList();
+};
+
+function addVocabToRow(row, term, meaning) {
+  const box = document.createElement("div");
+  box.innerHTML = row.notesHtml || escapeHtml(row.notes || "").replace(/\n/g, "<br>");
+  const key = normalizeVocabText(term);
+  const itemHtml = "<b>" + escapeHtml(term) + "</b>: " + escapeHtml(meaning);
+  const existing = Array.from(box.querySelectorAll("li")).find(li => {
+    const b = li.querySelector("b");
+    return b && normalizeVocabText(b.textContent.trim()) === key;
+  });
+  if (existing) {
+    existing.innerHTML = itemHtml;
+  } else {
+    let list = box.querySelector("ul.notes-list");
+    if (!list) {
+      list = document.createElement("ul");
+      list.className = "notes-list";
+      box.appendChild(list);
+    }
+    const li = document.createElement("li");
+    li.innerHTML = itemHtml;
+    list.appendChild(li);
+  }
+  pushUndo("Added word — " + term);
+  row.notesHtml = box.innerHTML;
+  row.notes = box.textContent;
+  scheduleAutoSave();
+  render();
+  showToast("Added word — " + term);
+}
+
+let vocabAddPopup = null;
+
+function hideVocabAddPopup() {
+  if (vocabAddPopup) vocabAddPopup.remove();
+  vocabAddPopup = null;
+}
+
+function showVocabAddPopup(row, term, rect) {
+  hideVocabAddPopup();
+  const popup = document.createElement("div");
+  popup.className = "vocab-add-popup";
+  popup.innerHTML = '<input type="text" autocomplete="off" aria-label="Word: meaning"><div>word: meaning — Enter to add, Esc to cancel</div>';
+  document.body.appendChild(popup);
+  vocabAddPopup = popup;
+  const input = popup.querySelector("input");
+  input.value = term ? term + ": " : "";
+  const box = popup.getBoundingClientRect();
+  let top = rect.bottom + 8;
+  if (top + box.height > window.innerHeight - 8) top = rect.top - box.height - 8;
+  popup.style.left = Math.max(8, Math.min(rect.left, window.innerWidth - box.width - 8)) + "px";
+  popup.style.top = Math.max(8, top) + "px";
+  input.focus();
+  input.setSelectionRange(input.value.length, input.value.length);
+  input.addEventListener("keydown", e => {
+    e.stopPropagation();
+    if (e.isComposing || e.keyCode === 229) return;
+    if (e.key === "Escape") {
+      e.preventDefault();
+      hideVocabAddPopup();
+      return;
+    }
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    const m = input.value.match(VOCAB_LINE_RE);
+    if (!m) {
+      input.select();
+      return;
+    }
+    hideVocabAddPopup();
+    addVocabToRow(row, m[1], m[2]);
+  });
+}
+
+document.addEventListener("pointerdown", e => {
+  if (vocabAddPopup && !vocabAddPopup.contains(e.target)) hideVocabAddPopup();
+}, true);
+
+window.addEventListener("scroll", e => {
+  if (vocabAddPopup && !vocabAddPopup.contains(e.target)) hideVocabAddPopup();
+}, true);
+
+function dictSourceRow(el) {
+  const panel = el && el.closest && el.closest("#dictPanels .stroke-order-panel");
+  return panel ? rows.find(r => r.id === Number(panel.dataset.rowId)) : null;
+}
+
+function selectionInDictSource() {
+  const sel = window.getSelection();
+  if (!sel || !sel.rangeCount) return null;
+  const text = sel.toString().trim();
+  if (!text) return null;
+  const range = sel.getRangeAt(0);
+  const node = range.commonAncestorContainer;
+  const el = node.nodeType === 1 ? node : node.parentElement;
+  const source = el && el.closest(".dict-source");
+  const row = source && dictSourceRow(source);
+  return row ? {
+    row: row,
+    text: text,
+    rect: range.getBoundingClientRect()
+  } : null;
+}
+
+document.addEventListener("keydown", e => {
+  if (e.key !== "Shift" || e.repeat || e.metaKey || e.ctrlKey || isVirtualLesson()) return;
+  const hit = selectionInDictSource();
+  if (!hit) return;
+  e.preventDefault();
+  showVocabAddPopup(hit.row, hit.text, hit.rect);
+});
+
+document.getElementById("dictPanels").addEventListener("mouseup", e => {
+  if (!e.shiftKey || isVirtualLesson()) return;
+  const hit = selectionInDictSource();
+  if (hit) showVocabAddPopup(hit.row, hit.text, hit.rect);
+});
+
+document.getElementById("dictPanels").addEventListener("click", e => {
+  const source = e.target.closest(".dict-source");
+  if (!source || !isTouch() || isVirtualLesson()) return;
+  const row = dictSourceRow(source);
+  if (row) showVocabAddPopup(row, "", source.getBoundingClientRect());
+});
+
 function isTypingInField() {
   const el = document.activeElement;
   if (!el) return false;
@@ -7117,6 +7635,10 @@ function isTypingInField() {
 
 document.addEventListener("keydown", e => {
   if (e.isComposing || e.keyCode === 229) return;
+  if (currentView === "vocab" && !tabPaused) {
+    handleVocabKey(e);
+    return;
+  }
   if (currentView !== "study" || tabPaused) return;
   if (e.key === "Escape" && vocabPopupEl && vocabPopupEl.style.display !== "none") {
     hideVocabPopup();
