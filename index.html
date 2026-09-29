@@ -1055,7 +1055,7 @@ window.onYouTubeIframeAPIReady = function(){
         <option value="ko">🇰🇷 Korean</option>
         <option value="en">🇬🇧 English</option>
         <option value="vi">🇻🇳 Vietnamese</option>
-        <option value="multi" hidden>🌐 Global (several languages)</option>
+        <option value="multi" hidden>🌐</option>
       </select>
       <button id="vocabFrontBtn" aria-label="Switch which side shows first">⇄</button>
     </div>
@@ -1581,8 +1581,6 @@ function newRow(q, a, time) {
     srs: newSrs(),
     vocab: {},
     shuffleKeyTable: Math.random(),
-    shuffleKeyListen: Math.random(),
-    shuffleKeyWrite: Math.random(),
     time: time == null ? null : time
   };
 }
@@ -4328,15 +4326,13 @@ function dueScoreCompare(mode) {
     if (ka !== kb) return ka - kb;
     if (ka === 2) return position.get(a.id) - position.get(b.id);
     if (ka === 3) return srsOf(a, mode).due - srsOf(b, mode).due;
-    return (a["shuffleKey" + mode] || 0) - (b["shuffleKey" + mode] || 0);
+    return (a.shuffleKeyTable || 0) - (b.shuffleKeyTable || 0);
   };
 }
 
 function reshuffleCardOrder() {
   rows.forEach(r => {
     r.shuffleKeyTable = Math.random();
-    r.shuffleKeyListen = Math.random();
-    r.shuffleKeyWrite = Math.random();
   });
 }
 
@@ -4495,7 +4491,7 @@ function setReviewMode(style) {
 }
 
 function totalLapses(card) {
-  return MODES.reduce((sum, m) => sum + (card.srs && card.srs[m] ? card.srs[m].lapses : 0), 0);
+  return srsOf(card).lapses || 0;
 }
 
 const HARD_LESSON_ID = "__hard__";
@@ -4690,7 +4686,7 @@ function gradeLabel(isAgain) {
 }
 
 function applyGrade(r, isAgain, mode, now) {
-  r["shuffleKey" + mode] = Math.random();
+  r.shuffleKeyTable = Math.random();
   const grade = isAgain ? GRADE_AGAIN : GRADE_GOOD;
   const st = srsOf(r, mode);
   scheduleReview(st, grade, now);
@@ -6331,9 +6327,7 @@ function resetLessonProgress() {
   rows.forEach(r => {
     r.srs = newSrs();
     r.vocab = {};
-    MODES.forEach(m => {
-      r["shuffleKey" + m] = Math.random();
-    });
+    r.shuffleKeyTable = Math.random();
   });
   groupState = null;
   savedGroupState = null;
@@ -7525,6 +7519,7 @@ function mergeLessons(a, b) {
       const x = c.srs[m], y = o.srs[m];
       srs[m] = y && (!x || (y.last || 0) > (x.last || 0)) ? y : x;
     });
+    mergeModeSrs(srs);
     const vocab = Object.assign({}, o.vocab, c.vocab);
     Object.keys(o.vocab || {}).forEach(k => {
       const x = c.vocab && c.vocab[k], y = o.vocab[k];
