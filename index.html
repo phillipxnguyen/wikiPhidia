@@ -274,6 +274,7 @@ window.onYouTubeIframeAPIReady = function(){
   html.vocab-mode .brand-switch .brand-mark{background:var(--new-color);}
   .vocab-head{display:flex;align-items:flex-start;gap:10px;}
   .vocab-head .stats-title{flex:1;min-width:0;}
+  .vocab-head .header-actions{margin-top:4px;}
   .vocab-front-btn{flex-shrink:0;width:40px;height:40px;padding:0;margin-top:2px;font-size:20px;border-radius:10px;color:var(--accent);}
   .vocab-front-btn.active{background:var(--accent-soft);color:var(--accent);border-color:var(--accent);}
   .vocab-badges{margin:-8px 0 16px;}
@@ -1023,6 +1024,11 @@ window.onYouTubeIframeAPIReady = function(){
 <section id="viewVocab" hidden>
   <div class="vocab-head">
     <textarea id="vocabTitle" rows="1" autocomplete="off" class="stats-title lesson-name-input autofit oneline" placeholder="Lesson name" aria-label="Lesson name"></textarea>
+    <div class="header-actions">
+      <button id="vocabSaveBtn" class="ghost" title="Save this lesson as a .json file. Shift-click to pick a different file.">Save</button>
+      <button id="vocabResetBtn" class="ghost" title="Make every word in this lesson New again. Words, cards and statistics stay.">Reset</button>
+      <button id="vocabDeleteBtn" class="ghost danger" title="Delete this lesson">Delete</button>
+    </div>
     <button id="vocabFrontBtn" class="vocab-front-btn" aria-label="Switch which side shows first">⇄</button>
   </div>
   <div id="vocabBadges" class="vocab-badges"></div>
@@ -2410,11 +2416,9 @@ function updateLessonChrome() {
   const hasCards = rows.some(r => r.id !== draftRowId && ((r.q || "").trim() || (r.a || "").trim()));
   const hasQuestion = rows.some(r => r.id !== draftRowId && (r.q || "").trim());
   const virtual = isVirtualLesson();
-  const name = document.getElementById("lessonName").value.trim().toLowerCase();
-  const named = !!name && name !== "untitled lesson" || !!document.getElementById("mediaUrl").value.trim();
   document.getElementById("btnSaveFile").hidden = !virtual && !hasCards;
   document.getElementById("btnResetLesson").hidden = !virtual && !hasCards;
-  document.getElementById("btnDeleteLesson").hidden = !virtual && !hasCards && !named;
+  document.getElementById("btnDeleteLesson").hidden = false;
   document.getElementById("fileStatus").hidden = !virtual && !hasCards;
   document.querySelector("#viewStudy .toolbar").hidden = !virtual && !hasCards;
   document.getElementById("cardTable").classList.toggle("no-head", !hasQuestion);
@@ -5811,6 +5815,7 @@ function refreshSaveReminders() {
   const saveBtn = document.getElementById("btnSaveFile");
   const backupBtn = document.getElementById("btnBackupAll");
   saveBtn.classList.toggle("needs-save", lessonBehind);
+  document.getElementById("vocabSaveBtn").classList.toggle("needs-save", lessonBehind);
   backupBtn.classList.toggle("needs-save", backupBehind);
   saveBtn.setAttribute("aria-label", lessonBehind ? "Save — this lesson has changes not saved to a file" : "Save");
   backupBtn.setAttribute("aria-label", backupBehind ? "Back up — lessons changed since the last backup" : "Back up — up to date");
@@ -6068,7 +6073,9 @@ async function deleteCurrentLesson() {
   const lesson = library.find(l => l.id === currentLessonId);
   if (!lesson) return;
   const name = document.getElementById("lessonName").value.trim() || lesson.name;
-  if (!confirm(`Delete "${name}" and its ${rows.length} card(s)? This can't be undone — click Save first if you want a copy.`)) return;
+  const words = lessonVocabItems(vocabSource()).length;
+  const what = appMode === "vocab" ? `${words} word(s)` + (rows.length ? ` and ${rows.length} card(s)` : "") : `${rows.length} card(s)`;
+  if (!confirm(`Delete "${name}" and its ${what}? This can't be undone — click Save first if you want a copy.`)) return;
   clearTimeout(autoSaveDebounceTimer);
   autoSaveDebounceTimer = null;
   library = library.filter(l => l.id !== lesson.id);
@@ -8060,6 +8067,9 @@ function renderVocab() {
   vocabShownRowId = null;
   if (vocabEditingKey && vocabEditingKey !== NEW_WORD_KEY && !items.some(i => i.key === vocabEditingKey)) vocabEditingKey = null;
   const canAdd = currentLessonId !== VOCAB_ALL_ID;
+  document.getElementById("vocabSaveBtn").hidden = !canAdd || !items.length && !rows.length;
+  document.getElementById("vocabResetBtn").hidden = !canAdd || !items.length;
+  document.getElementById("vocabDeleteBtn").hidden = !canAdd;
   const emptyLesson = canAdd && !items.length;
   list.hidden = !items.length && vocabEditingKey !== NEW_WORD_KEY;
   placeVocabAddForm(emptyLesson ? "lesson" : "page");
@@ -8357,6 +8367,30 @@ document.getElementById("vocabTitle").addEventListener("keydown", e => {
   e.preventDefault();
   e.target.blur();
 });
+
+function resetVocabProgress() {
+  if (!currentLessonId || isVirtualLesson()) return;
+  const items = lessonVocabItems(vocabSource());
+  if (!items.length) return;
+  const name = document.getElementById("lessonName").value.trim() || "this lesson";
+  if (!confirm(`Reset the words of "${name}"?\n\nAll ${items.length} word(s) become New again, so you can study them from the start. Words, cards and statistics stay.\n\nYou can undo with ⌘Z.`)) return;
+  commitVocabEdit();
+  stopVocabSound();
+  pushUndo("Reset words — " + name);
+  vocabSource().forEach(c => {
+    c.vocab = {};
+  });
+  vocabSession = null;
+  scheduleAutoSave();
+  renderVocab();
+  renderLessonList();
+}
+
+document.getElementById("vocabSaveBtn").onclick = e => exportCurrentLesson(e);
+
+document.getElementById("vocabResetBtn").onclick = () => resetVocabProgress();
+
+document.getElementById("vocabDeleteBtn").onclick = () => deleteCurrentLesson();
 
 function addExtraWord(termRaw, meaningRaw, explicit) {
   const term = (termRaw || "").replace(/\s+/g, " ").trim();
