@@ -324,7 +324,8 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-list-term{max-width:14em;font-weight:600;overflow-wrap:anywhere;}
   .vocab-list-meaning{min-width:0;color:var(--text-2);overflow-wrap:anywhere;}
   .vocab-add-popup{position:fixed;z-index:2000;width:min(340px, calc(100vw - 16px));padding:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);}
-  .vocab-add-popup textarea{width:100%;}
+  .vocab-add-field{min-height:36px;padding:8px 10px;border:1px solid var(--accent);border-radius:var(--radius-sm);box-shadow:0 0 0 3px var(--accent-soft);background:var(--surface);color:var(--text);font-size:14px;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere;cursor:text;outline:none;}
+  .vocab-add-field:empty::before{content:attr(data-placeholder);color:var(--text-3);font-style:italic;}
   @media (prefers-reduced-motion: reduce){.vocab-card-inner{transition:none;}}
   @media (max-width:600px){.vocab-card{height:260px;}.vocab-term{font-size:32px;}.vocab-meaning{font-size:24px;}}
   .sidebar .primary{width:100%;}
@@ -8157,19 +8158,30 @@ function showVocabAddPopup(row, term, rect) {
   hideVocabAddPopup();
   const popup = document.createElement("div");
   popup.className = "vocab-add-popup";
-  popup.innerHTML = '<textarea class="autofit oneline" rows="1" autocomplete="off" placeholder="word: meaning" aria-label="Word: meaning"></textarea>';
+  popup.innerHTML = '<div class="vocab-add-field" contenteditable="true" role="textbox" aria-label="Word: meaning" data-placeholder="word: meaning"></div>';
   document.body.appendChild(popup);
   vocabAddPopup = popup;
-  const input = popup.querySelector("textarea");
-  input.value = term ? term + ": " : "";
-  fitTextarea(input);
+  const input = popup.querySelector(".vocab-add-field");
+  if (term) {
+    const bold = document.createElement("b");
+    bold.textContent = term;
+    input.append(bold, ": ");
+  }
   const box = popup.getBoundingClientRect();
   let top = rect.bottom + 8;
   if (top + box.height > window.innerHeight - 8) top = rect.top - box.height - 8;
   popup.style.left = Math.max(8, Math.min(rect.left, window.innerWidth - box.width - 8)) + "px";
   popup.style.top = Math.max(8, top) + "px";
   input.focus();
-  input.setSelectionRange(input.value.length, input.value.length);
+  const caret = document.createRange();
+  caret.selectNodeContents(input);
+  caret.collapse(false);
+  getSelection().removeAllRanges();
+  getSelection().addRange(caret);
+  input.addEventListener("paste", e => {
+    e.preventDefault();
+    document.execCommand("insertText", false, e.clipboardData.getData("text/plain").replace(/\s*[\r\n]+\s*/g, " "));
+  });
   input.addEventListener("keydown", e => {
     e.stopPropagation();
     if (e.isComposing || e.keyCode === 229) return;
@@ -8180,9 +8192,9 @@ function showVocabAddPopup(row, term, rect) {
     }
     if (e.key !== "Enter") return;
     e.preventDefault();
-    const m = input.value.match(VOCAB_LINE_RE);
+    const m = input.textContent.match(VOCAB_LINE_RE);
     if (!m) {
-      input.select();
+      showToast("Write it as word: meaning");
       return;
     }
     hideVocabAddPopup();
