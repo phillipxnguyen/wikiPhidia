@@ -262,7 +262,7 @@ window.onYouTubeIframeAPIReady = function(){
   @keyframes modeInRight{from{opacity:0;transform:translateX(28px);}to{opacity:1;transform:none;}}
   @keyframes modeInLeft{from{opacity:0;transform:translateX(-28px);}to{opacity:1;transform:none;}}
   @keyframes modeFade{from{opacity:0;}to{opacity:1;}}
-  .brand-mark.mode-flip{animation:modeFlip .5s cubic-bezier(.3,.7,.3,1);}
+  .brand-mark.mode-flip{animation:modeFlip 1.1s ease-in-out;}
   #brandName.mode-name{animation:modeName .3s ease-out;}
   .main-inner.mode-in-right{animation:modeInRight .28s ease-out;}
   .main-inner.mode-in-left{animation:modeInLeft .28s ease-out;}
@@ -333,7 +333,13 @@ window.onYouTubeIframeAPIReady = function(){
   .lesson-item-name{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .lesson-item-meta{display:flex;gap:8px;font-size:12px;color:var(--text-3);white-space:nowrap;overflow:hidden;font-variant-numeric:tabular-nums;}
   .lesson-item-meta .sep{opacity:.5;}
-  .lesson-item.all-vocab{margin-bottom:4px;}
+  .lesson-group{display:flex;flex-direction:column;gap:2px;padding:6px;border-radius:var(--radius);background:var(--surface-2);}
+  .lesson-group + .lesson-group{margin-top:8px;}
+  .lesson-group.recent{background:color-mix(in srgb, var(--accent) 8%, var(--surface));}
+  .lesson-group.vocab{background:color-mix(in srgb, var(--new-color) 11%, var(--surface));}
+  .lesson-group .lesson-group-label{padding:4px 4px 2px;}
+  @media (hover:hover){.lesson-group .lesson-item:hover{background:color-mix(in srgb, var(--surface) 70%, transparent);}}
+  .lesson-group .lesson-item.active{background:var(--surface);box-shadow:var(--shadow-sm);}
   .lesson-item.all-vocab .lesson-item-name{font-size:18px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3);}
   .lesson-item.all-vocab.active .lesson-item-name{color:var(--accent);}
   .lesson-item-meta .due{color:var(--due-color);font-weight:600;}
@@ -5972,14 +5978,15 @@ function renderLessonList() {
     list.innerHTML = items.map(itemHtml).join("");
     return;
   }
-  const allVocab = appMode === "vocab" ? allVocabItemHtml() : "";
+  const group = (cls, label, html) => `<div class="lesson-group ${cls}">${label ? `<div class="lesson-group-label">${label}</div>` : ""}${html}</div>`;
+  const allVocab = appMode === "vocab" ? group("vocab", "", allVocabItemHtml()) : "";
   const recent = recentLessonIds().map(id => library.find(l => l.id === id)).filter(Boolean).slice(0, RECENT_MAX);
   const rest = items.filter(l => !recent.includes(l));
   if (library.length <= 5 || !recent.length) {
-    list.innerHTML = allVocab + '<div class="lesson-group-label">Lessons</div>' + recent.concat(rest).map(itemHtml).join("");
+    list.innerHTML = allVocab + group("lessons", "Lessons", recent.concat(rest).map(itemHtml).join(""));
     return;
   }
-  list.innerHTML = allVocab + '<div class="lesson-group-label">Recent</div>' + recent.map(itemHtml).join("") + '<div class="lesson-group-label">Lessons</div>' + rest.map(itemHtml).join("");
+  list.innerHTML = allVocab + group("recent", "Recent", recent.map(itemHtml).join("")) + group("lessons", "Lessons", rest.map(itemHtml).join(""));
 }
 
 const RECENT_KEY = "flashcards.recentLessons";
