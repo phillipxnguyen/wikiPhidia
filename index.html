@@ -589,6 +589,7 @@ window.onYouTubeIframeAPIReady = function(){
     pointer-events:none;
     max-width:360px;
     box-shadow:var(--shadow-md);
+    white-space:pre-line;
     display:none;
   }
   .vocab-popup{
@@ -2318,6 +2319,7 @@ function showSessionCompletePanel() {
 }
 
 function render() {
+  maybeLoadJapanese();
   renderStudy();
   renderDictPanels();
 }
@@ -2665,6 +2667,7 @@ function updateGroupBtnFlag() {
 document.getElementById("studyLang").addEventListener("change", e => {
   studyLang = e.target.value;
   transliterationCache.clear();
+  if (studyLang === "ja") ensureJapanese().catch(() => {});
   hideTooltip();
   if (activeEdit && typeof activeEdit.updateEditDict === "function") activeEdit.updateEditDict();
   render();
@@ -2686,6 +2689,154 @@ function getPinyin(text) {
   } catch (err) {
     return "";
   }
+}
+
+const KUROMOJI_BASE = "https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/";
+
+const WANAKANA_URL = "https://cdn.jsdelivr.net/npm/wanakana@5.3.1/wanakana.min.js";
+
+const JA_READING_FIXES = {
+  "一人": "ひとり",
+  "二人": "ふたり"
+};
+
+const KANA_RE = /[\u3040-\u30FF]/;
+
+const HAN_RE = /[\u4e00-\u9fff\u3400-\u4dbf]/;
+
+let jaTokenizer = null;
+
+let jaLoading = null;
+
+const jaUnitCache = new Map;
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const el = document.createElement("script");
+    el.src = src;
+    el.onload = resolve;
+    el.onerror = () => reject(new Error("Couldn't load " + src));
+    document.head.appendChild(el);
+  });
+}
+
+function ensureJapanese() {
+  if (jaTokenizer) return Promise.resolve(jaTokenizer);
+  if (!jaLoading) {
+    jaLoading = Promise.all([ loadScript(KUROMOJI_BASE + "build/kuromoji.js"), loadScript(WANAKANA_URL) ]).then(() => new Promise((resolve, reject) => {
+      kuromoji.builder({
+        dicPath: KUROMOJI_BASE + "dict/"
+      }).build((err, tokenizer) => err ? reject(err) : resolve(tokenizer));
+    })).then(tokenizer => {
+      jaTokenizer = tokenizer;
+      transliterationCache.clear();
+      if (currentView === "vocab") renderVocab();
+      const tip = hoverTooltip;
+      if (tip && tip.style.display === "block" && tip.anchor && tip.anchor.isConnected) showCellPinyin(tip.anchor);
+      return tokenizer;
+    }).catch(err => {
+      jaLoading = null;
+      showToast("Couldn't load Japanese readings — check the connection");
+      throw err;
+    });
+  }
+  return jaLoading;
+}
+
+function maybeLoadJapanese() {
+  if (jaTokenizer || jaLoading) return;
+  if (studyLang === "ja" || rows.some(r => KANA_RE.test(r.q || ""))) ensureJapanese().catch(() => {});
+}
+
+function lessonLooksJapanese(row) {
+  const lesson = row && row.srcLessonId ? library.find(l => l.id === row.srcLessonId) : null;
+  const cards = lesson ? lesson.cards : rows;
+  return cards.some(c => KANA_RE.test(c.q || ""));
+}
+
+function cjkScriptFor(text, row) {
+  if (KANA_RE.test(text)) return "ja";
+  if (!HAN_RE.test(text)) return null;
+  const lesson = row && row.srcLessonId ? library.find(l => l.id === row.srcLessonId) : null;
+  const lang = lesson ? lesson.studyLang : studyLang;
+  if (lang === "ja") return "ja";
+  if (lang === "zh-CN" || lang === "zh-TW") return "zh";
+  return lessonLooksJapanese(row) ? "ja" : "zh";
+}
+
+function jaTokens(text) {
+  const raw = jaTokenizer.tokenize(text);
+  const out = [];
+  for (let i = 0; i < raw.length; i++) {
+    const pair = i + 1 < raw.length ? raw[i].surface_form + raw[i + 1].surface_form : "";
+    if (JA_READING_FIXES[pair]) {
+      out.push({
+        surface: pair,
+        reading: JA_READING_FIXES[pair],
+        pos: "名詞"
+      });
+      i++;
+      continue;
+    }
+    const t = raw[i];
+    out.push({
+      surface: t.surface_form,
+      reading: t.reading && t.reading !== "*" ? wanakana.toHiragana(t.reading) : "",
+      pos: t.pos
+    });
+  }
+  return out;
+}
+
+function jaUnits(text) {
+  if (!jaTokenizer || !text) return null;
+  if (jaUnitCache.has(text)) return jaUnitCache.get(text);
+  const units = [];
+  jaTokens(text).forEach(t => {
+    const chars = Array.from(t.surface);
+    if (!t.reading || !chars.some(ch => HAN_RE.test(ch))) {
+      chars.forEach(ch => units.push({
+        s: ch,
+        r: ""
+      }));
+      return;
+    }
+    const reading = Array.from(t.reading);
+    const same = (a, b) => KANA_RE.test(a) && wanakana.toHiragana(a) === b;
+    let pre = 0;
+    while (pre < chars.length && pre < reading.length && same(chars[pre], reading[pre])) pre++;
+    let suf = 0;
+    while (suf < chars.length - pre && suf < reading.length - pre && same(chars[chars.length - 1 - suf], reading[reading.length - 1 - suf])) suf++;
+    chars.slice(0, pre).forEach(ch => units.push({
+      s: ch,
+      r: ""
+    }));
+    const mid = chars.slice(pre, chars.length - suf).join("");
+    const midReading = reading.slice(pre, reading.length - suf).join("");
+    if (mid) units.push({
+      s: mid,
+      r: midReading !== mid ? midReading : ""
+    });
+    chars.slice(chars.length - suf).forEach(ch => units.push({
+      s: ch,
+      r: ""
+    }));
+  });
+  jaUnitCache.set(text, units);
+  return units;
+}
+
+function jaReadingText(text) {
+  const tokens = jaTokens(text);
+  const spoken = t => HAN_RE.test(t.surface) && t.reading ? t.reading : t.surface;
+  const hira = tokens.map(spoken).join(" ").replace(/ ([、。！？!?,.」』）)])/g, "$1");
+  const romaji = tokens.map(t => {
+    if (t.pos === "助詞" && t.surface === "は") return "wa";
+    if (t.pos === "助詞" && t.surface === "へ") return "e";
+    if (t.pos === "助詞" && t.surface === "を") return "o";
+    return wanakana.toRomaji(spoken(t));
+  }).join(" ").replace(/ ([、。！？!?,.」』）)])/g, "$1");
+  return hira + "\n" + romaji;
 }
 
 const transliterationCache = new Map;
@@ -3027,9 +3178,15 @@ function showCellPinyin(cellEl) {
   const row = rows.find(r => r.id === id);
   if (!row) return;
   const text = field === "q" ? row.q : row.a;
-  if (detectScript(text) !== "zh") return;
+  const script = cjkScriptFor(text || "", row);
+  if (!script) return;
+  if (script === "ja" && !jaTokenizer) {
+    showTooltip(cellEl, "Loading readings…");
+    ensureJapanese().catch(() => {});
+    return true;
+  }
   const key = cacheKey(id, field);
-  if (!transliterationCache.has(key)) transliterationCache.set(key, getPinyin(text) || "");
+  if (!transliterationCache.has(key)) transliterationCache.set(key, (script === "ja" ? jaReadingText(text) : getPinyin(text)) || "");
   showTooltip(cellEl, transliterationCache.get(key));
   return true;
 }
@@ -5540,6 +5697,7 @@ function openLesson(lesson) {
     destroyYtPlayer();
   }
   setFileNote("");
+  maybeLoadJapanese();
   const virtual = isVirtualId(lesson.id);
   document.body.classList.toggle("virtual-lesson", virtual);
   document.getElementById("lessonName").readOnly = virtual;
@@ -7463,7 +7621,7 @@ function formatDueIn(ts) {
   return "in " + days + " day" + (days === 1 ? "" : "s");
 }
 
-function vocabSentenceHtml(sentence, term) {
+function vocabSentenceHtml(sentence, term, row) {
   const chars = Array.from((sentence || "").normalize("NFC"));
   const text = chars.join("");
   const idx = term ? text.toLowerCase().indexOf(term.normalize("NFC").toLowerCase()) : -1;
@@ -7472,8 +7630,31 @@ function vocabSentenceHtml(sentence, term) {
     start = Array.from(text.slice(0, idx)).length;
     end = start + Array.from(term.normalize("NFC")).length;
   }
+  const script = cjkScriptFor(text, row);
+  if (script === "ja") {
+    const units = jaUnits(text);
+    if (!units) {
+      ensureJapanese().catch(() => {});
+    } else {
+      let pos = 0, html = "", open = false;
+      units.forEach(u => {
+        const len = Array.from(u.s).length;
+        const inside = start !== -1 && pos < end && pos + len > start;
+        if (inside && !open) {
+          html += "<mark>";
+          open = true;
+        } else if (!inside && open) {
+          html += "</mark>";
+          open = false;
+        }
+        html += u.r ? `<ruby>${escapeHtml(u.s)}<rt>${escapeHtml(u.r)}</rt></ruby>` : escapeHtml(u.s);
+        pos += len;
+      });
+      return html + (open ? "</mark>" : "");
+    }
+  }
   let pys = null;
-  if (detectScript(text) === "zh" && typeof pinyinPro !== "undefined") {
+  if (script === "zh" && typeof pinyinPro !== "undefined") {
     try {
       pys = pinyinPro.pinyin(text, {
         type: "array"
@@ -7495,7 +7676,7 @@ function vocabCardHtml(item) {
   const inSentence = sentence && sentence.normalize("NFC").toLowerCase().includes(item.term.normalize("NFC").toLowerCase());
   const frontText = vocabFront === "a" ? item.meaning : item.term;
   const front = `<div class="vocab-face vocab-front"><div class="vocab-term">${escapeHtml(frontText)}</div></div>`;
-  const main = inSentence ? `<div class="vocab-ctx">${vocabSentenceHtml(sentence, item.term)}</div>` : `<div class="vocab-ctx"><mark>${vocabSentenceHtml(item.term, "")}</mark></div>` + (sentence ? `<div class="vocab-ctx small">${vocabSentenceHtml(sentence, "")}</div>` : "");
+  const main = inSentence ? `<div class="vocab-ctx">${vocabSentenceHtml(sentence, item.term, item.card)}</div>` : `<div class="vocab-ctx"><mark>${vocabSentenceHtml(item.term, "", item.card)}</mark></div>` + (sentence ? `<div class="vocab-ctx small">${vocabSentenceHtml(sentence, "", item.card)}</div>` : "");
   const back = `<div class="vocab-face vocab-back">${main}<div class="vocab-meaning">${escapeHtml(item.meaning)}</div></div>`;
   return `<div class="vocab-card${vocabSession.flipped ? " flipped" : ""}" id="vocabCard">` + `<div class="vocab-card-inner">${front}${back}</div>` + '<span class="vocab-actions vocab-card-actions vocab-touch-only"><button class="vocab-act-edit" aria-label="Edit this word">&#9998;</button><button class="vocab-act-del" aria-label="Delete this word">&#10005;</button></span>' + '<button class="vocab-speak" aria-label="Play the sentence">🔊</button>' + "</div>";
 }
