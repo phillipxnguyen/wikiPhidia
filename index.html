@@ -7676,19 +7676,16 @@ function vocabKind(st, now) {
 function startVocabSession(all) {
   const now = Date.now();
   const items = lessonVocabItems(rows);
-  const order = new Map(items.map((item, i) => [ item.key, i ]));
-  const picked = items.filter(item => all || vocabStateOf(item).due <= now);
-  picked.sort((a, b) => {
-    const sa = vocabStateOf(a), sb = vocabStateOf(b);
-    const ka = vocabKind(sa, now), kb = vocabKind(sb, now);
-    if (ka !== kb) return ka - kb;
-    if (ka === 2) return order.get(a.key) - order.get(b.key);
-    return sa.due - sb.due;
-  });
+  const picked = items.filter(item => all || vocabStateOf(item).due <= now).map(item => ({
+    item: item,
+    kind: vocabKind(vocabStateOf(item), now),
+    shuffle: Math.random()
+  }));
+  picked.sort((a, b) => a.kind - b.kind || a.shuffle - b.shuffle);
   vocabSession = {
     lessonId: currentLessonId,
     all: !!all,
-    queue: picked.map(item => item.key),
+    queue: picked.map(p => p.item.key),
     total: picked.length,
     flipped: false
   };
