@@ -317,6 +317,7 @@ window.onYouTubeIframeAPIReady = function(){
   .lesson-item-name{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .lesson-item-meta{display:flex;gap:8px;font-size:12px;color:var(--text-3);white-space:nowrap;overflow:hidden;font-variant-numeric:tabular-nums;}
   .lesson-item-meta .sep{opacity:.5;}
+  .lesson-item.all-vocab{margin-bottom:4px;}
   .lesson-item-meta .due{color:var(--due-color);font-weight:600;}
   .lesson-item-meta .new{color:var(--new-color);font-weight:600;}
   .lesson-item-meta .done{color:var(--done-color);font-weight:600;}
@@ -3789,8 +3790,14 @@ async function practiceHardCards(lessonId, firstUid) {
 
 const HARD_LESSON_ID = "__hard__";
 
+const VOCAB_ALL_ID = "__vocab__";
+
+function isVirtualId(id) {
+  return id === HARD_LESSON_ID || id === VOCAB_ALL_ID;
+}
+
 function isVirtualLesson() {
-  return currentLessonId === HARD_LESSON_ID;
+  return isVirtualId(currentLessonId);
 }
 
 function allHardCards() {
@@ -5474,7 +5481,7 @@ function openLesson(lesson) {
     destroyYtPlayer();
   }
   setFileNote("");
-  const virtual = lesson.id === HARD_LESSON_ID;
+  const virtual = isVirtualId(lesson.id);
   document.body.classList.toggle("virtual-lesson", virtual);
   document.getElementById("lessonName").readOnly = virtual;
   refreshSaveReminders();
@@ -5919,6 +5926,8 @@ function updateLessonListItem(lesson) {
   const metaEl = item.querySelector(".lesson-item-meta");
   const meta = lessonItemMeta(lesson);
   if (metaEl.innerHTML !== meta) metaEl.innerHTML = meta;
+  const all = document.querySelector("#lessonList [data-all-vocab]");
+  if (all) all.outerHTML = allVocabItemHtml();
 }
 
 function renderLessonList() {
@@ -5942,13 +5951,14 @@ function renderLessonList() {
     list.innerHTML = items.map(itemHtml).join("");
     return;
   }
+  const allVocab = appMode === "vocab" ? allVocabItemHtml() : "";
   const recent = recentLessonIds().map(id => library.find(l => l.id === id)).filter(Boolean).slice(0, RECENT_MAX);
   const rest = items.filter(l => !recent.includes(l));
   if (library.length <= 5 || !recent.length) {
-    list.innerHTML = '<div class="lesson-group-label">Lessons</div>' + recent.concat(rest).map(itemHtml).join("");
+    list.innerHTML = allVocab + '<div class="lesson-group-label">Lessons</div>' + recent.concat(rest).map(itemHtml).join("");
     return;
   }
-  list.innerHTML = '<div class="lesson-group-label">Recent</div>' + recent.map(itemHtml).join("") + '<div class="lesson-group-label">Lessons</div>' + rest.map(itemHtml).join("");
+  list.innerHTML = allVocab + '<div class="lesson-group-label">Recent</div>' + recent.map(itemHtml).join("") + '<div class="lesson-group-label">Lessons</div>' + rest.map(itemHtml).join("");
 }
 
 const RECENT_KEY = "flashcards.recentLessons";
@@ -5961,7 +5971,7 @@ function recentLessonIds() {
 }
 
 function noteRecentLesson(id) {
-  if (!id || id === HARD_LESSON_ID) return;
+  if (!id || isVirtualId(id)) return;
   try {
     localStorage.setItem(RECENT_KEY, JSON.stringify([ id ].concat(recentLessonIds().filter(x => x !== id)).slice(0, 10)));
   } catch (e) {}
@@ -5969,7 +5979,7 @@ function noteRecentLesson(id) {
 
 function showView(view) {
   if (view === "study" && !currentLessonId) view = "empty";
-  if (view === "study" && appMode === "vocab" && !isVirtualLesson()) view = "vocab";
+  if (view === "study" && (currentLessonId === VOCAB_ALL_ID || appMode === "vocab" && !isVirtualLesson())) view = "vocab";
   if (view === "vocab" && currentView !== "vocab") vocabSession = null;
   if (view !== "vocab") {
     vocabTtsOn = false;
@@ -6020,7 +6030,7 @@ function placeAddForm(where) {
 function renderAddView() {
   placeAddForm("page");
   const select = document.getElementById("addTarget");
-  const blocked = !currentLessonId ? "Create or open a lesson first, then add cards to it." : isVirtualLesson() ? "The mixed hard-card session can't take new cards — choose a lesson in the box above." : "";
+  const blocked = !currentLessonId ? "Create or open a lesson first, then add cards to it." : isVirtualLesson() ? "A mixed session can't take new cards — choose a lesson in the box above." : "";
   select.innerHTML = (isVirtualLesson() || !currentLessonId ? '<option value="">Choose a lesson…</option>' : "") + sortedLibrary().map(l => {
     const name = l.id === currentLessonId ? document.getElementById("lessonName").value.trim() || l.name : l.name;
     return `<option value="${escapeAttr(l.id)}"${l.id === currentLessonId ? " selected" : ""}>${escapeHtml(name || "Untitled lesson")}</option>`;
@@ -6410,7 +6420,7 @@ document.getElementById("fileInput").addEventListener("change", e => {
 });
 
 document.getElementById("lessonList").addEventListener("click", e => {
-  const item = e.target.closest(".lesson-item");
+  const item = e.target.closest(".lesson-item:not([data-all-vocab])");
   if (item) switchToLesson(item.dataset.lessonId);
 });
 
@@ -6573,7 +6583,7 @@ function cloudNoteWrite(store, value, removed) {
   if (cloudApplying) return;
   if (store === "lessons") {
     const id = removed ? value : value.id;
-    if (!id || id === HARD_LESSON_ID) return;
+    if (!id || isVirtualId(id)) return;
     if (removed) writeCloudState(st => {
       if (st.synced[id]) st.deleted[id] = Date.now();
     });
@@ -7408,7 +7418,7 @@ function vocabCardHtml(item) {
   const front = `<div class="vocab-face vocab-front"><div class="vocab-term">${escapeHtml(frontText)}</div></div>`;
   const main = inSentence ? `<div class="vocab-sentence">${vocabSentenceHtml(sentence, item.term)}</div>` : `<div class="vocab-sentence"><mark>${vocabSentenceHtml(item.term, "")}</mark></div>` + (sentence ? `<div class="vocab-sentence small">${vocabSentenceHtml(sentence, "")}</div>` : "");
   const back = `<div class="vocab-face vocab-back">${main}<div class="vocab-meaning">${escapeHtml(item.meaning)}</div></div>`;
-  return `<div class="vocab-card${vocabSession.flipped ? " flipped" : ""}" id="vocabCard">` + `<div class="vocab-card-inner">${front}${back}</div>` + '<button class="vocab-edit" title="Edit this word" aria-label="Edit this word">✎</button>' + '<button class="vocab-speak" aria-label="Play the sentence">🔊</button>' + '<div class="vocab-drag-label again">Again</div><div class="vocab-drag-label good">Good</div>' + "</div>";
+  return `<div class="vocab-card${vocabSession.flipped ? " flipped" : ""}" id="vocabCard">` + `<div class="vocab-card-inner">${front}${back}</div>` + '<button class="vocab-edit" title="Edit this word (↓)" aria-label="Edit this word">✎</button>' + '<button class="vocab-speak" aria-label="Play the sentence">🔊</button>' + '<div class="vocab-drag-label again">Again</div><div class="vocab-drag-label good">Good</div>' + "</div>";
 }
 
 function vocabControlsHtml() {
@@ -7432,7 +7442,7 @@ function renderVocab() {
   vocabShownRowId = null;
   if (vocabEditingKey && !items.some(i => i.key === vocabEditingKey)) vocabEditingKey = null;
   list.hidden = !items.length;
-  list.innerHTML = `<h2>Words in this lesson (${items.length})</h2>` + items.map(item => item.key === vocabEditingKey && !(currentVocabItemKey() === item.key) ? `<div class="vocab-list-row editing">${vocabEditorHtml(item)}</div>` : `<div class="vocab-list-row" data-key="${escapeAttr(item.key)}"><span class="vocab-list-term">${escapeHtml(item.term)}</span><span class="vocab-list-meaning">${escapeHtml(item.meaning)}</span><span class="vocab-list-status">${vocabStatusIcon(vocabStateOf(item))}</span><button class="vocab-list-edit ghost" title="Edit this word" aria-label="Edit this word">✎</button></div>`).join("");
+  list.innerHTML = `<h2>${currentLessonId === VOCAB_ALL_ID ? "All words" : "Words in this lesson"} (${items.length})</h2>` + items.map(item => item.key === vocabEditingKey && !(currentVocabItemKey() === item.key) ? `<div class="vocab-list-row editing">${vocabEditorHtml(item)}</div>` : `<div class="vocab-list-row" data-key="${escapeAttr(item.key)}"><span class="vocab-list-term">${escapeHtml(item.term)}</span><span class="vocab-list-meaning">${escapeHtml(item.meaning)}</span><span class="vocab-list-status">${vocabStatusIcon(vocabStateOf(item))}</span><button class="vocab-list-edit ghost" title="Edit this word" aria-label="Edit this word">✎</button></div>`).join("");
   if (!items.length) {
     vocabSession = null;
     badges.innerHTML = "";
@@ -7613,7 +7623,7 @@ function syncVocabSound() {
   if (!btn) return;
   const on = vocabTtsOn || loopingRowId !== null && loopingRowId === vocabShownRowId;
   btn.textContent = on ? "⏸️" : "🔊";
-  btn.title = on ? "Pause" : "Play the sentence";
+  btn.title = on ? "Pause (↑)" : "Play the sentence (↑)";
 }
 
 function stopVocabSound() {
@@ -7652,6 +7662,11 @@ function playVocabSound(item) {
   };
   speak();
   syncVocabSound();
+}
+
+function toggleVocabSound(item) {
+  const on = vocabTtsOn || loopingRowId !== null && loopingRowId === vocabShownRowId;
+  if (on) stopVocabSound(); else playVocabSound(item);
 }
 
 function flipVocab() {
@@ -7695,8 +7710,7 @@ function wireVocabCard(item) {
   const againLabel = card.querySelector(".vocab-drag-label.again");
   card.querySelector(".vocab-speak").onclick = e => {
     e.stopPropagation();
-    const on = vocabTtsOn || loopingRowId !== null && loopingRowId === vocabShownRowId;
-    if (on) stopVocabSound(); else playVocabSound(item);
+    toggleVocabSound(item);
   };
   card.querySelector(".vocab-edit").onclick = e => {
     e.stopPropagation();
@@ -7762,10 +7776,11 @@ function handleVocabKey(e) {
   }
   if (e.metaKey || e.ctrlKey || e.altKey || e.repeat || vocabEditingKey) return;
   if (e.code === "Space" || e.code === "ArrowUp" || e.code === "ArrowDown") {
-    if (!currentVocabItem()) return;
+    const item = currentVocabItem();
+    if (!item) return;
     e.preventDefault();
     if (document.activeElement && document.activeElement.tagName === "BUTTON") document.activeElement.blur();
-    flipVocab();
+    if (e.code === "ArrowUp") toggleVocabSound(item); else if (e.code === "ArrowDown") openVocabEditor(item.key); else flipVocab();
     return;
   }
   const again = e.code === "ArrowLeft" || e.key === "Enter" && e.shiftKey;
@@ -7791,8 +7806,65 @@ setAppMode(appMode);
 document.getElementById("btnAppMode").onclick = () => {
   setAppMode(appMode === "vocab" ? "cards" : "vocab");
   document.querySelector(".shell").classList.remove("drawer-open");
-  if (currentLessonId) showView("study"); else renderLessonList();
+  let last = null;
+  try {
+    last = localStorage.getItem("flashcards.lastLesson");
+  } catch (e) {}
+  const real = library.find(l => l.id === last) || sortedLibrary()[0];
+  if (isVirtualLesson() && real) switchToLesson(real.id); else if (currentLessonId) showView("study"); else renderLessonList();
 };
+
+function allVocabCards() {
+  if (currentLessonId === VOCAB_ALL_ID) return rows;
+  const cards = [];
+  sortedLibrary().forEach(l => {
+    const src = l.id === currentLessonId ? rows : l.cards;
+    src.forEach(c => cards.push(c));
+  });
+  return cards;
+}
+
+function allVocabItemHtml() {
+  const c = vocabCounts(lessonVocabItems(allVocabCards()));
+  const active = currentLessonId === VOCAB_ALL_ID && currentView === "vocab";
+  return `<button class="lesson-item all-vocab${active ? " active" : ""}" data-all-vocab="1"${active ? ' aria-current="page"' : ""}>` + '<span class="lesson-item-name">📚 All vocabulary</span>' + `<span class="lesson-item-meta"><span title="Words">${c.total}</span><span class="sep">|</span><span class="new" title="New">🆕 ${c.fresh}</span><span class="due" title="Due">⏳ ${c.due}</span><span class="done" title="Done">✅ ${c.done}</span></span></button>`;
+}
+
+async function openAllVocabulary() {
+  if (currentLessonId === VOCAB_ALL_ID) {
+    showView("study");
+    return;
+  }
+  commitActiveEdit();
+  await discardIfEmptyDraft();
+  await flushAutoSave();
+  const picks = [];
+  sortedLibrary().forEach(l => l.cards.forEach(c => {
+    if (vocabEntriesOf(c).length) picks.push({
+      card: c,
+      lesson: l
+    });
+  }));
+  const langs = new Set(picks.map(pk => pk.lesson.studyLang || "auto"));
+  openLesson({
+    id: VOCAB_ALL_ID,
+    name: "📚 All vocabulary",
+    mediaUrl: "",
+    studyLang: langs.size === 1 ? Array.from(langs)[0] : "auto",
+    importHistory: [],
+    cards: picks.map(pk => pk.card)
+  });
+  rows.forEach((r, i) => {
+    r.srcLessonId = picks[i].lesson.id;
+  });
+  showView("study");
+}
+
+document.getElementById("lessonList").addEventListener("click", e => {
+  if (!e.target.closest("[data-all-vocab]")) return;
+  document.querySelector(".shell").classList.remove("drawer-open");
+  openAllVocabulary();
+});
 
 function addVocabToRow(row, term, meaning) {
   const box = document.createElement("div");
