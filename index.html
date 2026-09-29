@@ -4433,6 +4433,24 @@ function applyColumnLayout() {
   cols.forEach(c => c.style.width = "");
 }
 
+function dropCardsStudiedElsewhere() {
+  const now = Date.now();
+  const waiting = new Set((groupState.pendingAgain || []).map(p => p.id));
+  groupState.groups = groupState.groups.map((g, i) => i < groupState.index ? g : g.filter(id => {
+    const r = rows.find(x => x.id === id);
+    return r && (waiting.has(id) || srsOf(r).due <= now);
+  }));
+  skipEmptyGroups();
+  if (isResumableState(groupState)) return;
+  reshuffleCardOrder();
+  groupState = {
+    sessionId: ++sessionCounter,
+    groups: makeGroups(),
+    index: 0,
+    pendingAgain: []
+  };
+}
+
 function setReviewMode(style) {
   commitActiveEdit();
   haltAllPlayback();
@@ -4462,10 +4480,11 @@ function setReviewMode(style) {
     };
     savedGroupState = null;
     groupViewStyle = style;
-    if (resuming) skipEmptyGroups();
+    if (resuming) dropCardsStudiedElsewhere();
     applyGroupEntryHiddenState(groupState.groups[groupState.index]);
   } else {
     groupViewStyle = style;
+    if (style === "table") dropCardsStudiedElsewhere();
     applyGroupEntryHiddenState(groupState.groups[groupState.index]);
   }
   updateGroupUI();
@@ -6305,7 +6324,7 @@ async function createLesson() {
 function resetLessonProgress() {
   if (!currentLessonId || isVirtualLesson() || !rows.length) return;
   const name = document.getElementById("lessonName").value.trim() || "this lesson";
-  if (!confirm(`Reset "${name}"?\n\nAll ${rows.length} card(s) become New again in Group, Listen and Write, so you can study them from the start. Cards, notes and statistics stay.\n\nYou can undo with ⌘Z.`)) return;
+  if (!confirm(`Reset "${name}"?\n\nAll ${rows.length} card(s) become New again, so you can study them from the start. Cards, notes and statistics stay.\n\nYou can undo with ⌘Z.`)) return;
   commitActiveEdit();
   haltAllPlayback();
   pushUndo("Reset progress — " + name);
