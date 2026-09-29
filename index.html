@@ -3655,8 +3655,7 @@ function noteItemIsDuplicate(li, box, taken) {
   const term = noteItemTerm(li);
   if (!term) return false;
   const key = normalizeVocabText(term);
-  const row = activeEdit && activeEdit.row;
-  if (taken.has(key) || existingVocab(term, vocabSource().filter(r => r !== row))) return true;
+  if (taken.has(key)) return true;
   taken.add(key);
   return false;
 }
@@ -3673,7 +3672,7 @@ function noteVocabKeys(box, except) {
 
 function warnVocabDuplicates(terms) {
   if (!terms.length) return;
-  if (terms.length === 1) warnVocabExists(terms[0]); else showToast("Already in this lesson's words — " + terms.join(", "));
+  if (terms.length === 1) showToast("“" + terms[0].trim() + "” is already in this note"); else showToast("Already in this note — " + terms.join(", "));
 }
 
 function toggleVocabBullets(box) {
@@ -4103,7 +4102,7 @@ function wireEditBox(host, row) {
         e.preventDefault();
         document.execCommand("insertParagraph");
         if (el === editNotes && li.isConnected && !li.contains(window.getSelection().anchorNode) && !isVocabItem(li) && NOTE_VOCAB_ITEM_RE.test(ownLiTextNodes(li).map(n => n.nodeValue).join(""))) {
-          if (noteItemIsDuplicate(li, el, noteVocabKeys(el, [ li ]))) warnVocabExists(noteItemTerm(li)); else boldVocabItem(li);
+          if (noteItemIsDuplicate(li, el, noteVocabKeys(el, [ li ]))) warnVocabDuplicates([ noteItemTerm(li) ]); else boldVocabItem(li);
         }
         autoResizeDiv(el);
         return;
@@ -4129,8 +4128,8 @@ function wireEditBox(host, row) {
   }
   function appendWordToNotes(text) {
     let list = editNotes.querySelector("ul.notes-list");
-    if (wordAlreadyInNotes(list, text) || existingVocab(text, rows.filter(r => r !== row))) {
-      warnVocabExists(text);
+    if (wordAlreadyInNotes(list, text)) {
+      warnVocabDuplicates([ text ]);
       return;
     }
     const sel = window.getSelection();
