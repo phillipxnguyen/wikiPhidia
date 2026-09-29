@@ -297,13 +297,16 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-card.swipe-again .vocab-face{border:3px solid var(--danger);}
   .vocab-controls{display:flex;align-items:center;justify-content:center;gap:8px;margin:18px auto 22px;}
   .vocab-controls .tb-icon{flex:0 0 48px;height:48px;display:flex;align-items:center;justify-content:center;padding:0;border-radius:12px;}
-  .vocab-show{height:48px;padding:0 22px;font-size:15px;font-weight:600;border-radius:12px;}
+  .vocab-show{height:48px;padding:0 18px;font-size:20px;border-radius:12px;}
   .vocab-round{flex:0 0 56px;height:56px;padding:0;border-radius:50%;font-size:22px;font-weight:700;background:var(--surface);}
   .vocab-round.again{color:var(--danger);border-color:color-mix(in srgb, var(--danger) 45%, transparent);}
   .vocab-round.good{color:var(--a-label);border-color:color-mix(in srgb, var(--a-label) 45%, transparent);}
   .vocab-editor{display:flex;flex-direction:column;gap:8px;padding:16px;margin-bottom:16px;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow-sm);}
   .vocab-list .vocab-editor{margin:4px 0;box-shadow:none;}
   .vocab-editor input{width:100%;font-size:16px;}
+  .vocab-editor.on-card{height:320px;margin-bottom:0;justify-content:center;gap:14px;padding:28px 24px;border-radius:16px;box-shadow:var(--shadow-md);}
+  .vocab-editor.on-card input{font-size:24px;text-align:center;padding:12px;}
+  .vocab-editor.on-card .vocab-editor-actions{justify-content:center;}
   .vocab-editor-actions{display:flex;justify-content:flex-end;gap:8px;}
   html:not(.touch) .vocab-list-term, html:not(.touch) .vocab-list-meaning{cursor:pointer;}
   #viewStudy.offscreen{position:fixed;right:0;bottom:0;z-index:-1;width:356px;height:200px;overflow:hidden;opacity:.01;pointer-events:none;}
@@ -320,7 +323,7 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-add-popup input{width:100%;}
   .vocab-add-popup div{margin-top:6px;font-size:12px;color:var(--text-3);}
   @media (prefers-reduced-motion: reduce){.vocab-card-inner{transition:none;}}
-  @media (max-width:600px){.vocab-card{height:260px;}.vocab-term{font-size:32px;}.vocab-meaning{font-size:24px;}}
+  @media (max-width:600px){.vocab-card, .vocab-editor.on-card{height:260px;}.vocab-term{font-size:32px;}.vocab-meaning{font-size:24px;}}
   .sidebar .primary{width:100%;}
   #lessonSearch{width:100%;}
   .lesson-list{flex:1;overflow-y:auto;margin:0 -4px;padding:0 4px;display:flex;flex-direction:column;gap:2px;}
@@ -1210,6 +1213,7 @@ let redoStack = [];
 let localReviewKeys = [];
 
 function takeSnapshot(label, expiresAt) {
+  if (currentView === "vocab") commitVocabEdit();
   return {
     snapshot: JSON.stringify(rows),
     groupSnapshot: JSON.stringify(groupState || savedGroupState),
@@ -6015,9 +6019,9 @@ function showView(view) {
   if (view === "study" && (currentLessonId === VOCAB_ALL_ID || appMode === "vocab" && !isVirtualLesson())) view = "vocab";
   if (view === "vocab" && currentView !== "vocab") vocabSession = null;
   if (view !== "vocab") {
+    commitVocabEdit();
     vocabTtsOn = false;
     vocabTtsToken++;
-    vocabEditingKey = null;
   }
   currentView = view;
   releaseHeldPage();
@@ -7469,11 +7473,11 @@ function vocabCardHtml(item) {
 }
 
 function vocabControlsHtml() {
-  return '<div class="vocab-controls">' + `<button class="tb-icon" id="vocabUndo" title="Undo (⌘Z)" aria-label="Undo"${undoStack.length ? "" : " disabled"}>${document.getElementById("tbUndo").innerHTML}</button>` + `<button class="tb-icon" id="vocabRedo" title="Redo (⇧⌘Z)" aria-label="Redo"${redoStack.length ? "" : " disabled"}>${document.getElementById("tbRedo").innerHTML}</button>` + '<button class="vocab-show" id="vocabShow" title="Flip the card (Space)">Show</button>' + '<button class="vocab-round again" id="vocabAgain" title="Again — still learning (← or Shift+Enter)" aria-label="Again">✕</button>' + '<button class="vocab-round good" id="vocabGood" title="Good — I know it (→ or Enter)" aria-label="Good">✓</button>' + "</div>";
+  return '<div class="vocab-controls">' + `<button class="tb-icon" id="vocabUndo" title="Undo (⌘Z)" aria-label="Undo"${undoStack.length ? "" : " disabled"}>${document.getElementById("tbUndo").innerHTML}</button>` + `<button class="tb-icon" id="vocabRedo" title="Redo (⇧⌘Z)" aria-label="Redo"${redoStack.length ? "" : " disabled"}>${document.getElementById("tbRedo").innerHTML}</button>` + '<button class="vocab-show" id="vocabShow" title="Flip the card (Space)" aria-label="Flip the card">🔄</button>' + '<button class="vocab-round again" id="vocabAgain" title="Again — still learning (← or Shift+Enter)" aria-label="Again">✕</button>' + '<button class="vocab-round good" id="vocabGood" title="Good — I know it (→ or Enter)" aria-label="Good">✓</button>' + "</div>";
 }
 
-function vocabEditorHtml(item) {
-  return '<div class="vocab-editor">' + `<input type="text" id="vocabEditTerm" autocomplete="off" placeholder="Question" aria-label="Question" value="${escapeAttr(item.term)}">` + `<input type="text" id="vocabEditMeaning" autocomplete="off" placeholder="Answer" aria-label="Answer" value="${escapeAttr(item.meaning)}">` + '<div class="vocab-editor-actions"><button id="vocabEditCancel" class="ghost">Cancel</button><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
+function vocabEditorHtml(item, onCard) {
+  return `<div class="vocab-editor${onCard ? " on-card" : ""}">` + `<input type="text" id="vocabEditTerm" autocomplete="off" placeholder="Question" aria-label="Question" value="${escapeAttr(item.term)}">` + `<input type="text" id="vocabEditMeaning" autocomplete="off" placeholder="Answer" aria-label="Answer" value="${escapeAttr(item.meaning)}">` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
 }
 
 function renderVocab() {
@@ -7523,12 +7527,12 @@ function renderVocab() {
   vocabShownRowId = item.card.id;
   vocabShownIsVideo = !!vocabVideoIdFor(item.card);
   if (vocabEditingKey === item.key && !vocabEditingInList) {
-    stage.innerHTML = vocabEditorHtml(item);
+    stage.innerHTML = vocabEditorHtml(item, true) + vocabControlsHtml();
   } else {
     stage.innerHTML = vocabCardHtml(item) + vocabControlsHtml();
     wireVocabCard(item);
-    wireVocabControls();
   }
+  wireVocabControls();
   wireVocabEditor(items);
   syncVocabSound();
 }
@@ -7546,24 +7550,18 @@ function wireVocabEditor(items) {
   if (!term) return;
   const meaning = document.getElementById("vocabEditMeaning");
   const item = items.find(i => i.key === vocabEditingKey);
-  const cancel = () => {
+  const save = () => {
+    if (!updateVocabEntry(item, term.value, meaning.value)) return;
     vocabEditingKey = null;
     renderVocab();
   };
-  const save = () => {
-    if (updateVocabEntry(item, term.value, meaning.value)) cancel();
-  };
   document.getElementById("vocabEditSave").onclick = save;
-  document.getElementById("vocabEditCancel").onclick = cancel;
   [ term, meaning ].forEach(input => input.addEventListener("keydown", e => {
     e.stopPropagation();
     if (e.isComposing || e.keyCode === 229) return;
-    if (e.key === "Enter") {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       save();
-    } else if (e.key === "Escape") {
-      e.preventDefault();
-      cancel();
     }
   }));
   term.focus({
@@ -7578,7 +7576,29 @@ function wireVocabEditor(items) {
   });
 }
 
+function commitVocabEdit() {
+  if (!vocabEditingKey) return false;
+  const term = document.getElementById("vocabEditTerm");
+  const meaning = document.getElementById("vocabEditMeaning");
+  const item = lessonVocabItems(rows).find(i => i.key === vocabEditingKey);
+  vocabEditingKey = null;
+  if (term && meaning && item) updateVocabEntry(item, term.value, meaning.value);
+  return true;
+}
+
+document.addEventListener("click", e => {
+  if (!vocabEditingKey) return;
+  const editor = document.querySelector(".vocab-editor");
+  if (editor && editor.contains(e.target)) return;
+  if (commitVocabEdit()) renderVocab();
+}, true);
+
+window.addEventListener("blur", () => {
+  if (commitVocabEdit()) renderVocab();
+});
+
 function openVocabEditor(key, inList) {
+  commitVocabEdit();
   stopVocabSound();
   vocabEditingKey = key;
   vocabEditingInList = !!inList;
@@ -7603,6 +7623,7 @@ document.getElementById("vocabList").addEventListener("mouseleave", () => {
 });
 
 document.getElementById("vocabFrontBtn").onclick = () => {
+  commitVocabEdit();
   vocabFront = vocabFront === "a" ? "q" : "a";
   try {
     localStorage.setItem(VOCAB_FRONT_KEY, JSON.stringify(vocabFront));
@@ -7700,6 +7721,7 @@ function vocabSoundOn() {
 
 function deleteVocabEntry(item, part) {
   if (!item) return;
+  commitVocabEdit();
   const row = item.card;
   const next = rewrittenVocabNotes(row, item, null, null);
   if (!next) {
@@ -7819,10 +7841,12 @@ function playVocabSound(item) {
 }
 
 function toggleVocabSound(item) {
+  if (commitVocabEdit()) renderVocab();
   if (vocabSoundOn()) stopVocabSound(); else playVocabSound(item);
 }
 
 function flipVocab() {
+  if (commitVocabEdit()) renderVocab();
   const item = currentVocabItem();
   if (!item) return;
   vocabSession.flipped = !vocabSession.flipped;
@@ -7834,6 +7858,7 @@ function flipVocab() {
 let vocabFlying = false;
 
 function flyVocab(isAgain) {
+  if (commitVocabEdit()) renderVocab();
   const card = document.getElementById("vocabCard");
   if (vocabFlying || !currentVocabItem()) return;
   if (!card || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -7852,6 +7877,7 @@ function flyVocab(isAgain) {
 }
 
 function gradeVocab(isAgain) {
+  commitVocabEdit();
   const item = currentVocabItem();
   if (!item) return;
   stopVocabSound();
