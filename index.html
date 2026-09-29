@@ -6261,15 +6261,7 @@ function focusLessonName() {
 
 async function createLesson() {
   commitActiveEdit();
-  if (isEmptyDraft()) {
-    const draft = library.find(l => l.id === currentLessonId);
-    if (draft) draft.vocabOnly = appMode === "vocab";
-    setLessonTitle("");
-    renderLessonList();
-    showView("study");
-    focusLessonName();
-    return;
-  }
+  await discardIfEmptyDraft();
   await flushAutoSave();
   const now = Date.now();
   const lesson = {
@@ -7416,7 +7408,7 @@ async function cloudPushLesson(id) {
     });
     return;
   }
-  if (isEmptyLesson(lesson)) return;
+  if (isEmptyLesson(lesson) && !st.synced[id]) return;
   const at = lesson.updatedAt || 0;
   const data = JSON.stringify(Object.assign({}, lesson, {
     cards: lesson.cards.filter(c => (c.q || "").trim() || (c.a || "").trim())
