@@ -292,9 +292,11 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-actions{display:inline-flex;flex-shrink:0;}
   .vocab-actions button{width:32px;height:36px;line-height:36px;padding:0;border:0;border-radius:6px;background:none;font-size:20px;color:var(--text-3);}
   .vocab-card-actions{position:absolute;top:6px;left:6px;z-index:3;}
-  .vocab-drag-label{position:absolute;top:18px;padding:4px 12px;border:3px solid currentColor;border-radius:10px;font-size:20px;font-weight:700;opacity:0;pointer-events:none;z-index:2;}
-  .vocab-drag-label.good{right:56px;color:var(--a-label);transform:rotate(8deg);}
-  .vocab-drag-label.again{left:56px;color:var(--danger);transform:rotate(-8deg);}
+  .vocab-drag-label{position:absolute;top:50%;left:50%;transform:translate(-50%, -50%);padding:6px 18px;border-radius:12px;background:var(--surface);font-size:34px;font-weight:700;opacity:0;pointer-events:none;z-index:4;}
+  .vocab-drag-label.good{color:var(--a-label);}
+  .vocab-drag-label.again{color:var(--danger);}
+  .vocab-card.swipe-good .vocab-face{border:3px solid var(--a-label);}
+  .vocab-card.swipe-again .vocab-face{border:3px solid var(--danger);}
   .vocab-controls{display:flex;align-items:center;justify-content:center;gap:8px;margin:18px auto 22px;}
   .vocab-controls .tb-icon{flex:0 0 48px;height:48px;display:flex;align-items:center;justify-content:center;padding:0;border-radius:12px;}
   .vocab-show{height:48px;padding:0 22px;font-size:15px;font-weight:600;border-radius:12px;}
@@ -306,7 +308,10 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-editor input{width:100%;font-size:16px;}
   .vocab-editor-actions{display:flex;justify-content:flex-end;gap:8px;}
   html:not(.touch) .vocab-list-term, html:not(.touch) .vocab-list-meaning{cursor:pointer;}
-  #viewStudy.offscreen{position:fixed;left:-10000px;top:0;width:640px;height:400px;overflow:hidden;opacity:0;pointer-events:none;}
+  #viewStudy.offscreen{position:fixed;right:0;bottom:0;z-index:-1;width:356px;height:200px;overflow:hidden;opacity:.01;pointer-events:none;}
+  #viewStudy.offscreen > :not(.study-head), #viewStudy.offscreen .study-head > :not(#mediaContainer){display:none !important;}
+  #viewStudy.offscreen .study-head{position:static;margin:0;padding:0;}
+  #viewStudy.offscreen .media-container:not(.warming){width:356px;max-width:none;height:200px;aspect-ratio:auto;margin:0;}
   .vocab-list h2{font-size:15px;margin:0 0 8px;}
   .vocab-list-row{display:flex;align-items:center;gap:12px;padding:8px 2px;border-top:1px solid var(--border);font-size:14px;}
   .vocab-list-row:first-of-type{border-top:0;}
@@ -1710,7 +1715,7 @@ function onPlayerError(event) {
   stopSequenceLoop();
   vocabPendingKey = null;
   syncVocabSound();
-  showToast("YouTube Error: Unable to play video");
+  showToast("YouTube Error: Unable to play video" + (event && event.data != null ? " (code " + event.data + ")" : ""));
 }
 
 function clearMedia() {
@@ -7748,19 +7753,28 @@ function playVocabSound(item) {
   const row = item.card;
   const videoId = vocabVideoIdFor(row);
   if (videoId) {
+    if (row.srcLessonId && (vocabVideoId !== videoId || !ytHasVideo)) {
+      vocabVideoId = videoId;
+      if (ytPlayer && ytReady && typeof ytPlayer.loadVideoById === "function") {
+        ytHasError = false;
+        ytHasVideo = true;
+        setMediaState("shown");
+        ytPlayer.loadVideoById({
+          videoId: videoId,
+          startSeconds: row.time
+        });
+        updateSequenceBtnUI();
+      } else {
+        createYtPlayer(videoId);
+      }
+    } else if (!row.srcLessonId && !ytHasVideo && !pendingVideoId) {
+      applyMediaUrl(true);
+    }
     if (ytHasError) {
       showToast("This video can't be played");
       return;
     }
     vocabPendingKey = item.key;
-    if (row.srcLessonId) {
-      if (vocabVideoId !== videoId || !ytHasVideo) {
-        vocabVideoId = videoId;
-        createYtPlayer(videoId);
-      }
-    } else if (!ytHasVideo && !pendingVideoId) {
-      applyMediaUrl(true);
-    }
     startPendingVocabVideo();
     syncVocabSound();
     return;
@@ -7813,6 +7827,7 @@ function flyVocab(isAgain) {
   card.style.transition = "transform .3s ease-in";
   card.style.transform = `translateX(${out}px) rotate(${out / 18}deg)`;
   card.querySelector(".vocab-drag-label." + (isAgain ? "again" : "good")).style.opacity = 1;
+  card.classList.add(isAgain ? "swipe-again" : "swipe-good");
   setTimeout(() => {
     vocabFlying = false;
     gradeVocab(isAgain);
@@ -7864,6 +7879,8 @@ function wireVocabCard(item) {
   let drag = null;
   const place = dx => {
     card.style.transform = dx ? `translateX(${dx}px) rotate(${dx / 18}deg)` : "";
+    card.classList.toggle("swipe-good", dx > 0);
+    card.classList.toggle("swipe-again", dx < 0);
     goodLabel.style.opacity = Math.max(0, Math.min(1, dx / 90));
     againLabel.style.opacity = Math.max(0, Math.min(1, -dx / 90));
   };
