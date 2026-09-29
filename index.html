@@ -819,9 +819,6 @@ window.onYouTubeIframeAPIReady = function(){
   .stats-table th:last-child, .stats-table td:last-child{padding-right:16px;}
   .stats-table .clamp{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:anywhere;line-height:1.4;}
   .stats-empty{color:var(--text-3);font-size:13px;padding:6px 0;}
-  .hardest-table tbody tr{cursor:pointer;}
-  @media (hover:hover){.hardest-table tbody tr:hover{background:var(--accent-soft);}}
-  .practice-btn{padding:2px 6px;font-size:15px;}
   #btnSaveFile.needs-save, #btnBackupAll.needs-save{color:var(--due-color);font-weight:700;background:color-mix(in srgb, var(--due-color) 14%, transparent);}
   .panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;}
   .panel-head.end{justify-content:flex-end;}
@@ -830,6 +827,8 @@ window.onYouTubeIframeAPIReady = function(){
   .panel-head button{padding:5px 12px;font-size:13px;}
   .virtual-lesson #btnSaveFile, .virtual-lesson #btnResetLesson, .virtual-lesson #btnDeleteLesson,
   .virtual-lesson .link-bar, .virtual-lesson .del-forever{display:none !important;}
+  .virtual-lesson #cardTable col:nth-child(2){width:0 !important;}
+  .virtual-lesson #cardTable td.del-col{padding:0;overflow:hidden;}
   .virtual-lesson .lesson-name-input{pointer-events:none;}
 
   .paused-overlay{position:fixed;inset:0;z-index:20000;display:flex;align-items:center;justify-content:center;padding:16px;background:color-mix(in srgb, var(--bg) 82%, transparent);backdrop-filter:blur(3px);}
@@ -1071,7 +1070,7 @@ window.onYouTubeIframeAPIReady = function(){
   </header>
   <div id="fileStatus" class="save-status" aria-live="polite"></div>
   <div class="lesson-meta">
-    <select id="studyLang" title="Language you're learning — used for pinyin hover, dictionary lookup and the Table mode flag icon">
+    <select id="studyLang" title="Language you're learning — used for pinyin hover, dictionary lookup and the Group mode flag icon">
       <option value="auto" selected>Auto-detect</option>
       <option value="zh-CN">🇨🇳 Chinese (Simplified)</option>
       <option value="zh-TW">🇹🇼 Chinese (Traditional)</option>
@@ -1097,7 +1096,7 @@ window.onYouTubeIframeAPIReady = function(){
   <div class="toolbar">
     <div class="segmented" role="group" aria-label="Study mode">
       <button id="fullModeBtn" title="Full mode — show every card, no spaced repetition" aria-label="All cards">☰</button>
-      <button id="groupBtn" title="Table mode — 5-card spaced-repetition review" aria-label="Table mode"><span id="groupBtnFlag">🌐</span></button>
+      <button id="groupBtn" title="Group mode — 5-card spaced-repetition review" aria-label="Group mode"><span id="groupBtnFlag">🌐</span></button>
       <button id="listenModeBtn" style="display:none;" title="Listening mode — one card at a time, press Space to reveal" aria-label="Listening mode">🎧</button>
       <button id="writeModeBtn" style="display:none;" title="Writing mode — Answer shown first so you can recall &amp; write the character, press Space to reveal the Question" aria-label="Writing mode">📝</button>
       <button id="copyGroupBtn" style="display:none;" title="Copy all questions from current group (↓)">Copy</button>
@@ -4470,41 +4469,6 @@ function totalLapses(card) {
   return MODES.reduce((sum, m) => sum + (card.srs && card.srs[m] ? card.srs[m].lapses : 0), 0);
 }
 
-const HARD_PRACTICE_MAX = 20;
-
-function startFocusSession(ids) {
-  commitActiveEdit();
-  haltAllPlayback();
-  lastShownCardId = null;
-  pinnedCardId = null;
-  groupState = {
-    sessionId: ++sessionCounter,
-    focus: "hard",
-    groups: splitIntoGroups(ids),
-    index: 0,
-    pendingAgain: []
-  };
-  savedGroupState = null;
-  groupViewStyle = "table";
-  applyGroupEntryHiddenState(groupState.groups[0]);
-  updateGroupUI();
-  render();
-  window.scrollTo(0, 0);
-  showToast("🎯 Practising " + ids.length + " hard card(s)");
-  startTts("a", false);
-}
-
-async function practiceHardCards(lessonId, firstUid) {
-  if (appMode === "vocab") setAppMode("cards");
-  await switchToLesson(lessonId);
-  const hard = rows.filter(r => hasAnswer(r) && totalLapses(r) > 0).sort((a, b) => (b.uid === firstUid) - (a.uid === firstUid) || totalLapses(b) - totalLapses(a)).slice(0, HARD_PRACTICE_MAX);
-  if (!hard.length) {
-    showToast("No hard cards with an answer in this lesson");
-    return;
-  }
-  startFocusSession(hard.map(r => r.id));
-}
-
 const HARD_LESSON_ID = "__hard__";
 
 const VOCAB_ALL_ID = "__vocab__";
@@ -4553,7 +4517,6 @@ async function practiceAllHardCards() {
     r.srcLessonId = picks[i].lesson.id;
   });
   showView("study");
-  startFocusSession(rows.map(r => r.id));
 }
 
 function saveVirtualLesson() {
@@ -5131,7 +5094,6 @@ document.querySelectorAll(".col-toggle").forEach(headerLabel => {
   headerLabel.addEventListener("click", e => {
     e.stopPropagation();
     if (!groupState) {
-      showToast("Switch to Table mode to show/hide a column");
       return;
     }
     const field = headerLabel.dataset.field;
@@ -6333,7 +6295,7 @@ async function createLesson() {
 function resetLessonProgress() {
   if (!currentLessonId || isVirtualLesson() || !rows.length) return;
   const name = document.getElementById("lessonName").value.trim() || "this lesson";
-  if (!confirm(`Reset "${name}"?\n\nAll ${rows.length} card(s) become New again in Table, Listen and Write, so you can study them from the start. Cards, notes and statistics stay.\n\nYou can undo with ⌘Z.`)) return;
+  if (!confirm(`Reset "${name}"?\n\nAll ${rows.length} card(s) become New again in Group, Listen and Write, so you can study them from the start. Cards, notes and statistics stay.\n\nYou can undo with ⌘Z.`)) return;
   commitActiveEdit();
   haltAllPlayback();
   pushUndo("Reset progress — " + name);
@@ -7166,7 +7128,7 @@ function renderStats() {
   practiseAll.hidden = !hardWithAnswer;
   practiseAll.textContent = "🎯 Practise all " + hardWithAnswer;
   practiseAll.title = "One session with every hard card from every lesson — grades go back to each card's own lesson";
-  hardestEl.innerHTML = hardest.length ? '<table class="stats-table hardest-table"><thead><tr><th>Question</th><th>Answer</th><th>Lesson</th><th class="num" colspan="2" title="Times marked Again · 🎯 practise" aria-label="Times marked Again, and practise">👎</th></tr></thead><tbody>' + hardest.slice(0, 10).map(h => `<tr data-lesson-id="${escapeAttr(h.l.id)}" data-card-uid="${escapeAttr(h.c.uid)}"><td><span class="clamp">${escapeHtml(h.c.q)}</span></td><td><span class="clamp">${escapeHtml(h.c.a)}</span></td><td><span class="clamp">${escapeHtml(h.l.name || "")}</span></td><td class="num">${h.lapses}</td><td class="num"><button class="ghost practice-btn" title="Practise this lesson's hard cards, starting with this one" aria-label="Practise hard cards">🎯</button></td></tr>`).join("") + "</tbody></table>" : '<div class="stats-empty">No cards marked Again yet — keep studying!</div>';
+  hardestEl.innerHTML = hardest.length ? '<table class="stats-table hardest-table"><thead><tr><th>Question</th><th>Answer</th><th>Lesson</th><th class="num" title="Times marked Again" aria-label="Times marked Again">👎</th></tr></thead><tbody>' + hardest.slice(0, 10).map(h => `<tr><td><span class="clamp">${escapeHtml(h.c.q)}</span></td><td><span class="clamp">${escapeHtml(h.c.a)}</span></td><td><span class="clamp">${escapeHtml(h.l.name || "")}</span></td><td class="num">${h.lapses}</td></tr>`).join("") + "</tbody></table>" : '<div class="stats-empty">No cards marked Again yet — keep studying!</div>';
 }
 
 document.getElementById("btnPractiseAll").onclick = practiceAllHardCards;
@@ -7189,11 +7151,6 @@ document.getElementById("heatNext").onclick = () => {
 document.getElementById("btnAddCards").onclick = openAddView;
 
 document.getElementById("addTarget").addEventListener("change", e => changeAddTarget(e.target.value));
-
-document.getElementById("statHardest").addEventListener("click", e => {
-  const row = e.target.closest("tr[data-lesson-id]");
-  if (row) practiceHardCards(row.dataset.lessonId, row.dataset.cardUid);
-});
 
 document.getElementById("btnSaveFile").onclick = exportCurrentLesson;
 
