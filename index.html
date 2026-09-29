@@ -309,12 +309,17 @@ window.onYouTubeIframeAPIReady = function(){
   #viewStudy.offscreen > :not(.study-head), #viewStudy.offscreen .study-head > :not(#mediaContainer){display:none !important;}
   #viewStudy.offscreen .study-head{position:static;margin:0;padding:0;}
   #viewStudy.offscreen .media-container:not(.warming){width:356px;max-width:none;height:200px;aspect-ratio:auto;margin:0;}
-  .vocab-list h2{font-size:15px;margin:0 0 8px;}
-  .vocab-list-row{display:flex;align-items:center;gap:12px;padding:8px 2px;border-top:1px solid var(--border);font-size:14px;}
-  .vocab-list-row:first-of-type{border-top:0;}
-  .vocab-list-term{flex:0 0 40%;font-weight:600;overflow-wrap:anywhere;}
-  .vocab-list-meaning{flex:1;color:var(--text-2);overflow-wrap:anywhere;}
-  .vocab-list-status{flex-shrink:0;}
+  .vocab-list:not([hidden]){display:grid;grid-template-columns:auto 1fr auto;align-items:stretch;}
+  html.touch .vocab-list:not([hidden]){grid-template-columns:auto auto 1fr auto;}
+  .vocab-list h2{grid-column:1 / -1;font-size:15px;margin:0 0 8px;}
+  .vocab-list-row[data-key]{display:contents;}
+  .vocab-list-row[data-key] > *{display:flex;align-items:center;padding:8px 16px 8px 0;border-top:1px solid var(--border);font-size:14px;}
+  .vocab-list-row[data-key] > :last-child{padding-right:2px;}
+  .vocab-list h2 + .vocab-list-row > *{border-top:0;}
+  .vocab-list-row.editing{grid-column:1 / -1;border-top:1px solid var(--border);}
+  .vocab-list h2 + .vocab-list-row.editing{border-top:0;}
+  .vocab-list-term{max-width:14em;font-weight:600;overflow-wrap:anywhere;}
+  .vocab-list-meaning{min-width:0;color:var(--text-2);overflow-wrap:anywhere;}
   .vocab-add-popup{position:fixed;z-index:2000;width:min(340px, calc(100vw - 16px));padding:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);}
   .vocab-add-popup input{width:100%;}
   @media (prefers-reduced-motion: reduce){.vocab-card-inner{transition:none;}}
@@ -7923,20 +7928,41 @@ function wireVocabCard(item) {
     card.classList.toggle("swipe-again", dx < 0);
   };
   card.addEventListener("pointerdown", e => {
+    if (drag && drag.moved) return;
+    drag = null;
     if (e.button !== 0 || e.target.closest(".vocab-speak, .vocab-actions")) return;
+    if (e.pointerType === "touch" && (e.clientX < 20 || e.clientX > window.innerWidth - 20)) return;
     drag = {
       id: e.pointerId,
+      touch: e.pointerType === "touch",
       x: e.clientX,
       y: e.clientY,
       dx: 0,
+      axis: null,
       moved: false
     };
+  });
+  card.addEventListener("touchmove", e => {
+    if (!drag || !drag.touch || e.touches.length !== 1) return;
+    const t = e.touches[0];
+    const dx = t.clientX - drag.x, dy = t.clientY - drag.y;
+    if (!drag.axis) {
+      if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+      drag.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+    }
+    if (drag.axis === "y") {
+      if (!drag.moved) drag = null;
+      return;
+    }
+    if (e.cancelable) e.preventDefault();
+  }, {
+    passive: false
   });
   card.addEventListener("pointermove", e => {
     if (!drag || e.pointerId !== drag.id) return;
     const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
     if (!drag.moved) {
-      if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy)) return;
+      if (drag.touch ? drag.axis !== "x" || Math.abs(dx) < 8 : Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy)) return;
       drag.moved = true;
       try {
         card.setPointerCapture(e.pointerId);
@@ -7951,7 +7977,7 @@ function wireVocabCard(item) {
     if (!d || e.pointerId !== d.id) return;
     drag = null;
     if (!d.moved) {
-      if (e.type === "pointerup") flipVocab();
+      if (e.type === "pointerup" && d.axis !== "y") flipVocab();
       return;
     }
     card.style.transition = "transform .25s ease-out";
