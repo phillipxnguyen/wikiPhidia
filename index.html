@@ -3642,6 +3642,40 @@ function unwrapInheritSpans(box) {
   box.normalize();
 }
 
+function noteItemTerm(li) {
+  if (isVocabItem(li)) return li.firstChild.textContent.trim();
+  const text = ownLiTextNodes(li).map(n => n.nodeValue).join("").replace(/\u00a0/g, " ");
+  const m = text.match(NOTE_VOCAB_ITEM_RE);
+  if (m) return m[2].trim();
+  const plain = text.trim().replace(/\s*[:：=＝]$/, "");
+  return plain && plain.length <= 40 && !/[:：=＝]/.test(plain) ? plain : "";
+}
+
+function noteItemIsDuplicate(li, box, taken) {
+  const term = noteItemTerm(li);
+  if (!term) return false;
+  const key = normalizeVocabText(term);
+  const row = activeEdit && activeEdit.row;
+  if (taken.has(key) || existingVocab(term, vocabSource().filter(r => r !== row))) return true;
+  taken.add(key);
+  return false;
+}
+
+function noteVocabKeys(box, except) {
+  const keys = new Set;
+  box.querySelectorAll("li").forEach(li => {
+    if (except.includes(li)) return;
+    const term = isVocabItem(li) || NOTE_VOCAB_ITEM_RE.test(ownLiTextNodes(li).map(n => n.nodeValue).join("")) ? noteItemTerm(li) : "";
+    if (term) keys.add(normalizeVocabText(term));
+  });
+  return keys;
+}
+
+function warnVocabDuplicates(terms) {
+  if (!terms.length) return;
+  if (terms.length === 1) warnVocabExists(terms[0]); else showToast("Already in this lesson's words — " + terms.join(", "));
+}
+
 function toggleVocabBullets(box) {
   const sel = window.getSelection();
   if (!sel.rangeCount) return;
@@ -3670,11 +3704,24 @@ function toggleVocabBullets(box) {
   }
   unwrapInheritSpans(box);
   range = sel.getRangeAt(0);
-  const items = selectedNoteItems(box, range);
-  items.forEach(li => {
-    if (!isVocabItem(li)) boldVocabItem(li) || boldPlainItem(li);
+  const found = selectedNoteItems(box, range);
+  const taken = noteVocabKeys(box, found);
+  const dups = [];
+  found.forEach(li => {
+    if (isVocabItem(li)) return;
+    if (noteItemIsDuplicate(li, box, taken)) dups.push(li); else boldVocabItem(li) || boldPlainItem(li);
   });
   box.querySelectorAll("ul:not([class])").forEach(ul => ul.className = "notes-list");
+  warnVocabDuplicates(dups.map(noteItemTerm));
+  dups.reverse().forEach(li => {
+    const r = document.createRange();
+    r.selectNodeContents(li);
+    sel.removeAllRanges();
+    sel.addRange(r);
+    document.execCommand("insertUnorderedList");
+  });
+  if (dups.length) unwrapInheritSpans(box);
+  const items = found.filter(li => li.isConnected && !dups.includes(li));
   if (!items.length) return;
   const last = items[items.length - 1];
   const nodes = ownLiTextNodes(last);
@@ -3698,7 +3745,10 @@ function commitActiveEdit() {
   let newQHtml = stripVocabHighlights(activeEdit.editQ.innerHTML || "");
   let newA = activeEdit.editA.textContent || "";
   let newAHtml = stripVocabHighlights(activeEdit.editA.innerHTML || "");
-  activeEdit.editNotes.querySelectorAll("li").forEach(boldVocabItem);
+  const takenKeys = new Set;
+  activeEdit.editNotes.querySelectorAll("li").forEach(li => {
+    if (isVocabItem(li)) takenKeys.add(normalizeVocabText(noteItemTerm(li))); else if (NOTE_VOCAB_ITEM_RE.test(ownLiTextNodes(li).map(n => n.nodeValue).join("")) && !noteItemIsDuplicate(li, activeEdit.editNotes, takenKeys)) boldVocabItem(li);
+  });
   const newNotes = activeEdit.editNotes.textContent || "";
   const newNotesHtml = activeEdit.editNotes.innerHTML || "";
   if (activeEdit.row.id === draftRowId) {
@@ -4052,7 +4102,9 @@ function wireEditBox(host, row) {
         if (!li || !el.contains(li)) return;
         e.preventDefault();
         document.execCommand("insertParagraph");
-        if (el === editNotes && li.isConnected && !li.contains(window.getSelection().anchorNode)) boldVocabItem(li);
+        if (el === editNotes && li.isConnected && !li.contains(window.getSelection().anchorNode) && !isVocabItem(li) && NOTE_VOCAB_ITEM_RE.test(ownLiTextNodes(li).map(n => n.nodeValue).join(""))) {
+          if (noteItemIsDuplicate(li, el, noteVocabKeys(el, [ li ]))) warnVocabExists(noteItemTerm(li)); else boldVocabItem(li);
+        }
         autoResizeDiv(el);
         return;
       }
