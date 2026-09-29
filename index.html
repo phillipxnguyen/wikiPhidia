@@ -8238,10 +8238,10 @@ function vocabKind(st, now) {
   return st.streak === 0 ? 0 : 1;
 }
 
-function startVocabSession(all) {
+function startVocabSession() {
   const now = Date.now();
   const items = lessonVocabItems(vocabSource());
-  const picked = items.filter(item => all || vocabStateOf(item).due <= now).map(item => ({
+  const picked = items.filter(item => vocabStateOf(item).due <= now).map(item => ({
     item: item,
     kind: vocabKind(vocabStateOf(item), now),
     shuffle: Math.random()
@@ -8249,7 +8249,6 @@ function startVocabSession(all) {
   picked.sort((a, b) => a.kind - b.kind || a.shuffle - b.shuffle);
   vocabSession = {
     lessonId: currentLessonId,
-    all: !!all,
     queue: picked.map(p => p.item.key),
     total: picked.length,
     flipped: false
@@ -8262,7 +8261,7 @@ function currentVocabItem() {
   const now = Date.now();
   while (vocabSession.queue.length) {
     const item = items.find(i => i.key === vocabSession.queue[0]);
-    if (item && (vocabSession.all || vocabStateOf(item).due <= now)) return item;
+    if (item && vocabStateOf(item).due <= now) return item;
     vocabSession.queue.shift();
     vocabSession.flipped = false;
   }
@@ -8413,7 +8412,7 @@ function renderVocab() {
     syncVocabSound();
     return;
   }
-  if (!vocabSession || vocabSession.lessonId !== currentLessonId) startVocabSession(false);
+  if (!vocabSession || vocabSession.lessonId !== currentLessonId) startVocabSession();
   const item = currentVocabItem();
   const c = vocabCounts(items);
   badges.innerHTML = '<div class="progress-badges">' + `<span class="progress-badge new active" title="New — not studied yet">🆕 ${c.fresh}</span>` + `<span class="progress-badge due active" title="Due — ready to review now">⏳ ${c.due}</span>` + `<span class="progress-badge done active" title="Done — ${DONE_STREAK} Good in a row">✅ ${c.done}</span>` + "</div>";
@@ -8421,11 +8420,7 @@ function renderVocab() {
     const next = items.map(i => vocabStateOf(i)).filter(st => st.reps && !isDoneState(st)).map(st => st.due).sort((a, b) => a - b)[0];
     const sub = vocabSession.total ? `You reviewed ${vocabSession.total} word${vocabSession.total === 1 ? "" : "s"}.` : "Nothing is due right now.";
     const later = next ? ` Next review ${formatDueIn(next)}.` : "";
-    stage.innerHTML = `<div class="session-complete" style="display:block;"><div class="emoji">🎉</div><div class="session-complete-title">All caught up!</div><div class="session-complete-sub">${sub}${later}</div><div class="row-flex" style="justify-content:center;margin-top:18px;"><button id="vocabAgainAll" class="primary">Review all ${items.length} words</button></div></div>` + vocabControlsHtml();
-    document.getElementById("vocabAgainAll").onclick = () => {
-      startVocabSession(true);
-      renderVocab();
-    };
+    stage.innerHTML = `<div class="session-complete" style="display:block;"><div class="emoji">🎉</div><div class="session-complete-title">All caught up!</div><div class="session-complete-sub">${sub}${later}</div></div>` + vocabControlsHtml();
     document.getElementById("vocabShow").hidden = true;
     document.getElementById("vocabAgain").hidden = true;
     document.getElementById("vocabGood").hidden = true;
@@ -9116,7 +9111,7 @@ setInterval(() => {
   if (currentView !== "vocab" || tabPaused || vocabEditingKey || !vocabSession || currentVocabItem()) return;
   const now = Date.now();
   if (!lessonVocabItems(vocabSource()).some(i => vocabStateOf(i).due <= now)) return;
-  startVocabSession(false);
+  startVocabSession();
   renderVocab();
 }, 5e3);
 
