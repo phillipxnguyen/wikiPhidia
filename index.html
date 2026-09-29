@@ -3426,12 +3426,19 @@ function showDictOverlay(placeholder, url) {
   positionDictOverlay();
 }
 
+function findDuplicateCard(q, a, time, except) {
+  const nq = normalizeImportText(q || "");
+  if (!nq) return null;
+  const na = normalizeImportText(a || "");
+  return rows.find(r => r !== except && r.id !== draftRowId && (!except || r.srcLessonId === except.srcLessonId) && normalizeImportText(r.q || "") === nq && (time == null || r.time == null || r.time === time) && (!na || !(r.a || "").trim() || normalizeImportText(r.a) === na)) || null;
+}
+
 function commitActiveEdit() {
   if (!activeEdit) return;
-  const newQ = activeEdit.editQ.textContent || "";
-  const newQHtml = stripVocabHighlights(activeEdit.editQ.innerHTML || "");
-  const newA = activeEdit.editA.textContent || "";
-  const newAHtml = stripVocabHighlights(activeEdit.editA.innerHTML || "");
+  let newQ = activeEdit.editQ.textContent || "";
+  let newQHtml = stripVocabHighlights(activeEdit.editQ.innerHTML || "");
+  let newA = activeEdit.editA.textContent || "";
+  let newAHtml = stripVocabHighlights(activeEdit.editA.innerHTML || "");
   const newNotes = activeEdit.editNotes.textContent || "";
   const newNotesHtml = activeEdit.editNotes.innerHTML || "";
   if (activeEdit.row.id === draftRowId) {
@@ -3439,7 +3446,9 @@ function commitActiveEdit() {
     const at = rows.indexOf(row);
     draftRowId = null;
     if (at !== -1) rows.splice(at, 1);
-    if (newQ.trim() || newA.trim()) {
+    if ((newQ.trim() || newA.trim()) && findDuplicateCard(newQ, newA, row.time, row)) {
+      showToast("This card already exists — not added");
+    } else if (newQ.trim() || newA.trim()) {
       Object.assign(row, {
         q: newQ,
         qHtml: newQHtml,
@@ -3456,6 +3465,13 @@ function commitActiveEdit() {
     hideDictOverlay();
     activeEdit = null;
     return;
+  }
+  if ((newQ !== activeEdit.originalQ || newA !== activeEdit.originalA) && findDuplicateCard(newQ, newA, activeEdit.row.time, activeEdit.row)) {
+    showToast("Another card already has this question — question and answer not changed");
+    newQ = activeEdit.originalQ;
+    newQHtml = activeEdit.originalQHtml;
+    newA = activeEdit.originalA;
+    newAHtml = activeEdit.originalAHtml;
   }
   const changed = newQ !== activeEdit.originalQ || newQHtml !== activeEdit.originalQHtml || newA !== activeEdit.originalA || newAHtml !== activeEdit.originalAHtml || newNotes !== activeEdit.originalNotes || newNotesHtml !== activeEdit.originalNotesHtml;
   if (changed) {
@@ -3698,7 +3714,10 @@ function wireEditBox(host, row) {
   }
   function appendWordToNotes(text) {
     let list = editNotes.querySelector("ul.notes-list");
-    if (wordAlreadyInNotes(list, text)) return;
+    if (wordAlreadyInNotes(list, text) || existingVocab(text, rows.filter(r => r !== row))) {
+      warnVocabExists(text);
+      return;
+    }
     const sel = window.getSelection();
     const range = document.createRange();
     if (!list) {
@@ -7469,6 +7488,15 @@ const vocabEntryCache = new Map;
 
 const VOCAB_LINE_RE = /^\s*([^:：]{1,40}?)\s*[:：]\s*(\S[\s\S]*?)\s*$/;
 
+function existingVocab(term, rowsToCheck) {
+  const key = normalizeVocabText((term || "").trim());
+  return key ? lessonVocabItems(rowsToCheck || rows).find(i => i.key === key) || null : null;
+}
+
+function warnVocabExists(term) {
+  showToast("“" + term.trim() + "” is already in this lesson's words");
+}
+
 function vocabEntriesOf(card) {
   const html = card.notesHtml || escapeHtml(card.notes || "").replace(/\n/g, "<br>");
   if (!html.trim()) return [];
@@ -7908,7 +7936,7 @@ function updateVocabEntry(item, termRaw, meaningRaw) {
   if (term === item.term && meaning === item.meaning) return true;
   const newKey = normalizeVocabText(term);
   if (newKey !== item.key && lessonVocabItems(rows).some(i => i.key === newKey)) {
-    showToast("“" + term + "” is already in this lesson");
+    warnVocabExists(term);
     return false;
   }
   const row = item.card;
@@ -8401,6 +8429,10 @@ function showVocabAddPopup(row, term, rect) {
       showToast("Write it as word: meaning");
       return;
     }
+    if (existingVocab(m[1])) {
+      warnVocabExists(m[1]);
+      return;
+    }
     hideVocabAddPopup();
     addVocabToRow(row, m[1], m[2]);
   });
@@ -8441,13 +8473,14 @@ document.addEventListener("keydown", e => {
   const hit = selectionInDictSource();
   if (!hit) return;
   e.preventDefault();
-  showVocabAddPopup(hit.row, hit.text, hit.rect);
+  if (existingVocab(hit.text)) warnVocabExists(hit.text); else showVocabAddPopup(hit.row, hit.text, hit.rect);
 });
 
 document.getElementById("dictPanels").addEventListener("mouseup", e => {
   if (!e.shiftKey || isVirtualLesson()) return;
   const hit = selectionInDictSource();
-  if (hit) showVocabAddPopup(hit.row, hit.text, hit.rect);
+  if (!hit) return;
+  if (existingVocab(hit.text)) warnVocabExists(hit.text); else showVocabAddPopup(hit.row, hit.text, hit.rect);
 });
 
 document.getElementById("dictPanels").addEventListener("click", e => {
