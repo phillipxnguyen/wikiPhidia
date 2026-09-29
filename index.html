@@ -259,7 +259,8 @@ window.onYouTubeIframeAPIReady = function(){
   html.vocab-mode .brand-switch .brand-mark{background:var(--new-color);}
   .vocab-head{display:flex;align-items:flex-start;gap:10px;}
   .vocab-head .stats-title{flex:1;min-width:0;}
-  .vocab-head button{flex-shrink:0;margin-top:4px;}
+  .vocab-front-btn{flex-shrink:0;width:40px;height:40px;padding:0;margin-top:2px;font-size:20px;border-radius:10px;}
+  .vocab-front-btn.active{background:var(--accent-soft);color:var(--accent);border-color:var(--accent);}
   .vocab-badges{margin:-8px 0 16px;}
   .vocab-count{margin-left:6px;font-size:13px;font-weight:600;color:var(--text-2);font-variant-numeric:tabular-nums;}
   .vocab-card{position:relative;height:320px;perspective:1200px;touch-action:pan-y;cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;}
@@ -280,11 +281,12 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-drag-label{position:absolute;top:18px;padding:4px 12px;border:3px solid currentColor;border-radius:10px;font-size:20px;font-weight:700;opacity:0;pointer-events:none;z-index:2;}
   .vocab-drag-label.good{right:56px;color:var(--a-label);transform:rotate(8deg);}
   .vocab-drag-label.again{left:56px;color:var(--danger);transform:rotate(-8deg);}
-  .vocab-controls{display:flex;gap:8px;max-width:560px;margin:18px auto 22px;}
-  .vocab-controls button{flex:1;min-height:48px;font-size:15px;font-weight:600;border-radius:12px;}
-  .vocab-controls .tb-icon{flex:0 0 48px;display:flex;align-items:center;justify-content:center;padding:0;}
-  .vocab-controls .tb-again{background:var(--danger-soft);color:var(--danger);border-color:transparent;}
-  .vocab-controls .tb-good{background:var(--a-bg);color:var(--a-label);border-color:transparent;}
+  .vocab-controls{display:flex;align-items:center;gap:8px;max-width:560px;margin:18px auto 22px;}
+  .vocab-controls .tb-icon{flex:0 0 48px;height:48px;display:flex;align-items:center;justify-content:center;padding:0;border-radius:12px;}
+  .vocab-show{flex:1;min-height:48px;font-size:15px;font-weight:600;border-radius:12px;}
+  .vocab-round{flex:0 0 56px;height:56px;padding:0;border-radius:50%;font-size:22px;font-weight:700;background:var(--surface);}
+  .vocab-round.again{color:var(--danger);border-color:color-mix(in srgb, var(--danger) 45%, transparent);}
+  .vocab-round.good{color:var(--a-label);border-color:color-mix(in srgb, var(--a-label) 45%, transparent);}
   .vocab-editor{display:flex;flex-direction:column;gap:8px;padding:16px;margin-bottom:16px;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow-sm);}
   .vocab-list .vocab-editor{margin:4px 0;box-shadow:none;}
   .vocab-editor input{width:100%;font-size:16px;}
@@ -318,6 +320,8 @@ window.onYouTubeIframeAPIReady = function(){
   .lesson-item-meta{display:flex;gap:8px;font-size:12px;color:var(--text-3);white-space:nowrap;overflow:hidden;font-variant-numeric:tabular-nums;}
   .lesson-item-meta .sep{opacity:.5;}
   .lesson-item.all-vocab{margin-bottom:4px;}
+  .lesson-item.all-vocab .lesson-item-name{font-size:18px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3);}
+  .lesson-item.all-vocab.active .lesson-item-name{color:var(--accent);}
   .lesson-item-meta .due{color:var(--due-color);font-weight:600;}
   .lesson-item-meta .new{color:var(--new-color);font-weight:600;}
   .lesson-item-meta .done{color:var(--done-color);font-weight:600;}
@@ -965,7 +969,7 @@ window.onYouTubeIframeAPIReady = function(){
 <section id="viewVocab" hidden>
   <div class="vocab-head">
     <h1 id="vocabTitle" class="stats-title"></h1>
-    <button id="vocabFrontBtn" class="ghost" title="Choose which side of the card shows first"></button>
+    <button id="vocabFrontBtn" class="vocab-front-btn" aria-label="Switch which side shows first">⇄</button>
   </div>
   <div id="vocabBadges" class="vocab-badges"></div>
   <div id="vocabStage"></div>
@@ -7422,7 +7426,7 @@ function vocabCardHtml(item) {
 }
 
 function vocabControlsHtml() {
-  return '<div class="vocab-controls">' + `<button class="tb-icon" id="vocabUndo" title="Undo (⌘Z)" aria-label="Undo"${undoStack.length ? "" : " disabled"}>${document.getElementById("tbUndo").innerHTML}</button>` + '<button class="tb-again" id="vocabAgain" title="Again — still learning (← or Shift+Enter)">Again</button>' + '<button class="tb-good" id="vocabGood" title="Good — I know it (→ or Enter)">Good</button>' + `<button class="tb-icon" id="vocabRedo" title="Redo (⇧⌘Z)" aria-label="Redo"${redoStack.length ? "" : " disabled"}>${document.getElementById("tbRedo").innerHTML}</button>` + "</div>";
+  return '<div class="vocab-controls">' + `<button class="tb-icon" id="vocabUndo" title="Undo (⌘Z)" aria-label="Undo"${undoStack.length ? "" : " disabled"}>${document.getElementById("tbUndo").innerHTML}</button>` + `<button class="tb-icon" id="vocabRedo" title="Redo (⇧⌘Z)" aria-label="Redo"${redoStack.length ? "" : " disabled"}>${document.getElementById("tbRedo").innerHTML}</button>` + '<button class="vocab-show" id="vocabShow" title="Flip the card (Space)">Show</button>' + '<button class="vocab-round again" id="vocabAgain" title="Again — still learning (← or Shift+Enter)" aria-label="Again">✕</button>' + '<button class="vocab-round good" id="vocabGood" title="Good — I know it (→ or Enter)" aria-label="Good">✓</button>' + "</div>";
 }
 
 function vocabEditorHtml(item) {
@@ -7435,7 +7439,8 @@ function renderVocab() {
   document.getElementById("vocabTitle").textContent = document.getElementById("lessonName").value.trim() || "Untitled lesson";
   const frontBtn = document.getElementById("vocabFrontBtn");
   frontBtn.hidden = !items.length;
-  frontBtn.textContent = vocabFront === "a" ? "⇄ Answer first" : "⇄ Question first";
+  frontBtn.classList.toggle("active", vocabFront === "a");
+  frontBtn.title = vocabFront === "a" ? "Answer first — click to show the Question first" : "Question first — click to show the Answer first";
   const stage = document.getElementById("vocabStage");
   const list = document.getElementById("vocabList");
   const badges = document.getElementById("vocabBadges");
@@ -7465,6 +7470,7 @@ function renderVocab() {
       startVocabSession(true);
       renderVocab();
     };
+    document.getElementById("vocabShow").hidden = true;
     document.getElementById("vocabAgain").hidden = true;
     document.getElementById("vocabGood").hidden = true;
     wireVocabControls();
@@ -7492,6 +7498,7 @@ function wireVocabControls() {
   document.getElementById("vocabGood").onclick = () => gradeVocab(false);
   document.getElementById("vocabAgain").onclick = () => gradeVocab(true);
   document.getElementById("vocabUndo").onclick = () => undo();
+  document.getElementById("vocabShow").onclick = () => flipVocab();
   document.getElementById("vocabRedo").onclick = () => redo();
 }
 
@@ -7827,7 +7834,7 @@ function allVocabCards() {
 function allVocabItemHtml() {
   const c = vocabCounts(lessonVocabItems(allVocabCards()));
   const active = currentLessonId === VOCAB_ALL_ID && currentView === "vocab";
-  return `<button class="lesson-item all-vocab${active ? " active" : ""}" data-all-vocab="1"${active ? ' aria-current="page"' : ""}>` + '<span class="lesson-item-name">📚 All vocabulary</span>' + `<span class="lesson-item-meta"><span title="Words">${c.total}</span><span class="sep">|</span><span class="new" title="New">🆕 ${c.fresh}</span><span class="due" title="Due">⏳ ${c.due}</span><span class="done" title="Done">✅ ${c.done}</span></span></button>`;
+  return `<button class="lesson-item all-vocab${active ? " active" : ""}" data-all-vocab="1"${active ? ' aria-current="page"' : ""}>` + '<span class="lesson-item-name">All vocabulary</span>' + `<span class="lesson-item-meta"><span title="Words">${c.total}</span><span class="sep">|</span><span class="new" title="New">🆕 ${c.fresh}</span><span class="due" title="Due">⏳ ${c.due}</span><span class="done" title="Done">✅ ${c.done}</span></span></button>`;
 }
 
 async function openAllVocabulary() {
