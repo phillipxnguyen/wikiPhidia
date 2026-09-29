@@ -274,20 +274,20 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-front-btn{flex-shrink:0;width:40px;height:40px;padding:0;margin-top:2px;font-size:20px;border-radius:10px;}
   .vocab-front-btn.active{background:var(--accent-soft);color:var(--accent);border-color:var(--accent);}
   .vocab-badges{margin:-8px 0 16px;}
-  .vocab-count{margin-left:6px;font-size:13px;font-weight:600;color:var(--text-2);font-variant-numeric:tabular-nums;}
   .vocab-card{position:relative;height:320px;perspective:1200px;touch-action:pan-y;cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;}
   .vocab-card-inner{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .45s cubic-bezier(.3,.7,.3,1);}
   .vocab-card.flipped .vocab-card-inner{transform:rotateY(180deg);}
   .vocab-face{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:36px 24px 24px;text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow-md);backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:auto;}
   .vocab-back{transform:rotateY(180deg);background:var(--a-bg);}
   .vocab-term{font-size:40px;font-weight:600;line-height:1.3;overflow-wrap:anywhere;}
-  .vocab-sentence{font-size:28px;line-height:2;overflow-wrap:anywhere;}
-  .vocab-sentence.small{font-size:20px;color:var(--text-2);}
-  .vocab-sentence rt{font-size:.5em;color:var(--text-2);}
-  .vocab-sentence mark{background:var(--mark-bg);color:inherit;border-radius:3px;padding:0 2px;}
-  .vocab-sentence mark rt{color:inherit;}
+  .vocab-ctx{font-size:28px;line-height:2;overflow-wrap:anywhere;}
+  .vocab-ctx.small{font-size:20px;color:var(--text-2);}
+  .vocab-ctx rt{font-size:.5em;color:var(--text-2);}
+  .vocab-ctx mark{background:var(--mark-bg);color:inherit;border-radius:3px;padding:0 2px;}
+  .vocab-ctx mark rt{color:inherit;}
   .vocab-meaning{font-size:28px;font-weight:600;line-height:1.35;color:var(--a-text);overflow-wrap:anywhere;}
   .vocab-speak{position:absolute;top:10px;right:10px;z-index:3;width:36px;height:36px;padding:0;border:0;border-radius:50%;background:transparent;font-size:18px;}
+  .vocab-speak.video{border:1px solid var(--border);background:var(--surface);color:var(--text-2);font-size:15px;}
   html:not(.touch) .vocab-touch-only{display:none !important;}
   .vocab-actions{display:inline-flex;flex-shrink:0;}
   .vocab-actions button{width:32px;height:36px;line-height:36px;padding:0;border:0;border-radius:6px;background:none;font-size:20px;color:var(--text-3);}
@@ -295,9 +295,9 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-drag-label{position:absolute;top:18px;padding:4px 12px;border:3px solid currentColor;border-radius:10px;font-size:20px;font-weight:700;opacity:0;pointer-events:none;z-index:2;}
   .vocab-drag-label.good{right:56px;color:var(--a-label);transform:rotate(8deg);}
   .vocab-drag-label.again{left:56px;color:var(--danger);transform:rotate(-8deg);}
-  .vocab-controls{display:flex;align-items:center;gap:8px;max-width:560px;margin:18px auto 22px;}
+  .vocab-controls{display:flex;align-items:center;justify-content:center;gap:8px;margin:18px auto 22px;}
   .vocab-controls .tb-icon{flex:0 0 48px;height:48px;display:flex;align-items:center;justify-content:center;padding:0;border-radius:12px;}
-  .vocab-show{flex:1;min-height:48px;font-size:15px;font-weight:600;border-radius:12px;}
+  .vocab-show{height:48px;padding:0 22px;font-size:15px;font-weight:600;border-radius:12px;}
   .vocab-round{flex:0 0 56px;height:56px;padding:0;border-radius:50%;font-size:22px;font-weight:700;background:var(--surface);}
   .vocab-round.again{color:var(--danger);border-color:color-mix(in srgb, var(--danger) 45%, transparent);}
   .vocab-round.good{color:var(--a-label);border-color:color-mix(in srgb, var(--a-label) 45%, transparent);}
@@ -7255,6 +7255,8 @@ let vocabVideoId = null;
 
 let vocabHoveredKey = null;
 
+let vocabShownIsVideo = false;
+
 const vocabEntryCache = new Map;
 
 const VOCAB_LINE_RE = /^\s*([^:：]{1,40}?)\s*[:：]\s*(\S[\s\S]*?)\s*$/;
@@ -7443,7 +7445,7 @@ function vocabCardHtml(item) {
   const inSentence = sentence && sentence.normalize("NFC").toLowerCase().includes(item.term.normalize("NFC").toLowerCase());
   const frontText = vocabFront === "a" ? item.meaning : item.term;
   const front = `<div class="vocab-face vocab-front"><div class="vocab-term">${escapeHtml(frontText)}</div></div>`;
-  const main = inSentence ? `<div class="vocab-sentence">${vocabSentenceHtml(sentence, item.term)}</div>` : `<div class="vocab-sentence"><mark>${vocabSentenceHtml(item.term, "")}</mark></div>` + (sentence ? `<div class="vocab-sentence small">${vocabSentenceHtml(sentence, "")}</div>` : "");
+  const main = inSentence ? `<div class="vocab-ctx">${vocabSentenceHtml(sentence, item.term)}</div>` : `<div class="vocab-ctx"><mark>${vocabSentenceHtml(item.term, "")}</mark></div>` + (sentence ? `<div class="vocab-ctx small">${vocabSentenceHtml(sentence, "")}</div>` : "");
   const back = `<div class="vocab-face vocab-back">${main}<div class="vocab-meaning">${escapeHtml(item.meaning)}</div></div>`;
   return `<div class="vocab-card${vocabSession.flipped ? " flipped" : ""}" id="vocabCard">` + `<div class="vocab-card-inner">${front}${back}</div>` + '<span class="vocab-actions vocab-card-actions vocab-touch-only"><button class="vocab-act-edit" aria-label="Edit this word">&#9998;</button><button class="vocab-act-del" aria-label="Delete this word">&#10005;</button></span>' + '<button class="vocab-speak" aria-label="Play the sentence">🔊</button>' + '<div class="vocab-drag-label again">Again</div><div class="vocab-drag-label good">Good</div>' + "</div>";
 }
@@ -7482,8 +7484,7 @@ function renderVocab() {
   if (!vocabSession || vocabSession.lessonId !== currentLessonId) startVocabSession(false);
   const item = currentVocabItem();
   const c = vocabCounts(items);
-  const done = vocabSession.total - vocabSession.queue.length;
-  badges.innerHTML = '<div class="progress-badges">' + `<span class="progress-badge new active" title="New — not studied yet">🆕 ${c.fresh}</span>` + `<span class="progress-badge due active" title="Due — ready to review now">⏳ ${c.due}</span>` + `<span class="progress-badge done active" title="Done — ${DONE_STREAK} Good in a row">✅ ${c.done}</span>` + (item ? `<span class="vocab-count">${done + 1} / ${vocabSession.total}</span>` : "") + "</div>";
+  badges.innerHTML = '<div class="progress-badges">' + `<span class="progress-badge new active" title="New — not studied yet">🆕 ${c.fresh}</span>` + `<span class="progress-badge due active" title="Due — ready to review now">⏳ ${c.due}</span>` + `<span class="progress-badge done active" title="Done — ${DONE_STREAK} Good in a row">✅ ${c.done}</span>` + "</div>";
   if (!item) {
     const next = items.map(i => vocabStateOf(i)).filter(st => st.reps && !isDoneState(st)).map(st => st.due).sort((a, b) => a - b)[0];
     const sub = vocabSession.total ? `You reviewed ${vocabSession.total} word${vocabSession.total === 1 ? "" : "s"}.` : "Nothing is due right now.";
@@ -7502,6 +7503,7 @@ function renderVocab() {
     return;
   }
   vocabShownRowId = item.card.id;
+  vocabShownIsVideo = !!vocabVideoIdFor(item.card);
   if (vocabEditingKey === item.key) {
     stage.innerHTML = vocabEditorHtml(item);
   } else {
@@ -7518,8 +7520,8 @@ function currentVocabItemKey() {
 }
 
 function wireVocabControls() {
-  document.getElementById("vocabGood").onclick = () => gradeVocab(false);
-  document.getElementById("vocabAgain").onclick = () => gradeVocab(true);
+  document.getElementById("vocabGood").onclick = () => flyVocab(false);
+  document.getElementById("vocabAgain").onclick = () => flyVocab(true);
   document.getElementById("vocabUndo").onclick = () => undo();
   document.getElementById("vocabShow").onclick = () => flipVocab();
   document.getElementById("vocabRedo").onclick = () => redo();
@@ -7704,8 +7706,9 @@ function syncVocabSound() {
   const btn = document.querySelector("#vocabCard .vocab-speak");
   if (!btn) return;
   const on = vocabSoundOn();
-  btn.textContent = on ? "⏸️" : "🔊";
-  btn.title = on ? "Pause (↑)" : "Play the sentence (↑)";
+  btn.textContent = vocabShownIsVideo ? on ? "⏸" : "▶" : on ? "⏸️" : "🔊";
+  btn.classList.toggle("video", vocabShownIsVideo);
+  btn.title = on ? "Pause (↑)" : vocabShownIsVideo ? "Play the video clip (↑)" : "Read the sentence aloud (↑)";
 }
 
 function stopVocabSound() {
@@ -7789,6 +7792,26 @@ function flipVocab() {
   if (vocabSession.flipped) playVocabSound(item); else stopVocabSound();
 }
 
+let vocabFlying = false;
+
+function flyVocab(isAgain) {
+  const card = document.getElementById("vocabCard");
+  if (vocabFlying || !currentVocabItem()) return;
+  if (!card || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    gradeVocab(isAgain);
+    return;
+  }
+  vocabFlying = true;
+  const out = (isAgain ? -1 : 1) * (window.innerWidth + 200);
+  card.style.transition = "transform .3s ease-in";
+  card.style.transform = `translateX(${out}px) rotate(${out / 18}deg)`;
+  card.querySelector(".vocab-drag-label." + (isAgain ? "again" : "good")).style.opacity = 1;
+  setTimeout(() => {
+    vocabFlying = false;
+    gradeVocab(isAgain);
+  }, 220);
+}
+
 function gradeVocab(isAgain) {
   const item = currentVocabItem();
   if (!item) return;
@@ -7870,13 +7893,7 @@ function wireVocabCard(item) {
       return;
     }
     card.style.transition = "transform .25s ease-out";
-    if (e.type === "pointerup" && Math.abs(d.dx) >= 90) {
-      const out = Math.sign(d.dx) * (window.innerWidth + 200);
-      card.style.transform = `translateX(${out}px) rotate(${out / 18}deg)`;
-      setTimeout(() => gradeVocab(d.dx < 0), 180);
-    } else {
-      place(0);
-    }
+    if (e.type === "pointerup" && Math.abs(d.dx) >= 90) flyVocab(d.dx < 0); else place(0);
   };
   card.addEventListener("pointerup", end);
   card.addEventListener("pointercancel", end);
@@ -7911,7 +7928,7 @@ function handleVocabKey(e) {
   if (!again && !good || !currentVocabItem()) return;
   e.preventDefault();
   if (document.activeElement && document.activeElement.tagName === "BUTTON") document.activeElement.blur();
-  gradeVocab(again);
+  flyVocab(again);
 }
 
 function setAppMode(mode) {
