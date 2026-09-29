@@ -308,6 +308,7 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-editor textarea{width:100%;font-size:16px;}
   .vocab-editor-actions{display:flex;justify-content:flex-end;gap:8px;}
   html:not(.touch) .vocab-list-term, html:not(.touch) .vocab-list-meaning{cursor:pointer;}
+  .vocab-more{grid-column:1 / -1;margin-top:8px;width:100%;}
   #viewStudy.offscreen{position:fixed;right:0;bottom:0;z-index:-1;width:356px;height:200px;overflow:hidden;opacity:.01;pointer-events:none;}
   #viewStudy.offscreen > :not(.study-head), #viewStudy.offscreen .study-head > :not(#mediaContainer){display:none !important;}
   #viewStudy.offscreen .study-head{position:static;margin:0;padding:0;}
@@ -7523,6 +7524,33 @@ let vocabHoveredKey = null;
 
 let vocabShownIsVideo = false;
 
+const VOCAB_LIST_PAGE = 100;
+
+let vocabListLimit = VOCAB_LIST_PAGE;
+
+let vocabListLessonId = null;
+
+let vocabMoreObserver = null;
+
+function showMoreVocab() {
+  vocabListLimit += VOCAB_LIST_PAGE * 2;
+  renderVocab();
+}
+
+function watchVocabMore() {
+  if (vocabMoreObserver) vocabMoreObserver.disconnect();
+  const btn = document.getElementById("vocabMore");
+  if (!btn) return;
+  btn.onclick = showMoreVocab;
+  if (!("IntersectionObserver" in window)) return;
+  vocabMoreObserver = new IntersectionObserver(entries => {
+    if (entries.some(e => e.isIntersecting)) showMoreVocab();
+  }, {
+    rootMargin: "300px"
+  });
+  vocabMoreObserver.observe(btn);
+}
+
 let vocabAwaitCue = false;
 
 let vocabAwaitCueTimer = null;
@@ -7779,7 +7807,16 @@ function renderVocab() {
   vocabShownRowId = null;
   if (vocabEditingKey && !items.some(i => i.key === vocabEditingKey)) vocabEditingKey = null;
   list.hidden = !items.length;
-  list.innerHTML = `<h2>${currentLessonId === VOCAB_ALL_ID ? "All words" : "Words in this lesson"} (${items.length})</h2>` + items.map(item => item.key === vocabEditingKey && vocabEditingInList ? `<div class="vocab-list-row editing">${vocabEditorHtml(item)}</div>` : `<div class="vocab-list-row" data-key="${escapeAttr(item.key)}"><span class="vocab-actions vocab-touch-only"><button class="vocab-act-edit" aria-label="Edit this word">&#9998;</button><button class="vocab-act-del" aria-label="Delete this word">&#10005;</button></span><span class="vocab-list-term" title="Click to edit">${escapeHtml(item.term)}</span><span class="vocab-list-meaning" title="Click to edit">${escapeHtml(item.meaning)}</span><span class="vocab-list-status">${vocabStatusIcon(vocabStateOf(item))}</span></div>`).join("");
+  if (vocabListLessonId !== currentLessonId) {
+    vocabListLessonId = currentLessonId;
+    vocabListLimit = VOCAB_LIST_PAGE;
+  }
+  const editingAt = vocabEditingInList ? items.findIndex(i => i.key === vocabEditingKey) : -1;
+  if (editingAt >= vocabListLimit) vocabListLimit = editingAt + 1;
+  const shown = items.slice(0, vocabListLimit);
+  const more = items.length - shown.length;
+  list.innerHTML = `<h2>${currentLessonId === VOCAB_ALL_ID ? "All words" : "Words in this lesson"} (${items.length})</h2>` + shown.map(item => item.key === vocabEditingKey && vocabEditingInList ? `<div class="vocab-list-row editing">${vocabEditorHtml(item)}</div>` : `<div class="vocab-list-row" data-key="${escapeAttr(item.key)}"><span class="vocab-actions vocab-touch-only"><button class="vocab-act-edit" aria-label="Edit this word">&#9998;</button><button class="vocab-act-del" aria-label="Delete this word">&#10005;</button></span><span class="vocab-list-term" title="Click to edit">${escapeHtml(item.term)}</span><span class="vocab-list-meaning" title="Click to edit">${escapeHtml(item.meaning)}</span><span class="vocab-list-status">${vocabStatusIcon(vocabStateOf(item))}</span></div>`).join("") + (more ? `<button id="vocabMore" class="vocab-more ghost">Show ${more} more</button>` : "");
+  watchVocabMore();
   if (!items.length) {
     vocabSession = null;
     badges.innerHTML = "";
@@ -8333,7 +8370,8 @@ document.getElementById("btnAppMode").onclick = () => {
   setAppMode(appMode === "vocab" ? "cards" : "vocab");
   replayAnimation(document.querySelector("#btnAppMode .brand-mark"), "mode-flip");
   replayAnimation(document.getElementById("brandName"), "mode-name");
-  replayAnimation(document.querySelector(".main-inner"), appMode === "vocab" ? "mode-in-right" : "mode-in-left");
+  const main = document.querySelector(".main-inner");
+  if (main.scrollHeight < window.innerHeight * 3) replayAnimation(main, appMode === "vocab" ? "mode-in-right" : "mode-in-left");
   replayAnimation(document.getElementById("lessonList"), "mode-fade");
   document.querySelector(".shell").classList.remove("drawer-open");
   let last = null;
