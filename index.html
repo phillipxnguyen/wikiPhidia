@@ -601,8 +601,8 @@ window.onYouTubeIframeAPIReady = function(){
   .edit-row .rich-editor{margin-bottom:8px;display:block;}
   .rich-editor:empty::before{content:attr(data-placeholder);color:var(--text-3);font-style:italic;}
   #editNotes:empty::before{font-style:normal;}
-  .rich-editor mark.vocab-hit{background:var(--vocab-bg);color:var(--vocab-text);border-radius:3px;padding:0 1px;cursor:pointer;}
-  @media (hover:hover){.rich-editor mark.vocab-hit:hover{background:var(--vocab-bg-hover);}}
+  .dict-source mark.vocab-hit, .rich-editor mark.vocab-hit{background:var(--vocab-bg);color:var(--vocab-text);border-radius:3px;padding:0 1px;cursor:pointer;}
+  @media (hover:hover){.dict-source mark.vocab-hit:hover, .rich-editor mark.vocab-hit:hover{background:var(--vocab-bg-hover);}}
   .rich-editor ul, .vocab-popup ul{margin:2px 0;padding-left:20px;}
   .rich-editor li, .vocab-popup li{margin:2px 0;}
   .hover-tooltip{
@@ -2457,6 +2457,11 @@ function renderDictPanels() {
   }
   host.classList.toggle("with-source", !!groupState && inTable);
   const now = Date.now();
+  let notesLen = 0;
+  rows.forEach(r => {
+    notesLen += (r.notes || "").length * 31 + (r.q || "").length;
+  });
+  const notesSig = rows.length + ":" + notesLen;
   const panelFor = r => {
     const url = dictUrlFor((r.q || "").trim());
     if (!url) return null;
@@ -2471,6 +2476,12 @@ function renderDictPanels() {
     }
     el.dataset.used = now;
     el.dataset.rowId = r.id;
+    const src = el.querySelector(".dict-source");
+    const key = r.id + "\u0001" + (r.q || "") + "\u0001" + notesSig;
+    if (src.dataset.key !== key) {
+      src.dataset.key = key;
+      src.innerHTML = highlightVocabInHtml(escapeHtml(r.q || ""), r.id);
+    }
     return el;
   };
   preload.forEach(panelFor);
@@ -9461,13 +9472,25 @@ document.addEventListener("keydown", e => {
 });
 
 document.getElementById("dictPanels").addEventListener("mouseup", e => {
-  if (!e.shiftKey || isVirtualLesson()) return;
   const hit = selectionInDictSource();
   if (!hit) return;
+  if (!e.shiftKey) {
+    const matches = findVocabMatches(hit.text, hit.row.id);
+    if (matches.length) showVocabPopup(matches, hit.rect);
+    return;
+  }
+  if (isVirtualLesson()) return;
   if (existingVocab(hit.text)) warnVocabExists(hit.text); else showVocabAddPopup(hit.row, hit.text, hit.rect);
 });
 
 document.getElementById("dictPanels").addEventListener("click", e => {
+  const hit = e.target.closest(".dict-source mark.vocab-hit");
+  if (hit) {
+    const row = dictSourceRow(hit.closest(".dict-source"));
+    const matches = row ? findVocabMatches(hit.textContent, row.id) : [];
+    if (matches.length) showVocabPopup(matches, hit.getBoundingClientRect());
+    return;
+  }
   const source = e.target.closest(".dict-source");
   if (!source || !isTouch() || isVirtualLesson()) return;
   const row = dictSourceRow(source);
