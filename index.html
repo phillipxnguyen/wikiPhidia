@@ -171,6 +171,8 @@ window.onYouTubeIframeAPIReady = function(){
   input[type=text], input[type=search], input[type=email], input[type=password], textarea{cursor:text;}
   input[type=text]:focus, input[type=search]:focus, input[type=email]:focus, input[type=password]:focus, textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);}
   textarea{width:100%;resize:vertical;}
+  textarea.autofit{resize:none;overflow:hidden;min-height:0;line-height:1.35;white-space:pre-wrap;overflow-wrap:anywhere;}
+  .lesson-name-input.autofit{display:block;}
   select{
     appearance:none;
     -webkit-appearance:none;
@@ -303,7 +305,7 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-round.good{color:var(--a-label);border-color:color-mix(in srgb, var(--a-label) 45%, transparent);}
   .vocab-editor{display:flex;flex-direction:column;gap:8px;padding:16px;margin-bottom:16px;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow-sm);}
   .vocab-list .vocab-editor{margin:4px 0;box-shadow:none;}
-  .vocab-editor input{width:100%;font-size:16px;}
+  .vocab-editor textarea{width:100%;font-size:16px;}
   .vocab-editor-actions{display:flex;justify-content:flex-end;gap:8px;}
   html:not(.touch) .vocab-list-term, html:not(.touch) .vocab-list-meaning{cursor:pointer;}
   #viewStudy.offscreen{position:fixed;right:0;bottom:0;z-index:-1;width:356px;height:200px;overflow:hidden;opacity:.01;pointer-events:none;}
@@ -322,7 +324,7 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-list-term{max-width:14em;font-weight:600;overflow-wrap:anywhere;}
   .vocab-list-meaning{min-width:0;color:var(--text-2);overflow-wrap:anywhere;}
   .vocab-add-popup{position:fixed;z-index:2000;width:min(340px, calc(100vw - 16px));padding:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);}
-  .vocab-add-popup input{width:100%;}
+  .vocab-add-popup textarea{width:100%;}
   @media (prefers-reduced-motion: reduce){.vocab-card-inner{transition:none;}}
   @media (max-width:600px){.vocab-card{height:260px;}.vocab-term{font-size:32px;}.vocab-meaning{font-size:24px;}}
   .sidebar .primary{width:100%;}
@@ -561,7 +563,7 @@ window.onYouTubeIframeAPIReady = function(){
     font-family:inherit;
     font-size:14px;
     min-height:36px;
-    overflow-y:auto;
+    overflow:visible;
     word-wrap:break-word;
     cursor:text;
     white-space:pre-wrap;
@@ -1005,7 +1007,7 @@ window.onYouTubeIframeAPIReady = function(){
 
 <section id="viewStudy" hidden>
   <header class="lesson-header">
-    <input type="text" id="lessonName" name="lesson-name" autocomplete="off" class="lesson-name-input" placeholder="Lesson name" aria-label="Lesson name">
+    <textarea id="lessonName" name="lesson-name" rows="1" autocomplete="off" class="lesson-name-input autofit oneline" placeholder="Lesson name" aria-label="Lesson name"></textarea>
     <div class="header-actions">
       <button id="btnSaveFile" class="ghost" title="Save this lesson as a .json file. The first time you pick the file; after that it is overwritten in place. Shift-click to pick a different file.">Save</button>
       <button id="btnResetLesson" class="ghost" title="Make every card in this lesson New again in all modes, to study it from the start. Cards, notes and statistics stay.">Reset</button>
@@ -3483,8 +3485,7 @@ function wireEditBox(host, row) {
   refreshDict();
   function autoResizeDiv(el) {
     el.style.minHeight = "36px";
-    el.style.height = "auto";
-    el.style.height = Math.max(el.scrollHeight, 36) + "px";
+    el.style.height = "";
   }
   [ editQ, editA, editNotes ].forEach(el => {
     autoResizeDiv(el);
@@ -5452,6 +5453,7 @@ async function renameHandleIfNeeded(handle, filename, handleKey) {
 
 function setLessonTitle(name) {
   document.getElementById("lessonName").value = name;
+  fitTextarea(document.getElementById("lessonName"));
   document.title = name ? name + " · Flashcards" : "Flashcards";
 }
 
@@ -6046,6 +6048,7 @@ function showView(view) {
   if (view === "stats") renderStats();
   if (view === "study") render();
   if (view === "vocab") renderVocab();
+  fitAllTextareas();
   if (view === "add") renderAddView();
   renderLessonList();
 }
@@ -7478,7 +7481,7 @@ function vocabControlsHtml() {
 }
 
 function vocabEditorHtml(item) {
-  return '<div class="vocab-editor">' + `<input type="text" id="vocabEditTerm" autocomplete="off" placeholder="Question" aria-label="Question" value="${escapeAttr(item.term)}">` + `<input type="text" id="vocabEditMeaning" autocomplete="off" placeholder="Answer" aria-label="Answer" value="${escapeAttr(item.meaning)}">` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
+  return '<div class="vocab-editor">' + `<textarea id="vocabEditTerm" class="autofit oneline" rows="1" autocomplete="off" placeholder="Question" aria-label="Question">${escapeHtml(item.term)}</textarea>` + `<textarea id="vocabEditMeaning" class="autofit oneline" rows="1" autocomplete="off" placeholder="Answer" aria-label="Answer">${escapeHtml(item.meaning)}</textarea>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
 }
 
 function renderVocab() {
@@ -7550,6 +7553,8 @@ function wireVocabEditor(items) {
   const term = document.getElementById("vocabEditTerm");
   if (!term) return;
   const meaning = document.getElementById("vocabEditMeaning");
+  fitTextarea(term);
+  fitTextarea(meaning);
   const item = items.find(i => i.key === vocabEditingKey);
   const save = () => {
     if (!updateVocabEntry(item, term.value, meaning.value)) return;
@@ -8152,11 +8157,12 @@ function showVocabAddPopup(row, term, rect) {
   hideVocabAddPopup();
   const popup = document.createElement("div");
   popup.className = "vocab-add-popup";
-  popup.innerHTML = '<input type="text" autocomplete="off" placeholder="word: meaning" aria-label="Word: meaning">';
+  popup.innerHTML = '<textarea class="autofit oneline" rows="1" autocomplete="off" placeholder="word: meaning" aria-label="Word: meaning"></textarea>';
   document.body.appendChild(popup);
   vocabAddPopup = popup;
-  const input = popup.querySelector("input");
+  const input = popup.querySelector("textarea");
   input.value = term ? term + ": " : "";
+  fitTextarea(input);
   const box = popup.getBoundingClientRect();
   let top = rect.bottom + 8;
   if (top + box.height > window.innerHeight - 8) top = rect.top - box.height - 8;
@@ -8233,6 +8239,35 @@ document.getElementById("dictPanels").addEventListener("click", e => {
   if (!source || !isTouch() || isVirtualLesson()) return;
   const row = dictSourceRow(source);
   if (row) showVocabAddPopup(row, "", source.getBoundingClientRect());
+});
+
+function fitTextarea(el) {
+  if (!el || !el.offsetParent) return;
+  el.style.height = "auto";
+  el.style.height = el.scrollHeight + (el.offsetHeight - el.clientHeight) + "px";
+}
+
+function fitAllTextareas() {
+  document.querySelectorAll("textarea.autofit").forEach(fitTextarea);
+}
+
+document.addEventListener("input", e => {
+  const el = e.target;
+  if (!el.classList || !el.classList.contains("autofit")) return;
+  if (el.classList.contains("oneline") && /[\r\n]/.test(el.value)) {
+    const at = el.selectionStart;
+    el.value = el.value.replace(/\r?\n/g, " ");
+    el.setSelectionRange(at, at);
+  }
+  fitTextarea(el);
+}, true);
+
+window.addEventListener("resize", fitAllTextareas);
+
+document.getElementById("lessonName").addEventListener("keydown", e => {
+  if (e.key !== "Enter" || e.isComposing || e.keyCode === 229) return;
+  e.preventDefault();
+  e.target.blur();
 });
 
 function isTypingInField() {
