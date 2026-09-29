@@ -4441,21 +4441,14 @@ function applyColumnLayout() {
 }
 
 function dropCardsStudiedElsewhere() {
+  groupState.groups = makeGroups();
+  groupState.index = 0;
   const now = Date.now();
-  const waiting = new Set((groupState.pendingAgain || []).map(p => p.id));
-  groupState.groups = groupState.groups.map((g, i) => i < groupState.index ? g : g.filter(id => {
-    const r = rows.find(x => x.id === id);
-    return r && (waiting.has(id) || srsOf(r).due <= now);
-  }));
-  skipEmptyGroups();
-  if (isResumableState(groupState)) return;
-  reshuffleCardOrder();
-  groupState = {
-    sessionId: ++sessionCounter,
-    groups: makeGroups(),
-    index: 0,
-    pendingAgain: []
-  };
+  const ready = (groupState.pendingAgain || []).filter(p => p.readyAt <= now).map(p => p.id);
+  groupState.pendingAgain = (groupState.pendingAgain || []).filter(p => p.readyAt > now);
+  ready.forEach(id => {
+    if (!groupState.groups.some(g => g.includes(id))) insertWithCascadingBump(0, id);
+  });
 }
 
 function setReviewMode(style) {
