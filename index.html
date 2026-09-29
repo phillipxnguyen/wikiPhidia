@@ -416,6 +416,8 @@ window.onYouTubeIframeAPIReady = function(){
   html.touch #viewStudy.focus-study{touch-action:pan-y;}
   html.touch #viewStudy.focus-study :is(#dictPanels, #mediaContainer) iframe:not(.live){pointer-events:none;}
   html.touch #dictPanels{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
+  html.touch #dictPanels .dict-source{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default;}
+  .sel-plus{position:fixed;z-index:1200;display:none;width:40px;height:40px;padding:0;border:0;border-radius:50%;background:var(--accent);color:var(--on-accent);font-size:24px;line-height:40px;box-shadow:var(--shadow-md);-webkit-tap-highlight-color:transparent;}
   #dictPanels > *, .media-container{transition:box-shadow .18s ease-out;}
   #dictPanels > :has(iframe.live), .media-container:has(iframe.live){box-shadow:0 0 0 8px color-mix(in srgb, var(--text) 14%, transparent);}
   html.touch .edit-btn, html.touch .del-btn{width:32px;height:36px;line-height:36px;font-size:20px;}
@@ -9501,11 +9503,53 @@ document.getElementById("dictPanels").addEventListener("click", e => {
     if (matches.length) showVocabPopup(matches, hit.getBoundingClientRect());
     return;
   }
-  const source = e.target.closest(".dict-source");
-  if (!source || !isTouch() || isVirtualLesson()) return;
-  const row = dictSourceRow(source);
-  if (row) showVocabAddPopup(row, "", source.getBoundingClientRect());
 });
+
+let selPlusEl = null;
+
+let selPlusTimer = null;
+
+function selPlusButton() {
+  if (selPlusEl) return selPlusEl;
+  selPlusEl = document.createElement("button");
+  selPlusEl.className = "sel-plus";
+  selPlusEl.textContent = "+";
+  selPlusEl.setAttribute("aria-label", "Add the selected word");
+  selPlusEl.addEventListener("pointerdown", e => e.preventDefault());
+  selPlusEl.addEventListener("click", () => {
+    const hit = selectionInDictSource();
+    hideSelPlus();
+    if (!hit) return;
+    window.getSelection().removeAllRanges();
+    if (existingVocab(hit.text)) warnVocabExists(hit.text); else showVocabAddPopup(hit.row, hit.text, hit.rect);
+  });
+  document.body.appendChild(selPlusEl);
+  return selPlusEl;
+}
+
+function hideSelPlus() {
+  if (selPlusEl) selPlusEl.style.display = "none";
+}
+
+document.addEventListener("selectionchange", () => {
+  if (!isTouch()) return;
+  clearTimeout(selPlusTimer);
+  selPlusTimer = setTimeout(() => {
+    const hit = !isVirtualLesson() && selectionInDictSource();
+    if (!hit) {
+      hideSelPlus();
+      return;
+    }
+    const btn = selPlusButton();
+    btn.style.display = "block";
+    const left = Math.min(window.innerWidth - 48, Math.max(8, hit.rect.left + hit.rect.width / 2 - 20));
+    const below = hit.rect.bottom + 12;
+    btn.style.left = left + "px";
+    btn.style.top = (below + 40 < window.innerHeight ? below : hit.rect.top - 52) + "px";
+  }, 150);
+});
+
+window.addEventListener("scroll", hideSelPlus, true);
 
 function fitTextarea(el) {
   if (!el || !el.offsetParent) return;
