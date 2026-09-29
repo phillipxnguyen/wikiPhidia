@@ -266,9 +266,11 @@ window.onYouTubeIframeAPIReady = function(){
   .lesson-item.active{background:var(--accent-soft);}
   .lesson-item.active .lesson-item-name{color:var(--accent);}
   .lesson-item-name{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .lesson-item-meta{display:flex;gap:8px;font-size:12px;color:var(--text-3);}
+  .lesson-item-meta{display:flex;gap:8px;font-size:12px;color:var(--text-3);white-space:nowrap;font-variant-numeric:tabular-nums;}
+  .lesson-item-meta .sep{opacity:.5;}
   .lesson-item-meta .due{color:var(--due-color);font-weight:600;}
   .lesson-item-meta .new{color:var(--new-color);font-weight:600;}
+  .lesson-item-meta .done{color:var(--done-color);font-weight:600;}
   .lesson-group-label{padding:10px 10px 4px;font-size:18px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3);}
   .lesson-group-label:first-child{padding-top:2px;}
   .lesson-list-empty{padding:10px;color:var(--text-3);font-size:13px;}
@@ -5805,16 +5807,17 @@ function sortedLibrary() {
 
 function lessonCounts(lesson) {
   const now = Date.now();
-  let due = 0, fresh = 0;
+  let due = 0, fresh = 0, done = 0;
   lesson.cards.forEach(c => {
     if (!hasAnswer(c)) return;
     const bucket = cardBucket(c, "Table", now);
-    if (bucket === "due") due++; else if (bucket === "new") fresh++;
+    if (bucket === "due") due++; else if (bucket === "new") fresh++; else if (bucket === "done") done++;
   });
   return {
     total: lesson.cards.length,
     due: due,
-    fresh: fresh
+    fresh: fresh,
+    done: done
   };
 }
 
@@ -5824,7 +5827,7 @@ function escapeAttr(s) {
 
 function lessonItemMeta(lesson) {
   const c = lessonCounts(lesson);
-  return `<span>${c.total} card${c.total === 1 ? "" : "s"}</span>` + (c.due ? `<span class="due">${c.due} due</span>` : "") + (c.fresh ? `<span class="new">${c.fresh} new</span>` : "");
+  return `<span title="Cards">${c.total}</span><span class="sep">|</span>` + `<span class="new" title="New">🆕 ${c.fresh}</span>` + `<span class="due" title="Due">⏳ ${c.due}</span>` + `<span class="done" title="Done">✅ ${c.done}</span>`;
 }
 
 function updateLessonListItem(lesson) {
