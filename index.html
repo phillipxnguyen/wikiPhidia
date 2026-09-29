@@ -415,8 +415,7 @@ window.onYouTubeIframeAPIReady = function(){
   html.touch #tbody{-webkit-tap-highlight-color:transparent;}
   html.touch #viewStudy.focus-study{touch-action:pan-y;}
   html.touch #viewStudy.focus-study #mediaContainer iframe:not(.live){pointer-events:none;}
-  html.touch #dictPanels{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
-  html.touch #dictPanels .dict-source{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default;}
+  .dict-source{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default;}
   .sel-plus{position:absolute;z-index:1200;display:none;width:40px;height:40px;padding:0;border:0;border-radius:50%;background:var(--accent);color:var(--on-accent);font-size:24px;line-height:40px;box-shadow:var(--shadow-md);-webkit-tap-highlight-color:transparent;}
   .media-container{transition:box-shadow .18s ease-out;}
   .media-container:has(iframe.live){box-shadow:0 0 0 8px color-mix(in srgb, var(--text) 14%, transparent);}
@@ -9532,6 +9531,67 @@ function selPlusButton() {
   selPlusEl.addEventListener("click", act);
   document.body.appendChild(selPlusEl);
   return selPlusEl;
+}
+
+let hold = null;
+
+document.getElementById("dictPanels").addEventListener("touchstart", e => {
+  if (hold) clearTimeout(hold.timer);
+  hold = null;
+  const source = e.target.closest(".dict-source");
+  if (!source || e.touches.length !== 1) return;
+  const {clientX: x, clientY: y} = e.touches[0];
+  hold = {
+    x: x,
+    y: y,
+    timer: setTimeout(() => selectWordAt(source, x, y), 450)
+  };
+}, {
+  passive: true
+});
+
+document.getElementById("dictPanels").addEventListener("touchmove", e => {
+  if (!hold) return;
+  const t = e.touches[0];
+  if (e.touches.length === 1 && Math.abs(t.clientX - hold.x) < 10 && Math.abs(t.clientY - hold.y) < 10) return;
+  clearTimeout(hold.timer);
+  hold = null;
+}, {
+  passive: true
+});
+
+[ "touchend", "touchcancel" ].forEach(type => document.getElementById("dictPanels").addEventListener(type, () => {
+  if (hold) clearTimeout(hold.timer);
+  hold = null;
+}, {
+  passive: true
+}));
+
+function selectWordAt(source, x, y) {
+  const sel = window.getSelection();
+  if (sel.rangeCount && !sel.isCollapsed && source.contains(sel.getRangeAt(0).commonAncestorContainer)) return;
+  const caret = document.caretRangeFromPoint ? document.caretRangeFromPoint(x, y) : null;
+  const node = caret && caret.startContainer;
+  if (!node || node.nodeType !== 3 || !source.contains(node)) return;
+  const text = node.nodeValue;
+  const at = Math.min(caret.startOffset, text.length - 1);
+  let start = at, end = at + 1;
+  const seg = getVocabSegmenter();
+  if (seg) {
+    for (const part of seg.segment(text)) {
+      if (part.index <= at && at < part.index + part.segment.length) {
+        start = part.index;
+        end = part.index + part.segment.length;
+        break;
+      }
+    }
+  }
+  if (!text.slice(start, end).trim()) return;
+  const range = document.createRange();
+  range.setStart(node, start);
+  range.setEnd(node, end);
+  sel.removeAllRanges();
+  sel.addRange(range);
 }
 
 function selectionInEditQuestion() {
