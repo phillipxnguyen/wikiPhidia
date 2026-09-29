@@ -3592,25 +3592,104 @@ function boldVocabItem(li) {
   return true;
 }
 
-function boldVocabItemsInSelection(box) {
+function isVocabItem(li) {
+  const first = li.firstChild;
+  if (!first || first.nodeName !== "B" || !first.textContent.trim()) return false;
+  const next = first.nextSibling;
+  return !!next && next.nodeType === 3 && /^\s*[:：]/.test(next.nodeValue);
+}
+
+function boldPlainItem(li) {
+  const nodes = ownLiTextNodes(li);
+  const text = nodes.map(n => n.nodeValue).join("").replace(/\u00a0/g, " ").trim().replace(/\s*[:：=＝]$/, "");
+  if (!text || text.length > 40 || /[:：=＝]/.test(text)) return false;
+  Array.from(li.childNodes).forEach(c => {
+    if (!(c.nodeType === 1 && /^(UL|OL)$/.test(c.nodeName))) c.remove();
+  });
+  const b = document.createElement("b");
+  b.textContent = text;
+  li.insertBefore(document.createTextNode(": "), li.firstChild);
+  li.insertBefore(b, li.firstChild);
+  return true;
+}
+
+function selectedNoteItems(box, range) {
+  return Array.from(box.querySelectorAll("li")).filter(li => range.intersectsNode(li));
+}
+
+function selectionAllInItems(box, range) {
+  const root = range.commonAncestorContainer;
+  const scope = root.nodeType === 1 ? root : root.parentElement;
+  const hostLi = scope.closest("li");
+  if (hostLi && box.contains(hostLi)) return true;
+  const walker = document.createTreeWalker(scope, NodeFilter.SHOW_TEXT);
+  let n;
+  let any = false;
+  while (n = walker.nextNode()) {
+    if (!range.intersectsNode(n) || !n.nodeValue.trim()) continue;
+    any = true;
+    const li = n.parentElement.closest("li");
+    if (!li || !box.contains(li)) return false;
+  }
+  return any;
+}
+
+function unwrapInheritSpans(box) {
+  box.querySelectorAll("span").forEach(sp => {
+    if (sp.className || (sp.getAttribute("style") || "").replace(/font-family:\s*inherit;?/g, "").trim()) return;
+    sp.replaceWith(...sp.childNodes);
+  });
+  box.normalize();
+}
+
+function toggleVocabBullets(box) {
   const sel = window.getSelection();
   if (!sel.rangeCount) return;
-  const range = sel.getRangeAt(0);
-  const items = Array.from(box.querySelectorAll("li")).filter(li => range.intersectsNode(li));
-  let last = null;
+  let range = sel.getRangeAt(0);
+  const collapsed = range.collapsed;
+  const before = selectedNoteItems(box, range);
+  if (selectionAllInItems(box, range) && before.length && before.every(isVocabItem)) {
+    before.forEach(li => {
+      const b = li.firstChild;
+      const rest = b.nextSibling;
+      if (/^\s*[:：]\s*$/.test(rest.nodeValue) && !rest.nextSibling) rest.remove();
+      b.replaceWith(document.createTextNode(b.textContent));
+      li.normalize();
+    });
+    document.execCommand("insertUnorderedList");
+    unwrapInheritSpans(box);
+    return;
+  }
+  if (!selectionAllInItems(box, range)) {
+    document.execCommand("insertUnorderedList");
+    range = sel.getRangeAt(0);
+    if (!selectionAllInItems(box, range)) {
+      document.execCommand("insertUnorderedList");
+      range = sel.getRangeAt(0);
+    }
+  }
+  unwrapInheritSpans(box);
+  range = sel.getRangeAt(0);
+  const items = selectedNoteItems(box, range);
   items.forEach(li => {
-    if (boldVocabItem(li)) last = li;
+    if (!isVocabItem(li)) boldVocabItem(li) || boldPlainItem(li);
   });
   box.querySelectorAll("ul:not([class])").forEach(ul => ul.className = "notes-list");
-  if (!last || !range.collapsed) return;
+  if (!items.length) return;
+  const last = items[items.length - 1];
   const nodes = ownLiTextNodes(last);
   const tail = nodes[nodes.length - 1];
-  if (!tail) return;
-  const caret = document.createRange();
-  caret.setStart(tail, tail.nodeValue.length);
-  caret.collapse(true);
+  const next = document.createRange();
+  if (collapsed) {
+    if (!tail) return;
+    next.setStart(tail, tail.nodeValue.length);
+    next.collapse(true);
+  } else {
+    next.setStartBefore(items[0].firstChild || items[0]);
+    if (tail) next.setEnd(tail, tail.nodeValue.length); else next.setEndAfter(last);
+  }
   sel.removeAllRanges();
-  sel.addRange(caret);
+  sel.addRange(next);
 }
 
 function commitActiveEdit() {
@@ -3979,8 +4058,7 @@ function wireEditBox(host, row) {
       }
       if (!(e.metaKey || e.ctrlKey) || !e.shiftKey || e.code !== "Digit8") return;
       e.preventDefault();
-      document.execCommand("insertUnorderedList");
-      if (el === editNotes) boldVocabItemsInSelection(el);
+      if (el === editNotes) toggleVocabBullets(el); else document.execCommand("insertUnorderedList");
       autoResizeDiv(el);
     });
     el.addEventListener("paste", () => {
@@ -7888,9 +7966,13 @@ function vocabEntriesOf(card) {
   const lines = [];
   Array.from(box.querySelectorAll("li")).forEach(li => lines.push(ownLiText(li)));
   box.querySelectorAll("ul, ol").forEach(el => el.remove());
+  const plain = !card.notesHtml || !/<[a-z]/i.test(card.notesHtml);
+  if (!plain) box.querySelectorAll("b, strong").forEach(el => el.textContent.trim() && el.before("\u0001"));
   box.querySelectorAll("br").forEach(el => el.replaceWith("\n"));
   box.querySelectorAll("div, p").forEach(el => el.append("\n"));
-  lines.push(...box.textContent.split("\n"));
+  box.textContent.split("\n").forEach(line => {
+    if (plain) lines.push(line); else if (/^\s*\u0001/.test(line)) lines.push(line.replace(/\u0001/g, ""));
+  });
   const entries = [];
   lines.forEach(line => {
     const m = parseVocabLine(line);
