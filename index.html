@@ -415,8 +415,6 @@ window.onYouTubeIframeAPIReady = function(){
   html.touch #tbody{-webkit-tap-highlight-color:transparent;}
   html.touch #viewStudy.focus-study{touch-action:pan-y;}
   html.touch #viewStudy.focus-study #mediaContainer iframe:not(.live){pointer-events:none;}
-  .dict-source{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default;}
-  .sel-plus{position:absolute;z-index:1200;display:none;width:40px;height:40px;padding:0;border:0;border-radius:50%;background:var(--accent);color:var(--on-accent);font-size:24px;line-height:40px;box-shadow:var(--shadow-md);-webkit-tap-highlight-color:transparent;}
   .media-container{transition:box-shadow .18s ease-out;}
   .media-container:has(iframe.live){box-shadow:0 0 0 8px color-mix(in srgb, var(--text) 14%, transparent);}
   html.touch .edit-btn, html.touch .del-btn{width:32px;height:36px;line-height:36px;font-size:20px;}
@@ -3901,7 +3899,7 @@ function commitActiveEdit() {
 document.addEventListener("click", e => {
   if (!activeEdit) return;
   if (activeEdit.tr.contains(e.target)) return;
-  if (e.target.closest && e.target.closest(".edit-btn, .sel-plus")) return;
+  if (e.target.closest && e.target.closest(".edit-btn")) return;
   if (vocabPopupEl && vocabPopupEl.contains(e.target)) return;
   commitActiveEdit();
   setTimeout(() => {
@@ -4298,9 +4296,7 @@ function wireEditBox(host, row) {
     editQ: editQ,
     editA: editA,
     editNotes: editNotes,
-    updateEditDict: updateEditDict,
-    addWord: text => appendWordToNotes(text),
-    isWholeField: text => isWholeFieldSelection(editQ, text)
+    updateEditDict: updateEditDict
   };
   activeEdit.originalQ = editQ.textContent || "";
   activeEdit.originalQHtml = stripVocabHighlights(editQ.innerHTML || "");
@@ -4839,7 +4835,7 @@ document.addEventListener("pointerdown", e => {
   drag = null;
   if (e.pointerType !== "touch" || !groupState || currentView !== "study" || activeEdit || tabPaused) return;
   if (e.clientX < 20 || e.clientX > window.innerWidth - 20) return;
-  if (!e.target.closest("#viewStudy") || e.target.closest("button, input, select, textarea, [contenteditable], .loop-time, .dict-source")) return;
+  if (!e.target.closest("#viewStudy") || e.target.closest("button, input, select, textarea, [contenteditable], .loop-time")) return;
   if (document.getElementById("sessionCompletePanel").style.display === "block") return;
   const row = groupViewStyle === "table" ? e.target.closest("#tbody tr[data-id]") : null;
   drag = {
@@ -9499,150 +9495,10 @@ document.getElementById("dictPanels").addEventListener("click", e => {
   }
 });
 
-let selPlusEl = null;
-
-let selPlusTimer = null;
-
-let selPlusHit = null;
-
-function selPlusButton() {
-  if (selPlusEl) return selPlusEl;
-  selPlusEl = document.createElement("button");
-  selPlusEl.className = "sel-plus";
-  selPlusEl.textContent = "+";
-  selPlusEl.setAttribute("aria-label", "Add the selected word");
-  selPlusEl.addEventListener("pointerdown", e => e.preventDefault());
-  selPlusEl.addEventListener("touchstart", e => e.preventDefault(), {
-    passive: false
-  });
-  const act = e => {
-    e.preventDefault();
-    const hit = selPlusHit;
-    hideSelPlus();
-    if (!hit) return;
-    if (hit.edit) {
-      if (activeEdit && activeEdit.addWord) activeEdit.addWord(hit.text);
-      return;
-    }
-    window.getSelection().removeAllRanges();
-    if (existingVocab(hit.text)) warnVocabExists(hit.text); else showVocabAddPopup(hit.row, hit.text, hit.rect);
-  };
-  selPlusEl.addEventListener("touchend", act);
-  selPlusEl.addEventListener("click", act);
-  document.body.appendChild(selPlusEl);
-  return selPlusEl;
-}
-
-let hold = null;
-
-document.getElementById("dictPanels").addEventListener("touchstart", e => {
-  if (hold) clearTimeout(hold.timer);
-  hold = null;
-  const source = e.target.closest(".dict-source");
-  if (!source || e.touches.length !== 1) return;
-  const {clientX: x, clientY: y} = e.touches[0];
-  hold = {
-    x: x,
-    y: y,
-    timer: setTimeout(() => selectWordAt(source, x, y), 450)
-  };
-}, {
-  passive: true
-});
-
-document.getElementById("dictPanels").addEventListener("touchmove", e => {
-  if (!hold) return;
-  const t = e.touches[0];
-  if (e.touches.length === 1 && Math.abs(t.clientX - hold.x) < 10 && Math.abs(t.clientY - hold.y) < 10) return;
-  clearTimeout(hold.timer);
-  hold = null;
-}, {
-  passive: true
-});
-
-[ "touchend", "touchcancel" ].forEach(type => document.getElementById("dictPanels").addEventListener(type, () => {
-  if (hold) clearTimeout(hold.timer);
-  hold = null;
-}, {
-  passive: true
-}));
-
-function selectWordAt(source, x, y) {
-  const sel = window.getSelection();
-  if (sel.rangeCount && !sel.isCollapsed && source.contains(sel.getRangeAt(0).commonAncestorContainer)) return;
-  const caret = document.caretRangeFromPoint ? document.caretRangeFromPoint(x, y) : null;
-  const node = caret && caret.startContainer;
-  if (!node || node.nodeType !== 3 || !source.contains(node)) return;
-  const text = node.nodeValue;
-  const at = Math.min(caret.startOffset, text.length - 1);
-  let start = at, end = at + 1;
-  const seg = getVocabSegmenter();
-  if (seg) {
-    for (const part of seg.segment(text)) {
-      if (part.index <= at && at < part.index + part.segment.length) {
-        start = part.index;
-        end = part.index + part.segment.length;
-        break;
-      }
-    }
-  }
-  if (!text.slice(start, end).trim()) return;
-  const range = document.createRange();
-  range.setStart(node, start);
-  range.setEnd(node, end);
-  sel.removeAllRanges();
-  sel.addRange(range);
-}
-
-function selectionInEditQuestion() {
-  if (!activeEdit || !activeEdit.addWord) return null;
-  const sel = window.getSelection();
-  if (!sel || !sel.rangeCount) return null;
-  const text = sel.toString().trim();
-  const range = sel.getRangeAt(0);
-  if (!text || !activeEdit.editQ.contains(range.commonAncestorContainer) || activeEdit.isWholeField(text)) return null;
-  return {
-    text: text,
-    rect: range.getBoundingClientRect()
-  };
-}
-
 function repeatsHighlightedWord(box, range, text) {
   const key = normalizeVocabText(text);
   return Array.from(box.querySelectorAll("mark.vocab-hit")).some(m => normalizeVocabText(m.textContent) === key && !m.contains(range.commonAncestorContainer) && !range.intersectsNode(m));
 }
-
-function hideSelPlus() {
-  selPlusHit = null;
-  if (selPlusEl) selPlusEl.style.display = "none";
-}
-
-document.addEventListener("selectionchange", () => {
-  if (!isTouch()) return;
-  clearTimeout(selPlusTimer);
-  selPlusTimer = setTimeout(() => {
-    const edit = selectionInEditQuestion();
-    const hit = edit ? Object.assign({
-      edit: true
-    }, edit) : !isVirtualLesson() && selectionInDictSource();
-    if (!hit) {
-      hideSelPlus();
-      return;
-    }
-    selPlusHit = hit;
-    const btn = selPlusButton();
-    btn.style.display = "block";
-    const rects = window.getSelection().getRangeAt(0).getClientRects();
-    const end = rects.length ? rects[rects.length - 1] : hit.rect;
-    const start = rects.length ? rects[0] : hit.rect;
-    const fitsRight = end.right + 56 <= window.innerWidth;
-    const line = fitsRight ? end : start;
-    btn.style.left = window.scrollX + (fitsRight ? end.right + 10 : Math.max(8, start.left - 50)) + "px";
-    btn.style.top = window.scrollY + line.top + line.height / 2 - 20 + "px";
-  }, 150);
-});
-
-
 
 function fitTextarea(el) {
   if (!el || !el.offsetParent) return;
