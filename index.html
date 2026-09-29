@@ -330,6 +330,7 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-list-row[data-key]{display:contents;}
   .vocab-list-row[data-key] > *{display:flex;align-items:center;padding:8px 16px 8px 0;border-top:1px solid var(--border);font-size:14px;}
   .vocab-list-row[data-key] > :last-child{padding-right:2px;}
+  .vocab-list-row[data-key] > .vocab-actions{padding-right:0;}
   .vocab-list h2 + .vocab-list-row > *{border-top:0;}
   .vocab-list-row.editing{grid-column:1 / -1;border-top:1px solid var(--border);}
   .vocab-list h2 + .vocab-list-row.editing{border-top:0;}
@@ -394,8 +395,6 @@ window.onYouTubeIframeAPIReady = function(){
     .shell .lesson-name-input, .shell #vocabTitle.lesson-name-input{flex-basis:100%;font-size:20px !important;}
     .shell .header-actions{margin-left:auto;}
     .shell .link-bar{min-width:0;flex-basis:100%;}
-    #cardTable col:nth-child(1), #cardTable col:nth-child(2){width:26px !important;}
-    #cardTable col:nth-child(3), #cardTable col:nth-child(4){width:calc(50% - 26px) !important;}
     .shell #cardTable .cell{margin:6px 4px;padding:3px 4px;}
     .shell .single-card-body{padding:16px 12px;}
     .shell .single-card-field{padding:14px 10px;}
@@ -418,10 +417,6 @@ window.onYouTubeIframeAPIReady = function(){
   @media (prefers-reduced-motion: reduce){#dictPanels > *, .media-container{animation:none !important;}}
   @keyframes liftBounce{0%{transform:scale(1);}50%{transform:scale(1.03);}100%{transform:scale(1);}}
   html.touch .edit-btn, html.touch .del-btn{width:32px;height:36px;line-height:36px;font-size:20px;}
-  html.touch #cardTable col:nth-child(1), html.touch #cardTable col:nth-child(2){width:34px !important;}
-  html.touch #cardTable col:nth-child(3), html.touch #cardTable col:nth-child(4){width:calc(50% - 34px) !important;}
-  html.touch #cardTable.no-answer-col col:nth-child(3){width:calc(100% - 68px) !important;}
-  html.touch #cardTable.no-answer-col col:nth-child(4){width:0 !important;}
   .insert-btn{position:absolute;left:0;z-index:5;display:flex;align-items:center;justify-content:center;width:100%;height:18px;min-height:0;padding:0;border:0;border-radius:0;background:transparent;}
   .insert-btn::before{content:"";position:absolute;left:0;right:0;top:8.5px;height:1px;background:color-mix(in srgb, var(--a-label) 45%, transparent);}
   .insert-btn span{position:relative;width:18px;height:18px;border-radius:50%;background:var(--a-bg);color:var(--a-label);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;}
@@ -538,7 +533,19 @@ window.onYouTubeIframeAPIReady = function(){
   tbody tr.row-playing{background:var(--row-playing) !important;}
   tbody td{padding:0;border-bottom:1px solid var(--border);vertical-align:middle;}
   tbody tr:last-child td{border-bottom:none;}
-  td.edit-col, td.del-col{width:40px;text-align:center;padding:5px 0;}
+  #cardTable{--lead-l:18px;--lead-g:8px;--icon-w:24px;--text-in:18px;--col1:calc(var(--lead-l) + var(--icon-w) + var(--lead-g) / 2);--col2:calc(var(--lead-g) / 2 + var(--icon-w) + var(--lead-l) - var(--text-in));--lead:calc(var(--col1) + var(--col2));}
+  @media (max-width:600px){#cardTable{--lead-l:10px;--lead-g:6px;--text-in:8px;}}
+  html.touch #cardTable{--icon-w:32px;--lead-g:4px;}
+  @media (max-width:600px){html.touch #cardTable{--lead-l:8px;--lead-g:0px;}}
+  #cardTable col:nth-child(1){width:var(--col1);}
+  #cardTable col:nth-child(2){width:var(--col2);}
+  #cardTable col:nth-child(3), #cardTable col:nth-child(4){width:calc((100% - var(--lead)) / 2);}
+  #cardTable.no-answer-col col:nth-child(3){width:calc(100% - var(--lead));}
+  #cardTable.no-answer-col col:nth-child(4){width:0;}
+  html:not(.touch) #cardTable.no-icon-col{--col1:0px;--col2:0px;}
+  td.edit-col, td.del-col{text-align:left;padding:5px 0;white-space:nowrap;}
+  td.edit-col{padding-left:var(--lead-l);}
+  td.del-col{padding-left:calc(var(--lead-g) / 2);}
   .edit-btn, .del-btn{
     background:none;border:none;cursor:pointer;
     width:24px;height:24px;line-height:24px;padding:0;margin:0;display:inline-block;border-radius:6px;
@@ -567,7 +574,7 @@ window.onYouTubeIframeAPIReady = function(){
   table.no-answer-col .a-col{display:none;}
   #cardTable.no-head thead{display:none;}
   table.no-icon-col #groupCounterHeader,
-  table.no-icon-col td.del-col{padding:0;}
+  html:not(.touch) table.no-icon-col td.del-col{padding:0;}
 
   .rich-editor{
     width:100%;
@@ -782,6 +789,7 @@ window.onYouTubeIframeAPIReady = function(){
   .stats-title{font-size:24px;font-weight:700;letter-spacing:-.015em;margin:4px 0 18px;}
   .lesson-totals{display:flex;gap:16px;font-size:13px;color:var(--text-2);font-variant-numeric:tabular-nums;}
   .lesson-totals b{color:var(--text);font-size:15px;margin-left:4px;}
+  .stats-table th .lesson-totals{text-transform:none;letter-spacing:0;font-weight:400;}
   .chart-tooltip{
     position:absolute;pointer-events:none;
     background:var(--popup-bg);color:var(--popup-text);
@@ -827,7 +835,7 @@ window.onYouTubeIframeAPIReady = function(){
   .panel-head button{padding:5px 12px;font-size:13px;}
   .virtual-lesson #btnSaveFile, .virtual-lesson #btnResetLesson, .virtual-lesson #btnDeleteLesson,
   .virtual-lesson .link-bar, .virtual-lesson .del-forever{display:none !important;}
-  .virtual-lesson #cardTable col:nth-child(2){width:0 !important;}
+  .virtual-lesson #cardTable{--col1:calc(2 * var(--lead-l) + var(--icon-w) - var(--text-in));--col2:0px;}
   .virtual-lesson #cardTable td.del-col{padding:0;overflow:hidden;}
   .virtual-lesson .lesson-name-input{pointer-events:none;}
 
@@ -1012,9 +1020,6 @@ window.onYouTubeIframeAPIReady = function(){
     <div id="statHeatmap" class="heatmap"></div>
   </div>
   <div class="panel">
-    <div class="panel-head end">
-      <div id="lessonTotals" class="lesson-totals"></div>
-    </div>
     <div id="statLessons"></div>
   </div>
   <div class="panel">
@@ -1117,10 +1122,10 @@ window.onYouTubeIframeAPIReady = function(){
   <div id="tableProgress" class="single-card-progress" style="display:none;"></div>
   <table id="cardTable">
     <colgroup>
-      <col style="width:40px;">
-      <col style="width:40px;">
-      <col style="width:calc(50% - 40px);">
-      <col style="width:calc(50% - 40px);">
+      <col>
+      <col>
+      <col>
+      <col>
     </colgroup>
     <thead>
       <tr>
@@ -4419,8 +4424,7 @@ function applyColumnLayout() {
   const noAnswer = !inTable && !deckHasAnswers();
   table.classList.toggle("no-icon-col", inTable);
   table.classList.toggle("no-answer-col", noAnswer);
-  const widths = inTable ? [ "0", "0", "50%", "50%" ] : noAnswer ? [ "40px", "40px", "calc(100% - 80px)", "0" ] : [ "40px", "40px", "calc(50% - 40px)", "calc(50% - 40px)" ];
-  cols.forEach((c, i) => c.style.width = widths[i]);
+  cols.forEach(c => c.style.width = "");
 }
 
 function setReviewMode(style) {
@@ -7099,7 +7103,7 @@ function renderStats() {
     };
   });
   renderStreakCard();
-  document.getElementById("lessonTotals").innerHTML = `<span>New<b>${newCards}</b></span><span>Due<b>${dueCards}</b></span><span>Done<b>${doneCards}</b></span>`;
+  const totalsHtml = `<div class="lesson-totals"><span>New<b>${newCards}</b></span><span>Due<b>${dueCards}</b></span><span>Done<b>${doneCards}</b></span></div>`;
 
   renderHeatmap();
 
@@ -7107,7 +7111,7 @@ function renderStats() {
   if (!lessonRows.length) {
     lessonsEl.innerHTML = '<div class="stats-empty">No lessons yet.</div>';
   } else {
-    lessonsEl.innerHTML = '<table class="stats-table"><thead><tr><th>Lesson</th><th class="num" title="Total cards" aria-label="Total cards">Σ</th><th class="num" title="New — never studied yet" aria-label="New">🆕</th><th class="num" title="Due — ready to review now" aria-label="Due">⏳</th><th class="num" title="Done — ' + DONE_STREAK + ' Good in a row" aria-label="Done">✅</th><th class="num" title="Reviews in the last 30 days" aria-label="Reviews in the last 30 days">🔁</th></tr></thead><tbody>' + lessonRows.sort((a, b) => (a.l.name || "").localeCompare(b.l.name || "", undefined, {
+    lessonsEl.innerHTML = '<table class="stats-table"><thead><tr><th>' + totalsHtml + "</th>" + '<th class="num" title="Total cards" aria-label="Total cards">Σ</th><th class="num" title="New — never studied yet" aria-label="New">🆕</th><th class="num" title="Due — ready to review now" aria-label="Due">⏳</th><th class="num" title="Done — ' + DONE_STREAK + ' Good in a row" aria-label="Done">✅</th><th class="num" title="Reviews in the last 30 days" aria-label="Reviews in the last 30 days">🔁</th></tr></thead><tbody>' + lessonRows.sort((a, b) => (a.l.name || "").localeCompare(b.l.name || "", undefined, {
       numeric: true
     })).map(x => `<tr><td title="${escapeAttr(x.l.name || "Untitled lesson")}"><span class="clamp">${escapeHtml(x.l.name || "Untitled lesson")}</span></td><td class="num">${x.l.cards.length}</td><td class="num">${x.fresh}</td><td class="num">${x.due}</td><td class="num">${x.done}</td><td class="num">${x.reviews30}</td></tr>`).join("") + "</tbody></table>";
   }
