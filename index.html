@@ -275,9 +275,14 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-head{display:flex;align-items:flex-start;gap:10px;}
   .vocab-head .stats-title{flex:1;min-width:0;}
   .vocab-head .header-actions{margin-top:4px;}
-  .vocab-front-btn{flex-shrink:0;width:40px;height:40px;padding:0;margin-top:2px;font-size:20px;border-radius:10px;color:var(--accent);}
-  .vocab-front-btn.active{background:var(--accent-soft);color:var(--accent);border-color:var(--accent);}
+  .vocab-toolbar{margin:4px 0 14px;}
+  .vocab-toolbar .segmented{align-items:center;}
+  .vocab-toolbar select{width:auto;field-sizing:content;max-width:240px;padding:5px 26px 5px 10px;border:none;border-radius:7px;background-color:transparent;background-position:right 9px center;font-weight:600;font-size:14px;color:var(--text-2);box-shadow:none;}
+  @media (hover:hover){.vocab-toolbar select:not(:disabled):hover{background-color:var(--surface-2);color:var(--text);}}
+  .vocab-toolbar select:disabled{opacity:1;cursor:default;padding-right:10px;background-image:none;}
+  #vocabFrontBtn.active{color:var(--accent);}
   .vocab-badges{margin:-8px 0 16px;}
+  .vocab-toolbar:not([hidden]) + .vocab-badges{margin-top:0;}
   .vocab-card{position:relative;height:320px;perspective:1200px;touch-action:pan-y;cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;}
   .vocab-card-inner{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .45s cubic-bezier(.3,.7,.3,1);}
   .vocab-card.flipped .vocab-card-inner{transform:rotateY(180deg);}
@@ -293,6 +298,8 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-meaning{font-size:28px;font-weight:600;line-height:1.35;color:var(--a-text);overflow-wrap:anywhere;}
   .vocab-speak{position:absolute;top:10px;right:10px;z-index:3;width:36px;height:36px;padding:0;border:0;border-radius:50%;background:transparent;font-size:18px;}
   .vocab-speak.video{border:1px solid var(--border);background:var(--surface);color:var(--text-2);font-size:15px;}
+  .vocab-speed{position:absolute;top:14px;right:52px;z-index:3;width:auto;height:28px;padding:0 22px 0 8px;background-position:right 7px center;font-size:13px;font-weight:600;color:var(--text-2);border-radius:8px;}
+  html.touch .vocab-speed{font-size:16px;}
   html:not(.touch) .vocab-touch-only{display:none !important;}
   .vocab-actions{display:inline-flex;flex-shrink:0;}
   .vocab-actions button{width:32px;height:36px;line-height:36px;padding:0;border:0;border-radius:6px;background:none;font-size:20px;color:var(--text-3);}
@@ -1029,7 +1036,21 @@ window.onYouTubeIframeAPIReady = function(){
       <button id="vocabResetBtn" class="ghost" title="Make every word in this lesson New again. Words, cards and statistics stay.">Reset</button>
       <button id="vocabDeleteBtn" class="ghost danger" title="Delete this lesson">Delete</button>
     </div>
-    <button id="vocabFrontBtn" class="vocab-front-btn" aria-label="Switch which side shows first">⇄</button>
+  </div>
+  <div id="vocabToolbar" class="toolbar vocab-toolbar">
+    <div class="segmented" role="group" aria-label="Vocabulary options">
+      <select id="vocabLang" title="Language you're learning — used for pinyin hover, dictionary lookup and reading aloud">
+        <option value="auto">Auto-detect</option>
+        <option value="zh-CN">🇨🇳 Chinese (Simplified)</option>
+        <option value="zh-TW">🇹🇼 Chinese (Traditional)</option>
+        <option value="ja">🇯🇵 Japanese</option>
+        <option value="ko">🇰🇷 Korean</option>
+        <option value="en">🇬🇧 English</option>
+        <option value="vi">🇻🇳 Vietnamese</option>
+        <option value="multi" hidden>🌐 Global (several languages)</option>
+      </select>
+      <button id="vocabFrontBtn" aria-label="Switch which side shows first">⇄</button>
+    </div>
   </div>
   <div id="vocabBadges" class="vocab-badges"></div>
   <div id="vocabStage"></div>
@@ -7738,6 +7759,7 @@ let vocabVideoId = null;
 let vocabHoveredKey = null;
 
 let vocabShownIsVideo = false;
+let vocabAllMultiLang = false;
 
 const VOCAB_LIST_PAGE = 100;
 
@@ -8039,7 +8061,7 @@ function vocabCardHtml(item) {
   const frontText = vocabFront === "a" ? item.meaning : item.term;
   const front = `<div class="vocab-face vocab-front"><div class="vocab-term">${escapeHtml(frontText)}</div></div>`;
   const back = `<div class="vocab-face vocab-back">${vocabBackInner(item)}</div>`;
-  return `<div class="vocab-card${vocabSession.flipped ? " flipped" : ""}" id="vocabCard">` + `<div class="vocab-card-inner">${front}${back}</div>` + '<span class="vocab-actions vocab-card-actions vocab-touch-only"><button class="vocab-act-edit" aria-label="Edit this word">&#9998;</button><button class="vocab-act-del" aria-label="Delete this word">&#10005;</button></span>' + '<button class="vocab-speak" aria-label="Play the sentence">🔊</button>' + "</div>";
+  return `<div class="vocab-card${vocabSession.flipped ? " flipped" : ""}" id="vocabCard">` + `<div class="vocab-card-inner">${front}${back}</div>` + '<span class="vocab-actions vocab-card-actions vocab-touch-only"><button class="vocab-act-edit" aria-label="Edit this word">&#9998;</button><button class="vocab-act-del" aria-label="Delete this word">&#10005;</button></span>' + '<button class="vocab-speak" aria-label="Play the sentence">🔊</button>' + '<select class="vocab-speed" title="Playback speed" aria-label="Playback speed" hidden>' + document.getElementById("playbackSpeed").innerHTML + "</select>" + "</div>";
 }
 
 function vocabControlsHtml() {
@@ -8058,7 +8080,8 @@ function renderVocab() {
   if (document.activeElement !== title) title.value = document.getElementById("lessonName").value;
   fitTextarea(title);
   const frontBtn = document.getElementById("vocabFrontBtn");
-  frontBtn.hidden = !items.length;
+  document.getElementById("vocabToolbar").hidden = !items.length;
+  syncVocabLang();
   frontBtn.classList.toggle("active", vocabFront === "a");
   frontBtn.title = vocabFront === "a" ? "Answer first — click to show the Question first" : "Question first — click to show the Answer first";
   const stage = document.getElementById("vocabStage");
@@ -8460,6 +8483,23 @@ document.getElementById("vocabList").addEventListener("mouseleave", () => {
   vocabHoveredKey = null;
 });
 
+function syncVocabLang() {
+  const sel = document.getElementById("vocabLang");
+  const all = currentLessonId === VOCAB_ALL_ID;
+  sel.disabled = all;
+  sel.value = all && vocabAllMultiLang ? "multi" : studyLang;
+  sel.title = all ? vocabAllMultiLang ? "Several languages — each word uses its own lesson's language" : "Language of the lessons these words come from" : "Language you're learning — used for pinyin hover, dictionary lookup and reading aloud";
+}
+
+document.getElementById("vocabLang").onchange = e => {
+  commitVocabEdit();
+  const main = document.getElementById("studyLang");
+  main.value = e.target.value;
+  main.dispatchEvent(new Event("change"));
+  e.target.blur();
+  renderVocab();
+};
+
 document.getElementById("vocabFrontBtn").onclick = () => {
   commitVocabEdit();
   vocabFront = vocabFront === "a" ? "q" : "a";
@@ -8631,6 +8671,11 @@ function syncVocabSound() {
   const on = vocabSoundOn();
   btn.textContent = vocabShownIsVideo ? on ? "⏸" : "▶" : on ? "⏸️" : "🔊";
   btn.classList.toggle("video", vocabShownIsVideo);
+  const speed = document.querySelector("#vocabCard .vocab-speed");
+  if (speed) {
+    speed.hidden = !vocabShownIsVideo;
+    speed.value = String(sequenceSpeed);
+  }
   btn.title = on ? "Pause (↑)" : vocabShownIsVideo ? "Play the video clip (↑)" : "Read the sentence aloud (↑)";
 }
 
@@ -8785,6 +8830,14 @@ function wireVocabCard(item) {
     e.stopPropagation();
     toggleVocabSound(item);
   };
+  const speed = card.querySelector(".vocab-speed");
+  speed.onclick = e => e.stopPropagation();
+  speed.onchange = () => {
+    const main = document.getElementById("playbackSpeed");
+    main.value = speed.value;
+    main.dispatchEvent(new Event("change"));
+    speed.blur();
+  };
   card.querySelector(".vocab-act-edit").onclick = e => {
     e.stopPropagation();
     openVocabEditor(item.key);
@@ -8802,7 +8855,7 @@ function wireVocabCard(item) {
   card.addEventListener("pointerdown", e => {
     if (drag && drag.moved) return;
     drag = null;
-    if (e.button !== 0 || e.target.closest(".vocab-speak, .vocab-actions")) return;
+    if (e.button !== 0 || e.target.closest(".vocab-speak, .vocab-speed, .vocab-actions")) return;
     if (e.pointerType === "touch" && (e.clientX < 20 || e.clientX > window.innerWidth - 20)) return;
     drag = {
       id: e.pointerId,
@@ -8965,6 +9018,7 @@ async function openAllVocabulary() {
     });
   }));
   const langs = new Set(picks.map(pk => pk.lesson.studyLang || "auto"));
+  vocabAllMultiLang = langs.size > 1;
   openLesson({
     id: VOCAB_ALL_ID,
     name: "📚 All vocabulary",
