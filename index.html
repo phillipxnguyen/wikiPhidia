@@ -959,7 +959,7 @@ window.onYouTubeIframeAPIReady = function(){
       <label class="muted-label" for="colDelim">Column delimiter</label>
       <select id="colDelim">
         <option value="tab" selected>Tab</option>
-        <option value="=">Equal sign ( = )</option>
+        <option value=":">Colon ( : )</option>
       </select>
       <button id="importBtn" class="primary">Import</button>
     </div>
@@ -982,6 +982,11 @@ window.onYouTubeIframeAPIReady = function(){
   <textarea id="vocabImportText" rows="8" placeholder="Paste here!"></textarea>
   <div id="vocabImportPreview" class="import-preview" hidden aria-live="polite"></div>
   <div class="row-flex" style="margin-top:10px;">
+    <label class="muted-label" for="vocabDelim">Column delimiter</label>
+    <select id="vocabDelim">
+      <option value="tab" selected>Tab</option>
+      <option value=":">Colon ( : )</option>
+    </select>
     <button id="vocabImportBtn" class="primary">Import</button>
     <span id="vocabImportStatus" class="muted-label"></span>
   </div>
@@ -5023,7 +5028,12 @@ async function convertZhAndImport(targetScript, sourceBtn) {
       const parts = splitCols(line, delim, 3);
       const ts = matchSpacedTimestamp(line, delim);
       let qText, prefix, suffix;
-      if (ts) {
+      const colon = delim === ":" && line.match(COLON_LINE_RE);
+      if (colon) {
+        prefix = colon[1] || "";
+        qText = colon[2];
+        suffix = colon[3] || "";
+      } else if (ts) {
         prefix = ts.prefix;
         qText = ts.rest;
         suffix = "";
@@ -5067,6 +5077,17 @@ async function convertZhAndImport(targetScript, sourceBtn) {
   }
 }
 
+const COLON_LINE_RE = /^(\s*(?:\d+:\d{1,2}(?::\d{1,2})?|\d+s)\s+)?(.*?)(\s*[:：].*)?$/;
+
+function hasColonColumn(line) {
+  const m = (line || "").match(COLON_LINE_RE);
+  return !!(m && m[3] && m[2].trim());
+}
+
+function delimLabel(delim) {
+  return delim === "\t" ? "Tab" : "Colon ( : )";
+}
+
 function currentDelim() {
   const v = document.getElementById("colDelim").value;
   return v === "tab" ? "\t" : v;
@@ -5098,8 +5119,12 @@ function takeHeaderLines(raw) {
   const delim = pickDelim(media.text);
   let lines = media.text.split(/\r?\n/);
   let title = "";
+  let seenLine = false;
   lines = lines.filter(l => {
-    if (title || l.includes(delim)) return true;
+    if (title || !l.trim()) return true;
+    const first = !seenLine;
+    seenLine = true;
+    if (delim === ":" ? !first : l.includes(delim)) return true;
     const m = l.match(TITLE_LABEL_RE);
     if (!m) return true;
     title = m[1];
@@ -5107,7 +5132,7 @@ function takeHeaderLines(raw) {
   });
   if (!title && rows.length === 0) {
     const i = lines.findIndex(l => l.trim());
-    if (i !== -1 && lines[i].indexOf(delim) === -1 && !matchSpacedTimestamp(lines[i], delim)) {
+    if (i !== -1 && (delim === ":" ? !hasColonColumn(lines[i]) : lines[i].indexOf(delim) === -1) && !matchSpacedTimestamp(lines[i], delim)) {
       title = lines[i].trim();
       lines.splice(i, 1);
     }
@@ -5136,10 +5161,10 @@ function takeMediaUrl(text) {
 }
 
 function pickDelim(text) {
-  const lines = text.split(/\r?\n/).filter(l => l.trim() && !(matchSpacedTimestamp(l, "\t") && matchSpacedTimestamp(l, "=")));
+  const lines = text.split(/\r?\n/).filter(l => l.trim() && !(matchSpacedTimestamp(l, "\t") && matchSpacedTimestamp(l, ":")));
   const cur = currentDelim();
-  const count = d => lines.filter(l => l.includes(d)).length;
-  const best = [ "\t", "=" ].map(d => [ d, count(d) ]).sort((a, b) => b[1] - a[1])[0];
+  const count = d => lines.filter(l => d === ":" ? hasColonColumn(l) : l.includes(d)).length;
+  const best = [ "\t", ":" ].map(d => [ d, count(d) ]).sort((a, b) => b[1] - a[1])[0];
   return best[1] <= count(cur) ? cur : best[0];
 }
 
@@ -5171,6 +5196,23 @@ function recordImport(added) {
 }
 
 function parseImportLine(line, delim) {
+  if (delim === ":") {
+    const m = line.match(COLON_LINE_RE);
+    const time = m && m[1] ? parseTimeToSeconds(m[1].trim()) : null;
+    if (!m || !m[2].trim()) return null;
+    if (!m[3]) return time != null ? {
+      time: time,
+      q: m[2].trim(),
+      a: "",
+      notes: ""
+    } : null;
+    return {
+      time: time,
+      q: m[2].trim(),
+      a: m[3].replace(/^\s*[:：]\s*/, "").trim(),
+      notes: ""
+    };
+  }
   const ts = matchSpacedTimestamp(line, delim);
   if (ts) return {
     time: ts.time,
@@ -5469,7 +5511,7 @@ function renderImportPreview() {
   });
   const counts = {};
   lineOutcomes.forEach(o => counts[o.kind] = (counts[o.kind] || 0) + 1);
-  const delimName = analysis.delim === "\t" ? "Tab" : "Equal sign ( = )";
+  const delimName = delimLabel(analysis.delim);
   const summary = [];
   summary.push(`<span><b>${analysis.lines.length}</b> line${analysis.lines.length === 1 ? "" : "s"}</span>`);
   if (counts.new) summary.push(`<span class="ip-status new">🆕 ${counts.new}</span>`);
@@ -8152,14 +8194,29 @@ function ensureVocabExtras() {
   return vocabExtras;
 }
 
-function parseVocabPaste(line) {
+function vocabDelimFor(text) {
+  const sel = document.getElementById("vocabDelim");
+  const cur = sel.value === "tab" ? "\t" : ":";
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  const count = d => lines.filter(l => d === ":" ? VOCAB_LINE_RE.test(l) : l.indexOf("\t") > 0).length;
+  const best = [ "\t", ":" ].map(d => [ d, count(d) ]).sort((a, b) => b[1] - a[1])[0];
+  const delim = best[1] <= count(cur) ? cur : best[0];
+  return {
+    delim: delim,
+    auto: delim !== cur
+  };
+}
+
+function parseVocabPaste(line, delim) {
   let term = "", meaning = "";
-  const tab = line.indexOf("\t");
-  if (tab > 0) {
-    term = line.slice(0, tab);
-    meaning = line.slice(tab + 1);
+  if (delim === "\t") {
+    const tab = line.indexOf("\t");
+    if (tab > 0) {
+      term = line.slice(0, tab);
+      meaning = line.slice(tab + 1);
+    }
   } else {
-    const m = line.match(VOCAB_LINE_RE) || line.match(/^\s*(.+?)\s+=\s+(.+)$/);
+    const m = line.match(VOCAB_LINE_RE);
     if (m) {
       term = m[1];
       meaning = m[2];
@@ -8173,9 +8230,10 @@ function parseVocabPaste(line) {
 function planVocabImport(text) {
   const seen = new Set;
   const lines = [];
+  const delim = vocabDelimFor(text).delim;
   text.split(/\r?\n/).forEach((raw, i) => {
     if (!raw.trim()) return;
-    const pair = parseVocabPaste(raw);
+    const pair = parseVocabPaste(raw, delim);
     let kind = "new";
     if (!pair) kind = "invalid"; else {
       const key = normalizeVocabText(pair[0]);
@@ -8205,10 +8263,12 @@ function renderVocabImportPreview() {
   if (count("new")) summary.push(`<span class="ip-status new">🆕 ${count("new")}</span>`);
   if (count("duplicate")) summary.push(`<span class="ip-status dup">${count("duplicate")} duplicate</span>`);
   if (count("invalid")) summary.push(`<span class="ip-status skip">${count("invalid")} skipped</span>`);
+  const pick = vocabDelimFor(raw);
+  summary.push(`<span>Delimiter: <b>${delimLabel(pick.delim)}</b>${pick.auto ? " (auto-detected)" : ""}</span>`);
   const labels = {
     new: [ "new", "🆕", "New word" ],
     duplicate: [ "dup", "⏭", "Already in this lesson" ],
-    invalid: [ "skip", "⚠️", "Not read — write word, Tab, meaning or word: meaning" ]
+    invalid: [ "skip", "⚠️", "Not read — no " + delimLabel(pick.delim) + " on this line" ]
   };
   const body = lines.slice(0, IMPORT_PREVIEW_MAX_ROWS).map(l => {
     const [cls, icon, label] = labels[l.kind];
@@ -8223,6 +8283,8 @@ function renderVocabImportPreview() {
 }
 
 let vocabPreviewTimer = null;
+
+document.getElementById("vocabDelim").addEventListener("change", renderVocabImportPreview);
 
 document.getElementById("vocabImportText").addEventListener("input", () => {
   clearTimeout(vocabPreviewTimer);
@@ -8266,10 +8328,11 @@ function importVocabText(text) {
 document.getElementById("vocabImportBtn").onclick = () => {
   if (!currentLessonId || isVirtualLesson()) return;
   const ta = document.getElementById("vocabImportText");
+  document.getElementById("vocabDelim").value = vocabDelimFor(ta.value).delim === "\t" ? "tab" : ":";
   const r = importVocabText(ta.value);
   const parts = [ r.added + " word" + (r.added === 1 ? "" : "s") + " added" ];
   if (r.dup) parts.push(r.dup + " already there");
-  if (r.bad) parts.push(r.bad + " not read — write word, Tab, meaning or word: meaning");
+  if (r.bad) parts.push(r.bad + " not read");
   document.getElementById("vocabImportStatus").textContent = parts.join(" · ");
   if (r.added && !r.bad && !r.dup) ta.value = "";
   renderVocabImportPreview();
