@@ -3738,6 +3738,28 @@ function toggleVocabBullets(box) {
   sel.addRange(next);
 }
 
+function notesEditorHtml(row) {
+  if (row.notesHtml && /<[a-z]/i.test(row.notesHtml)) return row.notesHtml;
+  const box = document.createElement("div");
+  box.innerHTML = row.notesHtml || escapeHtml(row.notes || "");
+  const text = box.textContent;
+  if (!text.trim()) return "";
+  let html = "";
+  let list = "";
+  text.split("\n").forEach(line => {
+    const m = parseVocabLine(line);
+    if (m) {
+      list += "<li><b>" + escapeHtml(m.term.trim()) + "</b>: " + escapeHtml(m.meaning) + "</li>";
+      return;
+    }
+    if (list) html += '<ul class="notes-list">' + list + "</ul>";
+    list = "";
+    html += "<div>" + (escapeHtml(line) || "<br>") + "</div>";
+  });
+  if (list) html += '<ul class="notes-list">' + list + "</ul>";
+  return html;
+}
+
 function commitActiveEdit() {
   if (!activeEdit) return;
   let newQ = activeEdit.editQ.textContent || "";
@@ -3748,6 +3770,7 @@ function commitActiveEdit() {
   activeEdit.editNotes.querySelectorAll("li").forEach(li => {
     if (isVocabItem(li)) takenKeys.add(normalizeVocabText(noteItemTerm(li))); else if (NOTE_VOCAB_ITEM_RE.test(ownLiTextNodes(li).map(n => n.nodeValue).join("")) && !noteItemIsDuplicate(li, activeEdit.editNotes, takenKeys)) boldVocabItem(li);
   });
+  if (activeEdit.editNotes.textContent.trim() && !activeEdit.editNotes.querySelector("*")) activeEdit.editNotes.innerHTML = "<div>" + activeEdit.editNotes.innerHTML + "</div>";
   const newNotes = activeEdit.editNotes.textContent || "";
   const newNotesHtml = activeEdit.editNotes.innerHTML || "";
   if (activeEdit.row.id === draftRowId) {
@@ -3834,7 +3857,7 @@ window.addEventListener("blur", () => {
 });
 
 function buildEditBoxInner(row) {
-  return `\n    <div style="display:flex;gap:10px;">\n      <div style="flex:1;">\n        <div id="editQ" class="rich-editor" contenteditable="true" data-placeholder="Question">${getEditInitialHtml(row.q, row.qHtml, row.id)}</div>\n      </div>\n      <div style="flex:1;">\n        <div id="editA" class="rich-editor" contenteditable="true" data-placeholder="Answer">${row.aHtml || escapeHtml(row.a)}</div>\n      </div>\n    </div>\n    <div id="editNotes" class="rich-editor" contenteditable="true" data-placeholder="Optional notes" style="margin-bottom:8px;">${row.notesHtml || escapeHtml(row.notes || "")}</div>\n    <div class="edit-actions">\n      <button id="editSave" class="primary">Save</button>\n    </div>\n    <div id="editDict"></div>\n  `;
+  return `\n    <div style="display:flex;gap:10px;">\n      <div style="flex:1;">\n        <div id="editQ" class="rich-editor" contenteditable="true" data-placeholder="Question">${getEditInitialHtml(row.q, row.qHtml, row.id)}</div>\n      </div>\n      <div style="flex:1;">\n        <div id="editA" class="rich-editor" contenteditable="true" data-placeholder="Answer">${row.aHtml || escapeHtml(row.a)}</div>\n      </div>\n    </div>\n    <div id="editNotes" class="rich-editor" contenteditable="true" data-placeholder="Optional notes" style="margin-bottom:8px;">${notesEditorHtml(row)}</div>\n    <div class="edit-actions">\n      <button id="editSave" class="primary">Save</button>\n    </div>\n    <div id="editDict"></div>\n  `;
 }
 
 let draftRowId = null;
@@ -8011,13 +8034,14 @@ function warnVocabExists(term) {
 function vocabEntriesOf(card) {
   const html = card.notesHtml || escapeHtml(card.notes || "").replace(/\n/g, "<br>");
   if (!html.trim()) return [];
-  if (vocabEntryCache.has(html)) return vocabEntryCache.get(html);
+  const plain = !card.notesHtml || !/<[a-z]/i.test(card.notesHtml);
+  const entryKey = (plain ? "p" : "h") + html;
+  if (vocabEntryCache.has(entryKey)) return vocabEntryCache.get(entryKey);
   const box = document.createElement("div");
   box.innerHTML = html;
   const lines = [];
   Array.from(box.querySelectorAll("li")).forEach(li => lines.push(ownLiText(li)));
   box.querySelectorAll("ul, ol").forEach(el => el.remove());
-  const plain = !card.notesHtml || !/<[a-z]/i.test(card.notesHtml);
   if (!plain) box.querySelectorAll("b, strong").forEach(el => el.textContent.trim() && el.before("\u0001"));
   box.querySelectorAll("br").forEach(el => el.replaceWith("\n"));
   box.querySelectorAll("div, p").forEach(el => el.append("\n"));
@@ -8029,7 +8053,7 @@ function vocabEntriesOf(card) {
     const m = parseVocabLine(line);
     if (m) entries.push(m);
   });
-  vocabEntryCache.set(html, entries);
+  vocabEntryCache.set(entryKey, entries);
   return entries;
 }
 
