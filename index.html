@@ -601,6 +601,7 @@ window.onYouTubeIframeAPIReady = function(){
   .edit-row .rich-editor{margin-bottom:8px;display:block;}
   .rich-editor:empty::before{content:attr(data-placeholder);color:var(--text-3);font-style:italic;}
   #editNotes:empty::before{font-style:normal;}
+  .dict-source mark.vocab-own, .rich-editor mark.vocab-own{background:var(--surface-3);color:inherit;border-radius:3px;padding:0 1px;}
   .dict-source mark.vocab-hit, .rich-editor mark.vocab-hit{background:var(--vocab-bg);color:var(--vocab-text);border-radius:3px;padding:0 1px;cursor:pointer;}
   @media (hover:hover){.dict-source mark.vocab-hit:hover, .rich-editor mark.vocab-hit:hover{background:var(--vocab-bg-hover);}}
   .rich-editor ul, .vocab-popup ul{margin:2px 0;padding-left:20px;}
@@ -2461,7 +2462,7 @@ function renderDictPanels() {
   rows.forEach(r => {
     notesLen += (r.notes || "").length * 31 + (r.q || "").length;
   });
-  const notesSig = rows.length + ":" + notesLen;
+  const notesSig = rows.length + ":" + notesLen + ":" + (vocabExtras ? (vocabExtras.notesHtml || "").length : 0);
   const panelFor = r => {
     const url = dictUrlFor((r.q || "").trim());
     if (!url) return null;
@@ -3169,7 +3170,8 @@ const MAX_VOCAB_PHRASE_UNITS = 10;
 function highlightVocabInHtml(html, excludeId) {
   if (!html) return html;
   const index = vocabIndexFor(excludeId);
-  if (!index.length) return html;
+  const ownKeys = new Set(lessonVocabItems(vocabSource()).map(i => i.key));
+  if (!index.length && !ownKeys.size) return html;
   const container = document.createElement("div");
   container.innerHTML = html;
   const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null);
@@ -3193,22 +3195,35 @@ function highlightVocabInHtml(html, excludeId) {
       }
       let matchLen = 0;
       let matchTerm = "";
+      let ownOnly = false;
       const maxLen = Math.min(MAX_VOCAB_PHRASE_UNITS, units.length - i);
       for (let len = maxLen; len >= 1; len--) {
         if (!units[i + len - 1].isWord) continue;
         const candidate = units.slice(i, i + len).map(u => u.token).join("");
-        if (candidate.trim().length >= 1 && findVocabMatches(candidate, excludeId, index).length) {
+        if (candidate.trim().length >= 1 && index.length && findVocabMatches(candidate, excludeId, index).length) {
           matchLen = len;
           matchTerm = candidate;
           break;
+        }
+      }
+      if (!matchLen && ownKeys.size) {
+        for (let len = maxLen; len >= 1; len--) {
+          if (!units[i + len - 1].isWord) continue;
+          const candidate = units.slice(i, i + len).map(u => u.token).join("");
+          if (ownKeys.has(normalizeVocabText(candidate.trim()))) {
+            matchLen = len;
+            matchTerm = candidate;
+            ownOnly = true;
+            break;
+          }
         }
       }
       if (matchLen > 0) {
         const normTerm = normalizeVocabText(matchTerm);
         if (!seenTerms.has(normTerm)) {
           const mark = document.createElement("mark");
-          mark.className = "vocab-hit";
-          mark.title = "Related note available — click to view";
+          mark.className = ownOnly ? "vocab-own" : "vocab-hit";
+          mark.title = ownOnly ? "Already a word in your vocabulary" : "Related note available — click to view";
           mark.textContent = matchTerm;
           frag.appendChild(mark);
           hasHit = true;
@@ -3231,7 +3246,7 @@ function stripVocabHighlights(html) {
   if (!html) return html;
   const tmp = document.createElement("div");
   tmp.innerHTML = html;
-  tmp.querySelectorAll("mark.vocab-hit").forEach(mk => {
+  tmp.querySelectorAll("mark.vocab-hit, mark.vocab-own").forEach(mk => {
     mk.replaceWith(document.createTextNode(mk.textContent));
   });
   return tmp.innerHTML;
