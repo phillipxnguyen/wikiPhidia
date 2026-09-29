@@ -1428,10 +1428,24 @@ function newSrs() {
   };
 }
 
-function srsOf(r, mode) {
+function srsOf(r) {
   if (!r.srs) r.srs = newSrs();
-  if (!r.srs[mode]) r.srs[mode] = newSrsState();
-  return r.srs[mode];
+  if (!r.srs.Table) r.srs.Table = newSrsState();
+  return r.srs.Table;
+}
+
+function mergeModeSrs(srs) {
+  const states = MODES.map(m => srs[m]).filter(st => st && st.reps);
+  if (states.length > 1 || states.length === 1 && states[0] !== srs.Table) {
+    const latest = states.reduce((a, b) => (b.last || 0) > (a.last || 0) ? b : a);
+    srs.Table = Object.assign({}, latest, {
+      reps: states.reduce((sum, st) => sum + st.reps, 0),
+      lapses: states.reduce((sum, st) => sum + (st.lapses || 0), 0)
+    });
+  }
+  srs.Listen = newSrsState();
+  srs.Write = newSrsState();
+  return srs;
 }
 
 function goodDelayMs(streak) {
@@ -2038,7 +2052,7 @@ function progressBadgesHtml(mode, currentIds) {
     const bucket = cardBucket(r, mode);
     if (bucket) active[bucket] = true;
   });
-  return '<div class="progress-badges">' + '<span class="progress-badge new' + (active.new ? " active" : "") + '" title="New — never studied in this mode yet">🆕 ' + newN + "</span>" + '<span class="progress-badge due' + (active.due ? " active" : "") + '" title="Due — studied before and ready to review right now">⏳ ' + dueN + "</span>" + '<span class="progress-badge done' + (active.done ? " active" : "") + '" title="Done — ' + DONE_STREAK + ' Good in a row in this mode, then reviewed after 1, 3, 7… days; an Again sends it back to Due">✅ ' + doneN + "</span>" + "</div>";
+  return '<div class="progress-badges">' + '<span class="progress-badge new' + (active.new ? " active" : "") + '" title="New — never studied yet">🆕 ' + newN + "</span>" + '<span class="progress-badge due' + (active.due ? " active" : "") + '" title="Due — studied before and ready to review right now">⏳ ' + dueN + "</span>" + '<span class="progress-badge done' + (active.done ? " active" : "") + '" title="Done — ' + DONE_STREAK + ' Good in a row, then reviewed after 1, 3, 7… days; an Again sends it back to Due">✅ ' + doneN + "</span>" + "</div>";
 }
 
 function modeKey() {
@@ -2277,6 +2291,10 @@ function isFinishedState(state) {
   return !!state && state.groups[state.index].length === 0 && state.index >= state.groups.length - 1;
 }
 
+function isResumableState(state) {
+  return !!state && !isFinishedState(state) && (state.groups.some(g => g.length) || (state.pendingAgain || []).length > 0);
+}
+
 function isSessionFinished() {
   return isFinishedState(groupState);
 }
@@ -2325,7 +2343,7 @@ function renderDictPanels() {
         reshuffleCardOrder();
         nextOrderReady = true;
       }
-      const saved = savedGroupState && !isFinishedState(savedGroupState) ? savedGroupState : null;
+      const saved = isResumableState(savedGroupState) ? savedGroupState : null;
       const ids = (saved ? saved.groups[saved.index] : makeGroups()[0]) || [];
       preload = rows.filter(r => ids.includes(r.id)).concat(dueRows("Write").slice(0, 1), dueRows("Listen").slice(0, 1));
     }
@@ -3766,7 +3784,7 @@ function setReviewMode(style) {
   const wasInSession = !!groupState;
   if (!groupState) {
     if (rows.length === 0) return;
-    const resuming = savedGroupState && !isFinishedState(savedGroupState);
+    const resuming = isResumableState(savedGroupState);
     if (!resuming && !nextOrderReady) reshuffleCardOrder();
     nextOrderReady = false;
     groupState = resuming ? savedGroupState : {
@@ -3777,6 +3795,7 @@ function setReviewMode(style) {
     };
     savedGroupState = null;
     groupViewStyle = style;
+    if (resuming) skipEmptyGroups();
     applyGroupEntryHiddenState(groupState.groups[groupState.index]);
   } else {
     groupViewStyle = style;
@@ -5249,7 +5268,7 @@ function normalizeCard(c) {
     notes: String(c.notes || ""),
     notesHtml: c.notesHtml ? sanitizeHtml(String(c.notesHtml)) : "",
     time: time,
-    srs: c.srs ? normalizeSrs(c.srs) : migrateLegacySrs(c),
+    srs: mergeModeSrs(c.srs ? normalizeSrs(c.srs) : migrateLegacySrs(c)),
     vocab: normalizeVocabSrs(c.vocab)
   };
 }
@@ -6382,7 +6401,7 @@ function renderStats() {
   if (!lessonRows.length) {
     lessonsEl.innerHTML = '<div class="stats-empty">No lessons yet.</div>';
   } else {
-    lessonsEl.innerHTML = '<table class="stats-table"><thead><tr><th>Lesson</th><th class="num" title="Total cards" aria-label="Total cards">Σ</th><th class="num" title="New — never studied in Table mode" aria-label="New">🆕</th><th class="num" title="Due — ready to review now" aria-label="Due">⏳</th><th class="num" title="Done — ' + DONE_STREAK + ' Good in a row" aria-label="Done">✅</th><th class="num" title="Reviews in the last 30 days" aria-label="Reviews in the last 30 days">🔁</th></tr></thead><tbody>' + lessonRows.sort((a, b) => (a.l.name || "").localeCompare(b.l.name || "", undefined, {
+    lessonsEl.innerHTML = '<table class="stats-table"><thead><tr><th>Lesson</th><th class="num" title="Total cards" aria-label="Total cards">Σ</th><th class="num" title="New — never studied yet" aria-label="New">🆕</th><th class="num" title="Due — ready to review now" aria-label="Due">⏳</th><th class="num" title="Done — ' + DONE_STREAK + ' Good in a row" aria-label="Done">✅</th><th class="num" title="Reviews in the last 30 days" aria-label="Reviews in the last 30 days">🔁</th></tr></thead><tbody>' + lessonRows.sort((a, b) => (a.l.name || "").localeCompare(b.l.name || "", undefined, {
       numeric: true
     })).map(x => `<tr><td title="${escapeAttr(x.l.name || "Untitled lesson")}"><span class="clamp">${escapeHtml(x.l.name || "Untitled lesson")}</span></td><td class="num">${x.l.cards.length}</td><td class="num">${x.fresh}</td><td class="num">${x.due}</td><td class="num">${x.done}</td><td class="num">${x.reviews30}</td></tr>`).join("") + "</tbody></table>";
   }
@@ -7228,6 +7247,10 @@ async function initApp() {
     l.cards.forEach(c => {
       if (c.srs && MODES.some(m => c.srs[m] && typeof c.srs[m].streak !== "number")) {
         c.srs = normalizeSrs(c.srs);
+        converted = true;
+      }
+      if (c.srs && (c.srs.Listen && c.srs.Listen.reps || c.srs.Write && c.srs.Write.reps)) {
+        c.srs = mergeModeSrs(normalizeSrs(c.srs));
         converted = true;
       }
     });
