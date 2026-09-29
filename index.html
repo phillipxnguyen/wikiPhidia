@@ -418,8 +418,8 @@ window.onYouTubeIframeAPIReady = function(){
   html.touch #dictPanels{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
   html.touch #dictPanels .dict-source{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default;}
   .sel-plus{position:fixed;z-index:1200;display:none;width:40px;height:40px;padding:0;border:0;border-radius:50%;background:var(--accent);color:var(--on-accent);font-size:24px;line-height:40px;box-shadow:var(--shadow-md);-webkit-tap-highlight-color:transparent;}
-  #dictPanels > *, .media-container{transition:box-shadow .18s ease-out;}
-  #dictPanels > :has(iframe.live), .media-container:has(iframe.live){box-shadow:0 0 0 8px color-mix(in srgb, var(--text) 14%, transparent);}
+  .media-container{transition:box-shadow .18s ease-out;}
+  .media-container:has(iframe.live){box-shadow:0 0 0 8px color-mix(in srgb, var(--text) 14%, transparent);}
   html.touch .edit-btn, html.touch .del-btn{width:32px;height:36px;line-height:36px;font-size:20px;}
   .insert-btn{position:absolute;left:0;z-index:5;display:flex;align-items:center;justify-content:center;width:100%;height:18px;min-height:0;padding:0;border:0;border-radius:0;background:transparent;}
   .insert-btn::before{content:"";position:absolute;left:0;right:0;top:8.5px;height:1px;background:color-mix(in srgb, var(--a-label) 45%, transparent);}
@@ -1847,12 +1847,6 @@ document.getElementById("btnClearMedia").onclick = () => {
 document.addEventListener("pointerdown", () => {
   document.querySelectorAll("iframe.live").forEach(f => f.classList.remove("live"));
 }, true);
-
-document.getElementById("dictPanels").addEventListener("click", e => {
-  const panel = e.target.closest(".stroke-order-panel");
-  const frame = panel && panel.querySelector("iframe");
-  if (frame && isTouch()) frame.classList.add("live");
-});
 
 document.getElementById("mediaContainer").addEventListener("click", () => {
   const frame = mediaBox().querySelector("iframe");
@@ -9563,10 +9557,13 @@ document.addEventListener("selectionchange", () => {
     }
     const btn = selPlusButton();
     btn.style.display = "block";
-    const left = Math.min(window.innerWidth - 48, Math.max(8, hit.rect.left + hit.rect.width / 2 - 20));
-    const below = hit.rect.bottom + 12;
-    btn.style.left = left + "px";
-    btn.style.top = (below + 40 < window.innerHeight ? below : hit.rect.top - 52) + "px";
+    const rects = window.getSelection().getRangeAt(0).getClientRects();
+    const end = rects.length ? rects[rects.length - 1] : hit.rect;
+    const start = rects.length ? rects[0] : hit.rect;
+    const fitsRight = end.right + 56 <= window.innerWidth;
+    const line = fitsRight ? end : start;
+    btn.style.left = (fitsRight ? end.right + 10 : Math.max(8, start.left - 50)) + "px";
+    btn.style.top = line.top + line.height / 2 - 20 + "px";
   }, 150);
 });
 
