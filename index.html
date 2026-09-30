@@ -529,10 +529,6 @@ window.onYouTubeIframeAPIReady = function(){
     border-bottom:1px solid var(--border);
   }
   thead th.icon-col{width:20px;padding:10px 4px;}
-  .tts-icon{display:none;margin-right:6px;cursor:pointer;opacity:.75;}
-  @media (hover:hover){.tts-icon:hover{opacity:1;}}
-  .tts-icon.tts-playing{opacity:1;color:var(--accent);}
-  .group-mode .tts-icon{display:inline;}
   .col-toggle{cursor:pointer;}
   #groupCounterHeader{text-align:center;padding:8px 4px;}
   #editDict{margin-top:0;height:0;overflow:hidden;}
@@ -1066,7 +1062,7 @@ window.onYouTubeIframeAPIReady = function(){
       </select></label>
       <button id="vocabFullBtn" class="sep-before" data-view="full" title="All words — the whole list, for browsing and editing" aria-label="All words">☰</button>
       <button id="vocabGroupBtn" data-view="group" title="Group — due words five at a time" aria-label="Group">🗂️</button>
-      <button id="vocabCardBtn" data-view="card" title="Flashcards — one word at a time" aria-label="Flashcards">◫</button>
+      <button id="vocabCardBtn" data-view="card" title="Flashcards — one word at a time" aria-label="Flashcards">🗒️</button>
       <button id="vocabFrontBtn" class="sep-before" aria-label="Switch which side shows first">⇄</button>
     </div>
     <div class="toolbar-right">
@@ -1146,8 +1142,8 @@ window.onYouTubeIframeAPIReady = function(){
     <thead>
       <tr>
         <th class="icon-col" colspan="2" id="groupCounterHeader"></th>
-        <th><span id="ttsIcon" class="tts-icon" title="Read all questions in this group aloud (click again to stop)">🔊</span> <span class="col-toggle" data-field="q" title="Click to show/hide the Question column for this group">Question</span></th>
-        <th class="a-col"><span id="ttsIconA" class="tts-icon" title="Read all answers in this group aloud (click again to stop)">🔊</span> <span class="col-toggle" data-field="a" title="Click to show/hide the Answer column for this group">Answer</span></th>
+        <th><span class="col-toggle" data-field="q" title="Click to show/hide the Question column for this group">Question</span></th>
+        <th class="a-col"><span class="col-toggle" data-field="a" title="Click to show/hide the Answer column for this group">Answer</span></th>
       </tr>
     </thead>
     <tbody id="tbody"></tbody>
@@ -2206,7 +2202,16 @@ const ENTRY_HIDDEN = {
   Listen: { q: true, a: true }
 };
 
+function sequenceReadsAloud() {
+  const ready = !!ytPlayer && ytReady && ytHasVideo && !ytHasError;
+  return !ready && !!groupState && !(deckHasVideoCards() && extractYouTubeId(document.getElementById("mediaUrl").value.trim()));
+}
+
 function toggleSequenceLoop() {
+  if (sequenceReadsAloud()) {
+    if (ttsPlaying && ttsField === "q") stopTts(); else startTts("q");
+    return;
+  }
   if (ytHasError) return;
   if (!ytPlayer || !ytReady || !ytHasVideo) {
     showToast(ytHasVideo ? "Video is still loading…" : "Add a YouTube video first");
@@ -2265,6 +2270,17 @@ function stopSequenceLoop() {
 function updateSequenceBtnUI() {
   const btn = document.getElementById("btnPlaySequence");
   const speedSel = document.getElementById("playbackSpeed");
+  if (sequenceReadsAloud()) {
+    const on = ttsPlaying && ttsField === "q";
+    btn.style.display = "inline-block";
+    btn.disabled = false;
+    speedSel.style.display = "none";
+    btn.textContent = on ? "⏸" : "🔊";
+    btn.classList.toggle("active", on);
+    btn.title = on ? "Pause (↑)" : "Read the questions aloud (↑)";
+    return;
+  }
+  btn.title = "Play sequence and pause (↑)";
   if (!ytPlayer || !ytReady || !ytHasVideo || ytHasError) {
     btn.style.display = "none";
     btn.disabled = true;
@@ -5049,7 +5065,7 @@ let ttsLoop = true;
 
 function currentGroupTexts(field) {
   if (!groupState) return [];
-  const ids = groupState.groups[groupState.index];
+  const ids = isCardMode() ? singleCardQueue().slice(0, 1).map(r => r.id) : groupState.groups[groupState.index];
   return rows.filter(r => ids.includes(r.id)).map(r => ((field === "q" ? r.q : r.a) || "").trim()).filter(Boolean);
 }
 
@@ -5086,17 +5102,6 @@ function pickVoice(lang) {
   if (ttsVoices.length === 0) loadTtsVoices();
   const prefix = lang.split("-")[0].toLowerCase();
   return ttsVoices.find(v => v.lang.toLowerCase().startsWith(prefix) && /google/i.test(v.name)) || ttsVoices.find(v => v.lang.toLowerCase() === lang.toLowerCase()) || ttsVoices.find(v => v.lang.toLowerCase().startsWith(prefix)) || null;
-}
-
-function updateTtsIcons() {
-  [ [ "ttsIcon", "q", "Read all questions in this group aloud (click again to stop)" ], [ "ttsIconA", "a", "Read all answers in this group aloud (click again to stop)" ] ].forEach(([id, field, idleTitle]) => {
-    const icon = document.getElementById(id);
-    if (!icon) return;
-    const active = ttsPlaying && ttsField === field;
-    icon.classList.toggle("tts-playing", active);
-    icon.textContent = active ? "⏸️" : "🔊";
-    icon.title = active ? "Pause reading" : idleTitle;
-  });
 }
 
 function buildTtsQueue() {
@@ -5142,7 +5147,7 @@ function cancelSpeechOnly() {
   if (speechSynthesis.speaking || speechSynthesis.pending) {
     speechSynthesis.cancel();
   }
-  updateTtsIcons();
+  updateSequenceBtnUI();
 }
 
 function startTts(field, loop = true) {
@@ -5156,7 +5161,7 @@ function startTts(field, loop = true) {
   ttsPlaying = true;
   ttsField = field;
   ttsLoop = loop;
-  updateTtsIcons();
+  updateSequenceBtnUI();
   buildTtsQueue();
   if (ttsQueue.length === 0) {
     stopTts();
@@ -5166,14 +5171,6 @@ function startTts(field, loop = true) {
     if (ttsPlaying) speakNext();
   }, 60);
 }
-
-[ [ "ttsIcon", "q" ], [ "ttsIconA", "a" ] ].forEach(([id, field]) => {
-  document.getElementById(id).addEventListener("click", e => {
-    e.stopPropagation();
-    if (!groupState) return;
-    if (ttsPlaying && ttsField === field) stopTts(); else startTts(field);
-  });
-});
 
 document.querySelectorAll(".col-toggle").forEach(headerLabel => {
   headerLabel.addEventListener("click", e => {
@@ -8949,7 +8946,10 @@ document.getElementById("vocabFrontBtn").onclick = () => {
     localStorage.setItem(VOCAB_FRONT_KEY, JSON.stringify(vocabFront));
   } catch (e) {}
   stopVocabSound();
-  if (vocabSession) vocabSession.flipped = false;
+  if (vocabSession) {
+    vocabSession.flipped = false;
+    vocabSession.shown = false;
+  }
   renderVocab();
 };
 
@@ -9369,7 +9369,10 @@ function setVocabView(view) {
   try {
     localStorage.setItem(VOCAB_VIEW_KEY, JSON.stringify(view));
   } catch (e) {}
-  if (vocabSession) vocabSession.flipped = false;
+  if (vocabSession) {
+    vocabSession.flipped = false;
+    vocabSession.shown = false;
+  }
   renderVocab();
 }
 
@@ -9812,32 +9815,11 @@ document.addEventListener("keydown", e => {
     seqBtn.click();
     return;
   }
-  if (e.code === "ArrowLeft") {
-    if (e.repeat) return;
-    if (!groupState || groupViewStyle !== "table") return;
-    e.preventDefault();
-    document.getElementById("ttsIcon").click();
-    return;
-  }
-  if (e.code === "ArrowRight") {
-    if (e.repeat) return;
-    if (!groupState || groupViewStyle !== "table") return;
-    e.preventDefault();
-    document.getElementById("ttsIconA").click();
-    return;
-  }
   if (e.code === "ArrowDown") {
     if (e.repeat) return;
     if (!groupState || groupViewStyle !== "table") return;
     e.preventDefault();
     document.getElementById("copyGroupBtn").click();
-    return;
-  }
-  if (e.altKey && e.code === "Slash") {
-    if (e.repeat) return;
-    if (!groupState || groupViewStyle !== "table") return;
-    e.preventDefault();
-    document.getElementById("ttsIcon").click();
     return;
   }
   if (e.code === "Backspace" || e.code === "Delete") {
