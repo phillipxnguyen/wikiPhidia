@@ -22,7 +22,7 @@ The whole app is one file, `index.html`. There is no build step and nothing to i
 
 Group, Listen and Write share one queue: a card studied in one mode leaves the others until it is due again.
 
-**Sound.** The ▶ button (or ↑) plays the cards' video clips, at the speed beside it. In a lesson without a video it becomes 🔊 and reads the questions aloud instead. Showing a group, or flipping a word to its Question side in Vocabulary, plays it automatically; revealing an Answer never does.
+**Sound.** The ▶ button (or ↑) plays the cards' video clips, at the speed beside it. Cards without a clip are read aloud in their turn, so clips and reading alternate; in a lesson without a video the button becomes 🔊 and reads the questions aloud. Showing a group, or flipping a word to its Question side in Vocabulary, plays it automatically; revealing an Answer never does.
 
 **Scheduling.** *Again* brings a card back in 10 minutes. Each *Good* counts towards a streak; until the fifth Good in a row the card returns the next day. After five it is **done**, and the gaps grow to 1, 3 and then 7 days.
 
@@ -36,7 +36,7 @@ Group, Listen and Write share one queue: a card studied in one mode leaves the o
 | → | Good |
 | ↑ | Play or pause the sound |
 | ↓ | Copy the questions |
-| 1 – 5 | In a group, play just that row's sound over and over (press again to stop) |
+| 1 – 5 | In a group, play just that row over and over: its video clip, or read aloud when it has none (press again to stop) |
 | Space | Reveal / flip |
 | ⌘/Ctrl + Z | Undo, including grades (add Shift to redo) |
 | Delete | Delete the card |
