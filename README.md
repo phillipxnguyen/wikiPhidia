@@ -18,9 +18,8 @@ The whole app is one file, `index.html`. There is no build step and nothing to i
 | ☰ Full | The whole lesson as a list, for browsing and editing. No spaced repetition. |
 | Group | Due cards five at a time. |
 | Listening | One card at a time, playing its video clip first. Shown when the lesson has video cards. |
-| Writing | Answer first, so you recall and write the character, with stroke-order animation. Shown for Chinese and Japanese cards. |
 
-Group, Listening and Writing share one queue: a card studied in one mode leaves the others until it is due again.
+Group and Listening share one queue: a card studied in one mode leaves the others until it is due again.
 
 **Sound.** The ▶ button (or ↑) plays the cards' video clips, at the speed beside it. Cards without a clip are read aloud in their turn, so clips and reading alternate; in a lesson without a video the button becomes 🔊 and reads the questions aloud. Showing a group, or flipping a word to its Question side in Vocabulary, plays it automatically; revealing an Answer never does.
 
@@ -35,7 +34,7 @@ Group, Listening and Writing share one queue: a card studied in one mode leaves 
 | ← | Again |
 | → | Good |
 | ↑ | Play or pause the sound |
-| ↓ | In a group, copy the questions; one card at a time (Flashcards, Listening, Writing), edit the card |
+| ↓ | In a group, copy the questions; one card at a time (Flashcards, Listening), edit the card |
 | 1 – 5 | In a group, play just that row over and over: its video clip, or read aloud when it has none (press again to stop) |
 | Space | Reveal / flip |
 | ⌘/Ctrl + Z | Undo, including grades (add Shift to redo) |
@@ -64,7 +63,7 @@ Words already in your vocabulary are highlighted in questions and in the sentenc
 ## Language help
 
 - Pinyin on hover for Chinese
-- Stroke-order animations in Writing mode
+- Stroke-order animations: every dictionary panel in Group and Listening shows how to write the card's characters, animated each time it appears
 - A dictionary panel under each card, in every language: chinesedictionary.mobi for Chinese; Bing Translator into English for Japanese, Korean and Vietnamese, and into Vietnamese for English. Chinese and Japanese sentences above it show pinyin or readings
 - Reading aloud with the browser's own voices
 - Study languages: Chinese (Simplified and Traditional), Japanese, Korean, English, Vietnamese

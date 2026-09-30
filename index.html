@@ -764,6 +764,7 @@ window.onYouTubeIframeAPIReady = function(){
   .swipe-ghost.again{color:var(--danger);border-color:currentColor;}
   .swipe-ghost.delete{color:var(--text);border-color:currentColor;}
   .dict-source{font-size:22px;line-height:2;color:var(--text);margin:0 0 10px;overflow-wrap:break-word;}
+  .dict-stroke .stroke-order-row{margin-bottom:12px;}
   .dict-frame{display:block;width:100%;height:360px;border:1px solid var(--border);border-radius:8px;background:#fff;}
   .stroke-replay{
     position:absolute;bottom:3px;right:3px;
@@ -1122,7 +1123,6 @@ window.onYouTubeIframeAPIReady = function(){
       <button id="fullModeBtn" title="Full — every card in a list, no spaced repetition" aria-label="Full">☰</button>
       <button id="groupBtn" title="Group — due cards five at a time" aria-label="Group"><span id="groupBtnFlag">🌐</span></button>
       <button id="listenModeBtn" style="display:none;" title="Listening — one card at a time, playing its clip; Space reveals it" aria-label="Listening">🎧</button>
-      <button id="writeModeBtn" style="display:none;" title="Writing — the Answer comes first so you recall and write the character; Space reveals the Question" aria-label="Writing">📝</button>
     </div>
     <div class="toolbar-right">
       <button id="btnPlaySequence" title="Play sequence and pause (↑)">▶</button>
@@ -1158,7 +1158,6 @@ window.onYouTubeIframeAPIReady = function(){
   <div id="singleCardView" style="display:none;">
     <div id="singleCardProgress" class="single-card-progress"></div>
     <div id="singleCardBody" class="single-card-body"></div>
-    <div id="strokeOrderPanel" class="stroke-order-panel" style="display:none;"></div>
   </div>
 
   <div id="dictPanels"></div>
@@ -1676,7 +1675,7 @@ function isListenMode() {
 }
 
 function isCardMode() {
-  return !!groupState && (groupViewStyle === "listen" || groupViewStyle === "write");
+  return !!groupState && groupViewStyle === "listen";
 }
 
 function onPlayerReady() {
@@ -2122,7 +2121,6 @@ function deckHasAnswers() {
 
 function modeScopeRows(mode) {
   if (mode === "Listen") return rows.filter(r => r.time != null);
-  if (mode === "Write") return rows.filter(r => hasAnswer(r) && rowIsCjk(r));
   return rows.filter(hasAnswer);
 }
 
@@ -2171,7 +2169,7 @@ function badgesHtml(newN, dueN, doneN, active) {
 }
 
 function modeKey() {
-  return groupViewStyle === "listen" ? "Listen" : groupViewStyle === "write" ? "Write" : "Table";
+  return groupViewStyle === "listen" ? "Listen" : "Table";
 }
 
 function dueRows(mode) {
@@ -2187,7 +2185,7 @@ function singleCardQueue() {
 }
 
 function getCurrentSingleCardRow() {
-  if (groupViewStyle === "listen" || groupViewStyle === "write") return singleCardQueue()[0];
+  if (groupViewStyle === "listen") return singleCardQueue()[0];
   return getVisibleRows()[0];
 }
 
@@ -2206,7 +2204,6 @@ function refreshBadges() {
 
 const ENTRY_HIDDEN = {
   Table: { q: true, a: false },
-  Write: { q: true, a: false },
   Listen: { q: true, a: true }
 };
 
@@ -2531,7 +2528,7 @@ function renderDictPanels() {
       }
       const saved = isResumableState(savedGroupState) ? savedGroupState : null;
       const ids = (saved ? saved.groups[saved.index] : makeGroups()[0]) || [];
-      preload = rows.filter(r => ids.includes(r.id)).concat(dueRows("Write").slice(0, 1), dueRows("Listen").slice(0, 1));
+      preload = rows.filter(r => ids.includes(r.id)).concat(dueRows("Listen").slice(0, 1));
     }
   }
   host.classList.toggle("with-source", !!groupState && inTable);
@@ -2549,7 +2546,7 @@ function renderDictPanels() {
       el = document.createElement("div");
       el.className = "stroke-order-panel dict-pending";
       el.dataset.url = url;
-      el.innerHTML = `<div class="dict-source">${escapeHtml(r.q)}</div><iframe class="dict-frame"></iframe>`;
+      el.innerHTML = `<div class="dict-source">${escapeHtml(r.q)}</div><div class="dict-stroke"></div><iframe class="dict-frame"></iframe>`;
       el.querySelector("iframe").src = url;
       host.appendChild(el);
     }
@@ -2572,7 +2569,14 @@ function renderDictPanels() {
     el.style.order = i;
     visible.add(el);
   });
-  Array.from(host.children).forEach(el => el.classList.toggle("dict-pending", !visible.has(el)));
+  Array.from(host.children).forEach(el => {
+    if (visible.has(el) && el.classList.contains("dict-pending")) {
+      const r = rows.find(x => x.id === Number(el.dataset.rowId));
+      const text = r ? (r.q || "") + (r.a || "") : "";
+      drawStrokeOrder(el.querySelector(".dict-stroke"), text, cjkScriptFor(text, r) === "ja", "dictStroke_" + el.dataset.rowId);
+    }
+    el.classList.toggle("dict-pending", !visible.has(el));
+  });
   if (visible.size) guardDictFocus();
   const stale = Array.from(host.children).filter(el => Number(el.dataset.used) !== now).sort((a, b) => a.dataset.used - b.dataset.used);
   stale.slice(0, Math.max(0, host.children.length - 40)).forEach(el => el.remove());
@@ -2636,7 +2640,6 @@ function renderStudy() {
     if (singleCardRows.length === 0) {
       singleCardView.style.display = "none";
       lastShownCardId = null;
-      renderStrokeOrderPanel(null);
       showSessionCompletePanel();
       return;
     }
@@ -2680,7 +2683,7 @@ function singleCardFieldsHtml(row) {
   const qField = `<div class="single-card-field single-card-q"><div class="cell ${row.qHidden ? "hidden" : "shown"}" data-field="q">${qCellContent(row)}</div></div>`;
   const aField = `<div class="single-card-field single-card-a"><div class="cell ${row.aHidden ? "hidden" : "shown"}" data-field="a">${aCellContent(row)}</div></div>`;
   if (!hasAnswer(row)) return qField;
-  return groupViewStyle === "write" ? aField + qField : qField + aField;
+  return qField + aField;
 }
 
 function renderSingleCard(visibleRows) {
@@ -2696,7 +2699,6 @@ function renderSingleCard(visibleRows) {
     row.aHidden = ENTRY_HIDDEN[modeKey()].a;
   }
   const autoPlay = firstShow && groupViewStyle === "listen";
-  renderStrokeOrderPanel(groupViewStyle === "write" ? row : null);
   if (activeEdit && activeEdit.row.id === row.id) {
     if (autoPlay) playListenCardAudio(row);
     return;
@@ -2716,25 +2718,6 @@ function loadStrokeCharData(ch, isJa) {
     if (!res.ok) throw new Error("not found");
     return res.json();
   }).catch(() => HanziWriter.loadCharacterData(ch));
-}
-
-let lastStrokeKey = null;
-
-function renderStrokeOrderPanel(row) {
-  const panel = document.getElementById("strokeOrderPanel");
-  if (!panel) return;
-  const revealed = !!row && !row.qHidden;
-  const wantKey = revealed ? row.id + ":" + row.q + "\u0000" + row.a : null;
-  if (wantKey === null) {
-    panel.style.display = "none";
-    panel.innerHTML = "";
-    lastStrokeKey = null;
-    return;
-  }
-  if (wantKey === lastStrokeKey) return;
-  lastStrokeKey = wantKey;
-  const combinedText = (row.q || "") + (row.a || "");
-  drawStrokeOrder(panel, combinedText, detectScript(combinedText) === "ja", "strokeTarget_" + row.id);
 }
 
 function drawStrokeOrder(panel, text, isJa, idPrefix) {
@@ -4479,12 +4462,6 @@ function applyGroupEntryHiddenState(ids) {
   });
 }
 
-function rowIsCjk(row) {
-  const mode = effectiveScriptMode();
-  if (mode === "zh" || mode === "ja") return true;
-  return CJK_CHAR_RE.test(row && row.a || "") || CJK_CHAR_RE.test(row && row.q || "");
-}
-
 function updateMediaModeClasses() {
   const c = mediaBox();
   c.classList.toggle("listen-mask", isListenMode());
@@ -4494,15 +4471,12 @@ function syncModeButtonHighlights() {
   const fullBtn = document.getElementById("fullModeBtn");
   const btn = document.getElementById("groupBtn");
   const listenBtn = document.getElementById("listenModeBtn");
-  const writeBtn = document.getElementById("writeModeBtn");
-  if (!fullBtn || !btn || !listenBtn || !writeBtn) return;
+  if (!fullBtn || !btn || !listenBtn) return;
   btn.style.display = deckHasAnswers() ? "" : "none";
-  writeBtn.style.display = modeScopeRows("Write").length ? "" : "none";
   listenBtn.style.display = deckHasVideoCards() && !isVirtualLesson() ? "" : "none";
   fullBtn.classList.toggle("active", !groupState);
   btn.classList.toggle("active", !!groupState && groupViewStyle === "table");
   listenBtn.classList.toggle("active", !!groupState && groupViewStyle === "listen");
-  writeBtn.classList.toggle("active", !!groupState && groupViewStyle === "write");
 }
 
 function updateGroupUI() {
@@ -4692,7 +4666,6 @@ document.getElementById("groupBtn").onclick = () => goToReviewMode("table");
 
 document.getElementById("listenModeBtn").onclick = () => goToReviewMode("listen");
 
-document.getElementById("writeModeBtn").onclick = () => goToReviewMode("write");
 
 function ensureGroupSlot(state, i) {
   while (state.groups.length <= i) state.groups.push([]);
@@ -5020,7 +4993,6 @@ function showNextUnderSwipe(row) {
     return () => row.style.display = "";
   }
   hide(document.getElementById("dictPanels"));
-  hide(document.getElementById("strokeOrderPanel"));
   const entry = ENTRY_HIDDEN[modeKey()];
   const entryCopy = r => Object.assign({}, r, {
     qHidden: entry.q,
@@ -10001,7 +9973,7 @@ document.addEventListener("keydown", e => {
 
 function gradeAction(isAgain) {
   if (!groupState) return;
-  if (groupViewStyle === "listen" || groupViewStyle === "write") {
+  if (groupViewStyle === "listen") {
     gradeCard(getCurrentSingleCardRow(), isAgain);
     return;
   }
@@ -10018,7 +9990,7 @@ function gradeAction(isAgain) {
 
 function revealAction() {
   if (!groupState) return;
-  if (groupViewStyle === "listen" || groupViewStyle === "write") {
+  if (groupViewStyle === "listen") {
     const current = getCurrentSingleCardRow();
     if (current) {
       current.qHidden = false;
