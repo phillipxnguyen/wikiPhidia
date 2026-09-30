@@ -3552,10 +3552,7 @@ function handleCardAreaClick(e) {
     if (isSingleCard) openSingleCardEdit(row); else openEdit(container, row);
     return;
   }
-  if (e.target.classList.contains("del-forever")) {
-    deleteRow(id);
-    return;
-  }
+  if (e.target.classList.contains("del-forever")) deleteRow(id);
 }
 
 function addTouchInsertRows() {
@@ -3867,7 +3864,7 @@ function noteItemTerm(li) {
   return plain && plain.length <= 40 && !/[:：=＝]/.test(plain) ? plain : "";
 }
 
-function noteItemIsDuplicate(li, box, taken) {
+function noteItemIsDuplicate(li, taken) {
   const term = noteItemTerm(li);
   if (!term) return false;
   const key = normalizeVocabText(term);
@@ -3924,7 +3921,7 @@ function toggleVocabBullets(box) {
   const dups = [];
   found.forEach(li => {
     if (isVocabItem(li)) return;
-    if (noteItemIsDuplicate(li, box, taken)) dups.push(li); else boldVocabItem(li) || boldPlainItem(li);
+    if (noteItemIsDuplicate(li, taken)) dups.push(li); else if (!boldVocabItem(li)) boldPlainItem(li);
   });
   box.querySelectorAll("ul:not([class])").forEach(ul => ul.className = "notes-list");
   warnVocabDuplicates(dups.map(noteItemTerm));
@@ -3984,7 +3981,7 @@ function commitActiveEdit() {
   let newAHtml = stripVocabHighlights(activeEdit.editA.innerHTML || "");
   const takenKeys = new Set;
   activeEdit.editNotes.querySelectorAll("li").forEach(li => {
-    if (isVocabItem(li)) takenKeys.add(normalizeVocabText(noteItemTerm(li))); else if (NOTE_VOCAB_ITEM_RE.test(ownLiTextNodes(li).map(n => n.nodeValue).join("")) && !noteItemIsDuplicate(li, activeEdit.editNotes, takenKeys)) boldVocabItem(li);
+    if (isVocabItem(li)) takenKeys.add(normalizeVocabText(noteItemTerm(li))); else if (NOTE_VOCAB_ITEM_RE.test(ownLiTextNodes(li).map(n => n.nodeValue).join("")) && !noteItemIsDuplicate(li, takenKeys)) boldVocabItem(li);
   });
   if (activeEdit.editNotes.textContent.trim() && !activeEdit.editNotes.querySelector("*")) activeEdit.editNotes.innerHTML = "<div>" + activeEdit.editNotes.innerHTML + "</div>";
   const newNotes = activeEdit.editNotes.textContent || "";
@@ -4339,7 +4336,7 @@ function wireEditBox(host, row) {
         e.preventDefault();
         document.execCommand("insertParagraph");
         if (el === editNotes && li.isConnected && !li.contains(window.getSelection().anchorNode) && !isVocabItem(li) && NOTE_VOCAB_ITEM_RE.test(ownLiTextNodes(li).map(n => n.nodeValue).join(""))) {
-          if (noteItemIsDuplicate(li, el, noteVocabKeys(el, [ li ]))) warnVocabDuplicates([ noteItemTerm(li) ]); else boldVocabItem(li);
+          if (noteItemIsDuplicate(li, noteVocabKeys(el, [ li ]))) warnVocabDuplicates([ noteItemTerm(li) ]); else boldVocabItem(li);
         }
         autoResizeDiv(el);
         return;
@@ -4407,7 +4404,7 @@ function wireEditBox(host, row) {
       showVocabPopup(matches, hit.getBoundingClientRect());
     }
   });
-  editQ.addEventListener("mouseup", e => {
+  editQ.addEventListener("mouseup", () => {
     const sel = window.getSelection();
     if (!sel || sel.rangeCount === 0) return;
     const selectedText = sel.toString().trim();
@@ -9961,14 +9958,12 @@ document.getElementById("dictPanels").addEventListener("mouseup", e => {
   if (existingVocab(hit.text)) warnVocabExists(hit.text); else showVocabAddPopup(hit.row, hit.text, hit.rect);
 });
 
-document.getElementById("dictPanels").addEventListener("click", e => {
+dictPanelsHost.addEventListener("click", e => {
   const hit = e.target.closest(".dict-source mark.vocab-hit");
-  if (hit) {
-    const row = dictSourceRow(hit.closest(".dict-source"));
-    const matches = row ? findVocabMatches(hit.textContent, row.id) : [];
-    if (matches.length) showVocabPopup(matches, hit.getBoundingClientRect());
-    return;
-  }
+  if (!hit) return;
+  const row = dictSourceRow(hit.closest(".dict-source"));
+  const matches = row ? findVocabMatches(hit.textContent, row.id) : [];
+  if (matches.length) showVocabPopup(matches, hit.getBoundingClientRect());
 });
 
 function repeatsHighlightedWord(box, range, text) {
@@ -10089,11 +10084,9 @@ document.addEventListener("keydown", e => {
     if (isCardMode()) openSingleCardEdit(getCurrentSingleCardRow()); else copyQuestions(currentGroupTexts("q"));
     return;
   }
-  if (e.code === "Backspace" || e.code === "Delete") {
-    if (e.repeat) return;
+  if ((e.code === "Backspace" || e.code === "Delete") && !e.repeat) {
     e.preventDefault();
     deleteAction();
-    return;
   }
 });
 
