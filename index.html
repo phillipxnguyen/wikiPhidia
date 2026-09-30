@@ -332,6 +332,7 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-editor{display:flex;flex-direction:column;gap:8px;padding:16px;margin-bottom:16px;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow-sm);}
   .vocab-list .vocab-editor{margin:4px 0;box-shadow:none;}
   .vocab-editor textarea{width:100%;font-size:16px;}
+  .vocab-editor + .stroke-order-panel{margin-top:16px;}
   .vocab-editor-actions{display:flex;justify-content:flex-end;gap:8px;}
   html:not(.touch) .vocab-list-term, html:not(.touch) .vocab-list-meaning{cursor:pointer;}
   .vocab-more{grid-column:1 / -1;margin-top:8px;width:100%;}
@@ -1078,7 +1079,6 @@ window.onYouTubeIframeAPIReady = function(){
   </div>
   <div id="vocabBadges" class="vocab-badges"></div>
   <div id="vocabStage"></div>
-  <div id="vocabStrokePanel" class="stroke-order-panel" style="display:none;"></div>
   <div id="vocabDictPanels"></div>
   <div id="vocabInlineAdd" hidden></div>
   <div id="vocabList" class="panel vocab-list" hidden></div>
@@ -8533,20 +8533,6 @@ function renderVocab() {
   hideTooltip();
   renderVocabStage();
   renderVocabDictPanels();
-  renderVocabStrokePanel();
-}
-
-let vocabStrokeKey = null;
-
-function renderVocabStrokePanel() {
-  const panel = document.getElementById("vocabStrokePanel");
-  const item = currentView === "vocab" && vocabView === "card" && vocabSession && vocabSession.flipped ? currentVocabItem() : null;
-  const key = item ? item.key : null;
-  if (key === vocabStrokeKey) return;
-  vocabStrokeKey = key;
-  panel.style.display = "none";
-  panel.innerHTML = "";
-  if (item) drawStrokeOrder(panel, item.term, cjkScriptFor(item.term, item.card) === "ja", "vocabStroke");
 }
 
 function vocabDictWords() {
@@ -8555,9 +8541,7 @@ function vocabDictWords() {
     const group = currentVocabGroup();
     return [ group, vocabSession.shown ? group : [] ];
   }
-  const item = vocabView === "card" ? currentVocabItem() : null;
-  if (!item) return [ [], [] ];
-  return [ [ item ], vocabSession.flipped ? [ item ] : [] ];
+  return [ [], [] ];
 }
 
 function vocabDictUrl(items) {
@@ -8688,7 +8672,9 @@ function renderVocabStage() {
   vocabShownRowId = item.card.id;
   vocabShownIsVideo = !!vocabVideoIdFor(item.card);
   if (vocabEditingKey === item.key && !vocabEditingInList) {
-    stage.innerHTML = vocabEditorHtml(item) + vocabControlsHtml();
+    const url = dictUrlFor(item.term, item.card);
+    stage.innerHTML = vocabEditorHtml(item) + '<div class="stroke-order-panel vocab-edit-stroke" style="display:none;"></div>' + (url ? `<div class="stroke-order-panel"><iframe class="dict-frame" src="${escapeAttr(url)}"></iframe></div>` : "") + vocabControlsHtml();
+    drawStrokeOrder(stage.querySelector(".vocab-edit-stroke"), item.term, cjkScriptFor(item.term, item.card) === "ja", "vocabEditStroke");
   } else {
     stage.innerHTML = vocabCardHtml(item) + vocabControlsHtml();
     wireVocabCard(item);
@@ -9082,8 +9068,15 @@ document.getElementById("vocabFrontBtn").onclick = () => {
     vocabSession.flipped = false;
     vocabSession.shown = false;
   }
+  const shell = document.querySelector(".shell");
+  shell.style.minHeight = shell.offsetHeight + "px";
   renderVocab();
   replayAnimation(document.getElementById("vocabCard") || document.getElementById("vocabTable"), "vocab-swap");
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
+  setTimeout(() => shell.style.minHeight = "", 800);
 };
 
 function findNoteLine(container, matches) {
@@ -9430,8 +9423,6 @@ function flipVocab() {
   vocabSession.flipped = !vocabSession.flipped;
   const card = document.getElementById("vocabCard");
   if (card) card.classList.toggle("flipped", vocabSession.flipped);
-  renderVocabDictPanels();
-  renderVocabStrokePanel();
   if (!vocabSession.flipped) stopVocabSound(); else if (vocabFront === "a") playVocabSound(item);
 }
 
@@ -9579,7 +9570,7 @@ function handleVocabKey(e) {
     if (!item) return;
     e.preventDefault();
     if (document.activeElement && document.activeElement.tagName === "BUTTON") document.activeElement.blur();
-    if (e.code === "ArrowUp") toggleVocabSound(item); else if (e.code === "ArrowDown") copyQuestions([ item.term ]); else flipVocab();
+    if (e.code === "ArrowUp") toggleVocabSound(item); else if (e.code === "ArrowDown") openVocabEditor(item.key); else flipVocab();
     return;
   }
   if (e.code !== "ArrowLeft" && e.code !== "ArrowRight" || !currentVocabItem()) return;
@@ -9963,7 +9954,7 @@ document.addEventListener("keydown", e => {
     if (e.repeat) return;
     if (!groupState) return;
     e.preventDefault();
-    copyQuestions(currentGroupTexts("q"));
+    if (isCardMode()) openSingleCardEdit(getCurrentSingleCardRow()); else copyQuestions(currentGroupTexts("q"));
     return;
   }
   if (e.code === "Backspace" || e.code === "Delete") {
