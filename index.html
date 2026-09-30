@@ -9524,6 +9524,17 @@ function toggleVocabSound(item) {
   if (vocabSoundOn()) stopVocabSound(); else playVocabSound(item);
 }
 
+function pinVocabArea() {
+  const toolbar = document.getElementById("vocabToolbar");
+  const top = (toolbar.hidden ? document.getElementById("vocabStage") : toolbar).getBoundingClientRect().top;
+  const bar = document.querySelector(".sidebar");
+  const cover = getComputedStyle(bar).position === "fixed" ? bar.getBoundingClientRect().bottom : 0;
+  if (top < cover + 8) window.scrollTo({
+    top: Math.max(0, window.scrollY + top - cover - 8),
+    behavior: "instant"
+  });
+}
+
 function closeVocabList() {
   const was = vocabListOpen;
   vocabListOpen = false;
@@ -9536,6 +9547,7 @@ function flipVocab() {
   const item = currentVocabItem();
   if (!item) return;
   vocabSession.flipped = !vocabSession.flipped;
+  pinVocabArea();
   const card = document.getElementById("vocabCard");
   if (card) card.classList.toggle("flipped", vocabSession.flipped);
   if (!vocabSession.flipped) stopVocabSound(); else if (vocabFront === "a") playVocabSound(item);
@@ -9579,6 +9591,7 @@ function gradeVocabItems(items, isAgain, label) {
   closeVocabList();
   scheduleAutoSave();
   renderVocab();
+  pinVocabArea();
   renderLessonList();
 }
 
@@ -9605,6 +9618,7 @@ function toggleVocabGroupReveal() {
   vocabSession.shown = !vocabSession.shown;
   if (!vocabSession.shown) stopVocabSound();
   renderVocab();
+  pinVocabArea();
   if (vocabSession.shown && vocabFront === "a" && !vocabSoundOn()) toggleVocabGroupSound(vocabSelectedKey);
 }
 
@@ -10106,6 +10120,7 @@ function gradeAction(isAgain) {
 
 function revealAction() {
   if (!groupState) return;
+  pinStudyArea();
   if (groupViewStyle === "listen") {
     const current = getCurrentSingleCardRow();
     if (current) {
