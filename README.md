@@ -44,6 +44,14 @@ On a phone, swipe a card right for Good and left for Again.
 
 Switch from **Lessons** to **Vocabulary** with the 字 button at the top. Words come from the `word: meaning` lines in your notes, or can be pasted in directly. They have their own review sessions and scheduling, one lesson at a time or all words together.
 
+| Mode | What it does |
+| --- | --- |
+| ☰ All words | The whole word list, for browsing and editing |
+| 🗂️ Group | Due words five at a time, like Group mode in Lessons |
+| 🃏 Flashcards | One word at a time; tap the card to flip it |
+
+Group and Flashcards share one queue, and a word marked Again comes back after 10 minutes. The 🌐 button picks the language; ⇄ picks which side is shown first.
+
 Words already in your vocabulary are highlighted in questions and in the sentence above each dictionary; click one to see its notes.
 
 ## Language help

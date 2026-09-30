@@ -277,9 +277,13 @@ window.onYouTubeIframeAPIReady = function(){
   @media (max-width:600px){.lesson-header.vocab-head{margin-bottom:5px;}}
   .vocab-toolbar{margin:4px 0 14px;}
   .vocab-toolbar .segmented{align-items:center;}
-  #vocabLang{width:auto;field-sizing:content;max-width:240px;padding:5px 26px 5px 10px;border:none;border-radius:7px;background-color:transparent;background-position:right 9px center;font-weight:600;font-size:14px;color:var(--text-2);box-shadow:none;}
-  @media (hover:hover){#vocabLang:not(:disabled):hover{background-color:var(--surface-2);color:var(--text);}}
-  #vocabLang:disabled{opacity:1;cursor:default;padding-right:10px;background-image:none;}
+  .lang-pick{position:relative;display:inline-flex;align-items:center;justify-content:center;min-width:38px;padding:5px 10px;border-radius:7px;font-size:16px;line-height:1.2;}
+  html.touch .lang-pick{min-width:46px;padding:8px 12px;}
+  @media (hover:hover){.lang-pick:not(.disabled):hover{background:var(--surface-2);}}
+  .lang-pick select{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;}
+  .lang-pick select:disabled{cursor:default;}
+  .vocab-toolbar .segmented .sep-before{position:relative;margin-left:7px;}
+  .vocab-toolbar .segmented .sep-before::before{content:"";position:absolute;left:-5px;top:6px;bottom:6px;width:1px;background:var(--border-strong);}
   #vocabFrontBtn.active{color:var(--accent);}
   .vocab-badges{margin:-8px 0 16px;}
   .vocab-toolbar:not([hidden]) + .vocab-badges{margin-top:0;}
@@ -303,8 +307,11 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-actions{gap:12px;padding-left:12px;}
   .vocab-actions button{width:17px;height:36px;line-height:36px;padding:0;border:0;border-radius:6px;background:none;font-size:20px;color:var(--text-3);}
   .vocab-card-actions{position:absolute;top:6px;left:6px;z-index:3;}
-  .vocab-card.swipe-good .vocab-face{border:3px solid var(--a-label);}
-  .vocab-card.swipe-again .vocab-face{border:3px solid var(--danger);}
+  #vocabTable .vocab-lead-col{width:calc(2 * 17px + 36px);}
+  #vocabTable td.vocab-lead-col{padding:5px 0;white-space:nowrap;}
+  html:not(.touch) #vocabTable .vocab-lead-col{display:none;}
+  html.touch #vocabTable{touch-action:pan-y;}
+  #vocabTable .cell{font-size:18px;}
   .vocab-controls{display:flex;align-items:center;justify-content:center;gap:8px;margin:18px auto 22px;}
   .vocab-controls .tb-icon{flex:0 0 48px;height:48px;display:flex;align-items:center;justify-content:center;padding:0;border-radius:12px;}
   .vocab-round{flex:0 0 56px;height:56px;padding:0;border-radius:50%;font-size:22px;font-weight:700;background:var(--surface);}
@@ -572,7 +579,7 @@ window.onYouTubeIframeAPIReady = function(){
   @media (hover:hover){.cell.hidden:hover{color:var(--accent);}}
   .cell.shown{color:var(--text);}
   @media (hover:hover){.cell.shown:hover{background:var(--accent-soft);}}
-  #cardTable .cell{display:inline-block;max-width:calc(100% - 20px);margin:8px 10px;padding:4px 8px;border-radius:8px;vertical-align:middle;}
+  #cardTable .cell, #vocabTable .cell{display:inline-block;max-width:calc(100% - 20px);margin:8px 10px;padding:4px 8px;border-radius:8px;vertical-align:middle;}
   .edit-row td{padding:10px 12px;}
   .edit-actions{display:flex;gap:6px;}
   .empty-msg{padding:24px;text-align:center;color:var(--text-3);font-size:14px;}
@@ -1047,8 +1054,8 @@ window.onYouTubeIframeAPIReady = function(){
   </div>
   <div id="vocabToolbar" class="toolbar vocab-toolbar">
     <div class="segmented" role="group" aria-label="Vocabulary options">
-      <select id="vocabLang" title="Language you're learning — used for pinyin hover, dictionary lookup and reading aloud">
-        <option value="auto">Auto-detect</option>
+      <label id="vocabLangPick" class="lang-pick"><span id="vocabLangFlag" aria-hidden="true">🌐</span><select id="vocabLang" aria-label="Language">
+        <option value="auto">🌐 Auto-detect</option>
         <option value="zh-CN">🇨🇳 Chinese (Simplified)</option>
         <option value="zh-TW">🇹🇼 Chinese (Traditional)</option>
         <option value="ja">🇯🇵 Japanese</option>
@@ -1056,8 +1063,11 @@ window.onYouTubeIframeAPIReady = function(){
         <option value="en">🇬🇧 English</option>
         <option value="vi">🇻🇳 Vietnamese</option>
         <option value="multi" hidden>🌐</option>
-      </select>
-      <button id="vocabFrontBtn" aria-label="Switch which side shows first">⇄</button>
+      </select></label>
+      <button id="vocabFullBtn" class="sep-before" data-view="full" title="All words — the whole list, for browsing and editing" aria-label="All words">☰</button>
+      <button id="vocabGroupBtn" data-view="group" title="Group — due words five at a time" aria-label="Group">🗂️</button>
+      <button id="vocabCardBtn" data-view="card" title="Flashcards — one word at a time" aria-label="Flashcards">🃏</button>
+      <button id="vocabFrontBtn" class="sep-before" aria-label="Switch which side shows first">⇄</button>
     </div>
     <div class="toolbar-right">
       <button id="vocabSpeak" aria-label="Play the sentence">🔊</button>
@@ -2519,7 +2529,7 @@ function renderStudy() {
   hideTooltip();
   renderImportInfo();
   if (document.getElementById("importText").value.trim()) scheduleImportPreview();
-  const toolbar = document.querySelector(".toolbar");
+  const toolbar = document.querySelector("#viewStudy .toolbar");
   const table = document.getElementById("cardTable");
   const singleCardView = document.getElementById("singleCardView");
   const panel = document.getElementById("sessionCompletePanel");
@@ -4840,8 +4850,12 @@ const SWIPE_START = 30;
 document.addEventListener("pointerdown", e => {
   if (drag && drag.ghost) return;
   drag = null;
-  if (e.pointerType !== "touch" || !groupState || currentView !== "study" || activeEdit || tabPaused) return;
-  if (e.clientX < 20 || e.clientX > window.innerWidth - 20) return;
+  if (e.pointerType !== "touch" || tabPaused || e.clientX < 20 || e.clientX > window.innerWidth - 20) return;
+  if (currentView === "vocab") {
+    drag = vocabDragStart(e);
+    return;
+  }
+  if (!groupState || currentView !== "study" || activeEdit) return;
   if (!e.target.closest("#viewStudy") || e.target.closest("button, input, select, textarea, [contenteditable], .loop-time")) return;
   if (document.getElementById("sessionCompletePanel").style.display === "block") return;
   const row = groupViewStyle === "table" ? e.target.closest("#tbody tr[data-id]") : null;
@@ -4890,7 +4904,7 @@ window.addEventListener("pointermove", e => {
     } catch (err) {}
     getSelection().removeAllRanges();
     hideTooltip();
-    drag.restore = showNextUnderSwipe(drag.row);
+    drag.restore = drag.vocab ? hideUnderSwipe(drag.parts) : showNextUnderSwipe(drag.row);
   }
   drag.dx = dx;
   const again = dx < 0;
@@ -4899,6 +4913,31 @@ window.addEventListener("pointermove", e => {
   drag.ghost.textContent = again ? "Again" : "Good";
   drag.ghost.style.transform = `translate(${dx}px, ${dy / 4}px) rotate(${dx / 20}deg)`;
 });
+
+function vocabDragStart(e) {
+  if (vocabEditingKey || vocabView === "full" || !e.target.closest("#vocabStage") || e.target.closest("button, input, select, textarea, .vocab-actions, .edit-row")) return null;
+  const card = document.getElementById("vocabCard");
+  const table = document.getElementById("vocabTable");
+  if (!card && !table) return null;
+  const tr = table && e.target.closest("#vocabTable tr[data-key]");
+  const row = tr && table.tBodies[0].rows.length > 1 ? tr : null;
+  return {
+    id: e.pointerId,
+    vocab: true,
+    row: row,
+    parts: [ row || card || table ],
+    x: e.clientX,
+    y: e.clientY,
+    dx: 0,
+    ghost: null
+  };
+}
+
+function hideUnderSwipe(parts) {
+  const saved = parts.map(el => [ el, el.style.visibility ]);
+  parts.forEach(el => el.style.visibility = "hidden");
+  return () => saved.forEach(([el, v]) => el.style.visibility = v);
+}
 
 function showNextUnderSwipe(row) {
   const hidden = [];
@@ -4949,13 +4988,17 @@ function endDrag(e) {
   d.restore();
   if (e.type === "pointerup" && Math.abs(d.dx) >= SWIPE_START) {
     dragGhost = d.ghost;
-    selectedRowId = d.row ? Number(d.row.dataset.id) : null;
-    hoveredRowId = null;
-    gradeAction(d.dx < 0);
+    if (d.vocab) {
+      if (vocabView === "group") gradeVocabGroup(d.dx < 0, d.row && d.row.dataset.key); else flyVocab(d.dx < 0);
+    } else {
+      selectedRowId = d.row ? Number(d.row.dataset.id) : null;
+      hoveredRowId = null;
+      gradeAction(d.dx < 0);
+    }
     if (!dragGhost) return;
     dragGhost = null;
   }
-  render();
+  if (d.vocab) renderVocab(); else render();
   d.ghost.animate([ {
     transform: d.ghost.style.transform,
     opacity: 1
@@ -8025,9 +8068,13 @@ const APP_MODE_KEY = "flashcards.appMode";
 
 const VOCAB_FRONT_KEY = "flashcards.vocabFront";
 
+const VOCAB_VIEW_KEY = "flashcards.vocabView";
+
 let appMode = readLocal(APP_MODE_KEY) === "vocab" ? "vocab" : "cards";
 
 let vocabFront = readLocal(VOCAB_FRONT_KEY) === "a" ? "a" : "q";
+
+let vocabView = [ "full", "group" ].includes(readLocal(VOCAB_VIEW_KEY)) ? readLocal(VOCAB_VIEW_KEY) : "card";
 
 let vocabSession = null;
 
@@ -8260,8 +8307,48 @@ function startVocabSession() {
     lessonId: currentLessonId,
     queue: picked.map(p => p.item.key),
     total: picked.length,
-    flipped: false
+    flipped: false,
+    group: [],
+    pending: [],
+    revealed: {}
   };
+}
+
+function currentVocabGroup() {
+  if (!vocabSession) return [];
+  const byKey = new Map(lessonVocabItems(vocabSource()).map(i => [ i.key, i ]));
+  const now = Date.now();
+  const due = k => byKey.has(k) && vocabStateOf(byKey.get(k)).due <= now;
+  const s = vocabSession;
+  s.group = s.group.filter(due);
+  if (!s.group.length) {
+    s.queue = s.queue.filter(due);
+    s.group = splitIntoGroups(s.queue)[0] || [];
+    s.revealed = {};
+  }
+  return s.group.map(k => byKey.get(k));
+}
+
+function renameVocabSessionKey(from, to) {
+  const s = vocabSession;
+  if (!s) return;
+  const swap = k => k === from ? to : k;
+  s.queue = s.queue.map(swap);
+  s.group = s.group.map(swap);
+  s.pending.forEach(p => p.key = swap(p.key));
+  if (s.revealed[from]) {
+    delete s.revealed[from];
+    s.revealed[to] = true;
+  }
+}
+
+function dropVocabSessionKey(key) {
+  const s = vocabSession;
+  if (!s) return;
+  s.queue = s.queue.filter(k => k !== key);
+  s.group = s.group.filter(k => k !== key);
+  s.pending = s.pending.filter(p => p.key !== key);
+  delete s.revealed[key];
 }
 
 function currentVocabItem() {
@@ -8359,6 +8446,18 @@ function vocabControlsHtml() {
   return '<div class="vocab-controls">' + `<button class="tb-icon" id="vocabUndo" title="Undo (⌘Z)" aria-label="Undo"${undoStack.length ? "" : " disabled"}>${document.getElementById("tbUndo").innerHTML}</button>` + `<button class="tb-icon" id="vocabRedo" title="Redo (⇧⌘Z)" aria-label="Redo"${redoStack.length ? "" : " disabled"}>${document.getElementById("tbRedo").innerHTML}</button>` + '<button class="vocab-round flip vocab-show" id="vocabShow" title="Flip the card (Space)" aria-label="Flip the card"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/></svg></button>' + '<button class="vocab-round again" id="vocabAgain" title="Again — still learning (← or Shift+Enter)" aria-label="Again">✕</button>' + '<button class="vocab-round good" id="vocabGood" title="Good — I know it (→ or Enter)" aria-label="Good">✓</button>' + "</div>";
 }
 
+function vocabTableHtml(group) {
+  const hide = vocabFront === "a" ? "q" : "a";
+  const revealed = vocabSession.revealed;
+  const cell = (item, field) => {
+    const hidden = field === hide && !revealed[item.key];
+    return `<div class="cell ${hidden ? "hidden" : "shown"}" data-field="${field}">${hidden ? "···" : escapeHtml(field === "q" ? item.term : item.meaning)}</div>`;
+  };
+  const head = field => `<th${field === "a" ? ' class="a-col"' : ""}><span${field === hide ? ' class="col-toggle" title="Click to show or hide this column"' : ""}>${field === "q" ? "Question" : "Answer"}</span></th>`;
+  const actions = '<span class="vocab-actions vocab-touch-only"><button class="vocab-act-edit" aria-label="Edit this word">&#9998;</button><button class="vocab-act-del" aria-label="Delete this word">&#10005;</button></span>';
+  return '<table id="vocabTable"><thead><tr><th class="vocab-lead-col"></th>' + head("q") + head("a") + "</tr></thead><tbody>" + group.map(item => item.key === vocabEditingKey && !vocabEditingInList ? `<tr class="edit-row"><td colspan="3">${vocabEditorHtml(item)}</td></tr>` : `<tr data-key="${escapeAttr(item.key)}"><td class="vocab-lead-col">${actions}</td><td>${cell(item, "q")}</td><td class="a-col">${cell(item, "a")}</td></tr>`).join("") + "</tbody></table>";
+}
+
 function vocabEditorHtml(item) {
   return '<div class="vocab-editor">' + `<textarea id="vocabEditTerm" class="autofit oneline" rows="1" autocomplete="off" placeholder="Question" aria-label="Question">${escapeHtml(item.term)}</textarea>` + `<textarea id="vocabEditMeaning" class="autofit oneline" rows="1" autocomplete="off" placeholder="Answer" aria-label="Answer">${escapeHtml(item.meaning)}</textarea>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
 }
@@ -8372,6 +8471,8 @@ function renderVocab() {
   fitTextarea(title);
   const frontBtn = document.getElementById("vocabFrontBtn");
   document.getElementById("vocabToolbar").hidden = !items.length;
+  document.querySelectorAll("#vocabToolbar [data-view]").forEach(btn => btn.classList.toggle("active", btn.dataset.view === vocabView));
+  frontBtn.hidden = vocabView === "full";
   syncVocabLang();
   frontBtn.classList.toggle("active", vocabFront === "a");
   frontBtn.title = vocabFront === "a" ? "Answer first — click to show the Question first" : "Question first — click to show the Answer first";
@@ -8385,7 +8486,7 @@ function renderVocab() {
   document.getElementById("vocabResetBtn").hidden = !canAdd || !items.length;
   document.getElementById("vocabDeleteBtn").hidden = !canAdd;
   const emptyLesson = canAdd && !items.length;
-  list.hidden = !items.length && vocabEditingKey !== NEW_WORD_KEY;
+  list.hidden = items.length ? vocabView !== "full" : vocabEditingKey !== NEW_WORD_KEY;
   placeVocabAddForm(emptyLesson ? "lesson" : "page");
   if (vocabListLessonId !== currentLessonId) {
     vocabListLessonId = currentLessonId;
@@ -8422,15 +8523,25 @@ function renderVocab() {
     return;
   }
   if (!vocabSession || vocabSession.lessonId !== currentLessonId) startVocabSession();
-  const item = currentVocabItem();
+  if (vocabView === "full") {
+    badges.innerHTML = "";
+    stage.innerHTML = "";
+    wireVocabEditor(items);
+    syncVocabSound();
+    return;
+  }
+  const group = vocabView === "group" ? currentVocabGroup() : [];
+  const item = vocabView === "group" ? null : currentVocabItem();
+  const studying = item ? [ item ] : group;
   const c = vocabCounts(items);
-  const bucket = item && srsBucket(vocabStateOf(item), Date.now());
+  const now = Date.now();
+  const buckets = new Set(studying.map(i => srsBucket(vocabStateOf(i), now)));
   badges.innerHTML = badgesHtml(c.fresh, c.due, c.done, {
-    new: bucket === "new",
-    due: bucket === "due",
-    done: bucket === "done"
+    new: buckets.has("new"),
+    due: buckets.has("due"),
+    done: buckets.has("done")
   });
-  if (!item) {
+  if (!studying.length) {
     const next = items.map(i => vocabStateOf(i)).filter(st => st.reps && !isDoneState(st)).map(st => st.due).sort((a, b) => a - b)[0];
     const sub = vocabSession.total ? `You reviewed ${vocabSession.total} word${vocabSession.total === 1 ? "" : "s"}.` : "Nothing is due right now.";
     const later = next ? ` Next review ${formatDueIn(next)}.` : "";
@@ -8438,6 +8549,14 @@ function renderVocab() {
     document.getElementById("vocabShow").hidden = true;
     document.getElementById("vocabAgain").hidden = true;
     document.getElementById("vocabGood").hidden = true;
+    wireVocabControls();
+    wireVocabEditor(items);
+    syncVocabSound();
+    return;
+  }
+  if (group.length) {
+    vocabShownIsVideo = false;
+    stage.innerHTML = vocabTableHtml(group) + vocabControlsHtml();
     wireVocabControls();
     wireVocabEditor(items);
     syncVocabSound();
@@ -8457,10 +8576,16 @@ function renderVocab() {
 }
 
 function wireVocabControls() {
-  document.getElementById("vocabGood").onclick = () => flyVocab(false);
-  document.getElementById("vocabAgain").onclick = () => flyVocab(true);
+  const group = vocabView === "group";
+  const show = document.getElementById("vocabShow");
+  document.getElementById("vocabGood").onclick = () => group ? gradeVocabGroup(false) : flyVocab(false);
+  document.getElementById("vocabAgain").onclick = () => group ? gradeVocabGroup(true) : flyVocab(true);
   document.getElementById("vocabUndo").onclick = () => undo();
-  document.getElementById("vocabShow").onclick = () => flipVocab();
+  show.onclick = () => group ? toggleVocabGroupReveal() : flipVocab();
+  if (group) {
+    show.title = "Show or hide the hidden side (Space)";
+    show.setAttribute("aria-label", "Show or hide the hidden side");
+  }
   document.getElementById("vocabRedo").onclick = () => redo();
 }
 
@@ -8775,12 +8900,37 @@ document.getElementById("vocabList").addEventListener("mouseleave", () => {
   vocabHoveredKey = null;
 });
 
+document.getElementById("vocabStage").addEventListener("click", e => {
+  if (vocabView !== "group" || !document.getElementById("vocabTable")) return;
+  if (e.target.closest(".col-toggle")) {
+    toggleVocabGroupReveal();
+    return;
+  }
+  const row = e.target.closest("#vocabTable tr[data-key]");
+  if (!row) return;
+  const item = currentVocabGroup().find(i => i.key === row.dataset.key);
+  if (!item) return;
+  if (e.target.closest(".vocab-act-del")) deleteVocabEntry(item, row); else if (e.target.closest(".vocab-act-edit")) openVocabEditor(item.key); else toggleVocabGroupReveal(item.key);
+});
+
+document.getElementById("vocabStage").addEventListener("mouseover", e => {
+  const row = e.target.closest("#vocabTable tr[data-key]");
+  vocabHoveredKey = row ? row.dataset.key : null;
+});
+
+document.getElementById("vocabStage").addEventListener("mouseleave", () => {
+  vocabHoveredKey = null;
+});
+
 function syncVocabLang() {
   const sel = document.getElementById("vocabLang");
   const all = currentLessonId === VOCAB_ALL_ID;
   sel.disabled = all;
   sel.value = all && vocabAllMultiLang ? "multi" : studyLang;
   sel.title = all ? vocabAllMultiLang ? "Several languages — each word uses its own lesson's language" : "Language of the lessons these words come from" : "Language you're learning — used for pinyin hover, dictionary lookup and reading aloud";
+  if (sel.value !== "multi" && sel.selectedIndex >= 0) sel.title = sel.options[sel.selectedIndex].text.replace(/^🌐 /, "") + " — " + sel.title;
+  document.getElementById("vocabLangPick").classList.toggle("disabled", all);
+  document.getElementById("vocabLangFlag").textContent = STUDY_LANG_FLAGS[sel.value] || "🌐";
 }
 
 document.getElementById("vocabLang").onchange = e => {
@@ -8917,7 +9067,7 @@ function updateVocabEntry(item, termRaw, meaningRaw) {
     row.vocab[newKey] = row.vocab[item.key];
     delete row.vocab[item.key];
   }
-  if (vocabSession) vocabSession.queue = vocabSession.queue.map(k => k === item.key ? newKey : k);
+  renameVocabSessionKey(item.key, newKey);
   scheduleAutoSave();
   render();
   return true;
@@ -8943,13 +9093,13 @@ function deleteVocabEntry(item, part) {
   if (row.vocab) delete row.vocab[item.key];
   if (vocabSession) {
     if (vocabSession.queue[0] === item.key) vocabSession.flipped = false;
-    vocabSession.queue = vocabSession.queue.filter(k => k !== item.key);
+    dropVocabSessionKey(item.key);
     vocabSession.total = Math.max(0, vocabSession.total - 1);
   }
   if (vocabEditingKey === item.key) vocabEditingKey = null;
   if (vocabHoveredKey === item.key) vocabHoveredKey = null;
   scheduleAutoSave();
-  swipe(part ? Array.from(part.children) : [ document.getElementById("vocabCard") ], -1, () => {
+  swipe(part ? part.tagName === "TR" ? [ part ] : Array.from(part.children) : [ document.getElementById("vocabCard") ], -1, () => {
     render();
     renderVocab();
     renderLessonList();
@@ -9081,25 +9231,11 @@ function flipVocab() {
   if (vocabSession.flipped) playVocabSound(item); else stopVocabSound();
 }
 
-let vocabFlying = false;
-
 function flyVocab(isAgain) {
   if (commitVocabEdit()) renderVocab();
+  if (!currentVocabItem()) return;
   const card = document.getElementById("vocabCard");
-  if (vocabFlying || !currentVocabItem()) return;
-  if (!card || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    gradeVocab(isAgain);
-    return;
-  }
-  vocabFlying = true;
-  const out = (isAgain ? -1 : 1) * (window.innerWidth + 200);
-  card.style.transition = "transform .3s ease-in";
-  card.style.transform = `translateX(${out}px) rotate(${out / 18}deg)`;
-  card.classList.add(isAgain ? "swipe-again" : "swipe-good");
-  setTimeout(() => {
-    vocabFlying = false;
-    gradeVocab(isAgain);
-  }, 220);
+  swipe(card ? [ card ] : [], isAgain ? -1 : 1, () => gradeVocab(isAgain));
 }
 
 function gradeVocab(isAgain) {
@@ -9107,22 +9243,79 @@ function gradeVocab(isAgain) {
   const item = currentVocabItem();
   if (!item) return;
   stopVocabSound();
-  pushUndo((isAgain ? "Again" : "Good") + " — " + item.term);
+  gradeVocabItems([ item ], isAgain, (isAgain ? "Again" : "Good") + " — " + item.term);
+}
+
+function gradeVocabItems(items, isAgain, label) {
+  pushUndo(label);
   const now = Date.now();
   const grade = isAgain ? GRADE_AGAIN : GRADE_GOOD;
-  const st = vocabStateOf(item);
-  scheduleReview(st, grade, now);
-  item.card.vocab[item.key] = st;
-  logReview(item.card, "Vocab", grade, now);
-  vocabSession.queue.shift();
-  vocabSession.flipped = false;
+  const s = vocabSession;
+  items.forEach(item => {
+    const st = vocabStateOf(item);
+    scheduleReview(st, grade, now);
+    item.card.vocab[item.key] = st;
+    logReview(item.card, "Vocab", grade, now);
+    dropVocabSessionKey(item.key);
+    if (isAgain) s.pending.push({
+      key: item.key,
+      readyAt: st.due
+    });
+  });
+  const ready = s.pending.filter(p => p.readyAt <= now).map(p => p.key);
+  s.pending = s.pending.filter(p => p.readyAt > now);
+  s.queue = ready.concat(s.queue);
+  s.flipped = false;
   scheduleAutoSave();
   renderVocab();
   renderLessonList();
 }
 
+function gradeVocabGroup(isAgain, key) {
+  if (commitVocabEdit()) renderVocab();
+  const group = currentVocabGroup();
+  const one = key ? group.find(i => i.key === key) : null;
+  const items = one ? [ one ] : group;
+  if (!items.length) return;
+  const whole = items.length === group.length;
+  const table = document.getElementById("vocabTable");
+  const part = whole ? table : table && table.querySelector(`tr[data-key="${CSS.escape(one.key)}"]`);
+  const label = whole && items.length > 1 ? "Graded group — " + gradeLabel(isAgain) : gradeLabel(isAgain) + " — " + items[0].term;
+  if (vocabHoveredKey && items.some(i => i.key === vocabHoveredKey)) vocabHoveredKey = null;
+  swipe(part ? [ part ] : [], isAgain ? -1 : 1, () => gradeVocabItems(items, isAgain, label));
+  showToast(label);
+}
+
+function toggleVocabGroupReveal(key) {
+  const group = currentVocabGroup();
+  if (!group.length) return;
+  const r = vocabSession.revealed;
+  if (key) {
+    if (r[key]) delete r[key]; else r[key] = true;
+  } else if (group.every(i => r[i.key])) {
+    vocabSession.revealed = {};
+  } else {
+    group.forEach(i => r[i.key] = true);
+  }
+  renderVocab();
+}
+
+function setVocabView(view) {
+  if (vocabView === view) return;
+  commitVocabEdit();
+  stopVocabSound();
+  vocabView = view;
+  try {
+    localStorage.setItem(VOCAB_VIEW_KEY, JSON.stringify(view));
+  } catch (e) {}
+  if (vocabSession) vocabSession.flipped = false;
+  renderVocab();
+}
+
+document.querySelectorAll("#vocabToolbar [data-view]").forEach(btn => btn.onclick = () => setVocabView(btn.dataset.view));
+
 setInterval(() => {
-  if (currentView !== "vocab" || tabPaused || vocabEditingKey || !vocabSession || currentVocabItem()) return;
+  if (currentView !== "vocab" || vocabView === "full" || tabPaused || vocabEditingKey || !vocabSession || currentVocabItem()) return;
   const now = Date.now();
   if (!lessonVocabItems(vocabSource()).some(i => vocabStateOf(i).due <= now)) return;
   startVocabSession();
@@ -9139,70 +9332,9 @@ function wireVocabCard(item) {
     e.stopPropagation();
     deleteVocabEntry(item);
   };
-  let drag = null;
-  const place = dx => {
-    card.style.transform = dx ? `translateX(${dx}px) rotate(${dx / 18}deg)` : "";
-    card.classList.toggle("swipe-good", dx > 0);
-    card.classList.toggle("swipe-again", dx < 0);
-  };
-  card.addEventListener("pointerdown", e => {
-    if (drag && drag.moved) return;
-    drag = null;
-    if (e.button !== 0 || e.target.closest(".vocab-actions")) return;
-    if (e.pointerType === "touch" && (e.clientX < 20 || e.clientX > window.innerWidth - 20)) return;
-    drag = {
-      id: e.pointerId,
-      touch: e.pointerType === "touch",
-      x: e.clientX,
-      y: e.clientY,
-      dx: 0,
-      axis: null,
-      moved: false
-    };
+  card.addEventListener("click", e => {
+    if (!e.target.closest(".vocab-actions")) flipVocab();
   });
-  card.addEventListener("touchmove", e => {
-    if (!drag || !drag.touch || e.touches.length !== 1) return;
-    const t = e.touches[0];
-    const dx = t.clientX - drag.x, dy = t.clientY - drag.y;
-    if (!drag.axis) {
-      if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
-      drag.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
-    }
-    if (drag.axis === "y") {
-      if (!drag.moved) drag = null;
-      return;
-    }
-    if (e.cancelable) e.preventDefault();
-  }, {
-    passive: false
-  });
-  card.addEventListener("pointermove", e => {
-    if (!drag || e.pointerId !== drag.id) return;
-    const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
-    if (!drag.moved) {
-      if (drag.touch ? drag.axis !== "x" || Math.abs(dx) < 8 : Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy)) return;
-      drag.moved = true;
-      try {
-        card.setPointerCapture(e.pointerId);
-      } catch (err) {}
-      card.style.transition = "none";
-    }
-    drag.dx = dx;
-    place(dx);
-  });
-  const end = e => {
-    const d = drag;
-    if (!d || e.pointerId !== d.id) return;
-    drag = null;
-    if (!d.moved) {
-      if (e.type === "pointerup" && d.axis !== "y") flipVocab();
-      return;
-    }
-    card.style.transition = "transform .25s ease-out";
-    if (e.type === "pointerup" && Math.abs(d.dx) >= SWIPE_START) flyVocab(d.dx < 0); else place(0);
-  };
-  card.addEventListener("pointerup", end);
-  card.addEventListener("pointercancel", end);
 }
 
 function handleVocabKey(e) {
@@ -9216,10 +9348,20 @@ function handleVocabKey(e) {
   if (e.code === "Backspace" || e.code === "Delete") {
     const items = lessonVocabItems(vocabSource());
     const hovered = vocabHoveredKey && items.find(i => i.key === vocabHoveredKey);
-    const target = hovered || currentVocabItem();
+    const target = hovered || (vocabView === "card" ? currentVocabItem() : null);
     if (!target) return;
     e.preventDefault();
-    deleteVocabEntry(target, hovered ? document.querySelector(`#vocabList .vocab-list-row[data-key="${CSS.escape(hovered.key)}"]`) : null);
+    deleteVocabEntry(target, hovered ? document.querySelector(`#vocabList .vocab-list-row[data-key="${CSS.escape(hovered.key)}"], #vocabTable tr[data-key="${CSS.escape(hovered.key)}"]`) : null);
+    return;
+  }
+  if (vocabView === "full") return;
+  if (vocabView === "group") {
+    const again = e.code === "ArrowLeft" || e.key === "Enter" && e.shiftKey;
+    const good = e.code === "ArrowRight" || e.key === "Enter" && !e.shiftKey;
+    const hovered = vocabHoveredKey && currentVocabGroup().some(i => i.key === vocabHoveredKey) ? vocabHoveredKey : null;
+    if (e.code === "Space") toggleVocabGroupReveal(); else if (e.code === "ArrowDown" && hovered) openVocabEditor(hovered); else if (again || good) gradeVocabGroup(again, hovered); else return;
+    e.preventDefault();
+    if (document.activeElement && document.activeElement.tagName === "BUTTON") document.activeElement.blur();
     return;
   }
   if (e.code === "Space" || e.code === "ArrowUp" || e.code === "ArrowDown") {
