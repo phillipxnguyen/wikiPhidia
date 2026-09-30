@@ -36,6 +36,7 @@ Group, Listen and Write share one queue: a card studied in one mode leaves the o
 | → | Good |
 | ↑ | Play or pause the sound |
 | ↓ | Copy the questions |
+| 1 – 5 | In a group, play just that row's sound over and over (press again to stop) |
 | Space | Reveal / flip |
 | ⌘/Ctrl + Z | Undo, including grades (add Shift to redo) |
 | Delete | Delete the card |

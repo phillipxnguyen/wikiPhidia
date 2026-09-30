@@ -9216,7 +9216,8 @@ function toggleVocabGroupSound(key) {
   }
   const seq = vocabSeq = {
     index: 0,
-    key: null
+    key: null,
+    only: key || null
   };
   const step = () => {
     if (vocabSeq !== seq) return;
@@ -9431,7 +9432,12 @@ function handleVocabKey(e) {
   if (vocabView === "group") {
     const hovered = vocabHoveredKey && currentVocabGroup().some(i => i.key === vocabHoveredKey) ? vocabHoveredKey : null;
     const target = hovered || vocabSelectedKey;
-    if (e.code === "Space") toggleVocabGroupReveal(); else if (e.code === "ArrowDown") copyQuestions(currentVocabGroup().map(i => i.term)); else if (e.code === "ArrowUp") toggleVocabGroupSound(target); else if (e.code === "ArrowLeft" || e.code === "ArrowRight") gradeVocabGroup(e.code === "ArrowLeft", target); else return;
+    const row = /^Digit[1-5]$/.test(e.code) ? currentVocabGroup()[Number(e.code.slice(-1)) - 1] : null;
+    if (row) {
+      const same = !!vocabSeq && vocabSeq.only === row.key;
+      stopVocabSound();
+      if (!same) toggleVocabGroupSound(row.key);
+    } else if (e.code === "Space") toggleVocabGroupReveal(); else if (e.code === "ArrowDown") copyQuestions(currentVocabGroup().map(i => i.term)); else if (e.code === "ArrowUp") toggleVocabGroupSound(target); else if (e.code === "ArrowLeft" || e.code === "ArrowRight") gradeVocabGroup(e.code === "ArrowLeft", target); else return;
     e.preventDefault();
     if (document.activeElement && document.activeElement.tagName === "BUTTON") document.activeElement.blur();
     return;
