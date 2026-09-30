@@ -303,10 +303,10 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-term{font-size:40px;font-weight:600;line-height:1.3;overflow-wrap:anywhere;}
   .vocab-ctx{font-size:28px;line-height:2.1;overflow-wrap:anywhere;}
   .vocab-ctx.small{font-size:20px;color:var(--text-2);}
-  .vocab-ctx ruby, .dict-source ruby{ruby-position:over;}
-  .vocab-ctx rt, .dict-source rt{font-size:.44em;line-height:1.2;padding-bottom:.2em;color:var(--text-2);-webkit-user-select:none;user-select:none;}
+  .rd{position:relative;}
+  .rd::before{content:attr(data-rd);position:absolute;left:50%;bottom:100%;transform:translateX(-50%);font-size:.44em;line-height:1.2;white-space:nowrap;color:var(--text-2);pointer-events:none;-webkit-user-select:none;user-select:none;}
   .vocab-ctx mark{display:inline-block;line-height:1.3;padding:.1em .18em .08em;margin:0 .06em;border-radius:8px;background:var(--accent-soft);color:inherit;vertical-align:baseline;}
-  .vocab-ctx mark rt{color:inherit;}
+  .vocab-ctx mark .rd::before{color:inherit;}
   .vocab-meaning{font-size:28px;font-weight:600;line-height:1.35;color:var(--a-text);overflow-wrap:anywhere;}
   #vocabSpeak{min-width:40px;}
   #vocabSpeak.active{background:var(--accent);color:var(--on-accent);border-color:var(--accent);}
@@ -763,7 +763,7 @@ window.onYouTubeIframeAPIReady = function(){
   .swipe-ghost.good{color:var(--a-label);border-color:currentColor;}
   .swipe-ghost.again{color:var(--danger);border-color:currentColor;}
   .swipe-ghost.delete{color:var(--text);border-color:currentColor;}
-  .dict-source{font-size:28px;line-height:1.8;color:var(--text);margin:0 0 6px;overflow-wrap:break-word;}
+  .dict-source{font-size:28px;line-height:2.1;color:var(--text);margin:0 0 6px;overflow-wrap:break-word;}
   .dict-stroke:not(:last-child) .stroke-order-row{margin-bottom:14px;}
   .dict-frame{display:block;width:100%;height:360px;border:1px solid var(--border);border-radius:8px;background:#fff;}
   html.touch .dict-frame{width:calc(100% - 80px);margin:0 auto;}
@@ -8532,12 +8532,9 @@ function addReadings(el, row) {
     let cursor = start;
     inside.forEach(([a, b, r]) => {
       if (a > cursor) frag.append(nc.slice(cursor - start, a - start).join(""));
-      const ruby = document.createElement("ruby");
-      const rt = document.createElement("rt");
-      ruby.append(nc.slice(a - start, b - start).join(""));
-      rt.textContent = r;
-      ruby.append(rt);
-      frag.append(ruby);
+      const tpl = document.createElement("template");
+      tpl.innerHTML = readingHtml(nc.slice(a - start, b - start).join(""), r);
+      frag.append(tpl.content);
       cursor = b;
     });
     if (cursor < end) frag.append(nc.slice(cursor - start).join(""));
@@ -8545,8 +8542,10 @@ function addReadings(el, row) {
   });
 }
 
-function baseText(el) {
-  return Array.from(el.childNodes).map(n => n.nodeName === "RT" ? "" : n.nodeType === 3 ? n.nodeValue : baseText(n)).join("");
+function readingHtml(base, reading) {
+  const width = text => Array.from(text).reduce((w, c) => w + (/[\u3000-\u9fff\uff00-\uffef]/.test(c) ? 1 : .6), 0);
+  const over = width(reading) * .44 + .1 - width(base);
+  return `<span class="rd" data-rd="${escapeAttr(reading)}"${over > 0 ? ` style="margin:0 ${(over / 2).toFixed(2)}em"` : ""}>${escapeHtml(base)}</span>`;
 }
 
 function vocabSentenceHtml(sentence, term, row) {
@@ -8574,7 +8573,7 @@ function vocabSentenceHtml(sentence, term, row) {
           html += "</mark>";
           open = false;
         }
-        html += u.r ? `<ruby>${escapeHtml(u.s)}<rt>${escapeHtml(u.r)}</rt></ruby>` : escapeHtml(u.s);
+        html += u.r ? readingHtml(u.s, u.r) : escapeHtml(u.s);
         pos += len;
       });
       return html + (open ? "</mark>" : "");
@@ -8592,7 +8591,7 @@ function vocabSentenceHtml(sentence, term, row) {
   let html = "";
   chars.forEach((ch, i) => {
     if (i === start) html += "<mark>";
-    html += pys && /\p{Script=Han}/u.test(ch) ? `<ruby>${escapeHtml(ch)}<rt>${escapeHtml(pys[i])}</rt></ruby>` : escapeHtml(ch);
+    html += pys && /\p{Script=Han}/u.test(ch) ? readingHtml(ch, pys[i]) : escapeHtml(ch);
     if (i === end - 1) html += "</mark>";
   });
   return html;
@@ -9915,7 +9914,7 @@ function dictSourceRow(el) {
 function selectionInDictSource() {
   const sel = window.getSelection();
   if (!sel || !sel.rangeCount) return null;
-  const text = baseText(sel.getRangeAt(0).cloneContents()).trim();
+  const text = sel.getRangeAt(0).cloneContents().textContent.trim();
   if (!text) return null;
   const range = sel.getRangeAt(0);
   const node = range.commonAncestorContainer;
@@ -9956,7 +9955,7 @@ document.getElementById("dictPanels").addEventListener("click", e => {
   const hit = e.target.closest(".dict-source mark.vocab-hit");
   if (hit) {
     const row = dictSourceRow(hit.closest(".dict-source"));
-    const matches = row ? findVocabMatches(baseText(hit), row.id) : [];
+    const matches = row ? findVocabMatches(hit.textContent, row.id) : [];
     if (matches.length) showVocabPopup(matches, hit.getBoundingClientRect());
     return;
   }
@@ -9964,7 +9963,7 @@ document.getElementById("dictPanels").addEventListener("click", e => {
 
 function repeatsHighlightedWord(box, range, text) {
   const key = normalizeVocabText(text);
-  return Array.from(box.querySelectorAll("mark.vocab-hit")).some(m => normalizeVocabText(baseText(m)) === key && !m.contains(range.commonAncestorContainer) && !range.intersectsNode(m));
+  return Array.from(box.querySelectorAll("mark.vocab-hit")).some(m => normalizeVocabText(m.textContent) === key && !m.contains(range.commonAncestorContainer) && !range.intersectsNode(m));
 }
 
 function fitTextarea(el) {
