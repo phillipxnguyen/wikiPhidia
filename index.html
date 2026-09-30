@@ -337,7 +337,10 @@ window.onYouTubeIframeAPIReady = function(){
   #viewStudy.offscreen .media-container:not(.warming){width:356px;max-width:none;height:200px;aspect-ratio:auto;margin:0;}
   .vocab-list:not([hidden]){display:grid;grid-template-columns:auto 1fr auto;align-items:stretch;}
   html.touch .vocab-list:not([hidden]){grid-template-columns:auto auto 1fr auto;}
-  .vocab-list h2{grid-column:1 / -1;font-size:15px;margin:0 0 8px;}
+  .vocab-list h2{grid-column:1 / -1;font-size:15px;margin:0 0 8px;cursor:pointer;-webkit-user-select:none;user-select:none;}
+  .vocab-list h2::before{content:"▸ ";}
+  .vocab-list.open h2::before{content:"▾ ";}
+  .vocab-list:not(.open) h2{margin:0;}
   .vocab-list-row[data-key]{display:contents;}
   .vocab-list-row[data-key] > *{display:flex;align-items:center;padding:8px 16px 8px 0;border-top:1px solid var(--border);font-size:14px;}
   .vocab-list-row[data-key] > :last-child{padding-right:2px;}
@@ -348,10 +351,6 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-list h2 + .vocab-list-row.editing{border-top:0;}
   .vocab-list-term{max-width:14em;font-weight:600;overflow-wrap:anywhere;}
   .vocab-list-meaning{min-width:0;color:var(--text-2);overflow-wrap:anywhere;}
-  .vocab-list-row[data-key] > .vocab-list-term, .vocab-list-row[data-key] > .vocab-list-meaning{color:transparent;text-shadow:0 0 9px var(--text-2);transition:color .15s, text-shadow .15s;}
-  .vocab-list-row.row-selected > .vocab-list-term{color:var(--text);text-shadow:none;}
-  .vocab-list-row.row-selected > .vocab-list-meaning{color:var(--text-2);text-shadow:none;}
-  @media (hover:hover){.vocab-list-row[data-key]:hover > .vocab-list-term{color:var(--text);text-shadow:none;}.vocab-list-row[data-key]:hover > .vocab-list-meaning{color:var(--text-2);text-shadow:none;}}
   .vocab-add-popup{position:fixed;z-index:2000;width:min(340px, calc(100vw - 16px));padding:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);}
   .vocab-add-field{min-height:36px;padding:8px 10px;border:1px solid var(--accent);border-radius:var(--radius-sm);box-shadow:0 0 0 3px var(--accent-soft);background:var(--surface);color:var(--text);font-size:14px;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere;cursor:text;outline:none;}
   .vocab-add-field:empty::before{content:attr(data-placeholder);color:var(--text-3);font-style:italic;}
@@ -8182,6 +8181,8 @@ let vocabPendingThen = null;
 let vocabShownIsVideo = false;
 
 let vocabStudying = false;
+
+let vocabListOpen = false;
 let vocabAllMultiLang = false;
 
 const VOCAB_LIST_PAGE = 100;
@@ -8694,7 +8695,9 @@ function renderVocab() {
     term: "",
     meaning: ""
   })}</div>` : '<button id="vocabAddWord" class="add-single vocab-add-word" title="Add a word" aria-label="Add a word">＋</button>';
-  list.innerHTML = `<h2>${currentLessonId === VOCAB_ALL_ID ? "All words" : "Words in this lesson"} (${items.length})</h2>` + adder + shown.map(item => item.key === vocabEditingKey && vocabEditingInList ? `<div class="vocab-list-row editing">${vocabEditorHtml(item)}</div>` : `<div class="vocab-list-row" data-key="${escapeAttr(item.key)}"><span class="vocab-actions vocab-touch-only"><button class="vocab-act-edit" aria-label="Edit this word">&#9998;</button><button class="vocab-act-del" aria-label="Delete this word">&#10005;</button></span><span class="vocab-list-term" title="Click to edit">${escapeHtml(item.term)}</span><span class="vocab-list-meaning" title="Click to edit">${escapeHtml(item.meaning)}</span><span class="vocab-list-status">${vocabStatusIcon(vocabStateOf(item))}</span></div>`).join("") + (more ? `<button id="vocabMore" class="vocab-more ghost">Show ${more} more</button>` : "");
+  const open = vocabListOpen || !!vocabEditingKey && (vocabEditingInList || vocabEditingKey === NEW_WORD_KEY);
+  list.classList.toggle("open", open);
+  list.innerHTML = `<h2>Words (${items.length})</h2>` + (!open ? "" : adder + shown.map(item => item.key === vocabEditingKey && vocabEditingInList ? `<div class="vocab-list-row editing">${vocabEditorHtml(item)}</div>` : `<div class="vocab-list-row" data-key="${escapeAttr(item.key)}"><span class="vocab-actions vocab-touch-only"><button class="vocab-act-edit" aria-label="Edit this word">&#9998;</button><button class="vocab-act-del" aria-label="Delete this word">&#10005;</button></span><span class="vocab-list-term" title="Click to edit">${escapeHtml(item.term)}</span><span class="vocab-list-meaning" title="Click to edit">${escapeHtml(item.meaning)}</span><span class="vocab-list-status">${vocabStatusIcon(vocabStateOf(item))}</span></div>`).join("") + (more ? `<button id="vocabMore" class="vocab-more ghost">Show ${more} more</button>` : ""));
   watchVocabMore();
   const addBtn = document.getElementById("vocabAddWord");
   if (addBtn) addBtn.onclick = e => {
@@ -9058,6 +9061,12 @@ function openVocabEditor(key, inList) {
 }
 
 document.getElementById("vocabList").addEventListener("click", e => {
+  if (e.target.closest("h2")) {
+    commitVocabEdit();
+    vocabListOpen = !document.getElementById("vocabList").classList.contains("open");
+    renderVocab();
+    return;
+  }
   const row = e.target.closest(".vocab-list-row[data-key]");
   if (!row) return;
   const item = lessonVocabItems(vocabSource()).find(i => i.key === row.dataset.key);
