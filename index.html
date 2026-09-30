@@ -2443,6 +2443,11 @@ function showSessionCompletePanel() {
   const panel = document.getElementById("sessionCompletePanel");
   if (panel.style.display === "block") return;
   panel.querySelectorAll(".confetti-piece").forEach(el => el.remove());
+  addConfetti(panel);
+  panel.style.display = "block";
+}
+
+function addConfetti(panel) {
   for (let i = 0; i < 28; i++) {
     const piece = document.createElement("span");
     piece.className = "confetti-piece";
@@ -2452,7 +2457,6 @@ function showSessionCompletePanel() {
     piece.style.animationDuration = 1.8 + Math.random() * 1.2 + "s";
     panel.appendChild(piece);
   }
-  panel.style.display = "block";
 }
 
 function render() {
@@ -8620,7 +8624,9 @@ function renderVocab() {
     const next = items.map(i => vocabStateOf(i)).filter(st => st.reps && !isDoneState(st)).map(st => st.due).sort((a, b) => a - b)[0];
     const sub = vocabSession.total ? `You reviewed ${vocabSession.total} word${vocabSession.total === 1 ? "" : "s"}.` : "Nothing is due right now.";
     const later = next ? ` Next review ${formatDueIn(next)}.` : "";
+    const celebrate = !stage.querySelector(".session-complete");
     stage.innerHTML = `<div class="session-complete" style="display:block;"><div class="emoji">🎉</div><div class="session-complete-title">All caught up!</div><div class="session-complete-sub">${sub}${later}</div></div>` + vocabControlsHtml();
+    if (celebrate) addConfetti(stage.querySelector(".session-complete"));
     document.getElementById("vocabShow").hidden = true;
     document.getElementById("vocabAgain").hidden = true;
     document.getElementById("vocabGood").hidden = true;
