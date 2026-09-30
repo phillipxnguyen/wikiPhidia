@@ -2592,6 +2592,7 @@ function renderDictPanels() {
     el.classList.toggle("dict-veiled", !!r.qHidden);
   });
   Array.from(host.children).forEach(el => el.classList.toggle("dict-pending", !visible.has(el)));
+  visible.forEach(fitReadings);
   if (visible.size) guardDictFocus();
   const stale = Array.from(host.children).filter(el => Number(el.dataset.used) !== now).sort((a, b) => a.dataset.used - b.dataset.used);
   stale.slice(0, Math.max(0, host.children.length - 40)).forEach(el => el.remove());
@@ -8543,9 +8544,22 @@ function addReadings(el, row) {
 }
 
 function readingHtml(base, reading) {
-  const width = text => Array.from(text).reduce((w, c) => w + (/[\u3000-\u9fff\uff00-\uffef]/.test(c) ? 1 : .6), 0);
-  const over = width(reading) * .44 + .1 - width(base);
-  return `<span class="rd" data-rd="${escapeAttr(reading)}"${over > 0 ? ` style="margin:0 ${(over / 2).toFixed(2)}em"` : ""}>${escapeHtml(base)}</span>`;
+  return `<span class="rd" data-rd="${escapeAttr(reading)}">${escapeHtml(base)}</span>`;
+}
+
+const readingCanvas = document.createElement("canvas").getContext("2d");
+
+function fitReadings(root) {
+  root.querySelectorAll(".rd:not([data-fit])").forEach(el => {
+    const base = el.getBoundingClientRect().width;
+    if (!base) return;
+    const cs = getComputedStyle(el, "::before");
+    const size = parseFloat(cs.fontSize);
+    readingCanvas.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+    const pad = (readingCanvas.measureText(el.dataset.rd).width + size * .5 - base) / 2;
+    el.style.margin = pad > 0 ? `0 ${pad.toFixed(1)}px` : "";
+    el.dataset.fit = "";
+  });
 }
 
 function vocabSentenceHtml(sentence, term, row) {
@@ -8784,6 +8798,7 @@ function renderVocab() {
     stage.innerHTML = vocabEditorHtml(item);
   } else {
     stage.innerHTML = vocabCardHtml(item);
+    fitReadings(stage);
     wireVocabCard(item);
   }
   wireVocabEditor(items);
