@@ -343,6 +343,8 @@ window.onYouTubeIframeAPIReady = function(){
   @media (hover:hover){.vocab-list-toggle:hover{background:color-mix(in srgb, var(--accent) 20%, transparent);color:var(--accent);}}
   .vocab-list-toggle::before{content:"▸";margin-right:6px;}
   .vocab-list.open .vocab-list-toggle::before{content:"▾";}
+  .vocab-list.fixed .vocab-list-toggle{pointer-events:none;}
+  .vocab-list.fixed .vocab-list-toggle::before{display:none;}
   .vocab-list-row[data-key]{display:contents;}
   .vocab-list-row[data-key] > *{display:flex;align-items:center;padding:8px 16px 8px 0;border-top:1px solid var(--border);font-size:14px;}
   .vocab-list-row[data-key] > :last-child{padding-right:2px;}
@@ -3365,7 +3367,7 @@ function getVocabPopupEl() {
   if (!vocabPopupEl) {
     vocabPopupEl = document.createElement("div");
     vocabPopupEl.className = "vocab-popup";
-    vocabPopupEl.innerHTML = `\n      <button class="vocab-nav prev" aria-label="Previous match">&#8249;</button>\n      <div class="vocab-sentence"></div>\n      <div class="vocab-note"></div>\n      <div class="vocab-counter"></div>\n      <button class="vocab-nav next" title="Next match">&#8250;</button>\n    `;
+    vocabPopupEl.innerHTML = `\n      <button class="vocab-nav prev" aria-label="Previous match">&#8249;</button>\n      <div class="vocab-sentence"></div>\n      <div class="vocab-note"></div>\n      <div class="vocab-counter"></div>\n      <button class="vocab-nav next" aria-label="Next match">&#8250;</button>\n    `;
     document.body.appendChild(vocabPopupEl);
     vocabPopupEl.querySelector(".prev").addEventListener("click", e => {
       e.stopPropagation();
@@ -8706,7 +8708,12 @@ function renderVocab() {
   document.getElementById("vocabResetBtn").hidden = !canAdd || !items.length;
   document.getElementById("vocabDeleteBtn").hidden = !canAdd;
   const emptyLesson = canAdd && !items.length;
-  list.hidden = items.length ? vocabView !== "group" : vocabEditingKey !== NEW_WORD_KEY;
+  if (items.length && (!vocabSession || vocabSession.lessonId !== currentLessonId)) startVocabSession();
+  const group = items.length && vocabView === "group" ? currentVocabGroup() : [];
+  const item = items.length && vocabView !== "group" ? currentVocabItem() : null;
+  const studying = item ? [ item ] : group;
+  const caughtUp = items.length > 0 && !studying.length;
+  list.hidden = items.length ? vocabView !== "group" && !caughtUp : vocabEditingKey !== NEW_WORD_KEY;
   placeVocabAddForm(emptyLesson ? "lesson" : "page");
   if (vocabListLessonId !== currentLessonId) {
     vocabListLessonId = currentLessonId;
@@ -8720,9 +8727,10 @@ function renderVocab() {
     term: "",
     meaning: ""
   })}</div>` : "";
-  const open = vocabListOpen || !!vocabEditingKey && (vocabEditingInList || vocabEditingKey === NEW_WORD_KEY);
+  const open = caughtUp || vocabListOpen || !!vocabEditingKey && (vocabEditingInList || vocabEditingKey === NEW_WORD_KEY);
   list.classList.toggle("open", open);
-  list.innerHTML = '<div class="vocab-list-bar">' + (canAdd ? '<button id="vocabAddWord" class="add-single vocab-add-word" aria-label="Add a word">＋</button>' : "") + `<button class="vocab-list-toggle" aria-expanded="${open}">Words (${items.length})</button></div>` + adder + (!open ? "" : shown.map(item => item.key === vocabEditingKey && vocabEditingInList ? `<div class="vocab-list-row editing">${vocabEditorHtml(item)}</div>` : `<div class="vocab-list-row" data-key="${escapeAttr(item.key)}"><span class="vocab-actions vocab-touch-only"><button class="vocab-act-edit" aria-label="Edit this word">&#9998;</button><button class="vocab-act-del" aria-label="Delete this word">&#10005;</button></span><span class="vocab-list-term" title="Click to edit">${escapeHtml(item.term)}</span><span class="vocab-list-meaning" title="Click to edit">${escapeHtml(item.meaning)}</span><span class="vocab-list-status">${vocabStatusIcon(vocabStateOf(item))}</span></div>`).join("") + (more ? `<button id="vocabMore" class="vocab-more ghost">Show ${more} more</button>` : ""));
+  list.classList.toggle("fixed", caughtUp);
+  list.innerHTML = '<div class="vocab-list-bar">' + (canAdd ? '<button id="vocabAddWord" class="add-single vocab-add-word" aria-label="Add a word">＋</button>' : "") + `<button class="vocab-list-toggle" aria-expanded="${open}">Words (${items.length})</button></div>` + adder + (!open ? "" : shown.map(item => item.key === vocabEditingKey && vocabEditingInList ? `<div class="vocab-list-row editing">${vocabEditorHtml(item)}</div>` : `<div class="vocab-list-row" data-key="${escapeAttr(item.key)}"><span class="vocab-actions vocab-touch-only"><button class="vocab-act-edit" aria-label="Edit this word">&#9998;</button><button class="vocab-act-del" aria-label="Delete this word">&#10005;</button></span><span class="vocab-list-term">${escapeHtml(item.term)}</span><span class="vocab-list-meaning">${escapeHtml(item.meaning)}</span><span class="vocab-list-status">${vocabStatusIcon(vocabStateOf(item))}</span></div>`).join("") + (more ? `<button id="vocabMore" class="vocab-more ghost">Show ${more} more</button>` : ""));
   watchVocabMore();
   const addBtn = document.getElementById("vocabAddWord");
   if (addBtn) addBtn.onclick = e => {
@@ -8744,17 +8752,11 @@ function renderVocab() {
     syncVocabSound();
     return;
   }
-  if (!vocabSession || vocabSession.lessonId !== currentLessonId) startVocabSession();
-
-  const group = vocabView === "group" ? currentVocabGroup() : [];
-  const item = vocabView === "group" ? null : currentVocabItem();
-  const studying = item ? [ item ] : group;
   const c = vocabCounts(items);
   const now = Date.now();
   const buckets = new Set(studying.map(i => srsBucket(vocabStateOf(i), now)));
   vocabStudying = studying.length > 0;
   document.querySelectorAll("#vocabToolbar [data-view], #vocabFrontBtn").forEach(btn => btn.hidden = !studying.length);
-  if (!studying.length) list.hidden = false;
   badges.innerHTML = badgesHtml(c.fresh, c.due, c.done, {
     new: buckets.has("new"),
     due: buckets.has("due"),
@@ -9778,7 +9780,7 @@ function allVocabCards() {
 function allVocabItemHtml() {
   const c = vocabCounts(lessonVocabItems(allVocabCards()));
   const active = currentLessonId === VOCAB_ALL_ID && currentView === "vocab";
-  return `<button class="lesson-item all-vocab${active ? " active" : ""}" data-all-vocab="1"${active ? ' aria-current="page"' : ""}>` + '<span class="lesson-item-name">All vocabularies</span>' + `<span class="lesson-item-meta"><span title="Words">${c.total}</span><span class="sep">|</span><span class="new" title="New">🆕 ${c.fresh}</span><span class="due" title="Due">⏳ ${c.due}</span><span class="done" title="Done">✅ ${c.done}</span></span></button>`;
+  return `<button class="lesson-item all-vocab${active ? " active" : ""}" data-all-vocab="1"${active ? ' aria-current="page"' : ""}>` + '<span class="lesson-item-name">All vocabularies</span>' + `<span class="lesson-item-meta"><span>${c.total}</span><span class="sep">|</span><span class="new">🆕 ${c.fresh}</span><span class="due">⏳ ${c.due}</span><span class="done">✅ ${c.done}</span></span></button>`;
 }
 
 async function openAllVocabulary() {

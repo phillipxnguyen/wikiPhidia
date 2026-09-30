@@ -60,7 +60,7 @@ Group and Flashcards share one queue, and a word marked Again comes back after 1
 
 As in Lessons, pointing at a word (or tapping its row on a phone) shows its pinyin or reading. Editing a flashcard (↓ or ✎) shows the word's stroke order and its dictionary together, in one panel under the editor.
 
-When every word is studied, ☰, 📝 and ⇄ are hidden: only 🌐, the counts, 🎉 and the word list remain until words are due again.
+When every word is studied, ☰, 📝 and ⇄ are hidden: only 🌐, the counts, 🎉 and the word list, always open, remain until words are due again.
 
 Words already in your vocabulary are highlighted in questions and in the sentence above each dictionary; click one to see its notes.
 
