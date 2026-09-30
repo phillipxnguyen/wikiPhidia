@@ -43,7 +43,7 @@ Group and Listening share one queue: a card studied in one mode leaves the other
 
 The same keys work in every study mode, in Lessons and in Vocabulary. In a Lesson group, pointing at a row, or at the dictionary panel under the table that belongs to it, makes the grading keys grade just that card.
 
-On a phone, swipe a card right for Good and left for Again. In a Lesson group, swiping one row or its dictionary panel grades just that card; swiping anywhere else grades the whole group.
+On a phone, swipe a card right for Good and left for Again. In a Lesson group, swiping one row or its dictionary panel grades just that card; swiping anywhere else grades the whole group. Dictionary pages are narrower on a phone, leaving room at their sides for your thumb to swipe.
 
 ## Vocabulary
 
