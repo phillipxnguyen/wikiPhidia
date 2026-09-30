@@ -287,7 +287,7 @@ window.onYouTubeIframeAPIReady = function(){
   #vocabFrontBtn.active{color:var(--accent);}
   .vocab-badges{margin:-8px 0 16px;}
   .vocab-toolbar:not([hidden]) + .vocab-badges{margin-top:0;}
-  .vocab-card{position:relative;height:320px;perspective:1200px;touch-action:pan-y;cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;}
+  .vocab-card{position:relative;margin-bottom:16px;height:320px;perspective:1200px;touch-action:pan-y;cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;}
   .vocab-card-inner{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .45s cubic-bezier(.3,.7,.3,1);}
   .vocab-card.flipped .vocab-card-inner{transform:rotateY(180deg);}
   .vocab-face{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:36px 24px 24px;text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow-md);backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:auto;}
@@ -303,9 +303,9 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-term{font-size:40px;font-weight:600;line-height:1.3;overflow-wrap:anywhere;}
   .vocab-ctx{font-size:28px;line-height:2.1;overflow-wrap:anywhere;}
   .vocab-ctx.small{font-size:20px;color:var(--text-2);}
-  .vocab-ctx ruby{ruby-position:over;}
-  .vocab-ctx rt{font-size:.44em;line-height:1.2;padding-bottom:.2em;color:var(--text-2);}
-  .vocab-ctx mark{display:inline-block;line-height:1.3;padding:.1em .18em .08em;margin:0 .06em;border-radius:8px;background:var(--mark-bg);color:inherit;vertical-align:baseline;}
+  .vocab-ctx ruby, .dict-source ruby{ruby-position:over;}
+  .vocab-ctx rt, .dict-source rt{font-size:.44em;line-height:1.2;padding-bottom:.2em;color:var(--text-2);-webkit-user-select:none;user-select:none;}
+  .vocab-ctx mark{display:inline-block;line-height:1.3;padding:.1em .18em .08em;margin:0 .06em;border-radius:8px;background:var(--accent-soft);color:inherit;vertical-align:baseline;}
   .vocab-ctx mark rt{color:inherit;}
   .vocab-meaning{font-size:28px;font-weight:600;line-height:1.35;color:var(--a-text);overflow-wrap:anywhere;}
   #vocabSpeak{min-width:40px;}
@@ -762,7 +762,7 @@ window.onYouTubeIframeAPIReady = function(){
   .swipe-ghost.good{color:var(--a-label);border-color:currentColor;}
   .swipe-ghost.again{color:var(--danger);border-color:currentColor;}
   .swipe-ghost.delete{color:var(--text);border-color:currentColor;}
-  .dict-source{font-size:22px;color:var(--text);margin:0 0 10px;overflow-wrap:break-word;}
+  .dict-source{font-size:22px;line-height:2;color:var(--text);margin:0 0 10px;overflow-wrap:break-word;}
   .dict-frame{display:block;width:100%;height:360px;border:1px solid var(--border);border-radius:8px;background:#fff;}
   .stroke-replay{
     position:absolute;bottom:3px;right:3px;
@@ -1078,6 +1078,7 @@ window.onYouTubeIframeAPIReady = function(){
   </div>
   <div id="vocabBadges" class="vocab-badges"></div>
   <div id="vocabStage"></div>
+  <div id="vocabStrokePanel" class="stroke-order-panel" style="display:none;"></div>
   <div id="vocabDictPanels"></div>
   <div id="vocabInlineAdd" hidden></div>
   <div id="vocabList" class="panel vocab-list" hidden></div>
@@ -2501,7 +2502,7 @@ function renderDictPanels() {
   });
   const notesSig = rows.length + ":" + notesLen + ":" + (vocabExtras ? (vocabExtras.notesHtml || "").length : 0);
   const panelFor = r => {
-    const url = dictUrlFor((r.q || "").trim());
+    const url = dictUrlFor((r.q || "").trim(), r);
     if (!url) return null;
     let el = Array.from(host.children).find(c => c.dataset.url === url);
     if (!el) {
@@ -2515,10 +2516,11 @@ function renderDictPanels() {
     el.dataset.used = now;
     el.dataset.rowId = r.id;
     const src = el.querySelector(".dict-source");
-    const key = r.id + "\u0001" + (r.q || "") + "\u0001" + notesSig;
+    const key = r.id + "\u0001" + (r.q || "") + "\u0001" + notesSig + "\u0001" + typeof pinyinPro + jaResults.has(r.q || "");
     if (src.dataset.key !== key) {
       src.dataset.key = key;
       src.innerHTML = highlightVocabInHtml(escapeHtml(r.q || ""), r.id);
+      addReadings(src, r);
     }
     return el;
   };
@@ -2691,7 +2693,11 @@ function renderStrokeOrderPanel(row) {
   if (wantKey === lastStrokeKey) return;
   lastStrokeKey = wantKey;
   const combinedText = (row.q || "") + (row.a || "");
-  const chars = Array.from(new Set(combinedText.match(/[一-鿿]/g) || []));
+  drawStrokeOrder(panel, combinedText, detectScript(combinedText) === "ja", "strokeTarget_" + row.id);
+}
+
+function drawStrokeOrder(panel, text, isJa, idPrefix) {
+  const chars = Array.from(new Set(text.match(/[一-鿿]/g) || []));
   if (chars.length === 0 || typeof HanziWriter === "undefined") {
     panel.style.display = "none";
     panel.innerHTML = "";
@@ -2703,11 +2709,10 @@ function renderStrokeOrderPanel(row) {
   const strokeColor = themeStyle.getPropertyValue("--accent").trim() || "#2f6fd6";
   const outlineColor = themeStyle.getPropertyValue("--stroke-outline").trim() || "#d8dee6";
   const rowEl = panel.querySelector(".stroke-order-row");
-  const isJa = detectScript(combinedText) === "ja";
   chars.forEach((ch, i) => {
     const box = document.createElement("div");
     box.className = "stroke-order-box";
-    const targetId = "strokeTarget_" + row.id + "_" + i;
+    const targetId = idPrefix + "_" + i;
     box.innerHTML = `<div class="stroke-target" id="${targetId}"></div><button class="stroke-replay" title="Replay">↻</button>`;
     rowEl.appendChild(box);
     loadStrokeCharData(ch, isJa).then(charData => {
@@ -3028,6 +3033,7 @@ function japaneseFor(text) {
 function refreshJapaneseReadings() {
   const tip = hoverTooltip;
   if (tip && tip.style.display === "block" && tip.anchor && tip.anchor.isConnected && tip.textContent === "Loading readings…") showCellPinyin(tip.anchor);
+  if (currentView === "study") renderDictPanels();
   if (currentView !== "vocab" || vocabEditingKey) return;
   const item = currentVocabItem();
   const back = document.querySelector("#vocabCard .vocab-back");
@@ -5082,7 +5088,7 @@ function detectLang(text) {
   if (/[\u3040-\u30FF]/.test(text)) return "ja-JP";
   if (/[\u4E00-\u9FFF]/.test(text)) return "zh-CN";
   if (/[\uAC00-\uD7A3]/.test(text)) return "ko-KR";
-  if (/[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(text)) return "vi-VN";
+  if (/[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(text)) return "vi-VN";
   return "en-US";
 }
 
@@ -5209,11 +5215,12 @@ function copyQuestions(questions) {
   });
 }
 
-function dictUrlFor(text) {
-  const script = detectScript(text);
+function dictUrlFor(text, row) {
+  if (!text) return null;
+  const script = cjkScriptFor(text, row);
   if (script === "zh") return "https://chinesedictionary.mobi/?handler=QueryWorddict&mwdqb=" + encodeURIComponent(text);
-  if (script === "ja") return "https://www.bing.com/translator?ref=TThis&text=" + encodeURIComponent(text) + "&from=ja&to=en";
-  return null;
+  const from = script === "ja" ? "ja" : /[\uAC00-\uD7A3]/.test(text) ? "ko" : detectLang(text) === "vi-VN" ? "vi" : "en";
+  return "https://www.bing.com/translator?ref=TThis&text=" + encodeURIComponent(text) + "&from=" + from + "&to=" + (from === "en" ? "vi" : "en");
 }
 
 function splitCols(line, delim, maxParts) {
@@ -8382,6 +8389,63 @@ function formatDueIn(ts) {
   return "in " + days + " day" + (days === 1 ? "" : "s");
 }
 
+function addReadings(el, row) {
+  const text = el.textContent;
+  const chars = Array.from(text);
+  const script = cjkScriptFor(text, row);
+  let spans = null;
+  if (script === "ja") {
+    const ja = japaneseFor(text);
+    if (!ja) return;
+    let pos = 0;
+    spans = [];
+    ja.units.forEach(u => {
+      const len = Array.from(u.s).length;
+      if (u.r) spans.push([ pos, pos + len, u.r ]);
+      pos += len;
+    });
+  } else if (script === "zh" && typeof pinyinPro !== "undefined") {
+    let pys = null;
+    try {
+      pys = pinyinPro.pinyin(text, {
+        type: "array"
+      });
+    } catch (e) {}
+    if (!Array.isArray(pys) || pys.length !== chars.length) return;
+    spans = chars.map((ch, i) => /\p{Script=Han}/u.test(ch) ? [ i, i + 1, pys[i] ] : null).filter(Boolean);
+  }
+  if (!spans || !spans.length) return;
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  let pos = 0;
+  nodes.forEach(node => {
+    const nc = Array.from(node.nodeValue);
+    const start = pos, end = pos + nc.length;
+    pos = end;
+    const inside = spans.filter(([a, b]) => a >= start && b <= end);
+    if (!inside.length) return;
+    const frag = document.createDocumentFragment();
+    let cursor = start;
+    inside.forEach(([a, b, r]) => {
+      if (a > cursor) frag.append(nc.slice(cursor - start, a - start).join(""));
+      const ruby = document.createElement("ruby");
+      const rt = document.createElement("rt");
+      ruby.append(nc.slice(a - start, b - start).join(""));
+      rt.textContent = r;
+      ruby.append(rt);
+      frag.append(ruby);
+      cursor = b;
+    });
+    if (cursor < end) frag.append(nc.slice(cursor - start).join(""));
+    node.replaceWith(frag);
+  });
+}
+
+function baseText(el) {
+  return Array.from(el.childNodes).map(n => n.nodeName === "RT" ? "" : n.nodeType === 3 ? n.nodeValue : baseText(n)).join("");
+}
+
 function vocabSentenceHtml(sentence, term, row) {
   const chars = Array.from((sentence || "").normalize("NFC"));
   const text = chars.join("");
@@ -8469,25 +8533,37 @@ function renderVocab() {
   hideTooltip();
   renderVocabStage();
   renderVocabDictPanels();
+  renderVocabStrokePanel();
+}
+
+let vocabStrokeKey = null;
+
+function renderVocabStrokePanel() {
+  const panel = document.getElementById("vocabStrokePanel");
+  const item = currentView === "vocab" && vocabView === "card" && vocabSession && vocabSession.flipped ? currentVocabItem() : null;
+  const key = item ? item.key : null;
+  if (key === vocabStrokeKey) return;
+  vocabStrokeKey = key;
+  panel.style.display = "none";
+  panel.innerHTML = "";
+  if (item) drawStrokeOrder(panel, item.term, cjkScriptFor(item.term, item.card) === "ja", "vocabStroke");
 }
 
 function vocabDictWords() {
   if (currentView !== "vocab" || !vocabSession) return [ [], [] ];
   if (vocabView === "group") {
     const group = currentVocabGroup();
-    return [ group, vocabFront === "a" && !vocabSession.shown ? [] : group ];
+    return [ group, vocabSession.shown ? group : [] ];
   }
   const item = vocabView === "card" ? currentVocabItem() : null;
   if (!item) return [ [], [] ];
-  return [ [ item ], vocabFront === "a" && !vocabSession.flipped ? [] : [ item ] ];
+  return [ [ item ], vocabSession.flipped ? [ item ] : [] ];
 }
 
 function vocabDictUrl(items) {
-  if (!items.length || !cjkScriptFor(items[0].term, items[0].card)) return null;
-  const lesson = items[0].card.srcLessonId ? library.find(l => l.id === items[0].card.srcLessonId) : null;
-  const lang = lesson ? lesson.studyLang : studyLang;
-  const from = cjkScriptFor(items[0].term, items[0].card) === "ja" ? "ja" : lang === "zh-TW" ? "zh-Hant" : "zh-Hans";
-  return "https://www.bing.com/translator?ref=TThis&text=" + encodeURIComponent(letteredList(items.map(i => i.term))) + "&from=" + from + "&to=en";
+  if (!items.length) return null;
+  const terms = items.map(i => i.term);
+  return dictUrlFor(cjkScriptFor(terms[0], items[0].card) === "zh" ? terms.join(" ") : letteredList(terms), items[0].card);
 }
 
 function renderVocabDictPanels() {
@@ -9355,6 +9431,7 @@ function flipVocab() {
   const card = document.getElementById("vocabCard");
   if (card) card.classList.toggle("flipped", vocabSession.flipped);
   renderVocabDictPanels();
+  renderVocabStrokePanel();
   if (!vocabSession.flipped) stopVocabSound(); else if (vocabFront === "a") playVocabSound(item);
 }
 
@@ -9730,7 +9807,7 @@ function dictSourceRow(el) {
 function selectionInDictSource() {
   const sel = window.getSelection();
   if (!sel || !sel.rangeCount) return null;
-  const text = sel.toString().trim();
+  const text = baseText(sel.getRangeAt(0).cloneContents()).trim();
   if (!text) return null;
   const range = sel.getRangeAt(0);
   const node = range.commonAncestorContainer;
@@ -9771,7 +9848,7 @@ document.getElementById("dictPanels").addEventListener("click", e => {
   const hit = e.target.closest(".dict-source mark.vocab-hit");
   if (hit) {
     const row = dictSourceRow(hit.closest(".dict-source"));
-    const matches = row ? findVocabMatches(hit.textContent, row.id) : [];
+    const matches = row ? findVocabMatches(baseText(hit), row.id) : [];
     if (matches.length) showVocabPopup(matches, hit.getBoundingClientRect());
     return;
   }
@@ -9779,7 +9856,7 @@ document.getElementById("dictPanels").addEventListener("click", e => {
 
 function repeatsHighlightedWord(box, range, text) {
   const key = normalizeVocabText(text);
-  return Array.from(box.querySelectorAll("mark.vocab-hit")).some(m => normalizeVocabText(m.textContent) === key && !m.contains(range.commonAncestorContainer) && !range.intersectsNode(m));
+  return Array.from(box.querySelectorAll("mark.vocab-hit")).some(m => normalizeVocabText(baseText(m)) === key && !m.contains(range.commonAncestorContainer) && !range.intersectsNode(m));
 }
 
 function fitTextarea(el) {
