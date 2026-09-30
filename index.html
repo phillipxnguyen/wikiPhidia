@@ -336,19 +336,20 @@ window.onYouTubeIframeAPIReady = function(){
   #viewStudy.offscreen .media-container:not(.warming){width:356px;max-width:none;height:200px;aspect-ratio:auto;margin:0;}
   .vocab-list:not([hidden]){display:grid;grid-template-columns:auto 1fr auto;align-items:stretch;}
   html.touch .vocab-list:not([hidden]){grid-template-columns:auto auto 1fr auto;}
-  .vocab-list-toggle{grid-column:1 / -1;justify-self:start;margin:0 0 10px;padding:0;border:0;background:none;color:var(--text-2);font-size:12px;text-transform:uppercase;letter-spacing:.06em;font-weight:700;}
+  .vocab-list-bar{grid-column:1 / -1;position:relative;min-height:36px;margin-bottom:8px;}
+  .vocab-list:not(.open) .vocab-list-bar{margin-bottom:0;}
+  .vocab-list-bar .vocab-add-word{margin:0;}
+  .vocab-list-toggle{position:absolute;left:4px;top:50%;transform:translateY(-50%);padding:6px 10px;border:0;border-radius:var(--radius-sm);background:none;color:var(--text-2);font-size:12px;text-transform:uppercase;letter-spacing:.06em;font-weight:700;}
   .vocab-list-toggle::before{content:"▸ ";}
   .vocab-list.open .vocab-list-toggle::before{content:"▾ ";}
-  .vocab-list .vocab-add-word{grid-column:1 / -1;margin:0 0 8px;}
-  .vocab-list:not(.open) .vocab-add-word{margin-bottom:0;}
   .vocab-list-row[data-key]{display:contents;}
   .vocab-list-row[data-key] > *{display:flex;align-items:center;padding:8px 16px 8px 0;border-top:1px solid var(--border);font-size:14px;}
   .vocab-list-row[data-key] > :last-child{padding-right:2px;}
   .vocab-list-row[data-key] > .vocab-actions{padding-left:12px;padding-right:12px;}
-  .vocab-list-toggle + .vocab-list-row > *{border-top:0;}
+  .vocab-list-bar + .vocab-list-row > *{border-top:0;}
   .vocab-list-row.row-selected > *{background:var(--accent-soft);}
   .vocab-list-row.editing{grid-column:1 / -1;border-top:1px solid var(--border);}
-  .vocab-list-toggle + .vocab-list-row.editing{border-top:0;}
+  .vocab-list-bar + .vocab-list-row.editing{border-top:0;}
   .vocab-list-term{max-width:14em;font-weight:600;overflow-wrap:anywhere;}
   .vocab-list-meaning{min-width:0;color:var(--text-2);overflow-wrap:anywhere;}
   .vocab-add-popup{position:fixed;z-index:2000;width:min(340px, calc(100vw - 16px));padding:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);}
@@ -8691,13 +8692,13 @@ function renderVocab() {
   if (editingAt >= vocabListLimit) vocabListLimit = editingAt + 1;
   const shown = items.slice(0, vocabListLimit);
   const more = items.length - shown.length;
-  const adder = !canAdd ? "" : vocabEditingKey === NEW_WORD_KEY ? `<div class="vocab-list-row editing">${vocabEditorHtml({
+  const adder = canAdd && vocabEditingKey === NEW_WORD_KEY ? `<div class="vocab-list-row editing">${vocabEditorHtml({
     term: "",
     meaning: ""
-  })}</div>` : '<button id="vocabAddWord" class="add-single vocab-add-word" title="Add a word" aria-label="Add a word">＋</button>';
+  })}</div>` : "";
   const open = vocabListOpen || !!vocabEditingKey && (vocabEditingInList || vocabEditingKey === NEW_WORD_KEY);
   list.classList.toggle("open", open);
-  list.innerHTML = `<button class="vocab-list-toggle" aria-expanded="${open}">Words (${items.length})</button>` + adder + (!open ? "" : shown.map(item => item.key === vocabEditingKey && vocabEditingInList ? `<div class="vocab-list-row editing">${vocabEditorHtml(item)}</div>` : `<div class="vocab-list-row" data-key="${escapeAttr(item.key)}"><span class="vocab-actions vocab-touch-only"><button class="vocab-act-edit" aria-label="Edit this word">&#9998;</button><button class="vocab-act-del" aria-label="Delete this word">&#10005;</button></span><span class="vocab-list-term" title="Click to edit">${escapeHtml(item.term)}</span><span class="vocab-list-meaning" title="Click to edit">${escapeHtml(item.meaning)}</span><span class="vocab-list-status">${vocabStatusIcon(vocabStateOf(item))}</span></div>`).join("") + (more ? `<button id="vocabMore" class="vocab-more ghost">Show ${more} more</button>` : ""));
+  list.innerHTML = '<div class="vocab-list-bar">' + (canAdd ? '<button id="vocabAddWord" class="add-single vocab-add-word" title="Add a word" aria-label="Add a word">＋</button>' : "") + `<button class="vocab-list-toggle" aria-expanded="${open}">Words (${items.length})</button></div>` + adder + (!open ? "" : shown.map(item => item.key === vocabEditingKey && vocabEditingInList ? `<div class="vocab-list-row editing">${vocabEditorHtml(item)}</div>` : `<div class="vocab-list-row" data-key="${escapeAttr(item.key)}"><span class="vocab-actions vocab-touch-only"><button class="vocab-act-edit" aria-label="Edit this word">&#9998;</button><button class="vocab-act-del" aria-label="Delete this word">&#10005;</button></span><span class="vocab-list-term" title="Click to edit">${escapeHtml(item.term)}</span><span class="vocab-list-meaning" title="Click to edit">${escapeHtml(item.meaning)}</span><span class="vocab-list-status">${vocabStatusIcon(vocabStateOf(item))}</span></div>`).join("") + (more ? `<button id="vocabMore" class="vocab-more ghost">Show ${more} more</button>` : ""));
   watchVocabMore();
   const addBtn = document.getElementById("vocabAddWord");
   if (addBtn) addBtn.onclick = e => {
