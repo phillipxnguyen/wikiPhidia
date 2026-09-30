@@ -51,8 +51,8 @@ Switch from **Lessons** to **Vocabulary** with the 字 button at the top. Words 
 
 | Mode | What it does |
 | --- | --- |
-| 🗒️ Flashcards | One word at a time; tap the card to flip it. The whole word list, for browsing and editing, sits below |
-| 🗂️ Group | Due words five at a time, like Group mode in Lessons: click a word to edit it, tap a row (phone) or point at it (computer) to grade just that word, ▶ plays the group's words in turn, and the ▶ or 🔊 before each word plays just that word |
+| 🗒️ Flashcards | One word at a time; tap the card to flip it. The whole word list, for browsing and editing, sits below; point at a word (or tap it on a phone) to see its pinyin or reading |
+| 📝 Group | Due words five at a time, like Group mode in Lessons: click a word to edit it, tap a row (phone) or point at it (computer) to grade just that word, ▶ plays the group's words in turn, and the ▶ or 🔊 before each word plays just that word |
 
 Group and Flashcards share one queue, and a word marked Again comes back after 10 minutes. The 🌐 button picks the language; ⇄ picks which side is shown first and hides the other side again (the card gives a short squash, and the side it starts on is labelled and coloured Question or Answer). On a phone, undo, redo, flip, Again and Good buttons sit under the words; on a computer the keys do the same.
 
