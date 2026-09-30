@@ -759,7 +759,6 @@ window.onYouTubeIframeAPIReady = function(){
   #vocabDictPanels{position:relative;}
   #dictPanels .dict-pending, #vocabDictPanels .dict-pending{position:absolute;top:0;left:0;right:0;height:0;overflow:hidden;visibility:hidden;pointer-events:none;}
   #dictPanels:not(.with-source) .dict-source{display:none;}
-  .dict-veiled{visibility:hidden;}
   #vocabGroupStrokes{display:flex;flex-wrap:wrap;justify-content:center;gap:12px 28px;}
   #viewStudy.focus-study > .lesson-header, #viewStudy.focus-study > .save-status, #viewStudy.focus-study > .lesson-meta{display:none;}
   .swipe-ghost{position:fixed;z-index:1000;box-sizing:border-box;display:flex;justify-content:center;border:3px solid var(--border);border-radius:28px;background:var(--surface);box-shadow:var(--shadow-md);font-size:34px;font-weight:700;pointer-events:none;}
@@ -2526,16 +2525,16 @@ function renderDictPanels() {
   const host = document.getElementById("dictPanels");
   const inTable = document.getElementById("cardTable").style.display !== "none";
   const inSingle = document.getElementById("singleCardView").style.display !== "none";
-  let laid = [];
+  let current = [];
   let preload = [];
   if (currentView === "study" && rows.length) {
     if (groupState && inTable) {
       const next = groupState.groups[groupState.index + 1] || [];
-      laid = getVisibleRows();
-      preload = laid.concat(rows.filter(r => next.includes(r.id)));
+      current = getVisibleRows();
+      preload = current.concat(rows.filter(r => next.includes(r.id)));
     } else if (groupState && inSingle) {
       preload = singleCardQueue().slice(0, 2);
-      laid = preload.slice(0, 1);
+      current = preload.slice(0, 1);
     } else if (!groupState) {
       if (!nextOrderReady) {
         reshuffleCardOrder();
@@ -2578,19 +2577,15 @@ function renderDictPanels() {
   };
   preload.forEach(panelFor);
   const visible = new Set;
-  laid.forEach((r, i) => {
-    const el = panelFor(r);
+  current.forEach((r, i) => {
+    const el = !r.qHidden && panelFor(r);
     if (!el) return;
     el.style.order = i;
     visible.add(el);
-    const stroke = el.querySelector(".dict-stroke");
     if (el.classList.contains("dict-pending")) {
       const text = (r.q || "") + (r.a || "");
-      drawStrokeOrder(stroke, text, cjkScriptFor(text, r) === "ja", "dictStroke_" + r.id, r.qHidden);
-    } else if (!r.qHidden) {
-      playStrokeOrder(stroke);
+      drawStrokeOrder(el.querySelector(".dict-stroke"), text, cjkScriptFor(text, r) === "ja", "dictStroke_" + r.id);
     }
-    el.classList.toggle("dict-veiled", !!r.qHidden);
   });
   Array.from(host.children).forEach(el => el.classList.toggle("dict-pending", !visible.has(el)));
   visible.forEach(fitReadings);
@@ -3104,7 +3099,9 @@ function refreshJapaneseReadings() {
   if (currentView !== "vocab" || vocabEditingKey) return;
   const item = currentVocabItem();
   const back = document.querySelector("#vocabCard .vocab-back");
-  if (item && back) back.innerHTML = vocabBackInner(item);
+  if (!item || !back) return;
+  back.innerHTML = vocabBackInner(item);
+  fitReadings(back);
 }
 
 function lessonLooksJapanese(row) {
@@ -4902,7 +4899,7 @@ function pinStudyArea() {
 }
 
 function studyParts() {
-  return [ "mediaContainer", "tableProgress", "cardTable", "singleCardView" ].map(id => document.getElementById(id)).concat(document.querySelector(".study-head .toolbar"), Array.from(document.querySelectorAll("#dictPanels > :not(.dict-pending):not(.dict-veiled)")));
+  return [ "mediaContainer", "tableProgress", "cardTable", "singleCardView" ].map(id => document.getElementById(id)).concat(document.querySelector(".study-head .toolbar"), Array.from(document.querySelectorAll("#dictPanels > :not(.dict-pending)")));
 }
 
 function ghostFor(parts) {
