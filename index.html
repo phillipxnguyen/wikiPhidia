@@ -320,13 +320,6 @@ window.onYouTubeIframeAPIReady = function(){
   html:not(.touch) #vocabTable .vocab-lead-col{display:none;}
   html.touch #vocabTable{touch-action:pan-y;}
   #vocabTable .cell{font-size:18px;}
-  .vocab-controls{display:flex;align-items:center;justify-content:center;gap:8px;margin:18px auto 22px;}
-  html:not(.touch) .vocab-controls{display:none;}
-  .vocab-controls .tb-icon{flex:0 0 48px;height:48px;display:flex;align-items:center;justify-content:center;padding:0;border-radius:12px;}
-  .vocab-round{flex:0 0 56px;height:56px;padding:0;border-radius:50%;font-size:22px;font-weight:700;background:var(--surface);}
-  .vocab-round.again{color:var(--danger);border-color:color-mix(in srgb, var(--danger) 45%, transparent);}
-  .vocab-round.good{color:var(--a-label);border-color:color-mix(in srgb, var(--a-label) 45%, transparent);}
-  .vocab-round.flip{display:flex;align-items:center;justify-content:center;}
   :root.vocab-mode{--accent:var(--new-color);--accent-hover:color-mix(in srgb, var(--new-color) 85%, black);--accent-soft:color-mix(in srgb, var(--new-color) 13%, transparent);}
   .stats-title, .lesson-name-input{color:var(--accent);}
   .vocab-editor{display:flex;flex-direction:column;gap:8px;padding:16px;margin-bottom:16px;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow-sm);}
@@ -3620,8 +3613,9 @@ document.addEventListener("click", e => {
 
 function updateTouchBar() {
   const bar = document.getElementById("touchBar");
-  bar.hidden = !isTouch() || currentView !== "study" || !rows.length;
-  const inSession = !!groupState && document.getElementById("sessionCompletePanel").style.display !== "block";
+  const vocab = currentView === "vocab";
+  bar.hidden = !isTouch() || (vocab ? document.getElementById("vocabToolbar").hidden : currentView !== "study" || !rows.length);
+  const inSession = vocab ? vocabStudying : !!groupState && document.getElementById("sessionCompletePanel").style.display !== "block";
   bar.classList.toggle("tools-only", !inSession);
   [ "tbShow", "tbAgain", "tbGood" ].forEach(id => {
     document.getElementById(id).hidden = !inSession;
@@ -3634,11 +3628,17 @@ document.getElementById("tbUndo").onclick = () => undo();
 
 document.getElementById("tbRedo").onclick = () => redo();
 
-document.getElementById("tbShow").onclick = () => revealAction();
+document.getElementById("tbShow").onclick = () => {
+  if (currentView !== "vocab") revealAction(); else if (vocabView === "group") toggleVocabGroupReveal(); else flipVocab();
+};
 
-document.getElementById("tbAgain").onclick = () => gradeAction(true);
+function touchGrade(isAgain) {
+  if (currentView !== "vocab") gradeAction(isAgain); else if (vocabView === "group") gradeVocabGroup(isAgain, vocabSelectedKey); else flyVocab(isAgain);
+}
 
-document.getElementById("tbGood").onclick = () => gradeAction(false);
+document.getElementById("tbAgain").onclick = () => touchGrade(true);
+
+document.getElementById("tbGood").onclick = () => touchGrade(false);
 
 touchQuery.addEventListener("change", () => {
   document.documentElement.classList.toggle("touch", isTouch());
@@ -8173,6 +8173,8 @@ let vocabSeq = null;
 let vocabPendingThen = null;
 
 let vocabShownIsVideo = false;
+
+let vocabStudying = false;
 let vocabAllMultiLang = false;
 
 const VOCAB_LIST_PAGE = 100;
@@ -8577,10 +8579,6 @@ function vocabCardHtml(item) {
   return `<div class="vocab-card${vocabFront === "a" ? " answer-first" : ""}${vocabSession.flipped ? " flipped" : ""}" id="vocabCard">` + `<div class="vocab-card-inner">${front}${back}</div>` + '<span class="vocab-actions vocab-card-actions vocab-touch-only"><button class="vocab-act-edit" aria-label="Edit this word">&#9998;</button><button class="vocab-act-del" aria-label="Delete this word">&#10005;</button></span>' + "</div>";
 }
 
-function vocabControlsHtml() {
-  return '<div class="vocab-controls">' + `<button class="tb-icon" id="vocabUndo" title="Undo (⌘Z)" aria-label="Undo"${undoStack.length ? "" : " disabled"}>${document.getElementById("tbUndo").innerHTML}</button>` + `<button class="tb-icon" id="vocabRedo" title="Redo (⇧⌘Z)" aria-label="Redo"${redoStack.length ? "" : " disabled"}>${document.getElementById("tbRedo").innerHTML}</button>` + '<button class="vocab-round flip vocab-show" id="vocabShow" title="Flip the card (Space)" aria-label="Flip the card"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/></svg></button>' + '<button class="vocab-round again" id="vocabAgain" title="Again — still learning (←)" aria-label="Again">✕</button>' + '<button class="vocab-round good" id="vocabGood" title="Good — I know it (→)" aria-label="Good">✓</button>' + "</div>";
-}
-
 function vocabTableHtml(group) {
   const hide = vocabFront === "a" ? "q" : "a";
   const cell = (item, field) => {
@@ -8599,6 +8597,8 @@ function vocabEditorHtml(item) {
 
 function renderVocab() {
   if (currentView !== "vocab") return;
+  vocabStudying = false;
+  setTimeout(updateTouchBar, 0);
   hideTooltip();
   const items = lessonVocabItems(vocabSource());
   const title = document.getElementById("vocabTitle");
@@ -8665,6 +8665,7 @@ function renderVocab() {
   const c = vocabCounts(items);
   const now = Date.now();
   const buckets = new Set(studying.map(i => srsBucket(vocabStateOf(i), now)));
+  vocabStudying = studying.length > 0;
   document.querySelectorAll("#vocabToolbar [data-view], #vocabFrontBtn").forEach(btn => btn.hidden = !studying.length);
   if (!studying.length) list.hidden = false;
   badges.innerHTML = badgesHtml(c.fresh, c.due, c.done, {
@@ -8678,20 +8679,15 @@ function renderVocab() {
     const later = next ? ` Next review ${formatDueIn(next)}.` : "";
     const celebrate = !stage.querySelector(".session-complete") || stage.dataset.lessonId !== String(currentLessonId);
     stage.dataset.lessonId = currentLessonId;
-    stage.innerHTML = `<div class="session-complete" style="display:block;"><div class="emoji">🎉</div><div class="session-complete-title">All caught up!</div><div class="session-complete-sub">${sub}${later}</div></div>` + vocabControlsHtml();
+    stage.innerHTML = `<div class="session-complete" style="display:block;"><div class="emoji">🎉</div><div class="session-complete-title">All caught up!</div><div class="session-complete-sub">${sub}${later}</div></div>`;
     if (celebrate) addConfetti(stage.querySelector(".session-complete"));
-    document.getElementById("vocabShow").hidden = true;
-    document.getElementById("vocabAgain").hidden = true;
-    document.getElementById("vocabGood").hidden = true;
-    wireVocabControls();
     wireVocabEditor(items);
     syncVocabSound();
     return;
   }
   if (group.length) {
     vocabShownIsVideo = group.some(i => !!vocabVideoIdFor(i.card));
-    stage.innerHTML = vocabTableHtml(group) + vocabControlsHtml();
-    wireVocabControls();
+    stage.innerHTML = vocabTableHtml(group);
     wireVocabEditor(items);
     syncVocabSound();
     return;
@@ -8700,31 +8696,16 @@ function renderVocab() {
   vocabShownIsVideo = !!vocabVideoIdFor(item.card);
   if (vocabEditingKey === item.key && !vocabEditingInList) {
     const url = dictUrlFor(item.term, item.card);
-    stage.innerHTML = vocabEditorHtml(item) + '<div class="stroke-order-panel"><div class="dict-stroke"></div>' + (url ? `<iframe class="dict-frame" src="${escapeAttr(url)}"></iframe>` : "") + "</div>" + vocabControlsHtml();
+    stage.innerHTML = vocabEditorHtml(item) + '<div class="stroke-order-panel"><div class="dict-stroke"></div>' + (url ? `<iframe class="dict-frame" src="${escapeAttr(url)}"></iframe>` : "") + "</div>";
     const stroke = stage.querySelector(".dict-stroke");
     drawStrokeOrder(stroke, item.term, cjkScriptFor(item.term, item.card) === "ja", "vocabEditStroke");
     stroke.parentElement.hidden = !url && stroke.style.display === "none";
   } else {
-    stage.innerHTML = vocabCardHtml(item) + vocabControlsHtml();
+    stage.innerHTML = vocabCardHtml(item);
     wireVocabCard(item);
   }
-  wireVocabControls();
   wireVocabEditor(items);
   syncVocabSound();
-}
-
-function wireVocabControls() {
-  const group = vocabView === "group";
-  const show = document.getElementById("vocabShow");
-  document.getElementById("vocabGood").onclick = () => group ? gradeVocabGroup(false, vocabSelectedKey) : flyVocab(false);
-  document.getElementById("vocabAgain").onclick = () => group ? gradeVocabGroup(true, vocabSelectedKey) : flyVocab(true);
-  document.getElementById("vocabUndo").onclick = () => undo();
-  show.onclick = () => group ? toggleVocabGroupReveal() : flipVocab();
-  if (group) {
-    show.title = "Show or hide the hidden side (Space)";
-    show.setAttribute("aria-label", "Show or hide the hidden side");
-  }
-  document.getElementById("vocabRedo").onclick = () => redo();
 }
 
 function wireVocabEditor(items) {
