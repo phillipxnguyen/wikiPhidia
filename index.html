@@ -292,6 +292,16 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-card.flipped .vocab-card-inner{transform:rotateY(180deg);}
   .vocab-face{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:36px 24px 24px;text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow-md);backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:auto;}
   .vocab-back{transform:rotateY(180deg);background:var(--a-bg);}
+  .vocab-face::before{content:"Question";position:absolute;top:14px;left:0;right:0;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-2);}
+  .vocab-back::before, .vocab-card.answer-first .vocab-front::before{content:"Answer";color:var(--a-label);}
+  .vocab-card.answer-first .vocab-back::before{content:"Question";color:var(--text-2);}
+  .vocab-card.answer-first .vocab-front{background:var(--a-bg);}
+  .vocab-card.answer-first .vocab-front .vocab-term{color:var(--a-text);}
+  .vocab-card.answer-first .vocab-back{background:var(--surface);}
+  @keyframes vocabSwapCard{from{transform:perspective(1200px) rotateY(-90deg);opacity:.4;}to{transform:none;opacity:1;}}
+  @keyframes vocabSwapTable{from{transform:perspective(1200px) rotateX(-70deg);opacity:.4;}to{transform:none;opacity:1;}}
+  .vocab-card.vocab-swap{animation:vocabSwapCard .4s cubic-bezier(.3,.7,.3,1);}
+  #vocabTable.vocab-swap{animation:vocabSwapTable .4s cubic-bezier(.3,.7,.3,1);}
   .vocab-term{font-size:40px;font-weight:600;line-height:1.3;overflow-wrap:anywhere;}
   .vocab-ctx{font-size:28px;line-height:2.1;overflow-wrap:anywhere;}
   .vocab-ctx.small{font-size:20px;color:var(--text-2);}
@@ -313,6 +323,7 @@ window.onYouTubeIframeAPIReady = function(){
   html.touch #vocabTable{touch-action:pan-y;}
   #vocabTable .cell{font-size:18px;}
   .vocab-controls{display:flex;align-items:center;justify-content:center;gap:8px;margin:18px auto 22px;}
+  html:not(.touch) .vocab-controls{display:none;}
   .vocab-controls .tb-icon{flex:0 0 48px;height:48px;display:flex;align-items:center;justify-content:center;padding:0;border-radius:12px;}
   .vocab-round{flex:0 0 56px;height:56px;padding:0;border-radius:50%;font-size:22px;font-weight:700;background:var(--surface);}
   .vocab-round.again{color:var(--danger);border-color:color-mix(in srgb, var(--danger) 45%, transparent);}
@@ -348,7 +359,7 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-add-popup{position:fixed;z-index:2000;width:min(340px, calc(100vw - 16px));padding:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);}
   .vocab-add-field{min-height:36px;padding:8px 10px;border:1px solid var(--accent);border-radius:var(--radius-sm);box-shadow:0 0 0 3px var(--accent-soft);background:var(--surface);color:var(--text);font-size:14px;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere;cursor:text;outline:none;}
   .vocab-add-field:empty::before{content:attr(data-placeholder);color:var(--text-3);font-style:italic;}
-  @media (prefers-reduced-motion: reduce){.vocab-card-inner{transition:none;}}
+  @media (prefers-reduced-motion: reduce){.vocab-card-inner{transition:none;}.vocab-card.vocab-swap, #vocabTable.vocab-swap{animation:none;}}
   @media (max-width:600px){.vocab-card{height:260px;}.vocab-term{font-size:32px;}.vocab-meaning{font-size:24px;}}
   .sidebar .primary{width:100%;}
   #lessonSearch{width:100%;}
@@ -4943,9 +4954,10 @@ function vocabDragStart(e) {
 }
 
 function hideUnderSwipe(parts) {
-  const saved = parts.map(el => [ el, el.style.visibility ]);
-  parts.forEach(el => el.style.visibility = "hidden");
-  return () => saved.forEach(([el, v]) => el.style.visibility = v);
+  const prop = parts[0] && parts[0].tagName === "TR" ? "display" : "visibility";
+  const saved = parts.map(el => [ el, el.style[prop] ]);
+  parts.forEach(el => el.style[prop] = prop === "display" ? "none" : "hidden");
+  return () => saved.forEach(([el, v]) => el.style[prop] = v);
 }
 
 function showNextUnderSwipe(row) {
@@ -8427,7 +8439,7 @@ function vocabCardHtml(item) {
   const frontText = vocabFront === "a" ? item.meaning : item.term;
   const front = `<div class="vocab-face vocab-front"><div class="vocab-term">${escapeHtml(frontText)}</div></div>`;
   const back = `<div class="vocab-face vocab-back">${vocabBackInner(item)}</div>`;
-  return `<div class="vocab-card${vocabSession.flipped ? " flipped" : ""}" id="vocabCard">` + `<div class="vocab-card-inner">${front}${back}</div>` + '<span class="vocab-actions vocab-card-actions vocab-touch-only"><button class="vocab-act-edit" aria-label="Edit this word">&#9998;</button><button class="vocab-act-del" aria-label="Delete this word">&#10005;</button></span>' + "</div>";
+  return `<div class="vocab-card${vocabFront === "a" ? " answer-first" : ""}${vocabSession.flipped ? " flipped" : ""}" id="vocabCard">` + `<div class="vocab-card-inner">${front}${back}</div>` + '<span class="vocab-actions vocab-card-actions vocab-touch-only"><button class="vocab-act-edit" aria-label="Edit this word">&#9998;</button><button class="vocab-act-del" aria-label="Delete this word">&#10005;</button></span>' + "</div>";
 }
 
 function vocabControlsHtml() {
@@ -8937,6 +8949,7 @@ document.getElementById("vocabFrontBtn").onclick = () => {
     vocabSession.shown = false;
   }
   renderVocab();
+  replayAnimation(document.getElementById("vocabCard") || document.getElementById("vocabTable"), "vocab-swap");
 };
 
 function findNoteLine(container, matches) {
