@@ -23,7 +23,7 @@ Group and Listening share one queue: a card studied in one mode leaves the other
 
 **Sound.** The ▶ button (or ↑) plays the cards' video clips, at the speed beside it. Cards without a clip are read aloud in their turn, so clips and reading alternate; in a lesson without a video the button becomes 🔊 and reads the questions aloud. Showing a group, or flipping a word to its Question side in Vocabulary, plays it automatically; revealing an Answer never does.
 
-**Back to the card.** Revealing or flipping a card, and moving on to the next one, jumps straight back to the top of the study area if you had scrolled down, in Lessons and in Vocabulary.
+**Back to the card.** Revealing or flipping a card, and moving on to the next one, jumps in one step to the top of the study area, in Lessons and in Vocabulary.
 
 **Scheduling.** *Again* brings a card back in 10 minutes. Each *Good* counts towards a streak; until the fifth Good in a row the card returns the next day. After five it is **done**, and the gaps grow to 1, 3 and then 7 days.
 
