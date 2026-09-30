@@ -755,7 +755,8 @@ window.onYouTubeIframeAPIReady = function(){
   #vocabDictPanels{position:relative;}
   #dictPanels .dict-pending, #vocabDictPanels .dict-pending{position:absolute;top:0;left:0;right:0;height:0;overflow:hidden;visibility:hidden;pointer-events:none;}
   #dictPanels:not(.with-source) .dict-source{display:none;}
-  #dictPanels .dict-veiled{visibility:hidden;}
+  .dict-veiled{visibility:hidden;}
+  #vocabGroupStrokes{display:flex;flex-wrap:wrap;justify-content:center;gap:12px 28px;}
   #viewStudy.focus-study > .lesson-header, #viewStudy.focus-study > .save-status, #viewStudy.focus-study > .lesson-meta{display:none;}
   .swipe-ghost{position:fixed;z-index:1000;box-sizing:border-box;display:flex;justify-content:center;border:3px solid var(--border);border-radius:28px;background:var(--surface);box-shadow:var(--shadow-md);font-size:34px;font-weight:700;pointer-events:none;}
   .swipe-ghost.row{align-items:center;border-radius:16px;font-size:20px;}
@@ -1074,6 +1075,7 @@ window.onYouTubeIframeAPIReady = function(){
   </div>
   <div id="vocabBadges" class="vocab-badges"></div>
   <div id="vocabStage"></div>
+  <div id="vocabGroupStrokes" class="stroke-order-panel" hidden></div>
   <div id="vocabDictPanels"></div>
   <div id="vocabInlineAdd" hidden></div>
   <div id="vocabList" class="panel vocab-list" hidden></div>
@@ -8631,6 +8633,24 @@ function renderVocabDict() {
   if (shown) guardDictFocus();
   const stale = Array.from(host.children).filter(el => el.dataset.used !== now).sort((a, b) => a.dataset.used - b.dataset.used);
   stale.slice(0, Math.max(0, host.children.length - 10)).forEach(el => el.remove());
+  renderVocabGroupStrokes();
+}
+
+function renderVocabGroupStrokes() {
+  const host = document.getElementById("vocabGroupStrokes");
+  const group = currentView === "vocab" && vocabView === "group" && vocabSession ? currentVocabGroup() : [];
+  const words = group.filter(item => /[一-鿿]/.test(item.term));
+  const key = words.map(item => item.key).join("\u0001");
+  host.hidden = !words.length;
+  const qShown = vocabFront !== "a" || !!vocabSession && vocabSession.shown;
+  if (host.dataset.key !== key) {
+    host.dataset.key = key;
+    host.innerHTML = words.map(() => "<div></div>").join("");
+    words.forEach((item, i) => drawStrokeOrder(host.children[i], item.term, cjkScriptFor(item.term, item.card) === "ja", "vocabGroupStroke_" + i, !qShown));
+  } else if (qShown) {
+    Array.from(host.children).forEach(playStrokeOrder);
+  }
+  host.classList.toggle("dict-veiled", !qShown);
 }
 
 function renderVocab() {
