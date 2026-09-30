@@ -923,7 +923,7 @@ window.onYouTubeIframeAPIReady = function(){
       <input type="email" id="cloudEmail" name="username" placeholder="Email" autocomplete="username" aria-label="Email">
       <input type="password" id="cloudPassword" name="password" placeholder="Password (6+ characters)" autocomplete="current-password" aria-label="Password">
       <div class="cloud-row">
-        <button type="submit" id="cloudSignIn">Sign in</button>
+        <button type="submit">Sign in</button>
         <button type="button" id="cloudSignUp">Create account</button>
       </div>
     </form>
@@ -1067,8 +1067,8 @@ window.onYouTubeIframeAPIReady = function(){
         <option value="vi">🇻🇳 Vietnamese</option>
         <option value="multi" hidden>🌐</option>
       </select></label>
-      <button id="vocabGroupBtn" class="sep-before" data-view="group" aria-label="Group">☰</button>
-      <button id="vocabCardBtn" data-view="card" aria-label="Flashcards">📝</button>
+      <button class="sep-before" data-view="group" aria-label="Group">☰</button>
+      <button data-view="card" aria-label="Flashcards">📝</button>
       <button id="vocabFrontBtn" class="sep-before" aria-label="Switch which side shows first">⇄</button>
     </div>
     <div class="toolbar-right">
@@ -1643,7 +1643,7 @@ function formatTime(sec) {
 
 function extractYouTubeId(url) {
   if (!url) return null;
-  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|shorts\/|live\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|shorts\/|live\/|watch\?v=|&v=)([^#&?]*).*/;
   const match = url.match(regExp);
   return match && match[2].length === 11 ? match[2] : null;
 }
@@ -1946,8 +1946,7 @@ function startLoop(row) {
   const end = segmentEnd(row, 8);
   loopingRowData = {
     wasSequencePlaying: wasSequencePlaying,
-    row: row,
-    endTime: end
+    row: row
   };
   if (loopInterval) {
     clearInterval(loopInterval);
@@ -4739,10 +4738,7 @@ function insertWithCascadingBump(startIndex, id) {
   while (carry != null) {
     ensureGroupSlot(groupState, i);
     const grp = groupState.groups[i];
-    if (grp.includes(carry)) {
-      carry = null;
-      break;
-    }
+    if (grp.includes(carry)) break;
     grp.push(carry);
     carry = grp.length > 5 ? grp.shift() : null;
     i++;
@@ -5763,8 +5759,7 @@ function planImport(entries, forPreview) {
     if (kind === "update") updated++; else if (kind === "duplicate") skipped++;
     outcomes.push({
       kind: kind,
-      filled: filled,
-      matchCount: matches.length
+      filled: filled
     });
   });
   return {
@@ -10001,6 +9996,7 @@ document.getElementById("lessonName").addEventListener("keydown", e => {
 });
 
 function gradeKey(e) {
+  if (e.metaKey || e.ctrlKey || e.altKey) return null;
   if (e.key === "Enter") return e.shiftKey ? "again" : "good";
   if (e.code === "ArrowLeft") return "again";
   if (e.code === "ArrowRight") return "good";
@@ -10017,6 +10013,11 @@ function isTypingInField() {
 
 document.addEventListener("keydown", e => {
   if (e.isComposing || e.keyCode === 229) return;
+  const cloudDialog = document.getElementById("cloudDialog");
+  if (!cloudDialog.hidden) {
+    if (e.key === "Escape") cloudDialog.hidden = true;
+    return;
+  }
   if (currentView === "vocab" && !tabPaused) {
     handleVocabKey(e);
     return;
