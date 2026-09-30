@@ -1130,7 +1130,7 @@ window.onYouTubeIframeAPIReady = function(){
       <button id="groupBtn" title="Group mode — 5-card spaced-repetition review" aria-label="Group mode"><span id="groupBtnFlag">🌐</span></button>
       <button id="listenModeBtn" style="display:none;" title="Listening mode — one card at a time, press Space to reveal" aria-label="Listening mode">🎧</button>
       <button id="writeModeBtn" style="display:none;" title="Writing mode — Answer shown first so you can recall &amp; write the character, press Space to reveal the Question" aria-label="Writing mode">📝</button>
-      <button id="copyGroupBtn" style="display:none;" title="Copy all questions from current group (↓)">Copy</button>
+      <button id="copyGroupBtn" style="display:none;" title="Copy the questions (↓)">Copy</button>
     </div>
     <div class="toolbar-right">
       <button id="btnPlaySequence" title="Play sequence and pause (↑)">▶</button>
@@ -5191,23 +5191,17 @@ document.querySelectorAll(".col-toggle").forEach(headerLabel => {
   });
 });
 
-document.getElementById("copyGroupBtn").onclick = () => {
-  if (!groupState) return;
-  const currentGroupIds = groupState.groups[groupState.index];
-  const groupRows = rows.filter(r => currentGroupIds.includes(r.id));
-  const letters = [ "A", "B", "C", "D", "E" ];
-  const text = groupRows.map((r, idx) => {
-    const q = r.q || "";
-    if (groupRows.length === 1) return q;
-    const letter = letters[idx % letters.length];
-    return letter + ". " + q;
-  }).join("\n");
+function copyQuestions(questions) {
+  if (!questions.length) return;
+  const text = questions.length === 1 ? questions[0] : questions.map((q, i) => "ABCDE"[i % 5] + ". " + q).join("\n");
   navigator.clipboard.writeText(text).then(() => {
-    showToast("Copied " + groupRows.length + " question(s)");
+    showToast("Copied " + questions.length + " question(s)");
   }).catch(() => {
     showToast("Failed to copy — please try again");
   });
-};
+}
+
+document.getElementById("copyGroupBtn").onclick = () => copyQuestions(currentGroupTexts("q"));
 
 function dictUrlFor(text) {
   const script = detectScript(text);
@@ -8446,7 +8440,7 @@ function vocabCardHtml(item) {
 }
 
 function vocabControlsHtml() {
-  return '<div class="vocab-controls">' + `<button class="tb-icon" id="vocabUndo" title="Undo (⌘Z)" aria-label="Undo"${undoStack.length ? "" : " disabled"}>${document.getElementById("tbUndo").innerHTML}</button>` + `<button class="tb-icon" id="vocabRedo" title="Redo (⇧⌘Z)" aria-label="Redo"${redoStack.length ? "" : " disabled"}>${document.getElementById("tbRedo").innerHTML}</button>` + '<button class="vocab-round flip vocab-show" id="vocabShow" title="Flip the card (Space)" aria-label="Flip the card"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/></svg></button>' + '<button class="vocab-round again" id="vocabAgain" title="Again — still learning (← or Shift+Enter)" aria-label="Again">✕</button>' + '<button class="vocab-round good" id="vocabGood" title="Good — I know it (→ or Enter)" aria-label="Good">✓</button>' + "</div>";
+  return '<div class="vocab-controls">' + `<button class="tb-icon" id="vocabUndo" title="Undo (⌘Z)" aria-label="Undo"${undoStack.length ? "" : " disabled"}>${document.getElementById("tbUndo").innerHTML}</button>` + `<button class="tb-icon" id="vocabRedo" title="Redo (⇧⌘Z)" aria-label="Redo"${redoStack.length ? "" : " disabled"}>${document.getElementById("tbRedo").innerHTML}</button>` + '<button class="vocab-round flip vocab-show" id="vocabShow" title="Flip the card (Space)" aria-label="Flip the card"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/></svg></button>' + '<button class="vocab-round again" id="vocabAgain" title="Again — still learning (←)" aria-label="Again">✕</button>' + '<button class="vocab-round good" id="vocabGood" title="Good — I know it (→)" aria-label="Good">✓</button>' + "</div>";
 }
 
 function vocabTableHtml(group) {
@@ -9435,11 +9429,9 @@ function handleVocabKey(e) {
   }
   if (vocabView === "full") return;
   if (vocabView === "group") {
-    const again = e.code === "ArrowLeft" || e.key === "Enter" && e.shiftKey;
-    const good = e.code === "ArrowRight" || e.key === "Enter" && !e.shiftKey;
     const hovered = vocabHoveredKey && currentVocabGroup().some(i => i.key === vocabHoveredKey) ? vocabHoveredKey : null;
     const target = hovered || vocabSelectedKey;
-    if (e.code === "Space") toggleVocabGroupReveal(); else if (e.code === "ArrowDown" && hovered) openVocabEditor(hovered); else if (e.code === "ArrowUp") toggleVocabGroupSound(target); else if (again || good) gradeVocabGroup(again, target); else return;
+    if (e.code === "Space") toggleVocabGroupReveal(); else if (e.code === "ArrowDown") copyQuestions(currentVocabGroup().map(i => i.term)); else if (e.code === "ArrowUp") toggleVocabGroupSound(target); else if (e.code === "ArrowLeft" || e.code === "ArrowRight") gradeVocabGroup(e.code === "ArrowLeft", target); else return;
     e.preventDefault();
     if (document.activeElement && document.activeElement.tagName === "BUTTON") document.activeElement.blur();
     return;
@@ -9449,15 +9441,13 @@ function handleVocabKey(e) {
     if (!item) return;
     e.preventDefault();
     if (document.activeElement && document.activeElement.tagName === "BUTTON") document.activeElement.blur();
-    if (e.code === "ArrowUp") toggleVocabSound(item); else if (e.code === "ArrowDown") openVocabEditor(item.key); else flipVocab();
+    if (e.code === "ArrowUp") toggleVocabSound(item); else if (e.code === "ArrowDown") copyQuestions([ item.term ]); else flipVocab();
     return;
   }
-  const again = e.code === "ArrowLeft" || e.key === "Enter" && e.shiftKey;
-  const good = e.code === "ArrowRight" || e.key === "Enter" && !e.shiftKey;
-  if (!again && !good || !currentVocabItem()) return;
+  if (e.code !== "ArrowLeft" && e.code !== "ArrowRight" || !currentVocabItem()) return;
   e.preventDefault();
   if (document.activeElement && document.activeElement.tagName === "BUTTON") document.activeElement.blur();
-  flyVocab(again);
+  flyVocab(e.code === "ArrowLeft");
 }
 
 function setAppMode(mode) {
@@ -9799,11 +9789,11 @@ document.addEventListener("keydown", e => {
     undo();
     return;
   }
-  if (e.key === "Enter") {
+  if (e.code === "ArrowLeft" || e.code === "ArrowRight") {
     if (e.repeat) return;
     if (!groupState) return;
     e.preventDefault();
-    gradeAction(e.shiftKey);
+    gradeAction(e.code === "ArrowLeft");
     return;
   }
   if (e.code === "Space" || e.key === " ") {
@@ -9832,9 +9822,9 @@ document.addEventListener("keydown", e => {
   }
   if (e.code === "ArrowDown") {
     if (e.repeat) return;
-    if (!groupState || groupViewStyle !== "table") return;
+    if (!groupState) return;
     e.preventDefault();
-    document.getElementById("copyGroupBtn").click();
+    copyQuestions(currentGroupTexts("q"));
     return;
   }
   if (e.code === "Backspace" || e.code === "Delete") {

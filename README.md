@@ -32,13 +32,16 @@ Group, Listen and Write share one queue: a card studied in one mode leaves the o
 
 | Key | Action |
 | --- | --- |
-| Space | Reveal |
-| Enter | Good |
-| Shift + Enter | Again |
+| ← | Again |
+| → | Good |
+| ↑ | Play or pause the sound |
+| ↓ | Copy the questions |
+| Space | Reveal / flip |
 | ⌘/Ctrl + Z | Undo, including grades (add Shift to redo) |
-| ← / → | Again / Good in Vocabulary |
 | Delete | Delete the card |
 | Esc | Close a popup |
+
+The same keys work in every study mode, in Lessons and in Vocabulary. In a group, pointing at a row with the mouse makes ← and → grade just that row.
 
 On a phone, swipe a card right for Good and left for Again.
 
