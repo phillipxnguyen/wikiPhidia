@@ -3659,6 +3659,21 @@ document.querySelector(".sidebar").addEventListener("click", e => {
   if (e.target.closest(".lesson-item, #btnNewLesson, .sidebar-footer button:not(#btnTheme)")) document.querySelector(".shell").classList.remove("drawer-open");
 });
 
+const dictPanelsHost = document.getElementById("dictPanels");
+
+dictPanelsHost.addEventListener("mouseover", e => {
+  const panel = e.target.closest(".stroke-order-panel");
+  hoveredRowId = panel && groupState && groupViewStyle === "table" ? Number(panel.dataset.rowId) : null;
+});
+
+dictPanelsHost.addEventListener("mouseleave", () => {
+  hoveredRowId = null;
+});
+
+function rowDictPanel(id) {
+  return document.querySelector(`#dictPanels > [data-row-id="${id}"]:not(.dict-pending)`);
+}
+
 [ "tbody", "singleCardBody" ].forEach(id => {
   const el = document.getElementById(id);
   el.addEventListener("mouseover", handleCardAreaMouseover);
@@ -4855,7 +4870,9 @@ function gradeCard(row, isAgain) {
   if (hoveredRowId === row.id) hoveredRowId = null;
   const next = !ids || ids.length === 1;
   if (!next) holdPage();
-  swipe(next ? studyParts() : [ document.querySelector(`#tbody tr[data-id="${row.id}"]`) ], isAgain ? -1 : 1, () => {
+  const panel = rowDictPanel(row.id);
+  const fromPanel = !!panel && panel.matches(":hover");
+  swipe(next ? studyParts() : [ fromPanel ? panel : document.querySelector(`#tbody tr[data-id="${row.id}"]`) ], isAgain ? -1 : 1, () => {
     if (ids) {
       ids.splice(ids.indexOf(row.id), 1);
       if (ids.length === 0) advanceToNextGroup(); else updateGroupUI();
@@ -4955,11 +4972,12 @@ document.addEventListener("pointerdown", e => {
   if (!groupState || currentView !== "study" || activeEdit) return;
   if (!e.target.closest("#viewStudy") || e.target.closest("button, input, select, textarea, [contenteditable], .loop-time")) return;
   if (document.getElementById("sessionCompletePanel").style.display === "block") return;
-  const row = groupViewStyle === "table" ? e.target.closest("#tbody tr[data-id]") : null;
+  const panel = groupViewStyle === "table" ? e.target.closest("#dictPanels > .stroke-order-panel") : null;
+  const row = groupViewStyle === "table" ? panel ? document.querySelector(`#tbody tr[data-id="${panel.dataset.rowId}"]`) : e.target.closest("#tbody tr[data-id]") : null;
   drag = {
     id: e.pointerId,
     row: row,
-    parts: row ? [ row ] : studyParts(),
+    parts: panel && row ? [ panel ] : row ? [ row ] : studyParts(),
     x: e.clientX,
     y: e.clientY,
     dx: 0,
@@ -5046,8 +5064,13 @@ function showNextUnderSwipe(row) {
   };
   const ids = groupState.groups[groupState.index] || [];
   if (row && ids.length > 1) {
+    const panel = rowDictPanel(row.dataset.id);
     row.style.display = "none";
-    return () => row.style.display = "";
+    if (panel) panel.style.display = "none";
+    return () => {
+      row.style.display = "";
+      if (panel) panel.style.display = "";
+    };
   }
   hide(document.getElementById("dictPanels"));
   const entry = ENTRY_HIDDEN[modeKey()];
@@ -8641,7 +8664,7 @@ function renderVocabDict() {
 function renderVocabGroupStrokes() {
   const host = document.getElementById("vocabGroupStrokes");
   const group = currentView === "vocab" && vocabView === "group" && vocabSession ? currentVocabGroup() : [];
-  const words = group.filter(item => /[一-鿿]/.test(item.term));
+  const words = typeof HanziWriter === "undefined" ? [] : group.filter(item => /[一-鿿]/.test(item.term));
   const key = words.map(item => item.key).join("\u0001");
   host.hidden = !words.length;
   const qShown = vocabFront !== "a" || !!vocabSession && vocabSession.shown;
@@ -9653,7 +9676,7 @@ function handleVocabKey(e) {
     const hovered = vocabHoveredKey && currentVocabGroup().some(i => i.key === vocabHoveredKey) ? vocabHoveredKey : null;
     const target = hovered || vocabSelectedKey;
     const row = /^Digit[1-5]$/.test(e.code) ? currentVocabGroup()[Number(e.code.slice(-1)) - 1] : null;
-    if (row) toggleVocabRowSound(row.key); else if (e.code === "Space") toggleVocabGroupReveal(); else if (e.code === "ArrowDown") copyQuestions(currentVocabGroup().map(i => i.term)); else if (e.code === "ArrowUp") toggleVocabGroupSound(target); else if (e.code === "ArrowLeft" || e.code === "ArrowRight") gradeVocabGroup(e.code === "ArrowLeft", target); else return;
+    if (row) toggleVocabRowSound(row.key); else if (e.code === "Space") toggleVocabGroupReveal(); else if (e.code === "ArrowDown") copyQuestions(currentVocabGroup().map(i => i.term)); else if (e.code === "ArrowUp") toggleVocabGroupSound(target); else if (gradeKey(e)) gradeVocabGroup(gradeKey(e) === "again", target); else return;
     e.preventDefault();
     if (document.activeElement && document.activeElement.tagName === "BUTTON") document.activeElement.blur();
     return;
@@ -9666,10 +9689,10 @@ function handleVocabKey(e) {
     if (e.code === "ArrowUp") toggleVocabSound(item); else if (e.code === "ArrowDown") openVocabEditor(item.key); else flipVocab();
     return;
   }
-  if (e.code !== "ArrowLeft" && e.code !== "ArrowRight" || !currentVocabItem()) return;
+  if (!gradeKey(e) || !currentVocabItem()) return;
   e.preventDefault();
   if (document.activeElement && document.activeElement.tagName === "BUTTON") document.activeElement.blur();
-  flyVocab(e.code === "ArrowLeft");
+  flyVocab(gradeKey(e) === "again");
 }
 
 function setAppMode(mode) {
@@ -9972,6 +9995,13 @@ document.getElementById("lessonName").addEventListener("keydown", e => {
   e.target.blur();
 });
 
+function gradeKey(e) {
+  if (e.key === "Enter") return e.shiftKey ? "again" : "good";
+  if (e.code === "ArrowLeft") return "again";
+  if (e.code === "ArrowRight") return "good";
+  return null;
+}
+
 function isTypingInField() {
   const el = document.activeElement;
   if (!el) return false;
@@ -10011,11 +10041,10 @@ document.addEventListener("keydown", e => {
     undo();
     return;
   }
-  if (e.code === "ArrowLeft" || e.code === "ArrowRight") {
-    if (e.repeat) return;
-    if (!groupState) return;
+  if (gradeKey(e)) {
+    if (e.repeat || !groupState) return;
     e.preventDefault();
-    gradeAction(e.code === "ArrowLeft");
+    gradeAction(gradeKey(e) === "again");
     return;
   }
   if (e.code === "Space" || e.key === " ") {

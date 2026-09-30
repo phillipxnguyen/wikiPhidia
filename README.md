@@ -31,8 +31,8 @@ Group and Listening share one queue: a card studied in one mode leaves the other
 
 | Key | Action |
 | --- | --- |
-| ← | Again |
-| → | Good |
+| ← or Shift + Return | Again |
+| → or Return | Good |
 | ↑ | Play or pause the sound |
 | ↓ | In a group, copy the questions; one card at a time (Flashcards, Listening), edit the card |
 | 1 – 5 | In a group, play just that row over and over: its video clip, or read aloud when it has none (press again to stop) |
@@ -41,9 +41,9 @@ Group and Listening share one queue: a card studied in one mode leaves the other
 | Delete | Delete the card |
 | Esc | Close a popup |
 
-The same keys work in every study mode, in Lessons and in Vocabulary. In a group, pointing at a row with the mouse makes ← and → grade just that row.
+The same keys work in every study mode, in Lessons and in Vocabulary. In a Lesson group, pointing at a row, or at the dictionary panel under the table that belongs to it, makes the grading keys grade just that card.
 
-On a phone, swipe a card right for Good and left for Again.
+On a phone, swipe a card right for Good and left for Again. In a Lesson group, swiping one row or its dictionary panel grades just that card; swiping anywhere else grades the whole group.
 
 ## Vocabulary
 
