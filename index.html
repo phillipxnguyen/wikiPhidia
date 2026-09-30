@@ -4509,7 +4509,6 @@ function setReviewMode(style) {
     render();
     return;
   }
-  const wasInSession = !!groupState;
   if (!groupState) {
     if (rows.length === 0) return;
     const resuming = isResumableState(savedGroupState);
@@ -4528,9 +4527,6 @@ function setReviewMode(style) {
   applyGroupEntryHiddenState(groupState.groups[groupState.index]);
   updateGroupUI();
   render();
-  if (!wasInSession && style === "table") {
-    startTts("a", false);
-  }
 }
 
 function totalLapses(card) {
@@ -4696,9 +4692,6 @@ function advanceToNextGroup() {
   applyGroupEntryHiddenState(groupState.groups[groupState.index]);
   updateGroupUI();
   render();
-  if (groupViewStyle === "table") {
-    startTts("a", false);
-  }
 }
 
 setInterval(() => {
@@ -5061,8 +5054,6 @@ let ttsQueue = [];
 
 let ttsIndex = 0;
 
-let ttsLoop = true;
-
 function currentGroupTexts(field) {
   if (!groupState) return [];
   const ids = isCardMode() ? singleCardQueue().slice(0, 1).map(r => r.id) : groupState.groups[groupState.index];
@@ -5112,10 +5103,6 @@ function buildTtsQueue() {
 function speakNext() {
   if (!ttsPlaying) return;
   if (ttsIndex >= ttsQueue.length) {
-    if (!ttsLoop) {
-      stopTts();
-      return;
-    }
     buildTtsQueue();
     if (ttsQueue.length === 0) {
       stopTts();
@@ -5150,7 +5137,7 @@ function cancelSpeechOnly() {
   updateSequenceBtnUI();
 }
 
-function startTts(field, loop = true) {
+function startTts(field) {
   if (!groupState) return;
   stopTts();
   if (loopingRowId !== null) {
@@ -5160,7 +5147,6 @@ function startTts(field, loop = true) {
   pauseVideoProgrammatically();
   ttsPlaying = true;
   ttsField = field;
-  ttsLoop = loop;
   updateSequenceBtnUI();
   buildTtsQueue();
   if (ttsQueue.length === 0) {
@@ -8556,7 +8542,7 @@ function renderVocab() {
     return;
   }
   if (group.length) {
-    vocabShownIsVideo = vocabSession.shown && group.some(i => !!vocabVideoIdFor(i.card));
+    vocabShownIsVideo = group.some(i => !!vocabVideoIdFor(i.card));
     stage.innerHTML = vocabTableHtml(group) + vocabControlsHtml();
     wireVocabControls();
     wireVocabEditor(items);
@@ -9110,7 +9096,7 @@ function deleteVocabEntry(item, part) {
 function syncVocabSound() {
   const btn = document.getElementById("vocabSpeak");
   const speed = document.getElementById("vocabSpeed");
-  const shown = !!document.getElementById("vocabCard") || !!document.getElementById("vocabTable") && !!vocabSession && vocabSession.shown;
+  const shown = !!document.getElementById("vocabCard") || !!document.getElementById("vocabTable");
   document.querySelectorAll("#vocabTable tr[data-key]").forEach(tr => tr.classList.toggle("row-playing", !!vocabSeq && tr.dataset.key === vocabSeq.key));
   btn.hidden = !shown;
   speed.hidden = !shown || !vocabShownIsVideo;
@@ -9289,7 +9275,7 @@ function flipVocab() {
   vocabSession.flipped = !vocabSession.flipped;
   const card = document.getElementById("vocabCard");
   if (card) card.classList.toggle("flipped", vocabSession.flipped);
-  if (vocabSession.flipped) playVocabSound(item); else stopVocabSound();
+  if (!vocabSession.flipped) stopVocabSound(); else if (vocabFront === "a") playVocabSound(item);
 }
 
 function flyVocab(isAgain) {
@@ -9354,6 +9340,7 @@ function toggleVocabGroupReveal() {
   vocabSession.shown = !vocabSession.shown;
   if (!vocabSession.shown) stopVocabSound();
   renderVocab();
+  if (vocabSession.shown && vocabFront === "a" && !vocabSoundOn()) toggleVocabGroupSound(vocabSelectedKey);
 }
 
 function selectVocabRow(key) {
@@ -9424,7 +9411,7 @@ function handleVocabKey(e) {
     const good = e.code === "ArrowRight" || e.key === "Enter" && !e.shiftKey;
     const hovered = vocabHoveredKey && currentVocabGroup().some(i => i.key === vocabHoveredKey) ? vocabHoveredKey : null;
     const target = hovered || vocabSelectedKey;
-    if (e.code === "Space") toggleVocabGroupReveal(); else if (e.code === "ArrowDown" && hovered) openVocabEditor(hovered); else if (e.code === "ArrowUp" && vocabSession.shown) toggleVocabGroupSound(target); else if (again || good) gradeVocabGroup(again, target); else return;
+    if (e.code === "Space") toggleVocabGroupReveal(); else if (e.code === "ArrowDown" && hovered) openVocabEditor(hovered); else if (e.code === "ArrowUp") toggleVocabGroupSound(target); else if (again || good) gradeVocabGroup(again, target); else return;
     e.preventDefault();
     if (document.activeElement && document.activeElement.tagName === "BUTTON") document.activeElement.blur();
     return;

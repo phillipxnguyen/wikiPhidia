@@ -22,7 +22,7 @@ The whole app is one file, `index.html`. There is no build step and nothing to i
 
 Group, Listen and Write share one queue: a card studied in one mode leaves the others until it is due again.
 
-**Sound.** The ▶ button (or ↑) plays the cards' video clips, at the speed beside it. In a lesson without a video it becomes 🔊 and reads the questions aloud instead.
+**Sound.** The ▶ button (or ↑) plays the cards' video clips, at the speed beside it. In a lesson without a video it becomes 🔊 and reads the questions aloud instead. Showing a group, or flipping a word to its Question side in Vocabulary, plays it automatically; revealing an Answer never does.
 
 **Scheduling.** *Again* brings a card back in 10 minutes. Each *Good* counts towards a streak; until the fifth Good in a row the card returns the next day. After five it is **done**, and the gaps grow to 1, 3 and then 7 days.
 
@@ -49,7 +49,7 @@ Switch from **Lessons** to **Vocabulary** with the 字 button at the top. Words 
 | Mode | What it does |
 | --- | --- |
 | ☰ All words | The whole word list, for browsing and editing |
-| 🗂️ Group | Due words five at a time, like Group mode in Lessons: click a word to edit it, tap a row (phone) or point at it (computer) to grade just that word, and ▶ plays the group once it is shown |
+| 🗂️ Group | Due words five at a time, like Group mode in Lessons: click a word to edit it, tap a row (phone) or point at it (computer) to grade just that word, and ▶ plays the group's words in turn |
 | 🗒️ Flashcards | One word at a time; tap the card to flip it |
 
 Group and Flashcards share one queue, and a word marked Again comes back after 10 minutes. The 🌐 button picks the language; ⇄ picks which side is shown first and hides the other side again.
