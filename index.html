@@ -755,8 +755,8 @@ window.onYouTubeIframeAPIReady = function(){
   .stroke-order-box{position:relative;width:72px;}
   .stroke-target{width:72px;height:72px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);}
   .stroke-fallback{display:flex;align-items:center;justify-content:center;font-size:34px;color:var(--text);}
-  #dictPanels, #vocabDictPanels{display:flex;flex-direction:column;position:relative;}
-  #dictPanels .dict-pending, #vocabDictPanels .dict-pending{position:absolute;top:0;left:0;right:0;height:0;overflow:hidden;visibility:hidden;pointer-events:none;}
+  #dictPanels{display:flex;flex-direction:column;position:relative;}
+  #dictPanels .dict-pending{position:absolute;top:0;left:0;right:0;height:0;overflow:hidden;visibility:hidden;pointer-events:none;}
   #dictPanels:not(.with-source) .dict-source{display:none;}
   #viewStudy.focus-study > .lesson-header, #viewStudy.focus-study > .save-status, #viewStudy.focus-study > .lesson-meta{display:none;}
   .swipe-ghost{position:fixed;z-index:1000;box-sizing:border-box;display:flex;justify-content:center;border:3px solid var(--border);border-radius:28px;background:var(--surface);box-shadow:var(--shadow-md);font-size:34px;font-weight:700;pointer-events:none;}
@@ -1080,7 +1080,6 @@ window.onYouTubeIframeAPIReady = function(){
   </div>
   <div id="vocabBadges" class="vocab-badges"></div>
   <div id="vocabStage"></div>
-  <div id="vocabDictPanels"></div>
   <div id="vocabInlineAdd" hidden></div>
   <div id="vocabList" class="panel vocab-list" hidden></div>
 </section>
@@ -8549,48 +8548,8 @@ function vocabEditorHtml(item) {
 }
 
 function renderVocab() {
-  hideTooltip();
-  renderVocabStage();
-  renderVocabDictPanels();
-}
-
-function vocabDictWords() {
-  if (currentView !== "vocab" || !vocabSession) return [ [], [] ];
-  if (vocabView === "group") {
-    const group = currentVocabGroup();
-    return [ group, vocabSession.shown ? group : [] ];
-  }
-  return [ [], [] ];
-}
-
-function vocabDictUrl(items) {
-  if (!items.length) return null;
-  const terms = items.map(i => i.term);
-  return dictUrlFor(cjkScriptFor(terms[0], items[0].card) === "zh" ? terms.join(" ") : letteredList(terms), items[0].card);
-}
-
-function renderVocabDictPanels() {
-  const host = document.getElementById("vocabDictPanels");
-  const [words, shown] = vocabDictWords();
-  const url = vocabDictUrl(words);
-  let panel = url ? Array.from(host.children).find(c => c.dataset.url === url) : null;
-  if (url && !panel) {
-    panel = document.createElement("div");
-    panel.className = "stroke-order-panel";
-    panel.dataset.url = url;
-    panel.innerHTML = '<iframe class="dict-frame"></iframe>';
-    panel.querySelector("iframe").src = url;
-    host.appendChild(panel);
-  }
-  Array.from(host.children).forEach(c => {
-    if (c !== panel) c.remove();
-  });
-  if (panel) panel.classList.toggle("dict-pending", !shown.length);
-  if (panel && shown.length) guardDictFocus();
-}
-
-function renderVocabStage() {
   if (currentView !== "vocab") return;
+  hideTooltip();
   const items = lessonVocabItems(vocabSource());
   const title = document.getElementById("vocabTitle");
   title.readOnly = currentLessonId === VOCAB_ALL_ID;
