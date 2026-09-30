@@ -1067,9 +1067,8 @@ window.onYouTubeIframeAPIReady = function(){
         <option value="vi">🇻🇳 Vietnamese</option>
         <option value="multi" hidden>🌐</option>
       </select></label>
-      <button id="vocabFullBtn" class="sep-before" data-view="full" title="All words — the whole list, for browsing and editing" aria-label="All words">☰</button>
+      <button id="vocabCardBtn" class="sep-before" data-view="card" title="Flashcards — one word at a time, with the list of words below" aria-label="Flashcards">🗒️</button>
       <button id="vocabGroupBtn" data-view="group" title="Group — due words five at a time" aria-label="Group">🗂️</button>
-      <button id="vocabCardBtn" data-view="card" title="Flashcards — one word at a time" aria-label="Flashcards">🗒️</button>
       <button id="vocabFrontBtn" class="sep-before" aria-label="Switch which side shows first">⇄</button>
     </div>
     <div class="toolbar-right">
@@ -1120,10 +1119,10 @@ window.onYouTubeIframeAPIReady = function(){
 
   <div class="toolbar">
     <div class="segmented" role="group" aria-label="Study mode">
-      <button id="fullModeBtn" title="Full mode — show every card, no spaced repetition" aria-label="All cards">☰</button>
-      <button id="groupBtn" title="Group mode — 5-card spaced-repetition review" aria-label="Group mode"><span id="groupBtnFlag">🌐</span></button>
-      <button id="listenModeBtn" style="display:none;" title="Listening mode — one card at a time, press Space to reveal" aria-label="Listening mode">🎧</button>
-      <button id="writeModeBtn" style="display:none;" title="Writing mode — Answer shown first so you can recall &amp; write the character, press Space to reveal the Question" aria-label="Writing mode">📝</button>
+      <button id="fullModeBtn" title="Full — every card in a list, no spaced repetition" aria-label="Full">☰</button>
+      <button id="groupBtn" title="Group — due cards five at a time" aria-label="Group"><span id="groupBtnFlag">🌐</span></button>
+      <button id="listenModeBtn" style="display:none;" title="Listening — one card at a time, playing its clip; Space reveals it" aria-label="Listening">🎧</button>
+      <button id="writeModeBtn" style="display:none;" title="Writing — the Answer comes first so you recall and write the character; Space reveals the Question" aria-label="Writing">📝</button>
     </div>
     <div class="toolbar-right">
       <button id="btnPlaySequence" title="Play sequence and pause (↑)">▶</button>
@@ -2470,6 +2469,47 @@ function render() {
 
 let nextOrderReady = false;
 
+let dictGuard = {
+  until: 0,
+  y: 0
+};
+
+function guardDictFocus() {
+  dictGuard = {
+    until: Date.now() + 2500,
+    y: window.scrollY
+  };
+}
+
+function dictFrameFocused() {
+  const el = document.activeElement;
+  return !!el && el.tagName === "IFRAME" && !el.closest("#mediaContainer");
+}
+
+document.addEventListener("load", e => {
+  if (e.target.tagName === "IFRAME" && !e.target.closest("#mediaContainer")) guardDictFocus();
+}, true);
+
+window.addEventListener("blur", () => setTimeout(() => {
+  if (Date.now() > dictGuard.until || !dictFrameFocused()) return;
+  document.activeElement.blur();
+  window.focus();
+  window.scrollTo({
+    top: dictGuard.y,
+    behavior: "instant"
+  });
+}, 0));
+
+window.addEventListener("scroll", () => {
+  if (Date.now() > dictGuard.until) return;
+  if (dictFrameFocused()) window.scrollTo({
+    top: dictGuard.y,
+    behavior: "instant"
+  }); else dictGuard.y = window.scrollY;
+}, {
+  passive: true
+});
+
 function renderDictPanels() {
   const host = document.getElementById("dictPanels");
   const inTable = document.getElementById("cardTable").style.display !== "none";
@@ -2533,6 +2573,7 @@ function renderDictPanels() {
     visible.add(el);
   });
   Array.from(host.children).forEach(el => el.classList.toggle("dict-pending", !visible.has(el)));
+  if (visible.size) guardDictFocus();
   const stale = Array.from(host.children).filter(el => Number(el.dataset.used) !== now).sort((a, b) => a.dataset.used - b.dataset.used);
   stale.slice(0, Math.max(0, host.children.length - 40)).forEach(el => el.remove());
 }
@@ -4941,7 +4982,7 @@ window.addEventListener("pointermove", e => {
 });
 
 function vocabDragStart(e) {
-  if (vocabEditingKey || vocabView === "full" || !e.target.closest("#vocabStage") || e.target.closest("button, input, select, textarea, .vocab-actions, .edit-row, .vocab-play")) return null;
+  if (vocabEditingKey || !e.target.closest("#vocabStage") || e.target.closest("button, input, select, textarea, .vocab-actions, .edit-row, .vocab-play")) return null;
   const card = document.getElementById("vocabCard");
   const table = document.getElementById("vocabTable");
   if (!card && !table) return null;
@@ -8080,7 +8121,7 @@ let appMode = readLocal(APP_MODE_KEY) === "vocab" ? "vocab" : "cards";
 
 let vocabFront = readLocal(VOCAB_FRONT_KEY) === "a" ? "a" : "q";
 
-let vocabView = [ "full", "group" ].includes(readLocal(VOCAB_VIEW_KEY)) ? readLocal(VOCAB_VIEW_KEY) : "card";
+let vocabView = readLocal(VOCAB_VIEW_KEY) === "group" ? "group" : "card";
 
 let vocabSession = null;
 
@@ -8567,6 +8608,7 @@ function renderVocabDictPanels() {
     if (c !== panel) c.remove();
   });
   if (panel) panel.classList.toggle("dict-pending", !shown.length);
+  if (panel && shown.length) guardDictFocus();
 }
 
 function renderVocabStage() {
@@ -8579,7 +8621,6 @@ function renderVocabStage() {
   const frontBtn = document.getElementById("vocabFrontBtn");
   document.getElementById("vocabToolbar").hidden = !items.length;
   document.querySelectorAll("#vocabToolbar [data-view]").forEach(btn => btn.classList.toggle("active", btn.dataset.view === vocabView));
-  frontBtn.hidden = vocabView === "full";
   syncVocabLang();
   frontBtn.classList.toggle("active", vocabFront === "a");
   frontBtn.title = vocabFront === "a" ? "Answer first — click to show the Question first" : "Question first — click to show the Answer first";
@@ -8593,7 +8634,7 @@ function renderVocabStage() {
   document.getElementById("vocabResetBtn").hidden = !canAdd || !items.length;
   document.getElementById("vocabDeleteBtn").hidden = !canAdd;
   const emptyLesson = canAdd && !items.length;
-  list.hidden = items.length ? vocabView !== "full" : vocabEditingKey !== NEW_WORD_KEY;
+  list.hidden = items.length ? vocabView !== "card" : vocabEditingKey !== NEW_WORD_KEY;
   placeVocabAddForm(emptyLesson ? "lesson" : "page");
   if (vocabListLessonId !== currentLessonId) {
     vocabListLessonId = currentLessonId;
@@ -8630,13 +8671,7 @@ function renderVocabStage() {
     return;
   }
   if (!vocabSession || vocabSession.lessonId !== currentLessonId) startVocabSession();
-  if (vocabView === "full") {
-    badges.innerHTML = "";
-    stage.innerHTML = "";
-    wireVocabEditor(items);
-    syncVocabSound();
-    return;
-  }
+
   const group = vocabView === "group" ? currentVocabGroup() : [];
   const item = vocabView === "group" ? null : currentVocabItem();
   const studying = item ? [ item ] : group;
@@ -9516,7 +9551,7 @@ function setVocabView(view) {
 document.querySelectorAll("#vocabToolbar [data-view]").forEach(btn => btn.onclick = () => setVocabView(btn.dataset.view));
 
 setInterval(() => {
-  if (currentView !== "vocab" || vocabView === "full" || tabPaused || vocabEditingKey || !vocabSession || currentVocabItem()) return;
+  if (currentView !== "vocab" || tabPaused || vocabEditingKey || !vocabSession || currentVocabItem()) return;
   const now = Date.now();
   if (!lessonVocabItems(vocabSource()).some(i => vocabStateOf(i).due <= now)) return;
   startVocabSession();
@@ -9555,7 +9590,6 @@ function handleVocabKey(e) {
     deleteVocabEntry(target, hovered ? document.querySelector(`#vocabList .vocab-list-row[data-key="${CSS.escape(hovered.key)}"], #vocabTable tr[data-key="${CSS.escape(hovered.key)}"]`) : null);
     return;
   }
-  if (vocabView === "full") return;
   if (vocabView === "group") {
     const hovered = vocabHoveredKey && currentVocabGroup().some(i => i.key === vocabHoveredKey) ? vocabHoveredKey : null;
     const target = hovered || vocabSelectedKey;

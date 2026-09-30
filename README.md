@@ -15,12 +15,12 @@ The whole app is one file, `index.html`. There is no build step and nothing to i
 
 | Mode | What it does |
 | --- | --- |
-| ☰ All cards | The whole lesson as a list, for browsing and editing. No spaced repetition. |
+| ☰ Full | The whole lesson as a list, for browsing and editing. No spaced repetition. |
 | Group | Due cards five at a time. |
-| Listen | One card at a time, playing its video clip first. Shown when the lesson has video cards. |
-| Write | Answer first, so you recall and write the character, with stroke-order animation. Shown for Chinese and Japanese cards. |
+| Listening | One card at a time, playing its video clip first. Shown when the lesson has video cards. |
+| Writing | Answer first, so you recall and write the character, with stroke-order animation. Shown for Chinese and Japanese cards. |
 
-Group, Listen and Write share one queue: a card studied in one mode leaves the others until it is due again.
+Group, Listening and Writing share one queue: a card studied in one mode leaves the others until it is due again.
 
 **Sound.** The ▶ button (or ↑) plays the cards' video clips, at the speed beside it. Cards without a clip are read aloud in their turn, so clips and reading alternate; in a lesson without a video the button becomes 🔊 and reads the questions aloud. Showing a group, or flipping a word to its Question side in Vocabulary, plays it automatically; revealing an Answer never does.
 
@@ -35,7 +35,7 @@ Group, Listen and Write share one queue: a card studied in one mode leaves the o
 | ← | Again |
 | → | Good |
 | ↑ | Play or pause the sound |
-| ↓ | In a group, copy the questions; one card at a time (Flashcards, Listen, Write), edit the card |
+| ↓ | In a group, copy the questions; one card at a time (Flashcards, Listening, Writing), edit the card |
 | 1 – 5 | In a group, play just that row over and over: its video clip, or read aloud when it has none (press again to stop) |
 | Space | Reveal / flip |
 | ⌘/Ctrl + Z | Undo, including grades (add Shift to redo) |
@@ -52,9 +52,8 @@ Switch from **Lessons** to **Vocabulary** with the 字 button at the top. Words 
 
 | Mode | What it does |
 | --- | --- |
-| ☰ All words | The whole word list, for browsing and editing |
+| 🗒️ Flashcards | One word at a time; tap the card to flip it. The whole word list, for browsing and editing, sits below |
 | 🗂️ Group | Due words five at a time, like Group mode in Lessons: click a word to edit it, tap a row (phone) or point at it (computer) to grade just that word, ▶ plays the group's words in turn, and the ▶ or 🔊 before each word plays just that word |
-| 🗒️ Flashcards | One word at a time; tap the card to flip it |
 
 Group and Flashcards share one queue, and a word marked Again comes back after 10 minutes. The 🌐 button picks the language; ⇄ picks which side is shown first and hides the other side again (the card gives a short squash, and the side it starts on is labelled and coloured Question or Answer). On a phone, undo, redo, flip, Again and Good buttons sit under the words; on a computer the keys do the same.
 
@@ -65,7 +64,7 @@ Words already in your vocabulary are highlighted in questions and in the sentenc
 ## Language help
 
 - Pinyin on hover for Chinese
-- Stroke-order animations in Write mode
+- Stroke-order animations in Writing mode
 - A dictionary panel under each card, in every language: chinesedictionary.mobi for Chinese; Bing Translator into English for Japanese, Korean and Vietnamese, and into Vietnamese for English. Chinese and Japanese sentences above it show pinyin or readings
 - Reading aloud with the browser's own voices
 - Study languages: Chinese (Simplified and Traditional), Japanese, Korean, English, Vietnamese
