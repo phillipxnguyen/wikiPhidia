@@ -25,7 +25,7 @@ Group and Listening share one queue: a card studied in one mode leaves the other
 
 **Scheduling.** *Again* brings a card back in 10 minutes. Each *Good* counts towards a streak; until the fifth Good in a row the card returns the next day. After five it is **done**, and the gaps grow to 1, 3 and then 7 days.
 
-**Done is done.** When nothing is left to study, the study modes are hidden and the lesson goes back to ☰ Full: 🎉 with the New, Due and Done counts sits above the list, with confetti when you have just finished. There is no button to study ahead; the modes come back when cards are due again. (**Reset** makes a whole lesson New again, if you want to start it over.)
+**Done is done.** When nothing is left to study, the study modes are hidden and the lesson goes back to ☰ Full: 🎉 with the New, Due and Done counts sits above the list, with confetti. There is no button to study ahead; the modes come back when cards are due again. (**Reset** makes a whole lesson New again, if you want to start it over.)
 
 ### Keyboard
 
@@ -51,14 +51,14 @@ Switch from **Lessons** to **Vocabulary** with the 字 button at the top. Words 
 
 | Mode | What it does |
 | --- | --- |
-| 🗒️ Flashcards | One word at a time; tap the card to flip it. The whole word list, for browsing and editing, sits below; point at a word (or tap it on a phone) to see its pinyin or reading |
+| ☰ Flashcards | One word at a time; tap the card to flip it. The whole word list, for browsing and editing, sits below; point at a word (or tap it on a phone) to see its pinyin or reading |
 | 📝 Group | Due words five at a time, like Group mode in Lessons: click a word to edit it, tap a row (phone) or point at it (computer) to grade just that word, ▶ plays the group's words in turn, and the ▶ or 🔊 before each word plays just that word |
 
 Group and Flashcards share one queue, and a word marked Again comes back after 10 minutes. The 🌐 button picks the language; ⇄ picks which side is shown first and hides the other side again (the card gives a short squash, and the side it starts on is labelled and coloured Question or Answer). On a phone, undo, redo, flip, Again and Good buttons sit under the words; on a computer the keys do the same.
 
 As in Lessons, pointing at a word (or tapping its row on a phone) shows its pinyin or reading. Editing a flashcard (↓ or ✎) shows the word's stroke order and its dictionary together, in one panel under the editor.
 
-When every word is studied, 🗒️, 📝 and ⇄ are hidden: only 🌐, the counts, 🎉 and the word list remain until words are due again.
+When every word is studied, ☰, 📝 and ⇄ are hidden: only 🌐, the counts, 🎉 and the word list remain until words are due again.
 
 Words already in your vocabulary are highlighted in questions and in the sentence above each dictionary; click one to see its notes.
 

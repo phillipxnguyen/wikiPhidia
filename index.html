@@ -1066,7 +1066,7 @@ window.onYouTubeIframeAPIReady = function(){
         <option value="vi">🇻🇳 Vietnamese</option>
         <option value="multi" hidden>🌐</option>
       </select></label>
-      <button id="vocabCardBtn" class="sep-before" data-view="card" title="Flashcards — one word at a time, with the list of words below" aria-label="Flashcards">🗒️</button>
+      <button id="vocabCardBtn" class="sep-before" data-view="card" title="Flashcards — one word at a time, with the list of words below" aria-label="Flashcards">☰</button>
       <button id="vocabGroupBtn" data-view="group" title="Group — due words five at a time" aria-label="Group">📝</button>
       <button id="vocabFrontBtn" class="sep-before" aria-label="Switch which side shows first">⇄</button>
     </div>
@@ -2449,16 +2449,14 @@ function isSessionFinished() {
 
 const CONFETTI_COLORS = [ "#2f6fa8", "#e8b923", "#c0392b", "#3aa76d", "#8e6fce" ];
 
-let celebrateNext = false;
-
-function showSessionCompletePanel(celebrate) {
+function showSessionCompletePanel() {
   const panel = document.getElementById("sessionCompletePanel");
   const now = Date.now();
   const next = rows.filter(hasAnswer).map(r => srsOf(r, "Table")).filter(st => st.reps && !isDoneState(st) && st.due > now).map(st => st.due).sort((a, b) => a - b)[0];
   panel.querySelector(".session-complete-sub").textContent = "Nothing is due right now." + (next ? ` Next review ${formatDueIn(next)}.` : "");
   if (panel.style.display === "block") return;
   panel.querySelectorAll(".confetti-piece").forEach(el => el.remove());
-  if (celebrate) addConfetti(panel);
+  addConfetti(panel);
   panel.style.display = "block";
 }
 
@@ -2638,7 +2636,6 @@ function renderStudy() {
   const tbody = document.getElementById("tbody");
   const singleCard = isCardMode();
   if (groupState && lessonCaughtUp()) {
-    celebrateNext = true;
     setReviewMode("full");
     return;
   }
@@ -2647,12 +2644,11 @@ function renderStudy() {
     table.style.display = "none";
     document.getElementById("tableProgress").style.display = "none";
     singleCardView.style.display = "none";
-    showSessionCompletePanel(true);
+    showSessionCompletePanel();
     return;
   }
   const caughtUp = !groupState && lessonCaughtUp();
-  if (caughtUp) showSessionCompletePanel(celebrateNext); else panel.style.display = "none";
-  celebrateNext = false;
+  if (caughtUp) showSessionCompletePanel(); else panel.style.display = "none";
   if (!groupState) {
     const progress = document.getElementById("tableProgress");
     progress.style.display = caughtUp ? "" : "none";
@@ -2668,7 +2664,7 @@ function renderStudy() {
     if (singleCardRows.length === 0) {
       singleCardView.style.display = "none";
       lastShownCardId = null;
-      showSessionCompletePanel(true);
+      showSessionCompletePanel();
       return;
     }
     singleCardView.style.display = "";
@@ -6364,6 +6360,7 @@ function openLesson(lesson) {
   studyLang = VALID_STUDY_LANGS.includes(lesson.studyLang) ? lesson.studyLang : "auto";
   document.getElementById("studyLang").value = studyLang;
   showAllCardsInFullMode();
+  document.getElementById("sessionCompletePanel").style.display = "none";
   updateGroupUI();
   setLessonTitle(lesson.name || "");
   if (lesson.mediaUrl) {
@@ -6901,6 +6898,10 @@ function showView(view) {
   }
   const changed = currentView !== view;
   currentView = view;
+  if (changed) {
+    document.getElementById("sessionCompletePanel").style.display = "none";
+    document.getElementById("vocabStage").innerHTML = "";
+  }
   releaseHeldPage();
   setTimeout(updateTouchBar, 0);
   document.getElementById("viewStudy").hidden = view !== "study" && view !== "vocab";
@@ -8675,7 +8676,8 @@ function renderVocab() {
     const next = items.map(i => vocabStateOf(i)).filter(st => st.reps && !isDoneState(st)).map(st => st.due).sort((a, b) => a - b)[0];
     const sub = vocabSession.total ? `You reviewed ${vocabSession.total} word${vocabSession.total === 1 ? "" : "s"}.` : "Nothing is due right now.";
     const later = next ? ` Next review ${formatDueIn(next)}.` : "";
-    const celebrate = vocabSession.total > 0 && !stage.querySelector(".session-complete");
+    const celebrate = !stage.querySelector(".session-complete") || stage.dataset.lessonId !== String(currentLessonId);
+    stage.dataset.lessonId = currentLessonId;
     stage.innerHTML = `<div class="session-complete" style="display:block;"><div class="emoji">🎉</div><div class="session-complete-title">All caught up!</div><div class="session-complete-sub">${sub}${later}</div></div>` + vocabControlsHtml();
     if (celebrate) addConfetti(stage.querySelector(".session-complete"));
     document.getElementById("vocabShow").hidden = true;
