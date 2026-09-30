@@ -65,7 +65,7 @@ Words already in your vocabulary are highlighted in questions and in the sentenc
 ## Language help
 
 - Pinyin on hover for Chinese
-- Stroke-order animations: every dictionary panel in Group and Listening shows how to write the card's characters, animated each time it appears
+- Stroke-order animations: every dictionary panel in Group and Listening shows how to write the card's characters, animated when the card is shown. The panels are laid out before Show and only become visible when it is pressed, so revealing a card never moves the page
 - A dictionary panel under each card, in every language: chinesedictionary.mobi for Chinese; Bing Translator into English for Japanese, Korean and Vietnamese, and into Vietnamese for English. Chinese and Japanese sentences above it show pinyin or readings
 - Reading aloud with the browser's own voices
 - Study languages: Chinese (Simplified and Traditional), Japanese, Korean, English, Vietnamese

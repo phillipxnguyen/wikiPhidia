@@ -758,6 +758,7 @@ window.onYouTubeIframeAPIReady = function(){
   #dictPanels{display:flex;flex-direction:column;position:relative;}
   #dictPanels .dict-pending{position:absolute;top:0;left:0;right:0;height:0;overflow:hidden;visibility:hidden;pointer-events:none;}
   #dictPanels:not(.with-source) .dict-source{display:none;}
+  #dictPanels .dict-veiled{visibility:hidden;}
   #viewStudy.focus-study > .lesson-header, #viewStudy.focus-study > .save-status, #viewStudy.focus-study > .lesson-meta{display:none;}
   .swipe-ghost{position:fixed;z-index:1000;box-sizing:border-box;display:flex;justify-content:center;border:3px solid var(--border);border-radius:28px;background:var(--surface);box-shadow:var(--shadow-md);font-size:34px;font-weight:700;pointer-events:none;}
   .swipe-ghost.row{align-items:center;border-radius:16px;font-size:20px;}
@@ -2525,16 +2526,16 @@ function renderDictPanels() {
   const host = document.getElementById("dictPanels");
   const inTable = document.getElementById("cardTable").style.display !== "none";
   const inSingle = document.getElementById("singleCardView").style.display !== "none";
-  let shown = [];
+  let laid = [];
   let preload = [];
   if (currentView === "study" && rows.length) {
     if (groupState && inTable) {
       const next = groupState.groups[groupState.index + 1] || [];
-      preload = getVisibleRows().concat(rows.filter(r => next.includes(r.id)));
-      shown = getVisibleRows().filter(r => !r.qHidden);
+      laid = getVisibleRows();
+      preload = laid.concat(rows.filter(r => next.includes(r.id)));
     } else if (groupState && inSingle) {
       preload = singleCardQueue().slice(0, 2);
-      shown = preload.slice(0, 1).filter(r => !r.qHidden);
+      laid = preload.slice(0, 1);
     } else if (!groupState) {
       if (!nextOrderReady) {
         reshuffleCardOrder();
@@ -2577,20 +2578,21 @@ function renderDictPanels() {
   };
   preload.forEach(panelFor);
   const visible = new Set;
-  shown.forEach((r, i) => {
+  laid.forEach((r, i) => {
     const el = panelFor(r);
     if (!el) return;
     el.style.order = i;
     visible.add(el);
-  });
-  Array.from(host.children).forEach(el => {
-    if (visible.has(el) && el.classList.contains("dict-pending")) {
-      const r = rows.find(x => x.id === Number(el.dataset.rowId));
-      const text = r ? (r.q || "") + (r.a || "") : "";
-      drawStrokeOrder(el.querySelector(".dict-stroke"), text, cjkScriptFor(text, r) === "ja", "dictStroke_" + el.dataset.rowId);
+    const stroke = el.querySelector(".dict-stroke");
+    if (el.classList.contains("dict-pending")) {
+      const text = (r.q || "") + (r.a || "");
+      drawStrokeOrder(stroke, text, cjkScriptFor(text, r) === "ja", "dictStroke_" + r.id, r.qHidden);
+    } else if (!r.qHidden) {
+      playStrokeOrder(stroke);
     }
-    el.classList.toggle("dict-pending", !visible.has(el));
+    el.classList.toggle("dict-veiled", !!r.qHidden);
   });
+  Array.from(host.children).forEach(el => el.classList.toggle("dict-pending", !visible.has(el)));
   if (visible.size) guardDictFocus();
   const stale = Array.from(host.children).filter(el => Number(el.dataset.used) !== now).sort((a, b) => a.dataset.used - b.dataset.used);
   stale.slice(0, Math.max(0, host.children.length - 40)).forEach(el => el.remove());
@@ -2746,7 +2748,16 @@ function loadStrokeCharData(ch, isJa) {
   }).catch(() => HanziWriter.loadCharacterData(ch));
 }
 
-function drawStrokeOrder(panel, text, isJa, idPrefix) {
+const strokeSets = new WeakMap;
+
+function playStrokeOrder(panel) {
+  const set = strokeSets.get(panel);
+  if (!set || !set.deferred) return;
+  set.deferred = false;
+  set.writers.forEach(w => w.animateCharacter());
+}
+
+function drawStrokeOrder(panel, text, isJa, idPrefix, deferred) {
   const chars = Array.from(new Set(text.match(/[一-鿿]/g) || []));
   if (chars.length === 0 || typeof HanziWriter === "undefined") {
     panel.style.display = "none";
@@ -2755,6 +2766,11 @@ function drawStrokeOrder(panel, text, isJa, idPrefix) {
   }
   panel.style.display = "";
   panel.innerHTML = '<div class="stroke-order-row"></div>';
+  const set = {
+    deferred: !!deferred,
+    writers: []
+  };
+  strokeSets.set(panel, set);
   const themeStyle = getComputedStyle(document.documentElement);
   const strokeColor = themeStyle.getPropertyValue("--accent").trim() || "#2f6fd6";
   const outlineColor = themeStyle.getPropertyValue("--stroke-outline").trim() || "#d8dee6";
@@ -2772,6 +2788,7 @@ function drawStrokeOrder(panel, text, isJa, idPrefix) {
         width: 60,
         height: 60,
         padding: 4,
+        showCharacter: !set.deferred,
         showOutline: true,
         strokeColor: strokeColor,
         outlineColor: outlineColor,
@@ -2779,7 +2796,8 @@ function drawStrokeOrder(panel, text, isJa, idPrefix) {
         delayBetweenStrokes: 250,
         charDataLoader: (_ch, onLoad) => onLoad(charData)
       });
-      writer.animateCharacter();
+      set.writers.push(writer);
+      if (!set.deferred) writer.animateCharacter();
       const replayBtn = box.querySelector(".stroke-replay");
       if (replayBtn) replayBtn.addEventListener("click", () => writer.animateCharacter());
     }).catch(() => {
@@ -4864,7 +4882,7 @@ function pinStudyArea() {
 }
 
 function studyParts() {
-  return [ "mediaContainer", "tableProgress", "cardTable", "singleCardView" ].map(id => document.getElementById(id)).concat(document.querySelector(".study-head .toolbar"), Array.from(document.querySelectorAll("#dictPanels > :not(.dict-pending)")));
+  return [ "mediaContainer", "tableProgress", "cardTable", "singleCardView" ].map(id => document.getElementById(id)).concat(document.querySelector(".study-head .toolbar"), Array.from(document.querySelectorAll("#dictPanels > :not(.dict-pending):not(.dict-veiled)")));
 }
 
 function ghostFor(parts) {
