@@ -58,7 +58,7 @@ Switch from **Lessons** to **Vocabulary** with the 字 button at the top. Words 
 
 Group and Flashcards share one queue, and a word marked Again comes back after 10 minutes. The 🌐 button picks the language; ⇄ picks which side is shown first and hides the other side again (the card gives a short squash, and the side it starts on is labelled and coloured Question or Answer). On a phone, undo, redo, flip, Again and Good buttons sit under the words; on a computer the keys do the same.
 
-As in Lessons, pointing at a word (or tapping its row on a phone) shows its pinyin or reading, and a dictionary panel with the word's sentence sits under each word whose Question side is showing.
+As in Lessons, pointing at a word (or tapping its row on a phone) shows its pinyin or reading, and one Bing Translator panel underneath lists the words being studied (A. B. C. …) once their Question side is showing.
 
 Words already in your vocabulary are highlighted in questions and in the sentence above each dictionary; click one to see its notes.
 

@@ -754,7 +754,6 @@ window.onYouTubeIframeAPIReady = function(){
   .stroke-target{width:72px;height:72px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);}
   .stroke-fallback{display:flex;align-items:center;justify-content:center;font-size:34px;color:var(--text);}
   #dictPanels, #vocabDictPanels{display:flex;flex-direction:column;position:relative;}
-  #vocabDictPanels .dict-source{font-size:22px;line-height:2;}
   #dictPanels .dict-pending, #vocabDictPanels .dict-pending{position:absolute;top:0;left:0;right:0;height:0;overflow:hidden;visibility:hidden;pointer-events:none;}
   #dictPanels:not(.with-source) .dict-source{display:none;}
   #viewStudy.focus-study > .lesson-header, #viewStudy.focus-study > .save-status, #viewStudy.focus-study > .lesson-meta{display:none;}
@@ -3033,7 +3032,6 @@ function refreshJapaneseReadings() {
   const item = currentVocabItem();
   const back = document.querySelector("#vocabCard .vocab-back");
   if (item && back) back.innerHTML = vocabBackInner(item);
-  renderVocabDictPanels();
 }
 
 function lessonLooksJapanese(row) {
@@ -5197,9 +5195,13 @@ document.querySelectorAll(".col-toggle").forEach(headerLabel => {
   });
 });
 
+function letteredList(texts) {
+  return texts.length === 1 ? texts[0] : texts.map((t, i) => "ABCDE"[i % 5] + ". " + t).join("\n");
+}
+
 function copyQuestions(questions) {
   if (!questions.length) return;
-  const text = questions.length === 1 ? questions[0] : questions.map((q, i) => "ABCDE"[i % 5] + ". " + q).join("\n");
+  const text = letteredList(questions);
   navigator.clipboard.writeText(text).then(() => {
     showToast("Copied " + questions.length + " question(s)");
   }).catch(() => {
@@ -8480,40 +8482,31 @@ function vocabDictWords() {
   return [ [ item ], vocabFront === "a" && !vocabSession.flipped ? [] : [ item ] ];
 }
 
+function vocabDictUrl(items) {
+  if (!items.length || !cjkScriptFor(items[0].term, items[0].card)) return null;
+  const lesson = items[0].card.srcLessonId ? library.find(l => l.id === items[0].card.srcLessonId) : null;
+  const lang = lesson ? lesson.studyLang : studyLang;
+  const from = cjkScriptFor(items[0].term, items[0].card) === "ja" ? "ja" : lang === "zh-TW" ? "zh-Hant" : "zh-Hans";
+  return "https://www.bing.com/translator?ref=TThis&text=" + encodeURIComponent(letteredList(items.map(i => i.term))) + "&from=" + from + "&to=en";
+}
+
 function renderVocabDictPanels() {
   const host = document.getElementById("vocabDictPanels");
-  const [preload, shown] = vocabDictWords();
-  const now = Date.now();
-  const panelFor = item => {
-    const url = dictUrlFor(item.term.trim());
-    if (!url) return null;
-    let el = Array.from(host.children).find(c => c.dataset.url === url);
-    if (!el) {
-      el = document.createElement("div");
-      el.className = "stroke-order-panel dict-pending";
-      el.dataset.url = url;
-      el.innerHTML = '<div class="dict-source vocab-ctx"></div><iframe class="dict-frame"></iframe>';
-      el.querySelector("iframe").src = url;
-      host.appendChild(el);
-    }
-    el.dataset.used = now;
-    const sentence = (item.card.q || "").trim();
-    const html = sentence && sentence.normalize("NFC").toLowerCase().includes(item.term.normalize("NFC").toLowerCase()) ? vocabSentenceHtml(sentence, item.term, item.card) : `<mark>${vocabSentenceHtml(item.term, "", item.card)}</mark>`;
-    const src = el.querySelector(".dict-source");
-    if (src.innerHTML !== html) src.innerHTML = html;
-    return el;
-  };
-  preload.forEach(panelFor);
-  const visible = new Set;
-  shown.forEach((item, i) => {
-    const el = panelFor(item);
-    if (!el) return;
-    el.style.order = i;
-    visible.add(el);
+  const [words, shown] = vocabDictWords();
+  const url = vocabDictUrl(words);
+  let panel = url ? Array.from(host.children).find(c => c.dataset.url === url) : null;
+  if (url && !panel) {
+    panel = document.createElement("div");
+    panel.className = "stroke-order-panel";
+    panel.dataset.url = url;
+    panel.innerHTML = '<iframe class="dict-frame"></iframe>';
+    panel.querySelector("iframe").src = url;
+    host.appendChild(panel);
+  }
+  Array.from(host.children).forEach(c => {
+    if (c !== panel) c.remove();
   });
-  Array.from(host.children).forEach(el => el.classList.toggle("dict-pending", !visible.has(el)));
-  const stale = Array.from(host.children).filter(el => Number(el.dataset.used) !== now).sort((a, b) => a.dataset.used - b.dataset.used);
-  stale.slice(0, Math.max(0, host.children.length - 40)).forEach(el => el.remove());
+  if (panel) panel.classList.toggle("dict-pending", !shown.length);
 }
 
 function renderVocabStage() {
