@@ -752,9 +752,9 @@ window.onYouTubeIframeAPIReady = function(){
     text-align:center;
   }
   .stroke-order-row{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;}
-  .stroke-order-box{position:relative;width:72px;}
-  .stroke-target{width:72px;height:72px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);}
-  .stroke-fallback{display:flex;align-items:center;justify-content:center;font-size:34px;color:var(--text);}
+  .stroke-order-box{position:relative;width:60px;}
+  .stroke-target{width:60px;height:60px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);}
+  .stroke-fallback{display:flex;align-items:center;justify-content:center;font-size:28px;color:var(--text);}
   #dictPanels{display:flex;flex-direction:column;position:relative;}
   #dictPanels .dict-pending{position:absolute;top:0;left:0;right:0;height:0;overflow:hidden;visibility:hidden;pointer-events:none;}
   #dictPanels:not(.with-source) .dict-source{display:none;}
@@ -764,8 +764,8 @@ window.onYouTubeIframeAPIReady = function(){
   .swipe-ghost.good{color:var(--a-label);border-color:currentColor;}
   .swipe-ghost.again{color:var(--danger);border-color:currentColor;}
   .swipe-ghost.delete{color:var(--text);border-color:currentColor;}
-  .dict-source{font-size:22px;line-height:2;color:var(--text);margin:0 0 10px;overflow-wrap:break-word;}
-  .dict-stroke .stroke-order-row{margin-bottom:12px;}
+  .dict-source{font-size:28px;line-height:1.8;color:var(--text);margin:0 0 6px;overflow-wrap:break-word;}
+  .dict-stroke:not(:last-child) .stroke-order-row{margin-bottom:14px;}
   .dict-frame{display:block;width:100%;height:360px;border:1px solid var(--border);border-radius:8px;background:#fff;}
   .stroke-replay{
     position:absolute;bottom:3px;right:3px;
@@ -1134,6 +1134,11 @@ window.onYouTubeIframeAPIReady = function(){
   </div>
 
   <div id="tableProgress" class="single-card-progress" style="display:none;"></div>
+  <div id="sessionCompletePanel" class="session-complete">
+    <div class="emoji">🎉</div>
+    <div class="session-complete-title">All done!</div>
+    <div class="session-complete-sub"></div>
+  </div>
   <table id="cardTable">
     <colgroup>
       <col>
@@ -1159,12 +1164,6 @@ window.onYouTubeIframeAPIReady = function(){
   <div id="dictPanels"></div>
 
   <div id="inlineAddSlot" hidden></div>
-
-  <div id="sessionCompletePanel" class="session-complete">
-    <div class="emoji">🎉</div>
-    <div class="session-complete-title">All done!</div>
-    <div class="session-complete-sub">You've completed this study session.</div>
-  </div>
 
 </section>
 
@@ -1294,6 +1293,7 @@ function takeSnapshot(label, expiresAt) {
     extrasSnapshot: JSON.stringify(vocabExtras),
     groupSnapshot: JSON.stringify(groupState || savedGroupState),
     inSession: !!groupState,
+    style: groupViewStyle,
     importHistory: JSON.stringify(importHistory),
     reviewCount: localReviewKeys.length,
     pinned: pinnedCardId,
@@ -1393,7 +1393,11 @@ function restoreFrom(fromStack, toStack, verb) {
   const liveGroup = groupState || savedGroupState;
   const sessionRestored = !!snapGroup && (!liveGroup || liveGroup.sessionId === snapGroup.sessionId);
   if (sessionRestored) {
-    if (groupState) groupState = snapGroup; else savedGroupState = snapGroup;
+    if (!groupState && entry.inSession) {
+      savedGroupState = null;
+      groupViewStyle = entry.style;
+    }
+    if (groupState || entry.inSession) groupState = snapGroup; else savedGroupState = snapGroup;
   } else if (groupState && groupViewStyle === "table" && rows.length) {
     rebuildGroupsFromQueue();
   }
@@ -2115,6 +2119,11 @@ function deckHasAnswers() {
   return rows.some(hasAnswer);
 }
 
+function lessonCaughtUp() {
+  const now = Date.now();
+  return deckHasAnswers() && !rows.some(r => hasAnswer(r) && srsOf(r, "Table").due <= now);
+}
+
 function modeScopeRows(mode) {
   if (mode === "Listen") return rows.filter(r => r.time != null);
   return rows.filter(hasAnswer);
@@ -2439,11 +2448,16 @@ function isSessionFinished() {
 
 const CONFETTI_COLORS = [ "#2f6fa8", "#e8b923", "#c0392b", "#3aa76d", "#8e6fce" ];
 
-function showSessionCompletePanel() {
+let celebrateNext = false;
+
+function showSessionCompletePanel(celebrate) {
   const panel = document.getElementById("sessionCompletePanel");
+  const now = Date.now();
+  const next = rows.filter(hasAnswer).map(r => srsOf(r, "Table")).filter(st => st.reps && !isDoneState(st) && st.due > now).map(st => st.due).sort((a, b) => a - b)[0];
+  panel.querySelector(".session-complete-sub").textContent = "Nothing is due right now." + (next ? ` Next review ${formatDueIn(next)}.` : "");
   if (panel.style.display === "block") return;
   panel.querySelectorAll(".confetti-piece").forEach(el => el.remove());
-  addConfetti(panel);
+  if (celebrate) addConfetti(panel);
   panel.style.display = "block";
 }
 
@@ -2621,15 +2635,27 @@ function renderStudy() {
   updateGroupBtnFlag();
   const tbody = document.getElementById("tbody");
   const singleCard = isCardMode();
+  if (groupState && lessonCaughtUp()) {
+    celebrateNext = true;
+    setReviewMode("full");
+    return;
+  }
   if (groupState && groupViewStyle === "table" && isSessionFinished()) {
     commitActiveEdit();
     table.style.display = "none";
     document.getElementById("tableProgress").style.display = "none";
     singleCardView.style.display = "none";
-    showSessionCompletePanel();
+    showSessionCompletePanel(true);
     return;
   }
-  panel.style.display = "none";
+  const caughtUp = !groupState && lessonCaughtUp();
+  if (caughtUp) showSessionCompletePanel(celebrateNext); else panel.style.display = "none";
+  celebrateNext = false;
+  if (!groupState) {
+    const progress = document.getElementById("tableProgress");
+    progress.style.display = caughtUp ? "" : "none";
+    progress.innerHTML = caughtUp ? progressBadgesHtml("Table") : "";
+  }
   const visibleRows = getVisibleRows();
   const singleCardRows = singleCard ? singleCardQueue() : visibleRows;
   if (activeEdit && !(singleCard ? singleCardRows : visibleRows).some(r => r.id === activeEdit.row.id)) {
@@ -2640,7 +2666,7 @@ function renderStudy() {
     if (singleCardRows.length === 0) {
       singleCardView.style.display = "none";
       lastShownCardId = null;
-      showSessionCompletePanel();
+      showSessionCompletePanel(true);
       return;
     }
     singleCardView.style.display = "";
@@ -2743,8 +2769,8 @@ function drawStrokeOrder(panel, text, isJa, idPrefix) {
       const target = document.getElementById(targetId);
       if (!target) return;
       const writer = HanziWriter.create(target, ch, {
-        width: 72,
-        height: 72,
+        width: 60,
+        height: 60,
         padding: 4,
         showOutline: true,
         strokeColor: strokeColor,
@@ -4477,8 +4503,9 @@ function syncModeButtonHighlights() {
   const btn = document.getElementById("groupBtn");
   const listenBtn = document.getElementById("listenModeBtn");
   if (!fullBtn || !btn || !listenBtn) return;
-  btn.style.display = deckHasAnswers() ? "" : "none";
-  listenBtn.style.display = deckHasVideoCards() && !isVirtualLesson() ? "" : "none";
+  const caughtUp = lessonCaughtUp();
+  btn.style.display = deckHasAnswers() && !caughtUp ? "" : "none";
+  listenBtn.style.display = deckHasVideoCards() && !isVirtualLesson() && !caughtUp ? "" : "none";
   fullBtn.classList.toggle("active", !groupState);
   btn.classList.toggle("active", !!groupState && groupViewStyle === "table");
   listenBtn.classList.toggle("active", !!groupState && groupViewStyle === "listen");
@@ -4731,7 +4758,11 @@ function advanceToNextGroup() {
 }
 
 setInterval(() => {
-  if (!groupState || currentView !== "study" || tabPaused) return;
+  if (currentView !== "study" || tabPaused) return;
+  if (!groupState) {
+    if (rows.length && lessonCaughtUp() !== (document.getElementById("sessionCompletePanel").style.display === "block")) render();
+    return;
+  }
   if (groupViewStyle !== "table") {
     if (document.getElementById("singleCardView").style.display === "none") render(); else refreshBadges();
     return;
@@ -8615,6 +8646,8 @@ function renderVocab() {
   const c = vocabCounts(items);
   const now = Date.now();
   const buckets = new Set(studying.map(i => srsBucket(vocabStateOf(i), now)));
+  document.querySelectorAll("#vocabToolbar [data-view], #vocabFrontBtn").forEach(btn => btn.hidden = !studying.length);
+  if (!studying.length) list.hidden = false;
   badges.innerHTML = badgesHtml(c.fresh, c.due, c.done, {
     new: buckets.has("new"),
     due: buckets.has("due"),
@@ -8624,7 +8657,7 @@ function renderVocab() {
     const next = items.map(i => vocabStateOf(i)).filter(st => st.reps && !isDoneState(st)).map(st => st.due).sort((a, b) => a - b)[0];
     const sub = vocabSession.total ? `You reviewed ${vocabSession.total} word${vocabSession.total === 1 ? "" : "s"}.` : "Nothing is due right now.";
     const later = next ? ` Next review ${formatDueIn(next)}.` : "";
-    const celebrate = !stage.querySelector(".session-complete");
+    const celebrate = vocabSession.total > 0 && !stage.querySelector(".session-complete");
     stage.innerHTML = `<div class="session-complete" style="display:block;"><div class="emoji">🎉</div><div class="session-complete-title">All caught up!</div><div class="session-complete-sub">${sub}${later}</div></div>` + vocabControlsHtml();
     if (celebrate) addConfetti(stage.querySelector(".session-complete"));
     document.getElementById("vocabShow").hidden = true;
@@ -8647,8 +8680,10 @@ function renderVocab() {
   vocabShownIsVideo = !!vocabVideoIdFor(item.card);
   if (vocabEditingKey === item.key && !vocabEditingInList) {
     const url = dictUrlFor(item.term, item.card);
-    stage.innerHTML = vocabEditorHtml(item) + '<div class="stroke-order-panel vocab-edit-stroke" style="display:none;"></div>' + (url ? `<div class="stroke-order-panel"><iframe class="dict-frame" src="${escapeAttr(url)}"></iframe></div>` : "") + vocabControlsHtml();
-    drawStrokeOrder(stage.querySelector(".vocab-edit-stroke"), item.term, cjkScriptFor(item.term, item.card) === "ja", "vocabEditStroke");
+    stage.innerHTML = vocabEditorHtml(item) + '<div class="stroke-order-panel"><div class="dict-stroke"></div>' + (url ? `<iframe class="dict-frame" src="${escapeAttr(url)}"></iframe>` : "") + "</div>" + vocabControlsHtml();
+    const stroke = stage.querySelector(".dict-stroke");
+    drawStrokeOrder(stroke, item.term, cjkScriptFor(item.term, item.card) === "ja", "vocabEditStroke");
+    stroke.parentElement.hidden = !url && stroke.style.display === "none";
   } else {
     stage.innerHTML = vocabCardHtml(item) + vocabControlsHtml();
     wireVocabCard(item);
