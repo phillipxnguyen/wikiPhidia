@@ -1066,7 +1066,7 @@ window.onYouTubeIframeAPIReady = function(){
       </select></label>
       <button id="vocabFullBtn" class="sep-before" data-view="full" title="All words — the whole list, for browsing and editing" aria-label="All words">☰</button>
       <button id="vocabGroupBtn" data-view="group" title="Group — due words five at a time" aria-label="Group">🗂️</button>
-      <button id="vocabCardBtn" data-view="card" title="Flashcards — one word at a time" aria-label="Flashcards">🃏</button>
+      <button id="vocabCardBtn" data-view="card" title="Flashcards — one word at a time" aria-label="Flashcards">◫</button>
       <button id="vocabFrontBtn" class="sep-before" aria-label="Switch which side shows first">⇄</button>
     </div>
     <div class="toolbar-right">
@@ -8093,6 +8093,12 @@ let vocabVideoId = null;
 
 let vocabHoveredKey = null;
 
+let vocabSelectedKey = null;
+
+let vocabSeq = null;
+
+let vocabPendingThen = null;
+
 let vocabShownIsVideo = false;
 let vocabAllMultiLang = false;
 
@@ -8311,7 +8317,7 @@ function startVocabSession() {
     flipped: false,
     group: [],
     pending: [],
-    revealed: {}
+    shown: false
   };
 }
 
@@ -8325,7 +8331,8 @@ function currentVocabGroup() {
   if (!s.group.length) {
     s.queue = s.queue.filter(due);
     s.group = splitIntoGroups(s.queue)[0] || [];
-    s.revealed = {};
+    s.shown = false;
+    vocabSelectedKey = null;
   }
   return s.group.map(k => byKey.get(k));
 }
@@ -8337,10 +8344,7 @@ function renameVocabSessionKey(from, to) {
   s.queue = s.queue.map(swap);
   s.group = s.group.map(swap);
   s.pending.forEach(p => p.key = swap(p.key));
-  if (s.revealed[from]) {
-    delete s.revealed[from];
-    s.revealed[to] = true;
-  }
+  if (vocabSelectedKey === from) vocabSelectedKey = to;
 }
 
 function dropVocabSessionKey(key) {
@@ -8349,7 +8353,7 @@ function dropVocabSessionKey(key) {
   s.queue = s.queue.filter(k => k !== key);
   s.group = s.group.filter(k => k !== key);
   s.pending = s.pending.filter(p => p.key !== key);
-  delete s.revealed[key];
+  if (vocabSelectedKey === key) vocabSelectedKey = null;
 }
 
 function currentVocabItem() {
@@ -8449,14 +8453,13 @@ function vocabControlsHtml() {
 
 function vocabTableHtml(group) {
   const hide = vocabFront === "a" ? "q" : "a";
-  const revealed = vocabSession.revealed;
   const cell = (item, field) => {
-    const hidden = field === hide && !revealed[item.key];
+    const hidden = field === hide && !vocabSession.shown;
     return `<div class="cell ${hidden ? "hidden" : "shown"}" data-field="${field}">${hidden ? "···" : escapeHtml(field === "q" ? item.term : item.meaning)}</div>`;
   };
-  const head = field => `<th${field === "a" ? ' class="a-col"' : ""}><span${field === hide ? ' class="col-toggle" title="Click to show or hide this column"' : ""}>${field === "q" ? "Question" : "Answer"}</span></th>`;
+  const head = field => `<th${field === "a" ? ' class="a-col"' : ""}>${field === "q" ? "Question" : "Answer"}</th>`;
   const actions = '<span class="vocab-actions vocab-touch-only"><button class="vocab-act-edit" aria-label="Edit this word">&#9998;</button><button class="vocab-act-del" aria-label="Delete this word">&#10005;</button></span>';
-  return '<table id="vocabTable"><thead><tr><th class="vocab-lead-col"></th>' + head("q") + head("a") + "</tr></thead><tbody>" + group.map(item => item.key === vocabEditingKey && !vocabEditingInList ? `<tr class="edit-row"><td colspan="3">${vocabEditorHtml(item)}</td></tr>` : `<tr data-key="${escapeAttr(item.key)}"><td class="vocab-lead-col">${actions}</td><td>${cell(item, "q")}</td><td class="a-col">${cell(item, "a")}</td></tr>`).join("") + "</tbody></table>";
+  return '<table id="vocabTable"><thead><tr><th class="vocab-lead-col"></th>' + head("q") + head("a") + "</tr></thead><tbody>" + group.map(item => item.key === vocabEditingKey && !vocabEditingInList ? `<tr class="edit-row"><td colspan="3">${vocabEditorHtml(item)}</td></tr>` : `<tr data-key="${escapeAttr(item.key)}"${item.key === vocabSelectedKey ? ' class="row-selected"' : ""}><td class="vocab-lead-col">${actions}</td><td>${cell(item, "q")}</td><td class="a-col">${cell(item, "a")}</td></tr>`).join("") + "</tbody></table>";
 }
 
 function vocabEditorHtml(item) {
@@ -8556,7 +8559,7 @@ function renderVocab() {
     return;
   }
   if (group.length) {
-    vocabShownIsVideo = false;
+    vocabShownIsVideo = vocabSession.shown && group.some(i => !!vocabVideoIdFor(i.card));
     stage.innerHTML = vocabTableHtml(group) + vocabControlsHtml();
     wireVocabControls();
     wireVocabEditor(items);
@@ -8579,8 +8582,8 @@ function renderVocab() {
 function wireVocabControls() {
   const group = vocabView === "group";
   const show = document.getElementById("vocabShow");
-  document.getElementById("vocabGood").onclick = () => group ? gradeVocabGroup(false) : flyVocab(false);
-  document.getElementById("vocabAgain").onclick = () => group ? gradeVocabGroup(true) : flyVocab(true);
+  document.getElementById("vocabGood").onclick = () => group ? gradeVocabGroup(false, vocabSelectedKey) : flyVocab(false);
+  document.getElementById("vocabAgain").onclick = () => group ? gradeVocabGroup(true, vocabSelectedKey) : flyVocab(true);
   document.getElementById("vocabUndo").onclick = () => undo();
   show.onclick = () => group ? toggleVocabGroupReveal() : flipVocab();
   if (group) {
@@ -8903,15 +8906,11 @@ document.getElementById("vocabList").addEventListener("mouseleave", () => {
 
 document.getElementById("vocabStage").addEventListener("click", e => {
   if (vocabView !== "group" || !document.getElementById("vocabTable")) return;
-  if (e.target.closest(".col-toggle")) {
-    toggleVocabGroupReveal();
-    return;
-  }
   const row = e.target.closest("#vocabTable tr[data-key]");
   if (!row) return;
   const item = currentVocabGroup().find(i => i.key === row.dataset.key);
   if (!item) return;
-  if (e.target.closest(".vocab-act-del")) deleteVocabEntry(item, row); else if (e.target.closest(".vocab-act-edit")) openVocabEditor(item.key); else toggleVocabGroupReveal(item.key);
+  if (e.target.closest(".vocab-act-del")) deleteVocabEntry(item, row); else if (e.target.closest(".vocab-act-edit")) openVocabEditor(item.key); else if (isTouch()) selectVocabRow(item.key); else if (e.target.closest(".cell")) openVocabEditor(item.key);
 });
 
 document.getElementById("vocabStage").addEventListener("mouseover", e => {
@@ -9075,7 +9074,7 @@ function updateVocabEntry(item, termRaw, meaningRaw) {
 }
 
 function vocabSoundOn() {
-  return vocabTtsOn || vocabPendingKey !== null || loopingRowId !== null && loopingRowId === vocabShownRowId;
+  return vocabTtsOn || vocabPendingKey !== null || vocabSeq !== null || loopingRowId !== null && loopingRowId === vocabShownRowId;
 }
 
 function deleteVocabEntry(item, part) {
@@ -9111,7 +9110,8 @@ function deleteVocabEntry(item, part) {
 function syncVocabSound() {
   const btn = document.getElementById("vocabSpeak");
   const speed = document.getElementById("vocabSpeed");
-  const shown = !!document.getElementById("vocabCard");
+  const shown = !!document.getElementById("vocabCard") || !!document.getElementById("vocabTable") && !!vocabSession && vocabSession.shown;
+  document.querySelectorAll("#vocabTable tr[data-key]").forEach(tr => tr.classList.toggle("row-playing", !!vocabSeq && tr.dataset.key === vocabSeq.key));
   btn.hidden = !shown;
   speed.hidden = !shown || !vocabShownIsVideo;
   if (!speed.options.length) speed.innerHTML = document.getElementById("playbackSpeed").innerHTML;
@@ -9123,8 +9123,12 @@ function syncVocabSound() {
 }
 
 document.getElementById("vocabSpeak").onclick = e => {
-  const item = currentVocabItem();
-  if (item) toggleVocabSound(item);
+  if (vocabView === "group") {
+    toggleVocabGroupSound(vocabSelectedKey);
+  } else {
+    const item = currentVocabItem();
+    if (item) toggleVocabSound(item);
+  }
   e.currentTarget.blur();
 };
 
@@ -9140,6 +9144,8 @@ function stopVocabSound() {
   vocabTtsOn = false;
   vocabTtsToken++;
   vocabPendingKey = null;
+  vocabPendingThen = null;
+  vocabSeq = null;
   vocabAwaitCue = false;
   if (wasTts || loopingRowId !== null) haltAllPlayback();
   syncVocabSound();
@@ -9166,13 +9172,63 @@ function vocabCueDone() {
 function startPendingVocabVideo() {
   if (vocabPendingKey === null || vocabAwaitCue || !ytPlayer || !ytReady || !ytHasVideo) return;
   const item = lessonVocabItems(vocabSource()).find(i => i.key === vocabPendingKey);
+  const then = vocabPendingThen;
   vocabPendingKey = null;
-  if (item && !ytHasError) startLoop(item.card);
+  vocabPendingThen = null;
+  if (item && !ytHasError) {
+    if (then) playVocabClipOnce(item.card, then); else startLoop(item.card);
+  }
   syncVocabSound();
 }
 
-function playVocabSound(item) {
+function playVocabClipOnce(row, then) {
+  if (row.time == null || !ytPlayer || typeof ytPlayer.seekTo !== "function") return;
+  const end = segmentEnd(row, 8);
+  if (loopInterval) clearInterval(loopInterval);
+  loopingRowId = row.id;
+  segmentArmed = false;
+  videoActionSeq++;
+  ytPlayer.seekTo(row.time, true);
+  ytPlayer.playVideo();
+  if (typeof ytPlayer.setPlaybackRate === "function") ytPlayer.setPlaybackRate(sequenceSpeed);
+  loopInterval = setInterval(() => {
+    if (loopingRowId !== row.id || !ytPlayer || typeof ytPlayer.getCurrentTime !== "function") return;
+    if (!segmentReached(row.time, end)) return;
+    clearInterval(loopInterval);
+    loopInterval = null;
+    pauseVideoProgrammatically();
+    setTimeout(then, 300);
+  }, 250);
+}
+
+function toggleVocabGroupSound(key) {
+  if (vocabSoundOn()) {
+    stopVocabSound();
+    return;
+  }
+  const seq = vocabSeq = {
+    index: 0,
+    key: null
+  };
+  const step = () => {
+    if (vocabSeq !== seq) return;
+    const group = currentVocabGroup();
+    const pool = key ? group.filter(i => i.key === key) : group;
+    if (!pool.length) {
+      stopVocabSound();
+      return;
+    }
+    const item = pool[seq.index++ % pool.length];
+    seq.key = item.key;
+    playVocabSound(item, step);
+  };
+  step();
+}
+
+function playVocabSound(item, then) {
+  const seq = vocabSeq;
   stopVocabSound();
+  if (then) vocabSeq = seq;
   if (!item) return;
   const row = item.card;
   const videoId = vocabVideoIdFor(row);
@@ -9189,9 +9245,11 @@ function playVocabSound(item) {
     }
     if (ytHasError) {
       showToast("This video can't be played");
+      stopVocabSound();
       return;
     }
     vocabPendingKey = item.key;
+    vocabPendingThen = then || null;
     startPendingVocabVideo();
     syncVocabSound();
     return;
@@ -9205,7 +9263,9 @@ function playVocabSound(item) {
     utter.lang = resolveSpeechLang(text);
     const voice = pickVoice(utter.lang);
     if (voice) utter.voice = voice;
-    utter.onend = () => setTimeout(speak, 700);
+    utter.onend = () => setTimeout(() => {
+      if (token === vocabTtsToken) (then || speak)();
+    }, 700);
     utter.onerror = e => {
       if (e.error === "interrupted" || e.error === "canceled" || token !== vocabTtsToken) return;
       vocabTtsOn = false;
@@ -9283,22 +9343,22 @@ function gradeVocabGroup(isAgain, key) {
   const part = whole ? table : table && table.querySelector(`tr[data-key="${CSS.escape(one.key)}"]`);
   const label = whole && items.length > 1 ? "Graded group — " + gradeLabel(isAgain) : gradeLabel(isAgain) + " — " + items[0].term;
   if (vocabHoveredKey && items.some(i => i.key === vocabHoveredKey)) vocabHoveredKey = null;
+  vocabSelectedKey = null;
+  stopVocabSound();
   swipe(part ? [ part ] : [], isAgain ? -1 : 1, () => gradeVocabItems(items, isAgain, label));
   showToast(label);
 }
 
-function toggleVocabGroupReveal(key) {
-  const group = currentVocabGroup();
-  if (!group.length) return;
-  const r = vocabSession.revealed;
-  if (key) {
-    if (r[key]) delete r[key]; else r[key] = true;
-  } else if (group.every(i => r[i.key])) {
-    vocabSession.revealed = {};
-  } else {
-    group.forEach(i => r[i.key] = true);
-  }
+function toggleVocabGroupReveal() {
+  if (!currentVocabGroup().length) return;
+  vocabSession.shown = !vocabSession.shown;
+  if (!vocabSession.shown) stopVocabSound();
   renderVocab();
+}
+
+function selectVocabRow(key) {
+  vocabSelectedKey = vocabSelectedKey === key ? null : key;
+  document.querySelectorAll("#vocabTable tr[data-key]").forEach(tr => tr.classList.toggle("row-selected", tr.dataset.key === vocabSelectedKey));
 }
 
 function setVocabView(view) {
@@ -9360,7 +9420,8 @@ function handleVocabKey(e) {
     const again = e.code === "ArrowLeft" || e.key === "Enter" && e.shiftKey;
     const good = e.code === "ArrowRight" || e.key === "Enter" && !e.shiftKey;
     const hovered = vocabHoveredKey && currentVocabGroup().some(i => i.key === vocabHoveredKey) ? vocabHoveredKey : null;
-    if (e.code === "Space") toggleVocabGroupReveal(); else if (e.code === "ArrowDown" && hovered) openVocabEditor(hovered); else if (again || good) gradeVocabGroup(again, hovered); else return;
+    const target = hovered || vocabSelectedKey;
+    if (e.code === "Space") toggleVocabGroupReveal(); else if (e.code === "ArrowDown" && hovered) openVocabEditor(hovered); else if (e.code === "ArrowUp" && vocabSession.shown) toggleVocabGroupSound(target); else if (again || good) gradeVocabGroup(again, target); else return;
     e.preventDefault();
     if (document.activeElement && document.activeElement.tagName === "BUTTON") document.activeElement.blur();
     return;

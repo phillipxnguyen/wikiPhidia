@@ -47,8 +47,8 @@ Switch from **Lessons** to **Vocabulary** with the 字 button at the top. Words 
 | Mode | What it does |
 | --- | --- |
 | ☰ All words | The whole word list, for browsing and editing |
-| 🗂️ Group | Due words five at a time, like Group mode in Lessons |
-| 🃏 Flashcards | One word at a time; tap the card to flip it |
+| 🗂️ Group | Due words five at a time, like Group mode in Lessons: click a word to edit it, tap a row (phone) or point at it (computer) to grade just that word, and ▶ plays the group once it is shown |
+| ◫ Flashcards | One word at a time; tap the card to flip it |
 
 Group and Flashcards share one queue, and a word marked Again comes back after 10 minutes. The 🌐 button picks the language; ⇄ picks which side is shown first.
 
