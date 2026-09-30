@@ -53,8 +53,8 @@ Switch from **Lessons** to **Vocabulary** with the 字 button at the top. Words 
 
 | Mode | What it does |
 | --- | --- |
-| ☰ Group | Due words five at a time, like Group mode in Lessons: click a word to edit it, tap a row (phone) or point at it (computer) to grade just that word, ▶ plays the group's words in turn, the ▶ or 🔊 before each word plays just that word, and while the Question side is showing, the stroke order of the group's words sits under the table |
-| 📝 Flashcards | One word at a time; tap the card to flip it. The whole word list, for browsing and editing, sits below, folded away so it does not give answers away: click **Words (n)** to open or close it (it folds again as soon as you flip, show or grade), and the ＋ bar it sits on adds a word; and point at a word (or tap it on a phone) to see its pinyin or reading |
+| ☰ Group | Due words five at a time, like Group mode in Lessons: click a word to edit it, tap a row (phone) or point at it (computer) to grade just that word, ▶ plays the group's words in turn, the ▶ or 🔊 before each word plays just that word, and while the Question side is showing, the stroke order of the group's words sits under the table. The whole word list, for browsing and editing, sits below, folded away so it does not give answers away: click **Words (n)** to open or close it (it folds again as soon as you show or grade), and the ＋ bar it sits on adds a word; point at a word (or tap it on a phone) to see its pinyin or reading |
+| 📝 Flashcards | One word at a time; tap the card to flip it. |
 
 Group and Flashcards share one queue, and a word marked Again comes back after 10 minutes. The 🌐 button picks the language; ⇄ picks which side is shown first and hides the other side again (the card gives a short squash, and the side it starts on is labelled and coloured Question or Answer). On a phone, Undo, Redo, Show, Again and Good sit in a bar fixed to the bottom of the screen, as in Lessons; on a computer the keys do the same.
 
