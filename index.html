@@ -3607,6 +3607,7 @@ function updateTouchBar() {
   [ "tbShow", "tbAgain", "tbGood" ].forEach(id => {
     document.getElementById(id).hidden = !inSession;
   });
+  document.getElementById("tbShow").textContent = !vocab && listenCardShown() ? "Sound" : "Show";
   document.getElementById("tbUndo").disabled = !undoStack.length;
   document.getElementById("tbRedo").disabled = !redoStack.length;
 }
@@ -10061,13 +10062,7 @@ document.addEventListener("keydown", e => {
   if (e.code === "Space" || e.key === " ") {
     if (!groupState) return;
     e.preventDefault();
-    const current = isListenMode() ? getCurrentSingleCardRow() : null;
-    const seqBtn = document.getElementById("btnPlaySequence");
-    if (current && !current.qHidden && !current.aHidden && !seqBtn.disabled) {
-      if (!e.repeat) seqBtn.click();
-      return;
-    }
-    revealAction();
+    if (!e.repeat) revealAction();
     return;
   }
   if ([ "Digit1", "Digit2", "Digit3", "Digit4", "Digit5" ].includes(e.code)) {
@@ -10119,8 +10114,18 @@ function gradeAction(isAgain) {
   }
 }
 
+function listenCardShown() {
+  const current = isListenMode() ? getCurrentSingleCardRow() : null;
+  return !!current && !current.qHidden && !current.aHidden;
+}
+
 function revealAction() {
   if (!groupState) return;
+  const seqBtn = document.getElementById("btnPlaySequence");
+  if (listenCardShown() && !seqBtn.disabled) {
+    seqBtn.click();
+    return;
+  }
   window.scrollTo(0, studyAreaTop());
   if (groupViewStyle === "listen") {
     const current = getCurrentSingleCardRow();
