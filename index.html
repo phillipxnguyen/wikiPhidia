@@ -275,7 +275,8 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-head{margin-bottom:10px;}
   .vocab-head .stats-title{flex:1;min-width:0;margin:0;}
   @media (max-width:600px){.lesson-header.vocab-head{margin-bottom:5px;}}
-  .vocab-toolbar{margin:4px 0 14px;}
+  .vocab-toolbar{position:sticky;top:0;z-index:999;margin:-6px 0 14px;padding-top:10px;pointer-events:none;}
+  .vocab-toolbar .segmented, .vocab-toolbar .toolbar-right > *{pointer-events:auto;}
   .vocab-toolbar .segmented{align-items:center;}
   .lang-pick{position:relative;display:inline-flex;align-items:center;justify-content:center;min-width:38px;padding:5px 10px;border-radius:7px;font-size:16px;line-height:1.2;}
   html.touch .lang-pick{min-width:46px;padding:8px 12px;}
@@ -337,21 +338,13 @@ window.onYouTubeIframeAPIReady = function(){
   #viewStudy.offscreen .media-container:not(.warming){width:356px;max-width:none;height:200px;aspect-ratio:auto;margin:0;}
   .vocab-list:not([hidden]){display:grid;grid-template-columns:auto 1fr auto;align-items:stretch;}
   html.touch .vocab-list:not([hidden]){grid-template-columns:auto auto 1fr auto;}
-  .vocab-list-bar{grid-column:1 / -1;position:relative;min-height:36px;margin-bottom:8px;}
-  .vocab-list:not(.open) .vocab-list-bar{margin-bottom:0;}
+  .vocab-list-bar{grid-column:1 / -1;margin-bottom:8px;}
   .vocab-list-bar .vocab-add-word{height:36px;margin:0;}
-  .vocab-list-toggle{position:absolute;left:4px;top:4px;bottom:4px;display:flex;align-items:center;padding:0 12px;border:0;border-radius:var(--radius-sm);background:none;color:var(--text-2);font-size:12px;text-transform:uppercase;letter-spacing:.06em;font-weight:700;transform-origin:left center;transition:transform .22s cubic-bezier(.25, .9, .35, 1), color .22s ease-out;will-change:transform;backface-visibility:hidden;}
-  @media (hover:hover){.vocab-list-toggle:hover{background:none;color:var(--text);transform:scale(1.18);}}
-  @media (prefers-reduced-motion:reduce){.vocab-list-toggle{transition:none;}}
-  .vocab-list-toggle::before{content:"▸";margin-right:6px;}
-  .vocab-list.open .vocab-list-toggle::before{content:"▾";}
-  .vocab-list.fixed .vocab-list-toggle{pointer-events:none;}
-  .vocab-list.fixed .vocab-list-toggle::before{display:none;}
   .vocab-list-row[data-key]{display:contents;}
   .vocab-list-row[data-key] > *{display:flex;align-items:center;padding:8px 16px 8px 0;border-top:1px solid var(--border);font-size:14px;}
   .vocab-list-row[data-key] > :last-child{padding-right:2px;}
   .vocab-list-row[data-key] > .vocab-actions{padding-left:12px;padding-right:12px;}
-  .vocab-list-bar + .vocab-list-row > *{border-top:0;}
+  .vocab-list-bar + .vocab-list-row > *, .vocab-list > .vocab-list-row:first-child > *{border-top:0;}
   .vocab-list-row.row-selected > *{background:var(--accent-soft);}
   .vocab-list-row.editing{grid-column:1 / -1;border-top:1px solid var(--border);}
   .vocab-list-bar + .vocab-list-row.editing{border-top:0;}
@@ -409,7 +402,7 @@ window.onYouTubeIframeAPIReady = function(){
     .shell.bare .drawer-btn{display:none;}
     .main{padding:calc(66px + env(safe-area-inset-top)) 12px 16px;}
     .shell.bare .main{padding-top:16px;}
-    .shell .study-head{top:calc(46px + env(safe-area-inset-top));}
+    .shell .study-head, .shell .vocab-toolbar{top:calc(46px + env(safe-area-inset-top));}
   }
   @media (max-width:600px){
     .shell .lesson-header{flex-wrap:wrap;}
@@ -4174,7 +4167,7 @@ function visibleBand() {
   let bottom = top + (vv ? vv.height : window.innerHeight);
   const sidebar = document.querySelector(".sidebar");
   if (sidebar && getComputedStyle(sidebar).position === "fixed") top = Math.max(top, sidebar.getBoundingClientRect().bottom);
-  const head = currentView === "study" && document.querySelector(".study-head");
+  const head = currentView === "study" ? document.querySelector(".study-head") : currentView === "vocab" && document.getElementById("vocabToolbar");
   if (head && head.offsetHeight && getComputedStyle(head).position === "sticky") {
     const r = head.getBoundingClientRect();
     if (r.bottom > top && r.top <= top + 1) top = r.bottom;
@@ -8650,9 +8643,13 @@ function renderVocabDict() {
   };
   next && panelFor(next);
   const current = card && panelFor(card);
-  btn.hidden = !current;
-  btn.classList.toggle("active", vocabDictOpen);
-  btn.setAttribute("aria-pressed", vocabDictOpen);
+  if (vocabView === "card") {
+    btn.hidden = !current;
+    btn.textContent = "📖";
+    btn.setAttribute("aria-label", "Dictionary");
+    btn.classList.toggle("active", vocabDictOpen);
+    btn.setAttribute("aria-pressed", vocabDictOpen);
+  }
   const shown = vocabDictOpen && current;
   Array.from(host.children).forEach(el => {
     if (el === shown && el.classList.contains("dict-pending")) drawStrokeOrder(el.querySelector(".dict-stroke"), card.term, cjkScriptFor(card.term, card.card) === "ja", "vocabDictStroke");
@@ -8711,7 +8708,6 @@ function renderVocab() {
   const item = items.length && vocabView !== "group" ? currentVocabItem() : null;
   const studying = item ? [ item ] : group;
   const caughtUp = items.length > 0 && !studying.length;
-  list.hidden = items.length ? vocabView !== "group" && !caughtUp : vocabEditingKey !== NEW_WORD_KEY;
   placeVocabAddForm(emptyLesson ? "lesson" : "page");
   if (vocabListLessonId !== currentLessonId) {
     vocabListLessonId = currentLessonId;
@@ -8725,10 +8721,17 @@ function renderVocab() {
     term: "",
     meaning: ""
   })}</div>` : "";
-  const open = caughtUp || vocabListOpen || !!vocabEditingKey && (vocabEditingInList || vocabEditingKey === NEW_WORD_KEY);
-  list.classList.toggle("open", open);
-  list.classList.toggle("fixed", caughtUp);
-  list.innerHTML = '<div class="vocab-list-bar">' + (canAdd ? '<button id="vocabAddWord" class="add-single vocab-add-word" aria-label="Add a word">＋</button>' : "") + `<button class="vocab-list-toggle" aria-expanded="${open}">Words (${items.length})</button></div>` + adder + (!open ? "" : shown.map(item => item.key === vocabEditingKey && vocabEditingInList ? `<div class="vocab-list-row editing">${vocabEditorHtml(item)}</div>` : `<div class="vocab-list-row" data-key="${escapeAttr(item.key)}"><span class="vocab-actions vocab-touch-only"><button class="vocab-act-edit" aria-label="Edit this word">&#9998;</button><button class="vocab-act-del" aria-label="Delete this word">&#10005;</button></span><span class="vocab-list-term">${escapeHtml(item.term)}</span><span class="vocab-list-meaning">${escapeHtml(item.meaning)}</span><span class="vocab-list-status">${vocabStatusIcon(vocabStateOf(item))}</span></div>`).join("") + (more ? `<button id="vocabMore" class="vocab-more ghost">Show ${more} more</button>` : ""));
+  const open = caughtUp || vocabView === "group" && vocabListOpen || !!vocabEditingKey && (vocabEditingInList || vocabEditingKey === NEW_WORD_KEY);
+  list.hidden = items.length ? !open : vocabEditingKey !== NEW_WORD_KEY;
+  if (vocabView === "group") {
+    const bookBtn = document.getElementById("vocabDictBtn");
+    bookBtn.hidden = !group.length;
+    bookBtn.textContent = "📖 " + items.length;
+    bookBtn.setAttribute("aria-label", "Words");
+    bookBtn.classList.toggle("active", open);
+    bookBtn.setAttribute("aria-pressed", open);
+  }
+  list.innerHTML = (canAdd ? '<div class="vocab-list-bar"><button id="vocabAddWord" class="add-single vocab-add-word" aria-label="Add a word">＋</button></div>' : "") + adder + (list.hidden ? "" : shown.map(item => item.key === vocabEditingKey && vocabEditingInList ? `<div class="vocab-list-row editing">${vocabEditorHtml(item)}</div>` : `<div class="vocab-list-row" data-key="${escapeAttr(item.key)}"><span class="vocab-actions vocab-touch-only"><button class="vocab-act-edit" aria-label="Edit this word">&#9998;</button><button class="vocab-act-del" aria-label="Delete this word">&#10005;</button></span><span class="vocab-list-term">${escapeHtml(item.term)}</span><span class="vocab-list-meaning">${escapeHtml(item.meaning)}</span><span class="vocab-list-status">${vocabStatusIcon(vocabStateOf(item))}</span></div>`).join("") + (more ? `<button id="vocabMore" class="vocab-more ghost">Show ${more} more</button>` : ""));
   watchVocabMore();
   const addBtn = document.getElementById("vocabAddWord");
   if (addBtn) addBtn.onclick = e => {
@@ -9087,12 +9090,6 @@ function openVocabEditor(key, inList) {
 }
 
 document.getElementById("vocabList").addEventListener("click", e => {
-  if (e.target.closest(".vocab-list-toggle")) {
-    commitVocabEdit();
-    vocabListOpen = !document.getElementById("vocabList").classList.contains("open");
-    renderVocab();
-    return;
-  }
   const row = e.target.closest(".vocab-list-row[data-key]");
   if (!row) return;
   const item = lessonVocabItems(vocabSource()).find(i => i.key === row.dataset.key);
@@ -9525,13 +9522,27 @@ function toggleVocabSound(item) {
 
 function pinVocabArea() {
   const toolbar = document.getElementById("vocabToolbar");
-  const top = (toolbar.hidden ? document.getElementById("vocabStage") : toolbar).getBoundingClientRect().top;
-  const bar = document.querySelector(".sidebar");
-  const cover = getComputedStyle(bar).position === "fixed" ? bar.getBoundingClientRect().bottom : 0;
-  window.scrollTo(0, Math.max(0, window.scrollY + top - cover - 8));
+  if (toolbar.hidden) {
+    const bar = document.querySelector(".sidebar");
+    const cover = getComputedStyle(bar).position === "fixed" ? bar.getBoundingClientRect().bottom : 0;
+    window.scrollTo(0, Math.max(0, window.scrollY + document.getElementById("vocabStage").getBoundingClientRect().top - cover - 8));
+    return;
+  }
+  const stickyTop = parseFloat(getComputedStyle(toolbar).top) || 0;
+  toolbar.style.position = "static";
+  const naturalTop = toolbar.getBoundingClientRect().top + window.scrollY;
+  toolbar.style.position = "";
+  window.scrollTo(0, Math.max(0, naturalTop - stickyTop));
 }
 
 document.getElementById("vocabDictBtn").onclick = () => {
+  if (vocabView === "group") {
+    const open = !document.getElementById("vocabList").hidden;
+    commitVocabEdit();
+    vocabListOpen = !open;
+    renderVocab();
+    return;
+  }
   vocabDictOpen = !vocabDictOpen;
   renderVocabDict();
 };
