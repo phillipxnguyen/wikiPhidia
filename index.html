@@ -776,6 +776,7 @@ window.onYouTubeIframeAPIReady = function(){
   .dict-source{color:var(--text);}
   .dict-source:has(.rd){line-height:2.1;margin:.06em 0 -.53em;}
   .dict-answer{color:var(--a-text);}
+  .dict-editing{border-radius:var(--radius-sm);outline:none;box-shadow:0 0 0 2px var(--accent);cursor:text;}
   .dict-frame{display:block;width:100%;height:360px;border:1px solid var(--border);border-radius:8px;background:#fff;}
 
   .session-complete{
@@ -10076,7 +10077,7 @@ function selectionInDictSource() {
   const node = range.commonAncestorContainer;
   const el = node.nodeType === 1 ? node : node.parentElement;
   const source = el && el.closest(".dict-source");
-  const row = source && dictSourceRow(source);
+  const row = source && !source.isContentEditable && dictSourceRow(source);
   return row ? {
     row: row,
     text: text,
@@ -10084,8 +10085,77 @@ function selectionInDictSource() {
   } : null;
 }
 
+function wholeDictFieldSelected() {
+  const sel = window.getSelection();
+  if (!sel || !sel.rangeCount || sel.isCollapsed) return null;
+  const range = sel.getRangeAt(0);
+  const start = range.startContainer.nodeType === 1 ? range.startContainer : range.startContainer.parentElement;
+  const el = start && start.closest("#dictPanels .dict-source, #dictPanels .dict-answer");
+  const row = el && !el.isContentEditable && dictSourceRow(el);
+  const tidy = t => t.replace(/\s+/g, " ").trim();
+  return row && tidy(sel.toString()) === tidy(el.textContent) ? {
+    el: el,
+    row: row
+  } : null;
+}
+
+function editDictField(el, row) {
+  const field = el.classList.contains("dict-source") ? "q" : "a";
+  hideVocabPopup();
+  hideVocabAddPopup();
+  el.innerHTML = row[field + "Html"] || escapeHtml(row[field] || "");
+  el.contentEditable = "true";
+  el.classList.add("dict-editing");
+  el.focus();
+  const caret = document.createRange();
+  caret.selectNodeContents(el);
+  caret.collapse(false);
+  getSelection().removeAllRanges();
+  getSelection().addRange(caret);
+  let done = false;
+  const finish = save => {
+    if (done) return;
+    done = true;
+    el.removeAttribute("contenteditable");
+    el.classList.remove("dict-editing");
+    const html = sanitizeHtml(el.innerHTML);
+    const text = plainTextOf(html, " ");
+    if (save && (text || field === "a") && (html !== row[field + "Html"] || text !== row[field])) {
+      pushUndo("Edited card");
+      row[field] = text;
+      row[field + "Html"] = html;
+      scheduleAutoSave();
+    }
+    delete el.dataset.key;
+    delete el.dataset.html;
+    render();
+  };
+  el.addEventListener("keydown", e => {
+    e.stopPropagation();
+    if (e.isComposing || e.keyCode === 229) return;
+    if (e.key === "Escape" || e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      finish(e.key === "Enter");
+    }
+  });
+  el.addEventListener("paste", e => {
+    e.preventDefault();
+    document.execCommand("insertHTML", false, pastedHtml(e));
+  });
+  el.addEventListener("blur", () => finish(true), {
+    once: true
+  });
+}
+
 document.addEventListener("keydown", e => {
-  if (e.key !== "Shift" || e.repeat || e.metaKey || e.ctrlKey || isVirtualLesson()) return;
+  if (e.key !== "Shift" || e.repeat || e.metaKey || e.ctrlKey) return;
+  const whole = wholeDictFieldSelected();
+  if (whole) {
+    e.preventDefault();
+    editDictField(whole.el, whole.row);
+    return;
+  }
+  if (isVirtualLesson()) return;
   const hit = selectionInDictSource();
   if (!hit) return;
   e.preventDefault();
@@ -10093,6 +10163,11 @@ document.addEventListener("keydown", e => {
 });
 
 document.getElementById("dictPanels").addEventListener("mouseup", e => {
+  const whole = e.shiftKey && wholeDictFieldSelected();
+  if (whole) {
+    editDictField(whole.el, whole.row);
+    return;
+  }
   const hit = selectionInDictSource();
   if (!hit) return;
   if (!e.shiftKey) {
