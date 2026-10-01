@@ -2887,6 +2887,10 @@ function sanitizeHtml(html, newlines) {
     const parts = t.nodeValue.split(/\r?\n|\r/);
     t.replaceWith(...parts.flatMap((part, i) => i ? [ document.createElement("br"), part ] : [ part ]).filter(n => n !== ""));
   });
+  if (newlines === "br") [ "firstChild", "lastChild" ].forEach(edge => {
+    let n;
+    while ((n = tpl.content[edge]) && (n.nodeName === "BR" || !n.textContent.trim() && (n.nodeType === 3 || n.nodeName === "DIV"))) n.remove();
+  });
   return tpl.innerHTML;
 }
 
