@@ -307,7 +307,7 @@ window.onYouTubeIframeAPIReady = function(){
   @keyframes vocabSquash{0%{transform:none;}40%{transform:scale(1.02,.9);}75%{transform:scale(.99,1.02);}100%{transform:none;}}
   .vocab-card.vocab-swap, #vocabTable.vocab-swap{transform-origin:50% 100%;animation:vocabSquash .35s ease-out;}
   .vocab-term{font-size:40px;font-weight:600;line-height:1.3;overflow-wrap:anywhere;}
-  .vocab-ctx{font-size:28px;line-height:2.1;overflow-wrap:anywhere;}
+  .vocab-ctx{font-size:28px;line-height:2.1;overflow-wrap:anywhere;white-space:pre-line;}
   .vocab-ctx.small{font-size:20px;color:var(--text-2);}
   .rd{position:relative;}
   .rd::before{content:attr(data-rd);position:absolute;left:50%;bottom:100%;transform:translateX(-50%);font-size:.44em;line-height:1.2;white-space:nowrap;color:var(--text-2);pointer-events:none;-webkit-user-select:none;user-select:none;}
@@ -658,7 +658,7 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-popup .vocab-nav:active{background:rgba(255,255,255,.12);}
   .vocab-popup .vocab-nav.prev{left:0;border-radius:10px 0 0 10px;}
   .vocab-popup .vocab-nav.next{right:0;border-radius:0 10px 10px 0;}
-  .vocab-popup .vocab-sentence{margin-bottom:6px;}
+  .vocab-popup .vocab-sentence{margin-bottom:6px;white-space:pre-line;}
   .vocab-popup .vocab-sentence mark, .vocab-popup .vocab-note mark{background:var(--mark-bg);color:#20242b;border-radius:3px;padding:0 2px;font-style:normal;}
   .vocab-popup .vocab-note{color:var(--popup-muted);font-style:italic;}
   .vocab-popup .vocab-note:empty{display:none;}
@@ -2570,10 +2570,10 @@ function renderDictPanels() {
     el.dataset.used = now;
     el.dataset.rowId = r.id;
     const src = el.querySelector(".dict-source");
-    const key = r.id + "\u0001" + (r.q || "") + "\u0001" + notesSig + "\u0001" + typeof pinyinPro + jaResults.has(r.q || "");
+    const key = r.id + "\u0001" + (r.qHtml || r.q || "") + "\u0001" + notesSig + "\u0001" + typeof pinyinPro + jaResults.size;
     if (src.dataset.key !== key) {
       src.dataset.key = key;
-      src.innerHTML = highlightVocabInHtml(escapeHtml(r.q || ""), r.id);
+      src.innerHTML = highlightVocabInHtml(r.qHtml || escapeHtml(r.q || ""), r.id);
       addReadings(src, r);
     }
     const answer = el.querySelector(".dict-answer");
@@ -2869,7 +2869,7 @@ function sanitizeHtml(html) {
   return tpl.innerHTML;
 }
 
-function plainTextOf(html, lineBreak) {
+function plainTextOf(html, lineBreak = "\n") {
   const box = document.createElement("div");
   box.innerHTML = html || "";
   box.querySelectorAll("br").forEach(br => br.replaceWith("\n"));
@@ -3214,7 +3214,7 @@ function scriptGroup(ch) {
 }
 
 function foldVocab(s) {
-  return (s || "").normalize("NFKC").toLowerCase().trim();
+  return (s || "").normalize("NFKC").toLowerCase().replace(/\s+/g, " ").trim();
 }
 
 function foldWithMap(text) {
@@ -3222,7 +3222,8 @@ function foldWithMap(text) {
   const map = [];
   let pos = 0;
   ((text || "").match(/[^\p{M}\uff9e\uff9f][\p{M}\uff9e\uff9f]*|[\p{M}\uff9e\uff9f]+/gu) || []).forEach(seg => {
-    const f = seg.normalize("NFKC").toLowerCase();
+    let f = seg.normalize("NFKC").toLowerCase();
+    if (/^\s+$/.test(f)) f = folded.endsWith(" ") ? "" : " ";
     for (let k = 0; k < f.length; k++) map.push(pos);
     folded += f;
     pos += seg.length;
@@ -4069,9 +4070,9 @@ function notesEditorHtml(row) {
 
 function commitActiveEdit() {
   if (!activeEdit) return;
-  let newQ = plainTextOf(activeEdit.editQ.innerHTML, " ");
+  let newQ = plainTextOf(activeEdit.editQ.innerHTML, "\n");
   let newQHtml = sanitizeHtml(stripVocabHighlights(activeEdit.editQ.innerHTML || ""));
-  let newA = plainTextOf(activeEdit.editA.innerHTML, " ");
+  let newA = plainTextOf(activeEdit.editA.innerHTML, "\n");
   let newAHtml = sanitizeHtml(stripVocabHighlights(activeEdit.editA.innerHTML || ""));
   const takenKeys = new Set;
   activeEdit.editNotes.querySelectorAll("li").forEach(li => {
@@ -4534,9 +4535,9 @@ function wireEditBox(host, row) {
     editNotes: editNotes,
     updateEditDict: updateEditDict
   };
-  activeEdit.originalQ = plainTextOf(editQ.innerHTML, " ");
+  activeEdit.originalQ = plainTextOf(editQ.innerHTML, "\n");
   activeEdit.originalQHtml = sanitizeHtml(stripVocabHighlights(editQ.innerHTML || ""));
-  activeEdit.originalA = plainTextOf(editA.innerHTML, " ");
+  activeEdit.originalA = plainTextOf(editA.innerHTML, "\n");
   activeEdit.originalAHtml = sanitizeHtml(stripVocabHighlights(editA.innerHTML || ""));
   activeEdit.originalNotes = plainTextOf(editNotes.innerHTML, "\n");
   activeEdit.originalNotesHtml = sanitizeHtml(editNotes.innerHTML || "");
@@ -5399,6 +5400,7 @@ function copyQuestions(questions) {
 }
 
 function dictUrlFor(text, row) {
+  text = (text || "").replace(/(\S)\s*\n\s*(?=(\S))/g, (...m) => m[1] + (UNSPACED_RE.test(m[1]) && UNSPACED_RE.test(m[2]) ? "" : " ")).replace(/\s+/g, " ").trim();
   if (!text) return null;
   const script = cjkScriptFor(text, row);
   if (script === "zh") return "https://chinesedictionary.mobi/?handler=QueryWorddict&mwdqb=" + encodeURIComponent(text);
@@ -6201,8 +6203,8 @@ function normalizeCard(c) {
   const notesHtml = c.notesHtml ? sanitizeHtml(String(c.notesHtml)) : "";
   return {
     uid: typeof c.uid === "string" && c.uid ? c.uid : makeUid(),
-    q: qHtml ? plainTextOf(qHtml, " ") : String(c.q || ""),
-    a: aHtml ? plainTextOf(aHtml, " ") : String(c.a || ""),
+    q: qHtml ? plainTextOf(qHtml, "\n") : String(c.q || ""),
+    a: aHtml ? plainTextOf(aHtml, "\n") : String(c.a || ""),
     qHtml: qHtml || escapeHtml(String(c.q || "")),
     aHtml: aHtml || escapeHtml(String(c.a || "")),
     notes: notesHtml ? plainTextOf(notesHtml, "\n") : String(c.notes || ""),
@@ -10119,7 +10121,7 @@ function editDictField(el, row) {
     el.removeAttribute("contenteditable");
     el.classList.remove("dict-editing");
     const html = sanitizeHtml(el.innerHTML);
-    const text = plainTextOf(html, " ");
+    const text = plainTextOf(html, "\n");
     if (save && (text || field === "a") && (html !== row[field + "Html"] || text !== row[field])) {
       pushUndo("Edited card");
       row[field] = text;
