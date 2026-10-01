@@ -3298,24 +3298,69 @@ function englishWords(folded) {
   let words = englishWordsCache.get(folded);
   if (!words) {
     if (englishWordsCache.size > 500) englishWordsCache.clear();
-    words = Array.from(folded.matchAll(/[a-z]+/g), m => ({
-      a: m.index,
-      b: m.index + m[0].length,
-      bases: englishBases(m[0])
-    })).filter(w => !/[\p{L}\p{M}]/u.test(folded[w.a - 1] || "") && !/[\p{L}\p{M}]/u.test(folded[w.b] || ""));
+    words = Array.from(folded.matchAll(/[a-z]+(?:['’][a-z]+)?/g), m => {
+      const word = m[0].replace("’", "'");
+      const bases = englishBases(word.replace(/'s$/, ""));
+      bases.add(word);
+      return {
+        a: m.index,
+        b: m.index + m[0].length,
+        word: word,
+        bases: bases
+      };
+    }).filter(w => !/[\p{L}\p{M}]/u.test(folded[w.a - 1] || "") && !/[\p{L}\p{M}]/u.test(folded[w.b] || ""));
     englishWordsCache.set(folded, words);
   }
   return words;
 }
 
+const EN_ARTICLES = new Set([ "a", "an", "the" ]);
+
+const EN_POSSESSIVES = new Set([ "my", "your", "his", "her", "its", "our", "their", "one's", "sb's", "someone's", "somebody's" ]);
+
+const EN_DETERMINERS = new Set([ "my", "your", "our", "their" ]);
+
+const EN_SELVES = new Set([ "oneself", "myself", "yourself", "himself", "herself", "itself", "ourselves", "yourselves", "themselves" ]);
+
+const EN_SLOTS = new Set([ "sb", "sth", "someone", "somebody", "something" ]);
+
 function englishSpans(folded, term) {
-  const parts = term.split(" ");
+  const parts = term.replace(/’/g, "'").split(" ");
   const words = englishWords(folded);
+  const joined = (prev, w) => prev < 0 || /^[ -]$/.test(folded.slice(words[prev].b, w.a));
+  const fits = (part, w) => EN_ARTICLES.has(part) ? EN_ARTICLES.has(w.word) : EN_POSSESSIVES.has(part) ? EN_POSSESSIVES.has(w.word) || /'s$/.test(w.word) : EN_SELVES.has(part) ? EN_SELVES.has(w.word) : w.bases.has(part);
+  const match = (pi, wi, prev) => {
+    if (pi === parts.length) return prev;
+    const part = parts[pi];
+    const w = words[wi];
+    const next = w && joined(prev, w);
+    if (EN_ARTICLES.has(part)) {
+      const skipped = match(pi + 1, wi, prev);
+      if (skipped !== null) return skipped;
+    }
+    if (!next) return null;
+    if (EN_SLOTS.has(part)) {
+      for (let n = 1; n <= 3 && wi + n <= words.length; n++) {
+        if (n > 1 && !joined(wi + n - 2, words[wi + n - 1])) break;
+        const tail = words[wi + n - 1].word;
+        if (EN_ARTICLES.has(tail) || EN_DETERMINERS.has(tail)) continue;
+        const end = match(pi + 1, wi + n, wi + n - 1);
+        if (end !== null) return end;
+      }
+      return null;
+    }
+    if (fits(part, w)) {
+      const end = match(pi + 1, wi + 1, wi);
+      if (end !== null) return end;
+    }
+    return EN_ARTICLES.has(w.word) && !EN_ARTICLES.has(part) && prev >= 0 ? match(pi, wi + 1, wi) : null;
+  };
   const spans = [];
-  for (let i = 0; i + parts.length <= words.length; i++) {
-    const run = words.slice(i, i + parts.length);
-    if (run.every((w, k) => w.bases.has(parts[k]) && (!k || /^[ -]$/.test(folded.slice(run[k - 1].b, w.a))))) spans.push([ run[0].a, run[run.length - 1].b ]);
-  }
+  words.forEach((w, i) => {
+    if (EN_ARTICLES.has(w.word) && !EN_ARTICLES.has(parts[0])) return;
+    const end = match(0, i, -1);
+    if (end !== null && end >= i) spans.push([ w.a, words[end].b ]);
+  });
   return spans;
 }
 
@@ -3372,7 +3417,7 @@ function termSpans(folded, term) {
     spans.push([ at, end ]);
   }
   if (spans.length) return spans;
-  if (/^[a-z]+(?: [a-z]+)*$/.test(term)) return englishSpans(folded, term);
+  if (/^[a-z'’]+(?: [a-z'’]+)*$/.test(term)) return englishSpans(folded, term);
   if (/^[\uac00-\ud7a3]{2,}$/.test(term) && term.endsWith("다")) return koreanVerbSpans(folded, term);
   return spans;
 }
