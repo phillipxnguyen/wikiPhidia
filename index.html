@@ -3249,7 +3249,12 @@ function foldVocab(s) {
   return foldScripts((s || "").normalize("NFKC").toLowerCase().replace(/\s+/g, " ").trim());
 }
 
+const foldCache = new Map;
+
 function foldWithMap(text) {
+  const cached = foldCache.get(text || "");
+  if (cached) return cached;
+  if (foldCache.size > 20000) foldCache.clear();
   let folded = "";
   const map = [];
   let pos = 0;
@@ -3261,19 +3266,21 @@ function foldWithMap(text) {
     pos += seg.length;
   });
   map.push(pos);
-  return {
+  const fold = {
     folded: foldScripts(folded),
     map: map
   };
+  foldCache.set(text || "", fold);
+  return fold;
 }
 
 const EN_IRREGULAR = new Map;
 
-const EN_IRREGULAR_BASES = new Set;
+const EN_IRREGULAR_BASES = new Map;
 
 "be:was:were:been:being:is:are:am|have:has:had:having|do:does:did:done|go:goes:went:gone|say:said|get:got:gotten|make:made|know:knew:known|think:thought|take:took:taken|see:saw:seen|come:came|give:gave:given|find:found|tell:told|feel:felt|leave:left|bring:brought|begin:began:begun|keep:kept|hold:held|write:wrote:written|stand:stood|hear:heard|mean:meant|meet:met|run:ran|pay:paid|sit:sat|speak:spoke:spoken|lie:lay:lain|lead:led|grow:grew:grown|lose:lost|fall:fell:fallen|send:sent|build:built|understand:understood|draw:drew:drawn|break:broke:broken|spend:spent|rise:rose:risen|drive:drove:driven|buy:bought|wear:wore:worn|choose:chose:chosen|seek:sought|throw:threw:thrown|catch:caught|deal:dealt|win:won|forget:forgot:forgotten|sell:sold|fight:fought|teach:taught|eat:ate:eaten|sing:sang:sung|drink:drank:drunk|swim:swam:swum|fly:flew:flown|sleep:slept|ride:rode:ridden|hide:hid:hidden|shake:shook:shaken|steal:stole:stolen|wake:woke:woken|bite:bit:bitten|blow:blew:blown|feed:fed|hang:hung|shoot:shot|light:lit|lend:lent|bend:bent|bleed:bled|dig:dug|forgive:forgave:forgiven|freeze:froze:frozen|lay:laid|ring:rang:rung|shine:shone|sink:sank:sunk|slide:slid|spin:spun|stick:stuck|strike:struck|swear:swore:sworn|sweep:swept|swing:swung|tear:tore:torn|weep:wept|wind:wound|withdraw:withdrew:withdrawn|arise:arose:arisen|become:became|bet|bind:bound|burst|cast|cling:clung|cost|cut|dream:dreamt|fit|flee:fled|forbid:forbade:forbidden|hit|hurt|let|mistake:mistook:mistaken|overcome:overcame|prove:proven|put|quit|read|set|shut|smell:smelt|spell:spelt|split|spread|stink:stank:stunk|undertake:undertook:undertaken|upset|good:better:best|bad:worse:worst|many:more:most|much:more:most|little:less:least|far:further:furthest:farther:farthest|man:men|woman:women|child:children|person:people|foot:feet|tooth:teeth|mouse:mice|goose:geese|life:lives|wife:wives|knife:knives|leaf:leaves|half:halves|wolf:wolves|shelf:shelves|thief:thieves".split("|").forEach(group => {
   const [ base, ...forms ] = group.split(":");
-  EN_IRREGULAR_BASES.add(base);
+  EN_IRREGULAR_BASES.set(base, forms);
   forms.forEach(form => {
     if (!EN_IRREGULAR.has(form)) EN_IRREGULAR.set(form, []);
     EN_IRREGULAR.get(form).push(base);
@@ -3325,6 +3332,7 @@ function englishWords(folded) {
         bases: bases
       };
     }).filter(w => !/[\p{L}\p{M}]/u.test(folded[w.a - 1] || "") && !/[\p{L}\p{M}]/u.test(folded[w.b] || ""));
+    words.all = new Set(words.flatMap(w => [ ...w.bases ]));
     englishWordsCache.set(folded, words);
   }
   return words;
@@ -3340,10 +3348,28 @@ const EN_SELVES = new Set([ "oneself", "myself", "yourself", "himself", "herself
 
 const EN_SLOTS = new Set([ "sb", "sth", "someone", "somebody", "something" ]);
 
+const englishTerms = new Map;
+
+function englishTerm(term) {
+  let info = englishTerms.get(term);
+  if (!info) {
+    const parts = term.replace(/’/g, "'").split(" ");
+    const needed = parts.filter(part => !EN_ARTICLES.has(part) && !EN_SLOTS.has(part) && !EN_POSSESSIVES.has(part) && !EN_SELVES.has(part));
+    info = {
+      parts: parts,
+      needed: needed,
+      probes: needed.map(part => [ part.replace(/(ie|e|y)$/, "") || part ].concat(EN_IRREGULAR_BASES.get(part) || []))
+    };
+    englishTerms.set(term, info);
+  }
+  return info;
+}
+
 function englishSpans(folded, term) {
-  const parts = term.replace(/’/g, "'").split(" ");
-  if (parts.every(part => EN_ARTICLES.has(part))) return [];
+  const {parts: parts, needed: needed, probes: probes} = englishTerm(term);
+  if (!needed.length || probes.some(list => !list.some(probe => folded.includes(probe)))) return [];
   const words = englishWords(folded);
+  if (needed.some(part => !words.all.has(part))) return [];
   const joined = (prev, w) => prev < 0 || /^[ -]$/.test(folded.slice(words[prev].b, w.a));
   const fits = (part, w) => EN_ARTICLES.has(part) ? EN_ARTICLES.has(w.word) : EN_POSSESSIVES.has(part) ? EN_POSSESSIVES.has(w.word) || /'s$/.test(w.word) : EN_SELVES.has(part) ? EN_SELVES.has(w.word) : w.bases.has(part);
   const match = (pi, wi, prev) => {
@@ -3428,13 +3454,25 @@ function koreanVerbSpans(folded, term) {
   return spans;
 }
 
+const termKinds = new Map;
+
+function termKind(term) {
+  let kind = termKinds.get(term);
+  if (kind === undefined) {
+    kind = /^[a-z'’]+(?:[ -][a-z'’]+)*$/.test(term) ? "en" : /^[\uac00-\ud7a3]{2,}$/.test(term) && term.endsWith("다") ? "ko" : "";
+    termKinds.set(term, kind);
+  }
+  return kind;
+}
+
 function termSpans(folded, term) {
   const spans = [];
   if (!term) return spans;
-  const chars = Array.from(term);
-  const first = scriptGroup(chars[0]);
-  const last = scriptGroup(chars[chars.length - 1]);
-  for (let at = folded.indexOf(term); at !== -1; at = folded.indexOf(term, at + 1)) {
+  let at = folded.indexOf(term);
+  const chars = at === -1 ? null : Array.from(term);
+  const first = chars && scriptGroup(chars[0]);
+  const last = chars && scriptGroup(chars[chars.length - 1]);
+  for (; at !== -1; at = folded.indexOf(term, at + 1)) {
     const end = at + term.length;
     const before = scriptGroup(Array.from(folded.slice(Math.max(0, at - 2), at)).pop());
     const after = end < folded.length ? scriptGroup(String.fromCodePoint(folded.codePointAt(end))) : "";
@@ -3443,8 +3481,9 @@ function termSpans(folded, term) {
     spans.push([ at, end ]);
   }
   if (spans.length) return spans;
-  if (/^[a-z'’]+(?:[ -][a-z'’]+)*$/.test(term)) return englishSpans(folded, term.replace(/-/g, " "));
-  if (/^[\uac00-\ud7a3]{2,}$/.test(term) && term.endsWith("다")) return koreanVerbSpans(folded, term);
+  const kind = termKind(term);
+  if (kind === "en") return englishSpans(folded, term.replace(/-/g, " "));
+  if (kind === "ko" && /[\uac00-\ud7a3]/.test(folded)) return koreanVerbSpans(folded, term);
   return spans;
 }
 
@@ -3514,8 +3553,23 @@ function vocabCardEntries() {
 
 let vocabLookupCache = null;
 
+let vocabLookupChecked = false;
+
+function vocabLookupSig() {
+  let hash = 0;
+  vocabSource().forEach(r => {
+    const text = (r.id != null ? r.id : r.uid) + "\u0001" + (r.q || "") + "\u0001" + (r.notesHtml || r.notes || "");
+    for (let i = 0; i < text.length; i++) hash = hash * 31 + text.charCodeAt(i) | 0;
+  });
+  return currentLessonId + "\u0001" + library.map(l => l.id + ":" + (l.updatedAt || 0) + ":" + l.cards.length).join("|") + "\u0001" + hash;
+}
+
 function vocabLookup() {
-  if (!vocabLookupCache) {
+  if (vocabLookupChecked && vocabLookupCache) return vocabLookupCache;
+  vocabLookupChecked = true;
+  Promise.resolve().then(() => vocabLookupChecked = false);
+  const sig = vocabLookupSig();
+  if (!vocabLookupCache || vocabLookupCache.sig !== sig) {
     const cards = vocabCardEntries();
     const terms = new Map;
     cards.forEach(entry => vocabEntriesOf(entry.card).forEach(e => {
@@ -3527,10 +3581,10 @@ function vocabLookup() {
       }, entry));
     }));
     vocabLookupCache = {
+      sig: sig,
       cards: cards,
       terms: terms
     };
-    Promise.resolve().then(() => vocabLookupCache = null);
   }
   return vocabLookupCache;
 }
