@@ -749,7 +749,7 @@ window.onYouTubeIframeAPIReady = function(){
   .stroke-order-panel{
     display:flex;
     flex-direction:column;
-    gap:16px;
+    gap:23px;
     background:var(--surface);
     border:1px solid var(--border);
     border-radius:var(--radius);
@@ -772,7 +772,7 @@ window.onYouTubeIframeAPIReady = function(){
   .swipe-ghost.good{color:var(--a-label);border-color:currentColor;}
   .swipe-ghost.again{color:var(--danger);border-color:currentColor;}
   .swipe-ghost.delete{color:var(--text);border-color:currentColor;}
-  .dict-source, .dict-answer{font-size:28px;line-height:1.3;margin:-.1em 0;overflow-wrap:break-word;}
+  .dict-source, .dict-answer{font-size:28px;line-height:1.3;margin:-.07em 0 -.12em;overflow-wrap:break-word;}
   .dict-source{color:var(--text);}
   .dict-source:has(.rd){line-height:2.1;margin:.06em 0 -.53em;}
   .dict-answer{color:var(--a-text);}
@@ -5389,9 +5389,13 @@ function letteredList(texts) {
   return texts.length === 1 ? texts[0] : texts.map((t, i) => "ABCDE"[i % 5] + ". " + t).join("\n");
 }
 
+function oneLine(text) {
+  return (text || "").replace(/(\S)\s*\n\s*(?=(\S))/g, (...m) => m[1] + (UNSPACED_RE.test(m[1]) && UNSPACED_RE.test(m[2]) ? "" : " ")).replace(/\s+/g, " ").trim();
+}
+
 function copyQuestions(questions) {
   if (!questions.length) return;
-  const text = letteredList(questions);
+  const text = letteredList(questions.map(oneLine));
   navigator.clipboard.writeText(text).then(() => {
     showToast("Copied " + questions.length + " question(s)");
   }).catch(() => {
@@ -5400,7 +5404,7 @@ function copyQuestions(questions) {
 }
 
 function dictUrlFor(text, row) {
-  text = (text || "").replace(/(\S)\s*\n\s*(?=(\S))/g, (...m) => m[1] + (UNSPACED_RE.test(m[1]) && UNSPACED_RE.test(m[2]) ? "" : " ")).replace(/\s+/g, " ").trim();
+  text = oneLine(text);
   if (!text) return null;
   const script = cjkScriptFor(text, row);
   if (script === "zh") return "https://chinesedictionary.mobi/?handler=QueryWorddict&mwdqb=" + encodeURIComponent(text);
