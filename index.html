@@ -9768,14 +9768,27 @@ function wireVocabCard(item) {
   });
 }
 
+let bookChordArmed = false;
+
+document.addEventListener("keydown", e => {
+  if (e.key !== "Meta" && e.key !== "Alt") bookChordArmed = false;
+}, true);
+
+document.addEventListener("keyup", e => {
+  if (!bookChordArmed || e.key !== "Meta" && e.key !== "Alt") return;
+  bookChordArmed = false;
+  const bookBtn = document.getElementById("vocabDictBtn");
+  if (currentView !== "vocab" || bookBtn.hidden || vocabEditingKey || isTypingInField()) return;
+  bookBtn.click();
+  bookBtn.blur();
+});
+
+window.addEventListener("blur", () => bookChordArmed = false);
+
 function handleVocabKey(e) {
   if (isTypingInField()) return;
-  if ((e.key === "Meta" && e.altKey || e.key === "Alt" && e.metaKey) && !e.ctrlKey && !e.shiftKey && !e.repeat) {
-    const bookBtn = document.getElementById("vocabDictBtn");
-    if (bookBtn.hidden || vocabEditingKey) return;
-    e.preventDefault();
-    bookBtn.click();
-    bookBtn.blur();
+  if ((e.key === "Meta" && e.altKey || e.key === "Alt" && e.metaKey) && !e.ctrlKey && !e.shiftKey) {
+    bookChordArmed = !e.repeat || bookChordArmed;
     return;
   }
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z") {
