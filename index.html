@@ -617,7 +617,7 @@ window.onYouTubeIframeAPIReady = function(){
   .dict-source mark.vocab-own.vocab-stack:not(.vocab-hit), .rich-editor mark.vocab-own.vocab-stack:not(.vocab-hit){background:color-mix(in srgb, var(--text) 36%, transparent);}
   .dict-source mark.vs, .rich-editor mark.vs{border-top-left-radius:3px;border-bottom-left-radius:3px;padding-left:1px;}
   .dict-source mark.ve, .rich-editor mark.ve{border-top-right-radius:3px;border-bottom-right-radius:3px;padding-right:1px;}
-  @media (hover:hover){.dict-source mark.vocab-hit:hover, .rich-editor mark.vocab-hit:hover{background:var(--vocab-bg-hover);}}
+  .dict-source mark.vocab-hover, .rich-editor mark.vocab-hover{background:var(--vocab-bg-hover);}
   .rich-editor ul, .vocab-popup ul{margin:2px 0;padding-left:20px;}
   .rich-editor li, .vocab-popup li{margin:2px 0;}
   .hover-tooltip{
@@ -2936,6 +2936,7 @@ function japaneseWorkerMain(cfg) {
         out.push({
           surface: pair,
           reading: FIXES[pair],
+          basic: pair,
           pos: "名詞"
         });
         i++;
@@ -2945,6 +2946,7 @@ function japaneseWorkerMain(cfg) {
       out.push({
         surface: t.surface_form,
         reading: t.reading && t.reading !== "*" ? wanakana.toHiragana(t.reading) : "",
+        basic: t.basic_form && t.basic_form !== "*" ? t.basic_form : t.surface_form,
         pos: t.pos
       });
     }
@@ -2996,7 +2998,12 @@ function japaneseWorkerMain(cfg) {
     postMessage({
       text: text,
       units: units(list),
-      reading: readingText(list)
+      reading: readingText(list),
+      words: list.map(t => ({
+        s: t.surface,
+        b: t.basic,
+        p: t.pos
+      }))
     });
   }
   onmessage = e => tokenizer ? handle(e.data) : queue.push(e.data);
@@ -3197,37 +3204,109 @@ function termSpans(folded, term) {
   return spans;
 }
 
-function findTermIn(text, term) {
-  const fold = foldWithMap(text);
-  const span = termSpans(fold.folded, foldVocab(term))[0];
-  return span ? [ fold.map[span[0]], fold.map[span[1]] ] : null;
+const KANA_TEXT_RE = /[\p{Script=Hiragana}\p{Script=Katakana}]/u;
+
+function jaForms(text) {
+  const ja = KANA_TEXT_RE.test(text) ? jaResults.get(text) : null;
+  if (!ja || !ja.words) return null;
+  if (ja.forms) return ja.forms;
+  const words = ja.words;
+  const starts = [];
+  let pos = 0;
+  words.forEach(w => {
+    starts.push(pos);
+    pos += w.s.length;
+  });
+  const forms = ja.forms = new Map;
+  if (pos !== text.length) return forms;
+  for (let i = 0; i < words.length; i++) {
+    let acc = "";
+    for (let j = i; j < words.length && j < i + 8; j++) {
+      if (words[j].b !== words[j].s) {
+        const key = foldVocab(acc + words[j].b);
+        let end = j + 1;
+        while (end < words.length && words[end].p === "助動詞") end++;
+        if (key && !forms.has(key)) forms.set(key, [ starts[i], end < words.length ? starts[end] : pos ]);
+      }
+      acc += words[j].s;
+    }
+  }
+  return forms;
 }
 
-let vocabTermsCache = null;
+function jaUnitEdges(text) {
+  const ja = KANA_TEXT_RE.test(text) || HAN_RE.test(text) ? jaResults.get(text) : null;
+  if (!ja) return null;
+  const edges = [ 0 ];
+  ja.units.forEach(u => edges.push(edges[edges.length - 1] + u.s.length));
+  return edges[edges.length - 1] === text.length ? edges : null;
+}
 
-function vocabTerms() {
-  if (!vocabTermsCache) {
-    const terms = vocabTermsCache = new Map;
-    allVocabCards().forEach(card => vocabEntriesOf(card).forEach(e => {
+function findTermIn(text, term) {
+  const fold = foldWithMap(text);
+  const key = foldVocab(term);
+  const span = termSpans(fold.folded, key)[0];
+  if (span) return [ fold.map[span[0]], fold.map[span[1]] ];
+  const forms = jaForms(text || "");
+  return forms && forms.get(key) || null;
+}
+
+function vocabCardEntries() {
+  const entries = [];
+  const taken = new Set;
+  const add = (card, lesson) => {
+    const id = (lesson ? lesson.id : "") + "\u0001" + card.uid;
+    if (taken.has(id)) return;
+    taken.add(id);
+    entries.push({
+      card: card,
+      lesson: lesson
+    });
+  };
+  if (isVirtualLesson()) rows.forEach(c => add(c, library.find(l => l.id === c.srcLessonId) || null)); else if (!library.some(l => l.id === currentLessonId)) vocabSource().forEach(c => add(c, null));
+  sortedLibrary().forEach(l => (l.id === currentLessonId ? vocabSource() : lessonCardsWithExtras(l)).forEach(c => add(c, l)));
+  return entries;
+}
+
+let vocabLookupCache = null;
+
+function vocabLookup() {
+  if (!vocabLookupCache) {
+    const cards = vocabCardEntries();
+    const terms = new Map;
+    cards.forEach(entry => vocabEntriesOf(entry.card).forEach(e => {
       const key = foldVocab(e.term);
       if (!key) return;
       if (!terms.has(key)) terms.set(key, []);
-      terms.get(key).push({
-        card: card,
+      terms.get(key).push(Object.assign({
         term: e.term
-      });
+      }, entry));
     }));
-    Promise.resolve().then(() => vocabTermsCache = null);
+    vocabLookupCache = {
+      cards: cards,
+      terms: terms
+    };
+    Promise.resolve().then(() => vocabLookupCache = null);
   }
-  return vocabTermsCache;
+  return vocabLookupCache;
+}
+
+function vocabTerms() {
+  return vocabLookup().terms;
+}
+
+function matchesHereFirst(matches) {
+  const here = new Set(rows);
+  return matches.map((m, i) => [ here.has(m.row) ? 0 : 1, i, m ]).sort((x, y) => x[0] - y[0] || x[1] - y[1]).map(x => x[2]);
 }
 
 function termMatches(key, exclude) {
-  return (vocabTerms().get(key) || []).filter(e => e.card !== exclude).map(e => ({
+  return matchesHereFirst((vocabTerms().get(key) || []).filter(e => e.card !== exclude).map(e => ({
     row: e.card,
+    lesson: e.lesson,
     sentence: e.card.q || "",
     term: e.term
-  }));
+  })));
 }
 
 function findVocabMatches(needleRaw, excludeId) {
@@ -3236,11 +3315,12 @@ function findVocabMatches(needleRaw, excludeId) {
   const exclude = rows.find(r => r.id === excludeId);
   const declared = termMatches(key, exclude);
   const seen = new Set(declared.map(m => m.row));
-  return declared.concat(allVocabCards().filter(c => c !== exclude && !seen.has(c) && findTermIn(c.q, key)).map(c => ({
-    row: c,
-    sentence: c.q,
+  return declared.concat(matchesHereFirst(vocabLookup().cards.filter(e => e.card !== exclude && !seen.has(e.card) && findTermIn(e.card.q, key)).map(e => ({
+    row: e.card,
+    lesson: e.lesson,
+    sentence: e.card.q,
     term: needleRaw.trim()
-  })));
+  }))));
 }
 
 function highlightMatch(sentence, needle) {
@@ -3268,15 +3348,24 @@ function highlightVocabInHtml(html, excludeId) {
     const text = textNode.nodeValue;
     if (!text.trim()) return;
     const fold = foldWithMap(text);
+    if (KANA_TEXT_RE.test(text)) japaneseFor(text);
+    const forms = jaForms(text);
+    const edges = jaUnitEdges(text);
+    const snap = (at, up) => edges ? up ? edges.find(x => x >= at) : edges.filter(x => x <= at).pop() : at;
     const words = [];
     terms.forEach((entries, key) => {
       if (seen.has(key)) return;
-      const span = termSpans(fold.folded, key)[0];
-      if (!span || fold.map[span[0]] >= fold.map[span[1]]) return;
+      const plain = termSpans(fold.folded, key)[0];
+      let span = plain && [ fold.map[plain[0]], fold.map[plain[1]] ];
+      const form = forms && forms.get(key);
+      if (form && (!span || form[0] < span[0])) span = form;
+      if (!span) return;
+      const a = snap(span[0], false), b = snap(span[1], true);
+      if (a >= b) return;
       seen.add(key);
       words.push({
-        a: fold.map[span[0]],
-        b: fold.map[span[1]],
+        a: a,
+        b: b,
         key: key,
         hit: entries.some(e => e.card !== exclude)
       });
@@ -3378,7 +3467,8 @@ function renderVocabPopup() {
   const notesHtml = m.row.notesHtml || escapeHtml(m.row.notes || "");
   popup.querySelector(".vocab-note").innerHTML = highlightTermInNotesHtml(notesHtml, m.term);
   const multi = vocabMatches.length > 1;
-  popup.querySelector(".vocab-counter").textContent = multi ? vocabIndex + 1 + " / " + vocabMatches.length : "";
+  const away = m.lesson && m.lesson.id !== currentLessonId && !rows.includes(m.row) ? m.lesson.name : "";
+  popup.querySelector(".vocab-counter").textContent = [ away, multi ? vocabIndex + 1 + " / " + vocabMatches.length : "" ].filter(Boolean).join(" · ");
   popup.querySelector(".prev").style.display = multi && vocabIndex > 0 ? "block" : "none";
   popup.querySelector(".next").style.display = multi && vocabIndex < vocabMatches.length - 1 ? "block" : "none";
 }
@@ -9955,6 +10045,19 @@ dictPanelsHost.addEventListener("click", e => {
   const row = dictSourceRow(hit.closest(".dict-source"));
   const matches = row ? markMatches(hit, row.id) : [];
   if (matches.length) showVocabPopup(matches, hit.getBoundingClientRect());
+});
+
+const hoverQuery = window.matchMedia("(hover: hover)");
+
+document.addEventListener("mouseover", e => {
+  if (!hoverQuery.matches) return;
+  const mark = e.target.closest && e.target.closest(".dict-source mark.vocab-hit, .rich-editor mark.vocab-hit");
+  document.querySelectorAll("mark.vocab-hover").forEach(m => m.classList.remove("vocab-hover"));
+  if (!mark) return;
+  const keys = markTerms(mark);
+  mark.closest(".dict-source, .rich-editor").querySelectorAll("mark.vocab-hit").forEach(m => {
+    if (markTerms(m).some(k => keys.includes(k))) m.classList.add("vocab-hover");
+  });
 });
 
 function repeatsHighlightedWord(box, range, text) {

@@ -63,14 +63,15 @@ As in Lessons, pointing at a word (or tapping its row on a phone) shows its piny
 
 When every word is studied, ☰, 📝 and ⇄ are hidden: only 🌐, the counts, 🎉 and the word list, always open, remain until words are due again.
 
-Words already in your vocabulary (the `word: meaning` lines in notes, in any lesson) are highlighted in questions and in the sentence above each dictionary. Green means another card, in this lesson or another one, also has the word: click it to see that card's sentence and note. Grey means only this card has it. Every word is highlighted, even inside or across another one, with the colours layered where they share characters, and clicking a shared character steps through every word on it. Selecting any other text looks it up in every card's sentence.
+Words already in your vocabulary (the `word: meaning` lines in notes, in any lesson) are highlighted in questions and in the sentence above each dictionary. Green means another card, in this lesson or another one, also has the word: click it to see that card's sentence and note, with the lesson's name when it comes from another lesson. Grey means only this card has it. Every word is highlighted, even inside or across another one, with the colours layered where they share characters; pointing at a word lights up all of it, and clicking a shared character steps through every word on it. Selecting any other text looks it up in every card's sentence. Cards from the lesson you are in come first.
 
 Words are found by the kind of writing at their edges, with no language setting and no lists of words to skip:
 
 - Chinese, Japanese, Thai, Lao, Khmer and Burmese, written without spaces, match anywhere.
 - Korean must start a spaced chunk but may end inside it, so 학교 matches 학교에서 but not 대학교.
 - Languages written with spaces (English, Vietnamese, Russian…) must match whole words, so "cat" does not match "concatenate".
-- Full-width and half-width forms count as the same (ｶﾀｶﾅ and カタカナ, ＡＢＣ and ABC), and case does not matter. Other forms of a word (went for go, 食べた for 食べる) are not matched; add them as words of their own.
+- Japanese verbs and adjectives also match in any form: 食べる highlights 食べました and 食べない. A word that covers part of a kanji compound highlights the whole compound, so its furigana stays in one piece.
+- Full-width and half-width forms count as the same (ｶﾀｶﾅ and カタカナ, ＡＢＣ and ABC), and case does not matter. In other languages, other forms of a word (went for go, 갔어요 for 가다) are not matched; add them as words of their own.
 
 ## Language help
 
