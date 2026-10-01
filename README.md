@@ -63,7 +63,7 @@ As in Lessons, pointing at a word (or tapping its row on a phone) shows its piny
 
 When every word is studied, ☰, 📝 and ⇄ are hidden: only 🌐, the counts, 🎉 and the word list, always open, remain until words are due again.
 
-Words already in your vocabulary are highlighted in questions and in the sentence above each dictionary; click one to see its notes.
+Words already in your vocabulary are highlighted in questions and in the sentence above each dictionary; click one to see its notes. Words that overlap are all highlighted, their colours layered where they share characters, and clicking a shared character steps through every word on it; a word that sits wholly inside a longer one is not highlighted on its own.
 
 ## Language help
 

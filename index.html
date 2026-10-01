@@ -611,8 +611,12 @@ window.onYouTubeIframeAPIReady = function(){
   .edit-row .rich-editor{margin-bottom:8px;display:block;}
   .rich-editor:empty::before{content:attr(data-placeholder);color:var(--text-3);font-style:italic;}
   #editNotes:empty::before{font-style:normal;}
-  .dict-source mark.vocab-own, .rich-editor mark.vocab-own{background:color-mix(in srgb, var(--text) 22%, transparent);color:inherit;border-radius:3px;padding:0 1px;}
-  .dict-source mark.vocab-hit, .rich-editor mark.vocab-hit{background:var(--vocab-bg);color:var(--vocab-text);border-radius:3px;padding:0 1px;cursor:pointer;}
+  .dict-source mark.vocab-own, .rich-editor mark.vocab-own{background:color-mix(in srgb, var(--text) 22%, transparent);color:inherit;}
+  .dict-source mark.vocab-hit, .rich-editor mark.vocab-hit{background:var(--vocab-bg);color:var(--vocab-text);cursor:pointer;}
+  .dict-source mark.vocab-stack, .rich-editor mark.vocab-stack{background:linear-gradient(color-mix(in srgb, var(--text) 16%, transparent), color-mix(in srgb, var(--text) 16%, transparent)), var(--vocab-bg);}
+  .dict-source mark.vocab-own.vocab-stack:not(.vocab-hit), .rich-editor mark.vocab-own.vocab-stack:not(.vocab-hit){background:color-mix(in srgb, var(--text) 36%, transparent);}
+  .dict-source mark.vs, .rich-editor mark.vs{border-top-left-radius:3px;border-bottom-left-radius:3px;padding-left:1px;}
+  .dict-source mark.ve, .rich-editor mark.ve{border-top-right-radius:3px;border-bottom-right-radius:3px;padding-right:1px;}
   @media (hover:hover){.dict-source mark.vocab-hit:hover, .rich-editor mark.vocab-hit:hover{background:var(--vocab-bg-hover);}}
   .rich-editor ul, .vocab-popup ul{margin:2px 0;padding-left:20px;}
   .rich-editor li, .vocab-popup li{margin:2px 0;}
@@ -3260,61 +3264,58 @@ function highlightVocabInHtml(html, excludeId) {
     if (!text) return;
     const units = explodeForPhraseMatch(tokenizeForVocab(text));
     if (!units.length) return;
-    let hasHit = false;
-    const frag = document.createDocumentFragment();
-    let i = 0;
-    while (i < units.length) {
-      if (!units[i].isWord) {
-        frag.appendChild(document.createTextNode(units[i].token));
-        i++;
-        continue;
-      }
-      let matchLen = 0;
-      let matchTerm = "";
-      let ownOnly = false;
+    const join = (a, b) => units.slice(a, b).map(u => u.token).join("");
+    const hits = [];
+    const owns = [];
+    units.forEach((u, i) => {
+      if (!u.isWord) return;
       const maxLen = Math.min(MAX_VOCAB_PHRASE_UNITS, units.length - i);
+      let hitDone = !index.length;
       for (let len = maxLen; len >= 1; len--) {
         if (!units[i + len - 1].isWord) continue;
-        const candidate = units.slice(i, i + len).map(u => u.token).join("");
-        if (candidate.trim().length >= 1 && index.length && findVocabMatches(candidate, excludeId, index).length) {
-          matchLen = len;
-          matchTerm = candidate;
-          break;
+        const term = join(i, i + len);
+        if (!hitDone && term.trim() && findVocabMatches(term, excludeId, index).length) {
+          hits.push({ a: i, b: i + len, term: term, hit: true });
+          hitDone = true;
         }
+        if (ownKeys.has(normalizeVocabText(term.trim()))) owns.push({ a: i, b: i + len, term: term, hit: false });
       }
-      if (!matchLen && ownKeys.size) {
-        for (let len = maxLen; len >= 1; len--) {
-          if (!units[i + len - 1].isWord) continue;
-          const candidate = units.slice(i, i + len).map(u => u.token).join("");
-          if (ownKeys.has(normalizeVocabText(candidate.trim()))) {
-            matchLen = len;
-            matchTerm = candidate;
-            ownOnly = true;
-            break;
-          }
-        }
+    });
+    const all = hits.concat(owns.filter(w => !hits.some(o => o.a === w.a && o.b === w.b)));
+    const words = all.filter(w => !all.some(o => o !== w && o.a <= w.a && o.b >= w.b)).sort((x, y) => x.a - y.a || y.b - x.b).filter(w => {
+      const key = normalizeVocabText(w.term);
+      if (seenTerms.has(key)) return false;
+      seenTerms.add(key);
+      return true;
+    });
+    if (!words.length) return;
+    const cuts = Array.from(new Set([ 0, units.length ].concat(...words.map(w => [ w.a, w.b ])))).sort((x, y) => x - y);
+    const frag = document.createDocumentFragment();
+    for (let k = 0; k < cuts.length - 1; k++) {
+      const a = cuts[k], b = cuts[k + 1];
+      const cover = words.filter(w => w.a <= a && w.b >= b);
+      if (!cover.length) {
+        frag.appendChild(document.createTextNode(join(a, b)));
+        continue;
       }
-      if (matchLen > 0) {
-        const normTerm = normalizeVocabText(matchTerm);
-        if (!seenTerms.has(normTerm)) {
-          const mark = document.createElement("mark");
-          mark.className = ownOnly ? "vocab-own" : "vocab-hit";
-          mark.textContent = matchTerm;
-          frag.appendChild(mark);
-          hasHit = true;
-          seenTerms.add(normTerm);
-        } else {
-          frag.appendChild(document.createTextNode(matchTerm));
-        }
-        i += matchLen;
-      } else {
-        frag.appendChild(document.createTextNode(units[i].token));
-        i++;
-      }
+      const mark = document.createElement("mark");
+      const hitTerms = cover.filter(w => w.hit).map(w => w.term);
+      mark.className = [ hitTerms.length ? "vocab-hit" : "", hitTerms.length < cover.length ? "vocab-own" : "", cover.length > 1 ? "vocab-stack" : "", cover.some(w => w.a < a) ? "" : "vs", cover.some(w => w.b > b) ? "" : "ve" ].filter(Boolean).join(" ");
+      if (hitTerms.length) mark.dataset.terms = hitTerms.join("\n");
+      mark.textContent = join(a, b);
+      frag.appendChild(mark);
     }
-    if (hasHit) textNode.replaceWith(frag);
+    textNode.replaceWith(frag);
   });
   return container.innerHTML;
+}
+
+function markTerms(mark) {
+  return (mark.dataset.terms || mark.textContent).split("\n");
+}
+
+function markMatches(mark, excludeId) {
+  return markTerms(mark).flatMap(term => findVocabMatches(term, excludeId));
 }
 
 function stripVocabHighlights(html) {
@@ -4371,8 +4372,7 @@ function wireEditBox(host, row) {
   editQ.addEventListener("click", e => {
     const hit = e.target.closest("mark.vocab-hit");
     if (!hit || !editQ.contains(hit)) return;
-    const word = hit.textContent;
-    const matches = findVocabMatches(word, row.id);
+    const matches = markMatches(hit, row.id);
     if (matches.length) {
       showVocabPopup(matches, hit.getBoundingClientRect());
     }
@@ -9959,13 +9959,14 @@ dictPanelsHost.addEventListener("click", e => {
   const hit = e.target.closest(".dict-source mark.vocab-hit");
   if (!hit) return;
   const row = dictSourceRow(hit.closest(".dict-source"));
-  const matches = row ? findVocabMatches(hit.textContent, row.id) : [];
+  const matches = row ? markMatches(hit, row.id) : [];
   if (matches.length) showVocabPopup(matches, hit.getBoundingClientRect());
 });
 
 function repeatsHighlightedWord(box, range, text) {
   const key = normalizeVocabText(text);
-  return Array.from(box.querySelectorAll("mark.vocab-hit")).some(m => normalizeVocabText(m.textContent) === key && !m.contains(range.commonAncestorContainer) && !range.intersectsNode(m));
+  const marks = Array.from(box.querySelectorAll("mark.vocab-hit")).filter(m => markTerms(m).some(t => normalizeVocabText(t) === key));
+  return !!marks.length && !marks.some(m => m.contains(range.commonAncestorContainer) || range.intersectsNode(m));
 }
 
 function fitTextarea(el) {
