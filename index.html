@@ -2868,6 +2868,17 @@ function sanitizeHtml(html) {
   return tpl.innerHTML;
 }
 
+function plainTextOf(html, lineBreak) {
+  const box = document.createElement("div");
+  box.innerHTML = html || "";
+  box.querySelectorAll("br").forEach(br => br.replaceWith("\n"));
+  box.querySelectorAll("div, p, li, ul, ol").forEach(el => {
+    el.before("\n");
+    el.after("\n");
+  });
+  return box.textContent.replace(/[^\S\n]*\n\s*/g, lineBreak).trim();
+}
+
 function pastedHtml(e) {
   const html = e.clipboardData.getData("text/html");
   return html ? sanitizeHtml(html) : escapeHtml(e.clipboardData.getData("text/plain")).replace(/\r?\n/g, "<br>");
@@ -4057,16 +4068,16 @@ function notesEditorHtml(row) {
 
 function commitActiveEdit() {
   if (!activeEdit) return;
-  let newQ = activeEdit.editQ.textContent || "";
+  let newQ = plainTextOf(activeEdit.editQ.innerHTML, " ");
   let newQHtml = sanitizeHtml(stripVocabHighlights(activeEdit.editQ.innerHTML || ""));
-  let newA = activeEdit.editA.textContent || "";
+  let newA = plainTextOf(activeEdit.editA.innerHTML, " ");
   let newAHtml = sanitizeHtml(stripVocabHighlights(activeEdit.editA.innerHTML || ""));
   const takenKeys = new Set;
   activeEdit.editNotes.querySelectorAll("li").forEach(li => {
     if (isVocabItem(li)) takenKeys.add(normalizeVocabText(noteItemTerm(li))); else if (NOTE_VOCAB_ITEM_RE.test(ownLiTextNodes(li).map(n => n.nodeValue).join("")) && !noteItemIsDuplicate(li, takenKeys)) boldVocabItem(li);
   });
   if (activeEdit.editNotes.textContent.trim() && !activeEdit.editNotes.querySelector("*")) activeEdit.editNotes.innerHTML = "<div>" + activeEdit.editNotes.innerHTML + "</div>";
-  const newNotes = activeEdit.editNotes.textContent || "";
+  const newNotes = plainTextOf(activeEdit.editNotes.innerHTML, "\n");
   const newNotesHtml = sanitizeHtml(activeEdit.editNotes.innerHTML || "");
   if (activeEdit.row.id === draftRowId) {
     const row = activeEdit.row;
@@ -4522,11 +4533,11 @@ function wireEditBox(host, row) {
     editNotes: editNotes,
     updateEditDict: updateEditDict
   };
-  activeEdit.originalQ = editQ.textContent || "";
+  activeEdit.originalQ = plainTextOf(editQ.innerHTML, " ");
   activeEdit.originalQHtml = sanitizeHtml(stripVocabHighlights(editQ.innerHTML || ""));
-  activeEdit.originalA = editA.textContent || "";
+  activeEdit.originalA = plainTextOf(editA.innerHTML, " ");
   activeEdit.originalAHtml = sanitizeHtml(stripVocabHighlights(editA.innerHTML || ""));
-  activeEdit.originalNotes = editNotes.textContent || "";
+  activeEdit.originalNotes = plainTextOf(editNotes.innerHTML, "\n");
   activeEdit.originalNotesHtml = sanitizeHtml(editNotes.innerHTML || "");
   host.querySelector("#editSave").onclick = () => {
     commitActiveEdit();
@@ -6184,14 +6195,17 @@ function normalizeSrs(srs) {
 
 function normalizeCard(c) {
   const time = c.time != null && isFinite(Number(c.time)) ? Number(c.time) : null;
+  const qHtml = c.qHtml ? sanitizeHtml(String(c.qHtml)) : "";
+  const aHtml = c.aHtml ? sanitizeHtml(String(c.aHtml)) : "";
+  const notesHtml = c.notesHtml ? sanitizeHtml(String(c.notesHtml)) : "";
   return {
     uid: typeof c.uid === "string" && c.uid ? c.uid : makeUid(),
-    q: String(c.q || ""),
-    a: String(c.a || ""),
-    qHtml: c.qHtml ? sanitizeHtml(String(c.qHtml)) : escapeHtml(String(c.q || "")),
-    aHtml: c.aHtml ? sanitizeHtml(String(c.aHtml)) : escapeHtml(String(c.a || "")),
-    notes: String(c.notes || ""),
-    notesHtml: c.notesHtml ? sanitizeHtml(String(c.notesHtml)) : "",
+    q: qHtml ? plainTextOf(qHtml, " ") : String(c.q || ""),
+    a: aHtml ? plainTextOf(aHtml, " ") : String(c.a || ""),
+    qHtml: qHtml || escapeHtml(String(c.q || "")),
+    aHtml: aHtml || escapeHtml(String(c.a || "")),
+    notes: notesHtml ? plainTextOf(notesHtml, "\n") : String(c.notes || ""),
+    notesHtml: notesHtml,
     time: time,
     srs: mergeModeSrs(c.srs ? normalizeSrs(c.srs) : migrateLegacySrs(c)),
     vocab: normalizeVocabSrs(c.vocab)
@@ -9055,7 +9069,7 @@ function importVocabText(text) {
       list.appendChild(li);
     });
     holder.notesHtml = box.innerHTML;
-    holder.notes = box.textContent;
+    holder.notes = plainTextOf(box.innerHTML, "\n");
     scheduleAutoSave();
     render();
     renderLessonList();
@@ -9348,7 +9362,7 @@ function rewrittenVocabNotes(row, item, term, meaning) {
     }
   }
   return {
-    notes: box.textContent,
+    notes: plainTextOf(box.innerHTML, "\n"),
     notesHtml: box.innerHTML
   };
 }
@@ -9967,7 +9981,7 @@ function addVocabToRow(row, term, meaning) {
   }
   pushUndo("Added word — " + term);
   row.notesHtml = box.innerHTML;
-  row.notes = box.textContent;
+  row.notes = plainTextOf(box.innerHTML, "\n");
   scheduleAutoSave();
   render();
   showToast("Added word — " + term);
