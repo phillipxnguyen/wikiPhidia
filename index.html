@@ -9659,6 +9659,14 @@ function wireVocabCard(item) {
 
 function handleVocabKey(e) {
   if (isTypingInField()) return;
+  if ((e.key === "Control" && e.altKey || e.key === "Alt" && e.ctrlKey) && !e.metaKey && !e.shiftKey && !e.repeat) {
+    const bookBtn = document.getElementById("vocabDictBtn");
+    if (bookBtn.hidden || vocabEditingKey) return;
+    e.preventDefault();
+    bookBtn.click();
+    bookBtn.blur();
+    return;
+  }
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z") {
     e.preventDefault();
     if (e.shiftKey) redo(); else undo();
@@ -9672,14 +9680,6 @@ function handleVocabKey(e) {
     if (!target) return;
     e.preventDefault();
     deleteVocabEntry(target, hovered ? document.querySelector(`#vocabList .vocab-list-row[data-key="${CSS.escape(hovered.key)}"], #vocabTable tr[data-key="${CSS.escape(hovered.key)}"]`) : null);
-    return;
-  }
-  if (e.key === "\\") {
-    const bookBtn = document.getElementById("vocabDictBtn");
-    if (bookBtn.hidden) return;
-    e.preventDefault();
-    bookBtn.click();
-    bookBtn.blur();
     return;
   }
   if (vocabView === "group") {
