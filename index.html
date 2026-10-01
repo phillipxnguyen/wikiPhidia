@@ -3238,8 +3238,15 @@ function scriptGroup(ch) {
   return /[\p{L}\p{N}\p{M}]/u.test(ch) ? "spaced" : "";
 }
 
+function foldScripts(s) {
+  return s.replace(/([òóỏõọ](?=[ae])|[ùúủũụ](?=y))([aey])(?![\p{L}\p{M}])/gu, (...m) => {
+    const d = m[1].normalize("NFD");
+    return d[0] + (m[2] + d.slice(1)).normalize("NFC");
+  }).replace(/[\u30a1-\u30f6]/g, c => String.fromCharCode(c.charCodeAt(0) - 96));
+}
+
 function foldVocab(s) {
-  return (s || "").normalize("NFKC").toLowerCase().replace(/\s+/g, " ").trim();
+  return foldScripts((s || "").normalize("NFKC").toLowerCase().replace(/\s+/g, " ").trim());
 }
 
 function foldWithMap(text) {
@@ -3255,7 +3262,7 @@ function foldWithMap(text) {
   });
   map.push(pos);
   return {
-    folded: folded,
+    folded: foldScripts(folded),
     map: map
   };
 }
@@ -3379,24 +3386,33 @@ function hangulParts(ch) {
 
 function koreanVerbSpans(folded, term) {
   const stem = Array.from(term.slice(0, -1));
-  const last = hangulParts(stem[stem.length - 1]);
+  const n = stem.length;
+  const last = hangulParts(stem[n - 1]);
   if (!last) return [];
-  const merged = last[0] === 18 && last[1] === 0 ? 1 : {
-    8: 9,
-    13: 14,
-    20: 6,
-    11: 10,
-    18: 4
-  }[last[1]];
+  const [ L, V, T ] = last;
+  const merged = L === 18 && V === 0 ? [ 1 ] : {
+    8: [ 9 ],
+    13: [ 14 ],
+    20: [ 6 ],
+    11: [ 10 ],
+    18: [ 4, 0 ]
+  }[V] || [];
   const head = stem.slice(0, -1).join("");
   const spans = [];
   for (const m of folded.matchAll(/[\uac00-\ud7a3]+/g)) {
     const word = Array.from(m[0]);
-    if (!m[0].startsWith(head) || word.length < stem.length) continue;
-    const x = hangulParts(word[stem.length - 1]);
-    const next = word[stem.length];
+    const next = word[n] || "-";
     let ok = false;
-    if (x[0] === last[0] && x[1] === last[1] && x[2] === last[2]) ok = KO_ENDINGS.has(next); else if (!last[2] && x[0] === last[0] && x[1] === last[1]) ok = x[2] === 20 || !!next && (KO_BATCHIM_NEXT[x[2]] || "").includes(next); else if (!last[2] && x[0] === last[0] && x[1] === merged) ok = !x[2] || x[2] === 20;
+    if (word.length >= n && m[0].startsWith(head)) {
+      const [ xl, xv, xt ] = hangulParts(word[n - 1]);
+      if (xl === L && xv === V && xt === T) ok = KO_ENDINGS.has(next); else if (xl === L && xv === V && !T) ok = xt === 20 || (KO_BATCHIM_NEXT[xt] || "").includes(next); else if (xl === L && !T && merged.includes(xv)) ok = !xt || xt === 20; else if (xl === L && xv === V && T === 17 && !xt) ok = "워와웠왔우".includes(next); else if (xl === L && xv === V && T === 7 && xt === 8) ok = "어었아았으을은음".includes(next); else if (xl === L && xv === V && T === 19 && !xt) ok = "아어았었으을은".includes(next); else if (xl === L && T === 27 && xv === 1) ok = !xt || xt === 20;
+    }
+    if (!ok && stem[n - 1] === "르" && n >= 2 && word.length >= n && m[0].startsWith(stem.slice(0, -2).join(""))) {
+      const p = hangulParts(stem[n - 2]);
+      const y = hangulParts(word[n - 2]);
+      const x = hangulParts(word[n - 1]);
+      ok = !p[2] && y[0] === p[0] && y[1] === p[1] && y[2] === 8 && x[0] === 5 && (x[1] === 0 || x[1] === 4) && (!x[2] || x[2] === 20);
+    }
     if (ok) spans.push([ m.index, m.index + m[0].length ]);
   }
   return spans;
@@ -3417,7 +3433,7 @@ function termSpans(folded, term) {
     spans.push([ at, end ]);
   }
   if (spans.length) return spans;
-  if (/^[a-z'’]+(?: [a-z'’]+)*$/.test(term)) return englishSpans(folded, term);
+  if (/^[a-z'’]+(?:[ -][a-z'’]+)*$/.test(term)) return englishSpans(folded, term.replace(/-/g, " "));
   if (/^[\uac00-\ud7a3]{2,}$/.test(term) && term.endsWith("다")) return koreanVerbSpans(folded, term);
   return spans;
 }
