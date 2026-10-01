@@ -63,7 +63,7 @@ As in Lessons, pointing at a word (or tapping its row on a phone) shows its piny
 
 When every word is studied, ☰, 📝 and ⇄ are hidden: only 🌐, the counts, 🎉 and the word list, always open, remain until words are due again.
 
-Words already in your vocabulary are highlighted in questions and in the sentence above each dictionary; click one to see its notes. Words that overlap are all highlighted, their colours layered where they share characters, and clicking a shared character steps through every word on it; a word that sits wholly inside a longer one is not highlighted on its own.
+Words already in your vocabulary are highlighted in questions and in the sentence above each dictionary; click one to see its notes. Green means other cards use the word (click it to see them); grey means it is one of your words with nothing else to look up. Every word is highlighted, even inside or across another one, with the colours layered where they share characters, and clicking a shared character steps through every word on it. The only thing left out is a piece of a longer word that would show exactly the same cards as the longer word.
 
 ## Language help
 

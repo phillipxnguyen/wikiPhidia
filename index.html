@@ -3265,24 +3265,20 @@ function highlightVocabInHtml(html, excludeId) {
     const units = explodeForPhraseMatch(tokenizeForVocab(text));
     if (!units.length) return;
     const join = (a, b) => units.slice(a, b).map(u => u.token).join("");
-    const hits = [];
-    const owns = [];
+    const found = [];
     units.forEach((u, i) => {
       if (!u.isWord) return;
       const maxLen = Math.min(MAX_VOCAB_PHRASE_UNITS, units.length - i);
-      let hitDone = !index.length;
-      for (let len = maxLen; len >= 1; len--) {
+      for (let len = 1; len <= maxLen; len++) {
         if (!units[i + len - 1].isWord) continue;
         const term = join(i, i + len);
-        if (!hitDone && term.trim() && findVocabMatches(term, excludeId, index).length) {
-          hits.push({ a: i, b: i + len, term: term, hit: true });
-          hitDone = true;
-        }
-        if (ownKeys.has(normalizeVocabText(term.trim()))) owns.push({ a: i, b: i + len, term: term, hit: false });
+        if (!term.trim()) continue;
+        const ids = new Set(index.length ? findVocabMatches(term, excludeId, index).map(m => m.row.id) : []);
+        const vocab = ownKeys.has(normalizeVocabText(term.trim()));
+        if (ids.size || vocab) found.push({ a: i, b: i + len, term: term, hit: ids.size > 0, ids: ids, vocab: vocab });
       }
     });
-    const all = hits.concat(owns.filter(w => !hits.some(o => o.a === w.a && o.b === w.b)));
-    const words = all.filter(w => !all.some(o => o !== w && o.a <= w.a && o.b >= w.b)).sort((x, y) => x.a - y.a || y.b - x.b).filter(w => {
+    const words = found.filter(w => w.vocab || !found.some(o => o !== w && o.a <= w.a && o.b >= w.b && [ ...w.ids ].every(id => o.ids.has(id)))).sort((x, y) => x.a - y.a || y.b - x.b).filter(w => {
       const key = normalizeVocabText(w.term);
       if (seenTerms.has(key)) return false;
       seenTerms.add(key);
