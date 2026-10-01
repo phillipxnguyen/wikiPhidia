@@ -38,7 +38,7 @@ Group and Listening share one queue: a card studied in one mode leaves the other
 | ↑ | Play or pause the sound |
 | ↓ | In a group, copy the questions; one card at a time (Flashcards, Listening), edit the card |
 | 1 – 5 | In a group, play just that row over and over: its video clip, or read aloud when it has none (press again to stop) |
-| Space | Reveal / flip |
+| Space | Reveal / flip; in Listening, once the card is shown, play or pause the sound (like ↑) |
 | ⌘/Ctrl + Z | Undo, including grades (add Shift to redo) |
 | Delete | Delete the card |
 | ⌃ + ⌥ (Ctrl + Alt) | In Vocabulary, show or hide the word list (Group) or the dictionary (Flashcards) |
