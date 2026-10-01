@@ -3271,7 +3271,7 @@ const EN_IRREGULAR = new Map;
 
 const EN_IRREGULAR_BASES = new Set;
 
-"be:was:were:been:being:is:are:am|have:has:had:having|do:does:did:done|go:goes:went:gone|say:said|get:got:gotten|make:made|know:knew:known|think:thought|take:took:taken|see:seen|come:came|give:gave:given|tell:told|bring:brought|begin:began:begun|keep:kept|hold:held|write:wrote:written|stand:stood|hear:heard|mean:meant|meet:met|run:ran|pay:paid|sit:sat|speak:spoken|lie:lain|lead:led|grow:grew:grown|lose:lost|fall:fallen|send:sent|build:built|understand:understood|draw:drew:drawn|break:broke:broken|spend:spent|rise:risen|drive:drove:driven|buy:bought|wear:wore:worn|choose:chose:chosen|seek:sought|throw:threw:thrown|catch:caught|deal:dealt|win:won|forget:forgot:forgotten|sell:sold|fight:fought|teach:taught|eat:ate:eaten|sing:sang:sung|drink:drank:drunk|swim:swam:swum|fly:flew:flown|sleep:slept|ride:rode:ridden|hide:hid:hidden|shake:shook:shaken|steal:stole:stolen|wake:woke:woken|bite:bitten|blow:blew:blown|feed:fed|hang:hung|lend:lent|bend:bent|bleed:bled|dig:dug|forgive:forgave:forgiven|freeze:froze:frozen|lay:laid|ring:rang:rung|shine:shone|sink:sank:sunk|slide:slid|spin:spun|stick:stuck|strike:struck|swear:swore:sworn|sweep:swept|swing:swung|tear:tore:torn|weep:wept|withdraw:withdrew:withdrawn|arise:arose:arisen|become:became|cling:clung|dream:dreamt|flee:fled|forbid:forbade:forbidden|mistake:mistook:mistaken|overcome:overcame|prove:proven|smell:smelt|spell:spelt|stink:stank:stunk|undertake:undertook:undertaken|good:better:best|bad:worse:worst|man:men|woman:women|child:children|person:people|foot:feet|tooth:teeth|mouse:mice|goose:geese|wife:wives|knife:knives|half:halves|wolf:wolves|shelf:shelves|thief:thieves".split("|").forEach(group => {
+"be:was:were:been:being:is:are:am|have:has:had:having|do:does:did:done|go:goes:went:gone|say:said|get:got:gotten|make:made|know:knew:known|think:thought|take:took:taken|see:saw:seen|come:came|give:gave:given|find:found|tell:told|feel:felt|leave:left|bring:brought|begin:began:begun|keep:kept|hold:held|write:wrote:written|stand:stood|hear:heard|mean:meant|meet:met|run:ran|pay:paid|sit:sat|speak:spoke:spoken|lie:lay:lain|lead:led|grow:grew:grown|lose:lost|fall:fell:fallen|send:sent|build:built|understand:understood|draw:drew:drawn|break:broke:broken|spend:spent|rise:rose:risen|drive:drove:driven|buy:bought|wear:wore:worn|choose:chose:chosen|seek:sought|throw:threw:thrown|catch:caught|deal:dealt|win:won|forget:forgot:forgotten|sell:sold|fight:fought|teach:taught|eat:ate:eaten|sing:sang:sung|drink:drank:drunk|swim:swam:swum|fly:flew:flown|sleep:slept|ride:rode:ridden|hide:hid:hidden|shake:shook:shaken|steal:stole:stolen|wake:woke:woken|bite:bit:bitten|blow:blew:blown|feed:fed|hang:hung|shoot:shot|light:lit|lend:lent|bend:bent|bleed:bled|dig:dug|forgive:forgave:forgiven|freeze:froze:frozen|lay:laid|ring:rang:rung|shine:shone|sink:sank:sunk|slide:slid|spin:spun|stick:stuck|strike:struck|swear:swore:sworn|sweep:swept|swing:swung|tear:tore:torn|weep:wept|wind:wound|withdraw:withdrew:withdrawn|arise:arose:arisen|become:became|bet|bind:bound|burst|cast|cling:clung|cost|cut|dream:dreamt|fit|flee:fled|forbid:forbade:forbidden|hit|hurt|let|mistake:mistook:mistaken|overcome:overcame|prove:proven|put|quit|read|set|shut|smell:smelt|spell:spelt|split|spread|stink:stank:stunk|undertake:undertook:undertaken|upset|good:better:best|bad:worse:worst|many:more:most|much:more:most|little:less:least|far:further:furthest:farther:farthest|man:men|woman:women|child:children|person:people|foot:feet|tooth:teeth|mouse:mice|goose:geese|life:lives|wife:wives|knife:knives|leaf:leaves|half:halves|wolf:wolves|shelf:shelves|thief:thieves".split("|").forEach(group => {
   const [ base, ...forms ] = group.split(":");
   EN_IRREGULAR_BASES.add(base);
   forms.forEach(form => {
@@ -3345,14 +3345,14 @@ function englishSpans(folded, term) {
   if (parts.every(part => EN_ARTICLES.has(part))) return [];
   const words = englishWords(folded);
   const joined = (prev, w) => prev < 0 || /^[ -]$/.test(folded.slice(words[prev].b, w.a));
-  const fits = (part, w) => EN_ARTICLES.has(part) ? part === "the" ? w.word === "the" : w.word === "a" || w.word === "an" : EN_POSSESSIVES.has(part) ? EN_POSSESSIVES.has(w.word) || /'s$/.test(w.word) : EN_SELVES.has(part) ? EN_SELVES.has(w.word) : w.bases.has(part);
-  const match = (pi, wi, prev, omitted) => {
+  const fits = (part, w) => EN_ARTICLES.has(part) ? EN_ARTICLES.has(w.word) : EN_POSSESSIVES.has(part) ? EN_POSSESSIVES.has(w.word) || /'s$/.test(w.word) : EN_SELVES.has(part) ? EN_SELVES.has(w.word) : w.bases.has(part);
+  const match = (pi, wi, prev) => {
     if (pi === parts.length) return prev;
     const part = parts[pi];
     const w = words[wi];
     const next = w && joined(prev, w);
-    if (EN_ARTICLES.has(part) && pi > 0) {
-      const skipped = match(pi + 1, wi, prev, true);
+    if (EN_ARTICLES.has(part)) {
+      const skipped = match(pi + 1, wi, prev);
       if (skipped !== null) return skipped;
     }
     if (!next) return null;
@@ -3370,7 +3370,7 @@ function englishSpans(folded, term) {
       const end = match(pi + 1, wi + 1, wi);
       if (end !== null) return end;
     }
-    return EN_ARTICLES.has(w.word) && !EN_ARTICLES.has(part) && prev >= 0 && !omitted ? match(pi, wi + 1, wi) : null;
+    return EN_ARTICLES.has(w.word) && !EN_ARTICLES.has(part) && prev >= 0 ? match(pi, wi + 1, wi) : null;
   };
   const spans = [];
   words.forEach((w, i) => {
@@ -3378,14 +3378,10 @@ function englishSpans(folded, term) {
     const end = match(0, i, -1);
     if (end !== null && end >= i) spans.push([ w.a, words[end].b ]);
   });
-  if (spans.length || parts.length < 2 || parts[0] !== "a" && parts[0] !== "an") return spans;
-  const rest = parts.slice(1);
-  return englishSpans(folded, rest.join(" ")).filter(([ a, b ]) => words.some(w => w.a >= a && w.b <= b && /s$/.test(w.word) && !rest.includes(w.word) && rest.some(part => w.bases.has(part))));
+  return spans;
 }
 
 const KO_ENDINGS = new Set("요어아여고는다지서면니게세시기도자며러려으습을은음네나군죠던든냐야었았였겠셨");
-
-const KO_SAFE_NEXT = new Set("어아여었았였으을은음습겠");
 
 const KO_BATCHIM_NEXT = {
   4: "다데",
@@ -3419,7 +3415,7 @@ function koreanVerbSpans(folded, term) {
     let ok = false;
     if (word.length >= n && m[0].startsWith(head)) {
       const [ xl, xv, xt ] = hangulParts(word[n - 1]);
-      if (xl === L && xv === V && xt === T) ok = (n > 1 ? KO_ENDINGS : KO_SAFE_NEXT).has(next); else if (xl === L && xv === V && !T) ok = xt === 20 || (KO_BATCHIM_NEXT[xt] || "").includes(next); else if (xl === L && !T && merged.includes(xv)) ok = !xt || xt === 20; else if (xl === L && xv === V && T === 17 && !xt) ok = "워와웠왔우".includes(next); else if (xl === L && xv === V && T === 19 && !xt) ok = "아어았었으을은".includes(next); else if (xl === L && T === 27 && xv === 1) ok = !xt || xt === 20;
+      if (xl === L && xv === V && xt === T) ok = KO_ENDINGS.has(next); else if (xl === L && xv === V && !T) ok = xt === 20 || (KO_BATCHIM_NEXT[xt] || "").includes(next); else if (xl === L && !T && merged.includes(xv)) ok = !xt || xt === 20; else if (xl === L && xv === V && T === 17 && !xt) ok = "워와웠왔우".includes(next); else if (xl === L && xv === V && T === 7 && xt === 8) ok = "어었아았으을은음".includes(next); else if (xl === L && xv === V && T === 19 && !xt) ok = "아어았었으을은".includes(next); else if (xl === L && T === 27 && xv === 1) ok = !xt || xt === 20;
     }
     if (!ok && stem[n - 1] === "르" && n >= 2 && word.length >= n && m[0].startsWith(stem.slice(0, -2).join(""))) {
       const p = hangulParts(stem[n - 2]);
