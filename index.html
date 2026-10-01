@@ -309,8 +309,8 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-ctx mark .rd::before{color:inherit;}
   .vocab-ctx mark:has(.rd){padding-top:.7em;}
   .vocab-meaning{font-size:28px;font-weight:600;line-height:1.35;color:var(--a-text);overflow-wrap:anywhere;}
-  #vocabSpeak{min-width:40px;}
-  #vocabSpeak.active{background:var(--accent);color:var(--on-accent);border-color:var(--accent);}
+  #vocabSpeak, #vocabDictBtn{min-width:40px;}
+  #vocabSpeak.active, #vocabDictBtn.active{background:var(--accent);color:var(--on-accent);border-color:var(--accent);}
   html:not(.touch) .vocab-touch-only{display:none !important;}
   .vocab-actions{display:inline-flex;flex-shrink:0;}
   .vocab-actions{gap:12px;padding-left:12px;}
@@ -347,10 +347,6 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-list.open .vocab-list-toggle::before{content:"▾";}
   .vocab-list.fixed .vocab-list-toggle{pointer-events:none;}
   .vocab-list.fixed .vocab-list-toggle::before{display:none;}
-  .vocab-dict-bar{height:36px;}
-  .vocab-dict-box:not(.open) .vocab-dict-bar{margin-bottom:0;}
-  .vocab-dict-box.open .vocab-list-toggle::before{content:"▾";}
-  #vocabDictPanels .stroke-order-panel{margin:0;padding:0;border:0;box-shadow:none;}
   .vocab-list-row[data-key]{display:contents;}
   .vocab-list-row[data-key] > *{display:flex;align-items:center;padding:8px 16px 8px 0;border-top:1px solid var(--border);font-size:14px;}
   .vocab-list-row[data-key] > :last-child{padding-right:2px;}
@@ -1077,6 +1073,7 @@ window.onYouTubeIframeAPIReady = function(){
       <button id="vocabFrontBtn" class="sep-before" aria-label="Switch which side shows first">⇄</button>
     </div>
     <div class="toolbar-right">
+      <button id="vocabDictBtn" aria-label="Dictionary" aria-pressed="false" hidden>📖</button>
       <button id="vocabSpeak" aria-label="Play the sentence">🔊</button>
       <select id="vocabSpeed" aria-label="Playback speed" hidden></select>
     </div>
@@ -1084,10 +1081,7 @@ window.onYouTubeIframeAPIReady = function(){
   <div id="vocabBadges" class="vocab-badges"></div>
   <div id="vocabStage"></div>
   <div id="vocabGroupStrokes" class="stroke-order-panel" hidden></div>
-  <div id="vocabDictBox" class="panel vocab-dict-box" hidden>
-    <div class="vocab-list-bar vocab-dict-bar"><button class="vocab-list-toggle" aria-expanded="false">Dictionary</button></div>
-    <div id="vocabDictPanels"></div>
-  </div>
+  <div id="vocabDictPanels"></div>
   <div id="vocabInlineAdd" hidden></div>
   <div id="vocabList" class="panel vocab-list" hidden></div>
 </section>
@@ -8634,7 +8628,7 @@ function vocabEditorHtml(item) {
 
 function renderVocabDict() {
   const host = document.getElementById("vocabDictPanels");
-  const box = document.getElementById("vocabDictBox");
+  const btn = document.getElementById("vocabDictBtn");
   const card = currentView === "vocab" && vocabView === "card" ? currentVocabItem() : null;
   const nextKey = card && vocabSession.queue[1];
   const next = nextKey ? lessonVocabItems(vocabSource()).find(i => i.key === nextKey) : null;
@@ -8656,9 +8650,9 @@ function renderVocabDict() {
   };
   next && panelFor(next);
   const current = card && panelFor(card);
-  box.hidden = !current;
-  box.classList.toggle("open", vocabDictOpen);
-  box.querySelector(".vocab-list-toggle").setAttribute("aria-expanded", vocabDictOpen);
+  btn.hidden = !current;
+  btn.classList.toggle("active", vocabDictOpen);
+  btn.setAttribute("aria-pressed", vocabDictOpen);
   const shown = vocabDictOpen && current;
   Array.from(host.children).forEach(el => {
     if (el === shown && el.classList.contains("dict-pending")) drawStrokeOrder(el.querySelector(".dict-stroke"), card.term, cjkScriptFor(card.term, card.card) === "ja", "vocabDictStroke");
@@ -9537,11 +9531,10 @@ function pinVocabArea() {
   window.scrollTo(0, Math.max(0, window.scrollY + top - cover - 8));
 }
 
-document.getElementById("vocabDictBox").addEventListener("click", e => {
-  if (!e.target.closest(".vocab-list-toggle")) return;
+document.getElementById("vocabDictBtn").onclick = () => {
   vocabDictOpen = !vocabDictOpen;
   renderVocabDict();
-});
+};
 
 function closeVocabList() {
   const was = vocabListOpen;
