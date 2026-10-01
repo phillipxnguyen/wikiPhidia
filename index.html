@@ -1593,8 +1593,8 @@ function newRow(q, a, time) {
     uid: makeUid(),
     q: q,
     a: a,
-    qHtml: escapeHtml(q),
-    aHtml: escapeHtml(a),
+    qHtml: textHtml(q),
+    aHtml: textHtml(a),
     qHidden: false,
     aHidden: false,
     notes: "",
@@ -2423,7 +2423,7 @@ function renderImportInfo() {
 }
 
 function aCellContent(r) {
-  return r.aHidden ? "···" : r.aHtml || escapeHtml(r.a);
+  return r.aHidden ? "···" : r.aHtml || textHtml(r.a);
 }
 
 function buildRowTr(r) {
@@ -2563,7 +2563,7 @@ function renderDictPanels() {
       el = document.createElement("div");
       el.className = "stroke-order-panel dict-pending";
       el.dataset.url = url;
-      el.innerHTML = `<div class="dict-source">${escapeHtml(r.q)}</div><div class="dict-answer"></div><div class="dict-stroke"></div><iframe class="dict-frame"></iframe>`;
+      el.innerHTML = `<div class="dict-source"></div><div class="dict-answer"></div><div class="dict-stroke"></div><iframe class="dict-frame"></iframe>`;
       el.querySelector("iframe").src = url;
       host.appendChild(el);
     }
@@ -2573,7 +2573,7 @@ function renderDictPanels() {
     const key = r.id + "\u0001" + (r.qHtml || r.q || "") + "\u0001" + notesSig + "\u0001" + typeof pinyinPro + jaResults.size;
     if (src.dataset.key !== key) {
       src.dataset.key = key;
-      src.innerHTML = highlightVocabInHtml(r.qHtml || escapeHtml(r.q || ""), r.id);
+      src.innerHTML = highlightVocabInHtml(r.qHtml || textHtml(r.q), r.id);
       addReadings(src, r);
     }
     const answer = el.querySelector(".dict-answer");
@@ -2797,7 +2797,7 @@ function qCellContent(r) {
   if (loopingRowId === r.id) badgeClasses += " looping";
   if (ytHasError) badgeClasses += " disabled";
   const badge = r.time != null ? `<span class="${badgeClasses}" data-id="${r.id}">${formatTime(r.time)}</span>` : "";
-  return badge + (r.qHidden ? "···" : r.qHtml || escapeHtml(r.q));
+  return badge + (r.qHidden ? "···" : r.qHtml || textHtml(r.q));
 }
 
 function escapeHtml(s) {
@@ -2824,7 +2824,11 @@ const HTML_TAG_ALIASES = {
 
 const DROP_HTML_TAGS = new Set([ "SCRIPT", "STYLE", "IFRAME", "FRAME", "FRAMESET", "OBJECT", "EMBED", "APPLET", "LINK", "META", "BASE", "TEMPLATE", "NOSCRIPT", "SVG", "MATH", "FORM", "INPUT", "TEXTAREA", "BUTTON", "SELECT", "OPTION", "AUDIO", "VIDEO", "SOURCE", "TRACK", "CANVAS", "IMG", "PICTURE", "TITLE", "HEAD", "RT", "RP" ]);
 
-function sanitizeHtml(html) {
+function textHtml(text) {
+  return escapeHtml(text || "").replace(/\r?\n/g, "<br>");
+}
+
+function sanitizeHtml(html, newlines) {
   if (!html) return "";
   const tpl = document.createElement("template");
   tpl.innerHTML = html;
@@ -2866,6 +2870,23 @@ function sanitizeHtml(html) {
       node.replaceWith(el);
     });
   })(tpl.content);
+  if (!newlines) return tpl.innerHTML;
+  const isBlock = n => n && /^(DIV|UL|OL|LI)$/.test(n.nodeName);
+  const walker = document.createTreeWalker(tpl.content, NodeFilter.SHOW_TEXT);
+  const texts = [];
+  while (walker.nextNode()) if (/[\r\n]/.test(walker.currentNode.nodeValue)) texts.push(walker.currentNode);
+  texts.forEach(t => {
+    if (!t.nodeValue.trim() && (isBlock(t.previousSibling) || isBlock(t.nextSibling) || /^(UL|OL)$/.test(t.parentNode.nodeName))) {
+      t.remove();
+      return;
+    }
+    if (newlines === "space") {
+      t.nodeValue = t.nodeValue.replace(/\s*[\r\n]\s*/g, " ");
+      return;
+    }
+    const parts = t.nodeValue.split(/\r?\n|\r/);
+    t.replaceWith(...parts.flatMap((part, i) => i ? [ document.createElement("br"), part ] : [ part ]).filter(n => n !== ""));
+  });
   return tpl.innerHTML;
 }
 
@@ -2882,7 +2903,7 @@ function plainTextOf(html, lineBreak = "\n") {
 
 function pastedHtml(e) {
   const html = e.clipboardData.getData("text/html");
-  return html ? sanitizeHtml(html) : escapeHtml(e.clipboardData.getData("text/plain")).replace(/\r?\n/g, "<br>");
+  return html ? sanitizeHtml(html, "space") : textHtml(e.clipboardData.getData("text/plain"));
 }
 
 let studyLang = "auto";
@@ -3461,7 +3482,7 @@ function stripVocabHighlights(html) {
 
 function getEditInitialHtml(plainText, existingHtml, excludeId) {
   if (!plainText) return existingHtml || "";
-  const baseHtml = existingHtml || escapeHtml(plainText);
+  const baseHtml = existingHtml || textHtml(plainText);
   return highlightVocabInHtml(baseHtml, excludeId);
 }
 
@@ -4071,9 +4092,9 @@ function notesEditorHtml(row) {
 function commitActiveEdit() {
   if (!activeEdit) return;
   let newQ = plainTextOf(activeEdit.editQ.innerHTML, "\n");
-  let newQHtml = sanitizeHtml(stripVocabHighlights(activeEdit.editQ.innerHTML || ""));
+  let newQHtml = sanitizeHtml(stripVocabHighlights(activeEdit.editQ.innerHTML || ""), "br");
   let newA = plainTextOf(activeEdit.editA.innerHTML, "\n");
-  let newAHtml = sanitizeHtml(stripVocabHighlights(activeEdit.editA.innerHTML || ""));
+  let newAHtml = sanitizeHtml(stripVocabHighlights(activeEdit.editA.innerHTML || ""), "br");
   const takenKeys = new Set;
   activeEdit.editNotes.querySelectorAll("li").forEach(li => {
     if (isVocabItem(li)) takenKeys.add(normalizeVocabText(noteItemTerm(li))); else if (NOTE_VOCAB_ITEM_RE.test(ownLiTextNodes(li).map(n => n.nodeValue).join("")) && !noteItemIsDuplicate(li, takenKeys)) boldVocabItem(li);
@@ -4165,7 +4186,7 @@ window.addEventListener("blur", () => {
 });
 
 function buildEditBoxInner(row) {
-  return `\n    <div style="display:flex;gap:10px;">\n      <div style="flex:1;">\n        <div id="editQ" class="rich-editor" contenteditable="true" data-placeholder="Question">${getEditInitialHtml(row.q, row.qHtml, row.id)}</div>\n      </div>\n      <div style="flex:1;">\n        <div id="editA" class="rich-editor" contenteditable="true" data-placeholder="Answer">${row.aHtml || escapeHtml(row.a)}</div>\n      </div>\n    </div>\n    <div id="editNotes" class="rich-editor" contenteditable="true" data-placeholder="Optional notes" style="margin-bottom:8px;">${notesEditorHtml(row)}</div>\n    <div class="edit-actions">\n      <button id="editSave" class="primary">Save</button>\n    </div>\n    <div id="editDict"></div>\n  `;
+  return `\n    <div style="display:flex;gap:10px;">\n      <div style="flex:1;">\n        <div id="editQ" class="rich-editor" contenteditable="true" data-placeholder="Question">${getEditInitialHtml(row.q, row.qHtml, row.id)}</div>\n      </div>\n      <div style="flex:1;">\n        <div id="editA" class="rich-editor" contenteditable="true" data-placeholder="Answer">${row.aHtml || textHtml(row.a)}</div>\n      </div>\n    </div>\n    <div id="editNotes" class="rich-editor" contenteditable="true" data-placeholder="Optional notes" style="margin-bottom:8px;">${notesEditorHtml(row)}</div>\n    <div class="edit-actions">\n      <button id="editSave" class="primary">Save</button>\n    </div>\n    <div id="editDict"></div>\n  `;
 }
 
 let draftRowId = null;
@@ -4537,9 +4558,9 @@ function wireEditBox(host, row) {
     updateEditDict: updateEditDict
   };
   activeEdit.originalQ = plainTextOf(editQ.innerHTML, "\n");
-  activeEdit.originalQHtml = sanitizeHtml(stripVocabHighlights(editQ.innerHTML || ""));
+  activeEdit.originalQHtml = sanitizeHtml(stripVocabHighlights(editQ.innerHTML || ""), "br");
   activeEdit.originalA = plainTextOf(editA.innerHTML, "\n");
-  activeEdit.originalAHtml = sanitizeHtml(stripVocabHighlights(editA.innerHTML || ""));
+  activeEdit.originalAHtml = sanitizeHtml(stripVocabHighlights(editA.innerHTML || ""), "br");
   activeEdit.originalNotes = plainTextOf(editNotes.innerHTML, "\n");
   activeEdit.originalNotesHtml = sanitizeHtml(editNotes.innerHTML || "");
   host.querySelector("#editSave").onclick = () => {
@@ -5808,7 +5829,7 @@ function planImport(entries, forPreview) {
     if (isNew.has(r)) {
       if (field === "a") {
         r.a = value;
-        r.aHtml = escapeHtml(value);
+        r.aHtml = textHtml(value);
       } else {
         r.notes = value;
         r.notesHtml = escapeHtml(value);
@@ -5906,7 +5927,7 @@ function commitImport(plan, label) {
   fills.forEach((f, r) => {
     if (f.a != null) {
       r.a = f.a;
-      r.aHtml = escapeHtml(f.a);
+      r.aHtml = textHtml(f.a);
       transliterationCache.delete(cacheKey(r.id, "a"));
     }
     if (f.notes != null) {
@@ -6203,15 +6224,15 @@ function normalizeSrs(srs) {
 
 function normalizeCard(c) {
   const time = c.time != null && isFinite(Number(c.time)) ? Number(c.time) : null;
-  const qHtml = c.qHtml ? sanitizeHtml(String(c.qHtml)) : "";
-  const aHtml = c.aHtml ? sanitizeHtml(String(c.aHtml)) : "";
+  const qHtml = c.qHtml ? sanitizeHtml(String(c.qHtml), "br") : "";
+  const aHtml = c.aHtml ? sanitizeHtml(String(c.aHtml), "br") : "";
   const notesHtml = c.notesHtml ? sanitizeHtml(String(c.notesHtml)) : "";
   return {
     uid: typeof c.uid === "string" && c.uid ? c.uid : makeUid(),
     q: qHtml ? plainTextOf(qHtml, "\n") : String(c.q || ""),
     a: aHtml ? plainTextOf(aHtml, "\n") : String(c.a || ""),
-    qHtml: qHtml || escapeHtml(String(c.q || "")),
-    aHtml: aHtml || escapeHtml(String(c.a || "")),
+    qHtml: qHtml || textHtml(String(c.q || "")),
+    aHtml: aHtml || textHtml(String(c.a || "")),
     notes: notesHtml ? plainTextOf(notesHtml, "\n") : String(c.notes || ""),
     notesHtml: notesHtml,
     time: time,
@@ -6259,8 +6280,8 @@ function serializeCard(r) {
     uid: r.uid,
     q: r.q,
     a: r.a,
-    qHtml: r.qHtml || escapeHtml(r.q || ""),
-    aHtml: r.aHtml || escapeHtml(r.a || ""),
+    qHtml: r.qHtml || textHtml(r.q),
+    aHtml: r.aHtml || textHtml(r.a),
     notes: r.notes || "",
     notesHtml: r.notesHtml || "",
     time: r.time,
@@ -10111,7 +10132,7 @@ function editDictField(el, row) {
   const field = el.classList.contains("dict-source") ? "q" : "a";
   hideVocabPopup();
   hideVocabAddPopup();
-  el.innerHTML = row[field + "Html"] || escapeHtml(row[field] || "");
+  el.innerHTML = row[field + "Html"] || textHtml(row[field]);
   el.contentEditable = "true";
   el.classList.add("dict-editing");
   el.focus();
@@ -10126,7 +10147,7 @@ function editDictField(el, row) {
     listeners.abort();
     el.removeAttribute("contenteditable");
     el.classList.remove("dict-editing");
-    const html = sanitizeHtml(el.innerHTML);
+    const html = sanitizeHtml(el.innerHTML, "br");
     const text = plainTextOf(html, "\n");
     if (save && (text || field === "a") && (html !== row[field + "Html"] || text !== row[field])) {
       pushUndo("Edited card");
