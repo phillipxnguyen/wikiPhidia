@@ -762,7 +762,7 @@ window.onYouTubeIframeAPIReady = function(){
   #dictPanels{display:flex;flex-direction:column;position:relative;}
   #vocabDictPanels{position:relative;}
   #dictPanels .dict-pending, #vocabDictPanels .dict-pending{position:absolute;top:0;left:0;right:0;height:0;overflow:hidden;visibility:hidden;pointer-events:none;}
-  #dictPanels:not(.with-source) .dict-source{display:none;}
+  #dictPanels:not(.with-source) .dict-source, #dictPanels:not(.with-source) .dict-answer{display:none;}
   #viewStudy.focus-study > .lesson-header, #viewStudy.focus-study > .save-status, #viewStudy.focus-study > .lesson-meta{display:none;}
   .swipe-ghost{position:fixed;z-index:1000;box-sizing:border-box;display:flex;justify-content:center;border:3px solid var(--border);border-radius:28px;background:var(--surface);box-shadow:var(--shadow-md);font-size:34px;font-weight:700;pointer-events:none;}
   .swipe-ghost.row{align-items:center;border-radius:16px;font-size:20px;}
@@ -770,6 +770,7 @@ window.onYouTubeIframeAPIReady = function(){
   .swipe-ghost.again{color:var(--danger);border-color:currentColor;}
   .swipe-ghost.delete{color:var(--text);border-color:currentColor;}
   .dict-source{font-size:28px;line-height:2.1;color:var(--text);margin:0 0 6px;overflow-wrap:break-word;}
+  .dict-answer{font-size:20px;line-height:1.5;color:var(--a-text);margin:-12px 0 16px;overflow-wrap:break-word;}
   .dict-stroke:not(:last-child) .stroke-order-row{margin-bottom:14px;}
   .dict-frame{display:block;width:100%;height:360px;border:1px solid var(--border);border-radius:8px;background:#fff;}
 
@@ -2557,7 +2558,7 @@ function renderDictPanels() {
       el = document.createElement("div");
       el.className = "stroke-order-panel dict-pending";
       el.dataset.url = url;
-      el.innerHTML = `<div class="dict-source">${escapeHtml(r.q)}</div><div class="dict-stroke"></div><iframe class="dict-frame"></iframe>`;
+      el.innerHTML = `<div class="dict-source">${escapeHtml(r.q)}</div><div class="dict-answer"></div><div class="dict-stroke"></div><iframe class="dict-frame"></iframe>`;
       el.querySelector("iframe").src = url;
       host.appendChild(el);
     }
@@ -2570,6 +2571,13 @@ function renderDictPanels() {
       src.innerHTML = highlightVocabInHtml(escapeHtml(r.q || ""), r.id);
       addReadings(src, r);
     }
+    const answer = el.querySelector(".dict-answer");
+    const answerHtml = r.aHtml || escapeHtml(r.a || "");
+    if (answer.dataset.html !== answerHtml) {
+      answer.dataset.html = answerHtml;
+      answer.innerHTML = answerHtml;
+    }
+    answer.hidden = !(r.a || "").trim() || r.aHidden;
     return el;
   };
   preload.forEach(panelFor);
