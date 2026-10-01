@@ -758,9 +758,6 @@ window.onYouTubeIframeAPIReady = function(){
   #vocabDictPanels{position:relative;}
   #dictPanels .dict-pending, #vocabDictPanels .dict-pending{position:absolute;top:0;left:0;right:0;height:0;overflow:hidden;visibility:hidden;pointer-events:none;}
   #dictPanels:not(.with-source) .dict-source{display:none;}
-  #vocabGroupStrokes{display:flex;flex-wrap:wrap;justify-content:center;gap:12px 28px;}
-  #vocabGroupStrokes[hidden]{display:none;}
-  #vocabGroupStrokes:not([hidden]) + .vocab-list:not([hidden]){margin-top:14px;padding-top:14px;border-top:1px solid var(--border);}
   #viewStudy.focus-study > .lesson-header, #viewStudy.focus-study > .save-status, #viewStudy.focus-study > .lesson-meta{display:none;}
   .swipe-ghost{position:fixed;z-index:1000;box-sizing:border-box;display:flex;justify-content:center;border:3px solid var(--border);border-radius:28px;background:var(--surface);box-shadow:var(--shadow-md);font-size:34px;font-weight:700;pointer-events:none;}
   .swipe-ghost.row{align-items:center;border-radius:16px;font-size:20px;}
@@ -1083,10 +1080,7 @@ window.onYouTubeIframeAPIReady = function(){
   <div id="vocabStage"></div>
   <div id="vocabDictPanels"></div>
   <div id="vocabInlineAdd" hidden></div>
-  <div id="vocabWordsBox" class="panel" hidden>
-    <div id="vocabGroupStrokes" hidden></div>
-    <div id="vocabList" class="vocab-list" hidden></div>
-  </div>
+  <div id="vocabList" class="panel vocab-list" hidden></div>
 </section>
 
 <section id="viewStudy" hidden>
@@ -8653,27 +8647,8 @@ function renderVocabDict() {
   if (shown) guardDictFocus();
   const stale = Array.from(host.children).filter(el => el.dataset.used !== now).sort((a, b) => a.dataset.used - b.dataset.used);
   stale.slice(0, Math.max(0, host.children.length - 10)).forEach(el => el.remove());
-  renderVocabGroupStrokes();
 }
 
-function renderVocabGroupStrokes() {
-  const host = document.getElementById("vocabGroupStrokes");
-  const group = currentView === "vocab" && vocabView === "group" && vocabSession ? currentVocabGroup() : [];
-  const words = typeof HanziWriter === "undefined" ? [] : group.filter(item => /[一-鿿]/.test(item.term));
-  const key = words.map(item => item.key).join("\u0001");
-  const qShown = vocabFront !== "a" || !!vocabSession && vocabSession.shown;
-  const list = document.getElementById("vocabList");
-  host.hidden = !words.length || !qShown || list.hidden;
-  document.getElementById("vocabWordsBox").hidden = list.hidden;
-  if (host.hidden) {
-    host.dataset.key = "";
-    host.innerHTML = "";
-  } else if (host.dataset.key !== key) {
-    host.dataset.key = key;
-    host.innerHTML = words.map(() => "<div></div>").join("");
-    words.forEach((item, i) => drawStrokeOrder(host.children[i], item.term, cjkScriptFor(item.term, item.card) === "ja", "vocabGroupStroke_" + i));
-  }
-}
 
 function renderVocab() {
   if (currentView !== "vocab") return;
@@ -9625,6 +9600,7 @@ function gradeVocabGroup(isAgain, key) {
 
 function toggleVocabGroupReveal() {
   if (!currentVocabGroup().length) return;
+  closeVocabList();
   vocabSession.shown = !vocabSession.shown;
   if (!vocabSession.shown) stopVocabSound();
   renderVocab();
