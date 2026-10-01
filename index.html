@@ -753,7 +753,7 @@ window.onYouTubeIframeAPIReady = function(){
     background:var(--surface);
     border:1px solid var(--border);
     border-radius:var(--radius);
-    padding:16px;
+    padding:23px;
     margin-bottom:16px;
     box-shadow:var(--shadow-sm);
     text-align:center;
@@ -773,8 +773,8 @@ window.onYouTubeIframeAPIReady = function(){
   .swipe-ghost.again{color:var(--danger);border-color:currentColor;}
   .swipe-ghost.delete{color:var(--text);border-color:currentColor;}
   .dict-source, .dict-answer{font-size:28px;line-height:1.3;margin:-.1em 0;overflow-wrap:break-word;}
-  .dict-source{color:var(--text);margin-top:calc(7px - .1em);}
-  .dict-source:has(.rd){line-height:2.1;margin:calc(7px + .06em) 0 -.53em;}
+  .dict-source{color:var(--text);}
+  .dict-source:has(.rd){line-height:2.1;margin:.06em 0 -.53em;}
   .dict-answer{color:var(--a-text);}
   .dict-frame{display:block;width:100%;height:360px;border:1px solid var(--border);border-radius:8px;background:#fff;}
 
@@ -2803,11 +2803,25 @@ function escapeHtml(s) {
   return (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-const SAFE_HTML_TAGS = new Set([ "B", "STRONG", "I", "EM", "U", "S", "STRIKE", "DEL", "INS", "MARK", "SUB", "SUP", "SMALL", "BIG", "BR", "HR", "DIV", "P", "SPAN", "FONT", "UL", "OL", "LI", "BLOCKQUOTE", "PRE", "CODE", "H1", "H2", "H3", "H4", "H5", "H6", "RUBY", "RT", "RP" ]);
+const SAFE_HTML_TAGS = new Set([ "B", "I", "U", "S", "BR", "DIV", "UL", "OL", "LI" ]);
 
-const SAFE_HTML_ATTRS = new Set([ "style", "class", "color", "face", "size", "title", "lang", "dir" ]);
+const HTML_TAG_ALIASES = {
+  STRONG: "B",
+  EM: "I",
+  STRIKE: "S",
+  DEL: "S",
+  P: "DIV",
+  H1: "DIV",
+  H2: "DIV",
+  H3: "DIV",
+  H4: "DIV",
+  H5: "DIV",
+  H6: "DIV",
+  BLOCKQUOTE: "DIV",
+  PRE: "DIV"
+};
 
-const DROP_HTML_TAGS = new Set([ "SCRIPT", "STYLE", "IFRAME", "FRAME", "FRAMESET", "OBJECT", "EMBED", "APPLET", "LINK", "META", "BASE", "TEMPLATE", "NOSCRIPT", "SVG", "MATH", "FORM", "INPUT", "TEXTAREA", "BUTTON", "SELECT", "OPTION", "AUDIO", "VIDEO", "SOURCE", "TRACK", "CANVAS", "IMG", "PICTURE", "TITLE", "HEAD" ]);
+const DROP_HTML_TAGS = new Set([ "SCRIPT", "STYLE", "IFRAME", "FRAME", "FRAMESET", "OBJECT", "EMBED", "APPLET", "LINK", "META", "BASE", "TEMPLATE", "NOSCRIPT", "SVG", "MATH", "FORM", "INPUT", "TEXTAREA", "BUTTON", "SELECT", "OPTION", "AUDIO", "VIDEO", "SOURCE", "TRACK", "CANVAS", "IMG", "PICTURE", "TITLE", "HEAD", "RT", "RP" ]);
 
 function sanitizeHtml(html) {
   if (!html) return "";
@@ -2826,16 +2840,37 @@ function sanitizeHtml(html) {
         return;
       }
       clean(node);
-      if (!SAFE_HTML_TAGS.has(tag)) {
-        node.replaceWith(...node.childNodes);
+      const style = (node.getAttribute("style") || "").toLowerCase();
+      const weight = (style.match(/font-weight\s*:\s*([a-z0-9]+)/) || [])[1];
+      let name = HTML_TAG_ALIASES[tag] || tag;
+      if (name === "B" && (weight === "normal" || Number(weight) < 600)) name = "";
+      const wraps = [];
+      if (name !== "B" && (weight === "bold" || weight === "bolder" || Number(weight) >= 600)) wraps.push("B");
+      if (name !== "I" && /font-style\s*:\s*(italic|oblique)/.test(style)) wraps.push("I");
+      if (name !== "U" && /text-decoration[^;]*underline/.test(style)) wraps.push("U");
+      if (name !== "S" && /text-decoration[^;]*line-through/.test(style)) wraps.push("S");
+      let kids = Array.from(node.childNodes);
+      wraps.forEach(w => {
+        const el = document.createElement(w);
+        el.append(...kids);
+        kids = [ el ];
+      });
+      if (!SAFE_HTML_TAGS.has(name)) {
+        node.replaceWith(...kids);
         return;
       }
-      Array.from(node.attributes).forEach(attr => {
-        if (!SAFE_HTML_ATTRS.has(attr.name.toLowerCase())) node.removeAttribute(attr.name);
-      });
+      const el = document.createElement(name);
+      el.append(...kids);
+      if (name === "UL" && node.classList.contains("notes-list")) el.className = "notes-list";
+      node.replaceWith(el);
     });
   })(tpl.content);
   return tpl.innerHTML;
+}
+
+function pastedHtml(e) {
+  const html = e.clipboardData.getData("text/html");
+  return html ? sanitizeHtml(html) : escapeHtml(e.clipboardData.getData("text/plain")).replace(/\r?\n/g, "<br>");
 }
 
 let studyLang = "auto";
@@ -4023,16 +4058,16 @@ function notesEditorHtml(row) {
 function commitActiveEdit() {
   if (!activeEdit) return;
   let newQ = activeEdit.editQ.textContent || "";
-  let newQHtml = stripVocabHighlights(activeEdit.editQ.innerHTML || "");
+  let newQHtml = sanitizeHtml(stripVocabHighlights(activeEdit.editQ.innerHTML || ""));
   let newA = activeEdit.editA.textContent || "";
-  let newAHtml = stripVocabHighlights(activeEdit.editA.innerHTML || "");
+  let newAHtml = sanitizeHtml(stripVocabHighlights(activeEdit.editA.innerHTML || ""));
   const takenKeys = new Set;
   activeEdit.editNotes.querySelectorAll("li").forEach(li => {
     if (isVocabItem(li)) takenKeys.add(normalizeVocabText(noteItemTerm(li))); else if (NOTE_VOCAB_ITEM_RE.test(ownLiTextNodes(li).map(n => n.nodeValue).join("")) && !noteItemIsDuplicate(li, takenKeys)) boldVocabItem(li);
   });
   if (activeEdit.editNotes.textContent.trim() && !activeEdit.editNotes.querySelector("*")) activeEdit.editNotes.innerHTML = "<div>" + activeEdit.editNotes.innerHTML + "</div>";
   const newNotes = activeEdit.editNotes.textContent || "";
-  const newNotesHtml = activeEdit.editNotes.innerHTML || "";
+  const newNotesHtml = sanitizeHtml(activeEdit.editNotes.innerHTML || "");
   if (activeEdit.row.id === draftRowId) {
     const row = activeEdit.row;
     const at = rows.indexOf(row);
@@ -4395,7 +4430,11 @@ function wireEditBox(host, row) {
       if (el === editNotes) toggleVocabBullets(el); else document.execCommand("insertUnorderedList");
       autoResizeDiv(el);
     });
-    el.addEventListener("paste", () => {
+    el.addEventListener("paste", e => {
+      if (el !== editNotes) {
+        e.preventDefault();
+        document.execCommand("insertHTML", false, pastedHtml(e));
+      }
       setTimeout(() => autoResizeDiv(el), 0);
     });
   });
@@ -4484,11 +4523,11 @@ function wireEditBox(host, row) {
     updateEditDict: updateEditDict
   };
   activeEdit.originalQ = editQ.textContent || "";
-  activeEdit.originalQHtml = stripVocabHighlights(editQ.innerHTML || "");
+  activeEdit.originalQHtml = sanitizeHtml(stripVocabHighlights(editQ.innerHTML || ""));
   activeEdit.originalA = editA.textContent || "";
-  activeEdit.originalAHtml = stripVocabHighlights(editA.innerHTML || "");
+  activeEdit.originalAHtml = sanitizeHtml(stripVocabHighlights(editA.innerHTML || ""));
   activeEdit.originalNotes = editNotes.textContent || "";
-  activeEdit.originalNotesHtml = editNotes.innerHTML || "";
+  activeEdit.originalNotesHtml = sanitizeHtml(editNotes.innerHTML || "");
   host.querySelector("#editSave").onclick = () => {
     commitActiveEdit();
     render();
