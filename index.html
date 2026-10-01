@@ -346,6 +346,10 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-list.open .vocab-list-toggle::before{content:"▾";}
   .vocab-list.fixed .vocab-list-toggle{pointer-events:none;}
   .vocab-list.fixed .vocab-list-toggle::before{display:none;}
+  .vocab-dict-bar{height:36px;border-radius:var(--radius-sm);background:var(--accent-soft);}
+  .vocab-dict-box:not(.open) .vocab-dict-bar{margin-bottom:0;}
+  .vocab-dict-box.open .vocab-list-toggle::before{content:"▾";}
+  #vocabDictPanels .stroke-order-panel{margin:0;padding:0;border:0;box-shadow:none;}
   .vocab-list-row[data-key]{display:contents;}
   .vocab-list-row[data-key] > *{display:flex;align-items:center;padding:8px 16px 8px 0;border-top:1px solid var(--border);font-size:14px;}
   .vocab-list-row[data-key] > :last-child{padding-right:2px;}
@@ -1079,7 +1083,10 @@ window.onYouTubeIframeAPIReady = function(){
   <div id="vocabBadges" class="vocab-badges"></div>
   <div id="vocabStage"></div>
   <div id="vocabGroupStrokes" class="stroke-order-panel" hidden></div>
-  <div id="vocabDictPanels"></div>
+  <div id="vocabDictBox" class="panel vocab-dict-box" hidden>
+    <div class="vocab-list-bar vocab-dict-bar"><button class="vocab-list-toggle" aria-expanded="false">Dictionary</button></div>
+    <div id="vocabDictPanels"></div>
+  </div>
   <div id="vocabInlineAdd" hidden></div>
   <div id="vocabList" class="panel vocab-list" hidden></div>
 </section>
@@ -8190,6 +8197,8 @@ let vocabShownIsVideo = false;
 let vocabStudying = false;
 
 let vocabListOpen = false;
+
+let vocabDictOpen = false;
 let vocabAllMultiLang = false;
 
 const VOCAB_LIST_PAGE = 100;
@@ -8624,10 +8633,10 @@ function vocabEditorHtml(item) {
 
 function renderVocabDict() {
   const host = document.getElementById("vocabDictPanels");
+  const box = document.getElementById("vocabDictBox");
   const card = currentView === "vocab" && vocabView === "card" ? currentVocabItem() : null;
   const nextKey = card && vocabSession.queue[1];
   const next = nextKey ? lessonVocabItems(vocabSource()).find(i => i.key === nextKey) : null;
-  const editing = card && vocabEditingKey === card.key && !vocabEditingInList ? card : null;
   const now = String(Date.now());
   const panelFor = item => {
     const url = dictUrlFor(item.term, item.card);
@@ -8644,10 +8653,14 @@ function renderVocabDict() {
     el.dataset.used = now;
     return el;
   };
-  [ card, next ].forEach(item => item && panelFor(item));
-  const shown = editing && panelFor(editing);
+  next && panelFor(next);
+  const current = card && panelFor(card);
+  box.hidden = !current;
+  box.classList.toggle("open", vocabDictOpen);
+  box.querySelector(".vocab-list-toggle").setAttribute("aria-expanded", vocabDictOpen);
+  const shown = vocabDictOpen && current;
   Array.from(host.children).forEach(el => {
-    if (el === shown && el.classList.contains("dict-pending")) drawStrokeOrder(el.querySelector(".dict-stroke"), editing.term, cjkScriptFor(editing.term, editing.card) === "ja", "vocabEditStroke");
+    if (el === shown && el.classList.contains("dict-pending")) drawStrokeOrder(el.querySelector(".dict-stroke"), card.term, cjkScriptFor(card.term, card.card) === "ja", "vocabDictStroke");
     el.classList.toggle("dict-pending", el !== shown);
   });
   if (shown) guardDictFocus();
@@ -9523,6 +9536,12 @@ function pinVocabArea() {
   window.scrollTo(0, Math.max(0, window.scrollY + top - cover - 8));
 }
 
+document.getElementById("vocabDictBox").addEventListener("click", e => {
+  if (!e.target.closest(".vocab-list-toggle")) return;
+  vocabDictOpen = !vocabDictOpen;
+  renderVocabDict();
+});
+
 function closeVocabList() {
   const was = vocabListOpen;
   vocabListOpen = false;
@@ -9577,6 +9596,7 @@ function gradeVocabItems(items, isAgain, label) {
   s.queue = ready.concat(s.queue);
   s.flipped = false;
   closeVocabList();
+  vocabDictOpen = false;
   scheduleAutoSave();
   renderVocab();
   pinVocabArea();
