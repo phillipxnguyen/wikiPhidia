@@ -9837,6 +9837,8 @@ function addVocabToRow(row, term, meaning) {
 
 let vocabAddPopup = null;
 
+let vocabAddPopupScrollY = 0;
+
 function hideVocabAddPopup() {
   if (vocabAddPopup) vocabAddPopup.remove();
   vocabAddPopup = null;
@@ -9860,6 +9862,7 @@ function showVocabAddPopup(row, term, rect) {
   if (top + box.height > window.innerHeight - 8) top = rect.top - box.height - 8;
   popup.style.left = Math.max(8, Math.min(rect.left, window.innerWidth - box.width - 8)) + "px";
   popup.style.top = Math.max(8, top) + "px";
+  vocabAddPopupScrollY = window.scrollY;
   input.focus();
   const caret = document.createRange();
   caret.selectNodeContents(input);
@@ -9898,9 +9901,14 @@ document.addEventListener("pointerdown", e => {
   if (vocabAddPopup && !vocabAddPopup.contains(e.target)) hideVocabAddPopup();
 }, true);
 
-window.addEventListener("scroll", e => {
-  if (vocabAddPopup && !vocabAddPopup.contains(e.target)) hideVocabAddPopup();
-}, true);
+window.addEventListener("scroll", () => {
+  if (!vocabAddPopup) return;
+  vocabAddPopup.style.top = parseFloat(vocabAddPopup.style.top) - (window.scrollY - vocabAddPopupScrollY) + "px";
+  vocabAddPopupScrollY = window.scrollY;
+  const band = visibleBand();
+  const r = vocabAddPopup.getBoundingClientRect();
+  if (r.bottom < band.top || r.top > band.bottom) hideVocabAddPopup();
+});
 
 function dictSourceRow(el) {
   const panel = el && el.closest && el.closest("#dictPanels .stroke-order-panel");
