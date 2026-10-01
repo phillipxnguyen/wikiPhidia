@@ -3345,14 +3345,14 @@ function englishSpans(folded, term) {
   if (parts.every(part => EN_ARTICLES.has(part))) return [];
   const words = englishWords(folded);
   const joined = (prev, w) => prev < 0 || /^[ -]$/.test(folded.slice(words[prev].b, w.a));
-  const fits = (part, w) => EN_ARTICLES.has(part) ? EN_ARTICLES.has(w.word) : EN_POSSESSIVES.has(part) ? EN_POSSESSIVES.has(w.word) || /'s$/.test(w.word) : EN_SELVES.has(part) ? EN_SELVES.has(w.word) : w.bases.has(part);
-  const match = (pi, wi, prev) => {
+  const fits = (part, w) => EN_ARTICLES.has(part) ? part === "the" ? w.word === "the" : w.word === "a" || w.word === "an" : EN_POSSESSIVES.has(part) ? EN_POSSESSIVES.has(w.word) || /'s$/.test(w.word) : EN_SELVES.has(part) ? EN_SELVES.has(w.word) : w.bases.has(part);
+  const match = (pi, wi, prev, omitted) => {
     if (pi === parts.length) return prev;
     const part = parts[pi];
     const w = words[wi];
     const next = w && joined(prev, w);
     if (EN_ARTICLES.has(part) && pi > 0) {
-      const skipped = match(pi + 1, wi, prev);
+      const skipped = match(pi + 1, wi, prev, true);
       if (skipped !== null) return skipped;
     }
     if (!next) return null;
@@ -3370,7 +3370,7 @@ function englishSpans(folded, term) {
       const end = match(pi + 1, wi + 1, wi);
       if (end !== null) return end;
     }
-    return EN_ARTICLES.has(w.word) && !EN_ARTICLES.has(part) && prev >= 0 ? match(pi, wi + 1, wi) : null;
+    return EN_ARTICLES.has(w.word) && !EN_ARTICLES.has(part) && prev >= 0 && !omitted ? match(pi, wi + 1, wi) : null;
   };
   const spans = [];
   words.forEach((w, i) => {
