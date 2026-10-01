@@ -3142,171 +3142,156 @@ let vocabMatches = [];
 
 let vocabIndex = 0;
 
-const KOREAN_PARTICLES = [ "이라도", "이라서", "이지만", "에게서", "한테서", "로부터", "이나마", "이라", "지만", "부터", "까지", "마저", "조차", "밖에", "한테", "에게", "에서", "으로", "이나", "이랑", "라도", "라서", "은", "는", "이", "가", "을", "를", "도", "만", "에", "로", "와", "과", "의", "나", "랑", "다" ].sort((a, b) => b.length - a.length);
-
-const VOCAB_STOPWORDS = new Set([ ...KOREAN_PARTICLES, "a", "an", "the", "of", "to", "in", "on", "at", "for", "and", "or", "but", "nor", "so", "is", "are", "was", "were", "am", "be", "been", "being", "it", "its", "this", "that", "these", "those", "he", "she", "they", "we", "you", "i", "my", "your", "his", "her", "their", "our", "as", "by", "from", "with" ]);
-
-function stripParticle(word) {
-  for (const p of KOREAN_PARTICLES) {
-    if (word.length > p.length && word.endsWith(p)) {
-      return word.slice(0, word.length - p.length);
-    }
-  }
-  return word;
-}
-
 function normalizeVocabText(s) {
   return (s || "").normalize("NFC").toLowerCase();
 }
 
-function vocabIndexFor(excludeId) {
-  return rows.filter(r => r.id !== excludeId && r.notes && r.notes.trim()).map(r => ({
-    row: r,
-    q: normalizeVocabText(r.q),
-    notes: normalizeVocabText(r.notes)
+const UNSPACED_RE = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Thai}\p{Script=Lao}\p{Script=Khmer}\p{Script=Myanmar}\u30fc]/u;
+
+function scriptGroup(ch) {
+  if (!ch) return "";
+  if (UNSPACED_RE.test(ch)) return "unspaced";
+  if (/\p{Script=Hangul}/u.test(ch)) return "hangul";
+  return /[\p{L}\p{N}\p{M}]/u.test(ch) ? "spaced" : "";
+}
+
+function foldVocab(s) {
+  return (s || "").normalize("NFKC").toLowerCase().trim();
+}
+
+function foldWithMap(text) {
+  let folded = "";
+  const map = [];
+  let pos = 0;
+  ((text || "").match(/[^\p{M}\uff9e\uff9f][\p{M}\uff9e\uff9f]*|[\p{M}\uff9e\uff9f]+/gu) || []).forEach(seg => {
+    const f = seg.normalize("NFKC").toLowerCase();
+    for (let k = 0; k < f.length; k++) map.push(pos);
+    folded += f;
+    pos += seg.length;
+  });
+  map.push(pos);
+  return {
+    folded: folded,
+    map: map
+  };
+}
+
+function termSpans(folded, term) {
+  const spans = [];
+  if (!term) return spans;
+  const chars = Array.from(term);
+  const first = scriptGroup(chars[0]);
+  const last = scriptGroup(chars[chars.length - 1]);
+  for (let at = folded.indexOf(term); at !== -1; at = folded.indexOf(term, at + 1)) {
+    const end = at + term.length;
+    const before = scriptGroup(Array.from(folded.slice(Math.max(0, at - 2), at)).pop());
+    const after = end < folded.length ? scriptGroup(String.fromCodePoint(folded.codePointAt(end))) : "";
+    if ((first === "spaced" || first === "hangul") && before === first) continue;
+    if (last === "spaced" && after === "spaced") continue;
+    spans.push([ at, end ]);
+  }
+  return spans;
+}
+
+function findTermIn(text, term) {
+  const fold = foldWithMap(text);
+  const span = termSpans(fold.folded, foldVocab(term))[0];
+  return span ? [ fold.map[span[0]], fold.map[span[1]] ] : null;
+}
+
+let vocabTermsCache = null;
+
+function vocabTerms() {
+  if (!vocabTermsCache) {
+    const terms = vocabTermsCache = new Map;
+    allVocabCards().forEach(card => vocabEntriesOf(card).forEach(e => {
+      const key = foldVocab(e.term);
+      if (!key) return;
+      if (!terms.has(key)) terms.set(key, []);
+      terms.get(key).push({
+        card: card,
+        term: e.term
+      });
+    }));
+    Promise.resolve().then(() => vocabTermsCache = null);
+  }
+  return vocabTermsCache;
+}
+
+function termMatches(key, exclude) {
+  return (vocabTerms().get(key) || []).filter(e => e.card !== exclude).map(e => ({
+    row: e.card,
+    sentence: e.card.q || "",
+    term: e.term
   }));
 }
 
-function findVocabMatches(needleRaw, excludeId, index) {
-  const needle = normalizeVocabText(needleRaw.trim());
-  if (!needle || VOCAB_STOPWORDS.has(needle)) return [];
-  const stem = stripParticle(needle);
-  const terms = stem !== needle ? [ needle, stem ] : [ needle ];
-  const matches = [];
-  (index || vocabIndexFor(excludeId)).forEach(e => {
-    const term = terms.find(t => e.q.includes(t) && e.notes.includes(t));
-    if (term) matches.push({
-      row: e.row,
-      sentence: e.row.q,
-      term: term
-    });
-  });
-  return matches;
+function findVocabMatches(needleRaw, excludeId) {
+  const key = foldVocab(needleRaw);
+  if (!key) return [];
+  const exclude = rows.find(r => r.id === excludeId);
+  const declared = termMatches(key, exclude);
+  const seen = new Set(declared.map(m => m.row));
+  return declared.concat(allVocabCards().filter(c => c !== exclude && !seen.has(c) && findTermIn(c.q, key)).map(c => ({
+    row: c,
+    sentence: c.q,
+    term: needleRaw.trim()
+  })));
 }
 
 function highlightMatch(sentence, needle) {
-  const normSentence = (sentence || "").normalize("NFC");
-  const normNeedle = (needle || "").normalize("NFC");
-  const idx = normSentence.toLowerCase().indexOf(normNeedle.toLowerCase());
-  if (idx === -1) return escapeHtml(normSentence);
-  const before = normSentence.slice(0, idx);
-  const match = normSentence.slice(idx, idx + normNeedle.length);
-  const after = normSentence.slice(idx + normNeedle.length);
-  return escapeHtml(before) + "<mark>" + escapeHtml(match) + "</mark>" + escapeHtml(after);
-}
-
-let vocabSegmenter = undefined;
-
-function getVocabSegmenter() {
-  if (vocabSegmenter === undefined) {
-    try {
-      vocabSegmenter = "Segmenter" in Intl ? new Intl.Segmenter(undefined, {
-        granularity: "word"
-      }) : null;
-    } catch (e) {
-      vocabSegmenter = null;
-    }
-  }
-  return vocabSegmenter;
-}
-
-const VOCAB_TOKEN_RE = /[\p{L}\p{N}]+|[^\p{L}\p{N}]+/gu;
-
-function tokenizeForVocab(text) {
-  const segmenter = getVocabSegmenter();
-  if (segmenter) {
-    return Array.from(segmenter.segment(text), seg => ({
-      token: seg.segment,
-      isWord: seg.isWordLike
-    }));
-  }
-  const tokens = [];
-  let m;
-  VOCAB_TOKEN_RE.lastIndex = 0;
-  while ((m = VOCAB_TOKEN_RE.exec(text)) !== null) {
-    const token = m[0];
-    tokens.push({
-      token: token,
-      isWord: /[\p{L}\p{N}]/u.test(token)
-    });
-  }
-  return tokens;
+  const text = (sentence || "").normalize("NFC");
+  const span = findTermIn(text, needle);
+  if (!span) return escapeHtml(text);
+  return escapeHtml(text.slice(0, span[0])) + "<mark>" + escapeHtml(text.slice(span[0], span[1])) + "</mark>" + escapeHtml(text.slice(span[1]));
 }
 
 const CJK_CHAR_RE = /[぀-ヿ一-鿿]/;
 
-function explodeForPhraseMatch(tokens) {
-  const units = [];
-  tokens.forEach(({token: token, isWord: isWord}) => {
-    if (isWord && CJK_CHAR_RE.test(token[0])) {
-      for (const ch of token) units.push({
-        token: ch,
-        isWord: true
-      });
-    } else {
-      units.push({
-        token: token,
-        isWord: isWord
-      });
-    }
-  });
-  return units;
-}
-
-const MAX_VOCAB_PHRASE_UNITS = 10;
-
 function highlightVocabInHtml(html, excludeId) {
   if (!html) return html;
-  const index = vocabIndexFor(excludeId);
-  const ownKeys = new Set(lessonVocabItems(vocabSource()).map(i => i.key));
-  if (!index.length && !ownKeys.size) return html;
+  const terms = vocabTerms();
+  if (!terms.size) return html;
+  const exclude = rows.find(r => r.id === excludeId);
   const container = document.createElement("div");
   container.innerHTML = html;
   const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null);
   const textNodes = [];
   let node;
   while (node = walker.nextNode()) textNodes.push(node);
-  const seenTerms = new Set;
+  const seen = new Set;
   textNodes.forEach(textNode => {
     const text = textNode.nodeValue;
-    if (!text) return;
-    const units = explodeForPhraseMatch(tokenizeForVocab(text));
-    if (!units.length) return;
-    const join = (a, b) => units.slice(a, b).map(u => u.token).join("");
-    const found = [];
-    units.forEach((u, i) => {
-      if (!u.isWord) return;
-      const maxLen = Math.min(MAX_VOCAB_PHRASE_UNITS, units.length - i);
-      for (let len = 1; len <= maxLen; len++) {
-        if (!units[i + len - 1].isWord) continue;
-        const term = join(i, i + len);
-        if (!term.trim()) continue;
-        const ids = new Set(index.length ? findVocabMatches(term, excludeId, index).map(m => m.row.id) : []);
-        const vocab = ownKeys.has(normalizeVocabText(term.trim()));
-        if (ids.size || vocab) found.push({ a: i, b: i + len, term: term, hit: ids.size > 0, ids: ids, vocab: vocab });
-      }
-    });
-    const words = found.filter(w => w.vocab || !found.some(o => o !== w && o.a <= w.a && o.b >= w.b && [ ...w.ids ].every(id => o.ids.has(id)))).sort((x, y) => x.a - y.a || y.b - x.b).filter(w => {
-      const key = normalizeVocabText(w.term);
-      if (seenTerms.has(key)) return false;
-      seenTerms.add(key);
-      return true;
+    if (!text.trim()) return;
+    const fold = foldWithMap(text);
+    const words = [];
+    terms.forEach((entries, key) => {
+      if (seen.has(key)) return;
+      const span = termSpans(fold.folded, key)[0];
+      if (!span || fold.map[span[0]] >= fold.map[span[1]]) return;
+      seen.add(key);
+      words.push({
+        a: fold.map[span[0]],
+        b: fold.map[span[1]],
+        key: key,
+        hit: entries.some(e => e.card !== exclude)
+      });
     });
     if (!words.length) return;
-    const cuts = Array.from(new Set([ 0, units.length ].concat(...words.map(w => [ w.a, w.b ])))).sort((x, y) => x - y);
+    const cuts = Array.from(new Set([ 0, text.length ].concat(...words.map(w => [ w.a, w.b ])))).sort((x, y) => x - y);
     const frag = document.createDocumentFragment();
     for (let k = 0; k < cuts.length - 1; k++) {
       const a = cuts[k], b = cuts[k + 1];
       const cover = words.filter(w => w.a <= a && w.b >= b);
       if (!cover.length) {
-        frag.appendChild(document.createTextNode(join(a, b)));
+        frag.appendChild(document.createTextNode(text.slice(a, b)));
         continue;
       }
       const mark = document.createElement("mark");
-      const hitTerms = cover.filter(w => w.hit).map(w => w.term);
-      mark.className = [ hitTerms.length ? "vocab-hit" : "", hitTerms.length < cover.length ? "vocab-own" : "", cover.length > 1 ? "vocab-stack" : "", cover.some(w => w.a < a) ? "" : "vs", cover.some(w => w.b > b) ? "" : "ve" ].filter(Boolean).join(" ");
-      if (hitTerms.length) mark.dataset.terms = hitTerms.join("\n");
-      mark.textContent = join(a, b);
+      const hitKeys = cover.filter(w => w.hit).map(w => w.key);
+      mark.className = [ hitKeys.length ? "vocab-hit" : "", hitKeys.length < cover.length ? "vocab-own" : "", cover.length > 1 ? "vocab-stack" : "", cover.some(w => w.a < a) ? "" : "vs", cover.some(w => w.b > b) ? "" : "ve" ].filter(Boolean).join(" ");
+      if (hitKeys.length) mark.dataset.terms = hitKeys.join("\n");
+      mark.textContent = text.slice(a, b);
       frag.appendChild(mark);
     }
     textNode.replaceWith(frag);
@@ -3315,11 +3300,12 @@ function highlightVocabInHtml(html, excludeId) {
 }
 
 function markTerms(mark) {
-  return (mark.dataset.terms || mark.textContent).split("\n");
+  return (mark.dataset.terms || foldVocab(mark.textContent)).split("\n");
 }
 
 function markMatches(mark, excludeId) {
-  return markTerms(mark).flatMap(term => findVocabMatches(term, excludeId));
+  const exclude = rows.find(r => r.id === excludeId);
+  return markTerms(mark).flatMap(key => termMatches(key, exclude));
 }
 
 function stripVocabHighlights(html) {
@@ -3363,9 +3349,7 @@ function getVocabPopupEl() {
 }
 
 function highlightTermInNotesHtml(html, term) {
-  if (!html || !term) return html || "";
-  const normTerm = normalizeVocabText(term);
-  if (!normTerm) return html;
+  if (!html || !foldVocab(term)) return html || "";
   const container = document.createElement("div");
   container.innerHTML = html;
   const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null);
@@ -3374,20 +3358,11 @@ function highlightTermInNotesHtml(html, term) {
   while (node = walker.nextNode()) textNodes.push(node);
   textNodes.forEach(textNode => {
     const text = textNode.nodeValue;
-    if (!text) return;
-    const normOriginal = text.normalize("NFC");
-    const idx = normOriginal.toLowerCase().indexOf(normTerm);
-    if (idx === -1) return;
-    const before = normOriginal.slice(0, idx);
-    const match = normOriginal.slice(idx, idx + normTerm.length);
-    const after = normOriginal.slice(idx + normTerm.length);
-    const frag = document.createDocumentFragment();
-    frag.appendChild(document.createTextNode(before));
+    const span = text && findTermIn(text, term);
+    if (!span) return;
     const mark = document.createElement("mark");
-    mark.textContent = match;
-    frag.appendChild(mark);
-    frag.appendChild(document.createTextNode(after));
-    textNode.replaceWith(frag);
+    mark.textContent = text.slice(span[0], span[1]);
+    textNode.replaceWith(text.slice(0, span[0]), mark, text.slice(span[1]));
   });
   return container.innerHTML;
 }
@@ -8526,11 +8501,11 @@ function fitReadings(root) {
 function vocabSentenceHtml(sentence, term, row) {
   const chars = Array.from((sentence || "").normalize("NFC"));
   const text = chars.join("");
-  const idx = term ? text.toLowerCase().indexOf(term.normalize("NFC").toLowerCase()) : -1;
+  const span = term ? findTermIn(text, term) : null;
   let start = -1, end = -1;
-  if (idx !== -1) {
-    start = Array.from(text.slice(0, idx)).length;
-    end = start + Array.from(term.normalize("NFC")).length;
+  if (span) {
+    start = Array.from(text.slice(0, span[0])).length;
+    end = Array.from(text.slice(0, span[1])).length;
   }
   const script = cjkScriptFor(text, row);
   if (script === "ja") {
@@ -8574,7 +8549,7 @@ function vocabSentenceHtml(sentence, term, row) {
 
 function vocabBackInner(item) {
   const sentence = (item.card.q || "").trim();
-  const inSentence = sentence && sentence.normalize("NFC").toLowerCase().includes(item.term.normalize("NFC").toLowerCase());
+  const inSentence = sentence && !!findTermIn(sentence.normalize("NFC"), item.term);
   const main = inSentence ? `<div class="vocab-ctx">${vocabSentenceHtml(sentence, item.term, item.card)}</div>` : `<div class="vocab-ctx"><mark>${vocabSentenceHtml(item.term, "", item.card)}</mark></div>` + (sentence ? `<div class="vocab-ctx small">${vocabSentenceHtml(sentence, "", item.card)}</div>` : "");
   return main + `<div class="vocab-meaning">${escapeHtml(item.meaning)}</div>`;
 }
@@ -9968,8 +9943,8 @@ dictPanelsHost.addEventListener("click", e => {
 });
 
 function repeatsHighlightedWord(box, range, text) {
-  const key = normalizeVocabText(text);
-  const marks = Array.from(box.querySelectorAll("mark.vocab-hit")).filter(m => markTerms(m).some(t => normalizeVocabText(t) === key));
+  const key = foldVocab(text);
+  const marks = Array.from(box.querySelectorAll("mark.vocab-hit")).filter(m => markTerms(m).includes(key));
   return !!marks.length && !marks.some(m => m.contains(range.commonAncestorContainer) || range.intersectsNode(m));
 }
 
