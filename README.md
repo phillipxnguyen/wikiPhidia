@@ -73,7 +73,9 @@ Words are found by the kind of writing at their edges, with no language setting 
 - Korean must start a spaced chunk but may end inside it, so 학교 matches 학교에서 but not 대학교.
 - Languages written with spaces (English, Vietnamese, Russian…) must match whole words, so "cat" does not match "concatenate".
 - Japanese verbs and adjectives also match in any form: 食べる highlights 食べました and 食べない. A word that covers part of a kanji compound highlights the whole compound, so its furigana stays in one piece.
-- Full-width and half-width forms count as the same (ｶﾀｶﾅ and カタカナ, ＡＢＣ and ABC), and case does not matter. In other languages, other forms of a word (went for go, 갔어요 for 가다) are not matched; add them as words of their own.
+- English words also match their other forms: -s, -es, -ies, -ed, -ied and -ing (cats, watches, studied, stopped, running, making), common irregular verbs, plurals and comparisons (went for go, children for child, better for good), and each word of a phrase (gave up for give up). Endings like -er and -ly are left out because they would match unrelated words (corner, only).
+- Korean verbs and adjectives written with -다 match their usual conjugations: 먹다 highlights 먹어요 and 먹었어요, 가다 highlights 가요, 갔어요 and 갑니다, 보다 highlights 봐요, and 공부하다 highlights 공부해요 and 공부했어요. Irregular verbs (듣다, 돕다…) are not matched; add their forms as words of their own.
+- Full-width and half-width forms count as the same (ｶﾀｶﾅ and カタカナ, ＡＢＣ and ABC), case does not matter, and line breaks count as spaces.
 
 ## Language help
 

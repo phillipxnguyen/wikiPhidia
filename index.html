@@ -3260,6 +3260,103 @@ function foldWithMap(text) {
   };
 }
 
+const EN_IRREGULAR = new Map;
+
+"be:was:were:been:being:is:are:am|have:has:had:having|do:does:did:done|go:goes:went:gone|say:said|get:got:gotten|make:made|know:knew:known|think:thought|take:took:taken|see:saw:seen|come:came|give:gave:given|find:found|tell:told|feel:felt|leave:left|bring:brought|begin:began:begun|keep:kept|hold:held|write:wrote:written|stand:stood|hear:heard|mean:meant|meet:met|run:ran|pay:paid|sit:sat|speak:spoke:spoken|lie:lay:lain|lead:led|grow:grew:grown|lose:lost|fall:fell:fallen|send:sent|build:built|understand:understood|draw:drew:drawn|break:broke:broken|spend:spent|rise:rose:risen|drive:drove:driven|buy:bought|wear:wore:worn|choose:chose:chosen|seek:sought|throw:threw:thrown|catch:caught|deal:dealt|win:won|forget:forgot:forgotten|sell:sold|fight:fought|teach:taught|eat:ate:eaten|sing:sang:sung|drink:drank:drunk|swim:swam:swum|fly:flew:flown|sleep:slept|ride:rode:ridden|hide:hid:hidden|shake:shook:shaken|steal:stole:stolen|wake:woke:woken|bite:bit:bitten|blow:blew:blown|feed:fed|hang:hung|shoot:shot|light:lit|lend:lent|bend:bent|bleed:bled|dig:dug|forgive:forgave:forgiven|freeze:froze:frozen|lay:laid|ring:rang:rung|shine:shone|sink:sank:sunk|slide:slid|spin:spun|stick:stuck|strike:struck|swear:swore:sworn|sweep:swept|swing:swung|tear:tore:torn|weep:wept|wind:wound|withdraw:withdrew:withdrawn|arise:arose:arisen|become:became|bet|bind:bound|burst|cast|cling:clung|cost|cut|dream:dreamt|fit|flee:fled|forbid:forbade:forbidden|hit|hurt|let|mistake:mistook:mistaken|overcome:overcame|prove:proven|put|quit|read|set|shut|smell:smelt|spell:spelt|split|spread|stink:stank:stunk|undertake:undertook:undertaken|upset|good:better:best|bad:worse:worst|many:more:most|much:more:most|little:less:least|far:further:furthest:farther:farthest|man:men|woman:women|child:children|person:people|foot:feet|tooth:teeth|mouse:mice|goose:geese|life:lives|wife:wives|knife:knives|leaf:leaves|half:halves|wolf:wolves|shelf:shelves|thief:thieves".split("|").forEach(group => {
+  const [ base, ...forms ] = group.split(":");
+  forms.forEach(form => {
+    if (!EN_IRREGULAR.has(form)) EN_IRREGULAR.set(form, []);
+    EN_IRREGULAR.get(form).push(base);
+  });
+});
+
+const EN_NOT_PLURAL = new Set("news always series species means perhaps physics politics economics mathematics athletics ethics lens bus gas plus yes this thus his hers its ours yours theirs was has does is us as".split(" "));
+
+function englishBases(word) {
+  const bases = new Set([ word ].concat(EN_IRREGULAR.get(word) || []));
+  const add = base => base.length >= 2 && bases.add(base);
+  if (word.length > 3 && word.endsWith("s") && !word.endsWith("ss") && !EN_NOT_PLURAL.has(word)) {
+    if (word.endsWith("ies")) add(word.slice(0, -3) + "y");
+    if (/(s|x|z|ch|sh|o)es$/.test(word)) add(word.slice(0, -2));
+    add(word.slice(0, -1));
+  }
+  [ "ed", "ing" ].forEach(suffix => {
+    if (!word.endsWith(suffix) || word.length - suffix.length < 2) return;
+    const stem = word.slice(0, -suffix.length);
+    add(stem);
+    add(stem + "e");
+    if (/([b-df-hj-np-tv-z])\1$/.test(stem)) add(stem.slice(0, -1));
+    if (suffix === "ed" && stem.endsWith("i")) add(stem.slice(0, -1) + "y");
+    if (suffix === "ing" && stem.endsWith("y")) add(stem.slice(0, -1) + "ie");
+  });
+  return bases;
+}
+
+const englishWordsCache = new Map;
+
+function englishWords(folded) {
+  let words = englishWordsCache.get(folded);
+  if (!words) {
+    if (englishWordsCache.size > 500) englishWordsCache.clear();
+    words = Array.from(folded.matchAll(/[a-z]+/g), m => ({
+      a: m.index,
+      b: m.index + m[0].length,
+      bases: englishBases(m[0])
+    })).filter(w => !/[\p{L}\p{M}]/u.test(folded[w.a - 1] || "") && !/[\p{L}\p{M}]/u.test(folded[w.b] || ""));
+    englishWordsCache.set(folded, words);
+  }
+  return words;
+}
+
+function englishSpans(folded, term) {
+  const parts = term.split(" ");
+  const words = englishWords(folded);
+  const spans = [];
+  for (let i = 0; i + parts.length <= words.length; i++) {
+    const run = words.slice(i, i + parts.length);
+    if (run.every((w, k) => w.bases.has(parts[k]) && (!k || /^[ -]$/.test(folded.slice(run[k - 1].b, w.a))))) spans.push([ run[0].a, run[run.length - 1].b ]);
+  }
+  return spans;
+}
+
+const KO_ENDINGS = new Set("요어아여고는다지서면니게세시기도자며러려으습을은음네나군죠던든냐야었았였겠셨");
+
+const KO_BATCHIM_NEXT = {
+  4: "다데",
+  8: "게까래거수",
+  17: "니시"
+};
+
+function hangulParts(ch) {
+  const code = ch ? ch.charCodeAt(0) - 44032 : -1;
+  return code >= 0 && code < 11172 ? [ Math.floor(code / 588), Math.floor(code % 588 / 28), code % 28 ] : null;
+}
+
+function koreanVerbSpans(folded, term) {
+  const stem = Array.from(term.slice(0, -1));
+  const last = hangulParts(stem[stem.length - 1]);
+  if (!last) return [];
+  const merged = last[0] === 18 && last[1] === 0 ? 1 : {
+    8: 9,
+    13: 14,
+    20: 6,
+    11: 10,
+    18: 4
+  }[last[1]];
+  const head = stem.slice(0, -1).join("");
+  const spans = [];
+  for (const m of folded.matchAll(/[\uac00-\ud7a3]+/g)) {
+    const word = Array.from(m[0]);
+    if (!m[0].startsWith(head) || word.length < stem.length) continue;
+    const x = hangulParts(word[stem.length - 1]);
+    const next = word[stem.length];
+    let ok = false;
+    if (x[0] === last[0] && x[1] === last[1] && x[2] === last[2]) ok = KO_ENDINGS.has(next); else if (!last[2] && x[0] === last[0] && x[1] === last[1]) ok = x[2] === 20 || !!next && (KO_BATCHIM_NEXT[x[2]] || "").includes(next); else if (!last[2] && x[0] === last[0] && x[1] === merged) ok = !x[2] || x[2] === 20;
+    if (ok) spans.push([ m.index, m.index + m[0].length ]);
+  }
+  return spans;
+}
+
 function termSpans(folded, term) {
   const spans = [];
   if (!term) return spans;
@@ -3274,6 +3371,9 @@ function termSpans(folded, term) {
     if (last === "spaced" && after === "spaced") continue;
     spans.push([ at, end ]);
   }
+  if (spans.length) return spans;
+  if (/^[a-z]+(?: [a-z]+)*$/.test(term)) return englishSpans(folded, term);
+  if (/^[\uac00-\ud7a3]{2,}$/.test(term) && term.endsWith("다")) return koreanVerbSpans(folded, term);
   return spans;
 }
 
