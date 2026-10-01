@@ -10098,7 +10098,7 @@ function wholeDictFieldSelected() {
   const start = range.startContainer.nodeType === 1 ? range.startContainer : range.startContainer.parentElement;
   const el = start && start.closest("#dictPanels .dict-source, #dictPanels .dict-answer");
   const row = el && !el.isContentEditable && dictSourceRow(el);
-  const tidy = t => t.replace(/\s+/g, " ").trim();
+  const tidy = t => t.replace(/\s+/g, "");
   return row && tidy(sel.toString()) === tidy(el.textContent) ? {
     el: el,
     row: row
@@ -10118,10 +10118,10 @@ function editDictField(el, row) {
   caret.collapse(false);
   getSelection().removeAllRanges();
   getSelection().addRange(caret);
-  let done = false;
+  const listeners = new AbortController;
   const finish = save => {
-    if (done) return;
-    done = true;
+    if (listeners.signal.aborted) return;
+    listeners.abort();
     el.removeAttribute("contenteditable");
     el.classList.remove("dict-editing");
     const html = sanitizeHtml(el.innerHTML);
@@ -10143,13 +10143,17 @@ function editDictField(el, row) {
       e.preventDefault();
       finish(e.key === "Enter");
     }
+  }, {
+    signal: listeners.signal
   });
   el.addEventListener("paste", e => {
     e.preventDefault();
     document.execCommand("insertHTML", false, pastedHtml(e));
+  }, {
+    signal: listeners.signal
   });
   el.addEventListener("blur", () => finish(true), {
-    once: true
+    signal: listeners.signal
   });
 }
 
