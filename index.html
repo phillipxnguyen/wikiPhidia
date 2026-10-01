@@ -3378,7 +3378,9 @@ function englishSpans(folded, term) {
     const end = match(0, i, -1);
     if (end !== null && end >= i) spans.push([ w.a, words[end].b ]);
   });
-  return spans;
+  if (spans.length || parts.length < 2 || parts[0] !== "a" && parts[0] !== "an") return spans;
+  const rest = parts.slice(1);
+  return englishSpans(folded, rest.join(" ")).filter(([ a, b ]) => words.some(w => w.a >= a && w.b <= b && /s$/.test(w.word) && !rest.includes(w.word) && rest.some(part => w.bases.has(part))));
 }
 
 const KO_ENDINGS = new Set("요어아여고는다지서면니게세시기도자며러려으습을은음네나군죠던든냐야었았였겠셨");
