@@ -10383,7 +10383,7 @@ function selectionInDictSource() {
   } : null;
 }
 
-function wholeDictFieldSelected() {
+function dictFieldToEdit() {
   const sel = window.getSelection();
   if (!sel || !sel.rangeCount || sel.isCollapsed) return null;
   const range = sel.getRangeAt(0);
@@ -10391,7 +10391,8 @@ function wholeDictFieldSelected() {
   const el = start && start.closest("#dictPanels .dict-source, #dictPanels .dict-answer");
   const row = el && !el.isContentEditable && dictSourceRow(el);
   const tidy = t => t.replace(/\s+/g, "");
-  return row && tidy(sel.toString()) === tidy(el.textContent) ? {
+  const partOfAnswer = el && el.classList.contains("dict-answer") && el.contains(range.endContainer);
+  return row && (partOfAnswer || tidy(sel.toString()) === tidy(el.textContent)) ? {
     el: el,
     row: row
   } : null;
@@ -10451,10 +10452,10 @@ function editDictField(el, row) {
 
 document.addEventListener("keydown", e => {
   if (e.key !== "Shift" || e.repeat || e.metaKey || e.ctrlKey) return;
-  const whole = wholeDictFieldSelected();
-  if (whole) {
+  const field = dictFieldToEdit();
+  if (field) {
     e.preventDefault();
-    editDictField(whole.el, whole.row);
+    editDictField(field.el, field.row);
     return;
   }
   if (isVirtualLesson()) return;
@@ -10465,9 +10466,9 @@ document.addEventListener("keydown", e => {
 });
 
 document.getElementById("dictPanels").addEventListener("mouseup", e => {
-  const whole = e.shiftKey && wholeDictFieldSelected();
-  if (whole) {
-    editDictField(whole.el, whole.row);
+  const field = e.shiftKey && dictFieldToEdit();
+  if (field) {
+    editDictField(field.el, field.row);
     return;
   }
   if (!e.shiftKey || isVirtualLesson()) return;

@@ -42,7 +42,7 @@ Group and Listening share one queue: a card studied in one mode leaves the other
 | Space | Reveal / flip; in Listening, once the card is shown, play or pause the sound (like ↑). The phone's Show button does the same and names what it will do: Show, or Hide once the group is shown; ⟲ in Flashcards, where flipping goes both ways; ▶ or ⏸ in Listening. In Vocabulary, Again and Good read ✕ and ✓, on the buttons and on the card that flies off when you grade or swipe |
 | ⌘/Ctrl + Z | Undo, including grades (add Shift to redo) |
 | Delete | Delete the card |
-| Shift (with text selected above a dictionary) | Select part of the question to add it as a word; select the whole question or the whole answer to edit it right there (Return saves, Esc cancels) |
+| Shift (with text selected above a dictionary) | Select part of the question to add it as a word; select the whole question, or any part of the answer, to edit it right there (Return saves, Esc cancels) |
 | ⌘ + ⌥ (Cmd + Option) | In Vocabulary, show or hide the word list (Group) or the dictionary (Flashcards) |
 | Esc | Close a popup |
 
