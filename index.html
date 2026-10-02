@@ -752,6 +752,11 @@ window.onYouTubeIframeAPIReady = function(){
   .single-card-q .cell.shown{color:var(--text);}
   .single-card-a .cell.shown{color:var(--a-text);}
   .single-card-field .cell.hidden{color:var(--text-2);}
+  .ielts-card .single-card-a .cell{font-size:18px;line-height:1.65;}
+  .ielts-card .single-card-a .cell mark{background:var(--accent-soft);color:inherit;border-radius:4px;padding:0 2px;}
+  .single-card-words{background:var(--q-bg);font-size:16px;line-height:1.6;}
+  .single-card-words::before{content:"Vocabulary";color:var(--text-2);}
+  .single-card-words .ielts-word{padding:0 16px;}
   .stroke-order-panel{
     display:flex;
     flex-direction:column;
@@ -1131,6 +1136,7 @@ window.onYouTubeIframeAPIReady = function(){
       <button id="fullModeBtn" aria-label="Full">☰</button>
       <button id="groupBtn" aria-label="Group"><span id="groupBtnFlag">🌐</span></button>
       <button id="listenModeBtn" style="display:none;" aria-label="Listening">🎧</button>
+      <button id="ieltsModeBtn" style="display:none;" aria-label="IELTS" title="IELTS — one question at a time: answer it yourself, then show the model answer">🎤</button>
     </div>
     <div class="toolbar-right">
       <button id="btnPlaySequence" aria-label="Play"></button>
@@ -1423,12 +1429,12 @@ function restoreFrom(fromStack, toStack, verb) {
     showAllCardsInFullMode();
   } else if (!(sessionRestored && entry.inSession)) {
     const current = groupState.groups[groupState.index] || [];
-    const entryHidden = ENTRY_HIDDEN[modeKey()];
+    const entryHiddenNow = entryHidden();
     rows.forEach(r => {
       const prev = prevHidden.get(r.id);
       const inGroup = current.includes(r.id);
-      r.qHidden = prev ? prev.q : inGroup ? entryHidden.q : true;
-      r.aHidden = prev ? prev.a : inGroup ? entryHidden.a : true;
+      r.qHidden = prev ? prev.q : inGroup ? entryHiddenNow.q : true;
+      r.aHidden = prev ? prev.a : inGroup ? entryHiddenNow.a : true;
     });
   }
   pinnedCardId = entry.pinned != null ? entry.pinned : null;
@@ -1687,7 +1693,7 @@ function isListenMode() {
 }
 
 function isCardMode() {
-  return !!groupState && groupViewStyle === "listen";
+  return !!groupState && (groupViewStyle === "listen" || groupViewStyle === "ielts");
 }
 
 function onPlayerReady() {
@@ -2201,7 +2207,7 @@ function singleCardQueue() {
 }
 
 function getCurrentSingleCardRow() {
-  if (groupViewStyle === "listen") return singleCardQueue()[0];
+  if (isCardMode()) return singleCardQueue()[0];
   return getVisibleRows()[0];
 }
 
@@ -2220,8 +2226,13 @@ function refreshBadges() {
 
 const ENTRY_HIDDEN = {
   Table: { q: true, a: false },
-  Listen: { q: true, a: true }
+  Listen: { q: true, a: true },
+  Ielts: { q: false, a: true }
 };
+
+function entryHidden() {
+  return ENTRY_HIDDEN[groupViewStyle === "ielts" ? "Ielts" : modeKey()];
+}
 
 function sequenceReadsAloud() {
   const ready = !!ytPlayer && ytReady && ytHasVideo && !ytHasError;
@@ -2727,11 +2738,20 @@ function renderStudy() {
   requestAnimationFrame(refreshTouchSelection);
 }
 
+function cardWords(row) {
+  const text = (row.q || "") + "\n" + (row.a || "");
+  return lessonVocabItems(vocabSource()).filter(i => termInText(i.term, text));
+}
+
 function singleCardFieldsHtml(row) {
+  const ielts = groupViewStyle === "ielts" && !row.aHidden;
+  const words = ielts ? cardWords(row) : [];
+  const answerHtml = words.reduce((html, i) => highlightTermInNotesHtml(html, i.term), aCellContent(row));
   const qField = `<div class="single-card-field single-card-q"><div class="cell ${row.qHidden ? "hidden" : "shown"}" data-field="q">${qCellContent(row)}</div></div>`;
-  const aField = `<div class="single-card-field single-card-a"><div class="cell ${row.aHidden ? "hidden" : "shown"}" data-field="a">${aCellContent(row)}</div></div>`;
+  const aField = `<div class="single-card-field single-card-a"><div class="cell ${row.aHidden ? "hidden" : "shown"}" data-field="a">${answerHtml}</div></div>`;
+  const wordsField = words.length ? '<div class="single-card-field single-card-words">' + words.map(i => `<div class="ielts-word"><b>${escapeHtml(i.term)}</b>${i.meaning ? " — " + escapeHtml(i.meaning) : ""}</div>`).join("") + "</div>" : "";
   if (!hasAnswer(row)) return qField;
-  return qField + aField;
+  return qField + aField + wordsField;
 }
 
 function renderSingleCard(visibleRows) {
@@ -2743,8 +2763,8 @@ function renderSingleCard(visibleRows) {
   const firstShow = lastShownCardId !== row.id;
   if (firstShow) {
     lastShownCardId = row.id;
-    row.qHidden = ENTRY_HIDDEN[modeKey()].q;
-    row.aHidden = ENTRY_HIDDEN[modeKey()].a;
+    row.qHidden = entryHidden().q;
+    row.aHidden = entryHidden().a;
   }
   const autoPlay = firstShow && groupViewStyle === "listen";
   if (activeEdit && activeEdit.row.id === row.id) {
@@ -2754,6 +2774,7 @@ function renderSingleCard(visibleRows) {
   bodyEl.dataset.id = row.id;
   bodyEl.classList.remove("edit-row");
   bodyEl.classList.toggle("row-playing", loopingRowId === row.id);
+  bodyEl.classList.toggle("ielts-card", groupViewStyle === "ielts");
   bodyEl.innerHTML = singleCardFieldsHtml(row);
   if (isTouch()) bodyEl.querySelector(".single-card-field").insertAdjacentHTML("afterbegin", '<div class="card-actions"><button class="edit-btn" aria-label="Edit card">&#9998;</button><button class="del-btn del-forever" aria-label="Delete card">&#10005;</button></div>');
   dictPreloadObserver.observe(bodyEl);
@@ -3993,6 +4014,9 @@ function updateTouchBar() {
     const playing = seqBtn.classList.contains("active");
     showLabel = playing ? "⏸" : "▶";
     showBtn.setAttribute("aria-label", playing ? "Pause" : "Play");
+  } else if (groupState && groupViewStyle === "ielts") {
+    const current = getCurrentSingleCardRow();
+    if (current && !current.aHidden) showLabel = "Hide";
   } else if (groupState && groupViewStyle !== "listen") {
     const ids = groupState.groups[groupState.index] || [];
     if (ids.length && rows.filter(r => ids.includes(r.id)).every(r => !r.qHidden && !r.aHidden)) showLabel = "Hide";
@@ -4905,7 +4929,7 @@ function showAllCardsInFullMode() {
 }
 
 function applyGroupEntryHiddenState(ids) {
-  const entry = ENTRY_HIDDEN[modeKey()];
+  const entry = entryHidden();
   rows.forEach(r => {
     const inGroup = ids.includes(r.id);
     r.qHidden = inGroup ? entry.q : true;
@@ -4922,13 +4946,16 @@ function syncModeButtonHighlights() {
   const fullBtn = document.getElementById("fullModeBtn");
   const btn = document.getElementById("groupBtn");
   const listenBtn = document.getElementById("listenModeBtn");
-  if (!fullBtn || !btn || !listenBtn) return;
+  const ieltsBtn = document.getElementById("ieltsModeBtn");
+  if (!fullBtn || !btn || !listenBtn || !ieltsBtn) return;
   const caughtUp = lessonCaughtUp();
   btn.style.display = deckHasAnswers() && !caughtUp ? "" : "none";
   listenBtn.style.display = deckHasVideoCards() && !isVirtualLesson() && !caughtUp ? "" : "none";
+  ieltsBtn.style.display = btn.style.display;
   fullBtn.classList.toggle("active", !groupState);
   btn.classList.toggle("active", !!groupState && groupViewStyle === "table");
   listenBtn.classList.toggle("active", !!groupState && groupViewStyle === "listen");
+  ieltsBtn.classList.toggle("active", !!groupState && groupViewStyle === "ielts");
 }
 
 function updateGroupUI() {
@@ -5118,6 +5145,8 @@ document.getElementById("groupBtn").onclick = () => goToReviewMode("table");
 
 document.getElementById("listenModeBtn").onclick = () => goToReviewMode("listen");
 
+document.getElementById("ieltsModeBtn").onclick = () => goToReviewMode("ielts");
+
 
 function ensureGroupSlot(state, i) {
   while (state.groups.length <= i) state.groups.push([]);
@@ -5242,7 +5271,7 @@ function gradeCurrentGroupAndAdvance(isAgain) {
 function gradeCard(row, isAgain) {
   if (!groupState || !row) return;
   const mode = modeKey();
-  const ids = mode === "Table" ? groupState.groups[groupState.index] : null;
+  const ids = groupViewStyle === "table" ? groupState.groups[groupState.index] : null;
   if (ids && !ids.includes(row.id)) return;
   stopPlaybackForRemovedRow(row.id);
   adjustSequenceIndexForRemoval(row.id);
@@ -5492,7 +5521,7 @@ function showNextUnderSwipe(row) {
     };
   }
   hide(document.getElementById("dictPanels"));
-  const entry = ENTRY_HIDDEN[modeKey()];
+  const entry = entryHidden();
   const entryCopy = r => Object.assign({}, r, {
     qHidden: entry.q,
     aHidden: entry.a
@@ -6032,12 +6061,18 @@ function stripBullet(line) {
 
 const SENTENCE_END_RE = /[.!?。！？]/;
 
+const QA_LABEL_RE = /^(?:q|question|a|answer)\s*[:：]\s*/i;
+
+const Q_LABEL_RE = /^(?:q|question)\s*[:：]\s*/i;
+
+const A_LABEL_RE = /^(?:a|answer)\s*[:：]\s*/i;
+
 const WORD_PAIR_RE = new RegExp(`^([^=＝:：]{1,${VOCAB_TERM_MAX}}?)\\s*(={1,2}|＝|[:：])\\s*(.*?)\\s*$`);
 
 function wordPairOf(line, bulleted) {
   if (matchSpacedTimestamp(line)) return null;
   const m = line.match(WORD_PAIR_RE);
-  if (!m || !/\p{L}/u.test(m[1]) || SENTENCE_END_RE.test(m[1]) || /[.!?。！？]\s+\S/.test(m[3])) return null;
+  if (!m || !/\p{L}/u.test(m[1]) || SENTENCE_END_RE.test(m[1]) || /[.!?。！？]\s+\S/.test(m[3]) || QA_LABEL_RE.test(m[1].trim() + ":")) return null;
   if (/[:：]/.test(m[2]) && !bulleted && /[.!?。！？]$/.test(m[3])) return null;
   return [ m[1].replace(/\s+/g, " ").trim(), m[3].replace(/\s+/g, " ") ];
 }
@@ -6060,10 +6095,32 @@ function analyzeMixed(text, side) {
   }).filter(Boolean);
   const items = [];
   const isShort = l => !/[.!?。！？]$/.test(l.s) && l.s.length <= VOCAB_TERM_MAX;
+  const isAnswerLine = l => !!l && !l.pair && !l.bulleted && !Q_LABEL_RE.test(l.s) && !/[?？]$/.test(l.s) && (A_LABEL_RE.test(l.s) || SENTENCE_END_RE.test(l.s));
+  let skipTo = -1;
   info.forEach((l, i) => {
+    if (i < skipTo) return;
     const next = info[i + 1], prev = info[i - 1];
     const short = isShort(l);
     const inList = prev && !prev.pair && !prev.bulleted && isShort(prev);
+    const question = !l.pair && !l.bulleted && (Q_LABEL_RE.test(l.s) || /[?？]$/.test(l.s) || short && !inList);
+    if (question && isAnswerLine(next)) {
+      let j = i + 1;
+      const answer = [];
+      while (isAnswerLine(info[j]) && (j === i + 1 || !A_LABEL_RE.test(info[j].s))) answer.push(info[j++].s.replace(A_LABEL_RE, ""));
+      skipTo = j;
+      const q = l.s.replace(Q_LABEL_RE, "").replace(/\s+/g, " ");
+      items.push({
+        kind: "card",
+        text: q,
+        entry: {
+          time: null,
+          q: q,
+          a: answer.join("\n"),
+          notes: ""
+        }
+      });
+      return;
+    }
     if (l.pair) items.push({
       kind: "word",
       text: l.text,
@@ -6218,7 +6275,7 @@ function addWordsToLesson(pairs, preferRows) {
   const targets = new Map;
   const cards = (preferRows || []).concat(rows);
   pairs.forEach(pair => {
-    const card = cards.find(r => termInText(pair[0], r.q)) || ensureVocabExtras();
+    const card = cards.find(r => termInText(pair[0], r.q + "\n" + (r.a || ""))) || ensureVocabExtras();
     if (!targets.has(card)) targets.set(card, []);
     targets.get(card).push(pair);
   });
@@ -6272,7 +6329,9 @@ function takeHeaderLines(raw) {
     const i = lines.findIndex(l => l.trim());
     if (i !== -1 && (delim === ":" ? !hasColonColumn(lines[i]) : delim === "none" ? !/[.!?。！？…]/.test(lines[i]) && lines.some((l, j) => j > i && l.trim()) : !hasDelim(lines[i], delim)) && !matchSpacedTimestamp(lines[i], delim)) {
       title = lines[i].trim();
-      lines.splice(i, 1);
+      const next = lines.slice(i + 1).find(l => l.trim());
+      const asked = delim === "none" && next && !BULLET_RE.test(next) && !wordPairOf(next.trim(), false) && SENTENCE_END_RE.test(next);
+      if (!asked) lines.splice(i, 1);
     }
   }
   return {
@@ -9358,14 +9417,23 @@ function vocabSentenceHtml(sentence, term, row) {
   return html;
 }
 
-function vocabContextCard(item) {
-  const uses = card => !!card.q && !!findTermIn(card.q.trim().normalize("NFC"), item.term);
-  return uses(item.card) ? item.card : rows.find(uses) || item.card;
+function vocabContext(item) {
+  const sentenceIn = card => [ card.q || "" ].concat(card.a ? splitIntoSentences(card.a).map(s => s.text) : []).map(t => t.trim()).find(t => t && findTermIn(t.normalize("NFC"), item.term));
+  for (const card of [ item.card ].concat(rows)) {
+    const sentence = sentenceIn(card);
+    if (sentence) return {
+      card: card,
+      sentence: sentence
+    };
+  }
+  return {
+    card: item.card,
+    sentence: (item.card.q || "").trim()
+  };
 }
 
 function vocabBackInner(item) {
-  const card = vocabContextCard(item);
-  const sentence = (card.q || "").trim();
+  const {card: card, sentence: sentence} = vocabContext(item);
   const inSentence = sentence && !!findTermIn(sentence.normalize("NFC"), item.term);
   const main = inSentence ? `<div class="vocab-ctx">${vocabSentenceHtml(sentence, item.term, card)}</div>` : `<div class="vocab-ctx"><mark>${vocabSentenceHtml(item.term, "", card)}</mark></div>` + (sentence ? `<div class="vocab-ctx small">${vocabSentenceHtml(sentence, "", card)}</div>` : "");
   return main + `<div class="vocab-meaning">${escapeHtml(item.meaning)}</div>`;
@@ -9403,8 +9471,7 @@ function renderVocabDict() {
   const next = nextKey ? lessonVocabItems(vocabSource()).find(i => i.key === nextKey) : null;
   const now = String(Date.now());
   const panelFor = item => {
-    const card = vocabContextCard(item);
-    const sentence = (card.q || "").trim();
+    const {card: card, sentence: sentence} = vocabContext(item);
     const url = dictUrlFor(sentence && findTermIn(sentence.normalize("NFC"), item.term) ? sentence : item.term, card);
     if (!url) return null;
     let el = Array.from(host.children).find(c => c.dataset.url === url);
@@ -9659,6 +9726,11 @@ function planVocabImport(text) {
     const outcomes = planImport(cards.map(it => it.entry), true).outcomes;
     cards.forEach((it, i) => it.cardKind = outcomes[i].kind === "new" ? "card" : "cardDup");
     if (!rows.length && items[0] && items[0].kind === "heading" && cards.length) items[0].kind = "title";
+    const asked = !rows.length && items[0] && items[0].kind === "card" && items[0].entry.a && !/[.!?。！？]$/.test(items[0].entry.q);
+    if (asked) items.unshift({
+      kind: "title",
+      text: items[0].entry.q
+    });
     return items.map((it, i) => ({
       lineNo: i + 1,
       text: it.text,
@@ -11081,7 +11153,7 @@ document.addEventListener("keydown", e => {
 
 function gradeAction(isAgain) {
   if (!groupState) return;
-  if (groupViewStyle === "listen") {
+  if (isCardMode()) {
     gradeCard(getCurrentSingleCardRow(), isAgain);
     return;
   }
@@ -11109,6 +11181,15 @@ function revealAction() {
     return;
   }
   window.scrollTo(0, studyAreaTop());
+  if (groupViewStyle === "ielts") {
+    const current = getCurrentSingleCardRow();
+    if (current) {
+      current.qHidden = false;
+      current.aHidden = !current.aHidden;
+    }
+    render();
+    return;
+  }
   if (groupViewStyle === "listen") {
     const current = getCurrentSingleCardRow();
     if (current) {
