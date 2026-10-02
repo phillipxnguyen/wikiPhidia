@@ -65,7 +65,7 @@ As in Lessons, pointing at a word (or tapping its row on a phone) shows its piny
 
 When every word is studied, ☰, 📝 and ⇄ are hidden: only 🌐, the counts, 🎉 and the word list, always open, remain until words are due again.
 
-Words already in your vocabulary (the `word: meaning` lines in notes, in any lesson) are highlighted in questions and in the sentence above each dictionary. Green means another card, in this lesson or another one, also has the word: click it to see that card's sentence and note, with the lesson's name when it comes from another lesson. Grey means only this card has it. Every word is highlighted, even inside or across another one, with the colours layered where they share characters; pointing at a word lights up all of it, and clicking a shared character steps through every word on it. Selecting any other text looks it up in every card's sentence. Cards from the lesson you are in come first.
+Words already in your vocabulary (the `word: meaning` lines in notes, in any lesson) are highlighted in questions and in the sentence above each dictionary. Green means another card, in this lesson or another one, also has the word: click it to see that card's sentence and note, with the lesson's name when it comes from another lesson. Grey means only this card has it. Every word is highlighted, even inside or across another one, with the colours layered where they share characters; pointing at a word lights up all of it, and clicking a shared character steps through every word on it. Only highlighted words can be looked up; selecting other text does nothing. Cards from the lesson you are in come first.
 
 Words are found by the kind of writing at their edges, with no language setting and no lists of words to skip:
 

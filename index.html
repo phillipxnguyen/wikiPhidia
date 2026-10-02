@@ -3577,7 +3577,6 @@ function vocabLookup() {
     }));
     vocabLookupCache = {
       sig: sig,
-      cards: cards,
       terms: terms
     };
   }
@@ -3600,20 +3599,6 @@ function termMatches(key, exclude) {
     sentence: e.card.q || "",
     term: e.term
   })));
-}
-
-function findVocabMatches(needleRaw, excludeId) {
-  const key = foldVocab(needleRaw);
-  if (!key) return [];
-  const exclude = rows.find(r => r.id === excludeId);
-  const declared = termMatches(key, exclude);
-  const seen = new Set(declared.map(m => m.row));
-  return declared.concat(matchesHereFirst(vocabLookup().cards.filter(e => e.card !== exclude && !seen.has(e.card) && findTermIn(e.card.q, key)).map(e => ({
-    row: e.card,
-    lesson: e.lesson,
-    sentence: e.card.q,
-    term: needleRaw.trim()
-  }))));
 }
 
 function highlightMatch(sentence, needle) {
@@ -4748,19 +4733,6 @@ function wireEditBox(host, row) {
     const matches = markMatches(hit, row.id);
     if (matches.length) {
       showVocabPopup(matches, hit.getBoundingClientRect());
-    }
-  });
-  editQ.addEventListener("mouseup", () => {
-    const sel = window.getSelection();
-    if (!sel || sel.rangeCount === 0) return;
-    const selectedText = sel.toString().trim();
-    if (!selectedText) return;
-    const range = sel.getRangeAt(0);
-    if (!editQ.contains(range.commonAncestorContainer) || repeatsHighlightedWord(editQ, range, selectedText)) return;
-    const rect = range.getBoundingClientRect();
-    const matches = findVocabMatches(selectedText, row.id);
-    if (matches.length) {
-      showVocabPopup(matches, rect);
     }
   });
   editQ.addEventListener("keydown", e => {
@@ -10425,17 +10397,9 @@ document.getElementById("dictPanels").addEventListener("mouseup", e => {
     editDictField(whole.el, whole.row);
     return;
   }
+  if (!e.shiftKey || isVirtualLesson()) return;
   const hit = selectionInDictSource();
   if (!hit) return;
-  if (!e.shiftKey) {
-    const range = window.getSelection().getRangeAt(0);
-    const box = range.commonAncestorContainer.nodeType === 1 ? range.commonAncestorContainer.closest(".dict-source") : range.commonAncestorContainer.parentElement.closest(".dict-source");
-    if (box && repeatsHighlightedWord(box, range, hit.text)) return;
-    const matches = findVocabMatches(hit.text, hit.row.id);
-    if (matches.length) showVocabPopup(matches, hit.rect);
-    return;
-  }
-  if (isVirtualLesson()) return;
   if (existingVocab(hit.text)) warnVocabExists(hit.text); else showVocabAddPopup(hit.row, hit.text, hit.rect);
 });
 
@@ -10459,12 +10423,6 @@ document.addEventListener("mouseover", e => {
     if (markTerms(m).some(k => keys.includes(k))) m.classList.add("vocab-hover");
   });
 });
-
-function repeatsHighlightedWord(box, range, text) {
-  const key = foldVocab(text);
-  const marks = Array.from(box.querySelectorAll("mark.vocab-hit")).filter(m => markTerms(m).includes(key));
-  return !!marks.length && !marks.some(m => m.contains(range.commonAncestorContainer) || range.intersectsNode(m));
-}
 
 function fitTextarea(el) {
   if (!el || !el.offsetParent) return;
