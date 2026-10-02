@@ -319,10 +319,10 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-actions{display:inline-flex;flex-shrink:0;}
   .vocab-actions{gap:12px;padding-left:12px;}
   .vocab-actions button{width:17px;height:36px;line-height:36px;padding:0;border:0;border-radius:6px;background:none;font-size:20px;color:var(--text-2);}
-  .vocab-card-actions{position:absolute;top:6px;left:6px;z-index:3;}
-  #vocabTable .vocab-lead-col{width:calc(2 * 17px + 36px);}
-  #vocabTable td.vocab-lead-col{padding:5px 0;white-space:nowrap;}
-  html:not(.touch) #vocabTable .vocab-lead-col{display:none;}
+  .vocab-card-actions{z-index:3;}
+  html:not(.touch) #vocabTable{--col1:0px;--col2:0px;}
+  html:not(.touch) #vocabTable .icon-col, html:not(.touch) #vocabTable .edit-col, html:not(.touch) #vocabTable .del-col{padding:0;overflow:hidden;}
+  html:not(.touch) #vocabTable .edit-col > *, html:not(.touch) #vocabTable .del-col > *{display:none;}
   html.touch #vocabTable{touch-action:pan-y;}
   #vocabTable .cell{font-size:18px;}
   :root.vocab-mode{--accent:var(--new-color);--accent-hover:color-mix(in srgb, var(--new-color) 85%, black);--accent-soft:color-mix(in srgb, var(--new-color) 13%, transparent);}
@@ -441,7 +441,7 @@ window.onYouTubeIframeAPIReady = function(){
   .touch-bar .tb-again{background:var(--danger-soft);color:var(--danger);border-color:transparent;}
   .touch-bar .tb-good{background:var(--a-bg);color:var(--a-label);border-color:transparent;}
   .touch-bar .tb-mark{font-size:22px;font-weight:700;}
-  .single-card-field > .card-actions{position:absolute;top:6px;left:6px;display:flex;gap:2px;}
+  .single-card-field > .card-actions, .vocab-card-actions{position:absolute;top:6px;left:6px;display:flex;gap:2px;}
 
   .lesson-header{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
   .lesson-name-input{
@@ -546,15 +546,15 @@ window.onYouTubeIframeAPIReady = function(){
   tbody tr.row-playing{background:var(--row-playing) !important;}
   tbody td{padding:0;border-bottom:1px solid var(--border);vertical-align:middle;}
   tbody tr:last-child td{border-bottom:none;}
-  #cardTable{--lead-l:18px;--lead-g:var(--lead-l);--icon-w:11px;--text-in:18px;--col1:calc(var(--lead-l) + var(--icon-w) + var(--lead-g) / 2);--col2:calc(var(--lead-g) / 2 + var(--icon-w) + var(--lead-l) - var(--text-in));--lead:calc(var(--col1) + var(--col2));}
-  @media (max-width:600px){#cardTable{--lead-l:10px;--text-in:8px;}}
-  html.touch #cardTable{--icon-w:17px;}
-  @media (max-width:600px){html.touch #cardTable{--lead-l:12px;}}
-  #cardTable td .edit-btn, #cardTable td .del-btn{position:relative;width:var(--icon-w);}
-  #cardTable td .edit-btn::after, #cardTable td .del-btn::after{content:"";position:absolute;inset:-6px calc(var(--lead-g) / -2);}
-  #cardTable col:nth-child(1){width:var(--col1);}
-  #cardTable col:nth-child(2){width:var(--col2);}
-  #cardTable col:nth-child(3), #cardTable col:nth-child(4){width:calc((100% - var(--lead)) / 2);}
+  #cardTable, #vocabTable{--lead-l:18px;--lead-g:var(--lead-l);--icon-w:11px;--text-in:18px;--col1:calc(var(--lead-l) + var(--icon-w) + var(--lead-g) / 2);--col2:calc(var(--lead-g) / 2 + var(--icon-w) + var(--lead-l) - var(--text-in));--lead:calc(var(--col1) + var(--col2));}
+  @media (max-width:600px){#cardTable, #vocabTable{--lead-l:10px;--text-in:8px;}}
+  html.touch #cardTable, html.touch #vocabTable{--icon-w:17px;}
+  @media (max-width:600px){html.touch #cardTable, html.touch #vocabTable{--lead-l:12px;}}
+  #cardTable td .edit-btn, #cardTable td .del-btn, #vocabTable td .edit-btn, #vocabTable td .del-btn{position:relative;width:var(--icon-w);}
+  #cardTable td .edit-btn::after, #cardTable td .del-btn::after, #vocabTable td .edit-btn::after, #vocabTable td .del-btn::after{content:"";position:absolute;inset:-6px calc(var(--lead-g) / -2);}
+  #cardTable col:nth-child(1), #vocabTable col:nth-child(1){width:var(--col1);}
+  #cardTable col:nth-child(2), #vocabTable col:nth-child(2){width:var(--col2);}
+  #cardTable col:nth-child(3), #cardTable col:nth-child(4), #vocabTable col:nth-child(3), #vocabTable col:nth-child(4){width:calc((100% - var(--lead)) / 2);}
   #cardTable.no-answer-col col:nth-child(3){width:calc(100% - var(--lead));}
   #cardTable.no-answer-col col:nth-child(4){width:0;}
   html:not(.touch) #cardTable{--col1:calc(2 * var(--lead-l) + var(--icon-w) - var(--text-in));--col2:0px;}
@@ -5419,7 +5419,7 @@ window.addEventListener("pointermove", e => {
 });
 
 function vocabDragStart(e) {
-  if (vocabEditingKey || !e.target.closest("#vocabStage") || e.target.closest("button, input, select, textarea, .vocab-actions, .edit-row, .vocab-play")) return null;
+  if (vocabEditingKey || !e.target.closest("#vocabStage") || e.target.closest("button, input, select, textarea, .vocab-actions, .edit-col, .del-col, .edit-row, .vocab-play")) return null;
   const card = document.getElementById("vocabCard");
   const table = document.getElementById("vocabTable");
   if (!card && !table) return null;
@@ -9023,7 +9023,7 @@ function vocabCardHtml(item) {
   const frontText = vocabFront === "a" ? item.meaning : item.term;
   const front = `<div class="vocab-face vocab-front"><div class="vocab-term">${escapeHtml(frontText)}</div></div>`;
   const back = `<div class="vocab-face vocab-back">${vocabBackInner(item)}</div>`;
-  return `<div class="vocab-card${vocabFront === "a" ? " answer-first" : ""}${vocabSession.flipped ? " flipped" : ""}" id="vocabCard">` + `<div class="vocab-card-inner">${front}${back}</div>` + '<span class="vocab-actions vocab-card-actions vocab-touch-only"><button class="vocab-act-edit" aria-label="Edit this word">&#9998;</button><button class="vocab-act-del" aria-label="Delete this word">&#10005;</button></span>' + "</div>";
+  return `<div class="vocab-card${vocabFront === "a" ? " answer-first" : ""}${vocabSession.flipped ? " flipped" : ""}" id="vocabCard">` + `<div class="vocab-card-inner">${front}${back}</div>` + '<span class="card-actions vocab-card-actions vocab-touch-only"><button class="edit-btn vocab-act-edit" aria-label="Edit this word">&#9998;</button><button class="del-btn vocab-act-del" aria-label="Delete this word">&#10005;</button></span>' + "</div>";
 }
 
 function vocabTableHtml(group) {
@@ -9035,8 +9035,8 @@ function vocabTableHtml(group) {
     return `<div class="cell ${hidden ? "hidden" : "shown"}" data-field="${field}">${play}${hidden ? "···" : escapeHtml(field === "q" ? item.term : item.meaning)}</div>`;
   };
   const head = field => `<th${field === "a" ? ' class="a-col"' : ""}>${field === "q" ? "Question" : "Answer"}</th>`;
-  const actions = '<span class="vocab-actions vocab-touch-only"><button class="vocab-act-edit" aria-label="Edit this word">&#9998;</button><button class="vocab-act-del" aria-label="Delete this word">&#10005;</button></span>';
-  return '<table id="vocabTable"><thead><tr><th class="vocab-lead-col"></th>' + head("q") + head("a") + "</tr></thead><tbody>" + group.map(item => item.key === vocabEditingKey && !vocabEditingInList ? `<tr class="edit-row"><td colspan="3">${vocabEditorHtml(item)}</td></tr>` : `<tr data-key="${escapeAttr(item.key)}"${item.key === vocabSelectedKey ? ' class="row-selected"' : ""}><td class="vocab-lead-col">${actions}</td><td>${cell(item, "q")}</td><td class="a-col">${cell(item, "a")}</td></tr>`).join("") + "</tbody></table>";
+  const lead = '<td class="edit-col"><button class="edit-btn vocab-act-edit" aria-label="Edit this word">&#9998;</button></td><td class="del-col"><button class="del-btn vocab-act-del" aria-label="Delete this word">&#10005;</button></td>';
+  return '<table id="vocabTable"><colgroup><col><col><col><col></colgroup><thead><tr><th class="icon-col" colspan="2"></th>' + head("q") + head("a") + "</tr></thead><tbody>" + group.map(item => item.key === vocabEditingKey && !vocabEditingInList ? `<tr class="edit-row"><td colspan="4">${vocabEditorHtml(item)}</td></tr>` : `<tr data-key="${escapeAttr(item.key)}"${item.key === vocabSelectedKey ? ' class="row-selected"' : ""}>${lead}<td>${cell(item, "q")}</td><td class="a-col">${cell(item, "a")}</td></tr>`).join("") + "</tbody></table>";
 }
 
 function vocabEditorHtml(item) {
@@ -10089,7 +10089,7 @@ function wireVocabCard(item) {
     deleteVocabEntry(item);
   };
   card.addEventListener("click", e => {
-    if (!e.target.closest(".vocab-actions")) flipVocab();
+    if (!e.target.closest(".card-actions")) flipVocab();
   });
 }
 
