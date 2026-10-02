@@ -440,6 +440,7 @@ window.onYouTubeIframeAPIReady = function(){
   .touch-bar .tb-icon{flex:0 0 48px;display:flex;align-items:center;justify-content:center;padding:0;}
   .touch-bar .tb-again{background:var(--danger-soft);color:var(--danger);border-color:transparent;}
   .touch-bar .tb-good{background:var(--a-bg);color:var(--a-label);border-color:transparent;}
+  .touch-bar .tb-mark{font-size:22px;font-weight:700;}
   .single-card-field > .card-actions{position:absolute;top:6px;left:6px;display:flex;gap:2px;}
 
   .lesson-header{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
@@ -3948,7 +3949,7 @@ document.addEventListener("click", e => {
   clearRowSelection();
 }, true);
 
-const FLIP_ICON = '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.76 10.06A7.5 7.5 0 0 1 19.24 10.06M20.79 7.03L19.24 10.06L16.39 8.21M19.24 13.94A7.5 7.5 0 0 1 4.76 13.94M3.21 16.97L4.76 13.94L7.61 15.79"/></svg>';
+const FLIP_ICON = '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/></svg>';
 
 function updateTouchBar() {
   const bar = document.getElementById("touchBar");
@@ -3962,7 +3963,14 @@ function updateTouchBar() {
   document.getElementById("tbUndo").disabled = !undoStack.length;
   document.getElementById("tbRedo").disabled = !redoStack.length;
   const showBtn = document.getElementById("tbShow");
-  if (vocab && vocabView !== "group") {
+  const flashcards = vocab && vocabView !== "group";
+  [ [ "tbAgain", "Again", "✕" ], [ "tbGood", "Good", "✓" ] ].forEach(([id, word, mark]) => {
+    const btn = document.getElementById(id);
+    btn.textContent = flashcards ? mark : word;
+    btn.classList.toggle("tb-mark", flashcards);
+    if (flashcards) btn.setAttribute("aria-label", word); else btn.removeAttribute("aria-label");
+  });
+  if (flashcards) {
     if (!showBtn.querySelector("svg")) showBtn.innerHTML = FLIP_ICON;
     showBtn.setAttribute("aria-label", "Flip");
     return;
