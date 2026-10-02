@@ -5158,11 +5158,13 @@ function gradeCurrentGroupAndAdvance(isAgain) {
   });
   showToast(gradeLabel(isAgain));
   scheduleAutoSave();
+  const focus = dictFocusBefore(null);
   swipe(studyParts(), isAgain ? -1 : 1, () => {
     groupState.groups[groupState.index] = [];
     advanceToNextGroup();
     render();
   }, true);
+  if (focus) keepDictFocus(focus, 0);
 }
 
 function gradeCard(row, isAgain) {
@@ -5181,6 +5183,8 @@ function gradeCard(row, isAgain) {
   if (!next) holdPage();
   const panel = rowDictPanel(row.id);
   const fromPanel = !!panel && panel.matches(":hover");
+  const focus = dictFocusBefore(fromPanel ? panel : null);
+  const gradedSlot = dictPanelsInOrder().indexOf(panel);
   swipe(next ? studyParts() : [ fromPanel ? panel : document.querySelector(`#tbody tr[data-id="${row.id}"]`) ], isAgain ? -1 : 1, () => {
     if (ids) {
       ids.splice(ids.indexOf(row.id), 1);
@@ -5188,6 +5192,36 @@ function gradeCard(row, isAgain) {
     }
     render();
   }, next);
+  if (focus) keepDictFocus(focus, next ? 0 : gradedSlot !== -1 && gradedSlot < focus.slot ? focus.slot - 1 : focus.slot);
+}
+
+function dictPanelsInOrder() {
+  return Array.from(document.querySelectorAll("#dictPanels > .stroke-order-panel:not(.dict-pending)")).filter(el => el.offsetParent).sort((a, b) => (Number(a.style.order) || 0) - (Number(b.style.order) || 0));
+}
+
+function dictFocusBefore(panel) {
+  const panels = dictPanelsInOrder();
+  if (!panels.length) return null;
+  const band = visibleBand();
+  if (!panels.includes(panel)) {
+    if (panels[0].getBoundingClientRect().top >= band.top) return null;
+    panel = panels.find(el => el.getBoundingClientRect().bottom > band.top);
+  }
+  return panel ? {
+    slot: panels.indexOf(panel),
+    top: panel.getBoundingClientRect().top
+  } : null;
+}
+
+function keepDictFocus(focus, slot) {
+  const panels = dictPanelsInOrder();
+  const panel = panels[Math.min(slot, panels.length - 1)];
+  if (!panel) return;
+  const delta = panel.getBoundingClientRect().top - focus.top;
+  if (Math.abs(delta) > 1) window.scrollBy({
+    top: delta,
+    behavior: "instant"
+  });
 }
 
 let heldPage = null;
