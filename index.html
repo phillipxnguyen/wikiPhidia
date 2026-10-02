@@ -765,13 +765,8 @@ window.onYouTubeIframeAPIReady = function(){
   #dictPanels{display:flex;flex-direction:column;position:relative;}
   #vocabDictPanels{position:relative;}
   #dictPanels .dict-pending, #vocabDictPanels .dict-pending{position:absolute;top:0;left:0;right:0;height:0;overflow:hidden;visibility:hidden;pointer-events:none;}
-  #dictPanels:not(.with-source) .dict-line{display:none;}
-  .dict-line{position:relative;}
-  html.touch .dict-line{padding:0 32px;}
-  .dict-edit{display:none;position:absolute;left:0;top:7px;width:32px;height:36px;padding:0;border:0;background:none;font-size:13px;color:var(--text-2);}
-  html.touch .dict-edit{display:block;}
-  .dict-line:has(.rd) .dict-edit{top:20px;}
-  .dict-line:has(.dict-answer) .dict-edit{top:-2px;}
+  #dictPanels:not(.with-source) .dict-source, #dictPanels:not(.with-source) .dict-answer{display:none;}
+  html.touch .dict-source:not(.dict-editing)::before, html.touch .dict-answer:not(.dict-editing)::before{content:"\270E";margin-right:.4em;font-size:13px;color:var(--text-2);}
   #viewStudy.focus-study > .lesson-header, #viewStudy.focus-study > .save-status, #viewStudy.focus-study > .lesson-meta{display:none;}
   .swipe-ghost{position:fixed;z-index:1000;box-sizing:border-box;display:flex;justify-content:center;border:3px solid var(--border);border-radius:28px;background:var(--surface);box-shadow:var(--shadow-md);font-size:34px;font-weight:700;pointer-events:none;}
   .swipe-ghost.row{align-items:center;border-radius:16px;font-size:20px;}
@@ -2575,7 +2570,7 @@ function renderDictPanels() {
       el = document.createElement("div");
       el.className = "stroke-order-panel dict-pending";
       el.dataset.url = url;
-      el.innerHTML = `<div class="dict-line"><button class="dict-edit" aria-label="Edit">&#9998;</button><div class="dict-source"></div></div><div class="dict-line"><button class="dict-edit" aria-label="Edit">&#9998;</button><div class="dict-answer"></div></div><div class="dict-stroke"></div><iframe class="dict-frame"></iframe>`;
+      el.innerHTML = `<div class="dict-source"></div><div class="dict-answer"></div><div class="dict-stroke"></div><iframe class="dict-frame"></iframe>`;
       el.querySelector("iframe").src = url;
       host.appendChild(el);
     }
@@ -2594,7 +2589,7 @@ function renderDictPanels() {
       answer.dataset.html = answerHtml;
       answer.innerHTML = answerHtml;
     }
-    answer.parentElement.hidden = !(r.a || "").trim() || r.aHidden;
+    answer.hidden = !(r.a || "").trim() || r.aHidden;
     return el;
   };
   preload.forEach(panelFor);
@@ -10367,6 +10362,18 @@ window.addEventListener("scroll", () => {
   if (r.bottom < band.top || r.top > band.bottom) hideVocabAddPopup();
 });
 
+function tapsEditMark(field, e) {
+  const walker = document.createTreeWalker(field, NodeFilter.SHOW_TEXT);
+  let node;
+  while ((node = walker.nextNode()) && !node.nodeValue.trim()) ;
+  if (!node) return true;
+  const first = document.createRange();
+  first.setStart(node, node.nodeValue.search(/\S/));
+  first.setEnd(node, node.nodeValue.search(/\S/) + 1);
+  const r = first.getClientRects()[0];
+  return !!r && e.clientX < r.left && e.clientX > r.left - 44 && e.clientY > r.top - 12 && e.clientY < r.bottom + 12;
+}
+
 function dictSourceRow(el) {
   const panel = el && el.closest && el.closest("#dictPanels .stroke-order-panel");
   return panel ? rows.find(r => r.id === Number(panel.dataset.rowId)) : null;
@@ -10484,10 +10491,9 @@ document.getElementById("dictPanels").addEventListener("mouseup", e => {
 });
 
 dictPanelsHost.addEventListener("click", e => {
-  const editBtn = e.target.closest(".dict-edit");
-  if (editBtn) {
-    const field = editBtn.nextElementSibling;
-    const row = !field.isContentEditable && dictSourceRow(field);
+  const field = isTouch() && e.target.closest(".dict-source:not(.dict-editing), .dict-answer:not(.dict-editing)");
+  if (field && tapsEditMark(field, e)) {
+    const row = dictSourceRow(field);
     if (row) editDictField(field, row);
     return;
   }
