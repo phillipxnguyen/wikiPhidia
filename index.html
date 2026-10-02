@@ -10113,29 +10113,8 @@ function wireVocabCard(item) {
   });
 }
 
-let bookChordArmed = false;
-
-document.addEventListener("keydown", e => {
-  if (e.key !== "Meta" && e.key !== "Alt") bookChordArmed = false;
-}, true);
-
-document.addEventListener("keyup", e => {
-  if (!bookChordArmed || e.key !== "Meta" && e.key !== "Alt") return;
-  bookChordArmed = false;
-  const bookBtn = document.getElementById("vocabDictBtn");
-  if (currentView !== "vocab" || bookBtn.hidden || vocabEditingKey || isTypingInField()) return;
-  bookBtn.click();
-  bookBtn.blur();
-});
-
-window.addEventListener("blur", () => bookChordArmed = false);
-
 function handleVocabKey(e) {
   if (isTypingInField()) return;
-  if ((e.key === "Meta" && e.altKey || e.key === "Alt" && e.metaKey) && !e.ctrlKey && !e.shiftKey) {
-    bookChordArmed = !e.repeat || bookChordArmed;
-    return;
-  }
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z") {
     e.preventDefault();
     if (e.shiftKey) redo(); else undo();
@@ -10163,17 +10142,17 @@ function handleVocabKey(e) {
     const hovered = vocabHoveredKey && currentVocabGroup().some(i => i.key === vocabHoveredKey) ? vocabHoveredKey : null;
     const target = hovered || vocabSelectedKey;
     const row = /^Digit[1-5]$/.test(e.code) ? currentVocabGroup()[Number(e.code.slice(-1)) - 1] : null;
-    if (row) toggleVocabRowSound(row.key); else if (e.code === "Space") toggleVocabGroupReveal(); else if (e.code === "KeyC") copyQuestions(currentVocabGroup().map(i => i.term)); else if (e.code === "KeyS") toggleVocabGroupSound(target); else if (gradeKey(e)) gradeVocabGroup(gradeKey(e) === "again", target); else return;
+    if (row) toggleVocabRowSound(row.key); else if (e.code === "Space") toggleVocabGroupReveal(); else if (e.code === "KeyC") copyQuestions(currentVocabGroup().map(i => i.term)); else if (e.code === "KeyE" && target) openVocabEditor(target); else if (e.code === "KeyS") toggleVocabGroupSound(target); else if (gradeKey(e)) gradeVocabGroup(gradeKey(e) === "again", target); else return;
     e.preventDefault();
     if (document.activeElement && document.activeElement.tagName === "BUTTON") document.activeElement.blur();
     return;
   }
-  if (e.code === "Space" || e.code === "KeyS" || e.code === "KeyE") {
+  if (e.code === "Space" || e.code === "KeyS" || e.code === "KeyE" || e.code === "KeyC") {
     const item = currentVocabItem();
     if (!item) return;
     e.preventDefault();
     if (document.activeElement && document.activeElement.tagName === "BUTTON") document.activeElement.blur();
-    if (e.code === "KeyS") toggleVocabSound(item); else if (e.code === "KeyE") openVocabEditor(item.key); else flipVocab();
+    if (e.code === "KeyS") toggleVocabSound(item); else if (e.code === "KeyE") openVocabEditor(item.key); else if (e.code === "KeyC") copyQuestions([ item.term ]); else flipVocab();
     return;
   }
   if (!gradeKey(e) || !currentVocabItem()) return;
@@ -10696,10 +10675,24 @@ document.addEventListener("keydown", e => {
     seqBtn.click();
     return;
   }
-  if (letter && (e.code === "KeyC" || e.code === "KeyE")) {
-    if (!groupState || isCardMode() !== (e.code === "KeyE")) return;
+  if (letter && e.code === "KeyC") {
+    if (!groupState) return;
     e.preventDefault();
-    if (e.code === "KeyE") openSingleCardEdit(getCurrentSingleCardRow()); else copyQuestions(currentGroupTexts("q"));
+    copyQuestions(currentGroupTexts("q"));
+    return;
+  }
+  if (letter && e.code === "KeyE") {
+    if (isCardMode()) {
+      e.preventDefault();
+      openSingleCardEdit(getCurrentSingleCardRow());
+      return;
+    }
+    const id = selectedRowId !== null ? selectedRowId : hoveredRowId;
+    const tr = id !== null && document.querySelector(`#tbody tr[data-id="${id}"]`);
+    const row = tr && rows.find(r => r.id === id);
+    if (!row) return;
+    e.preventDefault();
+    openEdit(tr, row);
     return;
   }
   if ((e.code === "Backspace" || e.code === "Delete") && !e.repeat) {
