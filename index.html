@@ -351,7 +351,7 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-list-row.row-selected > *{background:var(--accent-soft);}
   .vocab-list-row.editing{grid-column:1 / -1;border-top:1px solid var(--border);}
   .vocab-list-bar + .vocab-list-row.editing{border-top:0;}
-  .vocab-list-term{max-width:14em;font-weight:600;overflow-wrap:break-word;}
+  .vocab-list-term{max-width:14em;font-weight:600;overflow-wrap:anywhere;}
   .vocab-list-meaning{min-width:0;overflow-wrap:break-word;}
   .vocab-add-popup{position:fixed;z-index:2000;width:min(340px, calc(100vw - 16px));padding:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);}
   .vocab-add-field{min-height:36px;padding:8px 10px;border:1px solid var(--accent);border-radius:var(--radius-sm);box-shadow:0 0 0 3px var(--accent-soft);background:var(--surface);color:var(--text);font-size:14px;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere;cursor:text;outline:none;}
@@ -778,7 +778,7 @@ window.onYouTubeIframeAPIReady = function(){
   .dict-source{color:var(--text);margin-top:calc(7px - .07em);}
   .dict-source:has(.rd){line-height:2;margin:calc(7px + .11em) 0 -.48em;}
   .dict-answer{color:var(--a-text);}
-  .stroke-order-panel > .dict-source, .stroke-order-panel > .dict-answer{width:fit-content;max-width:100%;margin-left:auto;margin-right:auto;text-align:left;}
+  .stroke-order-panel > .dict-source, .stroke-order-panel > .dict-answer{box-sizing:border-box;width:fit-content;max-width:100%;margin-left:auto;margin-right:auto;padding:0 16px;text-align:left;}
   .dict-editing{border-radius:var(--radius-sm);outline:none;box-shadow:0 0 0 2px var(--accent);cursor:text;}
   .dict-frame{display:block;width:100%;height:360px;border:1px solid var(--border);border-radius:8px;background:#fff;}
 
@@ -2306,25 +2306,28 @@ function updateSequenceBtnUI() {
   if (sequenceReadsAloud()) {
     const on = ttsPlaying && ttsField === "q";
     btn.style.display = "inline-block";
-    btn.disabled = false;
     speedSel.style.display = "none";
     btn.innerHTML = playFace(on ? "⏸" : "🔊");
-    btn.classList.toggle("active", on);
-    updateTouchBar();
+    setSequenceBtnState(btn, on, true);
     return;
   }
   if (!ytPlayer || !ytReady || !ytHasVideo || ytHasError) {
     btn.style.display = "none";
-    btn.disabled = true;
     speedSel.style.display = "none";
+    setSequenceBtnState(btn, false, false);
     return;
   }
   btn.style.display = "inline-block";
-  btn.disabled = false;
   speedSel.style.display = "inline-block";
   btn.innerHTML = playFace(isSequencePlaying ? YT_PAUSE_ICON : YT_ICON);
-  btn.classList.toggle("active", isSequencePlaying);
-  updateTouchBar();
+  setSequenceBtnState(btn, isSequencePlaying, true);
+}
+
+function setSequenceBtnState(btn, on, enabled) {
+  const before = btn.classList.contains("active") + ":" + btn.disabled;
+  btn.classList.toggle("active", on);
+  btn.disabled = !enabled;
+  if (before !== btn.classList.contains("active") + ":" + btn.disabled) updateTouchBar();
 }
 
 function playNextSequenceStep() {
@@ -3982,11 +3985,14 @@ function updateTouchBar() {
     return;
   }
   showBtn.removeAttribute("aria-label");
+  const seqBtn = document.getElementById("btnPlaySequence");
   let showLabel = "Show";
   if (vocab) {
     if (vocabSession && vocabSession.shown) showLabel = "Hide";
-  } else if (listenCardShown()) {
-    showLabel = document.getElementById("btnPlaySequence").classList.contains("active") ? "⏸" : "▶";
+  } else if (listenCardShown() && !seqBtn.disabled) {
+    const playing = seqBtn.classList.contains("active");
+    showLabel = playing ? "⏸" : "▶";
+    showBtn.setAttribute("aria-label", playing ? "Pause" : "Play");
   } else if (groupState && groupViewStyle !== "listen") {
     const ids = groupState.groups[groupState.index] || [];
     if (ids.length && rows.filter(r => ids.includes(r.id)).every(r => !r.qHidden && !r.aHidden)) showLabel = "Hide";
@@ -4125,7 +4131,9 @@ function findDuplicateCard(q, a, time, except) {
   return rows.find(r => r !== except && r.id !== draftRowId && (!except || r.srcLessonId === except.srcLessonId) && normalizeImportText(r.q || "") === nq && (time == null || r.time == null || r.time === time) && (!na || !(r.a || "").trim() || normalizeImportText(r.a) === na)) || null;
 }
 
-const NOTE_VOCAB_ITEM_RE = /^(\s*([^:：=＝\n]{1,40}?)\s*(?:[:：]|={1,2}|＝)\s*)(\S[\s\S]*?)\s*$/;
+const VOCAB_TERM_MAX = 100;
+
+const NOTE_VOCAB_ITEM_RE = new RegExp(`^(\\s*([^:：=＝\\n]{1,${VOCAB_TERM_MAX}}?)\\s*(?:[:：]|={1,2}|＝)\\s*)(\\S[\\s\\S]*?)\\s*$`);
 
 function ownLiTextNodes(li) {
   const nodes = [];
@@ -5259,7 +5267,7 @@ function keepDictFocus(focus, slot) {
   const panels = dictPanelsInOrder();
   const panel = panels[Math.min(slot, panels.length - 1)];
   if (!panel) return;
-  const delta = panel.getBoundingClientRect().top - focus.top;
+  const delta = panel.getBoundingClientRect().top - Math.max(focus.top, visibleBand().top);
   if (Math.abs(delta) > 1) window.scrollBy({
     top: delta,
     behavior: "instant"
@@ -8637,7 +8645,7 @@ let vocabEditingInList = false;
 
 const vocabEntryCache = new Map;
 
-const VOCAB_LINE_RE = /^\s*([^:：]{1,40}?)\s*[:：]\s*(\S[\s\S]*?)\s*$/;
+const VOCAB_LINE_RE = new RegExp(`^\\s*([^:：]{1,${VOCAB_TERM_MAX}}?)\\s*[:：]\\s*(\\S[\\s\\S]*?)\\s*$`);
 
 function existingVocab(term, rowsToCheck) {
   const key = normalizeVocabText((term || "").trim());
@@ -9051,7 +9059,8 @@ function renderVocabDict() {
   const next = nextKey ? lessonVocabItems(vocabSource()).find(i => i.key === nextKey) : null;
   const now = String(Date.now());
   const panelFor = item => {
-    const url = dictUrlFor((item.card.q || "").trim() || item.term, item.card);
+    const sentence = (item.card.q || "").trim();
+    const url = dictUrlFor(sentence && findTermIn(sentence.normalize("NFC"), item.term) ? sentence : item.term, item.card);
     if (!url) return null;
     let el = Array.from(host.children).find(c => c.dataset.url === url);
     if (!el) {
@@ -9075,7 +9084,10 @@ function renderVocabDict() {
   }
   const shown = vocabDictOpen && current;
   Array.from(host.children).forEach(el => {
-    if (el === shown && el.classList.contains("dict-pending")) drawStrokeOrder(el.querySelector(".dict-stroke"), card.term, cjkScriptFor(card.term, card.card) === "ja", "vocabDictStroke");
+    if (el === shown && (el.classList.contains("dict-pending") || el.dataset.stroke !== card.term)) {
+      el.dataset.stroke = card.term;
+      drawStrokeOrder(el.querySelector(".dict-stroke"), card.term, cjkScriptFor(card.term, card.card) === "ja", "vocabDictStroke");
+    }
     el.classList.toggle("dict-pending", el !== shown);
   });
   if (shown) guardDictFocus();
@@ -9456,6 +9468,10 @@ function addExtraWord(termRaw, meaningRaw, explicit) {
     showToast("The question can't contain a colon");
     return false;
   }
+  if (term.length > VOCAB_TERM_MAX) {
+    showToast(`The question can be at most ${VOCAB_TERM_MAX} characters`);
+    return false;
+  }
   if (existingVocab(term)) {
     warnVocabExists(term);
     return false;
@@ -9683,6 +9699,10 @@ function updateVocabEntry(item, termRaw, meaningRaw) {
   }
   if (/[:：]/.test(term)) {
     showToast("The question can't contain a colon");
+    return false;
+  }
+  if (term.length > VOCAB_TERM_MAX) {
+    showToast(`The question can be at most ${VOCAB_TERM_MAX} characters`);
     return false;
   }
   if (term === item.term && meaning === item.meaning) return true;
@@ -10431,7 +10451,7 @@ function editDictField(el, row, keepSelection) {
     const before = document.createRange();
     before.selectNodeContents(el);
     before.setEnd(sel.getRangeAt(0)[edge + "Container"], sel.getRangeAt(0)[edge + "Offset"]);
-    return before.toString().length;
+    return before.toString().replace(/\n/g, "").length;
   }) : null;
   el.innerHTML = row[field + "Html"] || textHtml(row[field]);
   el.contentEditable = "true";
@@ -10510,7 +10530,9 @@ document.addEventListener("keydown", e => {
 });
 
 document.getElementById("dictPanels").addEventListener("mouseup", e => {
-  const answer = !e.shiftKey && !isTouch() && e.target.closest(".dict-answer");
+  const answer = e.button === 0 && !e.shiftKey && !isTouch() && e.target.closest(".dict-answer");
+  const sel = getSelection();
+  if (answer && !sel.isCollapsed && !answer.contains(sel.anchorNode)) return;
   const answerRow = answer && !answer.isContentEditable && dictSourceRow(answer);
   if (answerRow) {
     editDictField(answer, answerRow, true);
