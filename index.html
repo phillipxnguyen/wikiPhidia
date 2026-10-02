@@ -331,6 +331,12 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-list .vocab-editor{margin:4px 0;box-shadow:none;}
   .vocab-editor textarea{width:100%;font-size:16px;}
   .vocab-editor-actions{display:flex;justify-content:flex-end;gap:8px;}
+  .over-limit, .over-limit:focus, .vocab-add-field.over-limit{border-color:var(--danger);box-shadow:0 0 0 3px var(--danger-soft);}
+  .limit-row{display:flex;gap:8px;margin-top:4px;font-size:13px;}
+  .limit-msg{color:var(--danger);}
+  .limit-count{margin-left:auto;color:var(--text-2);font-variant-numeric:tabular-nums;}
+  .limit-count.over{color:var(--danger);font-weight:600;}
+  .vocab-editor .limit-row{margin-top:-4px;}
   html:not(.touch) .vocab-list-term, html:not(.touch) .vocab-list-meaning{cursor:pointer;}
   .vocab-more{grid-column:1 / -1;margin-top:8px;width:100%;}
   #vocabInlineAdd{margin-bottom:16px;}
@@ -4132,6 +4138,28 @@ function findDuplicateCard(q, a, time, except) {
 }
 
 const VOCAB_TERM_MAX = 100;
+
+function watchTermLimit(input, termOf, saveBtn) {
+  const row = document.createElement("div");
+  row.className = "limit-row";
+  row.innerHTML = `<span class="limit-msg">You've reached ${VOCAB_TERM_MAX} characters</span><span class="limit-count"></span>`;
+  input.after(row);
+  const msg = row.firstChild, count = row.lastChild;
+  const update = () => {
+    const len = termOf().length;
+    const over = len > VOCAB_TERM_MAX;
+    row.hidden = len < Math.ceil(VOCAB_TERM_MAX * .8);
+    msg.hidden = !over;
+    count.textContent = `${len} / ${VOCAB_TERM_MAX}`;
+    count.classList.toggle("over", over);
+    input.classList.toggle("over-limit", over);
+    if (saveBtn) saveBtn.disabled = over;
+    return over;
+  };
+  input.addEventListener("input", update);
+  update();
+  return update;
+}
 
 const NOTE_VOCAB_ITEM_RE = new RegExp(`^(\\s*([^:：=＝\\n]{1,${VOCAB_TERM_MAX}}?)\\s*(?:[:：]|={1,2}|＝)\\s*)(\\S[\\s\\S]*?)\\s*$`);
 
@@ -9220,7 +9248,9 @@ function wireVocabEditor(items) {
   fitTextarea(term);
   fitTextarea(meaning);
   const item = items.find(i => i.key === vocabEditingKey);
+  const overLimit = watchTermLimit(term, () => term.value.replace(/\s+/g, " ").trim(), document.getElementById("vocabEditSave"));
   const save = () => {
+    if (overLimit()) return;
     if (!(vocabEditingKey === NEW_WORD_KEY ? addExtraWord(term.value, meaning.value, true) : updateVocabEntry(item, term.value, meaning.value))) return;
     vocabEditingKey = null;
     renderVocab();
@@ -9290,7 +9320,7 @@ function parseVocabPaste(line, delim) {
       meaning = line.slice(tab + 1);
     }
   } else {
-    const m = line.match(VOCAB_LINE_RE);
+    const m = line.match(/^\s*([^:：]+?)\s*[:：]\s*(\S[\s\S]*?)\s*$/);
     if (m) {
       term = m[1];
       meaning = m[2];
@@ -9309,7 +9339,7 @@ function planVocabImport(text) {
     if (!raw.trim()) return;
     const pair = parseVocabPaste(raw, delim);
     let kind = "new";
-    if (!pair) kind = "invalid"; else {
+    if (!pair) kind = "invalid"; else if (pair[0].length > VOCAB_TERM_MAX) kind = "long"; else {
       const key = normalizeVocabText(pair[0]);
       if (seen.has(key) || existingVocab(pair[0])) kind = "duplicate"; else seen.add(key);
     }
@@ -9337,19 +9367,21 @@ function renderVocabImportPreview() {
   if (count("new")) summary.push(`<span class="ip-status new">🆕 ${count("new")}</span>`);
   if (count("duplicate")) summary.push(`<span class="ip-status dup">${count("duplicate")} duplicate</span>`);
   if (count("invalid")) summary.push(`<span class="ip-status skip">${count("invalid")} skipped</span>`);
+  if (count("long")) summary.push(`<span class="ip-status skip">${count("long")} too long</span>`);
   const pick = vocabDelimFor(raw);
   summary.push(`<span>Delimiter: <b>${delimLabel(pick.delim)}</b>${pick.auto ? " (auto-detected)" : ""}</span>`);
   const labels = {
     new: [ "new", "🆕", "New word" ],
     duplicate: [ "dup", "⏭", "Already in this lesson" ],
-    invalid: [ "skip", "⚠️", "Not read — no " + delimLabel(pick.delim) + " on this line" ]
+    invalid: [ "skip", "⚠️", "Not read — no " + delimLabel(pick.delim) + " on this line" ],
+    long: [ "skip", "⚠️", `Not read — the question is over ${VOCAB_TERM_MAX} characters` ]
   };
   const body = lines.slice(0, IMPORT_PREVIEW_MAX_ROWS).map(l => {
     const [cls, icon, label] = labels[l.kind];
     const status = `<td class="ip-result"><span class="ip-status ${cls}" aria-label="${escapeAttr(label)}">${icon}</span></td>`;
     const num = `<td class="ip-num">${l.lineNo}</td>`;
     if (!l.pair) return `<tr class="ip-dim">${num}${status}<td colspan="2" class="ip-raw">${escapeHtml(l.text)}</td></tr>`;
-    return `<tr${l.kind === "duplicate" ? ' class="ip-dim"' : ""}>${num}${status}${previewCell(l.pair[0])}${previewCell(l.pair[1])}</tr>`;
+    return `<tr${l.kind === "duplicate" || l.kind === "long" ? ' class="ip-dim"' : ""}>${num}${status}${previewCell(l.pair[0])}${previewCell(l.pair[1])}</tr>`;
   }).join("");
   const more = lines.length > IMPORT_PREVIEW_MAX_ROWS ? `<div class="ip-more">…and ${lines.length - IMPORT_PREVIEW_MAX_ROWS} more line(s)</div>` : "";
   box.innerHTML = `<div class="ip-summary">${summary.join("")}</div>` + '<div class="ip-scroll"><table class="ip-table"><colgroup><col style="width:44px"><col style="width:52px"><col><col></colgroup>' + "<thead><tr><th>#</th><th aria-label='Result'></th><th>Question</th><th>Answer</th></tr></thead>" + `<tbody>${body}</tbody></table>${more}</div>`;
@@ -9369,7 +9401,7 @@ function importVocabText(text) {
   const plan = planVocabImport(text);
   const pairs = plan.filter(l => l.kind === "new").map(l => l.pair);
   const dup = plan.filter(l => l.kind === "duplicate").length;
-  const bad = plan.filter(l => l.kind === "invalid").length;
+  const bad = plan.filter(l => l.kind === "invalid" || l.kind === "long").length;
   if (pairs.length) {
     pushUndo("Added " + pairs.length + " word" + (pairs.length === 1 ? "" : "s"));
     const holder = ensureVocabExtras();
@@ -9469,7 +9501,7 @@ function addExtraWord(termRaw, meaningRaw, explicit) {
     return false;
   }
   if (term.length > VOCAB_TERM_MAX) {
-    showToast(`The question can be at most ${VOCAB_TERM_MAX} characters`);
+    showToast(`You've reached ${VOCAB_TERM_MAX} characters — not saved`);
     return false;
   }
   if (existingVocab(term)) {
@@ -9702,7 +9734,7 @@ function updateVocabEntry(item, termRaw, meaningRaw) {
     return false;
   }
   if (term.length > VOCAB_TERM_MAX) {
-    showToast(`The question can be at most ${VOCAB_TERM_MAX} characters`);
+    showToast(`You've reached ${VOCAB_TERM_MAX} characters — not saved`);
     return false;
   }
   if (term === item.term && meaning === item.meaning) return true;
@@ -10344,6 +10376,7 @@ function showVocabAddPopup(row, term, rect) {
     e.preventDefault();
     document.execCommand("insertText", false, e.clipboardData.getData("text/plain").replace(/\s*[\r\n]+\s*/g, " "));
   });
+  const overLimit = watchTermLimit(input, () => input.textContent.split(/[:：]/)[0].replace(/\s+/g, " ").trim());
   input.addEventListener("keydown", e => {
     e.stopPropagation();
     if (e.isComposing || e.keyCode === 229) return;
@@ -10354,6 +10387,7 @@ function showVocabAddPopup(row, term, rect) {
     }
     if (e.key !== "Enter") return;
     e.preventDefault();
+    if (overLimit()) return;
     const m = input.textContent.match(VOCAB_LINE_RE);
     if (!m) {
       showToast("Write it as word: meaning");

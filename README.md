@@ -8,7 +8,7 @@ The whole app is one file, `index.html`. There is no build step and nothing to i
 
 - Paste cards into a lesson, one per line, as `question : answer` or tab-separated. The separator is detected and a preview shows what will be imported.
 - Start a line with a timestamp (`1:23 question : answer`) and set the lesson's YouTube link to tie each card to a moment in the video.
-- Each card has rich-text notes. Lines written as `word: meaning` become words in the vocabulary deck.
+- Each card has rich-text notes. Lines written as `word: meaning` become words in the vocabulary deck. The word part can be up to 100 characters: when you type a word, a counter appears near the limit, and past it the box turns red, says so and won't save. Pasted words over the limit are listed as too long and left out.
 - Questions, answers and notes keep only basic formatting: bold, italic, underline, strikethrough, line breaks and bullet or numbered lists. Anything else pasted in (font sizes, colours, fonts, headings, links, images) is dropped, so a paste from a web page, Word or Google Docs cannot change how a card looks.
 - Lessons can be saved as `.json` files and opened again, one at a time or all at once.
 
