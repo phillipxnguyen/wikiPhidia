@@ -39,7 +39,7 @@ Group and Listening share one queue: a card studied in one mode leaves the other
 | ↑ | Play or pause the sound |
 | ↓ | In a group, copy the questions; one card at a time (Flashcards, Listening), edit the card |
 | 1 – 5 | In a group, play just that row over and over: its video clip, or read aloud when it has none (press again to stop) |
-| Space | Reveal / flip; in Listening, once the card is shown, play or pause the sound (like ↑). The phone's Show button does the same and names what it will do: Show, Hide once the group is shown or the card flipped, and ▶ or ⏸ in Listening |
+| Space | Reveal / flip; in Listening, once the card is shown, play or pause the sound (like ↑). The phone's Show button does the same and names what it will do: Show, or Hide once the group is shown; ⟲ in Flashcards, where flipping goes both ways; ▶ or ⏸ in Listening |
 | ⌘/Ctrl + Z | Undo, including grades (add Shift to redo) |
 | Delete | Delete the card |
 | Shift (with text selected above a dictionary) | Select part of the question to add it as a word; select the whole question or the whole answer to edit it right there (Return saves, Esc cancels) |
