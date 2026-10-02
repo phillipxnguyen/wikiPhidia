@@ -766,7 +766,7 @@ window.onYouTubeIframeAPIReady = function(){
   #vocabDictPanels{position:relative;}
   #dictPanels .dict-pending, #vocabDictPanels .dict-pending{position:absolute;top:0;left:0;right:0;height:0;overflow:hidden;visibility:hidden;pointer-events:none;}
   #dictPanels:not(.with-source) .dict-source, #dictPanels:not(.with-source) .dict-answer{display:none;}
-  html.touch .dict-source:not(.dict-editing)::before, html.touch .dict-answer:not(.dict-editing)::before{content:"\270E";margin-right:.4em;font-size:20px;color:var(--text-2);}
+  html.touch .dict-answer:not(.dict-editing)::before{content:"\270E";margin-right:.4em;font-size:20px;color:var(--text-2);}
   #viewStudy.focus-study > .lesson-header, #viewStudy.focus-study > .save-status, #viewStudy.focus-study > .lesson-meta{display:none;}
   .swipe-ghost{position:fixed;z-index:1000;box-sizing:border-box;display:flex;justify-content:center;border:3px solid var(--border);border-radius:28px;background:var(--surface);box-shadow:var(--shadow-md);font-size:34px;font-weight:700;pointer-events:none;}
   .swipe-ghost.row{align-items:center;border-radius:16px;font-size:20px;}
@@ -10396,12 +10396,26 @@ function selectionInDictSource() {
   } : null;
 }
 
-function editDictField(el, row) {
+function wholeDictFieldSelected() {
+  const sel = window.getSelection();
+  if (!sel || !sel.rangeCount || sel.isCollapsed) return null;
+  const range = sel.getRangeAt(0);
+  const start = range.startContainer.nodeType === 1 ? range.startContainer : range.startContainer.parentElement;
+  const el = start && start.closest("#dictPanels .dict-source, #dictPanels .dict-answer");
+  const row = el && !el.isContentEditable && dictSourceRow(el);
+  const tidy = t => t.replace(/\s+/g, "");
+  return row && tidy(sel.toString()) === tidy(el.textContent) ? {
+    el: el,
+    row: row
+  } : null;
+}
+
+function editDictField(el, row, keepSelection) {
   const field = el.classList.contains("dict-source") ? "q" : "a";
   hideVocabPopup();
   hideVocabAddPopup();
   const sel = getSelection();
-  const kept = sel.rangeCount && el.contains(sel.getRangeAt(0).commonAncestorContainer) ? [ "start", "end" ].map(edge => {
+  const kept = keepSelection && sel.rangeCount && el.contains(sel.getRangeAt(0).commonAncestorContainer) ? [ "start", "end" ].map(edge => {
     const before = document.createRange();
     before.selectNodeContents(el);
     before.setEnd(sel.getRangeAt(0)[edge + "Container"], sel.getRangeAt(0)[edge + "Offset"]);
@@ -10470,6 +10484,12 @@ function editDictField(el, row) {
 
 document.addEventListener("keydown", e => {
   if (e.key !== "Shift" || e.repeat || e.metaKey || e.ctrlKey) return;
+  const whole = wholeDictFieldSelected();
+  if (whole) {
+    e.preventDefault();
+    editDictField(whole.el, whole.row);
+    return;
+  }
   if (isVirtualLesson()) return;
   const hit = selectionInDictSource();
   if (!hit) return;
@@ -10478,10 +10498,15 @@ document.addEventListener("keydown", e => {
 });
 
 document.getElementById("dictPanels").addEventListener("mouseup", e => {
-  const field = !e.shiftKey && !isTouch() && !e.target.closest("mark.vocab-hit") && e.target.closest(".dict-source, .dict-answer");
-  const fieldRow = field && !field.isContentEditable && (getSelection().isCollapsed || field.classList.contains("dict-answer")) && dictSourceRow(field);
-  if (fieldRow) {
-    editDictField(field, fieldRow);
+  const answer = !e.shiftKey && !isTouch() && e.target.closest(".dict-answer");
+  const answerRow = answer && !answer.isContentEditable && dictSourceRow(answer);
+  if (answerRow) {
+    editDictField(answer, answerRow, true);
+    return;
+  }
+  const whole = e.shiftKey && wholeDictFieldSelected();
+  if (whole) {
+    editDictField(whole.el, whole.row);
     return;
   }
   if (!e.shiftKey || isVirtualLesson()) return;
@@ -10491,7 +10516,7 @@ document.getElementById("dictPanels").addEventListener("mouseup", e => {
 });
 
 dictPanelsHost.addEventListener("click", e => {
-  const field = isTouch() && e.target.closest(".dict-source:not(.dict-editing), .dict-answer:not(.dict-editing)");
+  const field = isTouch() && e.target.closest(".dict-answer:not(.dict-editing)");
   if (field && tapsEditMark(field, e)) {
     const row = dictSourceRow(field);
     if (row) editDictField(field, row);
