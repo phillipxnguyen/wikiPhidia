@@ -9492,18 +9492,7 @@ function addExtraWord(termRaw, meaningRaw, explicit) {
   const term = (termRaw || "").replace(/\s+/g, " ").trim();
   const meaning = (meaningRaw || "").replace(/\s+/g, " ").trim();
   if (!term && !meaning) return true;
-  if (!term || !meaning) {
-    showToast("Question and answer can't be empty — not saved");
-    return false;
-  }
-  if (/[:：]/.test(term)) {
-    showToast("The question can't contain a colon");
-    return false;
-  }
-  if (term.length > VOCAB_TERM_MAX) {
-    showToast(`You've reached ${VOCAB_TERM_MAX} characters — not saved`);
-    return false;
-  }
+  if (!vocabEntryOk(term, meaning)) return false;
   if (existingVocab(term)) {
     warnVocabExists(term);
     return false;
@@ -9721,10 +9710,7 @@ function rewrittenVocabNotes(row, item, term, meaning) {
   };
 }
 
-function updateVocabEntry(item, termRaw, meaningRaw) {
-  const term = (termRaw || "").replace(/\s+/g, " ").trim();
-  const meaning = (meaningRaw || "").replace(/\s+/g, " ").trim();
-  if (!item) return false;
+function vocabEntryOk(term, meaning) {
   if (!term || !meaning) {
     showToast("Question and answer can't be empty — not saved");
     return false;
@@ -9737,6 +9723,14 @@ function updateVocabEntry(item, termRaw, meaningRaw) {
     showToast(`You've reached ${VOCAB_TERM_MAX} characters — not saved`);
     return false;
   }
+  return true;
+}
+
+function updateVocabEntry(item, termRaw, meaningRaw) {
+  const term = (termRaw || "").replace(/\s+/g, " ").trim();
+  const meaning = (meaningRaw || "").replace(/\s+/g, " ").trim();
+  if (!item) return false;
+  if (!vocabEntryOk(term, meaning)) return false;
   if (term === item.term && meaning === item.meaning) return true;
   const newKey = normalizeVocabText(term);
   if (newKey !== item.key && lessonVocabItems(vocabSource()).some(i => i.key === newKey)) {
