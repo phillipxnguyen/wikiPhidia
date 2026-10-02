@@ -765,7 +765,13 @@ window.onYouTubeIframeAPIReady = function(){
   #dictPanels{display:flex;flex-direction:column;position:relative;}
   #vocabDictPanels{position:relative;}
   #dictPanels .dict-pending, #vocabDictPanels .dict-pending{position:absolute;top:0;left:0;right:0;height:0;overflow:hidden;visibility:hidden;pointer-events:none;}
-  #dictPanels:not(.with-source) .dict-source, #dictPanels:not(.with-source) .dict-answer{display:none;}
+  #dictPanels:not(.with-source) .dict-line{display:none;}
+  .dict-line{position:relative;}
+  html.touch .dict-line{padding:0 32px;}
+  .dict-edit{display:none;position:absolute;left:0;top:7px;width:32px;height:36px;padding:0;border:0;background:none;font-size:13px;color:var(--text-2);}
+  html.touch .dict-edit{display:block;}
+  .dict-line:has(.rd) .dict-edit{top:20px;}
+  .dict-line:has(.dict-answer) .dict-edit{top:-2px;}
   #viewStudy.focus-study > .lesson-header, #viewStudy.focus-study > .save-status, #viewStudy.focus-study > .lesson-meta{display:none;}
   .swipe-ghost{position:fixed;z-index:1000;box-sizing:border-box;display:flex;justify-content:center;border:3px solid var(--border);border-radius:28px;background:var(--surface);box-shadow:var(--shadow-md);font-size:34px;font-weight:700;pointer-events:none;}
   .swipe-ghost.row{align-items:center;border-radius:16px;font-size:20px;}
@@ -2569,7 +2575,7 @@ function renderDictPanels() {
       el = document.createElement("div");
       el.className = "stroke-order-panel dict-pending";
       el.dataset.url = url;
-      el.innerHTML = `<div class="dict-source"></div><div class="dict-answer"></div><div class="dict-stroke"></div><iframe class="dict-frame"></iframe>`;
+      el.innerHTML = `<div class="dict-line"><button class="dict-edit" aria-label="Edit">&#9998;</button><div class="dict-source"></div></div><div class="dict-line"><button class="dict-edit" aria-label="Edit">&#9998;</button><div class="dict-answer"></div></div><div class="dict-stroke"></div><iframe class="dict-frame"></iframe>`;
       el.querySelector("iframe").src = url;
       host.appendChild(el);
     }
@@ -2588,7 +2594,7 @@ function renderDictPanels() {
       answer.dataset.html = answerHtml;
       answer.innerHTML = answerHtml;
     }
-    answer.hidden = !(r.a || "").trim() || r.aHidden;
+    answer.parentElement.hidden = !(r.a || "").trim() || r.aHidden;
     return el;
   };
   preload.forEach(panelFor);
@@ -10383,21 +10389,6 @@ function selectionInDictSource() {
   } : null;
 }
 
-function dictFieldToEdit() {
-  const sel = window.getSelection();
-  if (!sel || !sel.rangeCount || sel.isCollapsed) return null;
-  const range = sel.getRangeAt(0);
-  const start = range.startContainer.nodeType === 1 ? range.startContainer : range.startContainer.parentElement;
-  const el = start && start.closest("#dictPanels .dict-source, #dictPanels .dict-answer");
-  const row = el && !el.isContentEditable && dictSourceRow(el);
-  const tidy = t => t.replace(/\s+/g, "");
-  const partOfAnswer = el && el.classList.contains("dict-answer") && el.contains(range.endContainer);
-  return row && (partOfAnswer || tidy(sel.toString()) === tidy(el.textContent)) ? {
-    el: el,
-    row: row
-  } : null;
-}
-
 function editDictField(el, row) {
   const field = el.classList.contains("dict-source") ? "q" : "a";
   hideVocabPopup();
@@ -10472,12 +10463,6 @@ function editDictField(el, row) {
 
 document.addEventListener("keydown", e => {
   if (e.key !== "Shift" || e.repeat || e.metaKey || e.ctrlKey) return;
-  const field = dictFieldToEdit();
-  if (field) {
-    e.preventDefault();
-    editDictField(field.el, field.row);
-    return;
-  }
   if (isVirtualLesson()) return;
   const hit = selectionInDictSource();
   if (!hit) return;
@@ -10486,15 +10471,10 @@ document.addEventListener("keydown", e => {
 });
 
 document.getElementById("dictPanels").addEventListener("mouseup", e => {
-  const answer = !e.shiftKey && e.target.closest(".dict-answer");
-  const answerRow = answer && !answer.isContentEditable && dictSourceRow(answer);
-  if (answerRow) {
-    editDictField(answer, answerRow);
-    return;
-  }
-  const field = e.shiftKey && dictFieldToEdit();
-  if (field) {
-    editDictField(field.el, field.row);
+  const field = !e.shiftKey && !isTouch() && !e.target.closest("mark.vocab-hit") && e.target.closest(".dict-source, .dict-answer");
+  const fieldRow = field && !field.isContentEditable && (getSelection().isCollapsed || field.classList.contains("dict-answer")) && dictSourceRow(field);
+  if (fieldRow) {
+    editDictField(field, fieldRow);
     return;
   }
   if (!e.shiftKey || isVirtualLesson()) return;
@@ -10504,6 +10484,13 @@ document.getElementById("dictPanels").addEventListener("mouseup", e => {
 });
 
 dictPanelsHost.addEventListener("click", e => {
+  const editBtn = e.target.closest(".dict-edit");
+  if (editBtn) {
+    const field = editBtn.nextElementSibling;
+    const row = !field.isContentEditable && dictSourceRow(field);
+    if (row) editDictField(field, row);
+    return;
+  }
   const hit = e.target.closest(".dict-source mark.vocab-hit");
   if (!hit) return;
   const row = dictSourceRow(hit.closest(".dict-source"));
