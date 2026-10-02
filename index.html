@@ -5990,11 +5990,15 @@ const DELIMS = {
   "|": {
     label: "Bar ( | )",
     re: /[|｜]/
+  },
+  none: {
+    label: "None ( one card per sentence )",
+    re: /(?!)/
   }
 };
 
 [ "colDelim", "vocabDelim" ].forEach(id => {
-  document.getElementById(id).innerHTML = Object.keys(DELIMS).map(d => `<option value="${d === "\t" ? "tab" : d}">${DELIMS[d].label}</option>`).join("");
+  document.getElementById(id).innerHTML = Object.keys(DELIMS).filter(d => id === "colDelim" || d !== "none").map(d => `<option value="${d === "\t" ? "tab" : d}">${DELIMS[d].label}</option>`).join("");
 });
 
 function findDelim(str, delim) {
@@ -6064,7 +6068,7 @@ function takeHeaderLines(raw) {
   });
   if (!title && rows.length === 0) {
     const i = lines.findIndex(l => l.trim());
-    if (i !== -1 && (delim === ":" ? !hasColonColumn(lines[i]) : !hasDelim(lines[i], delim)) && !matchSpacedTimestamp(lines[i], delim)) {
+    if (i !== -1 && (delim === ":" ? !hasColonColumn(lines[i]) : delim === "none" ? !/[.!?。！？…]/.test(lines[i]) && lines.some((l, j) => j > i && l.trim()) : !hasDelim(lines[i], delim)) && !matchSpacedTimestamp(lines[i], delim)) {
       title = lines[i].trim();
       lines.splice(i, 1);
     }
@@ -6095,8 +6099,10 @@ function takeMediaUrl(text) {
 function pickDelim(text) {
   const lines = text.split(/\r?\n/).filter(l => l.trim() && !(matchSpacedTimestamp(l, "\t") && matchSpacedTimestamp(l, ":")));
   const cur = currentDelim();
+  if (cur === "none") return cur;
   const count = d => lines.filter(l => d === ":" ? hasColonColumn(l) : hasDelim(l, d)).length;
   const best = [ "\t", ":" ].map(d => [ d, count(d) ]).sort((a, b) => b[1] - a[1])[0];
+  if (!best[1] && !count(cur)) return "none";
   return best[1] <= count(cur) ? cur : best[0];
 }
 
@@ -6278,11 +6284,20 @@ function analyzeImportText(raw) {
   const head = takeHeaderLines(raw);
   const delim = head.delim;
   const title = head.title;
-  const lines = head.text.split(/\r?\n/).map((text, i) => ({
+  const lines = delim === "none" ? splitIntoSentences(head.text).map((s, i) => ({
+    text: s.text,
+    lineNo: i + 1,
+    entry: {
+      time: s.time,
+      q: s.text,
+      a: "",
+      notes: ""
+    }
+  })) : head.text.split(/\r?\n/).map((text, i) => ({
     text: text,
     lineNo: i + 1
   })).filter(l => l.text.trim().length > 0);
-  lines.forEach(l => {
+  if (delim !== "none") lines.forEach(l => {
     l.entry = parseImportLine(l.text, delim);
   });
   return {
@@ -6445,7 +6460,7 @@ function renderImportPreview() {
   lineOutcomes.forEach(o => counts[o.kind] = (counts[o.kind] || 0) + 1);
   const delimName = delimLabel(analysis.delim);
   const summary = [];
-  summary.push(`<span><b>${analysis.lines.length}</b> line${analysis.lines.length === 1 ? "" : "s"}</span>`);
+  summary.push(`<span><b>${analysis.lines.length}</b> ${analysis.delim === "none" ? "sentence" : "line"}${analysis.lines.length === 1 ? "" : "s"}</span>`);
   if (counts.new) summary.push(`<span class="ip-status new">🆕 ${counts.new}</span>`);
   if (counts.update) summary.push(`<span class="ip-status update">${counts.update} fill in</span>`);
   if (counts.merged) summary.push(`<span class="ip-status update">${counts.merged} merged</span>`);
