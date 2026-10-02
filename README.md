@@ -6,7 +6,7 @@ The whole app is one file, `index.html`. There is no build step and nothing to i
 
 ## Lessons and cards
 
-- Paste cards into a lesson, one per line, as `question : answer` or tab-separated. The separator is detected and a preview shows what will be imported.
+- Paste cards into a lesson, one per line, as `question : answer` or tab-separated. The separator is detected and a preview shows what will be imported. Column delimiter can also be set to a period (. or 。), an ellipsis (… or ...), a comma (, ，or 、), a semicolon, a dash ( - , – or —), =, | or /, for cards and for pasted vocabulary alike. These split each line once, at the first one, into question and answer; a period or comma between two digits (3.5, 1,000) and one at the very end of the line do not count. Only Tab also takes a time column and a notes column.
 - Start a line with a timestamp (`1:23 question : answer`) and set the lesson's YouTube link to tie each card to a moment in the video.
 - Each card has rich-text notes. Lines written as `word: meaning` become words in the vocabulary deck. The word part can be up to 100 characters: when you type a word, a counter appears near the limit, and past it the box turns red, says so and won't save. Pasted words over the limit are listed as too long and left out.
 - Questions, answers and notes keep only basic formatting: bold, italic, underline, strikethrough, line breaks and bullet or numbered lists. Anything else pasted in (font sizes, colours, fonts, headings, links, images) is dropped, so a paste from a web page, Word or Google Docs cannot change how a card looks.

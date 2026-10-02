@@ -999,10 +999,7 @@ window.onYouTubeIframeAPIReady = function(){
     <div id="importPreview" class="import-preview" hidden aria-live="polite"></div>
     <div class="row-flex" style="margin-top:10px;">
       <label class="muted-label" for="colDelim">Column delimiter</label>
-      <select id="colDelim">
-        <option value="tab" selected>Tab</option>
-        <option value=":">Colon ( : )</option>
-      </select>
+      <select id="colDelim"></select>
       <button id="importBtn" class="primary">Import</button>
     </div>
     <div class="row-flex" style="margin-top:8px;">
@@ -1025,10 +1022,7 @@ window.onYouTubeIframeAPIReady = function(){
   <div id="vocabImportPreview" class="import-preview" hidden aria-live="polite"></div>
   <div class="row-flex" style="margin-top:10px;">
     <label class="muted-label" for="vocabDelim">Column delimiter</label>
-    <select id="vocabDelim">
-      <option value="tab" selected>Tab</option>
-      <option value=":">Colon ( : )</option>
-    </select>
+    <select id="vocabDelim"></select>
     <button id="vocabImportBtn" class="primary">Import</button>
     <span id="vocabImportStatus" class="muted-label"></span>
   </div>
@@ -1637,7 +1631,7 @@ const TS_SPACE_RE = /^\s*(\d+:\d{1,2}(?::\d{1,2})?|\d+s)[ \u00a0\u3000]+(\S.*)$/
 
 function matchSpacedTimestamp(line, delim) {
   const m = (line || "").match(TS_SPACE_RE);
-  if (!m || delim && m[2].includes(delim)) return null;
+  if (!m || delim && hasDelim(m[2], delim)) return null;
   return {
     time: parseTimeToSeconds(m[1]),
     prefix: line.slice(0, line.length - m[2].length),
@@ -5750,10 +5744,10 @@ function splitCols(line, delim, maxParts) {
   const parts = [];
   let rest = line;
   for (let i = 0; i < maxParts - 1; i++) {
-    const idx = rest.indexOf(delim);
-    if (idx === -1) break;
-    parts.push(rest.slice(0, idx));
-    rest = rest.slice(idx + delim.length);
+    const hit = findDelim(rest, delim);
+    if (!hit) break;
+    parts.push(rest.slice(0, hit.idx));
+    rest = rest.slice(hit.end);
   }
   parts.push(rest);
   return parts;
@@ -5814,10 +5808,10 @@ function splitIntoSentences(text, delim) {
       time = ts.time;
       line = ts.rest;
     } else if (delim) {
-      const idx = rawLine.indexOf(delim);
-      if (idx !== -1) {
-        const firstCol = rawLine.slice(0, idx);
-        const rest = rawLine.slice(idx + delim.length);
+      const hit = findDelim(rawLine, delim);
+      if (hit) {
+        const firstCol = rawLine.slice(0, hit.idx);
+        const rest = rawLine.slice(hit.end);
         if (rest.trim() && looksLikeExplicitTimestamp(firstCol)) {
           time = parseTimeToSeconds(firstCol);
           line = rest;
@@ -5894,7 +5888,7 @@ async function convertZhAndImport(targetScript, sourceBtn) {
   try {
     const converted = await Promise.all(lines.map(async line => {
       if (!line.trim()) return line;
-      const parts = splitCols(line, delim, 3);
+      const parts = splitCols(line, delim, delimCols(delim, 3));
       const ts = matchSpacedTimestamp(line, delim);
       let qText, prefix, suffix;
       const colon = delim === ":" && line.match(COLON_LINE_RE);
@@ -5907,26 +5901,29 @@ async function convertZhAndImport(targetScript, sourceBtn) {
         qText = ts.rest;
         suffix = "";
       } else if (parts.length === 3 && looksLikeExplicitTimestamp(parts[0])) {
+        const first = findDelim(line, delim);
+        const after = line.slice(first.end);
+        const second = findDelim(after, delim);
         qText = parts[1];
-        prefix = parts[0] + delim;
-        suffix = delim + parts[2];
+        prefix = line.slice(0, first.end);
+        suffix = after.slice(second.idx);
       } else {
-        const idx = line.indexOf(delim);
-        if (idx === -1) {
+        const hit = findDelim(line, delim);
+        if (!hit) {
           qText = line;
           prefix = "";
           suffix = "";
         } else {
-          const firstCol = line.slice(0, idx);
-          const rest = line.slice(idx + delim.length);
+          const firstCol = line.slice(0, hit.idx);
+          const rest = line.slice(hit.end);
           if (rest.trim() && looksLikeExplicitTimestamp(firstCol)) {
             qText = rest;
-            prefix = firstCol + delim;
+            prefix = line.slice(0, hit.end);
             suffix = "";
           } else {
             qText = firstCol;
             prefix = "";
-            suffix = delim + rest;
+            suffix = line.slice(hit.idx);
           }
         }
       }
@@ -5953,8 +5950,74 @@ function hasColonColumn(line) {
   return !!(m && m[3] && m[2].trim());
 }
 
+const DELIMS = {
+  "\t": {
+    label: "Tab",
+    re: /\t/
+  },
+  ":": {
+    label: "Colon ( : )",
+    re: /:/
+  },
+  ".": {
+    label: "Period ( . )",
+    re: /(?<!\d)\.+(?!\d)|。+/
+  },
+  "…": {
+    label: "Ellipsis ( … or ... )",
+    re: /\.{2,}|[…⋯]+/
+  },
+  ",": {
+    label: "Comma ( , )",
+    re: /(?<!\d),(?!\d)|[，、]/
+  },
+  ";": {
+    label: "Semicolon ( ; )",
+    re: /[;；]/
+  },
+  "-": {
+    label: "Dash ( - )",
+    re: /\s[-–—]+\s|[–—]+/
+  },
+  "=": {
+    label: "Equals ( = )",
+    re: /[=＝]/
+  },
+  "|": {
+    label: "Bar ( | )",
+    re: /[|｜]/
+  },
+  "/": {
+    label: "Slash ( / )",
+    re: /[/／]/
+  }
+};
+
+[ "colDelim", "vocabDelim" ].forEach(id => {
+  document.getElementById(id).innerHTML = Object.keys(DELIMS).map(d => `<option value="${d === "\t" ? "tab" : d}">${DELIMS[d].label}</option>`).join("");
+});
+
+function findDelim(str, delim) {
+  const m = DELIMS[delim].re.exec(str);
+  if (!m) return null;
+  const end = m.index + m[0].length;
+  if (delim !== "\t" && delim !== ":" && !str.slice(end).trim()) return null;
+  return {
+    idx: m.index,
+    end: end
+  };
+}
+
+function delimCols(delim, cols) {
+  return delim === "\t" ? cols : 2;
+}
+
+function hasDelim(str, delim) {
+  return !!findDelim(str, delim);
+}
+
 function delimLabel(delim) {
-  return delim === "\t" ? "Tab" : "Colon ( : )";
+  return DELIMS[delim].label;
 }
 
 function currentDelim() {
@@ -5993,7 +6056,7 @@ function takeHeaderLines(raw) {
     if (title || !l.trim()) return true;
     const first = !seenLine;
     seenLine = true;
-    if (delim === ":" ? !first : l.includes(delim)) return true;
+    if (delim === ":" ? !first : hasDelim(l, delim)) return true;
     const m = l.match(TITLE_LABEL_RE);
     if (!m) return true;
     title = m[1];
@@ -6001,7 +6064,7 @@ function takeHeaderLines(raw) {
   });
   if (!title && rows.length === 0) {
     const i = lines.findIndex(l => l.trim());
-    if (i !== -1 && (delim === ":" ? !hasColonColumn(lines[i]) : lines[i].indexOf(delim) === -1) && !matchSpacedTimestamp(lines[i], delim)) {
+    if (i !== -1 && (delim === ":" ? !hasColonColumn(lines[i]) : !hasDelim(lines[i], delim)) && !matchSpacedTimestamp(lines[i], delim)) {
       title = lines[i].trim();
       lines.splice(i, 1);
     }
@@ -6032,7 +6095,7 @@ function takeMediaUrl(text) {
 function pickDelim(text) {
   const lines = text.split(/\r?\n/).filter(l => l.trim() && !(matchSpacedTimestamp(l, "\t") && matchSpacedTimestamp(l, ":")));
   const cur = currentDelim();
-  const count = d => lines.filter(l => d === ":" ? hasColonColumn(l) : l.includes(d)).length;
+  const count = d => lines.filter(l => d === ":" ? hasColonColumn(l) : hasDelim(l, d)).length;
   const best = [ "\t", ":" ].map(d => [ d, count(d) ]).sort((a, b) => b[1] - a[1])[0];
   return best[1] <= count(cur) ? cur : best[0];
 }
@@ -6089,7 +6152,7 @@ function parseImportLine(line, delim) {
     a: "",
     notes: ""
   };
-  const parts = splitCols(line, delim, 4);
+  const parts = splitCols(line, delim, delimCols(delim, 4));
   let time;
   if (parts.length >= 3 && looksLikeExplicitTimestamp(parts[0]) && (time = parseTimeToSeconds(parts[0].trim())) !== null) {
     return {
@@ -6108,7 +6171,7 @@ function parseImportLine(line, delim) {
     };
   }
   if (parts.length < 2) return null;
-  const cols = splitCols(line, delim, 3);
+  const cols = splitCols(line, delim, delimCols(delim, 3));
   const lead = matchSpacedTimestamp(cols[0]);
   return {
     time: lead ? lead.time : null,
@@ -9300,9 +9363,9 @@ function ensureVocabExtras() {
 
 function vocabDelimFor(text) {
   const sel = document.getElementById("vocabDelim");
-  const cur = sel.value === "tab" ? "\t" : ":";
+  const cur = sel.value === "tab" ? "\t" : sel.value;
   const lines = text.split(/\r?\n/).filter(l => l.trim());
-  const count = d => lines.filter(l => d === ":" ? VOCAB_LINE_RE.test(l) : l.indexOf("\t") > 0).length;
+  const count = d => lines.filter(l => d === ":" ? VOCAB_LINE_RE.test(l) : (findDelim(l, d) || {}).idx > 0).length;
   const best = [ "\t", ":" ].map(d => [ d, count(d) ]).sort((a, b) => b[1] - a[1])[0];
   const delim = best[1] <= count(cur) ? cur : best[0];
   return {
@@ -9313,11 +9376,11 @@ function vocabDelimFor(text) {
 
 function parseVocabPaste(line, delim) {
   let term = "", meaning = "";
-  if (delim === "\t") {
-    const tab = line.indexOf("\t");
-    if (tab > 0) {
-      term = line.slice(0, tab);
-      meaning = line.slice(tab + 1);
+  if (delim !== ":") {
+    const hit = findDelim(line, delim);
+    if (hit && hit.idx > 0) {
+      term = line.slice(0, hit.idx);
+      meaning = line.slice(hit.end);
     }
   } else {
     const m = line.match(/^\s*([^:：]+?)\s*[:：]\s*(\S[\s\S]*?)\s*$/);
