@@ -10486,8 +10486,14 @@ document.addEventListener("keydown", e => {
 });
 
 document.getElementById("dictPanels").addEventListener("mouseup", e => {
-  const field = dictFieldToEdit();
-  if (field && (e.shiftKey || field.el.classList.contains("dict-answer"))) {
+  const answer = !e.shiftKey && e.target.closest(".dict-answer");
+  const answerRow = answer && !answer.isContentEditable && dictSourceRow(answer);
+  if (answerRow) {
+    editDictField(answer, answerRow);
+    return;
+  }
+  const field = e.shiftKey && dictFieldToEdit();
+  if (field) {
     editDictField(field.el, field.row);
     return;
   }
