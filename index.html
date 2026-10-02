@@ -5998,7 +5998,7 @@ const DELIMS = {
 };
 
 [ "colDelim", "vocabDelim" ].forEach(id => {
-  document.getElementById(id).innerHTML = Object.keys(DELIMS).filter(d => id === "colDelim" || d !== "none").map(d => `<option value="${d === "\t" ? "tab" : d}">${DELIMS[d].label}</option>`).join("");
+  document.getElementById(id).innerHTML = Object.keys(DELIMS).map(d => `<option value="${d === "\t" ? "tab" : d}">${DELIMS[d].label}</option>`).join("");
 });
 
 function findDelim(str, delim) {
@@ -6022,6 +6022,201 @@ function hasDelim(str, delim) {
 
 function delimLabel(delim) {
   return DELIMS[delim].label;
+}
+
+const BULLET_RE = /^\s*(?:[*•·‣◦▪●○+]|[-–—](?=\s)|\d{1,3}[.)](?=\s))\s*/;
+
+function stripBullet(line) {
+  return line.replace(BULLET_RE, "");
+}
+
+const SENTENCE_END_RE = /[.!?。！？]/;
+
+const WORD_PAIR_RE = new RegExp(`^([^=＝:：]{1,${VOCAB_TERM_MAX}}?)\\s*(={1,2}|＝|[:：])\\s*(.*?)\\s*$`);
+
+function wordPairOf(line, bulleted) {
+  if (matchSpacedTimestamp(line)) return null;
+  const m = line.match(WORD_PAIR_RE);
+  if (!m || !/\p{L}/u.test(m[1]) || SENTENCE_END_RE.test(m[1]) || /[.!?。！？]\s+\S/.test(m[3])) return null;
+  if (/[:：]/.test(m[2]) && !bulleted && /[.!?。！？]$/.test(m[3])) return null;
+  return [ m[1].replace(/\s+/g, " ").trim(), m[3].replace(/\s+/g, " ") ];
+}
+
+function isProseLine(line) {
+  return !line.includes("\t") && /[.!?。！？]\s+\S/.test(line);
+}
+
+function analyzeMixed(text, side) {
+  const info = text.split(/\r?\n/).map((line, i) => {
+    const bulleted = BULLET_RE.test(line);
+    const s = stripBullet(line).trim();
+    return s ? {
+      lineNo: i + 1,
+      text: line,
+      s: s,
+      bulleted: bulleted,
+      pair: wordPairOf(s, bulleted)
+    } : null;
+  }).filter(Boolean);
+  const items = [];
+  const isShort = l => !/[.!?。！？]$/.test(l.s) && l.s.length <= VOCAB_TERM_MAX;
+  info.forEach((l, i) => {
+    const next = info[i + 1], prev = info[i - 1];
+    const short = isShort(l);
+    const inList = prev && !prev.pair && !prev.bulleted && isShort(prev);
+    if (l.pair) items.push({
+      kind: "word",
+      text: l.text,
+      term: l.pair[0],
+      meaning: l.pair[1]
+    }); else if (!l.bulleted && short && !inList && next && (next.pair || next.bulleted || side === "vocab" && !next.pair && !next.bulleted && SENTENCE_END_RE.test(next.s))) items.push({
+      kind: "heading",
+      text: l.text
+    }); else if (short && (l.bulleted || side === "vocab")) items.push({
+      kind: "word",
+      text: l.text,
+      term: l.s.replace(/\s+/g, " "),
+      meaning: ""
+    }); else splitIntoSentences(l.s).forEach(sentence => items.push({
+      kind: "card",
+      text: sentence.text,
+      entry: {
+        time: sentence.time,
+        q: sentence.text,
+        a: "",
+        notes: ""
+      }
+    }));
+  });
+  return items;
+}
+
+function planWords(items) {
+  const seen = new Set;
+  items.forEach(it => {
+    if (it.kind !== "word") return;
+    const key = normalizeVocabText(it.term);
+    if (it.term.length > VOCAB_TERM_MAX) it.wordKind = "long"; else if (seen.has(key) || existingVocab(it.term)) it.wordKind = "duplicate"; else {
+      it.wordKind = "new";
+      seen.add(key);
+    }
+  });
+  return items;
+}
+
+const IRREGULAR_FORMS = {
+  be: "was were been being is are am",
+  break: "broke broken",
+  bring: "brought",
+  build: "built",
+  buy: "bought",
+  catch: "caught",
+  come: "came",
+  do: "did done does",
+  draw: "drew drawn",
+  drive: "drove driven",
+  eat: "ate eaten",
+  fall: "fell fallen",
+  feel: "felt",
+  fight: "fought",
+  find: "found",
+  fly: "flew flown flies",
+  get: "got gotten gets getting",
+  give: "gave given",
+  go: "went gone goes",
+  grow: "grew grown",
+  hang: "hung",
+  have: "had has",
+  hold: "held",
+  keep: "kept",
+  know: "knew known",
+  lay: "laid",
+  lead: "led",
+  leave: "left",
+  let: "lets letting",
+  lie: "lay lain lying",
+  lose: "lost",
+  make: "made",
+  meet: "met",
+  pay: "paid",
+  put: "puts putting",
+  read: "read",
+  ride: "rode ridden",
+  ring: "rang rung",
+  rise: "rose risen",
+  run: "ran running",
+  say: "said",
+  see: "saw seen",
+  sell: "sold",
+  send: "sent",
+  set: "sets setting",
+  shake: "shook shaken",
+  shut: "shuts shutting",
+  sit: "sat sitting",
+  sleep: "slept",
+  speak: "spoke spoken",
+  spend: "spent",
+  stand: "stood",
+  stick: "stuck",
+  take: "took taken",
+  teach: "taught",
+  tear: "tore torn",
+  tell: "told",
+  think: "thought",
+  throw: "threw thrown",
+  wake: "woke woken",
+  wear: "wore worn",
+  win: "won",
+  write: "wrote written"
+};
+
+function wordFormMatches(form, word) {
+  if (form === word) return true;
+  if (IRREGULAR_FORMS[word] && IRREGULAR_FORMS[word].split(" ").includes(form)) return true;
+  if (word.length < 3) return false;
+  return form.startsWith(word.replace(/e$/, "")) || /[^aeiou]y$/.test(word) && form.startsWith(word.slice(0, -1) + "i");
+}
+
+function termInText(term, text) {
+  const t = normalizeVocabText(text || "");
+  const words = normalizeVocabText(term).split(/\s+/).filter(Boolean);
+  if (!words.length) return false;
+  if (!/\p{Script=Latin}/u.test(term)) return t.includes(words.join(" "));
+  const toks = t.split(/[^\p{L}\p{N}']+/u);
+  for (let i = 0; i + words.length <= toks.length; i++) {
+    if (words.every((w, j) => toks[i + j] === w || (j < words.length - 1 || words.length === 1) && wordFormMatches(toks[i + j], w))) return true;
+  }
+  return false;
+}
+
+function appendWordItems(card, pairs) {
+  const box = document.createElement("div");
+  box.innerHTML = card.notesHtml || escapeHtml(card.notes || "").replace(/\n/g, "<br>");
+  let list = box.querySelector("ul.notes-list");
+  if (!list) {
+    list = document.createElement("ul");
+    list.className = "notes-list";
+    box.appendChild(list);
+  }
+  pairs.forEach(([term, meaning]) => {
+    const li = document.createElement("li");
+    li.innerHTML = "<b>" + escapeHtml(term) + "</b>: " + escapeHtml(meaning);
+    list.appendChild(li);
+  });
+  card.notesHtml = box.innerHTML;
+  card.notes = plainTextOf(box.innerHTML, "\n");
+}
+
+function addWordsToLesson(pairs, preferRows) {
+  const targets = new Map;
+  const cards = (preferRows || []).concat(rows);
+  pairs.forEach(pair => {
+    const card = cards.find(r => termInText(pair[0], r.q)) || ensureVocabExtras();
+    if (!targets.has(card)) targets.set(card, []);
+    targets.get(card).push(pair);
+  });
+  targets.forEach((list, card) => appendWordItems(card, list));
+  scheduleAutoSave();
 }
 
 function currentDelim() {
@@ -6101,8 +6296,8 @@ function pickDelim(text) {
   const cur = currentDelim();
   const count = d => lines.filter(l => d === ":" ? hasColonColumn(l) && !(cur === "none" && /[.!?。！？]/.test(l.split(/[:：]/)[0])) : hasDelim(l, d)).length;
   const best = [ "\t", ":" ].map(d => [ d, count(d) ]).sort((a, b) => b[1] - a[1])[0];
-  if (cur === "none") return best[1] * 2 > lines.length ? best[0] : "none";
-  if (!best[1] && !count(cur)) return "none";
+  if (cur === "none") return best[1] * 2 > lines.length && !lines.some(isProseLine) ? best[0] : "none";
+  if (lines.length && !best[1] && !count(cur)) return "none";
   return best[1] <= count(cur) ? cur : best[0];
 }
 
@@ -6134,6 +6329,7 @@ function recordImport(added) {
 }
 
 function parseImportLine(line, delim) {
+  line = stripBullet(line);
   if (delim === ":") {
     const m = line.match(COLON_LINE_RE);
     const time = m && m[1] ? parseTimeToSeconds(m[1].trim()) : null;
@@ -6284,15 +6480,12 @@ function analyzeImportText(raw) {
   const head = takeHeaderLines(raw);
   const delim = head.delim;
   const title = head.title;
-  const lines = delim === "none" ? splitIntoSentences(head.text).map((s, i) => ({
-    text: s.text,
+  const lines = delim === "none" ? planWords(analyzeMixed(head.text, "lesson")).map((it, i) => ({
+    text: it.text,
     lineNo: i + 1,
-    entry: {
-      time: s.time,
-      q: s.text,
-      a: "",
-      notes: ""
-    }
+    entry: it.entry || null,
+    word: it.kind === "word" ? it : null,
+    heading: it.kind === "heading"
   })) : head.text.split(/\r?\n/).map((text, i) => ({
     text: text,
     lineNo: i + 1
@@ -6306,11 +6499,12 @@ function analyzeImportText(raw) {
     delim: delim,
     title: title,
     lines: lines,
-    entries: lines.filter(l => l.entry).map(l => l.entry)
+    entries: lines.filter(l => l.entry).map(l => l.entry),
+    words: lines.filter(l => l.word && l.word.wordKind === "new").map(l => [ l.word.term, l.word.meaning ])
   };
 }
 
-function commitImport(plan, label) {
+function commitImport(plan, label, keepText) {
   const {newRows: newRows, fills: fills} = plan;
   if (!newRows.length && !fills.size) return;
   pushUndo(label);
@@ -6333,7 +6527,7 @@ function commitImport(plan, label) {
   }
   rows.push(...newRows);
   if (newRows.length) recordImport(newRows.length);
-  document.getElementById("importText").value = "";
+  if (!keepText) document.getElementById("importText").value = "";
   renderImportPreview();
   if (currentView === "add") renderAddView();
   scheduleAutoSave();
@@ -6408,10 +6602,19 @@ document.getElementById("importBtn").onclick = () => {
   setDelimSelect(analysis.delim);
   if (analysis.title) setLessonTitle(analysis.title);
   const plan = planImport(analysis.entries);
-  let msg = importResultMessage(plan) || "No new cards found — check the delimiter matches your text.";
+  const words = analysis.words;
+  let msg = [ importResultMessage(plan), words.length ? `Added ${words.length} word(s) to Vocabulary.` : "" ].filter(Boolean).join(" ") || "No new cards found — check the delimiter matches your text.";
   if (analysis.title) msg += ` Title set to "${analysis.title}".`;
   setImportStatus(msg);
-  commitImport(plan, "Imported — " + plan.newRows.length + " new, " + plan.updated + " updated");
+  if (words.length && !plan.newRows.length && !plan.fills.size) pushUndo("Added " + words.length + " word" + (words.length === 1 ? "" : "s"));
+  commitImport(plan, "Imported — " + plan.newRows.length + " new, " + plan.updated + " updated" + (words.length ? ", " + words.length + " words" : ""));
+  if (words.length) {
+    addWordsToLesson(words, plan.newRows);
+    if (!plan.newRows.length && !plan.fills.size) {
+      document.getElementById("importText").value = "";
+      renderLessonList();
+    }
+  }
   if (analysis.title && !plan.newRows.length && !plan.fills.size) scheduleAutoSave();
   render();
   renderImportPreview();
@@ -6425,6 +6628,10 @@ const IMPORT_KIND_LABELS = {
   merged: [ "update", "🔗", "Merged" ],
   duplicate: [ "dup", "⏭", "Duplicate" ],
   empty: [ "skip", "⚠️", "Not read — the question is empty" ],
+  word: [ "new", "🔤", "New word — goes to Vocabulary" ],
+  wordDup: [ "dup", "⏭", "Word already in this lesson" ],
+  wordLong: [ "skip", "⚠️", `Not read — the word is over ${VOCAB_TERM_MAX} characters` ],
+  heading: [ "dup", "➖", "Heading — left out" ],
   invalid: [ "skip", "⚠️", "Not read" ]
 };
 
@@ -6454,18 +6661,24 @@ function renderImportPreview() {
   const plan = planImport(analysis.entries, true);
   let k = 0;
   const lineOutcomes = analysis.lines.map(l => l.entry ? plan.outcomes[k++] : {
-    kind: "invalid"
+    kind: l.word ? {
+      new: "word",
+      duplicate: "wordDup",
+      long: "wordLong"
+    }[l.word.wordKind] : l.heading ? "heading" : "invalid"
   });
   const counts = {};
   lineOutcomes.forEach(o => counts[o.kind] = (counts[o.kind] || 0) + 1);
   const delimName = delimLabel(analysis.delim);
   const summary = [];
-  summary.push(`<span><b>${analysis.lines.length}</b> ${analysis.delim === "none" ? "sentence" : "line"}${analysis.lines.length === 1 ? "" : "s"}</span>`);
+  summary.push(`<span><b>${analysis.lines.length}</b> ${analysis.delim === "none" ? "item" : "line"}${analysis.lines.length === 1 ? "" : "s"}</span>`);
   if (counts.new) summary.push(`<span class="ip-status new">🆕 ${counts.new}</span>`);
+  if (counts.word) summary.push(`<span class="ip-status new">🔤 ${counts.word} word${counts.word === 1 ? "" : "s"}</span>`);
   if (counts.update) summary.push(`<span class="ip-status update">✏️ ${counts.update} fill in</span>`);
   if (counts.merged) summary.push(`<span class="ip-status update">🔗 ${counts.merged} merged</span>`);
-  if (counts.duplicate) summary.push(`<span class="ip-status dup">⏭ ${counts.duplicate} duplicate</span>`);
-  if (counts.empty || counts.invalid) summary.push(`<span class="ip-status skip">⚠️ ${(counts.empty || 0) + (counts.invalid || 0)} skipped</span>`);
+  if (counts.duplicate || counts.wordDup) summary.push(`<span class="ip-status dup">⏭ ${(counts.duplicate || 0) + (counts.wordDup || 0)} duplicate</span>`);
+  if (counts.empty || counts.invalid || counts.wordLong) summary.push(`<span class="ip-status skip">⚠️ ${(counts.empty || 0) + (counts.invalid || 0) + (counts.wordLong || 0)} skipped</span>`);
+  if (counts.heading) summary.push(`<span class="ip-status dup">➖ ${counts.heading} heading${counts.heading === 1 ? "" : "s"}</span>`);
   summary.push(`<span>Delimiter: <b>${delimName}</b>${analysis.delim !== currentDelim() ? " (auto-detected)" : ""}</span>`);
   if (analysis.title) summary.push(`<span>Title: <b>${escapeHtml(analysis.title)}</b></span>`);
   if (analysis.mediaUrl) summary.push(`<span>Video link: <b>${escapeHtml(truncate(analysis.mediaUrl, 48))}</b></span>`);
@@ -6475,6 +6688,7 @@ function renderImportPreview() {
     const label = escapeAttr(o.kind === "invalid" ? `Not read — no ${delimName} on this line` : kindLabel);
     const status = `<td class="ip-result"><span class="ip-status ${cls}" aria-label="${label}" title="${label}">${icon}</span></td>`;
     const num = `<td class="ip-num">${l.lineNo}</td>`;
+    if (l.word) return `<tr${o.kind === "word" ? "" : ' class="ip-dim"'}>${num}${status}${previewCell("", "ip-time")}${previewCell(l.word.term)}${previewCell(l.word.meaning)}${previewCell("")}</tr>`;
     if (!l.entry) {
       return `<tr class="ip-dim">${num}${status}<td colspan="4" class="ip-raw">${escapeHtml(l.text)}</td></tr>`;
     }
@@ -8754,6 +8968,8 @@ const vocabEntryCache = new Map;
 
 const VOCAB_LINE_RE = new RegExp(`^\\s*([^:：]{1,${VOCAB_TERM_MAX}}?)\\s*[:：]\\s*(\\S[\\s\\S]*?)\\s*$`);
 
+const VOCAB_BARE_LINE_RE = new RegExp(`^\\s*([^:：]{1,${VOCAB_TERM_MAX}}?)\\s*[:：]\\s*(\\S[\\s\\S]*?)?\\s*$`);
+
 function existingVocab(term, rowsToCheck) {
   const key = normalizeVocabText((term || "").trim());
   return key ? lessonVocabItems(rowsToCheck || vocabSource()).find(i => i.key === key) || null : null;
@@ -8772,17 +8988,25 @@ function vocabEntriesOf(card) {
   const box = document.createElement("div");
   box.innerHTML = html;
   const lines = [];
-  Array.from(box.querySelectorAll("li")).forEach(li => lines.push(ownLiText(li)));
+  const bare = new Set;
+  Array.from(box.querySelectorAll("li")).forEach(li => {
+    const text = ownLiText(li);
+    if (isVocabItem(li) && !li.querySelector("ul, ol")) bare.add(text);
+    lines.push(text);
+  });
   box.querySelectorAll("ul, ol").forEach(el => el.remove());
   if (!plain) box.querySelectorAll("b, strong").forEach(el => el.textContent.trim() && el.before("\u0001"));
   box.querySelectorAll("br").forEach(el => el.replaceWith("\n"));
   box.querySelectorAll("div, p").forEach(el => el.append("\n"));
   box.textContent.split("\n").forEach(line => {
-    if (plain) lines.push(line); else if (/^\s*\u0001/.test(line)) lines.push(line.replace(/\u0001/g, ""));
+    if (plain) lines.push(line); else if (/^\s*\u0001/.test(line)) {
+      lines.push(line.replace(/\u0001/g, ""));
+      bare.add(line.replace(/\u0001/g, ""));
+    }
   });
   const entries = [];
   lines.forEach(line => {
-    const m = parseVocabLine(line);
+    const m = parseVocabLine(line, bare.has(line));
     if (m) entries.push(m);
   });
   vocabEntryCache.set(entryKey, entries);
@@ -8795,12 +9019,12 @@ function ownLiText(li) {
   return own.textContent;
 }
 
-function parseVocabLine(line) {
-  const m = (line || "").replace(/ /g, " ").match(VOCAB_LINE_RE);
+function parseVocabLine(line, bare) {
+  const m = (line || "").replace(/ /g, " ").match(bare ? VOCAB_BARE_LINE_RE : VOCAB_LINE_RE);
   return m ? {
     key: normalizeVocabText(m[1]),
     term: m[1],
-    meaning: m[2].replace(/\s+/g, " ")
+    meaning: (m[2] || "").replace(/\s+/g, " ")
   } : null;
 }
 
@@ -9380,10 +9604,10 @@ function ensureVocabExtras() {
 function vocabDelimFor(text) {
   const sel = document.getElementById("vocabDelim");
   const cur = sel.value === "tab" ? "\t" : sel.value;
-  const lines = text.split(/\r?\n/).filter(l => l.trim());
-  const count = d => lines.filter(l => d === ":" ? VOCAB_LINE_RE.test(l) : (findDelim(l, d) || {}).idx > 0).length;
+  const lines = text.split(/\r?\n/).filter(l => l.trim()).map(stripBullet);
+  const count = d => lines.filter(l => d === ":" ? VOCAB_LINE_RE.test(l) && !(cur === "none" && SENTENCE_END_RE.test(l.split(/[:：]/)[0])) : (findDelim(l, d) || {}).idx > 0).length;
   const best = [ "\t", ":" ].map(d => [ d, count(d) ]).sort((a, b) => b[1] - a[1])[0];
-  const delim = best[1] <= count(cur) ? cur : best[0];
+  const delim = cur === "none" ? best[1] * 2 > lines.length && !lines.some(isProseLine) ? best[0] : "none" : !best[1] && !count(cur) ? "none" : best[1] <= count(cur) ? cur : best[0];
   return {
     delim: delim,
     auto: delim !== cur
@@ -9391,6 +9615,7 @@ function vocabDelimFor(text) {
 }
 
 function parseVocabPaste(line, delim) {
+  line = stripBullet(line);
   let term = "", meaning = "";
   if (delim !== ":") {
     const hit = findDelim(line, delim);
@@ -9414,6 +9639,20 @@ function planVocabImport(text) {
   const seen = new Set;
   const lines = [];
   const delim = vocabDelimFor(text).delim;
+  if (delim === "none") {
+    const items = planWords(analyzeMixed(text, "vocab"));
+    const cards = items.filter(it => it.kind === "card");
+    const outcomes = planImport(cards.map(it => it.entry), true).outcomes;
+    cards.forEach((it, i) => it.cardKind = outcomes[i].kind === "new" ? "card" : "cardDup");
+    if (!rows.length && items[0] && items[0].kind === "heading" && cards.length) items[0].kind = "title";
+    return items.map((it, i) => ({
+      lineNo: i + 1,
+      text: it.text,
+      pair: it.kind === "word" ? [ it.term, it.meaning ] : it.entry ? [ it.entry.q, "" ] : null,
+      entry: it.entry || null,
+      kind: it.kind === "word" ? it.wordKind : it.kind === "card" ? it.cardKind : it.kind
+    }));
+  }
   text.split(/\r?\n/).forEach((raw, i) => {
     if (!raw.trim()) return;
     const pair = parseVocabPaste(raw, delim);
@@ -9442,14 +9681,23 @@ function renderVocabImportPreview() {
   }
   const lines = planVocabImport(raw);
   const count = kind => lines.filter(l => l.kind === kind).length;
-  const summary = [ `<span><b>${lines.length}</b> line${lines.length === 1 ? "" : "s"}</span>` ];
+  const shown = lines.filter(l => l.kind !== "title").length;
+  const summary = [ `<span><b>${shown}</b> ${vocabDelimFor(raw).delim === "none" ? "item" : "line"}${shown === 1 ? "" : "s"}</span>` ];
   if (count("new")) summary.push(`<span class="ip-status new">🆕 ${count("new")}</span>`);
-  if (count("duplicate")) summary.push(`<span class="ip-status dup">⏭ ${count("duplicate")} duplicate</span>`);
+  if (count("card")) summary.push(`<span class="ip-status new">🃏 ${count("card")} card${count("card") === 1 ? "" : "s"}</span>`);
+  if (count("duplicate") || count("cardDup")) summary.push(`<span class="ip-status dup">⏭ ${count("duplicate") + count("cardDup")} duplicate</span>`);
   if (count("invalid")) summary.push(`<span class="ip-status skip">⚠️ ${count("invalid")} skipped</span>`);
   if (count("long")) summary.push(`<span class="ip-status skip">⚠️ ${count("long")} too long</span>`);
+  if (count("heading")) summary.push(`<span class="ip-status dup">➖ ${count("heading")} heading${count("heading") === 1 ? "" : "s"}</span>`);
   const pick = vocabDelimFor(raw);
   summary.push(`<span>Delimiter: <b>${delimLabel(pick.delim)}</b>${pick.auto ? " (auto-detected)" : ""}</span>`);
+  const titleLine = lines.find(l => l.kind === "title");
+  if (titleLine) summary.push(`<span>Title: <b>${escapeHtml(titleLine.text.trim())}</b></span>`);
   const labels = {
+    card: [ "new", "🃏", "New card — goes to the lesson" ],
+    cardDup: [ "dup", "⏭", "Card already in this lesson" ],
+    heading: [ "dup", "➖", "Heading — left out" ],
+    title: [ "dup", "🏷", "Lesson title" ],
     new: [ "new", "🆕", "New word" ],
     duplicate: [ "dup", "⏭", "Already in this lesson" ],
     invalid: [ "skip", "⚠️", "Not read — no " + delimLabel(pick.delim) + " on this line" ],
@@ -9460,7 +9708,7 @@ function renderVocabImportPreview() {
     const status = `<td class="ip-result"><span class="ip-status ${cls}" aria-label="${escapeAttr(label)}" title="${escapeAttr(label)}">${icon}</span></td>`;
     const num = `<td class="ip-num">${l.lineNo}</td>`;
     if (!l.pair) return `<tr class="ip-dim">${num}${status}<td colspan="2" class="ip-raw">${escapeHtml(l.text)}</td></tr>`;
-    return `<tr${l.kind === "duplicate" || l.kind === "long" ? ' class="ip-dim"' : ""}>${num}${status}${previewCell(l.pair[0])}${previewCell(l.pair[1])}</tr>`;
+    return `<tr${l.kind === "duplicate" || l.kind === "long" || l.kind === "cardDup" ? ' class="ip-dim"' : ""}>${num}${status}${previewCell(l.pair[0])}${previewCell(l.pair[1])}</tr>`;
   }).join("");
   const more = lines.length > IMPORT_PREVIEW_MAX_ROWS ? `<div class="ip-more">…and ${lines.length - IMPORT_PREVIEW_MAX_ROWS} more line(s)</div>` : "";
   box.innerHTML = `<div class="ip-summary">${summary.join("")}</div>` + '<div class="ip-scroll"><table class="ip-table"><colgroup><col style="width:44px"><col style="width:52px"><col><col></colgroup>' + "<thead><tr><th>#</th><th aria-label='Result'></th><th>Question</th><th>Answer</th></tr></thead>" + `<tbody>${body}</tbody></table>${more}</div>`;
@@ -9479,32 +9727,21 @@ document.getElementById("vocabImportText").addEventListener("input", () => {
 function importVocabText(text) {
   const plan = planVocabImport(text);
   const pairs = plan.filter(l => l.kind === "new").map(l => l.pair);
-  const dup = plan.filter(l => l.kind === "duplicate").length;
+  const cardPlan = planImport(plan.filter(l => l.kind === "card").map(l => l.entry));
+  const title = plan.find(l => l.kind === "title");
+  const dup = plan.filter(l => l.kind === "duplicate" || l.kind === "cardDup").length;
   const bad = plan.filter(l => l.kind === "invalid" || l.kind === "long").length;
-  if (pairs.length) {
-    pushUndo("Added " + pairs.length + " word" + (pairs.length === 1 ? "" : "s"));
-    const holder = ensureVocabExtras();
-    const box = document.createElement("div");
-    box.innerHTML = holder.notesHtml;
-    let list = box.querySelector("ul.notes-list");
-    if (!list) {
-      list = document.createElement("ul");
-      list.className = "notes-list";
-      box.appendChild(list);
-    }
-    pairs.forEach(([term, meaning]) => {
-      const li = document.createElement("li");
-      li.innerHTML = "<b>" + escapeHtml(term) + "</b>: " + escapeHtml(meaning);
-      list.appendChild(li);
-    });
-    holder.notesHtml = box.innerHTML;
-    holder.notes = plainTextOf(box.innerHTML, "\n");
-    scheduleAutoSave();
+  if (pairs.length || cardPlan.newRows.length || title) {
+    if (!cardPlan.newRows.length) pushUndo("Added " + pairs.length + " word" + (pairs.length === 1 ? "" : "s"));
+    commitImport(cardPlan, "Imported — " + cardPlan.newRows.length + " new cards, " + pairs.length + " words", true);
+    if (title) setLessonTitle(title.text.trim());
+    addWordsToLesson(pairs, cardPlan.newRows);
     render();
     renderLessonList();
   }
   return {
     added: pairs.length,
+    cards: cardPlan.newRows.length,
     dup: dup,
     bad: bad
   };
@@ -9513,13 +9750,15 @@ function importVocabText(text) {
 document.getElementById("vocabImportBtn").onclick = () => {
   if (!currentLessonId || isVirtualLesson()) return;
   const ta = document.getElementById("vocabImportText");
-  document.getElementById("vocabDelim").value = vocabDelimFor(ta.value).delim === "\t" ? "tab" : ":";
+  const delim = vocabDelimFor(ta.value).delim;
+  document.getElementById("vocabDelim").value = delim === "\t" ? "tab" : delim;
   const r = importVocabText(ta.value);
   const parts = [ r.added + " word" + (r.added === 1 ? "" : "s") + " added" ];
+  if (r.cards) parts.push(r.cards + " card" + (r.cards === 1 ? "" : "s") + " added");
   if (r.dup) parts.push(r.dup + " already there");
   if (r.bad) parts.push(r.bad + " not read");
   document.getElementById("vocabImportStatus").textContent = parts.join(" · ");
-  if (r.added && !r.bad && !r.dup) ta.value = "";
+  if ((r.added || r.cards) && !r.bad && !r.dup) ta.value = "";
   renderVocabImportPreview();
   if (currentView === "vocab") renderVocab();
 };
@@ -9790,8 +10029,8 @@ function rewrittenVocabNotes(row, item, term, meaning) {
 }
 
 function vocabEntryOk(term, meaning) {
-  if (!term || !meaning) {
-    showToast("Question and answer can't be empty — not saved");
+  if (!term) {
+    showToast("Question can't be empty — not saved");
     return false;
   }
   if (/[:：]/.test(term)) {
