@@ -312,7 +312,6 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-ctx mark{display:inline-block;line-height:1.3;padding:.1em .18em .08em;margin:0 .06em;border-radius:8px;background:var(--accent-soft);color:inherit;vertical-align:baseline;}
   .vocab-ctx mark:has(.rd){padding-top:.7em;}
   .vocab-meaning{font-size:28px;font-weight:600;line-height:1.35;color:var(--a-text);overflow-wrap:anywhere;}
-  #vocabSpeak, #vocabDictBtn{min-width:40px;}
   .vocab-total{display:flex;align-items:center;justify-content:center;height:36px;font-size:18px;font-weight:700;line-height:1;color:var(--accent);background:var(--accent-soft);border-radius:var(--radius-sm);}
   #vocabSpeak.active, #vocabDictBtn.active{background:var(--accent);color:var(--on-accent);border-color:var(--accent);}
   html:not(.touch) .vocab-touch-only{display:none !important;}
@@ -506,9 +505,12 @@ window.onYouTubeIframeAPIReady = function(){
   @media (hover:hover){.segmented button:hover{background:var(--surface-2);color:var(--text);}}
   .segmented button.active{background:var(--surface);color:var(--text);box-shadow:var(--shadow-sm);}
   #btnPlaySequence{display:none;min-width:40px;}
-  .yt-icon{position:relative;}
-  .yt-icon > span{visibility:hidden;}
-  .yt-icon > svg{position:absolute;left:50%;top:50%;width:1.4em;height:1em;transform:translate(-50%, -50%);}
+  #btnPlaySequence, #vocabSpeak{box-sizing:border-box;width:40px;height:32px;padding:0;align-items:center;justify-content:center;}
+  #vocabSpeak{display:inline-flex;}
+  #vocabDictBtn{min-width:40px;}
+  .loop-time.vocab-play{box-sizing:border-box;width:23px;height:20px;padding:0;line-height:20px;text-align:center;}
+  .yt-icon{display:block;width:20px;height:14px;}
+  .vocab-play .yt-icon{display:inline-block;width:17px;height:12px;margin-top:4px;vertical-align:top;}
   #btnPlaySequence.active{background:var(--accent);color:var(--on-accent);border-color:var(--accent);}
 
   table{
@@ -2282,16 +2284,16 @@ function stopSequenceLoop() {
   render();
 }
 
-const YT_ICON = '<span class="yt-icon"><span>▶</span><svg viewBox="0 0 28 20" aria-hidden="true"><rect width="28" height="20" rx="5" fill="#FF0000"/><path d="M11 5.5v9l8-4.5z" fill="#fff"/></svg></span>';
+const YT_ICON = '<svg class="yt-icon" viewBox="0 0 28 20" aria-hidden="true"><rect width="28" height="20" rx="5" fill="#FF0000"/><path d="M11 5.5v9l8-4.5z" fill="#fff"/></svg>';
 
-const YT_PAUSE_ICON = '<span class="yt-icon"><span>⏸</span><svg viewBox="0 0 28 20" aria-hidden="true"><rect width="28" height="20" rx="5" fill="#FF0000"/><rect x="9.5" y="5.5" width="3" height="9" rx=".8" fill="#fff"/><rect x="15.5" y="5.5" width="3" height="9" rx=".8" fill="#fff"/></svg></span>';
+const YT_PAUSE_ICON = '<svg class="yt-icon" viewBox="0 0 28 20" aria-hidden="true"><rect width="28" height="20" rx="5" fill="#FF0000"/><rect x="9.5" y="5.5" width="3" height="9" rx=".8" fill="#fff"/><rect x="15.5" y="5.5" width="3" height="9" rx=".8" fill="#fff"/></svg>';
 
 function updateSequenceBtnUI() {
   const btn = document.getElementById("btnPlaySequence");
   const speedSel = document.getElementById("playbackSpeed");
   if (sequenceReadsAloud()) {
     const on = ttsPlaying && ttsField === "q";
-    btn.style.display = "inline-block";
+    btn.style.display = "inline-flex";
     btn.disabled = false;
     speedSel.style.display = "none";
     btn.textContent = on ? "⏸" : "🔊";
@@ -2305,7 +2307,7 @@ function updateSequenceBtnUI() {
     speedSel.style.display = "none";
     return;
   }
-  btn.style.display = "inline-block";
+  btn.style.display = "inline-flex";
   btn.disabled = false;
   speedSel.style.display = "inline-block";
   btn.innerHTML = isSequencePlaying ? YT_PAUSE_ICON : YT_ICON;
