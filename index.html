@@ -2441,7 +2441,7 @@ function buildRowTr(r) {
   if (selectedRowId === r.id) tr.classList.add("row-selected");
   const q = `<div class="cell ${r.qHidden ? "hidden" : "shown"}" data-field="q">${qCellContent(r)}</div>`;
   const cells = document.getElementById("cardTable").classList.contains("no-answer-col") ? `<td colspan="2">${q}</td>` : `<td>${q}</td><td class="a-col"><div class="cell ${r.aHidden ? "hidden" : "shown"}" data-field="a">${aCellContent(r)}</div></td>`;
-  const lead = groupState && !isTouch() ? `<td class="del-col" colspan="2"></td>` : `<td class="edit-col"><button class="edit-btn">&#9998;</button></td><td class="del-col"><button class="del-btn del-forever">&#10005;</button></td>`;
+  const lead = groupState && !isTouch() ? `<td class="del-col" colspan="2"></td>` : `<td class="edit-col"><button class="edit-btn">&#9998;</button></td><td class="del-col"><button class="del-btn del-forever">&#10006;&#xFE0E;</button></td>`;
   tr.innerHTML = lead + cells;
   dictPreloadObserver.observe(tr);
   return tr;
@@ -2747,7 +2747,7 @@ function renderSingleCard(visibleRows) {
   bodyEl.classList.remove("edit-row");
   bodyEl.classList.toggle("row-playing", loopingRowId === row.id);
   bodyEl.innerHTML = singleCardFieldsHtml(row);
-  if (isTouch()) bodyEl.querySelector(".single-card-field").insertAdjacentHTML("afterbegin", '<div class="card-actions"><button class="edit-btn" aria-label="Edit card">&#9998;</button><button class="del-btn del-forever" aria-label="Delete card">&#10005;</button></div>');
+  if (isTouch()) bodyEl.querySelector(".single-card-field").insertAdjacentHTML("afterbegin", '<div class="card-actions"><button class="edit-btn" aria-label="Edit card">&#9998;</button><button class="del-btn del-forever" aria-label="Delete card">&#10006;&#xFE0E;</button></div>');
   dictPreloadObserver.observe(bodyEl);
   if (autoPlay) playListenCardAudio(row);
 }
@@ -5309,7 +5309,7 @@ function ghostFor(parts) {
 let dragGhost = null;
 
 function gradeMark(isAgain) {
-  return currentView === "vocab" ? isAgain ? "✕" : "✓" : isAgain ? "Again" : "Good";
+  return currentView === "vocab" ? isAgain ? "✖\uFE0E" : "✔\uFE0E" : isAgain ? "Again" : "Good";
 }
 
 function swipe(parts, dir, update, next, label = dir > 0 ? "Good" : "Again") {
@@ -5321,7 +5321,7 @@ function swipe(parts, dir, update, next, label = dir > 0 ? "Good" : "Again") {
   if (ghost) {
     ghost.classList.remove("good", "again");
     ghost.classList.add(label === "Delete" ? "delete" : dir > 0 ? "good" : "again");
-    ghost.textContent = label === "Delete" ? "✕" : gradeMark(dir < 0);
+    ghost.textContent = label === "Delete" ? "✖\uFE0E" : gradeMark(dir < 0);
     ghost.animate([ {
       transform: from
     }, {
@@ -9018,7 +9018,7 @@ function vocabCardHtml(item) {
   const frontText = vocabFront === "a" ? item.meaning : item.term;
   const front = `<div class="vocab-face vocab-front"><div class="vocab-term">${escapeHtml(frontText)}</div></div>`;
   const back = `<div class="vocab-face vocab-back">${vocabBackInner(item)}</div>`;
-  return `<div class="vocab-card${vocabFront === "a" ? " answer-first" : ""}${vocabSession.flipped ? " flipped" : ""}" id="vocabCard">` + `<div class="vocab-card-inner">${front}${back}</div>` + '<span class="vocab-actions vocab-card-actions vocab-touch-only"><button class="vocab-act-edit" aria-label="Edit this word">&#9998;</button><button class="vocab-act-del" aria-label="Delete this word">&#10005;</button></span>' + "</div>";
+  return `<div class="vocab-card${vocabFront === "a" ? " answer-first" : ""}${vocabSession.flipped ? " flipped" : ""}" id="vocabCard">` + `<div class="vocab-card-inner">${front}${back}</div>` + '<span class="vocab-actions vocab-card-actions vocab-touch-only"><button class="vocab-act-edit" aria-label="Edit this word">&#9998;</button><button class="vocab-act-del" aria-label="Delete this word">&#10006;&#xFE0E;</button></span>' + "</div>";
 }
 
 function vocabTableHtml(group) {
@@ -9029,7 +9029,7 @@ function vocabTableHtml(group) {
     return `<div class="cell ${hidden ? "hidden" : "shown"}" data-field="${field}">${play}${hidden ? "···" : escapeHtml(field === "q" ? item.term : item.meaning)}</div>`;
   };
   const head = field => `<th${field === "a" ? ' class="a-col"' : ""}>${field === "q" ? "Question" : "Answer"}</th>`;
-  const actions = '<span class="vocab-actions vocab-touch-only"><button class="vocab-act-edit" aria-label="Edit this word">&#9998;</button><button class="vocab-act-del" aria-label="Delete this word">&#10005;</button></span>';
+  const actions = '<span class="vocab-actions vocab-touch-only"><button class="vocab-act-edit" aria-label="Edit this word">&#9998;</button><button class="vocab-act-del" aria-label="Delete this word">&#10006;&#xFE0E;</button></span>';
   return '<table id="vocabTable"><thead><tr><th class="vocab-lead-col"></th>' + head("q") + head("a") + "</tr></thead><tbody>" + group.map(item => item.key === vocabEditingKey && !vocabEditingInList ? `<tr class="edit-row"><td colspan="3">${vocabEditorHtml(item)}</td></tr>` : `<tr data-key="${escapeAttr(item.key)}"${item.key === vocabSelectedKey ? ' class="row-selected"' : ""}><td class="vocab-lead-col">${actions}</td><td>${cell(item, "q")}</td><td class="a-col">${cell(item, "a")}</td></tr>`).join("") + "</tbody></table>";
 }
 
@@ -9131,7 +9131,7 @@ function renderVocab() {
     bookBtn.classList.toggle("active", open);
     bookBtn.setAttribute("aria-pressed", open);
   }
-  list.innerHTML = '<div class="vocab-list-bar">' + (canAdd ? `<button id="vocabAddWord" class="add-single vocab-add-word" aria-label="Add a word">${items.length} ＋</button>` : `<div class="vocab-total">${items.length}</div>`) + "</div>" + adder + (list.hidden ? "" : shown.map(item => item.key === vocabEditingKey && vocabEditingInList ? `<div class="vocab-list-row editing">${vocabEditorHtml(item)}</div>` : `<div class="vocab-list-row" data-key="${escapeAttr(item.key)}"><span class="vocab-actions vocab-touch-only"><button class="vocab-act-edit" aria-label="Edit this word">&#9998;</button><button class="vocab-act-del" aria-label="Delete this word">&#10005;</button></span><span class="vocab-list-term">${escapeHtml(item.term)}</span><span class="vocab-list-meaning">${escapeHtml(item.meaning)}</span><span class="vocab-list-status">${vocabStatusIcon(vocabStateOf(item))}</span></div>`).join("") + (more ? `<button id="vocabMore" class="vocab-more ghost">Show ${more} more</button>` : ""));
+  list.innerHTML = '<div class="vocab-list-bar">' + (canAdd ? `<button id="vocabAddWord" class="add-single vocab-add-word" aria-label="Add a word">${items.length} ＋</button>` : `<div class="vocab-total">${items.length}</div>`) + "</div>" + adder + (list.hidden ? "" : shown.map(item => item.key === vocabEditingKey && vocabEditingInList ? `<div class="vocab-list-row editing">${vocabEditorHtml(item)}</div>` : `<div class="vocab-list-row" data-key="${escapeAttr(item.key)}"><span class="vocab-actions vocab-touch-only"><button class="vocab-act-edit" aria-label="Edit this word">&#9998;</button><button class="vocab-act-del" aria-label="Delete this word">&#10006;&#xFE0E;</button></span><span class="vocab-list-term">${escapeHtml(item.term)}</span><span class="vocab-list-meaning">${escapeHtml(item.meaning)}</span><span class="vocab-list-status">${vocabStatusIcon(vocabStateOf(item))}</span></div>`).join("") + (more ? `<button id="vocabMore" class="vocab-more ghost">Show ${more} more</button>` : ""));
   watchVocabMore();
   const addBtn = document.getElementById("vocabAddWord");
   if (addBtn) addBtn.onclick = e => {
