@@ -3547,7 +3547,7 @@ function findTermIn(text, term) {
   const span = termSpans(fold.folded, key)[0];
   if (span) return [ fold.map[span[0]], fold.map[span[1]] ];
   const forms = jaForms(text || "");
-  return forms && forms.get(key) || null;
+  return forms && forms.get(key) || inflectedSpan(text, term);
 }
 
 function vocabCardEntries() {
@@ -6173,20 +6173,27 @@ const IRREGULAR_FORMS = {
 function wordFormMatches(form, word) {
   if (form === word) return true;
   if (IRREGULAR_FORMS[word] && IRREGULAR_FORMS[word].split(" ").includes(form)) return true;
-  if (word.length < 3) return false;
-  return form.startsWith(word.replace(/e$/, "")) || /[^aeiou]y$/.test(word) && form.startsWith(word.slice(0, -1) + "i");
+  if (word.length < 2) return false;
+  return [ word, word.replace(/e$/, ""), word + word.slice(-1), word.replace(/y$/, "i") ].some(stem => form.startsWith(stem) && /^(s|es|d|ed|ing)$/.test(form.slice(stem.length)));
+}
+
+function inflectedSpan(text, term) {
+  const words = normalizeVocabText(term).split(/\s+/).filter(Boolean);
+  if (!words.length || !/\p{Script=Latin}/u.test(term)) return null;
+  const toks = Array.from((text || "").matchAll(/[\p{L}\p{N}']+/gu), m => ({
+    s: normalizeVocabText(m[0]),
+    start: m.index,
+    end: m.index + m[0].length
+  }));
+  for (let i = 0; i + words.length <= toks.length; i++) {
+    if (words.every((w, j) => toks[i + j].s === w || (j < words.length - 1 || words.length === 1) && wordFormMatches(toks[i + j].s, w))) return [ toks[i].start, toks[i + words.length - 1].end ];
+  }
+  return null;
 }
 
 function termInText(term, text) {
-  const t = normalizeVocabText(text || "");
-  const words = normalizeVocabText(term).split(/\s+/).filter(Boolean);
-  if (!words.length) return false;
-  if (!/\p{Script=Latin}/u.test(term)) return t.includes(words.join(" "));
-  const toks = t.split(/[^\p{L}\p{N}']+/u);
-  for (let i = 0; i + words.length <= toks.length; i++) {
-    if (words.every((w, j) => toks[i + j] === w || (j < words.length - 1 || words.length === 1) && wordFormMatches(toks[i + j], w))) return true;
-  }
-  return false;
+  if (/\p{Script=Latin}/u.test(term)) return !!inflectedSpan(text, term);
+  return normalizeVocabText(text || "").includes(normalizeVocabText(term).split(/\s+/).filter(Boolean).join(" "));
 }
 
 function appendWordItems(card, pairs) {
@@ -9351,10 +9358,16 @@ function vocabSentenceHtml(sentence, term, row) {
   return html;
 }
 
+function vocabContextCard(item) {
+  const uses = card => !!card.q && !!findTermIn(card.q.trim().normalize("NFC"), item.term);
+  return uses(item.card) ? item.card : rows.find(uses) || item.card;
+}
+
 function vocabBackInner(item) {
-  const sentence = (item.card.q || "").trim();
+  const card = vocabContextCard(item);
+  const sentence = (card.q || "").trim();
   const inSentence = sentence && !!findTermIn(sentence.normalize("NFC"), item.term);
-  const main = inSentence ? `<div class="vocab-ctx">${vocabSentenceHtml(sentence, item.term, item.card)}</div>` : `<div class="vocab-ctx"><mark>${vocabSentenceHtml(item.term, "", item.card)}</mark></div>` + (sentence ? `<div class="vocab-ctx small">${vocabSentenceHtml(sentence, "", item.card)}</div>` : "");
+  const main = inSentence ? `<div class="vocab-ctx">${vocabSentenceHtml(sentence, item.term, card)}</div>` : `<div class="vocab-ctx"><mark>${vocabSentenceHtml(item.term, "", card)}</mark></div>` + (sentence ? `<div class="vocab-ctx small">${vocabSentenceHtml(sentence, "", card)}</div>` : "");
   return main + `<div class="vocab-meaning">${escapeHtml(item.meaning)}</div>`;
 }
 
@@ -9390,8 +9403,9 @@ function renderVocabDict() {
   const next = nextKey ? lessonVocabItems(vocabSource()).find(i => i.key === nextKey) : null;
   const now = String(Date.now());
   const panelFor = item => {
-    const sentence = (item.card.q || "").trim();
-    const url = dictUrlFor(sentence && findTermIn(sentence.normalize("NFC"), item.term) ? sentence : item.term, item.card);
+    const card = vocabContextCard(item);
+    const sentence = (card.q || "").trim();
+    const url = dictUrlFor(sentence && findTermIn(sentence.normalize("NFC"), item.term) ? sentence : item.term, card);
     if (!url) return null;
     let el = Array.from(host.children).find(c => c.dataset.url === url);
     if (!el) {
