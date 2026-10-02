@@ -3963,9 +3963,9 @@ function updateTouchBar() {
   document.getElementById("tbUndo").disabled = !undoStack.length;
   document.getElementById("tbRedo").disabled = !redoStack.length;
   const showBtn = document.getElementById("tbShow");
-  [ [ "tbAgain", "Again", "✕" ], [ "tbGood", "Good", "✓" ] ].forEach(([id, word, mark]) => {
+  [ [ "tbAgain", "Again" ], [ "tbGood", "Good" ] ].forEach(([id, word]) => {
     const btn = document.getElementById(id);
-    btn.textContent = vocab ? mark : word;
+    btn.textContent = gradeMark(word === "Again");
     btn.classList.toggle("tb-mark", vocab);
     if (vocab) btn.setAttribute("aria-label", word); else btn.removeAttribute("aria-label");
   });
@@ -5306,6 +5306,10 @@ function ghostFor(parts) {
 
 let dragGhost = null;
 
+function gradeMark(isAgain) {
+  return currentView === "vocab" ? isAgain ? "✕" : "✓" : isAgain ? "Again" : "Good";
+}
+
 function swipe(parts, dir, update, next, label = dir > 0 ? "Good" : "Again") {
   const motion = !matchMedia("(prefers-reduced-motion: reduce)").matches;
   const ghost = dragGhost || (motion ? ghostFor(parts) : null);
@@ -5315,7 +5319,7 @@ function swipe(parts, dir, update, next, label = dir > 0 ? "Good" : "Again") {
   if (ghost) {
     ghost.classList.remove("good", "again");
     ghost.classList.add(label === "Delete" ? "delete" : dir > 0 ? "good" : "again");
-    ghost.textContent = label === "Delete" ? "✕" : label;
+    ghost.textContent = label === "Delete" ? "✕" : gradeMark(dir < 0);
     ghost.animate([ {
       transform: from
     }, {
@@ -5403,7 +5407,7 @@ window.addEventListener("pointermove", e => {
   const again = dx < 0;
   drag.ghost.classList.toggle("again", again);
   drag.ghost.classList.toggle("good", !again);
-  drag.ghost.textContent = again ? "Again" : "Good";
+  drag.ghost.textContent = gradeMark(again);
   drag.ghost.style.transform = `translate(${dx}px, ${dy / 4}px) rotate(${dx / 20}deg)`;
 });
 
