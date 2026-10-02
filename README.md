@@ -22,7 +22,7 @@ The whole app is one file, `index.html`. There is no build step and nothing to i
 
 Group and Listening share one queue: a card studied in one mode leaves the others until it is due again.
 
-**Sound.** The YouTube button (or ↑) plays the cards' video clips, at the speed beside it. Cards without a clip are read aloud in their turn, so clips and reading alternate; in a lesson without a video the button becomes 🔊 and reads the questions aloud. While sound plays, the button is filled with the mode's colour; press it again to stop. Showing a group, or showing or flipping a word in Vocabulary, plays it automatically.
+**Sound.** The YouTube button (or ↑) plays the cards' video clips, at the speed beside it. Cards without a clip are read aloud in their turn, so clips and reading alternate; in a lesson without a video the button becomes 🔊 and reads the questions aloud. While sound plays, the button shows a pause mark (the YouTube mark with ⏸ bars for clips, ⏸ for reading) and is filled with the mode's colour; press it again to stop. Showing a group, or showing or flipping a word in Vocabulary, plays it automatically.
 
 **Back to the card.** Revealing or flipping a card, and moving on to the next one, jumps in one step to the top of the study area, in Lessons and in Vocabulary.
 
