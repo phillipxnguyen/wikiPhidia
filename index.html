@@ -5951,6 +5951,10 @@ function hasColonColumn(line) {
 }
 
 const DELIMS = {
+  none: {
+    label: "None",
+    re: /(?!)/
+  },
   "\t": {
     label: "Tab",
     re: /\t/
@@ -5990,10 +5994,6 @@ const DELIMS = {
   "|": {
     label: "Bar ( | )",
     re: /[|｜]/
-  },
-  none: {
-    label: "None ( one card per sentence )",
-    re: /(?!)/
   }
 };
 
@@ -6099,9 +6099,9 @@ function takeMediaUrl(text) {
 function pickDelim(text) {
   const lines = text.split(/\r?\n/).filter(l => l.trim() && !(matchSpacedTimestamp(l, "\t") && matchSpacedTimestamp(l, ":")));
   const cur = currentDelim();
-  if (cur === "none") return cur;
-  const count = d => lines.filter(l => d === ":" ? hasColonColumn(l) : hasDelim(l, d)).length;
+  const count = d => lines.filter(l => d === ":" ? hasColonColumn(l) && !(cur === "none" && /[.!?。！？]/.test(l.split(/[:：]/)[0])) : hasDelim(l, d)).length;
   const best = [ "\t", ":" ].map(d => [ d, count(d) ]).sort((a, b) => b[1] - a[1])[0];
+  if (cur === "none") return best[1] * 2 > lines.length ? best[0] : "none";
   if (!best[1] && !count(cur)) return "none";
   return best[1] <= count(cur) ? cur : best[0];
 }
