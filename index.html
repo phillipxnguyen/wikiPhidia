@@ -10161,7 +10161,7 @@ function handleVocabKey(e) {
     const target = hovered || (vocabView === "card" ? currentVocabItem() : null);
     if (!target) return;
     e.preventDefault();
-    deleteVocabEntry(target, hovered ? document.querySelector(`#vocabList .vocab-list-row[data-key="${CSS.escape(hovered.key)}"], #vocabTable tr[data-key="${CSS.escape(hovered.key)}"]`) : null);
+    deleteByKey(() => deleteVocabEntry(target, hovered ? document.querySelector(`#vocabList .vocab-list-row[data-key="${CSS.escape(hovered.key)}"], #vocabTable tr[data-key="${CSS.escape(hovered.key)}"]`) : null));
     return;
   }
   if (vocabView === "group") {
@@ -10628,6 +10628,21 @@ function gradeKey(e) {
   return null;
 }
 
+let keyDeleteTimer = null;
+
+function deleteByKey(run) {
+  clearTimeout(keyDeleteTimer);
+  keyDeleteTimer = setTimeout(() => {
+    keyDeleteTimer = null;
+    run();
+  }, 100);
+}
+
+window.addEventListener("keydown", () => {
+  clearTimeout(keyDeleteTimer);
+  keyDeleteTimer = null;
+}, true);
+
 function isTypingInField() {
   const el = document.activeElement;
   if (!el) return false;
@@ -10725,9 +10740,9 @@ document.addEventListener("keydown", e => {
     openEdit(tr, row);
     return;
   }
-  if ((e.code === "Backspace" || e.code === "Delete") && !e.repeat) {
+  if ((e.code === "Backspace" || e.code === "Delete") && !e.repeat && !activeEdit) {
     e.preventDefault();
-    deleteAction();
+    deleteByKey(deleteAction);
   }
 });
 

@@ -43,7 +43,7 @@ Group and Listening share one queue: a card studied in one mode leaves the other
 | 1 – 5 | In a group, play just that row over and over: its video clip, or read aloud when it has none (press again to stop) |
 | Space | Reveal / flip; in Listening, once the card is shown, play or pause the sound (like S). The phone's Show button does the same and names what it will do: Show, or Hide once the group is shown; ⟲ in Flashcards, where flipping goes both ways; ▶ or ⏸ in Listening. In Vocabulary, Again and Good read ✕ and ✓, on the buttons and on the card that flies off when you grade or swipe |
 | ⌘/Ctrl + Z | Undo, including grades (add Shift to redo) |
-| Delete | Delete the card |
+| Delete or Backspace | Delete the card. Nothing happens while a card is open for editing, or when a Vietnamese typing tool (Telex, VNI) sends Backspace to turn a letter into ê, đ, é and so on |
 | Shift (with text selected above a dictionary) | Select part of the question to add it as a word; select the whole question or the whole answer to edit it right there. On a computer the answer also opens by clicking it, as in the table. On a phone, tap the ✎ just before the first word of the question or the answer; it hides while you edit. Return saves, Esc cancels |
 | Esc | Close a popup |
 
