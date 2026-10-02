@@ -506,6 +506,7 @@ window.onYouTubeIframeAPIReady = function(){
   @media (hover:hover){.segmented button:hover{background:var(--surface-2);color:var(--text);}}
   .segmented button.active{background:var(--surface);color:var(--text);box-shadow:var(--shadow-sm);}
   #btnPlaySequence{display:none;min-width:40px;}
+  .yt-icon{display:inline-block;width:1.4em;height:1em;vertical-align:-.14em;}
   #btnPlaySequence.active{background:var(--accent);color:var(--on-accent);border-color:var(--accent);}
 
   table{
@@ -1124,7 +1125,7 @@ window.onYouTubeIframeAPIReady = function(){
       <button id="listenModeBtn" style="display:none;" aria-label="Listening">🎧</button>
     </div>
     <div class="toolbar-right">
-      <button id="btnPlaySequence" aria-label="Play">▶</button>
+      <button id="btnPlaySequence" aria-label="Play"></button>
       <select id="playbackSpeed" style="display:none;">
         <option value="1">1x</option>
         <option value="1.25">1.25x</option>
@@ -2279,6 +2280,8 @@ function stopSequenceLoop() {
   render();
 }
 
+const YT_ICON = '<svg class="yt-icon" viewBox="0 0 28 20" aria-hidden="true"><rect width="28" height="20" rx="5" fill="#FF0000"/><path d="M11 5.5v9l8-4.5z" fill="#fff"/></svg>';
+
 function updateSequenceBtnUI() {
   const btn = document.getElementById("btnPlaySequence");
   const speedSel = document.getElementById("playbackSpeed");
@@ -2287,8 +2290,9 @@ function updateSequenceBtnUI() {
     btn.style.display = "inline-block";
     btn.disabled = false;
     speedSel.style.display = "none";
-    btn.textContent = on ? "⏸" : "🔊";
+    btn.textContent = "🔊";
     btn.classList.toggle("active", on);
+    updateTouchBar();
     return;
   }
   if (!ytPlayer || !ytReady || !ytHasVideo || ytHasError) {
@@ -2300,13 +2304,9 @@ function updateSequenceBtnUI() {
   btn.style.display = "inline-block";
   btn.disabled = false;
   speedSel.style.display = "inline-block";
-  if (isSequencePlaying) {
-    btn.textContent = "⏸";
-    btn.classList.add("active");
-  } else {
-    btn.textContent = "▶";
-    btn.classList.remove("active");
-  }
+  btn.innerHTML = YT_ICON;
+  btn.classList.toggle("active", isSequencePlaying);
+  updateTouchBar();
 }
 
 function playNextSequenceStep() {
@@ -3947,7 +3947,7 @@ function updateTouchBar() {
   [ "tbShow", "tbAgain", "tbGood" ].forEach(id => {
     document.getElementById(id).hidden = !inSession;
   });
-  document.getElementById("tbShow").textContent = !vocab && listenCardShown() ? "Sound" : "Show";
+  document.getElementById("tbShow").textContent = !vocab && listenCardShown() ? document.getElementById("btnPlaySequence").classList.contains("active") ? "⏸" : "▶" : "Show";
   document.getElementById("tbUndo").disabled = !undoStack.length;
   document.getElementById("tbRedo").disabled = !redoStack.length;
 }
@@ -8984,7 +8984,7 @@ function vocabTableHtml(group) {
   const hide = vocabFront === "a" ? "q" : "a";
   const cell = (item, field) => {
     const hidden = field === hide && !vocabSession.shown;
-    const play = field === "q" ? `<span class="loop-time vocab-play" data-key="${escapeAttr(item.key)}">${vocabVideoIdFor(item.card) ? "▶" : "🔊"}</span>` : "";
+    const play = field === "q" ? `<span class="loop-time vocab-play" data-key="${escapeAttr(item.key)}">${vocabVideoIdFor(item.card) ? YT_ICON : "🔊"}</span>` : "";
     return `<div class="cell ${hidden ? "hidden" : "shown"}" data-field="${field}">${play}${hidden ? "···" : escapeHtml(field === "q" ? item.term : item.meaning)}</div>`;
   };
   const head = field => `<th${field === "a" ? ' class="a-col"' : ""}>${field === "q" ? "Question" : "Answer"}</th>`;
@@ -9708,7 +9708,7 @@ function syncVocabSound() {
   if (!speed.options.length) speed.innerHTML = document.getElementById("playbackSpeed").innerHTML;
   speed.value = String(sequenceSpeed);
   const on = vocabSoundOn();
-  btn.textContent = on ? "⏸" : vocabShownIsVideo ? "▶" : "🔊";
+  btn.innerHTML = vocabShownIsVideo ? YT_ICON : "🔊";
   btn.classList.toggle("active", on);
 }
 
