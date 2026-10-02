@@ -319,7 +319,7 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-actions{display:inline-flex;flex-shrink:0;}
   .vocab-actions{gap:12px;padding-left:12px;}
   .vocab-actions button{width:17px;height:36px;line-height:36px;padding:0;border:0;border-radius:6px;background:none;font-size:20px;color:var(--text-2);}
-  .vocab-card-actions{z-index:3;}
+  .vocab-card-actions{position:absolute;top:6px;left:6px;z-index:3;gap:17px;}
   html:not(.touch) #vocabTable{--col1:0px;--col2:0px;}
   html:not(.touch) #vocabTable .icon-col, html:not(.touch) #vocabTable .edit-col, html:not(.touch) #vocabTable .del-col{padding:0;overflow:hidden;}
   html:not(.touch) #vocabTable .edit-col > *, html:not(.touch) #vocabTable .del-col > *{display:none;}
@@ -412,7 +412,7 @@ window.onYouTubeIframeAPIReady = function(){
     .shell .lesson-header{row-gap:0;}
     .shell #fileStatus{margin-top:-1px;}
     .shell .link-bar{min-width:0;flex-basis:100%;}
-    .shell #cardTable .cell{margin:6px 4px;padding:3px 4px;}
+    .shell #cardTable .cell, .shell #vocabTable .cell{margin:6px 4px;padding:3px 4px;}
     .shell .single-card-body{padding:16px 12px;}
     .shell .single-card-field{padding:14px 10px;}
     .shell .single-card-field .cell{font-size:21px;padding:2px 6px;}
@@ -441,7 +441,7 @@ window.onYouTubeIframeAPIReady = function(){
   .touch-bar .tb-again{background:var(--danger-soft);color:var(--danger);border-color:transparent;}
   .touch-bar .tb-good{background:var(--a-bg);color:var(--a-label);border-color:transparent;}
   .touch-bar .tb-mark{font-size:22px;font-weight:700;}
-  .single-card-field > .card-actions, .vocab-card-actions{position:absolute;top:6px;left:6px;display:flex;gap:2px;}
+  .single-card-field > .card-actions{position:absolute;top:6px;left:6px;display:flex;gap:2px;}
 
   .lesson-header{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
   .lesson-name-input{
@@ -9023,7 +9023,7 @@ function vocabCardHtml(item) {
   const frontText = vocabFront === "a" ? item.meaning : item.term;
   const front = `<div class="vocab-face vocab-front"><div class="vocab-term">${escapeHtml(frontText)}</div></div>`;
   const back = `<div class="vocab-face vocab-back">${vocabBackInner(item)}</div>`;
-  return `<div class="vocab-card${vocabFront === "a" ? " answer-first" : ""}${vocabSession.flipped ? " flipped" : ""}" id="vocabCard">` + `<div class="vocab-card-inner">${front}${back}</div>` + '<span class="card-actions vocab-card-actions vocab-touch-only"><button class="edit-btn vocab-act-edit" aria-label="Edit this word">&#9998;</button><button class="del-btn vocab-act-del" aria-label="Delete this word">&#10005;</button></span>' + "</div>";
+  return `<div class="vocab-card${vocabFront === "a" ? " answer-first" : ""}${vocabSession.flipped ? " flipped" : ""}" id="vocabCard">` + `<div class="vocab-card-inner">${front}${back}</div>` + '<span class="vocab-actions vocab-card-actions vocab-touch-only"><button class="vocab-act-edit" aria-label="Edit this word">&#9998;</button><button class="vocab-act-del" aria-label="Delete this word">&#10005;</button></span>' + "</div>";
 }
 
 function vocabTableHtml(group) {
@@ -10089,7 +10089,7 @@ function wireVocabCard(item) {
     deleteVocabEntry(item);
   };
   card.addEventListener("click", e => {
-    if (!e.target.closest(".card-actions")) flipVocab();
+    if (!e.target.closest(".vocab-actions")) flipVocab();
   });
 }
 
