@@ -3957,7 +3957,16 @@ function updateTouchBar() {
   [ "tbShow", "tbAgain", "tbGood" ].forEach(id => {
     document.getElementById(id).hidden = !inSession;
   });
-  document.getElementById("tbShow").textContent = !vocab && listenCardShown() ? document.getElementById("btnPlaySequence").classList.contains("active") ? "⏸" : "▶" : "Show";
+  let showLabel = "Show";
+  if (vocab) {
+    if (vocabSession && (vocabView === "group" ? vocabSession.shown : vocabSession.flipped)) showLabel = "Hide";
+  } else if (listenCardShown()) {
+    showLabel = document.getElementById("btnPlaySequence").classList.contains("active") ? "⏸" : "▶";
+  } else if (groupState && groupViewStyle !== "listen") {
+    const ids = groupState.groups[groupState.index] || [];
+    if (ids.length && rows.filter(r => ids.includes(r.id)).every(r => !r.qHidden && !r.aHidden)) showLabel = "Hide";
+  }
+  document.getElementById("tbShow").textContent = showLabel;
   document.getElementById("tbUndo").disabled = !undoStack.length;
   document.getElementById("tbRedo").disabled = !redoStack.length;
 }
@@ -9932,6 +9941,7 @@ function flipVocab() {
   const card = document.getElementById("vocabCard");
   if (card) card.classList.toggle("flipped", vocabSession.flipped);
   if (!vocabSession.flipped) stopVocabSound(); else playVocabSound(item);
+  updateTouchBar();
 }
 
 function flyVocab(isAgain) {
