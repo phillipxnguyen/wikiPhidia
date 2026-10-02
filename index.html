@@ -10402,6 +10402,13 @@ function editDictField(el, row) {
   const field = el.classList.contains("dict-source") ? "q" : "a";
   hideVocabPopup();
   hideVocabAddPopup();
+  const sel = getSelection();
+  const kept = sel.rangeCount && el.contains(sel.getRangeAt(0).commonAncestorContainer) ? [ "start", "end" ].map(edge => {
+    const before = document.createRange();
+    before.selectNodeContents(el);
+    before.setEnd(sel.getRangeAt(0)[edge + "Container"], sel.getRangeAt(0)[edge + "Offset"]);
+    return before.toString().length;
+  }) : null;
   el.innerHTML = row[field + "Html"] || textHtml(row[field]);
   el.contentEditable = "true";
   el.classList.add("dict-editing");
@@ -10409,8 +10416,21 @@ function editDictField(el, row) {
   const caret = document.createRange();
   caret.selectNodeContents(el);
   caret.collapse(false);
-  getSelection().removeAllRanges();
-  getSelection().addRange(caret);
+  if (kept) {
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    let pos = 0, node;
+    while (node = walker.nextNode()) {
+      const len = node.nodeValue.length;
+      if (kept[0] >= pos && kept[0] <= pos + len) caret.setStart(node, kept[0] - pos);
+      if (kept[1] >= pos && kept[1] <= pos + len) {
+        caret.setEnd(node, kept[1] - pos);
+        break;
+      }
+      pos += len;
+    }
+  }
+  sel.removeAllRanges();
+  sel.addRange(caret);
   const listeners = new AbortController;
   const finish = save => {
     if (listeners.signal.aborted) return;
@@ -10466,8 +10486,8 @@ document.addEventListener("keydown", e => {
 });
 
 document.getElementById("dictPanels").addEventListener("mouseup", e => {
-  const field = e.shiftKey && dictFieldToEdit();
-  if (field) {
+  const field = dictFieldToEdit();
+  if (field && (e.shiftKey || field.el.classList.contains("dict-answer"))) {
     editDictField(field.el, field.row);
     return;
   }
