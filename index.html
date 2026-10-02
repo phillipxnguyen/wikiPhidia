@@ -2292,6 +2292,10 @@ function playFace(face, sizer = "🔊") {
   return `<span class="play-sizer">${sizer}</span><span class="play-face">${face}</span>`;
 }
 
+function vocabPlayFace(video, on) {
+  return video ? playFace(on ? YT_PAUSE_ICON : YT_ICON, "▶") : playFace(on ? "⏸" : "🔊");
+}
+
 const YT_ICON = '<svg class="yt-icon" viewBox="0 0 28 20" aria-hidden="true"><rect width="28" height="20" rx="5" fill="#FF0000"/><path d="M11 5.5v9l8-4.5z" fill="#fff"/></svg>';
 
 const YT_PAUSE_ICON = '<svg class="yt-icon" viewBox="0 0 28 20" aria-hidden="true"><rect width="28" height="20" rx="5" fill="#FF0000"/><rect x="9.5" y="5.5" width="3" height="9" rx=".8" fill="#fff"/><rect x="15.5" y="5.5" width="3" height="9" rx=".8" fill="#fff"/></svg>';
@@ -9026,7 +9030,8 @@ function vocabTableHtml(group) {
   const hide = vocabFront === "a" ? "q" : "a";
   const cell = (item, field) => {
     const hidden = field === hide && !vocabSession.shown;
-    const play = field === "q" ? `<span class="loop-time vocab-play" data-key="${escapeAttr(item.key)}">${vocabVideoIdFor(item.card) ? playFace(YT_ICON, "▶") : "🔊"}</span>` : "";
+    const video = !!vocabVideoIdFor(item.card);
+    const play = field === "q" ? `<span class="loop-time vocab-play" data-key="${escapeAttr(item.key)}"${video ? " data-video" : ""}>${vocabPlayFace(video, false)}</span>` : "";
     return `<div class="cell ${hidden ? "hidden" : "shown"}" data-field="${field}">${play}${hidden ? "···" : escapeHtml(field === "q" ? item.term : item.meaning)}</div>`;
   };
   const head = field => `<th${field === "a" ? ' class="a-col"' : ""}>${field === "q" ? "Question" : "Answer"}</th>`;
@@ -9744,7 +9749,12 @@ function syncVocabSound() {
   const speed = document.getElementById("vocabSpeed");
   const shown = !!document.getElementById("vocabCard") || !!document.getElementById("vocabTable");
   document.querySelectorAll("#vocabTable tr[data-key]").forEach(tr => tr.classList.toggle("row-playing", !!vocabSeq && tr.dataset.key === vocabSeq.key));
-  document.querySelectorAll("#vocabTable .vocab-play").forEach(el => el.classList.toggle("looping", !!vocabSeq && el.dataset.key === vocabSeq.only));
+  document.querySelectorAll("#vocabTable .vocab-play").forEach(el => {
+    const on = !!vocabSeq && el.dataset.key === vocabSeq.only;
+    if (el.classList.contains("looping") === on) return;
+    el.classList.toggle("looping", on);
+    el.innerHTML = vocabPlayFace(el.hasAttribute("data-video"), on);
+  });
   btn.hidden = !shown;
   speed.hidden = !shown || !vocabShownIsVideo;
   if (!speed.options.length) speed.innerHTML = document.getElementById("playbackSpeed").innerHTML;
