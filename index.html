@@ -6424,7 +6424,7 @@ const IMPORT_KIND_LABELS = {
   update: [ "update", "✏️", "Fill in" ],
   merged: [ "update", "🔗", "Merged" ],
   duplicate: [ "dup", "⏭", "Duplicate" ],
-  empty: [ "skip", "⚠️", "Empty" ],
+  empty: [ "skip", "⚠️", "Not read — the question is empty" ],
   invalid: [ "skip", "⚠️", "Not read" ]
 };
 
@@ -6462,17 +6462,18 @@ function renderImportPreview() {
   const summary = [];
   summary.push(`<span><b>${analysis.lines.length}</b> ${analysis.delim === "none" ? "sentence" : "line"}${analysis.lines.length === 1 ? "" : "s"}</span>`);
   if (counts.new) summary.push(`<span class="ip-status new">🆕 ${counts.new}</span>`);
-  if (counts.update) summary.push(`<span class="ip-status update">${counts.update} fill in</span>`);
-  if (counts.merged) summary.push(`<span class="ip-status update">${counts.merged} merged</span>`);
-  if (counts.duplicate) summary.push(`<span class="ip-status dup">${counts.duplicate} duplicate</span>`);
-  if (counts.empty || counts.invalid) summary.push(`<span class="ip-status skip">${(counts.empty || 0) + (counts.invalid || 0)} skipped</span>`);
+  if (counts.update) summary.push(`<span class="ip-status update">✏️ ${counts.update} fill in</span>`);
+  if (counts.merged) summary.push(`<span class="ip-status update">🔗 ${counts.merged} merged</span>`);
+  if (counts.duplicate) summary.push(`<span class="ip-status dup">⏭ ${counts.duplicate} duplicate</span>`);
+  if (counts.empty || counts.invalid) summary.push(`<span class="ip-status skip">⚠️ ${(counts.empty || 0) + (counts.invalid || 0)} skipped</span>`);
   summary.push(`<span>Delimiter: <b>${delimName}</b>${analysis.delim !== currentDelim() ? " (auto-detected)" : ""}</span>`);
   if (analysis.title) summary.push(`<span>Title: <b>${escapeHtml(analysis.title)}</b></span>`);
   if (analysis.mediaUrl) summary.push(`<span>Video link: <b>${escapeHtml(truncate(analysis.mediaUrl, 48))}</b></span>`);
   const body = analysis.lines.slice(0, IMPORT_PREVIEW_MAX_ROWS).map((l, i) => {
     const o = lineOutcomes[i];
-    const [cls, icon, label] = IMPORT_KIND_LABELS[o.kind];
-    const status = `<td class="ip-result"><span class="ip-status ${cls}" aria-label="${label}">${icon}</span></td>`;
+    const [cls, icon, kindLabel] = IMPORT_KIND_LABELS[o.kind];
+    const label = escapeAttr(o.kind === "invalid" ? `Not read — no ${delimName} on this line` : kindLabel);
+    const status = `<td class="ip-result"><span class="ip-status ${cls}" aria-label="${label}" title="${label}">${icon}</span></td>`;
     const num = `<td class="ip-num">${l.lineNo}</td>`;
     if (!l.entry) {
       return `<tr class="ip-dim">${num}${status}<td colspan="4" class="ip-raw">${escapeHtml(l.text)}</td></tr>`;
@@ -9443,9 +9444,9 @@ function renderVocabImportPreview() {
   const count = kind => lines.filter(l => l.kind === kind).length;
   const summary = [ `<span><b>${lines.length}</b> line${lines.length === 1 ? "" : "s"}</span>` ];
   if (count("new")) summary.push(`<span class="ip-status new">🆕 ${count("new")}</span>`);
-  if (count("duplicate")) summary.push(`<span class="ip-status dup">${count("duplicate")} duplicate</span>`);
-  if (count("invalid")) summary.push(`<span class="ip-status skip">${count("invalid")} skipped</span>`);
-  if (count("long")) summary.push(`<span class="ip-status skip">${count("long")} too long</span>`);
+  if (count("duplicate")) summary.push(`<span class="ip-status dup">⏭ ${count("duplicate")} duplicate</span>`);
+  if (count("invalid")) summary.push(`<span class="ip-status skip">⚠️ ${count("invalid")} skipped</span>`);
+  if (count("long")) summary.push(`<span class="ip-status skip">⚠️ ${count("long")} too long</span>`);
   const pick = vocabDelimFor(raw);
   summary.push(`<span>Delimiter: <b>${delimLabel(pick.delim)}</b>${pick.auto ? " (auto-detected)" : ""}</span>`);
   const labels = {
@@ -9456,7 +9457,7 @@ function renderVocabImportPreview() {
   };
   const body = lines.slice(0, IMPORT_PREVIEW_MAX_ROWS).map(l => {
     const [cls, icon, label] = labels[l.kind];
-    const status = `<td class="ip-result"><span class="ip-status ${cls}" aria-label="${escapeAttr(label)}">${icon}</span></td>`;
+    const status = `<td class="ip-result"><span class="ip-status ${cls}" aria-label="${escapeAttr(label)}" title="${escapeAttr(label)}">${icon}</span></td>`;
     const num = `<td class="ip-num">${l.lineNo}</td>`;
     if (!l.pair) return `<tr class="ip-dim">${num}${status}<td colspan="2" class="ip-raw">${escapeHtml(l.text)}</td></tr>`;
     return `<tr${l.kind === "duplicate" || l.kind === "long" ? ' class="ip-dim"' : ""}>${num}${status}${previewCell(l.pair[0])}${previewCell(l.pair[1])}</tr>`;
