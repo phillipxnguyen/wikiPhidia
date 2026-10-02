@@ -312,6 +312,7 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-ctx mark{display:inline-block;line-height:1.3;padding:.1em .18em .08em;margin:0 .06em;border-radius:8px;background:var(--accent-soft);color:inherit;vertical-align:baseline;}
   .vocab-ctx mark:has(.rd){padding-top:.7em;}
   .vocab-meaning{font-size:28px;font-weight:600;line-height:1.35;color:var(--a-text);overflow-wrap:anywhere;}
+  #vocabSpeak, #vocabDictBtn{min-width:40px;}
   .vocab-total{display:flex;align-items:center;justify-content:center;height:36px;font-size:18px;font-weight:700;line-height:1;color:var(--accent);background:var(--accent-soft);border-radius:var(--radius-sm);}
   #vocabSpeak.active, #vocabDictBtn.active{background:var(--accent);color:var(--on-accent);border-color:var(--accent);}
   html:not(.touch) .vocab-touch-only{display:none !important;}
@@ -505,12 +506,11 @@ window.onYouTubeIframeAPIReady = function(){
   @media (hover:hover){.segmented button:hover{background:var(--surface-2);color:var(--text);}}
   .segmented button.active{background:var(--surface);color:var(--text);box-shadow:var(--shadow-sm);}
   #btnPlaySequence{display:none;min-width:40px;}
-  #btnPlaySequence, #vocabSpeak{box-sizing:border-box;width:40px;height:32px;padding:0;align-items:center;justify-content:center;}
-  #vocabSpeak{display:inline-flex;}
-  #vocabDictBtn{min-width:40px;}
-  .loop-time.vocab-play{box-sizing:border-box;width:23px;height:20px;padding:0;line-height:20px;text-align:center;}
+  #btnPlaySequence, #vocabSpeak, .vocab-play{position:relative;}
+  .play-sizer{visibility:hidden;}
+  .play-face{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
   .yt-icon{display:block;width:20px;height:14px;}
-  .vocab-play .yt-icon{display:inline-block;width:17px;height:12px;margin-top:4px;vertical-align:top;}
+  .vocab-play .yt-icon{width:17px;height:12px;}
   #btnPlaySequence.active{background:var(--accent);color:var(--on-accent);border-color:var(--accent);}
 
   table{
@@ -2284,6 +2284,10 @@ function stopSequenceLoop() {
   render();
 }
 
+function playFace(face, sizer = "🔊") {
+  return `<span class="play-sizer">${sizer}</span><span class="play-face">${face}</span>`;
+}
+
 const YT_ICON = '<svg class="yt-icon" viewBox="0 0 28 20" aria-hidden="true"><rect width="28" height="20" rx="5" fill="#FF0000"/><path d="M11 5.5v9l8-4.5z" fill="#fff"/></svg>';
 
 const YT_PAUSE_ICON = '<svg class="yt-icon" viewBox="0 0 28 20" aria-hidden="true"><rect width="28" height="20" rx="5" fill="#FF0000"/><rect x="9.5" y="5.5" width="3" height="9" rx=".8" fill="#fff"/><rect x="15.5" y="5.5" width="3" height="9" rx=".8" fill="#fff"/></svg>';
@@ -2293,10 +2297,10 @@ function updateSequenceBtnUI() {
   const speedSel = document.getElementById("playbackSpeed");
   if (sequenceReadsAloud()) {
     const on = ttsPlaying && ttsField === "q";
-    btn.style.display = "inline-flex";
+    btn.style.display = "inline-block";
     btn.disabled = false;
     speedSel.style.display = "none";
-    btn.textContent = on ? "⏸" : "🔊";
+    btn.innerHTML = playFace(on ? "⏸" : "🔊");
     btn.classList.toggle("active", on);
     updateTouchBar();
     return;
@@ -2307,10 +2311,10 @@ function updateSequenceBtnUI() {
     speedSel.style.display = "none";
     return;
   }
-  btn.style.display = "inline-flex";
+  btn.style.display = "inline-block";
   btn.disabled = false;
   speedSel.style.display = "inline-block";
-  btn.innerHTML = isSequencePlaying ? YT_PAUSE_ICON : YT_ICON;
+  btn.innerHTML = playFace(isSequencePlaying ? YT_PAUSE_ICON : YT_ICON);
   btn.classList.toggle("active", isSequencePlaying);
   updateTouchBar();
 }
@@ -8990,7 +8994,7 @@ function vocabTableHtml(group) {
   const hide = vocabFront === "a" ? "q" : "a";
   const cell = (item, field) => {
     const hidden = field === hide && !vocabSession.shown;
-    const play = field === "q" ? `<span class="loop-time vocab-play" data-key="${escapeAttr(item.key)}">${vocabVideoIdFor(item.card) ? YT_ICON : "🔊"}</span>` : "";
+    const play = field === "q" ? `<span class="loop-time vocab-play" data-key="${escapeAttr(item.key)}">${vocabVideoIdFor(item.card) ? playFace(YT_ICON, "▶") : "🔊"}</span>` : "";
     return `<div class="cell ${hidden ? "hidden" : "shown"}" data-field="${field}">${play}${hidden ? "···" : escapeHtml(field === "q" ? item.term : item.meaning)}</div>`;
   };
   const head = field => `<th${field === "a" ? ' class="a-col"' : ""}>${field === "q" ? "Question" : "Answer"}</th>`;
@@ -9714,7 +9718,7 @@ function syncVocabSound() {
   if (!speed.options.length) speed.innerHTML = document.getElementById("playbackSpeed").innerHTML;
   speed.value = String(sequenceSpeed);
   const on = vocabSoundOn();
-  btn.innerHTML = vocabShownIsVideo ? on ? YT_PAUSE_ICON : YT_ICON : on ? "⏸" : "🔊";
+  btn.innerHTML = playFace(vocabShownIsVideo ? on ? YT_PAUSE_ICON : YT_ICON : on ? "⏸" : "🔊");
   btn.classList.toggle("active", on);
 }
 
