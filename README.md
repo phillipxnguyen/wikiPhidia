@@ -22,7 +22,7 @@ The whole app is one file, `index.html`. There is no build step and nothing to i
 
 Group and Listening share one queue: a card studied in one mode leaves the others until it is due again.
 
-**Sound.** The YouTube button (or ↑) plays the cards' video clips, at the speed beside it. Cards without a clip are read aloud in their turn, so clips and reading alternate; in a lesson without a video the button becomes 🔊 and reads the questions aloud. While sound plays, the button shows a pause mark (the YouTube mark with ⏸ bars for clips, ⏸ for reading) and is filled with the mode's colour; press it again to stop. Showing a group, or showing or flipping a word in Vocabulary, plays it automatically.
+**Sound.** The YouTube button (or S) plays the cards' video clips, at the speed beside it. Cards without a clip are read aloud in their turn, so clips and reading alternate; in a lesson without a video the button becomes 🔊 and reads the questions aloud. While sound plays, the button shows a pause mark (the YouTube mark with ⏸ bars for clips, ⏸ for reading) and is filled with the mode's colour; press it again to stop. Showing a group, or showing or flipping a word in Vocabulary, plays it automatically.
 
 **Back to the card.** Revealing or flipping a card, and moving on to the next one, jumps in one step to the top of the study area, in Lessons and in Vocabulary.
 
@@ -36,10 +36,12 @@ Group and Listening share one queue: a card studied in one mode leaves the other
 | --- | --- |
 | ← or Shift + Return | Again |
 | → or Return | Good |
-| ↑ | Play or pause the sound |
-| ↓ | In a group, copy the questions; one card at a time (Flashcards, Listening), edit the card |
+| S | Play or pause the sound (Speaker) |
+| C | In a group, copy the questions |
+| E | One card at a time (Flashcards, Listening), edit the card |
+| D | In Vocabulary, show or hide the word list (Group) or the dictionary (Flashcards), like ⌘ + ⌥ |
 | 1 – 5 | In a group, play just that row over and over: its video clip, or read aloud when it has none (press again to stop) |
-| Space | Reveal / flip; in Listening, once the card is shown, play or pause the sound (like ↑). The phone's Show button does the same and names what it will do: Show, or Hide once the group is shown; ⟲ in Flashcards, where flipping goes both ways; ▶ or ⏸ in Listening. In Vocabulary, Again and Good read ✕ and ✓, on the buttons and on the card that flies off when you grade or swipe |
+| Space | Reveal / flip; in Listening, once the card is shown, play or pause the sound (like S). The phone's Show button does the same and names what it will do: Show, or Hide once the group is shown; ⟲ in Flashcards, where flipping goes both ways; ▶ or ⏸ in Listening. In Vocabulary, Again and Good read ✕ and ✓, on the buttons and on the card that flies off when you grade or swipe |
 | ⌘/Ctrl + Z | Undo, including grades (add Shift to redo) |
 | Delete | Delete the card |
 | Shift (with text selected above a dictionary) | Select part of the question to add it as a word; select the whole question or the whole answer to edit it right there. On a computer the answer also opens by clicking it, as in the table. On a phone, tap the ✎ just before the first word of the question or the answer; it hides while you edit. Return saves, Esc cancels |
@@ -56,8 +58,8 @@ Switch from **Lessons** to **Vocabulary** with the 字 button at the top. Words 
 
 | Mode | What it does |
 | --- | --- |
-| ☰ Group | Due words five at a time, like Group mode in Lessons: click a word to edit it, tap a row (phone) or point at it (computer) to grade just that word, the YouTube or 🔊 button plays the group's words in turn, the YouTube or 🔊 mark before each word plays just that (and turns into ⏸ while it plays) word, and 📖 beside 🔊 (or ⌘ + ⌥) shows or hides the whole word list under the table, for browsing and editing. It starts hidden so it does not give answers away and hides again as soon as you show or grade; the bar at the top of the list shows the number of words and, with ＋, adds a word; point at a word (or tap it on a phone) to see its pinyin or reading |
-| 📝 Flashcards | One word at a time; tap the card to flip it. 📖 beside 🔊 (or ⌘ + ⌥) shows or hides the word's stroke order and, under the card, the dictionary for the whole sentence the word comes from; it turns off again when you grade. |
+| ☰ Group | Due words five at a time, like Group mode in Lessons: click a word to edit it, tap a row (phone) or point at it (computer) to grade just that word, the YouTube or 🔊 button plays the group's words in turn, the YouTube or 🔊 mark before each word plays just that (and turns into ⏸ while it plays) word, and 📖 beside 🔊 (or D, or ⌘ + ⌥) shows or hides the whole word list under the table, for browsing and editing. It starts hidden so it does not give answers away and hides again as soon as you show or grade; the bar at the top of the list shows the number of words and, with ＋, adds a word; point at a word (or tap it on a phone) to see its pinyin or reading |
+| 📝 Flashcards | One word at a time; tap the card to flip it. 📖 beside 🔊 (or D, or ⌘ + ⌥) shows or hides the word's stroke order and, under the card, the dictionary for the whole sentence the word comes from; it turns off again when you grade. |
 
 Group and Flashcards share one queue, and a word marked Again comes back after 10 minutes. The toolbar stays pinned to the top of the screen as you scroll, in both modes, as in Lessons. The 🌐 button picks the language; ⇄ picks which side is shown first and hides the other side again (the card gives a short squash, and the side it starts on is labelled and coloured Question or Answer). On a phone, Undo, Redo, Show, Again and Good sit in a bar fixed to the bottom of the screen, as in Lessons; on a computer the keys do the same.
 
