@@ -17,11 +17,11 @@ The whole app is one file, `index.html`. There is no build step and nothing to i
 | Mode | What it does |
 | --- | --- |
 | ☰ Full | The whole lesson as a list, for browsing and editing. No spaced repetition. |
-| Group | Due cards five at a time. |
+| Group | Due cards five at a time. Shown in video lessons. |
 | Listening | One card at a time, playing its video clip first. Shown when the lesson has video cards. |
-| 🎤 IELTS | One question at a time, for long answers such as IELTS Speaking: say or think your answer, then Space shows the model answer with the lesson's words highlighted in it and a Vocabulary box listing those words with their meanings (Space again hides it). ← or → grades, as everywhere. Shown when the lesson has cards with answers; it shares Group's spaced repetition, so a card studied in one leaves the other until it is due again. |
+| 🎤 IELTS | Laid out like the IELTS Speaking test, one question at a time: a bar shows IELTS Speaking, Question 2 of 5 and a clock that runs while you answer out loud; Space shows the model answer, with the lesson's words highlighted in it and a Vocabulary box listing them with their meanings, and stops the clock (Space again hides it and restarts the clock). ← or → grades, as everywhere. Shown in lessons without a video; it uses the same spaced repetition as Group. |
 
-Group and Listening share one queue: a card studied in one mode leaves the others until it is due again.
+A lesson is either a video lesson (it has a YouTube, TikTok or Douyin link, or cards with video times), studied with Group and Listening, or a text lesson, studied with IELTS; adding or removing the link switches between them, also in the middle of a session. Group and Listening share one queue: a card studied in one mode leaves the others until it is due again.
 
 **Sound.** The YouTube button (or S) plays the cards' video clips, at the speed beside it. Cards without a clip are read aloud in their turn, so clips and reading alternate; in a lesson without a video the button becomes 🔊 and reads the questions aloud. While sound plays, the button shows a pause mark (the YouTube mark with ⏸ bars for clips, ⏸ for reading) and is filled with the mode's colour; press it again to stop. Showing a group, or showing or flipping a word in Vocabulary, plays it automatically.
 

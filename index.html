@@ -754,6 +754,13 @@ window.onYouTubeIframeAPIReady = function(){
   .single-card-field .cell.hidden{color:var(--text-2);}
   .ielts-card .single-card-a .cell{font-size:18px;line-height:1.65;}
   .ielts-card .single-card-a .cell mark{background:var(--accent-soft);color:inherit;border-radius:4px;padding:0 2px;}
+  .ielts-card .single-card-q::before{content:"Examiner";}
+  .ielts-card .single-card-a::before{content:"Model answer";}
+  .ielts-card .single-card-q .cell{font-size:22px;}
+  .ielts-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 6px;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-2);}
+  .ielts-timer{font-variant-numeric:tabular-nums;font-size:15px;letter-spacing:0;color:var(--accent);}
+  .ielts-timer.stopped{color:var(--text-2);}
+  .ielts-prompt{font-size:16px;font-style:italic;}
   .single-card-words{background:var(--q-bg);font-size:16px;line-height:1.6;}
   .single-card-words::before{content:"Vocabulary";color:var(--text-2);}
   .single-card-words .ielts-word{padding:0 16px;}
@@ -2128,6 +2135,25 @@ function deckHasVideoCards() {
   return rows.some(r => r.time != null);
 }
 
+function isVideoLesson() {
+  return !isVirtualLesson() && (!!document.getElementById("mediaUrl").value.trim() || deckHasVideoCards());
+}
+
+let ieltsAnswered = 0;
+
+let ieltsClock = null;
+
+function ieltsClockText() {
+  if (!ieltsClock) return "0:00";
+  const sec = Math.floor(((ieltsClock.stopped || Date.now()) - ieltsClock.start) / 1e3);
+  return Math.floor(sec / 60) + ":" + String(sec % 60).padStart(2, "0");
+}
+
+setInterval(() => {
+  const el = document.getElementById("ieltsTimer");
+  if (el) el.textContent = ieltsClockText();
+}, 1e3);
+
 function hasAnswer(r) {
   return !!(r && r.a && r.a.trim());
 }
@@ -2674,6 +2700,10 @@ function renderStudy() {
     setReviewMode("full");
     return;
   }
+  if (groupState && (groupViewStyle === "ielts" ? isVideoLesson() : groupViewStyle === "table" && !isVideoLesson())) {
+    setReviewMode(isVideoLesson() ? "table" : "ielts");
+    return;
+  }
   if (groupState && groupViewStyle === "table" && isSessionFinished()) {
     commitActiveEdit();
     table.style.display = "none";
@@ -2744,14 +2774,15 @@ function cardWords(row) {
 }
 
 function singleCardFieldsHtml(row) {
-  const ielts = groupViewStyle === "ielts" && !row.aHidden;
-  const words = ielts ? cardWords(row) : [];
-  const answerHtml = words.reduce((html, i) => highlightTermInNotesHtml(html, i.term), aCellContent(row));
+  const exam = groupViewStyle === "ielts";
+  const words = exam && !row.aHidden ? cardWords(row) : [];
+  const answerHtml = exam && row.aHidden ? '<span class="ielts-prompt">Answer out loud, then show the model answer</span>' : words.reduce((html, i) => highlightTermInNotesHtml(html, i.term), aCellContent(row));
+  const head = exam ? `<div class="ielts-head"><span>IELTS Speaking</span><span>Question ${ieltsAnswered + 1} of ${ieltsAnswered + singleCardQueue().length}</span><span id="ieltsTimer" class="ielts-timer${row.aHidden ? "" : " stopped"}">${ieltsClockText()}</span></div>` : "";
   const qField = `<div class="single-card-field single-card-q"><div class="cell ${row.qHidden ? "hidden" : "shown"}" data-field="q">${qCellContent(row)}</div></div>`;
   const aField = `<div class="single-card-field single-card-a"><div class="cell ${row.aHidden ? "hidden" : "shown"}" data-field="a">${answerHtml}</div></div>`;
   const wordsField = words.length ? '<div class="single-card-field single-card-words">' + words.map(i => `<div class="ielts-word"><b>${escapeHtml(i.term)}</b>${i.meaning ? " — " + escapeHtml(i.meaning) : ""}</div>`).join("") + "</div>" : "";
-  if (!hasAnswer(row)) return qField;
-  return qField + aField + wordsField;
+  if (!hasAnswer(row)) return head + qField;
+  return head + qField + aField + wordsField;
 }
 
 function renderSingleCard(visibleRows) {
@@ -2767,6 +2798,19 @@ function renderSingleCard(visibleRows) {
     row.aHidden = entryHidden().a;
   }
   const autoPlay = firstShow && groupViewStyle === "listen";
+  if (groupViewStyle === "ielts") {
+    if (firstShow || !ieltsClock || ieltsClock.id !== row.id) ieltsClock = {
+      id: row.id,
+      start: Date.now(),
+      stopped: null
+    };
+    if (!row.aHidden && !ieltsClock.stopped) ieltsClock.stopped = Date.now();
+    if (row.aHidden && ieltsClock.stopped) ieltsClock = {
+      id: row.id,
+      start: Date.now(),
+      stopped: null
+    };
+  }
   if (activeEdit && activeEdit.row.id === row.id) {
     if (autoPlay) playListenCardAudio(row);
     return;
@@ -4949,9 +4993,10 @@ function syncModeButtonHighlights() {
   const ieltsBtn = document.getElementById("ieltsModeBtn");
   if (!fullBtn || !btn || !listenBtn || !ieltsBtn) return;
   const caughtUp = lessonCaughtUp();
-  btn.style.display = deckHasAnswers() && !caughtUp ? "" : "none";
+  const video = isVideoLesson();
+  btn.style.display = deckHasAnswers() && video && !caughtUp ? "" : "none";
   listenBtn.style.display = deckHasVideoCards() && !isVirtualLesson() && !caughtUp ? "" : "none";
-  ieltsBtn.style.display = btn.style.display;
+  ieltsBtn.style.display = deckHasAnswers() && !video && !caughtUp ? "" : "none";
   fullBtn.classList.toggle("active", !groupState);
   btn.classList.toggle("active", !!groupState && groupViewStyle === "table");
   listenBtn.classList.toggle("active", !!groupState && groupViewStyle === "listen");
@@ -5034,6 +5079,7 @@ function setReviewMode(style) {
     savedGroupState = null;
   }
   groupViewStyle = style;
+  if (style === "ielts") ieltsAnswered = 0;
   rebuildGroupsFromQueue();
   applyGroupEntryHiddenState(groupState.groups[groupState.index]);
   updateGroupUI();
@@ -5277,6 +5323,7 @@ function gradeCard(row, isAgain) {
   adjustSequenceIndexForRemoval(row.id);
   pushUndo(gradeLabel(isAgain) + " — " + cardSummary(row));
   applyGrade(row, isAgain, mode, Date.now());
+  if (groupViewStyle === "ielts") ieltsAnswered++;
   showToast(gradeLabel(isAgain) + " — " + cardSummary(row));
   scheduleAutoSave();
   if (hoveredRowId === row.id) hoveredRowId = null;
@@ -6692,10 +6739,10 @@ const IMPORT_KIND_LABELS = {
   new: [ "new", "🆕", "New card" ],
   update: [ "update", "✏️", "Fill in" ],
   merged: [ "update", "🔗", "Merged" ],
-  duplicate: [ "dup", "⏭", "Duplicate" ],
+  duplicate: [ "dup", "❐", "Duplicate" ],
   empty: [ "skip", "⚠️", "Not read — the question is empty" ],
   word: [ "new", "🔤", "New word — goes to Vocabulary" ],
-  wordDup: [ "dup", "⏭", "Word already in this lesson" ],
+  wordDup: [ "dup", "❐", "Word already in this lesson" ],
   wordLong: [ "skip", "⚠️", `Not read — the word is over ${VOCAB_TERM_MAX} characters` ],
   heading: [ "dup", "➖", "Heading — left out" ],
   invalid: [ "skip", "⚠️", "Not read" ]
@@ -6742,7 +6789,7 @@ function renderImportPreview() {
   if (counts.word) summary.push(`<span class="ip-status new">🔤 ${counts.word} word${counts.word === 1 ? "" : "s"}</span>`);
   if (counts.update) summary.push(`<span class="ip-status update">✏️ ${counts.update} fill in</span>`);
   if (counts.merged) summary.push(`<span class="ip-status update">🔗 ${counts.merged} merged</span>`);
-  if (counts.duplicate || counts.wordDup) summary.push(`<span class="ip-status dup">⏭ ${(counts.duplicate || 0) + (counts.wordDup || 0)} duplicate</span>`);
+  if (counts.duplicate || counts.wordDup) summary.push(`<span class="ip-status dup">❐ ${(counts.duplicate || 0) + (counts.wordDup || 0)} duplicate</span>`);
   if (counts.empty || counts.invalid || counts.wordLong) summary.push(`<span class="ip-status skip">⚠️ ${(counts.empty || 0) + (counts.invalid || 0) + (counts.wordLong || 0)} skipped</span>`);
   if (counts.heading) summary.push(`<span class="ip-status dup">➖ ${counts.heading} heading${counts.heading === 1 ? "" : "s"}</span>`);
   summary.push(`<span>Delimiter: <b>${delimName}</b>${analysis.delim !== currentDelim() ? " (auto-detected)" : ""}</span>`);
@@ -9771,7 +9818,7 @@ function renderVocabImportPreview() {
   const summary = [ `<span><b>${shown}</b> ${vocabDelimFor(raw).delim === "none" ? "item" : "line"}${shown === 1 ? "" : "s"}</span>` ];
   if (count("new")) summary.push(`<span class="ip-status new">🆕 ${count("new")}</span>`);
   if (count("card")) summary.push(`<span class="ip-status new">🃏 ${count("card")} card${count("card") === 1 ? "" : "s"}</span>`);
-  if (count("duplicate") || count("cardDup")) summary.push(`<span class="ip-status dup">⏭ ${count("duplicate") + count("cardDup")} duplicate</span>`);
+  if (count("duplicate") || count("cardDup")) summary.push(`<span class="ip-status dup">❐ ${count("duplicate") + count("cardDup")} duplicate</span>`);
   if (count("invalid")) summary.push(`<span class="ip-status skip">⚠️ ${count("invalid")} skipped</span>`);
   if (count("long")) summary.push(`<span class="ip-status skip">⚠️ ${count("long")} too long</span>`);
   if (count("heading")) summary.push(`<span class="ip-status dup">➖ ${count("heading")} heading${count("heading") === 1 ? "" : "s"}</span>`);
@@ -9781,11 +9828,11 @@ function renderVocabImportPreview() {
   if (titleLine) summary.push(`<span>Title: <b>${escapeHtml(titleLine.text.trim())}</b></span>`);
   const labels = {
     card: [ "new", "🃏", "New card — goes to the lesson" ],
-    cardDup: [ "dup", "⏭", "Card already in this lesson" ],
+    cardDup: [ "dup", "❐", "Card already in this lesson" ],
     heading: [ "dup", "➖", "Heading — left out" ],
     title: [ "dup", "🏷", "Lesson title" ],
     new: [ "new", "🆕", "New word" ],
-    duplicate: [ "dup", "⏭", "Already in this lesson" ],
+    duplicate: [ "dup", "❐", "Already in this lesson" ],
     invalid: [ "skip", "⚠️", "Not read — no " + delimLabel(pick.delim) + " on this line" ],
     long: [ "skip", "⚠️", `Not read — the question is over ${VOCAB_TERM_MAX} characters` ]
   };
