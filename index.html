@@ -612,8 +612,10 @@ window.onYouTubeIframeAPIReady = function(){
   #cardTable.notebook tbody{display:block;}
   #cardTable.notebook tbody tr{display:grid;grid-template-columns:64px minmax(0, 1fr);padding:14px 36px 14px 0;background:none;}
   #cardTable.notebook tbody td{display:block;border:0;padding:0;overflow:visible;}
-  #cardTable.notebook td.edit-col{grid-column:1;grid-row:1;padding-top:3px;text-align:center;}
-  #cardTable.notebook td.del-col{grid-column:1;grid-row:2;text-align:center;}
+  #cardTable.notebook td.edit-col{grid-column:1;grid-row:1 / span 2;align-self:start;padding-top:3px;text-align:center;}
+  .to-vocab-btn{display:block;width:26px;height:26px;min-height:0;margin:8px auto 0;padding:0;border:0;border-radius:7px;font-size:13px;line-height:26px;color:#fff;background:#1e9466;opacity:.85;}
+  @media (hover:hover){.to-vocab-btn:hover{opacity:1;}}
+  #cardTable.notebook td.del-col{grid-column:1;grid-row:2;align-self:end;text-align:center;}
   #cardTable.notebook td.q-col, #cardTable.notebook td.a-col{grid-column:2;grid-row:1;padding-left:22px;}
   #cardTable.notebook td.a-col{grid-row:2;}
   #cardTable.notebook .cell{display:block;max-width:none;margin:0;padding:0 4px;border-radius:2px;color:var(--paper-ink);}
@@ -2273,6 +2275,28 @@ function deleteRows(ids, parts, next) {
   scheduleAutoSave();
 }
 
+function moveCardToVocab(row) {
+  const term = (row.q || "").replace(/\s+/g, " ").trim();
+  const meaning = (row.a || "").replace(/\s+/g, " ").trim();
+  if (!vocabEntryOk(term, meaning)) return;
+  const others = rows.filter(r => r !== row).concat(vocabExtras ? [ vocabExtras ] : []);
+  const carry = vocabEntriesOf(row).filter(e => !existingVocab(e.term, others)).map(e => [ e.term, e.meaning ]);
+  if (!carry.some(([t]) => normalizeVocabText(t) === normalizeVocabText(term)) && !existingVocab(term, others)) carry.unshift([ term, meaning ]);
+  pushUndo("Moved to Vocabulary — " + cardSummary(row));
+  if (carry.length) appendWordItems(ensureVocabExtras(), carry);
+  const part = document.querySelector(`#tbody tr[data-id="${row.id}"]`);
+  if (activeEdit && activeEdit.row.id === row.id) discardActiveEdit();
+  rows = rows.filter(r => r !== row);
+  if (hoveredRowId === row.id) hoveredRowId = null;
+  if (selectedRowId === row.id) selectedRowId = null;
+  pruneIdFromGroupState(groupState, row.id);
+  pruneIdFromGroupState(savedGroupState, row.id);
+  swipe(part ? [ part ] : [], 1, render, false, "Delete");
+  showToast("Moved to Vocabulary — " + term);
+  scheduleAutoSave();
+  renderLessonList();
+}
+
 function deleteRow(id) {
   const full = !!groupState && (groupViewStyle !== "table" || (groupState.groups[groupState.index] || []).length <= 1);
   if (groupState && !full) holdPage();
@@ -2660,7 +2684,8 @@ function buildRowTr(r) {
   if (selectedRowId === r.id) tr.classList.add("row-selected");
   const q = `<div class="cell ${r.qHidden ? "hidden" : "shown"}" data-field="q">${qCellContent(r)}</div>`;
   const cells = document.getElementById("cardTable").classList.contains("no-answer-col") ? `<td class="q-col" colspan="2">${q}</td>` : `<td class="q-col">${q}</td><td class="a-col"><div class="cell ${r.aHidden ? "hidden" : "shown"}" data-field="a">${aCellContent(r)}</div></td>`;
-  const lead = groupState && !isTouch() ? `<td class="del-col" colspan="2"></td>` : `<td class="edit-col"><button class="edit-btn">&#9998;</button></td><td class="del-col"><button class="del-btn del-forever">&#10005;</button></td>`;
+  const toVocab = !groupState && !isVideoLesson() && !isVirtualLesson() ? '<button class="to-vocab-btn" aria-label="Move to Vocabulary" title="Move to Vocabulary">字</button>' : "";
+  const lead = groupState && !isTouch() ? `<td class="del-col" colspan="2"></td>` : `<td class="edit-col"><button class="edit-btn">&#9998;</button>${toVocab}</td><td class="del-col"><button class="del-btn del-forever">&#10005;</button></td>`;
   tr.innerHTML = lead + cells;
   dictPreloadObserver.observe(tr);
   return tr;
@@ -4105,6 +4130,11 @@ function handleCardAreaClick(e) {
   const row = rows.find(r => r.id === id);
   if (!row) return;
   const isSingleCard = container.id === "singleCardBody";
+  if (e.target.closest(".to-vocab-btn")) {
+    e.stopPropagation();
+    moveCardToVocab(row);
+    return;
+  }
   if (e.target.classList.contains("loop-time")) {
     e.stopPropagation();
     if (ytHasError) return;
@@ -6394,6 +6424,47 @@ function appendWordItems(card, pairs) {
   card.notes = plainTextOf(box.innerHTML, "\n");
 }
 
+function sentenceWordsFrom(cards) {
+  const pairs = [], toTranslate = [], seen = new Set;
+  const fits = t => t && t.length <= VOCAB_TERM_MAX && !/[:：]/.test(t) && !seen.has(normalizeVocabText(t)) && !existingVocab(t);
+  cards.forEach(c => {
+    const q = (c.q || "").replace(/\s+/g, " ").trim(), a = (c.a || "").replace(/\s+/g, " ").trim();
+    if (a && !/[.!?。！？]\s+\S/.test(a)) {
+      if (fits(q)) {
+        seen.add(normalizeVocabText(q));
+        pairs.push([ q, a ]);
+      }
+      return;
+    }
+    splitIntoSentences(a || q).forEach(sen => {
+      if (!fits(sen.text)) return;
+      seen.add(normalizeVocabText(sen.text));
+      toTranslate.push(sen.text);
+    });
+  });
+  return {
+    pairs: pairs,
+    toTranslate: toTranslate
+  };
+}
+
+async function addSentenceWords(cards, onStatus) {
+  const lessonId = currentLessonId;
+  const {pairs: pairs, toTranslate: toTranslate} = sentenceWordsFrom(cards);
+  if (!pairs.length && !toTranslate.length) return 0;
+  if (toTranslate.length && onStatus) onStatus(`Translating ${toTranslate.length} sentence(s) for Vocabulary…`);
+  const vi = toTranslate.filter(t => detectLang(t) === "vi-VN"), other = toTranslate.filter(t => detectLang(t) !== "vi-VN");
+  const [viOut, otherOut] = await Promise.all([ vi.length ? translateBatch(vi, "en") : [], other.length ? translateBatch(other, "vi") : [] ]);
+  if (currentLessonId !== lessonId) return 0;
+  const found = pairs.concat(vi.map((t, i) => [ t, viOut[i] ]), other.map((t, i) => [ t, otherOut[i] ])).filter(([t, m]) => m && m.trim() && !existingVocab(t));
+  if (!found.length) return 0;
+  pushUndo("Added " + found.length + " word" + (found.length === 1 ? "" : "s") + " from sentences");
+  addWordsToLesson(found, cards);
+  render();
+  renderLessonList();
+  return found.length;
+}
+
 function addWordsToLesson(pairs, preferRows) {
   const targets = new Map;
   const cards = (preferRows || []).concat(rows);
@@ -6803,6 +6874,10 @@ document.getElementById("importBtn").onclick = () => {
       document.getElementById("importText").value = "";
       renderLessonList();
     }
+  } else if (plan.newRows.length && !isVideoLesson()) {
+    addSentenceWords(plan.newRows, setImportStatus).then(n => {
+      if (n) setImportStatus(msg + ` Added ${n} word(s) to Vocabulary from the sentences.`);
+    });
   }
   if (analysis.title && !plan.newRows.length && !plan.fills.size) scheduleAutoSave();
   render();
@@ -6868,6 +6943,11 @@ function renderImportPreview() {
   if (counts.duplicate || counts.wordDup) summary.push(`<span class="ip-status dup">❐ ${(counts.duplicate || 0) + (counts.wordDup || 0)} duplicate</span>`);
   if (counts.empty || counts.invalid || counts.wordLong) summary.push(`<span class="ip-status skip">⚠️ ${(counts.empty || 0) + (counts.invalid || 0) + (counts.wordLong || 0)} skipped</span>`);
   if (counts.heading) summary.push(`<span class="ip-status dup">➖ ${counts.heading} heading${counts.heading === 1 ? "" : "s"}</span>`);
+  if (!counts.word && !counts.wordDup && !isVideoLesson()) {
+    const fromSentences = sentenceWordsFrom(analysis.entries.filter((e, i) => plan.outcomes[i] && plan.outcomes[i].kind === "new"));
+    const n = fromSentences.pairs.length + fromSentences.toTranslate.length;
+    if (n) summary.push(`<span class="ip-status new" title="No word list found: the sentences themselves become Vocabulary words${fromSentences.toTranslate.length ? ", translated" : ""}">🔤 ${n} from sentences</span>`);
+  }
   summary.push(`<span>Delimiter: <b>${delimName}</b>${analysis.delim !== currentDelim() ? " (auto-detected)" : ""}</span>`);
   if (analysis.title) summary.push(`<span>Title: <b>${escapeHtml(analysis.title)}</b></span>`);
   if (analysis.mediaUrl) summary.push(`<span>Video link: <b>${escapeHtml(truncate(analysis.mediaUrl, 48))}</b></span>`);
@@ -9898,6 +9978,11 @@ function renderVocabImportPreview() {
   if (count("invalid")) summary.push(`<span class="ip-status skip">⚠️ ${count("invalid")} skipped</span>`);
   if (count("long")) summary.push(`<span class="ip-status skip">⚠️ ${count("long")} too long</span>`);
   if (count("heading")) summary.push(`<span class="ip-status dup">➖ ${count("heading")} heading${count("heading") === 1 ? "" : "s"}</span>`);
+  if (!count("new") && !count("duplicate") && count("card") && !isVideoLesson()) {
+    const fromSentences = sentenceWordsFrom(lines.filter(l => l.kind === "card").map(l => l.entry));
+    const n = fromSentences.pairs.length + fromSentences.toTranslate.length;
+    if (n) summary.push(`<span class="ip-status new" title="No word list found: the sentences themselves become words${fromSentences.toTranslate.length ? ", translated" : ""}">🔤 ${n} from sentences</span>`);
+  }
   const pick = vocabDelimFor(raw);
   summary.push(`<span>Delimiter: <b>${delimLabel(pick.delim)}</b>${pick.auto ? " (auto-detected)" : ""}</span>`);
   const titleLine = lines.find(l => l.kind === "title");
@@ -9947,6 +10032,13 @@ function importVocabText(text) {
     addWordsToLesson(pairs, cardPlan.newRows);
     render();
     renderLessonList();
+  }
+  if (!pairs.length && cardPlan.newRows.length && !isVideoLesson()) {
+    const status = document.getElementById("vocabImportStatus");
+    addSentenceWords(cardPlan.newRows, t => status.textContent = t).then(n => {
+      status.textContent = n ? `${n} word(s) added from the sentences · ${cardPlan.newRows.length} card(s) added` : status.textContent;
+      if (currentView === "vocab") renderVocab();
+    });
   }
   return {
     added: pairs.length,
