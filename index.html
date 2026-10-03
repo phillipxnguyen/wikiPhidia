@@ -732,41 +732,40 @@ window.onYouTubeIframeAPIReady = function(){
   .study-head .media-container, .study-head .segmented, .study-head .toolbar-right > *{pointer-events:auto;}
   .media-container{
     position:relative;
-    width:100%;
-    max-width:340px;
-    aspect-ratio:16 / 9;
-    margin:0 auto 16px auto;
-    border-radius:var(--radius);
-    overflow:hidden;
-    background:#000;
     display:none;
-    box-shadow:var(--shadow-md);
+    align-items:center;
+    gap:16px;
+    width:100%;
+    box-sizing:border-box;
+    margin:0 0 16px;
+    padding:10px 16px 10px 10px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow-sm);
   }
-  .media-container.warming{display:block;aspect-ratio:auto;height:1px;min-height:0;margin:0 auto;opacity:0;pointer-events:none;}
+  .media-video{position:relative;flex:none;width:160px;height:90px;overflow:hidden;border-radius:8px;background:#000;}
+  .media-video iframe{position:absolute;top:0;left:0;width:356px;height:200px;border:0;transform:scale(.4495);transform-origin:0 0;}
+  .media-grow{position:absolute;inset:0;z-index:4;width:100%;height:100%;min-height:0;padding:0;border:0;border-radius:0;background:transparent;cursor:zoom-in;}
+  .media-shrink{display:none;position:absolute;top:8px;right:8px;z-index:4;align-items:center;justify-content:center;width:34px;height:34px;min-height:0;padding:0;border:0;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;}
+  .media-container.big{flex-direction:column;align-items:stretch;padding:0;background:none;border:0;box-shadow:none;}
+  .media-container.big .media-video{width:100%;max-width:720px;height:auto;aspect-ratio:16 / 9;margin:0 auto;border-radius:var(--radius);box-shadow:var(--shadow-md);}
+  .media-container.big .media-video iframe{width:100%;height:100%;transform:none;}
+  .media-container.big .media-grow, .media-container.big .media-bar-main{display:none;}
+  .media-container.big .media-shrink{display:flex;}
+  .media-container.warming{display:block;height:1px;min-height:0;margin:0 auto;padding:0;border:0;opacity:0;pointer-events:none;}
   #mediaLoading{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:#000;color:#e8edf3;font-size:13px;z-index:2;}
   .media-container.loading #mediaLoading{display:flex;}
-  .media-container iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:0;}
   #mediaSubtitleMask{display:none;position:absolute;inset:0;background:radial-gradient(circle, transparent 20%, black 20%);pointer-events:none;z-index:3;}
   .media-container.listen-mask #mediaSubtitleMask{display:block;}
-  .media-bar{display:none;}
-  .media-container.as-bar:not(.warming){max-width:720px;height:76px;aspect-ratio:auto;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-sm);}
-  .media-container.as-bar iframe{position:fixed;top:auto;left:auto;right:0;bottom:0;width:356px;height:200px;opacity:.01;pointer-events:none;z-index:-1;}
-  .media-container.as-bar #mediaLoading, .media-container.as-bar #mediaSubtitleMask{display:none !important;}
-  .media-container.as-bar:not(.warming) .media-bar{display:flex;align-items:center;gap:14px;height:100%;padding:8px 12px 8px 8px;box-sizing:border-box;}
-  #mediaBarThumb{flex:none;width:96px;height:54px;object-fit:cover;border-radius:6px;background:var(--surface-2);}
   .media-bar-main{flex:1;min-width:0;}
   #mediaBarTitle{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:14px;font-weight:600;color:var(--text);}
   .media-bar-progress{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:11px;font-variant-numeric:tabular-nums;color:var(--text-2);}
   #mbSeek{flex:1;min-width:0;height:4px;margin:0;accent-color:var(--accent);cursor:pointer;}
-  .media-bar-controls{flex:none;display:flex;align-items:center;gap:4px;}
-  .media-bar-controls button{display:flex;align-items:center;justify-content:center;width:36px;height:36px;min-height:0;padding:0;border-radius:50%;color:var(--text);}
-  #mbPlay{width:42px;height:42px;background:var(--accent);color:var(--on-accent);border-color:transparent;}
   @media (max-width:600px){
-    .media-container.as-bar:not(.warming){height:auto;}
-    .media-container.as-bar:not(.warming) .media-bar{flex-wrap:wrap;gap:8px 12px;}
-    #mediaBarThumb{width:64px;height:36px;}
-    .media-bar-main{flex-basis:calc(100% - 80px);}
-    .media-bar-controls{width:100%;justify-content:center;}
+    .media-container{gap:12px;padding:8px 12px 8px 8px;}
+    .media-video{width:120px;height:68px;}
+    .media-video iframe{transform:scale(.3371);}
   }
   .loop-time{
     display:inline-block;margin-right:8px;
@@ -1213,10 +1212,14 @@ window.onYouTubeIframeAPIReady = function(){
 
   <div class="study-head">
   <div id="mediaContainer" class="media-container">
-    <div id="mediaIframe"></div>
-    <div id="mediaLoading">Loading video…</div>
-    <div id="mediaSubtitleMask"></div>
-    <div id="mediaBar" class="media-bar"><img id="mediaBarThumb" alt="" onerror="this.hidden=true"><div class="media-bar-main"><div id="mediaBarTitle"></div><div class="media-bar-progress"><span id="mbCur">0:00</span><input type="range" id="mbSeek" min="0" max="1000" value="0" aria-label="Seek"><span id="mbDur">0:00</span></div></div><div class="media-bar-controls"><button id="mbPrev" class="ghost" aria-label="Previous sentence" title="Previous sentence"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 5v14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M19 5.5v13L9 12z" fill="currentColor"/></svg></button><button id="mbPlay" aria-label="Play"></button><button id="mbNext" class="ghost" aria-label="Next sentence" title="Next sentence"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M18 5v14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M5 5.5v13L15 12z" fill="currentColor"/></svg></button></div></div>
+    <div id="mediaVideo" class="media-video">
+      <div id="mediaIframe"></div>
+      <div id="mediaLoading">Loading video…</div>
+      <div id="mediaSubtitleMask"></div>
+      <button id="mediaGrow" class="media-grow" aria-label="Show the video large"></button>
+      <button id="mediaShrink" class="media-shrink" aria-label="Back to the bar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 14h6v6"/><path d="M20 10h-6V4"/><path d="M14 10l7-7"/><path d="M3 21l7-7"/></svg></button>
+    </div>
+    <div class="media-bar-main"><div id="mediaBarTitle"></div><div class="media-bar-progress"><span id="mbCur">0:00</span><input type="range" id="mbSeek" min="0" max="1000" value="0" aria-label="Seek"><span id="mbDur">0:00</span></div></div>
   </div>
 
   <div class="toolbar">
@@ -1224,10 +1227,9 @@ window.onYouTubeIframeAPIReady = function(){
       <button id="fullModeBtn" aria-label="Full">☰</button>
       <button id="groupBtn" aria-label="Group"><span id="groupBtnFlag">🌐</span></button>
       <button id="listenModeBtn" style="display:none;" aria-label="Listening">🎧</button>
-      <button id="ieltsModeBtn" style="display:none;" aria-label="Speaking" title="Speaking — one question at a time: answer it out loud, then show the answer">🎤</button>
+      <button id="ieltsModeBtn" style="display:none;" aria-label="Speaking">🎤</button>
     </div>
     <div class="toolbar-right">
-      <button id="btnMediaView" hidden></button>
       <button id="btnPlaySequence" aria-label="Play"></button>
       <select id="playbackSpeed" style="display:none;">
         <option value="1">1x</option>
@@ -1771,38 +1773,15 @@ function setMediaState(state) {
     c.style.display = "";
     c.classList.add("warming");
   } else if (state === "loading") {
-    c.style.display = "block";
+    c.style.display = "flex";
     c.classList.add("loading");
   } else {
-    c.style.display = "block";
+    c.style.display = "flex";
   }
-  syncMediaView();
+  syncMediaTitle();
 }
 
-const MEDIA_BAR_KEY = "flashcards.mediaBar";
-
-let mediaAsBar = false;
-
-try {
-  mediaAsBar = localStorage.getItem(MEDIA_BAR_KEY) === "1";
-} catch (e) {}
-
-function syncMediaView() {
-  const c = mediaBox();
-  const btn = document.getElementById("btnMediaView");
-  c.classList.toggle("as-bar", mediaAsBar);
-  btn.hidden = c.style.display !== "block";
-  btn.textContent = mediaAsBar ? "🎬" : "🎵";
-  btn.setAttribute("aria-label", mediaAsBar ? "Show the video" : "Listen only (show as a bar)");
-  btn.title = btn.getAttribute("aria-label");
-  if (!mediaAsBar) return;
-  const id = extractYouTubeId(document.getElementById("mediaUrl").value.trim());
-  const thumb = document.getElementById("mediaBarThumb");
-  const src = id ? "https://i.ytimg.com/vi/" + id + "/mqdefault.jpg" : "";
-  if (thumb.getAttribute("src") !== src) {
-    thumb.hidden = !src;
-    if (src) thumb.src = src; else thumb.removeAttribute("src");
-  }
+function syncMediaTitle() {
   let title = "";
   try {
     title = ytPlayer && ytReady && typeof ytPlayer.getVideoData === "function" && ytPlayer.getVideoData().title || "";
@@ -1810,35 +1789,14 @@ function syncMediaView() {
   document.getElementById("mediaBarTitle").textContent = title || document.getElementById("lessonName").value.trim() || "Video";
 }
 
-const MB_PLAY = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M8 5.5v13L19 12z" fill="currentColor"/></svg>';
-
-const MB_PAUSE = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect x="6.5" y="5" width="4" height="14" rx="1" fill="currentColor"/><rect x="13.5" y="5" width="4" height="14" rx="1" fill="currentColor"/></svg>';
-
 let mbSeeking = false;
 
-function mediaBarReady() {
-  return mediaAsBar && !!ytPlayer && ytReady && !ytHasError && typeof ytPlayer.getCurrentTime === "function";
-}
-
-function freeVideoPlayback() {
-  if (isSequencePlaying) stopSequenceLoop(); else if (loopingRowId !== null) stopLoop();
+function mediaPlayerReady() {
+  return !!ytPlayer && ytReady && !ytHasError && typeof ytPlayer.getCurrentTime === "function";
 }
 
 function updateMediaBar() {
-  const play = document.getElementById("mbPlay");
-  if (!mediaBarReady()) {
-    if (play.dataset.state !== "off") {
-      play.dataset.state = "off";
-      play.innerHTML = MB_PLAY;
-    }
-    return;
-  }
-  const playing = ytPlayer.getPlayerState() === YT.PlayerState.PLAYING;
-  if (play.dataset.state !== String(playing)) {
-    play.dataset.state = String(playing);
-    play.innerHTML = playing ? MB_PAUSE : MB_PLAY;
-    play.setAttribute("aria-label", playing ? "Pause" : "Play");
-  }
+  if (!mediaPlayerReady() || mediaBox().style.display !== "flex") return;
   const cur = ytPlayer.getCurrentTime() || 0, dur = ytPlayer.getDuration() || 0;
   document.getElementById("mbCur").textContent = formatTime(cur);
   document.getElementById("mbDur").textContent = formatTime(dur);
@@ -1847,62 +1805,60 @@ function updateMediaBar() {
 
 setInterval(updateMediaBar, 500);
 
-document.getElementById("mbPlay").onclick = e => {
-  e.currentTarget.blur();
-  if (!mediaBarReady()) return;
-  if (ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) {
-    if (isSequencePlaying || loopingRowId !== null) freeVideoPlayback(); else ytPlayer.pauseVideo();
-  } else {
-    freeVideoPlayback();
-    ytPlayer.playVideo();
-  }
-  setTimeout(updateMediaBar, 150);
-};
-
-function mediaBarJump(dir) {
-  if (!mediaBarReady()) return;
-  freeVideoPlayback();
-  const t = ytPlayer.getCurrentTime() || 0;
-  const times = timeSortedRows().map(r => r.time);
-  let to = dir < 0 ? times.filter(x => x < t - 1.5).pop() : times.find(x => x > t + .3);
-  if (to == null) to = Math.max(0, t + dir * 10);
-  ytPlayer.seekTo(to, true);
-  ytPlayer.playVideo();
-  setTimeout(updateMediaBar, 150);
-}
-
-document.getElementById("mbPrev").onclick = e => {
-  e.currentTarget.blur();
-  mediaBarJump(-1);
-};
-
-document.getElementById("mbNext").onclick = e => {
-  e.currentTarget.blur();
-  mediaBarJump(1);
-};
-
 const mbSeek = document.getElementById("mbSeek");
 
 mbSeek.addEventListener("input", () => {
   mbSeeking = true;
-  if (mediaBarReady()) document.getElementById("mbCur").textContent = formatTime(mbSeek.value / 1e3 * (ytPlayer.getDuration() || 0));
+  if (mediaPlayerReady()) document.getElementById("mbCur").textContent = formatTime(mbSeek.value / 1e3 * (ytPlayer.getDuration() || 0));
 });
 
 mbSeek.addEventListener("change", () => {
   mbSeeking = false;
-  if (!mediaBarReady()) return;
-  freeVideoPlayback();
-  ytPlayer.seekTo(mbSeek.value / 1e3 * (ytPlayer.getDuration() || 0), true);
   mbSeek.blur();
+  if (!mediaPlayerReady()) return;
+  if (isSequencePlaying) stopSequenceLoop(); else if (loopingRowId !== null) stopLoop();
+  ytPlayer.seekTo(mbSeek.value / 1e3 * (ytPlayer.getDuration() || 0), true);
 });
 
-document.getElementById("btnMediaView").onclick = e => {
-  mediaAsBar = !mediaAsBar;
-  try {
-    localStorage.setItem(MEDIA_BAR_KEY, mediaAsBar ? "1" : "0");
-  } catch (err) {}
-  syncMediaView();
+function setMediaBig(big) {
+  const c = mediaBox();
+  if (c.classList.contains("big") === big) return;
+  const video = document.getElementById("mediaVideo");
+  const first = video.getBoundingClientRect();
+  c.classList.toggle("big", big);
+  const last = video.getBoundingClientRect();
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches || !first.width || !last.width) return;
+  const sx = first.width / last.width, sy = first.height / last.height;
+  const dx = first.left - last.left, dy = first.top - last.top;
+  const full = "polygon(0 0, 100% 0, 100% 100%, 0 100%)";
+  video.animate([ {
+    transformOrigin: "0 0",
+    transform: `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})`,
+    clipPath: full
+  }, {
+    offset: .45,
+    transformOrigin: "0 0",
+    transform: `translate(${dx * .45}px, ${dy * .3}px) scale(${sx + (1 - sx) * .5}, ${sy + (1 - sy) * .3})`,
+    clipPath: big ? "polygon(0 0, 100% 0, 80% 100%, 20% 100%)" : "polygon(20% 0, 80% 0, 100% 100%, 0 100%)"
+  }, {
+    transformOrigin: "0 0",
+    transform: "none",
+    clipPath: full
+  } ], {
+    duration: 560,
+    easing: "cubic-bezier(.22, .9, .25, 1)"
+  });
+}
+
+document.getElementById("mediaGrow").onclick = e => {
+  e.stopPropagation();
+  setMediaBig(true);
+};
+
+document.getElementById("mediaShrink").onclick = e => {
+  e.stopPropagation();
   e.currentTarget.blur();
+  setMediaBig(false);
 };
 
 function isListenMode() {
@@ -1916,7 +1872,7 @@ function isCardMode() {
 function onPlayerReady() {
   ytReady = true;
   ytHasError = false;
-  syncMediaView();
+  syncMediaTitle();
   if (ytWatchdog) {
     clearTimeout(ytWatchdog);
     ytWatchdog = null;
@@ -1968,7 +1924,7 @@ function buildPlayer() {
     if (ytReady || ytRetried) return;
     ytRetried = true;
     safeDestroyPlayer();
-    if (!document.getElementById("mediaIframe")) mediaBox().insertAdjacentHTML("afterbegin", '<div id="mediaIframe"></div>');
+    if (!document.getElementById("mediaIframe")) document.getElementById("mediaVideo").insertAdjacentHTML("afterbegin", '<div id="mediaIframe"></div>');
     buildPlayer();
   }, 8e3);
 }
@@ -7307,7 +7263,7 @@ function resetStudyState() {
   safeDestroyPlayer();
   mediaBox().querySelectorAll("iframe").forEach(f => f.remove());
   if (!document.getElementById("mediaIframe")) {
-    mediaBox().insertAdjacentHTML("afterbegin", '<div id="mediaIframe"></div>');
+    document.getElementById("mediaVideo").insertAdjacentHTML("afterbegin", '<div id="mediaIframe"></div>');
   }
   ytReady = false;
   ytHasVideo = false;
