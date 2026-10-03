@@ -304,14 +304,14 @@ window.onYouTubeIframeAPIReady = function(){
   #vocabFrontBtn.active{color:var(--accent);}
   .vocab-badges{margin:-8px 0 16px;}
   .vocab-toolbar:not([hidden]) + .vocab-badges{margin-top:0;}
-  .vocab-card{--front-h:230px;--card-h:var(--front-h);--drawer-h:0px;--tuck:calc(var(--card-h) / 2);position:relative;margin-bottom:16px;height:var(--card-h);transition:height .32s cubic-bezier(.4,0,.2,1);touch-action:pan-y;cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;}
+  .vocab-card{--front-h:230px;--card-h:var(--front-h);--drawer-h:0px;--tuck:calc(var(--card-h) / 2);position:relative;margin-bottom:16px;height:var(--card-h);transition:height .65s cubic-bezier(.45,0,.55,1);touch-action:pan-y;cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;}
   .vocab-card.open{height:calc(var(--card-h) - var(--tuck) + var(--drawer-h));transition-duration:.55s;transition-timing-function:cubic-bezier(.22,.9,.3,1);}
   .vocab-main{position:relative;z-index:2;height:var(--card-h);perspective:1400px;}
   .vocab-card-inner{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .6s cubic-bezier(.45,.05,.2,1);}
   .vocab-card.flipped .vocab-card-inner{transform:rotateX(180deg);}
-  .vocab-drawer-clip{position:absolute;z-index:1;left:24px;right:24px;top:calc(var(--card-h) - var(--tuck));height:var(--tuck);overflow:hidden;pointer-events:none;cursor:default;transition:height .32s cubic-bezier(.4,0,.2,1);}
+  .vocab-drawer-clip{position:absolute;z-index:1;left:24px;right:24px;top:calc(var(--card-h) - var(--tuck));height:var(--tuck);overflow:hidden;pointer-events:none;cursor:default;transition:height .65s cubic-bezier(.45,0,.55,1);}
   .vocab-card.open .vocab-drawer-clip{height:var(--drawer-h);pointer-events:auto;transition-duration:.55s;transition-timing-function:cubic-bezier(.22,.9,.3,1);}
-  .vocab-drawer{display:flex;flex-direction:column;align-items:center;gap:28px;padding:calc(var(--tuck) + 28px) 24px 28px;background:var(--surface);border:1px solid var(--border);border-top:0;border-radius:0 0 16px 16px;transform:translateY(-100%);transition:transform .32s cubic-bezier(.4,0,.2,1);will-change:transform;}
+  .vocab-drawer{display:flex;flex-direction:column;align-items:center;gap:28px;padding:calc(var(--tuck) + 28px) 24px 28px;background:var(--surface);border:1px solid var(--border);border-top:0;border-radius:0 0 16px 16px;transform:translateY(-100%);transition:transform .65s cubic-bezier(.45,0,.55,1);will-change:transform;}
   .vocab-card.open .vocab-drawer{transform:none;transition-duration:.55s;transition-timing-function:cubic-bezier(.22,.9,.3,1);}
   .vocab-drawer > .vocab-back-stroke:empty{display:none;}
   .vocab-card.no-anim, .vocab-card.no-anim *{transition:none !important;}
@@ -774,9 +774,7 @@ window.onYouTubeIframeAPIReady = function(){
     box-sizing:border-box;
     margin:0 0 16px;
     padding:6px 0;
-    background:color-mix(in srgb, var(--bg) 86%, transparent);
-    -webkit-backdrop-filter:blur(10px);
-    backdrop-filter:blur(10px);
+    background:none;
     border:0;
     border-radius:0;
     box-shadow:none;
@@ -9982,7 +9980,7 @@ function vocabDictUrl(item) {
 
 const VOCAB_FLIP_MS = 600;
 
-const VOCAB_DRAWER_CLOSE_MS = 320;
+const VOCAB_DRAWER_CLOSE_MS = 650;
 
 function sizeVocabCard(card) {
   if (!card) return;
@@ -10944,17 +10942,20 @@ function flipVocab() {
   const item = currentVocabItem();
   if (!item) return;
   vocabSession.flipped = !vocabSession.flipped;
-  pinVocabArea();
+  if (vocabSession.flipped) pinVocabArea();
   const card = document.getElementById("vocabCard");
   if (card) {
     card.classList.remove("no-anim");
-    card.classList.toggle("flipped", vocabSession.flipped);
     clearTimeout(card.drawerTimer);
+    clearTimeout(card.turnTimer);
     if (vocabSession.flipped) {
+      card.classList.add("flipped");
       showVocabBack(card, item);
       card.drawerTimer = setTimeout(() => card.classList.add("open"), VOCAB_FLIP_MS * .42);
     } else {
+      const opened = card.classList.contains("open");
       card.classList.remove("open");
+      card.turnTimer = setTimeout(() => card.classList.remove("flipped"), opened ? VOCAB_DRAWER_CLOSE_MS - VOCAB_FLIP_MS * .47 : 0);
       card.drawerTimer = setTimeout(() => {
         if (activeDictOverlay && card.contains(activeDictOverlay.placeholder)) hideDictOverlay();
       }, VOCAB_DRAWER_CLOSE_MS);
