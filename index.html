@@ -620,6 +620,32 @@ window.onYouTubeIframeAPIReady = function(){
   .empty-msg{padding:24px;text-align:center;color:var(--text-2);font-size:14px;}
   table.no-answer-col .a-col{display:none;}
   #cardTable.no-head thead{display:none;}
+  #cardTable.notebook{--line:30px;display:block;position:relative;overflow:visible;padding:18px 0 26px;background:var(--paper);color:var(--paper-ink);border:1px solid var(--paper-edge);border-radius:3px;box-shadow:0 1px 0 var(--paper-edge), 0 14px 30px var(--paper-shadow);font-family:Georgia, "Times New Roman", serif;}
+  #cardTable.notebook::before{content:"";position:absolute;top:0;bottom:0;left:64px;border-left:2px solid var(--paper-margin);pointer-events:none;}
+  #cardTable.notebook colgroup, #cardTable.notebook thead{display:none;}
+  #cardTable.notebook tbody{display:block;}
+  #cardTable.notebook tbody tr{display:grid;grid-template-columns:64px minmax(0, 1fr);padding:14px 36px 14px 0;background:none;}
+  #cardTable.notebook tbody td{display:block;border:0;padding:0;overflow:visible;}
+  #cardTable.notebook td.edit-col{grid-column:1;grid-row:1;padding-top:3px;text-align:center;}
+  #cardTable.notebook td.del-col{grid-column:1;grid-row:2;text-align:center;}
+  #cardTable.notebook td.q-col, #cardTable.notebook td.a-col{grid-column:2;grid-row:1;padding-left:22px;}
+  #cardTable.notebook td.a-col{grid-row:2;}
+  #cardTable.notebook .cell{display:block;max-width:none;margin:0;padding:0 4px;border-radius:2px;color:var(--paper-ink);}
+  #cardTable.notebook .cell[data-field="q"]{margin-bottom:6px;font-size:20px;font-weight:700;line-height:1.4;}
+  #cardTable.notebook .cell[data-field="a"]{font-size:17px;line-height:var(--line);background-image:linear-gradient(to bottom, transparent calc(var(--line) - 1px), var(--paper-rule) calc(var(--line) - 1px));background-size:100% var(--line);}
+  @media (hover:hover){#cardTable.notebook .cell.shown:hover{background-color:color-mix(in srgb, var(--paper-ink) 6%, transparent);}}
+  #cardTable.notebook tbody tr.row-selected, #cardTable.notebook tbody tr.row-playing{background:color-mix(in srgb, var(--paper-mark) 45%, transparent) !important;}
+  html.touch #cardTable.notebook tbody tr.row-selected > td:first-child{box-shadow:none;}
+  html.touch #cardTable.notebook tbody tr.row-selected .cell.shown[data-field="q"]{color:var(--paper-ink);}
+  #cardTable.notebook tbody tr.edit-row{display:block;padding:16px 36px 16px 86px;}
+  #cardTable.notebook tbody tr.edit-row td{display:block;font-family:system-ui, -apple-system, "Segoe UI", sans-serif;}
+  #cardTable.notebook .empty-msg{padding-left:86px;}
+  @media (max-width:600px){
+    #cardTable.notebook::before{left:40px;}
+    #cardTable.notebook tbody tr{grid-template-columns:40px minmax(0, 1fr);padding-right:14px;}
+    #cardTable.notebook td.q-col, #cardTable.notebook td.a-col{padding-left:14px;}
+    #cardTable.notebook tbody tr.edit-row{padding:12px 12px 12px 52px;}
+  }
   table.no-icon-col #groupCounterHeader,
   html:not(.touch) table.no-icon-col td.del-col{padding:0;}
 
@@ -639,6 +665,11 @@ window.onYouTubeIframeAPIReady = function(){
     white-space:pre-wrap;
   }
   .rich-editor:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);}
+  .edit-qa{display:flex;gap:10px;}
+  .edit-qa > div{flex:1;min-width:0;}
+  .edit-qa.stacked{flex-direction:column;gap:0;}
+  .edit-qa.stacked #editQ{font-size:17px;font-weight:600;}
+  .edit-qa.stacked #editA{min-height:150px !important;line-height:1.6;}
   .edit-row .rich-editor{margin-bottom:8px;display:block;}
   .rich-editor:empty::before{content:attr(data-placeholder);color:darkgray;}
   .dict-source mark.vocab-own, .rich-editor mark.vocab-own{background:color-mix(in srgb, var(--text) 22%, transparent);color:inherit;}
@@ -794,7 +825,7 @@ window.onYouTubeIframeAPIReady = function(){
   .ielts-paper .paper-lines, .ielts-paper .paper-prompt{font-size:18px;line-height:var(--line);background-image:linear-gradient(to bottom, transparent calc(var(--line) - 1px), var(--paper-rule) calc(var(--line) - 1px));background-size:100% var(--line);}
   .ielts-paper .paper-prompt{min-height:calc(var(--line) * 5);color:var(--paper-ink-2);font-style:italic;}
   .paper-lines mark{background:var(--paper-mark);color:inherit;padding:0 2px;border-radius:2px;}
-  .paper-glossary{margin-top:28px;padding-top:14px;border-top:1px dashed var(--paper-edge);font-size:16px;line-height:1.75;}
+  .paper-glossary{margin-top:36px;font-size:16px;line-height:1.75;}
   .paper-glossary ol{margin:0;padding-left:22px;}
   @media (max-width:600px){
     .ielts-paper{padding:22px 16px 26px 40px;}
@@ -1182,7 +1213,7 @@ window.onYouTubeIframeAPIReady = function(){
       <button id="fullModeBtn" aria-label="Full">☰</button>
       <button id="groupBtn" aria-label="Group"><span id="groupBtnFlag">🌐</span></button>
       <button id="listenModeBtn" style="display:none;" aria-label="Listening">🎧</button>
-      <button id="ieltsModeBtn" style="display:none;" aria-label="IELTS" title="IELTS — one question at a time: answer it yourself, then show the model answer">🎤</button>
+      <button id="ieltsModeBtn" style="display:none;" aria-label="Speaking" title="Speaking — one question at a time: answer it out loud, then show the answer">🎤</button>
     </div>
     <div class="toolbar-right">
       <button id="btnPlaySequence" aria-label="Play"></button>
@@ -2524,7 +2555,7 @@ function buildRowTr(r) {
   if (loopingRowId === r.id) tr.classList.add("row-playing");
   if (selectedRowId === r.id) tr.classList.add("row-selected");
   const q = `<div class="cell ${r.qHidden ? "hidden" : "shown"}" data-field="q">${qCellContent(r)}</div>`;
-  const cells = document.getElementById("cardTable").classList.contains("no-answer-col") ? `<td colspan="2">${q}</td>` : `<td>${q}</td><td class="a-col"><div class="cell ${r.aHidden ? "hidden" : "shown"}" data-field="a">${aCellContent(r)}</div></td>`;
+  const cells = document.getElementById("cardTable").classList.contains("no-answer-col") ? `<td class="q-col" colspan="2">${q}</td>` : `<td class="q-col">${q}</td><td class="a-col"><div class="cell ${r.aHidden ? "hidden" : "shown"}" data-field="a">${aCellContent(r)}</div></td>`;
   const lead = groupState && !isTouch() ? `<td class="del-col" colspan="2"></td>` : `<td class="edit-col"><button class="edit-btn">&#9998;</button></td><td class="del-col"><button class="del-btn del-forever">&#10005;</button></td>`;
   tr.innerHTML = lead + cells;
   dictPreloadObserver.observe(tr);
@@ -2823,9 +2854,9 @@ function ieltsPaperHtml(row) {
   const n = ieltsAnswered + 1;
   const topic = document.getElementById("lessonName").value.trim();
   const words = row.aHidden ? [] : cardWords(row);
-  const answer = row.aHidden ? '<div class="cell hidden paper-prompt" data-field="a">Answer out loud, then press Space or tap here to see the model answer.</div>' : `<div class="cell shown paper-lines" data-field="a">${words.reduce((html, i) => highlightTermInNotesHtml(html, i.term), aCellContent(row))}</div>`;
+  const answer = row.aHidden ? '<div class="cell hidden paper-prompt" data-field="a">Answer out loud, then press Space or tap here to see the answer.</div>' : `<div class="cell shown paper-lines" data-field="a">${words.reduce((html, i) => highlightTermInNotesHtml(html, i.term), aCellContent(row))}</div>`;
   const glossary = words.length ? '<footer class="paper-glossary"><div class="paper-label">Vocabulary</div><ol>' + words.map(i => `<li><b>${escapeHtml(i.term)}</b>${i.meaning ? " — " + escapeHtml(i.meaning) : ""}</li>`).join("") + "</ol></footer>" : "";
-  return '<article class="ielts-paper">' + `<header class="paper-head"><div><div class="paper-kicker">IELTS Speaking</div>${topic ? `<div class="paper-topic">${escapeHtml(topic)}</div>` : ""}</div>` + `<div class="paper-meta"><div>Question <b>${n}</b> of ${ieltsAnswered + singleCardQueue().length}</div><div id="ieltsTimer" class="paper-timer${row.aHidden ? "" : " stopped"}">${ieltsClockText()}</div></div></header>` + `<div class="paper-question"><span class="paper-num">${n}.</span><div class="cell shown" data-field="q">${qCellContent(row)}</div></div>` + `<div class="paper-answer"><div class="paper-label">${row.aHidden ? "Your answer" : "Model answer"}</div>${answer}</div>` + glossary + "</article>";
+  return '<article class="ielts-paper">' + `<header class="paper-head"><div><div class="paper-kicker">Speaking</div>${topic ? `<div class="paper-topic">${escapeHtml(topic)}</div>` : ""}</div>` + `<div class="paper-meta"><div>Question <b>${n}</b> of ${ieltsAnswered + singleCardQueue().length}</div><div id="ieltsTimer" class="paper-timer${row.aHidden ? "" : " stopped"}">${ieltsClockText()}</div></div></header>` + `<div class="paper-question"><span class="paper-num">${n}.</span><div class="cell shown" data-field="q">${qCellContent(row)}</div></div>` + `<div class="paper-answer"><div class="paper-label">${row.aHidden ? "Your answer" : "Answer"}</div>${answer}</div>` + glossary + "</article>";
 }
 
 function renderSingleCard(visibleRows) {
@@ -4582,7 +4613,7 @@ window.addEventListener("blur", () => {
 });
 
 function buildEditBoxInner(row) {
-  return `\n    <div style="display:flex;gap:10px;">\n      <div style="flex:1;">\n        <div id="editQ" class="rich-editor" contenteditable="true" data-placeholder="Question">${getEditInitialHtml(row.q, row.qHtml, row.id)}</div>\n      </div>\n      <div style="flex:1;">\n        <div id="editA" class="rich-editor" contenteditable="true" data-placeholder="Answer">${row.aHtml || textHtml(row.a)}</div>\n      </div>\n    </div>\n    <div id="editNotes" class="rich-editor" contenteditable="true" data-placeholder="Optional notes" style="margin-bottom:8px;">${notesEditorHtml(row)}</div>\n    <div class="edit-actions">\n      <button id="editSave" class="primary">Save</button>\n    </div>\n    <div id="editDict"></div>\n  `;
+  return `\n    <div class="edit-qa${isVideoLesson() ? "" : " stacked"}">\n      <div>\n        <div id="editQ" class="rich-editor" contenteditable="true" data-placeholder="Question">${getEditInitialHtml(row.q, row.qHtml, row.id)}</div>\n      </div>\n      <div>\n        <div id="editA" class="rich-editor" contenteditable="true" data-placeholder="Answer">${row.aHtml || textHtml(row.a)}</div>\n      </div>\n    </div>\n    <div id="editNotes" class="rich-editor" contenteditable="true" data-placeholder="Optional notes" style="margin-bottom:8px;">${notesEditorHtml(row)}</div>\n    <div class="edit-actions">\n      <button id="editSave" class="primary">Save</button>\n    </div>\n    <div id="editDict"></div>\n  `;
 }
 
 let draftRowId = null;
@@ -4819,7 +4850,7 @@ function wireEditBox(host, row) {
   let dictDebounce = null;
   function refreshDict() {
     const text = (editQ.textContent || "").trim();
-    const url = groupState ? null : dictUrlFor(text);
+    const url = groupState || !isVideoLesson() ? null : dictUrlFor(text);
     if (!url) {
       editDict.classList.remove("has-dict");
       if (activeDictOverlay && activeDictOverlay.placeholder === editDict) hideDictOverlay();
@@ -5081,6 +5112,7 @@ function applyColumnLayout() {
   const inTable = !!groupState && groupViewStyle === "table";
   const noAnswer = !inTable && !deckHasAnswers();
   table.classList.toggle("no-icon-col", inTable);
+  table.classList.toggle("notebook", !groupState && !isVideoLesson());
   table.classList.toggle("no-answer-col", noAnswer);
   table.querySelector("thead th:not(.icon-col):not(.a-col)").colSpan = noAnswer ? 2 : 1;
   cols.forEach(c => c.style.width = "");
