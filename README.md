@@ -42,7 +42,6 @@ A lesson is either a video lesson (it has a YouTube, TikTok or Douyin link, or c
 | S | Play or pause the sound (Speaker) |
 | C | Copy the questions being studied: the whole group, or the one card |
 | E | Edit a card: the one being studied, or in a table the row you point at or have selected |
-| D | In Vocabulary, show or hide the word list (Group) or the dictionary (Flashcards) |
 | 1 – 5 | In a group, play just that row over and over: its video clip, or read aloud when it has none (press again to stop) |
 | Space | Reveal / flip; in Listening, once the card is shown, play or pause the sound (like S). The phone's Show button does the same and names what it will do: Show, or Hide once the group is shown; ⟲ in Flashcards, where flipping goes both ways; ▶ or ⏸ in Listening. In Vocabulary, Again and Good read ✕ and ✓, on the buttons and on the card that flies off when you grade or swipe |
 | ⌘/Ctrl + Z | Undo, including grades (add Shift to redo) |
@@ -60,14 +59,17 @@ Switch from **Lessons** to **Vocabulary** with the 字 button at the top. Words 
 
 | Mode | What it does |
 | --- | --- |
-| ☰ Group | Due words five at a time, like Group mode in Lessons: click a word to edit it, tap a row (phone) or point at it (computer) to grade just that word, the YouTube or 🔊 button plays the group's words in turn, the YouTube or 🔊 mark before each word plays just that (and turns into ⏸ while it plays) word, and 📖 beside 🔊 (or D) shows or hides the whole word list under the table, for browsing and editing. It starts hidden so it does not give answers away and hides again as soon as you show or grade; the bar at the top of the list shows the number of words and, with ＋, adds a word; point at a word (or tap it on a phone) to see its pinyin or reading |
-| 📝 Flashcards | One word at a time; tap the card to flip it. 📖 beside 🔊 (or D) shows or hides the word's stroke order and, under the card, the dictionary for the whole sentence the word comes from; it turns off again when you grade. |
+| ☰ List | Every word of the lesson, for browsing and editing: the bar at the top shows the number of words and, with ＋, adds a word; point at a word (or tap it on a phone) to see its pinyin or reading. No grading. |
+| ▦ Group | Due words five at a time, like Group mode in Lessons; shown once the lesson has more than 10 words. Click a word to edit it, tap a row (phone) or point at it (computer) to grade just that word, the YouTube or 🔊 button plays the group's words in turn, and the YouTube or 🔊 mark before each word plays just that word (and turns into ⏸ while it plays). |
+| 📝 Flashcards | One word at a time; tap the card to flip it. The back holds everything: the sentence the word comes from with the word highlighted, its meaning, the stroke order and, under them, the dictionary for that sentence. The card turns at the size of its front and, once it is edge-on, grows downwards to fit the back; turning it back shrinks it as it turns. |
+
+The mode buttons have no tooltips, and there is no separate dictionary button: the dictionary lives on the back of the flashcard. 🔊 reads the sentence that really holds the word (also a sentence inside a long answer), or the word itself when no sentence has it.
 
 Group and Flashcards share one queue, and a word marked Again comes back after 10 minutes. The toolbar stays pinned to the top of the screen as you scroll, in both modes, as in Lessons. The 🌐 button picks the language; ⇄ picks which side is shown first and hides the other side again (the card gives a short squash, and the side it starts on is labelled and coloured Question or Answer). On a phone, Undo, Redo, Show, Again and Good sit in a bar fixed to the bottom of the screen, as in Lessons; on a computer the keys do the same.
 
 As in Lessons, pointing at a word (or tapping its row on a phone) shows its pinyin or reading.
 
-When every word is studied, ☰, 📝 and ⇄ are hidden: only 🌐, the counts, 🎉 and the word list, always open, remain until words are due again.
+When every word is studied, ▦, 📝 and ⇄ are hidden: only 🌐, the counts, 🎉 and the word list, always open, remain until words are due again.
 
 Words already in your vocabulary (the `word: meaning` lines in notes, in any lesson) are highlighted in questions and in the sentence above each dictionary. Green means another card, in this lesson or another one, also has the word: click it to see that card's sentence and note, with the lesson's name when it comes from another lesson. Grey means only this card has it. Every word is highlighted, even inside or across another one, with the colours layered where they share characters; pointing at a word lights up all of it, and clicking a shared character steps through every word on it. Only highlighted words can be looked up; selecting other text does nothing. Cards from the lesson you are in come first.
 
