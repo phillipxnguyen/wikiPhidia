@@ -310,8 +310,8 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-card-inner{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .45s cubic-bezier(.3,.7,.3,1);}
   .vocab-card.flipped .vocab-card-inner{transform:rotateY(180deg);}
   .vocab-face{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;gap:14px;padding:36px 24px;text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow-md);backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:auto;}
-  .vocab-back{transform:rotateY(180deg);background:var(--a-bg);justify-content:flex-start;overflow:hidden;}
-  .vocab-face.vocab-back > .vocab-back-main{margin:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;width:100%;flex:none;min-height:calc(var(--front-h) - 72px);}
+  .vocab-back{transform:rotateY(180deg);background:var(--a-bg);justify-content:flex-start;gap:28px;overflow:hidden;}
+  .vocab-face.vocab-back > .vocab-back-main{margin:0;display:flex;flex-direction:column;align-items:center;gap:14px;width:100%;flex:none;}
   .vocab-face.vocab-back > .vocab-back-stroke, .vocab-face.vocab-back > .vocab-back-dict{margin:0;flex:none;}
   .vocab-back-dict{width:100%;height:360px;border-radius:10px;background:var(--surface);}
   .vocab-back-dict[hidden]{display:none;}
@@ -845,11 +845,11 @@ window.onYouTubeIframeAPIReady = function(){
   .ielts-paper .paper-prompt{min-height:calc(var(--line) * 5);color:var(--paper-ink-2);font-style:normal;}
   .ielts-paper .paper-lines{user-select:text;cursor:text;}
   .paper-lines mark{background:var(--paper-mark);color:inherit;padding:0 2px;border-radius:2px;}
-  .paper-glossary{margin-top:36px;font-size:16px;line-height:1.75;}
+  .paper-glossary{margin-top:32px;font-size:16px;line-height:1.75;}
   .paper-glossary ol{margin:0;padding-left:22px;}
-  .paper-stroke{margin-top:28px;}
+  .paper-stroke{margin-top:32px;}
   .paper-stroke .stroke-order-row{justify-content:flex-start;}
-  .paper-dict{height:380px;margin-top:20px;border-radius:8px;background:var(--surface-2);}
+  .paper-dict{height:380px;margin-top:32px;border-radius:8px;background:var(--surface-2);}
   .paper-dict[hidden]{display:none;}
   @media (max-width:600px){
     .ielts-paper{padding:22px 16px 26px 40px;}
@@ -3060,7 +3060,13 @@ function renderSingleCard(visibleRows) {
   bodyEl.classList.toggle("row-playing", loopingRowId === row.id);
   bodyEl.classList.toggle("ielts-card", groupViewStyle === "ielts");
   bodyEl.innerHTML = groupViewStyle === "ielts" ? ieltsPaperHtml(row) : singleCardFieldsHtml(row);
-  if (groupViewStyle === "ielts") showPaperExtras(bodyEl, row);
+  if (groupViewStyle === "ielts") {
+    visibleRows.slice(0, 2).forEach(r => {
+      const url = dictUrlFor((r.a || "").trim(), r);
+      if (url) getDictIframe(url);
+    });
+    showPaperExtras(bodyEl, row);
+  }
   if (isTouch() && groupViewStyle !== "ielts") bodyEl.querySelector(".single-card-field").insertAdjacentHTML("afterbegin", '<div class="card-actions"><button class="edit-btn" aria-label="Edit card">&#9998;</button><button class="del-btn del-forever" aria-label="Delete card">&#10005;</button></div>');
   dictPreloadObserver.observe(bodyEl);
   if (autoPlay) playListenCardAudio(row);
@@ -9820,7 +9826,7 @@ function renderVocab() {
   const anyDue = !!currentVocabItem();
   document.querySelectorAll("#vocabToolbar [data-view], #vocabFrontBtn").forEach(btn => btn.hidden = btn.dataset.view === "list" ? false : !anyDue || btn.dataset.view === "group" && items.length < VOCAB_GROUP_MIN || btn.id === "vocabFrontBtn" && vocabView === "list");
   if (vocabView === "list") {
-    badges.innerHTML = badgesHtml(c.fresh, c.due, c.done, {});
+    badges.innerHTML = "";
     stage.innerHTML = "";
     wireVocabEditor(items);
     syncVocabSound();
@@ -10792,6 +10798,8 @@ function wireVocabCard(item) {
     if (!e.target.closest(".vocab-actions")) flipVocab();
   });
   sizeVocabCard(card);
+  const ownUrl = vocabDictUrl(item);
+  if (ownUrl) getDictIframe(ownUrl);
   showVocabBack(card, item);
   const nextKey = vocabSession && vocabSession.queue[1];
   const next = nextKey && lessonVocabItems(vocabSource()).find(i => i.key === nextKey);
