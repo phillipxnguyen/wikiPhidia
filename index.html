@@ -833,6 +833,7 @@ window.onYouTubeIframeAPIReady = function(){
   .paper-label{margin-bottom:6px;font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--paper-ink-2);}
   .ielts-paper .paper-lines, .ielts-paper .paper-prompt{font-size:18px;line-height:var(--line);background-image:linear-gradient(to bottom, transparent calc(var(--line) - 1px), var(--paper-rule) calc(var(--line) - 1px));background-size:100% var(--line);}
   .ielts-paper .paper-prompt{min-height:calc(var(--line) * 5);color:var(--paper-ink-2);font-style:normal;}
+  .ielts-paper .paper-lines{user-select:text;cursor:text;}
   .paper-lines mark{background:var(--paper-mark);color:inherit;padding:0 2px;border-radius:2px;}
   .paper-glossary{margin-top:36px;font-size:16px;line-height:1.75;}
   .paper-glossary ol{margin:0;padding-left:22px;}
@@ -2761,9 +2762,9 @@ function renderDictPanels() {
       const next = groupState.groups[groupState.index + 1] || [];
       current = getVisibleRows();
       preload = current.concat(rows.filter(r => next.includes(r.id)));
-    } else if (groupState && inSingle && groupViewStyle !== "ielts") {
+    } else if (groupState && inSingle) {
       preload = singleCardQueue().slice(0, 2);
-      current = preload.slice(0, 1);
+      current = preload.slice(0, 1).filter(r => groupViewStyle !== "ielts" || !r.aHidden);
     } else if (!groupState && isVideoLesson()) {
       if (!nextOrderReady) {
         reshuffleCardOrder();
@@ -2781,25 +2782,27 @@ function renderDictPanels() {
     notesLen += (r.notes || "").length * 31 + (r.q || "").length;
   });
   const notesSig = rows.length + ":" + notesLen + ":" + (vocabExtras ? (vocabExtras.notesHtml || "").length : 0);
+  const field = groupState && groupViewStyle === "ielts" ? "a" : "q";
   const panelFor = r => {
-    const url = dictUrlFor((r.q || "").trim(), r);
+    const url = dictUrlFor((r[field] || "").trim(), r);
     if (!url) return null;
-    let el = Array.from(host.children).find(c => c.dataset.url === url);
+    let el = Array.from(host.children).find(c => c.dataset.url === url && c.dataset.field === field);
     if (!el) {
       el = document.createElement("div");
       el.className = "stroke-order-panel dict-pending";
       el.dataset.url = url;
-      el.innerHTML = `<div class="dict-source"></div><div class="dict-answer"></div><div class="dict-stroke"></div><iframe class="dict-frame"></iframe>`;
+      el.dataset.field = field;
+      el.innerHTML = `<div class="dict-source" data-field="${field}"></div><div class="dict-answer"></div><div class="dict-stroke"></div><iframe class="dict-frame"></iframe>`;
       el.querySelector("iframe").src = url;
       host.appendChild(el);
     }
     el.dataset.used = now;
     el.dataset.rowId = r.id;
     const src = el.querySelector(".dict-source");
-    const key = r.id + "\u0001" + (r.qHtml || r.q || "") + "\u0001" + notesSig + "\u0001" + typeof pinyinPro + jaResults.size;
+    const key = r.id + "\u0001" + (r[field + "Html"] || r[field] || "") + "\u0001" + notesSig + "\u0001" + typeof pinyinPro + jaResults.size;
     if (src.dataset.key !== key) {
       src.dataset.key = key;
-      src.innerHTML = highlightVocabInHtml(r.qHtml || textHtml(r.q), r.id);
+      src.innerHTML = highlightVocabInHtml(r[field + "Html"] || textHtml(r[field]), r.id);
       addReadings(src, r);
     }
     const answer = el.querySelector(".dict-answer");
@@ -2808,7 +2811,7 @@ function renderDictPanels() {
       answer.dataset.html = answerHtml;
       answer.innerHTML = answerHtml;
     }
-    answer.hidden = !(r.a || "").trim() || r.aHidden;
+    answer.hidden = field === "a" || !(r.a || "").trim() || r.aHidden;
     return el;
   };
   preload.forEach(panelFor);
@@ -4123,6 +4126,7 @@ function handleCardAreaClick(e) {
     revealAction();
     return;
   }
+  if (e.target.closest(".paper-lines") && !getSelection().isCollapsed) return;
   if (e.target.classList.contains("cell")) {
     if (groupState) {
       if (isSingleCard) openSingleCardEdit(row); else openEdit(container, row);
@@ -4686,7 +4690,7 @@ window.addEventListener("blur", () => {
 });
 
 function buildEditBoxInner(row) {
-  return `\n    <div class="edit-qa${isVideoLesson() ? "" : " stacked"}">\n      <div>\n        <div id="editQ" class="rich-editor" contenteditable="true" data-placeholder="Question">${getEditInitialHtml(row.q, row.qHtml, row.id)}</div>\n      </div>\n      <div>\n        <div id="editA" class="rich-editor" contenteditable="true" data-placeholder="Answer">${row.aHtml || textHtml(row.a)}</div>\n      </div>\n    </div>\n    <div id="editNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes" style="margin-bottom:8px;">${notesEditorHtml(row)}</div>\n    <div class="edit-actions">\n      <button id="editSave" class="primary">Save</button>\n    </div>\n    <div id="editDict"></div>\n  `;
+  return `\n    <div class="edit-qa${isVideoLesson() ? "" : " stacked"}">\n      <div>\n        <div id="editQ" class="rich-editor" contenteditable="true" data-placeholder="Question">${isVideoLesson() ? getEditInitialHtml(row.q, row.qHtml, row.id) : row.qHtml || textHtml(row.q)}</div>\n      </div>\n      <div>\n        <div id="editA" class="rich-editor" contenteditable="true" data-placeholder="Answer">${isVideoLesson() ? row.aHtml || textHtml(row.a) : getEditInitialHtml(row.a, row.aHtml, row.id)}</div>\n      </div>\n    </div>\n    <div id="editNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes" style="margin-bottom:8px;">${notesEditorHtml(row)}</div>\n    <div class="edit-actions">\n      <button id="editSave" class="primary">Save</button>\n    </div>\n    <div id="editDict"></div>\n  `;
 }
 
 let draftRowId = null;
@@ -4872,10 +4876,11 @@ function wireEditBox(host, row) {
   const editA = host.querySelector("#editA");
   const editNotes = host.querySelector("#editNotes");
   const editDict = host.querySelector("#editDict");
+  const editSrc = isVideoLesson() ? editQ : editA;
   let dictDebounce = null;
   function refreshDict() {
-    const text = (editQ.textContent || "").trim();
-    const url = groupState || !isVideoLesson() ? null : dictUrlFor(text);
+    const text = (editSrc.textContent || "").trim();
+    const url = groupState && groupViewStyle !== "ielts" ? null : dictUrlFor(text);
     if (!url) {
       editDict.classList.remove("has-dict");
       if (activeDictOverlay && activeDictOverlay.placeholder === editDict) hideDictOverlay();
@@ -4888,7 +4893,7 @@ function wireEditBox(host, row) {
     clearTimeout(dictDebounce);
     dictDebounce = setTimeout(refreshDict, 300);
   }
-  editQ.addEventListener("input", updateEditDict);
+  editSrc.addEventListener("input", updateEditDict);
   refreshDict();
   function autoResizeDiv(el) {
     el.style.minHeight = "36px";
@@ -4970,22 +4975,22 @@ function wireEditBox(host, row) {
   function isWholeFieldSelection(el, text) {
     return text === (el.textContent || "").trim();
   }
-  editQ.addEventListener("click", e => {
+  editSrc.addEventListener("click", e => {
     const hit = e.target.closest("mark.vocab-hit");
-    if (!hit || !editQ.contains(hit)) return;
+    if (!hit || !editSrc.contains(hit)) return;
     const matches = markMatches(hit, row.id);
     if (matches.length) {
       showVocabPopup(matches, hit.getBoundingClientRect());
     }
   });
-  editQ.addEventListener("keydown", e => {
+  editSrc.addEventListener("keydown", e => {
     if (e.key !== "Shift" || e.metaKey || e.ctrlKey) return;
     const sel = window.getSelection();
     if (!sel || sel.rangeCount === 0) return;
     const selectedText = sel.toString().trim();
-    if (!selectedText || isWholeFieldSelection(editQ, selectedText)) return;
+    if (!selectedText || isWholeFieldSelection(editSrc, selectedText)) return;
     const range = sel.getRangeAt(0);
-    if (!editQ.contains(range.commonAncestorContainer)) return;
+    if (!editSrc.contains(range.commonAncestorContainer)) return;
     appendWordToNotes(selectedText);
   });
   activeEdit = {
@@ -10956,8 +10961,8 @@ function selectionInDictSource() {
   const range = sel.getRangeAt(0);
   const node = range.commonAncestorContainer;
   const el = node.nodeType === 1 ? node : node.parentElement;
-  const source = el && el.closest(".dict-source");
-  const row = source && !source.isContentEditable && dictSourceRow(source);
+  const source = el && el.closest(".dict-source, .ielts-paper .paper-lines");
+  const row = source && !source.isContentEditable && (source.classList.contains("paper-lines") ? rows.find(r => r.id === Number(document.getElementById("singleCardBody").dataset.id)) : dictSourceRow(source));
   return row ? {
     row: row,
     text: text,
@@ -10980,7 +10985,7 @@ function wholeDictFieldSelected() {
 }
 
 function editDictField(el, row, keepSelection) {
-  const field = el.classList.contains("dict-source") ? "q" : "a";
+  const field = el.classList.contains("dict-source") ? el.dataset.field || "q" : "a";
   hideVocabPopup();
   hideVocabAddPopup();
   const sel = getSelection();
