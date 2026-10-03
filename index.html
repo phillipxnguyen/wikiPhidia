@@ -658,7 +658,7 @@ window.onYouTubeIframeAPIReady = function(){
   .edit-qa > div{flex:1;min-width:0;}
   .edit-qa.stacked{flex-direction:column;gap:0;}
   .edit-qa.stacked #editQ{font-size:17px;font-weight:600;}
-  .edit-qa.stacked #editA{min-height:150px !important;line-height:1.6;}
+  .edit-qa.stacked #editA{line-height:1.6;}
   .edit-row .rich-editor{margin-bottom:8px;display:block;}
   .rich-editor:empty::before{content:attr(data-placeholder);color:darkgray;}
   .dict-source mark.vocab-own, .rich-editor mark.vocab-own{background:color-mix(in srgb, var(--text) 22%, transparent);color:inherit;}
@@ -749,14 +749,25 @@ window.onYouTubeIframeAPIReady = function(){
   #mediaSubtitleMask{display:none;position:absolute;inset:0;background:radial-gradient(circle, transparent 20%, black 20%);pointer-events:none;z-index:3;}
   .media-container.listen-mask #mediaSubtitleMask{display:block;}
   .media-bar{display:none;}
-  .media-container.as-bar:not(.warming){max-width:560px;height:64px;aspect-ratio:auto;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-sm);}
+  .media-container.as-bar:not(.warming){max-width:720px;height:76px;aspect-ratio:auto;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-sm);}
   .media-container.as-bar iframe{position:fixed;top:auto;left:auto;right:0;bottom:0;width:356px;height:200px;opacity:.01;pointer-events:none;z-index:-1;}
   .media-container.as-bar #mediaLoading, .media-container.as-bar #mediaSubtitleMask{display:none !important;}
-  .media-container.as-bar:not(.warming) .media-bar{display:flex;align-items:center;gap:12px;height:100%;padding:8px 14px 8px 8px;box-sizing:border-box;}
-  #mediaBarThumb{flex:none;width:85px;height:48px;object-fit:cover;border-radius:6px;background:var(--surface-2);}
-  .media-bar-text{min-width:0;}
+  .media-container.as-bar:not(.warming) .media-bar{display:flex;align-items:center;gap:14px;height:100%;padding:8px 12px 8px 8px;box-sizing:border-box;}
+  #mediaBarThumb{flex:none;width:96px;height:54px;object-fit:cover;border-radius:6px;background:var(--surface-2);}
+  .media-bar-main{flex:1;min-width:0;}
   #mediaBarTitle{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:14px;font-weight:600;color:var(--text);}
-  .media-bar-sub{margin-top:2px;font-size:12px;color:var(--text-2);}
+  .media-bar-progress{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:11px;font-variant-numeric:tabular-nums;color:var(--text-2);}
+  #mbSeek{flex:1;min-width:0;height:4px;margin:0;accent-color:var(--accent);cursor:pointer;}
+  .media-bar-controls{flex:none;display:flex;align-items:center;gap:4px;}
+  .media-bar-controls button{display:flex;align-items:center;justify-content:center;width:36px;height:36px;min-height:0;padding:0;border-radius:50%;color:var(--text);}
+  #mbPlay{width:42px;height:42px;background:var(--accent);color:var(--on-accent);border-color:transparent;}
+  @media (max-width:600px){
+    .media-container.as-bar:not(.warming){height:auto;}
+    .media-container.as-bar:not(.warming) .media-bar{flex-wrap:wrap;gap:8px 12px;}
+    #mediaBarThumb{width:64px;height:36px;}
+    .media-bar-main{flex-basis:calc(100% - 80px);}
+    .media-bar-controls{width:100%;justify-content:center;}
+  }
   .loop-time{
     display:inline-block;margin-right:8px;
     font-size:12px;font-variant-numeric:tabular-nums;
@@ -1205,7 +1216,7 @@ window.onYouTubeIframeAPIReady = function(){
     <div id="mediaIframe"></div>
     <div id="mediaLoading">Loading video…</div>
     <div id="mediaSubtitleMask"></div>
-    <div id="mediaBar" class="media-bar"><img id="mediaBarThumb" alt="" onerror="this.hidden=true"><div class="media-bar-text"><div id="mediaBarTitle"></div><div class="media-bar-sub">Audio only</div></div></div>
+    <div id="mediaBar" class="media-bar"><img id="mediaBarThumb" alt="" onerror="this.hidden=true"><div class="media-bar-main"><div id="mediaBarTitle"></div><div class="media-bar-progress"><span id="mbCur">0:00</span><input type="range" id="mbSeek" min="0" max="1000" value="0" aria-label="Seek"><span id="mbDur">0:00</span></div></div><div class="media-bar-controls"><button id="mbPrev" class="ghost" aria-label="Previous sentence" title="Previous sentence"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 5v14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M19 5.5v13L9 12z" fill="currentColor"/></svg></button><button id="mbPlay" aria-label="Play"></button><button id="mbNext" class="ghost" aria-label="Next sentence" title="Next sentence"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M18 5v14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M5 5.5v13L15 12z" fill="currentColor"/></svg></button></div></div>
   </div>
 
   <div class="toolbar">
@@ -1798,6 +1809,92 @@ function syncMediaView() {
   } catch (e) {}
   document.getElementById("mediaBarTitle").textContent = title || document.getElementById("lessonName").value.trim() || "Video";
 }
+
+const MB_PLAY = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M8 5.5v13L19 12z" fill="currentColor"/></svg>';
+
+const MB_PAUSE = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect x="6.5" y="5" width="4" height="14" rx="1" fill="currentColor"/><rect x="13.5" y="5" width="4" height="14" rx="1" fill="currentColor"/></svg>';
+
+let mbSeeking = false;
+
+function mediaBarReady() {
+  return mediaAsBar && !!ytPlayer && ytReady && !ytHasError && typeof ytPlayer.getCurrentTime === "function";
+}
+
+function freeVideoPlayback() {
+  if (isSequencePlaying) stopSequenceLoop(); else if (loopingRowId !== null) stopLoop();
+}
+
+function updateMediaBar() {
+  const play = document.getElementById("mbPlay");
+  if (!mediaBarReady()) {
+    if (play.dataset.state !== "off") {
+      play.dataset.state = "off";
+      play.innerHTML = MB_PLAY;
+    }
+    return;
+  }
+  const playing = ytPlayer.getPlayerState() === YT.PlayerState.PLAYING;
+  if (play.dataset.state !== String(playing)) {
+    play.dataset.state = String(playing);
+    play.innerHTML = playing ? MB_PAUSE : MB_PLAY;
+    play.setAttribute("aria-label", playing ? "Pause" : "Play");
+  }
+  const cur = ytPlayer.getCurrentTime() || 0, dur = ytPlayer.getDuration() || 0;
+  document.getElementById("mbCur").textContent = formatTime(cur);
+  document.getElementById("mbDur").textContent = formatTime(dur);
+  if (!mbSeeking) document.getElementById("mbSeek").value = dur ? Math.round(cur / dur * 1e3) : 0;
+}
+
+setInterval(updateMediaBar, 500);
+
+document.getElementById("mbPlay").onclick = e => {
+  e.currentTarget.blur();
+  if (!mediaBarReady()) return;
+  if (ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) {
+    if (isSequencePlaying || loopingRowId !== null) freeVideoPlayback(); else ytPlayer.pauseVideo();
+  } else {
+    freeVideoPlayback();
+    ytPlayer.playVideo();
+  }
+  setTimeout(updateMediaBar, 150);
+};
+
+function mediaBarJump(dir) {
+  if (!mediaBarReady()) return;
+  freeVideoPlayback();
+  const t = ytPlayer.getCurrentTime() || 0;
+  const times = timeSortedRows().map(r => r.time);
+  let to = dir < 0 ? times.filter(x => x < t - 1.5).pop() : times.find(x => x > t + .3);
+  if (to == null) to = Math.max(0, t + dir * 10);
+  ytPlayer.seekTo(to, true);
+  ytPlayer.playVideo();
+  setTimeout(updateMediaBar, 150);
+}
+
+document.getElementById("mbPrev").onclick = e => {
+  e.currentTarget.blur();
+  mediaBarJump(-1);
+};
+
+document.getElementById("mbNext").onclick = e => {
+  e.currentTarget.blur();
+  mediaBarJump(1);
+};
+
+const mbSeek = document.getElementById("mbSeek");
+
+mbSeek.addEventListener("input", () => {
+  mbSeeking = true;
+  if (mediaBarReady()) document.getElementById("mbCur").textContent = formatTime(mbSeek.value / 1e3 * (ytPlayer.getDuration() || 0));
+});
+
+mbSeek.addEventListener("change", () => {
+  mbSeeking = false;
+  if (!mediaBarReady()) return;
+  freeVideoPlayback();
+  ytPlayer.seekTo(mbSeek.value / 1e3 * (ytPlayer.getDuration() || 0), true);
+  mbSeek.blur();
+});
 
 document.getElementById("btnMediaView").onclick = e => {
   mediaAsBar = !mediaAsBar;
@@ -2905,8 +3002,8 @@ function ieltsPaperHtml(row) {
   const topic = document.getElementById("lessonName").value.trim();
   const words = row.aHidden ? [] : cardWords(row);
   const answer = row.aHidden ? '<div class="cell hidden paper-prompt" data-field="a">···</div>' : `<div class="cell shown paper-lines" data-field="a">${words.reduce((html, i) => highlightTermInNotesHtml(html, i.term), aCellContent(row))}</div>`;
-  const glossary = words.length ? '<footer class="paper-glossary"><div class="paper-label">Vocabulary</div><ol>' + words.map(i => `<li><b>${escapeHtml(i.term)}</b>${i.meaning ? " — " + escapeHtml(i.meaning) : ""}</li>`).join("") + "</ol></footer>" : "";
-  return '<article class="ielts-paper">' + `<header class="paper-head"><div><div class="paper-kicker">Speaking</div>${topic ? `<div class="paper-topic">${escapeHtml(topic)}</div>` : ""}</div>` + `<div class="paper-meta"><div>Question <b>${n}</b> of ${ieltsAnswered + singleCardQueue().length}</div><div id="ieltsTimer" class="paper-timer${row.aHidden ? "" : " stopped"}">${ieltsClockText()}</div></div></header>` + `<div class="paper-question"><span class="paper-num">${n}.</span><div class="cell shown" data-field="q">${qCellContent(row)}</div></div>` + `<div class="paper-answer"><div class="paper-label">${row.aHidden ? "Your answer" : "Answer"}</div>${answer}</div>` + glossary + "</article>";
+  const glossary = words.length ? '<footer class="paper-glossary"><div class="paper-label">Notes</div><ol>' + words.map(i => `<li><b>${escapeHtml(i.term)}</b>${i.meaning ? " — " + escapeHtml(i.meaning) : ""}</li>`).join("") + "</ol></footer>" : "";
+  return '<article class="ielts-paper">' + `<header class="paper-head"><div><div class="paper-kicker">Speaking</div>${topic ? `<div class="paper-topic">${escapeHtml(topic)}</div>` : ""}</div>` + `<div class="paper-meta"><div>Question <b>${n}</b> of ${ieltsAnswered + singleCardQueue().length}</div><div id="ieltsTimer" class="paper-timer${row.aHidden ? "" : " stopped"}">${ieltsClockText()}</div></div></header>` + `<div class="paper-question"><span class="paper-num">${n}.</span><div class="cell shown" data-field="q">${qCellContent(row)}</div></div>` + `<div class="paper-answer">${answer}</div>` + glossary + "</article>";
 }
 
 function renderSingleCard(visibleRows) {
@@ -4633,7 +4730,7 @@ window.addEventListener("blur", () => {
 });
 
 function buildEditBoxInner(row) {
-  return `\n    <div class="edit-qa${isVideoLesson() ? "" : " stacked"}">\n      <div>\n        <div id="editQ" class="rich-editor" contenteditable="true" data-placeholder="Question">${getEditInitialHtml(row.q, row.qHtml, row.id)}</div>\n      </div>\n      <div>\n        <div id="editA" class="rich-editor" contenteditable="true" data-placeholder="Answer">${row.aHtml || textHtml(row.a)}</div>\n      </div>\n    </div>\n    <div id="editNotes" class="rich-editor" contenteditable="true" data-placeholder="Optional notes" style="margin-bottom:8px;">${notesEditorHtml(row)}</div>\n    <div class="edit-actions">\n      <button id="editSave" class="primary">Save</button>\n    </div>\n    <div id="editDict"></div>\n  `;
+  return `\n    <div class="edit-qa${isVideoLesson() ? "" : " stacked"}">\n      <div>\n        <div id="editQ" class="rich-editor" contenteditable="true" data-placeholder="Question">${getEditInitialHtml(row.q, row.qHtml, row.id)}</div>\n      </div>\n      <div>\n        <div id="editA" class="rich-editor" contenteditable="true" data-placeholder="Answer">${row.aHtml || textHtml(row.a)}</div>\n      </div>\n    </div>\n    <div id="editNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes" style="margin-bottom:8px;">${notesEditorHtml(row)}</div>\n    <div class="edit-actions">\n      <button id="editSave" class="primary">Save</button>\n    </div>\n    <div id="editDict"></div>\n  `;
 }
 
 let draftRowId = null;
@@ -5085,7 +5182,7 @@ function applyColumnLayout() {
   const noAnswer = !inTable && !deckHasAnswers();
   table.classList.toggle("no-icon-col", inTable);
   table.classList.toggle("notebook", !groupState && !isVideoLesson());
-  document.getElementById("listAddCard").hidden = !!groupState || isVirtualLesson();
+  document.getElementById("listAddCard").hidden = !!groupState || isVirtualLesson() || !rows.length;
   table.classList.toggle("no-answer-col", noAnswer);
   table.querySelector("thead th:not(.icon-col):not(.a-col)").colSpan = noAnswer ? 2 : 1;
   cols.forEach(c => c.style.width = "");
