@@ -304,13 +304,13 @@ window.onYouTubeIframeAPIReady = function(){
   #vocabFrontBtn.active{color:var(--accent);}
   .vocab-badges{margin:-8px 0 16px;}
   .vocab-toolbar:not([hidden]) + .vocab-badges{margin-top:0;}
-  .vocab-card{--front-h:230px;--card-h:var(--front-h);--drawer-h:0px;--tuck:22px;position:relative;margin-bottom:16px;height:var(--card-h);transition:height .32s cubic-bezier(.4,0,.2,1);touch-action:pan-y;cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;}
+  .vocab-card{--front-h:230px;--card-h:var(--front-h);--drawer-h:0px;--tuck:calc(var(--card-h) / 2);position:relative;margin-bottom:16px;height:var(--card-h);transition:height .32s cubic-bezier(.4,0,.2,1);touch-action:pan-y;cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;}
   .vocab-card.open{height:calc(var(--card-h) - var(--tuck) + var(--drawer-h));transition-duration:.55s;transition-timing-function:cubic-bezier(.22,.9,.3,1);}
   .vocab-main{position:relative;z-index:2;height:var(--card-h);perspective:1400px;}
   .vocab-card-inner{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .6s cubic-bezier(.45,.05,.2,1);}
   .vocab-card.flipped .vocab-card-inner{transform:rotateX(180deg);}
-  .vocab-drawer-clip{position:absolute;z-index:1;left:14px;right:14px;top:calc(var(--card-h) - var(--tuck));height:var(--drawer-h);overflow:hidden;pointer-events:none;cursor:default;}
-  .vocab-card.open .vocab-drawer-clip{pointer-events:auto;}
+  .vocab-drawer-clip{position:absolute;z-index:1;left:24px;right:24px;top:calc(var(--card-h) - var(--tuck));height:var(--tuck);overflow:hidden;pointer-events:none;cursor:default;transition:height .32s cubic-bezier(.4,0,.2,1);}
+  .vocab-card.open .vocab-drawer-clip{height:var(--drawer-h);pointer-events:auto;transition-duration:.55s;transition-timing-function:cubic-bezier(.22,.9,.3,1);}
   .vocab-drawer{display:flex;flex-direction:column;align-items:center;gap:28px;padding:calc(var(--tuck) + 28px) 24px 28px;background:var(--surface);border:1px solid var(--border);border-top:0;border-radius:0 0 16px 16px;transform:translateY(-100%);transition:transform .32s cubic-bezier(.4,0,.2,1);will-change:transform;}
   .vocab-card.open .vocab-drawer{transform:none;transition-duration:.55s;transition-timing-function:cubic-bezier(.22,.9,.3,1);}
   .vocab-drawer > .vocab-back-stroke:empty{display:none;}
@@ -6843,7 +6843,7 @@ function takeMediaUrl(text) {
 function pickDelim(text) {
   const lines = text.split(/\r?\n/).filter(l => l.trim() && !(matchSpacedTimestamp(l, "\t") && matchSpacedTimestamp(l, ":")));
   const cur = currentDelim();
-  const count = d => lines.filter(l => d === ":" ? hasColonColumn(l) && !(cur === "none" && /[.!?。！？]/.test(l.split(/[:：]/)[0])) : hasDelim(l, d)).length;
+  const count = d => lines.filter(l => d === ":" ? hasColonColumn(l) && !QA_LABEL_RE.test(l.trim()) && !(cur === "none" && /[.!?。！？]/.test(l.split(/[:：]/)[0])) : hasDelim(l, d)).length;
   const best = [ "\t", ":" ].map(d => [ d, count(d) ]).sort((a, b) => b[1] - a[1])[0];
   if (cur === "none") return best[1] * 2 > lines.length && !lines.some(isProseLine) ? best[0] : "none";
   if (lines.length && !best[1] && !count(cur)) return "none";
@@ -10007,7 +10007,7 @@ window.addEventListener("resize", () => sizeVocabCard(document.getElementById("v
 
 function vocabDrawerClip(card) {
   return () => ({
-    top: card.querySelector(".vocab-main").getBoundingClientRect().bottom,
+    top: Math.max(card.querySelector(".vocab-card-inner").getBoundingClientRect().bottom, card.querySelector(".vocab-drawer-clip").getBoundingClientRect().top),
     bottom: card.querySelector(".vocab-drawer-clip").getBoundingClientRect().bottom
   });
 }
@@ -10208,7 +10208,7 @@ function vocabDelimFor(text) {
   const sel = document.getElementById("vocabDelim");
   const cur = sel.value === "tab" ? "\t" : sel.value;
   const lines = text.split(/\r?\n/).filter(l => l.trim()).map(stripBullet);
-  const count = d => lines.filter(l => d === ":" ? VOCAB_LINE_RE.test(l) && !(cur === "none" && SENTENCE_END_RE.test(l.split(/[:：]/)[0])) : (findDelim(l, d) || {}).idx > 0).length;
+  const count = d => lines.filter(l => d === ":" ? VOCAB_LINE_RE.test(l) && !QA_LABEL_RE.test(l.trim()) && !(cur === "none" && SENTENCE_END_RE.test(l.split(/[:：]/)[0])) : (findDelim(l, d) || {}).idx > 0).length;
   const best = [ "\t", ":" ].map(d => [ d, count(d) ]).sort((a, b) => b[1] - a[1])[0];
   const delim = cur === "none" ? best[1] * 2 > lines.length && !lines.some(isProseLine) ? best[0] : "none" : !best[1] && !count(cur) ? "none" : best[1] <= count(cur) ? cur : best[0];
   return {
@@ -10952,7 +10952,7 @@ function flipVocab() {
     clearTimeout(card.drawerTimer);
     if (vocabSession.flipped) {
       showVocabBack(card, item);
-      card.drawerTimer = setTimeout(() => card.classList.add("open"), VOCAB_FLIP_MS * .55);
+      card.drawerTimer = setTimeout(() => card.classList.add("open"), VOCAB_FLIP_MS * .42);
     } else {
       card.classList.remove("open");
       card.drawerTimer = setTimeout(() => {
