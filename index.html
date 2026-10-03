@@ -759,6 +759,15 @@ window.onYouTubeIframeAPIReady = function(){
   .media-container iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:0;}
   #mediaSubtitleMask{display:none;position:absolute;inset:0;background:radial-gradient(circle, transparent 20%, black 20%);pointer-events:none;z-index:3;}
   .media-container.listen-mask #mediaSubtitleMask{display:block;}
+  .media-bar{display:none;}
+  .media-container.as-bar:not(.warming){max-width:560px;height:64px;aspect-ratio:auto;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-sm);}
+  .media-container.as-bar iframe{position:fixed;top:auto;left:auto;right:0;bottom:0;width:356px;height:200px;opacity:.01;pointer-events:none;z-index:-1;}
+  .media-container.as-bar #mediaLoading, .media-container.as-bar #mediaSubtitleMask{display:none !important;}
+  .media-container.as-bar:not(.warming) .media-bar{display:flex;align-items:center;gap:12px;height:100%;padding:8px 14px 8px 8px;box-sizing:border-box;}
+  #mediaBarThumb{flex:none;width:85px;height:48px;object-fit:cover;border-radius:6px;background:var(--surface-2);}
+  .media-bar-text{min-width:0;}
+  #mediaBarTitle{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:14px;font-weight:600;color:var(--text);}
+  .media-bar-sub{margin-top:2px;font-size:12px;color:var(--text-2);}
   .loop-time{
     display:inline-block;margin-right:8px;
     font-size:12px;font-variant-numeric:tabular-nums;
@@ -1206,6 +1215,7 @@ window.onYouTubeIframeAPIReady = function(){
     <div id="mediaIframe"></div>
     <div id="mediaLoading">Loading video…</div>
     <div id="mediaSubtitleMask"></div>
+    <div id="mediaBar" class="media-bar"><img id="mediaBarThumb" alt="" onerror="this.hidden=true"><div class="media-bar-text"><div id="mediaBarTitle"></div><div class="media-bar-sub">Audio only</div></div></div>
   </div>
 
   <div class="toolbar">
@@ -1216,6 +1226,7 @@ window.onYouTubeIframeAPIReady = function(){
       <button id="ieltsModeBtn" style="display:none;" aria-label="Speaking" title="Speaking — one question at a time: answer it out loud, then show the answer">🎤</button>
     </div>
     <div class="toolbar-right">
+      <button id="btnMediaView" hidden></button>
       <button id="btnPlaySequence" aria-label="Play"></button>
       <select id="playbackSpeed" style="display:none;">
         <option value="1">1x</option>
@@ -1763,7 +1774,48 @@ function setMediaState(state) {
   } else {
     c.style.display = "block";
   }
+  syncMediaView();
 }
+
+const MEDIA_BAR_KEY = "flashcards.mediaBar";
+
+let mediaAsBar = false;
+
+try {
+  mediaAsBar = localStorage.getItem(MEDIA_BAR_KEY) === "1";
+} catch (e) {}
+
+function syncMediaView() {
+  const c = mediaBox();
+  const btn = document.getElementById("btnMediaView");
+  c.classList.toggle("as-bar", mediaAsBar);
+  btn.hidden = c.style.display !== "block";
+  btn.textContent = mediaAsBar ? "🎬" : "🎵";
+  btn.setAttribute("aria-label", mediaAsBar ? "Show the video" : "Listen only (show as a bar)");
+  btn.title = btn.getAttribute("aria-label");
+  if (!mediaAsBar) return;
+  const id = extractYouTubeId(document.getElementById("mediaUrl").value.trim());
+  const thumb = document.getElementById("mediaBarThumb");
+  const src = id ? "https://i.ytimg.com/vi/" + id + "/mqdefault.jpg" : "";
+  if (thumb.getAttribute("src") !== src) {
+    thumb.hidden = !src;
+    if (src) thumb.src = src; else thumb.removeAttribute("src");
+  }
+  let title = "";
+  try {
+    title = ytPlayer && ytReady && typeof ytPlayer.getVideoData === "function" && ytPlayer.getVideoData().title || "";
+  } catch (e) {}
+  document.getElementById("mediaBarTitle").textContent = title || document.getElementById("lessonName").value.trim() || "Video";
+}
+
+document.getElementById("btnMediaView").onclick = e => {
+  mediaAsBar = !mediaAsBar;
+  try {
+    localStorage.setItem(MEDIA_BAR_KEY, mediaAsBar ? "1" : "0");
+  } catch (err) {}
+  syncMediaView();
+  e.currentTarget.blur();
+};
 
 function isListenMode() {
   return !!groupState && groupViewStyle === "listen";
@@ -1776,6 +1828,7 @@ function isCardMode() {
 function onPlayerReady() {
   ytReady = true;
   ytHasError = false;
+  syncMediaView();
   if (ytWatchdog) {
     clearTimeout(ytWatchdog);
     ytWatchdog = null;
