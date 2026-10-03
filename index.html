@@ -835,6 +835,10 @@ window.onYouTubeIframeAPIReady = function(){
   .paper-meta{text-align:right;font-size:14px;color:var(--paper-ink-2);white-space:nowrap;}
   .paper-timer{margin-top:4px;font:600 22px/1.2 ui-monospace, "SF Mono", Menlo, Consolas, monospace;color:var(--paper-ink);}
   .paper-timer.stopped{color:var(--paper-ink-2);}
+  .paper-timer:not(.stopped){cursor:pointer;}
+  @media (hover:hover){.paper-timer:not(.stopped):hover{color:var(--accent);}}
+  .ielts-paper .paper-hint{font-style:normal;color:var(--paper-ink-2);}
+  .paper-hint ol{margin:0;padding-left:24px;}
   .paper-question{display:flex;gap:12px;margin-bottom:28px;font-size:22px;line-height:1.45;font-weight:700;color:var(--accent);}
   .ielts-paper .paper-question .cell{color:var(--accent);}
   .paper-num{flex:none;}
@@ -3015,11 +3019,25 @@ function showPaperExtras(bodyEl, row) {
   if (url) showDictOverlay(holder, url);
 }
 
+let ieltsHintId = null;
+
+function ieltsHints(row) {
+  const text = (row.a || "").normalize("NFC");
+  return cardWords(row).filter(i => (i.meaning || "").trim()).map(i => {
+    const span = findTermIn(text, i.term);
+    return {
+      meaning: i.meaning,
+      at: span ? span[0] : Infinity
+    };
+  }).sort((x, y) => x.at - y.at).map(h => h.meaning);
+}
+
 function ieltsPaperHtml(row) {
   const n = ieltsAnswered + 1;
   const topic = document.getElementById("lessonName").value.trim();
   const words = row.aHidden ? [] : cardWords(row);
-  const answer = row.aHidden ? '<div class="cell hidden paper-prompt" data-field="a">···</div>' : `<div class="cell shown paper-lines" data-field="a">${words.reduce((html, i) => highlightTermInNotesHtml(html, i.term), aCellContent(row))}</div>`;
+  const hints = row.aHidden && ieltsHintId === row.id ? ieltsHints(row) : [];
+  const answer = row.aHidden ? hints.length ? '<div class="cell hidden paper-prompt paper-hint" data-field="a"><ol>' + hints.map(m => `<li>${escapeHtml(m)}</li>`).join("") + "</ol></div>" : '<div class="cell hidden paper-prompt" data-field="a">···</div>' : `<div class="cell shown paper-lines" data-field="a">${words.reduce((html, i) => highlightTermInNotesHtml(html, i.term), aCellContent(row))}</div>`;
   const glossary = words.length ? '<footer class="paper-glossary"><div class="paper-label">Notes</div><ol>' + words.map(i => `<li><b>${escapeHtml(i.term)}</b>${i.meaning ? " — " + escapeHtml(i.meaning) : ""}</li>`).join("") + "</ol></footer>" : "";
   const extras = row.aHidden ? "" : '<div class="paper-stroke"></div><div class="paper-dict" hidden></div>';
   return '<article class="ielts-paper">' + `<header class="paper-head"><div><div class="paper-kicker">Speaking</div>${topic ? `<div class="paper-topic">${escapeHtml(topic)}</div>` : ""}</div>` + `<div class="paper-meta"><div>Question <b>${n}</b> of ${ieltsAnswered + singleCardQueue().length}</div><div id="ieltsTimer" class="paper-timer${row.aHidden ? "" : " stopped"}">${ieltsClockText()}</div></div></header>` + `<div class="paper-question"><span class="paper-num">${n}.</span><div class="cell shown" data-field="q">${qCellContent(row)}</div></div>` + `<div class="paper-answer">${answer}</div>` + glossary + extras + "</article>";
@@ -4175,6 +4193,17 @@ function handleCardAreaClick(e) {
   if (e.target.closest(".to-vocab-btn")) {
     e.stopPropagation();
     moveCardToVocab(row);
+    return;
+  }
+  if (e.target.closest("#ieltsTimer")) {
+    e.stopPropagation();
+    if (!row.aHidden) return;
+    if (ieltsHintId !== row.id && !ieltsHints(row).length) {
+      showToast("No notes to hint for this question");
+      return;
+    }
+    ieltsHintId = ieltsHintId === row.id ? null : row.id;
+    render();
     return;
   }
   if (e.target.classList.contains("loop-time")) {
@@ -5515,7 +5544,10 @@ function gradeCard(row, isAgain) {
   adjustSequenceIndexForRemoval(row.id);
   pushUndo(gradeLabel(isAgain) + " — " + cardSummary(row));
   applyGrade(row, isAgain, mode, Date.now());
-  if (groupViewStyle === "ielts") ieltsAnswered++;
+  if (groupViewStyle === "ielts") {
+    ieltsAnswered++;
+    ieltsHintId = null;
+  }
   showToast(gradeLabel(isAgain) + " — " + cardSummary(row));
   scheduleAutoSave();
   if (hoveredRowId === row.id) hoveredRowId = null;
