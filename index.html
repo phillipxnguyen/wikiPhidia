@@ -2242,7 +2242,6 @@ function panelRowOn(id) {
   return !isSequencePlaying && loopingRowId === id || ttsPlaying && ttsOnlyId === id;
 }
 
-
 function playListenCardAudio(row) {
   if (!row || !isListenMode()) return;
   startSequenceLoop(true);
@@ -3021,7 +3020,7 @@ function renderDictPanels() {
     visible.add(el);
     if (el.classList.contains("dict-pending")) {
       const text = (r.q || "") + (r.a || "");
-      drawStrokeOrder(el.querySelector(".dict-stroke"), text, cjkScriptFor(text, r) === "ja", "dictStroke_" + r.id);
+      drawStrokeOrder(el.querySelector(".dict-stroke"), text, cjkScriptFor(text, r) === "ja");
     }
   });
   Array.from(host.children).forEach(el => el.classList.toggle("dict-pending", !visible.has(el)));
@@ -3162,7 +3161,7 @@ function showPaperExtras(bodyEl, row) {
   const holder = bodyEl.querySelector(".paper-dict");
   if (!holder) return;
   const text = (row.a || "").trim();
-  drawStrokeOrder(bodyEl.querySelector(".paper-stroke"), text, cjkScriptFor(text, row) === "ja", "paperStroke_" + row.id);
+  drawStrokeOrder(bodyEl.querySelector(".paper-stroke"), text, cjkScriptFor(text, row) === "ja");
   const url = dictUrlFor(text, row);
   holder.hidden = !url;
   if (url) showDictOverlay(holder, url);
@@ -3259,7 +3258,7 @@ function loadStrokeCharData(ch, isJa) {
   }).catch(() => HanziWriter.loadCharacterData(ch));
 }
 
-function drawStrokeOrder(panel, text, isJa, idPrefix) {
+function drawStrokeOrder(panel, text, isJa) {
   const chars = Array.from(new Set(text.match(/[一-鿿]/g) || []));
   if (chars.length === 0 || typeof HanziWriter === "undefined") {
     panel.style.display = "none";
@@ -3272,12 +3271,12 @@ function drawStrokeOrder(panel, text, isJa, idPrefix) {
   const strokeColor = themeStyle.getPropertyValue("--accent").trim() || "#2f6fd6";
   const outlineColor = themeStyle.getPropertyValue("--stroke-outline").trim() || "#d8dee6";
   const rowEl = panel.querySelector(".stroke-order-row");
-  chars.forEach((ch, i) => {
-    const targetId = idPrefix + "_" + i;
-    rowEl.insertAdjacentHTML("beforeend", `<div class="stroke-target" id="${targetId}"></div>`);
+  chars.forEach(ch => {
+    const target = document.createElement("div");
+    target.className = "stroke-target";
+    rowEl.appendChild(target);
     loadStrokeCharData(ch, isJa).then(charData => {
-      const target = document.getElementById(targetId);
-      if (!target) return;
+      if (!target.isConnected) return;
       const writer = HanziWriter.create(target, ch, {
         width: 60,
         height: 60,
@@ -3293,8 +3292,8 @@ function drawStrokeOrder(panel, text, isJa, idPrefix) {
       writer.animateCharacter();
       target.addEventListener("click", () => writer.animateCharacter());
     }).catch(() => {
-      const target = document.getElementById(targetId);
-      if (target) target.outerHTML = `<div class="stroke-target stroke-fallback" id="${targetId}">${ch}</div>`;
+      target.classList.add("stroke-fallback");
+      target.textContent = ch;
     });
   });
 }
@@ -10133,8 +10132,6 @@ function vocabBackInner(item) {
   return main + `<div class="vocab-meaning">${escapeHtml(item.meaning)}</div>`;
 }
 
-let vocabCardSeq = 0;
-
 function buildVocabCard(item) {
   const el = document.createElement("div");
   const url = vocabDictUrl(item) || "";
@@ -10144,7 +10141,7 @@ function buildVocabCard(item) {
   el.dataset.url = url;
   el.innerHTML = '<div class="vocab-card-inner"><div class="vocab-face vocab-front"><div class="vocab-term"></div></div>' + `<div class="vocab-face vocab-back"><div class="vocab-back-main"></div><div class="vocab-back-stroke"></div><div class="vocab-back-dict"${url ? "" : " hidden"}>${url ? '<iframe class="vocab-dict-frame"></iframe>' : ""}</div></div></div>`;
   if (url) el.querySelector("iframe").src = url;
-  drawStrokeOrder(el.querySelector(".vocab-back-stroke"), item.term, cjkScriptFor(item.term, item.card) === "ja", "vocabStroke" + ++vocabCardSeq);
+  drawStrokeOrder(el.querySelector(".vocab-back-stroke"), item.term, cjkScriptFor(item.term, item.card) === "ja");
   const current = () => {
     const it = el.id === "vocabCard" ? currentVocabItem() : null;
     return it && it.key === el.dataset.key ? it : null;
@@ -11600,9 +11597,7 @@ function tapsEditMark(field, e) {
     const b = badge.getBoundingClientRect();
     return e.clientX < b.left && e.clientX > b.left - 44 && e.clientY > b.top - 12 && e.clientY < b.bottom + 12;
   }
-  const walker = document.createTreeWalker(field, NodeFilter.SHOW_TEXT, {
-    acceptNode: n => n.parentElement.closest(".loop-time") ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT
-  });
+  const walker = document.createTreeWalker(field, NodeFilter.SHOW_TEXT);
   let node;
   while ((node = walker.nextNode()) && !node.nodeValue.trim()) ;
   if (!node) return true;
@@ -12001,7 +11996,7 @@ document.addEventListener("keydown", e => {
     const groupRows = getVisibleRows();
     const row = groupRows[pos];
     if (!row) return;
-    if (vocabVideoIdFor(row)) toggleLoopForRow(row); else if (ttsPlaying && ttsOnlyId === row.id) stopTts(); else startTts("q", row.id);
+    toggleRowPlay(row);
     setTimeout(notePanelHush, 0);
     return;
   }
