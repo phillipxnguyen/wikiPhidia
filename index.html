@@ -460,6 +460,7 @@ window.onYouTubeIframeAPIReady = function(){
   .touch-bar.tools-only{justify-content:center;}
   .sel-bar{position:fixed;left:0;right:0;bottom:var(--tb-h, 70px);z-index:951;display:flex;justify-content:center;padding-bottom:10px;pointer-events:none;}
   .sel-bar[hidden]{display:none;}
+  html.touch #spTools, html.touch #vocabTools{display:none !important;}
   @media (min-width:821px){.sel-bar{left:268px;}}
   .sel-bar .segmented{pointer-events:auto;box-shadow:var(--shadow-md);}
   .sel-bar .segmented button{min-width:58px;padding:9px 14px;font-size:19px;}
@@ -4343,6 +4344,20 @@ function clearRowSelection() {
 
 function selectionTarget() {
   if (!isTouch()) return null;
+  if (currentView === "study" && groupState && isCardMode()) {
+    const row = getCurrentSingleCardRow();
+    return row ? {
+      row: row,
+      card: true
+    } : null;
+  }
+  if (currentView === "vocab" && vocabView === "card") {
+    const item = document.getElementById("vocabCard") && currentVocabItem();
+    return item ? {
+      item: item,
+      card: true
+    } : null;
+  }
   if (currentView === "study") {
     const row = selectedRowId !== null && rows.find(r => r.id === selectedRowId);
     const tr = row && document.querySelector(`#tbody tr[data-id="${row.id}"]`);
@@ -4377,7 +4392,11 @@ document.getElementById("selEdit").onclick = e => {
   const target = selectionTarget();
   if (!target) return;
   if (target.item) {
-    openVocabEditor(target.item.key, vocabView !== "group");
+    openVocabEditor(target.item.key, vocabView === "list");
+    return;
+  }
+  if (target.card) {
+    openSingleCardEdit(target.row);
     return;
   }
   clearRowSelection();
@@ -4389,7 +4408,11 @@ document.getElementById("selDelete").onclick = e => {
   const target = selectionTarget();
   if (!target) return;
   if (target.item) {
-    deleteVocabEntry(target.item, target.el);
+    if (target.card) deleteVocabEntry(target.item); else deleteVocabEntry(target.item, target.el);
+    return;
+  }
+  if (target.card) {
+    deleteAction();
     return;
   }
   clearRowSelection();
@@ -9933,7 +9956,8 @@ function fitVocabCards() {
   const below = card.getBoundingClientRect().top - toolbarTop;
   toolbar.style.position = "";
   const bar = document.getElementById("touchBar");
-  const reserve = 16 + (bar.hidden ? 0 : bar.offsetHeight);
+  const sel = document.getElementById("selBar");
+  const reserve = 16 + (bar.hidden ? 0 : bar.offsetHeight) + (sel.hidden ? 0 : sel.offsetHeight);
   const min = parseFloat(getComputedStyle(card).getPropertyValue("--front-h")) || 320;
   const height = Math.max(min, Math.floor(window.innerHeight - stickyTop - below - reserve)) + "px";
   cards.forEach(el => el.style.height = height);
@@ -9946,6 +9970,8 @@ const vocabFitObserver = new ResizeObserver(() => fitVocabCards());
 vocabFitObserver.observe(document.getElementById("vocabToolbar"));
 
 vocabFitObserver.observe(document.getElementById("touchBar"));
+
+vocabFitObserver.observe(document.getElementById("selBar"));
 
 function settleVocabCard(card, on) {
   if (!card || card.classList.contains("settled") === on) return;
