@@ -29,6 +29,8 @@ A lesson is either a video lesson (it has a YouTube, TikTok or Douyin link, or c
 
 **Sound.** The YouTube button (or S) plays the cards' video clips, at the speed beside it. Cards without a clip are read aloud in their turn, so clips and reading alternate; in a lesson without a video the button becomes 🔊 and reads the questions aloud. The speed sits beside the button whether it plays clips or reads aloud, and reading aloud follows it too, in Lessons and in Vocabulary. While sound plays, the button shows a pause mark (the YouTube mark with ⏸ bars for clips, ⏸ for reading) and is filled with the mode's colour; press it again to stop. Sound also stops at once, mid-word, when you grade or move on, switch mode, lesson or view, or switch between Lessons and Vocabulary. Showing a group, or showing or flipping a word in Vocabulary, plays it automatically.
 
+**Out of the way while you study.** In every study mode (Group, Listening and Speaking in Lessons; Group and Flashcards in Vocabulary) the lesson's name, Save, Reset and Delete are hidden, with the language and video link in Lessons; they come back in ☰ Full and ☰ List, and when everything is studied.
+
 **No grey text.** Everything you read while studying (column headings, the ··· of hidden fields, Question and the progress line on a card, and on the Speaking paper its heading, question count, clock and Notes label) is in the normal text colour.
 
 **Back to the card.** Revealing or flipping a card, and moving on to the next one, jumps in one step to the top of the study area, in Lessons and in Vocabulary.

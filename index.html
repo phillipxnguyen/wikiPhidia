@@ -876,7 +876,7 @@ window.onYouTubeIframeAPIReady = function(){
   #dictPanels .dict-pending{position:absolute;top:0;left:0;right:0;height:0;overflow:hidden;visibility:hidden;pointer-events:none;}
   #dictPanels:not(.with-source) .dict-source, #dictPanels:not(.with-source) .dict-answer{display:none;}
   html.touch .dict-source:not(.dict-editing)::before, html.touch .dict-answer:not(.dict-editing)::before{content:"\270E";margin-right:.4em;font-size:20px;color:var(--text-2);}
-  #viewStudy.focus-study > .lesson-header, #viewStudy.focus-study > .save-status, #viewStudy.focus-study > .lesson-meta{display:none;}
+  #viewStudy.focus-study > .lesson-header, #viewStudy.focus-study > .save-status, #viewStudy.focus-study > .lesson-meta, #viewVocab.focus-study > .vocab-head{display:none;}
   .swipe-ghost{position:fixed;z-index:1000;box-sizing:border-box;display:flex;justify-content:center;border:3px solid var(--border);border-radius:28px;background:var(--surface);box-shadow:var(--shadow-md);font-size:34px;font-weight:700;pointer-events:none;}
   .swipe-ghost.row{align-items:center;border-radius:16px;font-size:20px;}
   .swipe-ghost.good{color:var(--a-label);border-color:currentColor;}
@@ -10015,6 +10015,7 @@ const VOCAB_FLIP_MS = 450;
 function renderVocab() {
   if (currentView !== "vocab") return;
   vocabStudying = false;
+  document.getElementById("viewVocab").classList.remove("focus-study");
   setTimeout(updateTouchBar, 0);
   hideDictOverlay();
   hideTooltip();
@@ -10086,6 +10087,7 @@ function renderVocab() {
   const now = Date.now();
   const buckets = new Set(studying.map(i => srsBucket(vocabStateOf(i), now)));
   vocabStudying = studying.length > 0;
+  document.getElementById("viewVocab").classList.toggle("focus-study", vocabStudying && vocabView !== "list");
   const anyDue = !!currentVocabItem();
   document.querySelectorAll("#vocabToolbar [data-view], #vocabFrontBtn").forEach(btn => btn.hidden = btn.dataset.view === "list" ? false : !anyDue || btn.dataset.view === "group" && items.length < VOCAB_GROUP_MIN || btn.id === "vocabFrontBtn" && vocabView === "list");
   if (vocabView === "list") {
