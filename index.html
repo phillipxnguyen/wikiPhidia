@@ -689,13 +689,15 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-popup{
     position:fixed;
     z-index:10000;
-    width:300px;
+    width:max-content;
+    max-width:min(320px, calc(100vw - 16px));
+    box-sizing:border-box;
     background:var(--popup-bg);
     color:var(--popup-text);
     border:1px solid #333c48;
     border-radius:var(--radius);
     box-shadow:var(--shadow-md);
-    padding:12px 38px;
+    padding:12px 16px;
     font-size:13px;
     line-height:1.45;
     display:none;
@@ -709,11 +711,16 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-popup .vocab-nav:active{background:rgba(255,255,255,.12);}
   .vocab-popup .vocab-nav.prev{left:0;border-radius:10px 0 0 10px;}
   .vocab-popup .vocab-nav.next{right:0;border-radius:0 10px 10px 0;}
-  .vocab-popup .vocab-sentence{margin-bottom:6px;white-space:pre-line;}
+  .vocab-popup.has-nav{padding-left:38px;padding-right:38px;}
+  .vocab-popup .vocab-sentence{white-space:pre-line;}
+  .vocab-popup .vocab-note{margin-top:6px;}
+  .vocab-popup .vocab-note > :first-child{margin-top:0;}
+  .vocab-popup .vocab-note > :last-child, .vocab-popup .vocab-note li:last-child{margin-bottom:0;}
+  .vocab-popup .vocab-counter:empty{display:none;}
   .vocab-popup .vocab-sentence mark, .vocab-popup .vocab-note mark{background:var(--mark-bg);color:#20242b;border-radius:3px;padding:0 2px;font-style:normal;}
   .vocab-popup .vocab-note{font-style:italic;}
   .vocab-popup .vocab-note:empty{display:none;}
-  .vocab-popup .vocab-counter{margin-top:6px;font-size:11px;color:var(--popup-muted);text-align:center;white-space:pre-line;}
+  .vocab-popup .vocab-counter{margin-top:6px;font-size:11px;line-height:1.2;color:var(--popup-muted);text-align:center;white-space:pre-line;}
 
   .toast-container{position:fixed;left:16px;bottom:16px;display:flex;flex-direction:column;gap:6px;z-index:2000;pointer-events:none;}
   .toast{
@@ -4200,6 +4207,7 @@ function renderVocabPopup() {
   const multi = vocabMatches.length > 1;
   const away = m.lesson && m.lesson.id !== currentLessonId && !rows.includes(m.row) ? m.lesson.name : "";
   popup.querySelector(".vocab-counter").textContent = [ away, multi ? vocabIndex + 1 + " / " + vocabMatches.length : "" ].filter(Boolean).join("\n");
+  popup.classList.toggle("has-nav", multi);
   popup.querySelector(".prev").style.display = multi && vocabIndex > 0 ? "block" : "none";
   popup.querySelector(".next").style.display = multi && vocabIndex < vocabMatches.length - 1 ? "block" : "none";
 }
