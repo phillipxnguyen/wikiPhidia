@@ -5405,9 +5405,17 @@ function wireEditBox(host, row) {
     const anchor = list && sentenceOrderAnchor(list, text, editQ.textContent + "\n" + editA.textContent);
     let newLi = null;
     if (anchor) {
-      newLi = document.createElement("li");
-      newLi.innerHTML = "<b>" + escapeHtml(text) + "</b>: ";
-      list.insertBefore(newLi, anchor);
+      const at = Array.from(list.children).indexOf(anchor);
+      const copy = list.cloneNode(true);
+      const li = document.createElement("li");
+      li.innerHTML = "<b>" + escapeHtml(text) + "</b>: ";
+      copy.insertBefore(li, copy.children[at]);
+      range.selectNode(list);
+      sel.removeAllRanges();
+      sel.addRange(range);
+      document.execCommand("insertHTML", false, copy.outerHTML);
+      const placed = editNotes.querySelector("ul.notes-list");
+      newLi = placed && placed.children[at] || null;
     } else if (list) {
       range.selectNodeContents(list);
       range.collapse(false);
