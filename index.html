@@ -10043,8 +10043,14 @@ function vocabFrontHeight(card) {
 
 function sizeVocabCard(card) {
   if (!card) return;
-  const back = card.querySelector(".vocab-back");
-  card.style.height = (card.classList.contains("flipped") && back ? Math.max(vocabFrontHeight(card), back.scrollHeight) : vocabFrontHeight(card)) + "px";
+  const before = card.style.height;
+  card.style.transition = "none";
+  card.style.height = vocabFrontHeight(card) + "px";
+  const height = Math.max(vocabFrontHeight(card), ...[ ...card.querySelectorAll(".vocab-face") ].map(f => f.scrollHeight)) + "px";
+  card.style.height = before;
+  void card.offsetHeight;
+  card.style.transition = "";
+  card.style.height = height;
 }
 
 function renderVocab() {
@@ -10968,14 +10974,7 @@ function flipVocab() {
   if (card) {
     card.classList.toggle("flipped", vocabSession.flipped);
     clearTimeout(card.growTimer);
-    if (vocabSession.flipped) {
-      card.growTimer = setTimeout(() => {
-        sizeVocabCard(card);
-        card.querySelectorAll(".vocab-back-stroke .stroke-target").forEach(t => t.dispatchEvent(new Event("click")));
-      }, VOCAB_FLIP_MS * .5);
-    } else {
-      sizeVocabCard(card);
-    }
+    if (vocabSession.flipped) card.growTimer = setTimeout(() => card.querySelectorAll(".vocab-back-stroke .stroke-target").forEach(t => t.dispatchEvent(new Event("click"))), VOCAB_FLIP_MS * .5);
   }
   if (!vocabSession.flipped) stopVocabSound(); else playVocabSound(item);
 }
