@@ -309,7 +309,8 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-card.flipped .vocab-card-inner{transform:rotateY(180deg);}
   .vocab-face{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;gap:14px;padding:36px 24px;text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow-md);backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:auto;}
   .vocab-back{transform:rotateY(180deg);background:var(--a-bg);justify-content:flex-start;gap:0;padding:16px;overflow-y:auto;overscroll-behavior:contain;}
-  .vocab-face.vocab-back > .vocab-back-main{padding-top:20px;}
+  .vocab-face.vocab-back > .vocab-back-main{box-sizing:border-box;padding:20px 24px 0;}
+  @media (max-width:600px){.vocab-face.vocab-back > .vocab-back-main{padding:20px 8px 0;}}
   .vocab-face.vocab-back > .vocab-back-main{margin:0;display:flex;flex-direction:column;align-items:center;gap:14px;width:100%;flex:none;}
   .vocab-face.vocab-back > .vocab-back-stroke, .vocab-face.vocab-back > .vocab-back-dict{margin:16px 0 0;flex:none;}
   .vocab-back-dict{width:100%;height:360px;box-sizing:border-box;overflow:hidden;border:1px solid var(--border);border-radius:8px;background:#fff;}
@@ -9975,30 +9976,31 @@ function buildVocabCard(item) {
 
 const inkCanvas = document.createElement("canvas").getContext("2d");
 
-function inkBounds(el) {
+function inkBounds(el, withReadings) {
   const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, {
-    acceptNode: n => n.parentElement.closest(".rd, rt") || !n.textContent.trim() ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT
+    acceptNode: n => !withReadings && n.parentElement.closest(".rd, rt") || !n.textContent.trim() ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT
   });
   const range = document.createRange();
-  let top = Infinity, bottom = -Infinity, text = "";
+  let top = Infinity, bottom = -Infinity;
   for (let n = walker.nextNode(); n; n = walker.nextNode()) {
     range.selectNodeContents(n);
-    [ ...range.getClientRects() ].filter(r => r.width && r.height).forEach(r => {
-      top = Math.min(top, r.top);
-      bottom = Math.max(bottom, r.bottom);
+    const rects = [ ...range.getClientRects() ].filter(r => r.width && r.height);
+    if (!rects.length) continue;
+    const cs = getComputedStyle(n.parentElement);
+    inkCanvas.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+    const m = inkCanvas.measureText(n.textContent.trim());
+    const above = m.fontBoundingBoxAscent != null ? m.fontBoundingBoxAscent - m.actualBoundingBoxAscent : 0;
+    const below = m.fontBoundingBoxDescent != null ? m.fontBoundingBoxDescent - m.actualBoundingBoxDescent : 0;
+    rects.forEach(r => {
+      top = Math.min(top, r.top + above);
+      bottom = Math.max(bottom, r.bottom - below);
     });
-    text += n.textContent;
   }
   if (top === Infinity) return null;
-  const cs = getComputedStyle(el);
-  inkCanvas.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
-  const m = inkCanvas.measureText(text.trim());
-  if (m.fontBoundingBoxAscent != null) {
-    top += m.fontBoundingBoxAscent - m.actualBoundingBoxAscent;
-    bottom -= m.fontBoundingBoxDescent - m.actualBoundingBoxDescent;
-  }
   el.querySelectorAll("mark").forEach(mark => {
-    bottom = Math.max(bottom, mark.getBoundingClientRect().bottom);
+    const r = mark.getBoundingClientRect();
+    top = Math.min(top, r.top);
+    bottom = Math.max(bottom, r.bottom);
   });
   return {
     top: top,
@@ -10007,16 +10009,23 @@ function inkBounds(el) {
 }
 
 function balanceVocabBack(card) {
-  const main = card && card.querySelector(".vocab-back-main");
+  const back = card && card.querySelector(".vocab-back");
+  const main = back && back.querySelector(".vocab-back-main");
   const ctxs = main ? main.querySelectorAll(".vocab-ctx") : [];
   const meaning = main && main.querySelector(".vocab-meaning");
-  const sentence = ctxs.length ? inkBounds(ctxs[ctxs.length - 1]) : null;
-  const words = meaning ? inkBounds(meaning) : null;
-  if (!sentence || !words) return;
-  const gap = Math.max(8, Math.round(words.top - sentence.bottom));
+  if (!ctxs.length || !meaning) return;
+  meaning.style.marginTop = "";
+  const first = inkBounds(ctxs[0], true);
+  const sentence = inkBounds(ctxs[ctxs.length - 1]);
+  let words = inkBounds(meaning);
+  if (!first || !sentence || !words) return;
+  const backRect = back.getBoundingClientRect();
+  const gap = Math.max(12, Math.round(first.top - backRect.top - back.clientTop + back.scrollTop));
+  meaning.style.marginTop = Math.round(gap - (words.top - sentence.bottom)) + "px";
+  words = inkBounds(meaning);
   const under = main.getBoundingClientRect().bottom - words.bottom;
-  const stroke = card.querySelector(".vocab-back-stroke");
-  const dict = card.querySelector(".vocab-back-dict");
+  const stroke = back.querySelector(".vocab-back-stroke");
+  const dict = back.querySelector(".vocab-back-dict");
   const strokeShown = stroke.style.display !== "none" && stroke.childElementCount;
   stroke.style.marginTop = Math.max(0, gap - under) + "px";
   dict.style.marginTop = (strokeShown ? gap : Math.max(0, gap - under)) + "px";
