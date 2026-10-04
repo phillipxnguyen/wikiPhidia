@@ -11619,6 +11619,14 @@ function toggleBigVideo() {
   return true;
 }
 
+function focusLessonSearch() {
+  const shell = document.querySelector(".shell");
+  if (getComputedStyle(document.querySelector(".sidebar")).position === "fixed") shell.classList.add("drawer-open");
+  const box = document.getElementById("lessonSearch");
+  box.focus();
+  box.select();
+}
+
 function addFromKey() {
   const plus = [ document.getElementById("listAddCard"), document.getElementById("vocabAddWord") ].find(b => b && !b.hidden && b.getClientRects().length);
   (plus || document.getElementById("btnAddCards")).click();
@@ -11634,11 +11642,21 @@ const APP_KEYS = {
   KeyM: () => (currentView === "study" || currentView === "vocab") && cycleMode(),
   KeyF: () => currentView === "vocab" && !document.getElementById("vocabFrontBtn").hidden && document.getElementById("vocabFrontBtn").click(),
   KeyY: () => currentView === "study" && toggleBigVideo(),
+  KeyT: () => document.getElementById("btnTheme").click(),
+  Slash: () => focusLessonSearch(),
   BracketLeft: () => (currentView === "study" || currentView === "vocab") && stepSpeed(-1),
   BracketRight: () => (currentView === "study" || currentView === "vocab") && stepSpeed(1)
 };
 
 document.addEventListener("keydown", e => {
+  if ((e.metaKey || e.ctrlKey) && !e.altKey && e.code === "KeyS") {
+    e.preventDefault();
+    if (e.repeat || tabPaused || !currentLessonId || currentLessonId === VOCAB_ALL_ID || isVirtualLesson()) return;
+    exportCurrentLesson({
+      shiftKey: e.shiftKey
+    });
+    return;
+  }
   if (e.isComposing || e.keyCode === 229 || e.metaKey || e.ctrlKey || e.altKey || e.shiftKey || e.repeat || tabPaused) return;
   const act = APP_KEYS[e.code];
   if (!act || isTypingInField() || !document.getElementById("cloudDialog").hidden) return;

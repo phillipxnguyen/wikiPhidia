@@ -66,6 +66,9 @@ A lesson is either a video lesson (it has a YouTube, TikTok or Douyin link, or c
 | B | Back up |
 | W | Statistics |
 | Q | Switch between Lessons and Vocabulary |
+| T | Switch between the light and dark theme |
+| / | Jump to the lesson search box (on a phone it opens the menu first) |
+| ⌘/Ctrl + S | Save the lesson as a .json file, like Save (add Shift to pick a different file); works even while typing |
 
 The same keys work in every study mode, in Lessons and in Vocabulary. In a Lesson group, pointing at a row, or at the dictionary panel under the table that belongs to it, makes the grading keys grade just that card.
 
