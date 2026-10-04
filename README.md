@@ -46,7 +46,7 @@ A lesson is either a video lesson (it has a YouTube, TikTok or Douyin link, or c
 | --- | --- |
 | ← or Shift + Return | Again (while the card or group is still hidden, Return and Shift + Return show it first, like Space) |
 | → or Return | Good (likewise, Return shows a hidden card first) |
-| S | Sound on or off, like the YouTube or 🔊 button beside the mode buttons: whatever is playing stops (the whole group, a row looping from 1 – 5, or a sentence looping from its panel), and when nothing is playing it plays the group. The button shows pause whenever anything is playing |
+| S | Sound on or off, like the YouTube or 🔊 button beside the mode buttons: whatever is playing stops (the whole group, a row looping from 1 – 5, or a sentence looping from its panel), and when nothing is playing it plays the group. The button shows pause whenever anything is playing. If the sound was meant to be playing but nothing can be heard (the video stalled, or the browser dropped the reading), S starts it again with one press instead of first switching off the silence |
 | C | Copy the questions being studied: the whole group, or the one card |
 | E | Edit a card: the one being studied, or in a table the row you point at or have selected |
 | 1 – 5 | In a group, play just that row over and over: its video clip, or read aloud when it has none (press again to stop). Working in a sentence's dictionary panel does the same by itself |

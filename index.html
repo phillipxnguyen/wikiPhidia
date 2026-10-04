@@ -1356,6 +1356,8 @@ let listenAutoPlayOnce = false;
 
 let isSequencePlaying = false;
 
+let soundStartedAt = 0;
+
 let sequenceIndex = 0;
 
 let sequenceSpeed = 1.5;
@@ -2183,6 +2185,7 @@ function startLoop(row) {
   seqToken++;
   updateSequenceBtnUI();
   loopingRowId = row.id;
+  soundStartedAt = Date.now();
   const end = segmentEnd(row, 8);
   loopingRowData = {
     wasSequencePlaying: wasSequencePlaying,
@@ -2282,6 +2285,7 @@ function stopPlaybackForRemovedRow(id) {
   pauseVideoProgrammatically();
   if (shouldContinueSequence) {
     isSequencePlaying = true;
+    soundStartedAt = Date.now();
     updateSequenceBtnUI();
     setTimeout(() => playNextSequenceStep(), 200);
   } else {
@@ -2616,8 +2620,9 @@ function sequenceReadsAloud() {
 
 function toggleSequenceLoop() {
   if (lessonSoundOn()) {
+    const audible = lessonSoundAudible();
     stopLessonSound();
-    return;
+    if (audible) return;
   }
   if (sequenceReadsAloud()) {
     startTts("q");
@@ -2634,6 +2639,13 @@ function toggleSequenceLoop() {
 
 function lessonSoundOn() {
   return isSequencePlaying || loopingRowId !== null || ttsPlaying;
+}
+
+function lessonSoundAudible() {
+  if (Date.now() - soundStartedAt < 600 || speechSynthesis.speaking || speechSynthesis.pending) return true;
+  if (ttsPlaying || !ytPlayer || typeof ytPlayer.getPlayerState !== "function") return false;
+  const state = ytPlayer.getPlayerState();
+  return state === YT.PlayerState.PLAYING || state === YT.PlayerState.BUFFERING;
 }
 
 function stopLessonSound() {
@@ -2766,6 +2778,7 @@ function playNextSequenceStep() {
     playNextSequenceStep();
   })) return;
   loopingRowId = currentRow.id;
+  soundStartedAt = Date.now();
   markPlayingRow();
   if (currentRow.time != null && ytPlayer && ytReady && typeof ytPlayer.seekTo === "function") {
     const end = segmentEnd(currentRow, 5);
@@ -6346,6 +6359,7 @@ function speakNext() {
     if (e.error === "interrupted" || e.error === "canceled") return;
     stopTts();
   };
+  if (speechSynthesis.paused) speechSynthesis.resume();
   speechSynthesis.speak(utter);
 }
 
@@ -6373,6 +6387,7 @@ function startTts(field, onlyId = null) {
   }
   pauseVideoProgrammatically();
   ttsPlaying = true;
+  soundStartedAt = Date.now();
   ttsField = field;
   ttsOnlyId = onlyId;
   updateSequenceBtnUI();
