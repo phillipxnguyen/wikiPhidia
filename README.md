@@ -61,12 +61,12 @@ A lesson is either a video lesson (it has a YouTube, TikTok or Douyin link, or c
 | [ and ] | Slower or faster sound (the speed beside the sound button) |
 | Y | Make the video large or put it back in the bar |
 | A | Add a card or word (the ＋ in ☰ Full or ☰ List; elsewhere it opens Add cards or Add vocabularies) |
-| N | New lesson |
-| I | Import a file |
-| B | Back up |
-| W | Statistics |
-| Q | Switch between Lessons and Vocabulary |
-| T | Switch between the light and dark theme |
+| ⌘⌥N (Ctrl+Alt+N) | New lesson. The sidebar's shortcuts (N, I, B, W, Q, T) need ⌘ and ⌥ on a Mac, Ctrl and Alt elsewhere, so they are not pressed by accident; ⌘⌥I replaces the browser's developer tools while the app is in front |
+| ⌘⌥I (Ctrl+Alt+I) | Import a file |
+| ⌘⌥B (Ctrl+Alt+B) | Back up |
+| ⌘⌥W (Ctrl+Alt+W) | Statistics |
+| ⌘⌥Q (Ctrl+Alt+Q) | Switch between Lessons and Vocabulary |
+| ⌘⌥T (Ctrl+Alt+T) | Switch between the light and dark theme |
 | / | Jump to the lesson search box (on a phone it opens the menu first) |
 | ⌘/Ctrl + S | Save the lesson as a .json file, like Save (add Shift to pick a different file); works even while typing |
 

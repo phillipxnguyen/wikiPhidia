@@ -11664,17 +11664,20 @@ function addFromKey() {
   (plus || document.getElementById("btnAddCards")).click();
 }
 
+const SIDEBAR_KEYS = {
+  KeyN: "btnNewLesson",
+  KeyB: "btnBackupAll",
+  KeyW: "btnStats",
+  KeyI: "btnOpenFile",
+  KeyQ: "btnAppMode",
+  KeyT: "btnTheme"
+};
+
 const APP_KEYS = {
-  KeyN: () => document.getElementById("btnNewLesson").click(),
-  KeyB: () => document.getElementById("btnBackupAll").click(),
-  KeyW: () => document.getElementById("btnStats").click(),
-  KeyI: () => document.getElementById("btnOpenFile").click(),
-  KeyQ: () => document.getElementById("btnAppMode").click(),
   KeyA: () => addFromKey(),
   KeyM: () => (currentView === "study" || currentView === "vocab") && cycleMode(),
   KeyF: () => currentView === "vocab" && !document.getElementById("vocabFrontBtn").hidden && document.getElementById("vocabFrontBtn").click(),
   KeyY: () => currentView === "study" && toggleBigVideo(),
-  KeyT: () => document.getElementById("btnTheme").click(),
   Slash: () => focusLessonSearch(),
   BracketLeft: () => (currentView === "study" || currentView === "vocab") && stepSpeed(-1),
   BracketRight: () => (currentView === "study" || currentView === "vocab") && stepSpeed(1)
@@ -11687,6 +11690,12 @@ document.addEventListener("keydown", e => {
     exportCurrentLesson({
       shiftKey: e.shiftKey
     });
+    return;
+  }
+  if (e.altKey && (e.metaKey || e.ctrlKey) && !e.shiftKey && SIDEBAR_KEYS[e.code]) {
+    e.preventDefault();
+    if (e.repeat || tabPaused || !document.getElementById("cloudDialog").hidden) return;
+    document.getElementById(SIDEBAR_KEYS[e.code]).click();
     return;
   }
   if (e.isComposing || e.keyCode === 229 || e.metaKey || e.ctrlKey || e.altKey || e.shiftKey || e.repeat || tabPaused) return;
