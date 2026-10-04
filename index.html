@@ -3100,6 +3100,16 @@ function showPaperExtras(bodyEl, row) {
 
 let ieltsHintId = null;
 
+function toggleIeltsHint(row) {
+  if (!row || !row.aHidden) return;
+  if (ieltsHintId !== row.id && !ieltsHints(row).length) {
+    showToast("No notes to hint for this question");
+    return;
+  }
+  ieltsHintId = ieltsHintId === row.id ? null : row.id;
+  render();
+}
+
 function ieltsHints(row) {
   const text = (row.a || "").normalize("NFC");
   return cardWords(row).filter(i => (i.meaning || "").trim()).map(i => {
@@ -4273,13 +4283,7 @@ function handleCardAreaClick(e) {
   const isSingleCard = container.id === "singleCardBody";
   if (e.target.closest("#ieltsTimer")) {
     e.stopPropagation();
-    if (!row.aHidden) return;
-    if (ieltsHintId !== row.id && !ieltsHints(row).length) {
-      showToast("No notes to hint for this question");
-      return;
-    }
-    ieltsHintId = ieltsHintId === row.id ? null : row.id;
-    render();
+    toggleIeltsHint(row);
     return;
   }
   if (e.target.classList.contains("loop-time")) {
@@ -11675,6 +11679,12 @@ document.addEventListener("keydown", e => {
     if (!row) return;
     e.preventDefault();
     openEdit(tr, row);
+    return;
+  }
+  if (letter && e.code === "KeyH") {
+    if (!groupState || groupViewStyle !== "ielts") return;
+    e.preventDefault();
+    toggleIeltsHint(getCurrentSingleCardRow());
     return;
   }
   if (letter && e.code === "KeyV") {
