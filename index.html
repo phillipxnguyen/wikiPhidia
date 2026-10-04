@@ -460,7 +460,6 @@ window.onYouTubeIframeAPIReady = function(){
   .touch-bar.tools-only{justify-content:center;}
   .sel-bar{position:fixed;left:0;right:0;bottom:var(--tb-h, 70px);z-index:951;display:flex;justify-content:center;padding-bottom:10px;pointer-events:none;}
   .sel-bar[hidden]{display:none;}
-  html.touch #spTools{display:none !important;}
   @media (min-width:821px){.sel-bar{left:268px;}}
   .sel-bar .segmented{pointer-events:auto;box-shadow:var(--shadow-md);}
   .sel-bar .segmented button{min-width:58px;padding:9px 14px;font-size:19px;}
@@ -1241,7 +1240,6 @@ window.onYouTubeIframeAPIReady = function(){
       <button id="ieltsModeBtn" style="display:none;" aria-label="Speaking">🗒️</button>
     </div>
     <div class="toolbar-right">
-      <div id="spTools" class="segmented tool-seg" role="group" aria-label="Card" hidden><button id="spEdit" aria-label="Edit">&#9998;</button><button id="spDelete" class="sep-before" aria-label="Delete">&#10005;</button><button id="spVocab" class="sep-before sp-vocab" aria-label="Move to Vocabulary">字</button></div>
       <button id="btnPlaySequence" aria-label="Play"></button>
       <select id="playbackSpeed" style="display:none;">
         <option value="1">1x</option>
@@ -5380,8 +5378,6 @@ function syncModeButtonHighlights() {
   btn.classList.toggle("active", !!groupState && groupViewStyle === "table");
   listenBtn.classList.toggle("active", !!groupState && groupViewStyle === "listen");
   ieltsBtn.classList.toggle("active", !!groupState && groupViewStyle === "ielts");
-  document.getElementById("spTools").hidden = !(groupState && groupViewStyle === "ielts" && getCurrentSingleCardRow());
-  document.getElementById("spVocab").hidden = isVirtualLesson() || isVideoLesson();
 }
 
 function updateGroupUI() {
@@ -5574,15 +5570,6 @@ document.getElementById("groupBtn").onclick = () => goToReviewMode("table");
 document.getElementById("listenModeBtn").onclick = () => goToReviewMode("listen");
 
 document.getElementById("ieltsModeBtn").onclick = () => goToReviewMode("ielts");
-
-[ [ "spEdit", row => openSingleCardEdit(row) ], [ "spDelete", () => deleteAction() ], [ "spVocab", row => moveCardToVocab(row) ] ].forEach(([id, act]) => {
-  document.getElementById(id).onclick = e => {
-    e.currentTarget.blur();
-    const row = groupState && isCardMode() ? getCurrentSingleCardRow() : null;
-    if (row) act(row);
-  };
-});
-
 
 function ensureGroupSlot(state, i) {
   while (state.groups.length <= i) state.groups.push([]);
