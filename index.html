@@ -911,6 +911,8 @@ window.onYouTubeIframeAPIReady = function(){
   .panel-edit{text-align:left;}
   .dict-editing{border-radius:var(--radius-sm);outline:none;box-shadow:0 0 0 2px var(--accent);cursor:text;}
   .dict-frame{display:block;width:100%;height:360px;border:1px solid var(--border);border-radius:8px;background:#fff;}
+  html.touch .dict-frame:not(.live), html.touch .vocab-dict-frame:not(.live){pointer-events:none;}
+  .dict-frame.live, .vocab-back-dict:has(.live), .dict-layer iframe.live{box-shadow:0 0 0 4px color-mix(in srgb, var(--text) 16%, transparent);}
 
   .session-complete{
     display:none;
@@ -2106,6 +2108,23 @@ document.getElementById("btnClearMedia").onclick = () => {
 
 document.addEventListener("pointerdown", () => {
   document.querySelectorAll("iframe.live").forEach(f => f.classList.remove("live"));
+  if (activeDictOverlay && isTouch()) activeDictOverlay.iframe.style.pointerEvents = "none";
+}, true);
+
+document.addEventListener("click", e => {
+  if (!isTouch()) return;
+  const inside = f => {
+    const r = f.getBoundingClientRect();
+    return r.width && e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+  };
+  const frames = Array.from(document.querySelectorAll(".dict-frame, .vocab-dict-frame")).filter(f => f.offsetParent);
+  if (activeDictOverlay) frames.push(activeDictOverlay.iframe);
+  const frame = frames.find(inside);
+  if (!frame) return;
+  e.stopPropagation();
+  e.preventDefault();
+  frame.classList.add("live");
+  if (activeDictOverlay && frame === activeDictOverlay.iframe) frame.style.pointerEvents = "auto";
 }, true);
 
 document.getElementById("mediaContainer").addEventListener("click", () => {
@@ -4744,6 +4763,8 @@ let activeEdit = null;
 
 const dictOverlayLayer = document.createElement("div");
 
+dictOverlayLayer.className = "dict-layer";
+
 dictOverlayLayer.style.cssText = "position:absolute;top:0;left:0;width:0;height:0;overflow:visible;z-index:900;pointer-events:none;";
 
 document.body.appendChild(dictOverlayLayer);
@@ -4795,6 +4816,7 @@ function positionDictOverlay() {
 function hideDictOverlay() {
   if (!activeDictOverlay) return;
   cancelAnimationFrame(activeDictOverlay.rafId);
+  activeDictOverlay.iframe.classList.remove("live");
   Object.assign(activeDictOverlay.iframe.style, {
     position: "fixed",
     top: "0",
@@ -4811,7 +4833,7 @@ function showDictOverlay(placeholder, url) {
   Object.assign(iframe.style, {
     position: "absolute",
     opacity: "1",
-    pointerEvents: "auto"
+    pointerEvents: isTouch() ? "none" : "auto"
   });
   activeDictOverlay = {
     iframe: iframe,
