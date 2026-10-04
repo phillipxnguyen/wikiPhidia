@@ -7864,6 +7864,7 @@ function resetStudyState() {
 function openLesson(lesson) {
   stopAllSound();
   resetStudyState();
+  vocabView = "list";
   currentLessonId = lesson.id;
   rows = lesson.cards.map(c => {
     const r = newRow(c.q, c.a, c.time);
@@ -8402,6 +8403,15 @@ function noteRecentLesson(id) {
   } catch (e) {}
 }
 
+function showListModes() {
+  vocabView = "list";
+  if (!groupState) return;
+  savedGroupState = groupState;
+  groupState = null;
+  showAllCardsInFullMode();
+  updateGroupUI();
+}
+
 function showView(view) {
   if (view === "study" && !currentLessonId) view = "empty";
   if (view === "study" && (currentLessonId === VOCAB_ALL_ID || appMode === "vocab" && !isVirtualLesson())) view = "vocab";
@@ -8414,6 +8424,7 @@ function showView(view) {
   const changed = currentView !== view;
   if (changed) stopAllSound();
   currentView = view;
+  if (changed && (view === "study" || view === "vocab")) showListModes();
   if (changed) {
     document.getElementById("sessionCompletePanel").style.display = "none";
     document.getElementById("vocabStage").innerHTML = "";
@@ -9674,13 +9685,11 @@ const APP_MODE_KEY = "flashcards.appMode";
 
 const VOCAB_FRONT_KEY = "flashcards.vocabFront";
 
-const VOCAB_VIEW_KEY = "flashcards.vocabView";
-
 let appMode = readLocal(APP_MODE_KEY) === "vocab" ? "vocab" : "cards";
 
 let vocabFront = readLocal(VOCAB_FRONT_KEY) === "a" ? "a" : "q";
 
-let vocabView = [ "list", "group", "card" ].includes(readLocal(VOCAB_VIEW_KEY)) ? readLocal(VOCAB_VIEW_KEY) : "card";
+let vocabView = "list";
 
 const VOCAB_GROUP_MIN = 11;
 
@@ -10229,7 +10238,7 @@ function fillVocabCard(el, item) {
   fitReadings(main);
 }
 
-const VOCAB_CARD_GAP = 16;
+const VOCAB_CARD_GAP = 40;
 
 function fitVocabCards() {
   const cards = document.querySelectorAll(".vocab-deck > .vocab-card");
@@ -11345,9 +11354,6 @@ function setVocabView(view) {
   commitVocabEdit();
   stopVocabSound();
   vocabView = view;
-  try {
-    localStorage.setItem(VOCAB_VIEW_KEY, JSON.stringify(view));
-  } catch (e) {}
   if (vocabSession) {
     vocabSession.flipped = false;
     vocabSession.shown = false;
