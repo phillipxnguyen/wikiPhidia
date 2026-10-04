@@ -898,6 +898,8 @@ window.onYouTubeIframeAPIReady = function(){
   .dict-source:has(.rd){line-height:2;margin:11px 0 -14px;}
   .dict-answer{color:var(--a-text);}
   .stroke-order-panel > .dict-source, .stroke-order-panel > .dict-answer{box-sizing:border-box;width:fit-content;max-width:100%;margin-left:auto;margin-right:auto;padding:0 16px;text-align:left;}
+  .stroke-order-panel.editing > .dict-source, .stroke-order-panel.editing > .dict-answer{display:none;}
+  .panel-edit{text-align:left;}
   .dict-editing{border-radius:var(--radius-sm);outline:none;box-shadow:0 0 0 2px var(--accent);cursor:text;}
   .dict-frame{display:block;width:100%;height:360px;border:1px solid var(--border);border-radius:8px;background:#fff;}
 
@@ -1448,6 +1450,7 @@ function pushUndo(label) {
 function discardActiveEdit() {
   if (activeEdit && activeEdit.row.id === draftRowId) rows = rows.filter(r => r.id !== draftRowId);
   draftRowId = null;
+  closePanelEdit();
   activeEdit = null;
   hideDictOverlay();
 }
@@ -1853,6 +1856,16 @@ function pinMediaHead() {
 
 window.addEventListener("resize", pinMediaHead);
 
+function scrollToMedia() {
+  const head = document.querySelector("#viewStudy .study-head");
+  const sidebar = document.querySelector(".sidebar");
+  const cover = sidebar && getComputedStyle(sidebar).position === "fixed" ? Math.max(0, sidebar.getBoundingClientRect().bottom) : 0;
+  head.style.position = "static";
+  const top = head.getBoundingClientRect().top + window.scrollY - cover;
+  head.style.position = "";
+  if (window.scrollY > top) window.scrollTo(0, top);
+}
+
 function setMediaBig(big) {
   const c = mediaBox();
   if (c.classList.contains("big") === big) return;
@@ -1860,6 +1873,7 @@ function setMediaBig(big) {
   const first = video.getBoundingClientRect();
   c.classList.toggle("big", big);
   pinMediaHead();
+  if (big) scrollToMedia();
   const last = video.getBoundingClientRect();
   if (matchMedia("(prefers-reduced-motion: reduce)").matches || !first.width || !last.width) return;
   const sx = first.width / last.width, sy = first.height / last.height;
@@ -3072,7 +3086,7 @@ function renderStudy() {
     tbody.innerHTML = `<tr><td colspan="2" class="empty-msg">${msg}</td></tr>`;
     return;
   }
-  if (activeEdit) {
+  if (activeEdit && !activeEdit.panel) {
     const activeEditTr = activeEdit.tr;
     Array.from(tbody.children).forEach(child => {
       if (child !== activeEditTr) child.remove();
@@ -3179,7 +3193,7 @@ function renderSingleCard(visibleRows) {
       stopped: null
     };
   }
-  if (activeEdit && activeEdit.row.id === row.id) {
+  if (activeEdit && !activeEdit.panel && activeEdit.row.id === row.id) {
     if (autoPlay) playListenCardAudio(row);
     return;
   }
@@ -4921,11 +4935,13 @@ function commitActiveEdit() {
         notesHtml: newNotesHtml
       });
       pushUndo("Added — " + cardSummary(row));
-      rows.splice(at === -1 ? rows.length : at, 0, row);
+      stampNewVocab(row, new Set);
+      rows.splice(at === -1 ? 0 : at, 0, row);
       recordImport(1);
     }
     scheduleAutoSave();
     hideDictOverlay();
+    closePanelEdit();
     activeEdit = null;
     return;
   }
@@ -4945,17 +4961,20 @@ function commitActiveEdit() {
     activeEdit.row.qHtml = newQHtml;
     activeEdit.row.a = newA;
     activeEdit.row.aHtml = newAHtml;
+    const before = vocabKeysOf(activeEdit.row);
     activeEdit.row.notes = newNotes;
     activeEdit.row.notesHtml = newNotesHtml;
+    stampNewVocab(activeEdit.row, before);
     scheduleAutoSave();
   }
   hideDictOverlay();
+  closePanelEdit();
   activeEdit = null;
 }
 
 document.addEventListener("click", e => {
   if (!activeEdit) return;
-  if (activeEdit.tr.contains(e.target)) return;
+  if (activeEdit.tr.contains(e.target) || activeEdit.panel && e.target.closest && e.target.closest(".editing > .dict-source")) return;
   if (vocabPopupEl && vocabPopupEl.contains(e.target)) return;
   commitActiveEdit();
   setTimeout(() => {
@@ -4986,29 +5005,24 @@ window.addEventListener("blur", () => {
   reclaimKeyboardFocus();
 });
 
-function buildEditBoxInner(row) {
-  return `\n    <div class="edit-qa${isVideoLesson() ? "" : " stacked"}">\n      <div>\n        <div id="editQ" class="rich-editor" contenteditable="true" data-placeholder="Question">${isVideoLesson() ? getEditInitialHtml(row.q, row.qHtml, row.id) : row.qHtml || textHtml(row.q)}</div>\n      </div>\n      <div>\n        <div id="editA" class="rich-editor" contenteditable="true" data-placeholder="Answer">${isVideoLesson() ? row.aHtml || textHtml(row.a) : getEditInitialHtml(row.a, row.aHtml, row.id)}</div>\n      </div>\n    </div>\n    <div id="editNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes" style="margin-bottom:8px;">${notesEditorHtml(row)}</div>\n    <div class="edit-actions">\n      <button id="editSave" class="primary">Save</button>\n    </div>\n    <div id="editDict"></div>\n  `;
+function buildEditBoxInner(row, stacked) {
+  return `\n    <div class="edit-qa${stacked || !isVideoLesson() ? " stacked" : ""}">\n      <div>\n        <div id="editQ" class="rich-editor" contenteditable="true" data-placeholder="Question">${isVideoLesson() ? getEditInitialHtml(row.q, row.qHtml, row.id) : row.qHtml || textHtml(row.q)}</div>\n      </div>\n      <div>\n        <div id="editA" class="rich-editor" contenteditable="true" data-placeholder="Answer">${isVideoLesson() ? row.aHtml || textHtml(row.a) : getEditInitialHtml(row.a, row.aHtml, row.id)}</div>\n      </div>\n    </div>\n    <div id="editNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes" style="margin-bottom:8px;">${notesEditorHtml(row)}</div>\n    <div class="edit-actions">\n      <button id="editSave" class="primary">Save</button>\n    </div>\n    <div id="editDict"></div>\n  `;
 }
 
 let draftRowId = null;
 
 document.getElementById("listAddCard").onclick = e => {
   e.currentTarget.blur();
-  addSingleCard(rows.length ? {
-    id: rows[0].id,
-    after: false
-  } : null);
+  addSingleCard();
 };
 
-function addSingleCard(place) {
+function addSingleCard() {
   if (!currentLessonId || isVirtualLesson()) return;
   if (currentView !== "study") showView("study");
   if (groupState) goToReviewMode("full");
   commitActiveEdit();
-  const anchor = place && rows.findIndex(r => r.id === place.id);
-  const at = anchor == null || anchor === -1 ? rows.length : anchor + (place.after ? 1 : 0);
   const row = newRow("", "", null);
-  rows.splice(at, 0, row);
+  rows.unshift(row);
   draftRowId = row.id;
   render();
   const tr = document.querySelector(`#tbody tr[data-id="${row.id}"]`);
@@ -5021,7 +5035,7 @@ function addSingleCard(place) {
 
 document.getElementById("btnSingleCard").onclick = e => {
   e.stopPropagation();
-  addSingleCard(null);
+  addSingleCard();
 };
 
 function openEdit(tr, row) {
@@ -5168,6 +5182,40 @@ function openSingleCardEdit(row) {
   showEditBox(host);
 }
 
+function openPanelEdit(panel, row) {
+  hideTooltip();
+  hideVocabPopup();
+  hideVocabAddPopup();
+  getSelection().removeAllRanges();
+  if (activeEdit) {
+    commitActiveEdit();
+    render();
+    panel = rowDictPanel(row.id);
+    if (!panel || !rows.includes(row)) return;
+  }
+  const host = document.createElement("div");
+  host.className = "panel-edit edit-row";
+  host.innerHTML = buildEditBoxInner(row, true);
+  panel.classList.add("editing");
+  panel.insertBefore(host, panel.querySelector(".dict-stroke"));
+  wireEditBox(host, row);
+  activeEdit.panel = panel;
+  showEditBox(host);
+  const caret = document.createRange();
+  caret.selectNodeContents(activeEdit.editQ);
+  caret.collapse(false);
+  getSelection().addRange(caret);
+  activeEdit.editQ.focus({
+    preventScroll: true
+  });
+}
+
+function closePanelEdit() {
+  if (!activeEdit || !activeEdit.panel) return;
+  activeEdit.panel.classList.remove("editing");
+  activeEdit.tr.remove();
+}
+
 function wireEditBox(host, row) {
   const editQ = host.querySelector("#editQ");
   const editA = host.querySelector("#editA");
@@ -5251,7 +5299,14 @@ function wireEditBox(host, row) {
       sel.removeAllRanges();
       sel.addRange(range);
       document.execCommand("insertHTML", false, '<ul class="notes-list"><li><b>' + escapeHtml(text) + "</b>: </li></ul>");
-    } else {
+    }
+    const anchor = list && sentenceOrderAnchor(list, text, editQ.textContent + "\n" + editA.textContent);
+    let newLi = null;
+    if (anchor) {
+      newLi = document.createElement("li");
+      newLi.innerHTML = "<b>" + escapeHtml(text) + "</b>: ";
+      list.insertBefore(newLi, anchor);
+    } else if (list) {
       range.selectNodeContents(list);
       range.collapse(false);
       sel.removeAllRanges();
@@ -5259,7 +5314,7 @@ function wireEditBox(host, row) {
       document.execCommand("insertHTML", false, "<li><b>" + escapeHtml(text) + "</b>: </li>");
     }
     list = editNotes.querySelector("ul.notes-list") || Array.from(editNotes.querySelectorAll("ul")).pop();
-    const lastLi = list && list.lastElementChild;
+    const lastLi = newLi || list && list.lastElementChild;
     if (!lastLi) return;
     const caretRange = document.createRange();
     caretRange.selectNodeContents(lastLi);
@@ -6675,6 +6730,7 @@ function termInText(term, text) {
 }
 
 function appendWordItems(card, pairs) {
+  const before = vocabKeysOf(card);
   const box = document.createElement("div");
   box.innerHTML = card.notesHtml || escapeHtml(card.notes || "").replace(/\n/g, "<br>");
   let list = box.querySelector("ul.notes-list");
@@ -6690,6 +6746,7 @@ function appendWordItems(card, pairs) {
   });
   card.notesHtml = box.innerHTML;
   card.notes = plainTextOf(box.innerHTML, "\n");
+  stampNewVocab(card, before);
 }
 
 function sentenceWordsFrom(cards) {
@@ -7043,17 +7100,20 @@ function commitImport(plan, label, keepText) {
       transliterationCache.delete(cacheKey(r.id, "a"));
     }
     if (f.notes != null) {
+      const before = vocabKeysOf(r);
       r.notes = f.notes;
       r.notesHtml = escapeHtml(f.notes);
+      stampNewVocab(r, before);
     }
   });
+  newRows.forEach(r => stampNewVocab(r, new Set));
   if (groupState) {
     newRows.forEach(r => {
       r.qHidden = true;
       r.aHidden = true;
     });
   }
-  rows.push(...newRows);
+  rows.unshift(...newRows);
   if (newRows.length) recordImport(newRows.length);
   if (!keepText) document.getElementById("importText").value = "";
   renderImportPreview();
@@ -7743,7 +7803,7 @@ function resetLessonProgress() {
   pushUndo("Reset progress — " + name);
   rows.forEach(r => {
     r.srs = newSrs();
-    r.vocab = {};
+    r.vocab = keepVocabAdded(r.vocab);
     r.shuffleKeyTable = Math.random();
   });
   groupState = null;
@@ -9640,7 +9700,47 @@ function lessonVocabItems(cards) {
       }, e));
     });
   });
-  return items;
+  const added = item => item.card.vocab && item.card.vocab[item.key] && item.card.vocab[item.key].added || 0;
+  return items.sort((a, b) => added(b) - added(a));
+}
+
+let vocabAddClock = 0;
+
+let vocabStampHeld = false;
+
+function vocabStamp() {
+  if (!vocabStampHeld) {
+    vocabAddClock = Math.max(Date.now(), vocabAddClock + 1);
+    vocabStampHeld = true;
+    queueMicrotask(() => vocabStampHeld = false);
+  }
+  return vocabAddClock;
+}
+
+function vocabKeysOf(card) {
+  return new Set(vocabEntriesOf(card).map(e => e.key));
+}
+
+function stampNewVocab(card, before) {
+  const fresh = vocabEntriesOf(card).filter(e => !before.has(e.key));
+  if (!fresh.length) return;
+  const at = vocabStamp();
+  if (!card.vocab) card.vocab = {};
+  fresh.forEach(e => {
+    card.vocab[e.key] = Object.assign(card.vocab[e.key] || newSrsState(), {
+      added: at
+    });
+  });
+}
+
+function keepVocabAdded(vocab) {
+  const out = {};
+  Object.keys(vocab || {}).forEach(k => {
+    if (vocab[k] && vocab[k].added) out[k] = Object.assign(newSrsState(), {
+      added: vocab[k].added
+    });
+  });
+  return out;
 }
 
 function vocabStateOf(item) {
@@ -9659,6 +9759,7 @@ function normalizeVocabSrs(vocab) {
     Object.keys(clean).forEach(f => {
       if (typeof st[f] === "number" && isFinite(st[f])) clean[f] = st[f];
     });
+    if (typeof st.added === "number" && isFinite(st.added)) clean.added = st.added;
     out[k] = clean;
   });
   return out;
@@ -10418,6 +10519,7 @@ document.getElementById("vocabAddSingle").onclick = e => {
   e.stopPropagation();
   if (!currentLessonId || isVirtualLesson()) return;
   if (currentView !== "vocab") showView("study");
+  setVocabView("list");
   openVocabEditor(NEW_WORD_KEY, true);
 };
 
@@ -10443,7 +10545,7 @@ function resetVocabProgress() {
   stopVocabSound();
   pushUndo("Reset words — " + name);
   vocabSource().forEach(c => {
-    c.vocab = {};
+    c.vocab = keepVocabAdded(c.vocab);
   });
   vocabSession = null;
   scheduleAutoSave();
@@ -11265,6 +11367,20 @@ document.getElementById("lessonList").addEventListener("click", e => {
   openAllVocabulary();
 });
 
+function sentenceOrderAnchor(list, term, text) {
+  const sentence = (text || "").normalize("NFC");
+  const pos = t => {
+    const span = t && findTermIn(sentence, t);
+    return span ? span[0] : -1;
+  };
+  const at = pos(term);
+  if (at < 0) return null;
+  return Array.from(list.children).find(li => {
+    const b = li.querySelector("b");
+    return b && pos(b.textContent.trim()) > at;
+  }) || null;
+}
+
 function addVocabToRow(row, term, meaning) {
   const box = document.createElement("div");
   box.innerHTML = row.notesHtml || escapeHtml(row.notes || "").replace(/\n/g, "<br>");
@@ -11285,11 +11401,13 @@ function addVocabToRow(row, term, meaning) {
     }
     const li = document.createElement("li");
     li.innerHTML = itemHtml;
-    list.appendChild(li);
+    list.insertBefore(li, sentenceOrderAnchor(list, term, (row.q || "") + "\n" + (row.a || "")));
   }
   pushUndo("Added word — " + term);
+  const before = vocabKeysOf(row);
   row.notesHtml = box.innerHTML;
   row.notes = plainTextOf(box.innerHTML, "\n");
+  stampNewVocab(row, before);
   scheduleAutoSave();
   render();
   showToast("Added word — " + term);
@@ -11421,6 +11539,10 @@ function wholeDictFieldSelected() {
   } : null;
 }
 
+function editWholeDictField(whole) {
+  if (whole.el.classList.contains("dict-source")) openPanelEdit(whole.el.closest(".stroke-order-panel"), whole.row); else editDictField(whole.el, whole.row);
+}
+
 function editDictField(el, row, keepSelection) {
   const field = el.classList.contains("dict-source") ? el.dataset.field || "q" : "a";
   hideVocabPopup();
@@ -11498,7 +11620,7 @@ document.addEventListener("keydown", e => {
   const whole = wholeDictFieldSelected();
   if (whole) {
     e.preventDefault();
-    editDictField(whole.el, whole.row);
+    editWholeDictField(whole);
     return;
   }
   if (isVirtualLesson()) return;
@@ -11519,7 +11641,7 @@ document.getElementById("dictPanels").addEventListener("mouseup", e => {
   }
   const whole = e.shiftKey && wholeDictFieldSelected();
   if (whole) {
-    editDictField(whole.el, whole.row);
+    editWholeDictField(whole);
     return;
   }
   if (!e.shiftKey || isVirtualLesson()) return;
@@ -11532,7 +11654,10 @@ dictPanelsHost.addEventListener("click", e => {
   const field = isTouch() && e.target.closest(".dict-source:not(.dict-editing), .dict-answer:not(.dict-editing)");
   if (field && tapsEditMark(field, e)) {
     const row = dictSourceRow(field);
-    if (row) editDictField(field, row);
+    if (row) editWholeDictField({
+      el: field,
+      row: row
+    });
     return;
   }
   const hit = e.target.closest(".dict-source mark.vocab-hit");
