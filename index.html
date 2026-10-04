@@ -543,7 +543,7 @@ window.onYouTubeIframeAPIReady = function(){
   @media (hover:hover){.segmented button:hover{background:color-mix(in srgb, var(--accent) 10%, var(--surface));color:var(--text);}.segmented button.sp-vocab:hover{background:transparent;color:#1e9466;}}
   .segmented button.active{background:var(--surface);color:var(--text);box-shadow:var(--shadow-sm);}
   #btnPlaySequence{display:none;min-width:40px;}
-  #btnPlaySequence, #vocabSpeak, .vocab-play{position:relative;}
+  #btnPlaySequence, #vocabSpeak, .vocab-play, .tts-play{position:relative;}
   .play-sizer{visibility:hidden;}
   .play-face{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
   .yt-icon{display:block;width:20px;height:14px;}
@@ -898,12 +898,7 @@ window.onYouTubeIframeAPIReady = function(){
   .dict-source:has(.rd){line-height:2;margin:11px 0 -14px;}
   .dict-answer{color:var(--a-text);}
   .stroke-order-panel > .dict-source, .stroke-order-panel > .dict-answer{box-sizing:border-box;width:fit-content;max-width:100%;margin-left:auto;margin-right:auto;padding:0 16px;text-align:left;}
-  .stroke-order-panel{position:relative;}
-  .panel-play{position:absolute;top:8px;left:8px;width:32px;height:28px;min-width:0;padding:0;border:0;border-radius:6px;background:var(--accent-soft);color:var(--accent);font-size:14px;line-height:1;cursor:pointer;}
-  @media (hover:hover){.panel-play:hover{background:var(--accent-soft);border:0;filter:brightness(1.1);}}
-  .panel-play.looping, .panel-play.looping:hover{background:var(--accent);color:var(--on-accent);}
-  #dictPanels:not(.with-source) .panel-play, .stroke-order-panel.editing > .panel-play{display:none;}
-  #dictPanels.with-source > .stroke-order-panel > .dict-source, #dictPanels.with-source > .stroke-order-panel > .dict-answer{padding:0 32px;}
+  .dict-source > .loop-time{vertical-align:middle;}
   .stroke-order-panel.editing > .dict-source, .stroke-order-panel.editing > .dict-answer{display:none;}
   .panel-edit{text-align:left;}
   .dict-editing{border-radius:var(--radius-sm);outline:none;box-shadow:0 0 0 2px var(--accent);cursor:text;}
@@ -2223,31 +2218,30 @@ function markPlayingRow() {
     const id = Number(el.dataset.id);
     el.classList.toggle("row-playing", id === loopingRowId || ttsPlaying && id === ttsOnlyId);
   });
-  document.querySelectorAll(".loop-time").forEach(el => {
-    el.classList.toggle("looping", Number(el.dataset.id) === loopingRowId);
-  });
-  syncPanelPlay();
+  syncRowBadges();
   updateSequenceBtnUI();
   syncVocabSound();
+}
+
+function syncRowBadges() {
+  document.querySelectorAll(".loop-time[data-id]").forEach(el => {
+    const id = Number(el.dataset.id);
+    if (!el.classList.contains("tts-play")) {
+      el.classList.toggle("looping", id === loopingRowId);
+      return;
+    }
+    const face = ttsPlaying && ttsOnlyId === id ? "⏸" : "🔊";
+    el.classList.toggle("looping", face === "⏸");
+    if (el.dataset.face === face) return;
+    el.dataset.face = face;
+    el.innerHTML = playFace(face);
+  });
 }
 
 function panelRowOn(id) {
   return !isSequencePlaying && loopingRowId === id || ttsPlaying && ttsOnlyId === id;
 }
 
-function syncPanelPlay() {
-  document.querySelectorAll("#dictPanels .panel-play").forEach(el => {
-    const row = rows.find(r => r.id === Number(el.parentElement.dataset.rowId));
-    if (!row) return;
-    const on = panelRowOn(row.id), video = !!vocabVideoIdFor(row);
-    const face = on + ":" + video;
-    if (el.dataset.face === face) return;
-    el.dataset.face = face;
-    el.classList.toggle("looping", on);
-    el.setAttribute("aria-label", on ? "Stop this sentence" : "Play this sentence over and over");
-    el.innerHTML = vocabPlayFace(video, on);
-  });
-}
 
 function playListenCardAudio(row) {
   if (!row || !isListenMode()) return;
@@ -2994,18 +2988,20 @@ function renderDictPanels() {
       el.className = "stroke-order-panel dict-pending";
       el.dataset.url = url;
       el.dataset.field = field;
-      el.innerHTML = `<button class="panel-play" tabindex="-1"></button><div class="dict-source" data-field="${field}"></div><div class="dict-answer"></div><div class="dict-stroke"></div><iframe class="dict-frame"></iframe>`;
+      el.innerHTML = `<div class="dict-source" data-field="${field}"></div><div class="dict-answer"></div><div class="dict-stroke"></div><iframe class="dict-frame"></iframe>`;
       el.querySelector("iframe").src = url;
       host.appendChild(el);
     }
     el.dataset.used = now;
     el.dataset.rowId = r.id;
     const src = el.querySelector(".dict-source");
-    const key = r.id + "\u0001" + (r[field + "Html"] || r[field] || "") + "\u0001" + notesSig + "\u0001" + typeof pinyinPro + jaResults.size;
+    const badge = field === "q" ? rowPlayBadge(r) : "";
+    const key = r.id + "\u0001" + (r[field + "Html"] || r[field] || "") + "\u0001" + notesSig + "\u0001" + typeof pinyinPro + jaResults.size + "\u0001" + (badge ? r.time + ":" + ytHasError : "");
     if (src.dataset.key !== key) {
       src.dataset.key = key;
       src.innerHTML = highlightVocabInHtml(r[field + "Html"] || textHtml(r[field]), r.id);
       addReadings(src, r);
+      src.insertAdjacentHTML("afterbegin", badge);
     }
     const answer = el.querySelector(".dict-answer");
     const answerHtml = r.aHtml || escapeHtml(r.a || "");
@@ -3029,7 +3025,7 @@ function renderDictPanels() {
     }
   });
   Array.from(host.children).forEach(el => el.classList.toggle("dict-pending", !visible.has(el)));
-  syncPanelPlay();
+  syncRowBadges();
   visible.forEach(fitReadings);
   if (visible.size) guardDictFocus();
   const stale = Array.from(host.children).filter(el => Number(el.dataset.used) !== now).sort((a, b) => a.dataset.used - b.dataset.used);
@@ -3303,12 +3299,26 @@ function drawStrokeOrder(panel, text, isJa, idPrefix) {
   });
 }
 
+function rowPlayBadge(r) {
+  if (r.time != null) {
+    let badgeClasses = "loop-time";
+    if (loopingRowId === r.id) badgeClasses += " looping";
+    if (ytHasError) badgeClasses += " disabled";
+    return `<span class="${badgeClasses}" data-id="${r.id}">${formatTime(r.time)}</span>`;
+  }
+  if (!groupState || groupViewStyle !== "table") return "";
+  const on = ttsPlaying && ttsOnlyId === r.id;
+  return `<span class="loop-time tts-play${on ? " looping" : ""}" data-id="${r.id}" data-face="${on ? "⏸" : "🔊"}">${playFace(on ? "⏸" : "🔊")}</span>`;
+}
+
+function toggleRowPlay(row) {
+  if (vocabVideoIdFor(row)) {
+    if (!ytHasError) toggleLoopForRow(row);
+  } else if (ttsPlaying && ttsOnlyId === row.id) stopTts(); else startTts("q", row.id);
+}
+
 function qCellContent(r) {
-  let badgeClasses = "loop-time";
-  if (loopingRowId === r.id) badgeClasses += " looping";
-  if (ytHasError) badgeClasses += " disabled";
-  const badge = r.time != null ? `<span class="${badgeClasses}" data-id="${r.id}">${formatTime(r.time)}</span>` : "";
-  return badge + (r.qHidden ? "···" : r.qHtml || textHtml(r.q));
+  return rowPlayBadge(r) + (r.qHidden ? "···" : r.qHtml || textHtml(r.q));
 }
 
 function escapeHtml(s) {
@@ -4361,10 +4371,9 @@ function handleCardAreaClick(e) {
     toggleIeltsHint(row);
     return;
   }
-  if (e.target.classList.contains("loop-time")) {
+  if (e.target.closest(".loop-time")) {
     e.stopPropagation();
-    if (ytHasError) return;
-    toggleLoopForRow(row);
+    toggleRowPlay(row);
     return;
   }
   if (isTouch() && !(activeEdit && activeEdit.tr === container)) {
@@ -4629,15 +4638,14 @@ function startRowSound(row) {
 }
 
 dictPanelsHost.addEventListener("pointerdown", e => {
-  if (e.pointerType === "mouse" && !e.target.closest(".panel-play")) loopPanelRow(e.target);
+  if (e.pointerType === "mouse" && !e.target.closest(".loop-time")) loopPanelRow(e.target);
 }, true);
 
 dictPanelsHost.addEventListener("click", e => {
-  const play = e.target.closest(".panel-play");
+  const play = e.target.closest(".loop-time");
   if (play) {
-    e.stopPropagation();
-    play.blur();
-    const row = groupState && rows.find(r => r.id === Number(play.parentElement.dataset.rowId));
+    e.stopImmediatePropagation();
+    const row = groupState && rows.find(r => r.id === Number(play.dataset.id));
     if (!row) return;
     panelFocusId = row.id;
     if (panelRowOn(row.id)) stopLessonSound(); else startRowSound(row);
@@ -11587,7 +11595,14 @@ window.addEventListener("scroll", () => {
 });
 
 function tapsEditMark(field, e) {
-  const walker = document.createTreeWalker(field, NodeFilter.SHOW_TEXT);
+  const badge = field.querySelector(":scope > .loop-time");
+  if (badge) {
+    const b = badge.getBoundingClientRect();
+    return e.clientX < b.left && e.clientX > b.left - 44 && e.clientY > b.top - 12 && e.clientY < b.bottom + 12;
+  }
+  const walker = document.createTreeWalker(field, NodeFilter.SHOW_TEXT, {
+    acceptNode: n => n.parentElement.closest(".loop-time") ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT
+  });
   let node;
   while ((node = walker.nextNode()) && !node.nodeValue.trim()) ;
   if (!node) return true;
@@ -11628,7 +11643,9 @@ function wholeDictFieldSelected() {
   const el = start && start.closest("#dictPanels .dict-source, #dictPanels .dict-answer");
   const row = el && !el.isContentEditable && dictSourceRow(el);
   const tidy = t => t.replace(/\s+/g, "");
-  return row && tidy(sel.toString()) === tidy(el.textContent) ? {
+  const own = el.cloneNode(true);
+  own.querySelectorAll(".loop-time").forEach(b => b.remove());
+  return row && tidy(sel.toString()) === tidy(own.textContent) ? {
     el: el,
     row: row
   } : null;
