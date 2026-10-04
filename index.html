@@ -2449,7 +2449,12 @@ function moveOneCardToVocab(row) {
 function deleteRow(id) {
   const full = !!groupState && (groupViewStyle !== "table" || (groupState.groups[groupState.index] || []).length <= 1);
   if (groupState && !full) holdPage();
-  deleteRows([ id ], full ? studyParts() : [ document.querySelector(`#tbody tr[data-id="${id}"]`) || document.querySelector(`#singleCardBody[data-id="${id}"]`) ], full);
+  const panel = groupState && groupViewStyle === "table" ? rowDictPanel(id) : null;
+  const fromPanel = !!panel && panel.matches(":hover");
+  const focus = groupState && groupViewStyle === "table" ? dictFocusBefore(fromPanel ? panel : null) : null;
+  const deletedSlot = dictPanelsInOrder().indexOf(panel);
+  deleteRows([ id ], full ? studyParts() : [ fromPanel ? panel : document.querySelector(`#tbody tr[data-id="${id}"]`) || document.querySelector(`#singleCardBody[data-id="${id}"]`) ], full);
+  if (focus) keepDictFocus(focus, full ? 0 : deletedSlot !== -1 && deletedSlot < focus.slot ? focus.slot - 1 : focus.slot);
 }
 
 function deleteAction() {

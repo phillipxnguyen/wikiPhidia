@@ -54,7 +54,7 @@ A lesson is either a video lesson (it has a YouTube, TikTok or Douyin link, or c
 | ⌘/Ctrl + Z | Undo, including grades (add Shift to redo) |
 | H | In Speaking, show or hide the hint, like clicking the running clock |
 | V | Move a card of a text lesson to Vocabulary: the one being studied in Speaking, or in a table the row you point at or have selected |
-| Delete or Backspace | Delete the card. Nothing happens while a card is open for editing, or when a Vietnamese typing tool (Telex, VNI) sends Backspace to turn a letter into ê, đ, é and so on |
+| Delete or Backspace | Delete the card. In a group, pointing at a card's dictionary panel deletes that card and the panel flies off (pointing at its row, the row flies off), and the page keeps your place, the same as grading. Nothing happens while a card is open for editing, or when a Vietnamese typing tool (Telex, VNI) sends Backspace to turn a letter into ê, đ, é and so on |
 | Shift (with text selected above a dictionary) | Select part of the question to add it as a word. Select the whole question to open the full card editor inside the panel, in place of the sentence and its meaning: Question, Answer and Notes one under the other, then Save, with the stroke order and the dictionary still below. Select the whole answer to edit just the answer right there; on a computer the answer also opens by clicking it, as in the table. On a phone, tap the ✎ just before the first word of the question (full editor) or of the answer (answer only); it hides while you edit. Return saves, and so does clicking outside; Esc cancels when editing just the answer |
 | Esc | Close a popup |
 | M | Next study mode (☰ → Group / Listening / Speaking in Lessons, ☰ → 📑 → 🗃️ in Vocabulary) |
