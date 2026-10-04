@@ -4562,6 +4562,35 @@ dictPanelsHost.addEventListener("mouseleave", () => {
   hoveredRowId = null;
 });
 
+let panelSoundRowId = null;
+
+function loopPanelRow(target) {
+  if (!groupState || groupViewStyle !== "table" || currentView !== "study") return;
+  const panel = target && target.closest && target.closest("#dictPanels > .stroke-order-panel:not(.dict-pending)");
+  const row = panel && rows.find(r => r.id === Number(panel.dataset.rowId));
+  if (!row || panelSoundRowId === row.id) return;
+  panelSoundRowId = row.id;
+  if (vocabVideoIdFor(row)) {
+    if (isSequencePlaying || loopingRowId !== row.id) startLoop(row);
+  } else if (!(ttsPlaying && ttsOnlyId === row.id)) startTts("q", row.id);
+}
+
+dictPanelsHost.addEventListener("pointerdown", e => {
+  if (e.pointerType === "mouse") loopPanelRow(e.target);
+}, true);
+
+dictPanelsHost.addEventListener("click", e => {
+  if (isTouch()) loopPanelRow(e.target);
+}, true);
+
+window.addEventListener("blur", () => setTimeout(() => {
+  if (Date.now() > dictGuard.until && dictFrameFocused()) loopPanelRow(document.activeElement);
+}, 0));
+
+document.getElementById("cardTable").addEventListener("pointerdown", () => {
+  panelSoundRowId = null;
+}, true);
+
 function rowDictPanel(id) {
   return document.querySelector(`#dictPanels > [data-row-id="${id}"]:not(.dict-pending)`);
 }
