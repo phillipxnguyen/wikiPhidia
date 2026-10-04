@@ -2331,9 +2331,10 @@ function warnTranslationCard(row) {
     if (what === "cancel") translationWarned.add(row.id); else moveCardsToVocab(what === "all" ? rows.filter(isTranslationCard) : [ row ]);
   };
   const onKey = e => {
+    if (e.key === "Tab") return;
+    e.stopPropagation();
     if (e.key === "Escape" || e.key === "Enter") {
       e.preventDefault();
-      e.stopPropagation();
       act(e.key === "Enter" ? "one" : "cancel");
     }
   };
@@ -2392,7 +2393,7 @@ function moveCardsToVocab(list) {
 function moveOneCardToVocab(row) {
   const term = (row.q || "").replace(/\s+/g, " ").trim();
   const meaning = (row.a || "").replace(/\s+/g, " ").trim();
-  if (!vocabEntryOk(term, meaning)) return;
+  if (!vocabEntryOk(term)) return;
   const others = rows.filter(r => r !== row).concat(vocabExtras ? [ vocabExtras ] : []);
   const carry = vocabEntriesOf(row).filter(e => !existingVocab(e.term, others)).map(e => [ e.term, e.meaning ]);
   if (!carry.some(([t]) => normalizeVocabText(t) === normalizeVocabText(term)) && !existingVocab(term, others)) carry.unshift([ term, meaning ]);
@@ -2419,7 +2420,9 @@ function deleteRow(id) {
 
 function deleteAction() {
   if (!groupState) {
-    if (hoveredRowId !== null) deleteRow(hoveredRowId);
+    const pickedId = selectedRowId !== null ? selectedRowId : isTouch() ? null : hoveredRowId;
+    clearRowSelection();
+    if (pickedId !== null) deleteRow(pickedId);
     return;
   }
   if (groupViewStyle !== "table") {
@@ -4426,7 +4429,7 @@ document.addEventListener("click", e => {
   if (selectedRowId === null) return;
   if (e.target.closest("#tbAgain, #tbGood, #selBar")) return;
   const tr = e.target.closest("#tbody tr[data-id]");
-  if (tr && Number(tr.dataset.id) === selectedRowId && !e.target.closest(".edit-btn, .del-forever")) return;
+  if (tr && Number(tr.dataset.id) === selectedRowId) return;
   clearRowSelection();
 }, true);
 
@@ -10403,7 +10406,7 @@ function addExtraWord(termRaw, meaningRaw, explicit) {
   const term = (termRaw || "").replace(/\s+/g, " ").trim();
   const meaning = (meaningRaw || "").replace(/\s+/g, " ").trim();
   if (!term && !meaning) return true;
-  if (!vocabEntryOk(term, meaning)) return false;
+  if (!vocabEntryOk(term)) return false;
   if (existingVocab(term)) {
     warnVocabExists(term);
     return false;
@@ -10622,7 +10625,7 @@ function rewrittenVocabNotes(row, item, term, meaning) {
   };
 }
 
-function vocabEntryOk(term, meaning) {
+function vocabEntryOk(term) {
   if (!term) {
     showToast("Question can't be empty — not saved");
     return false;
@@ -10642,7 +10645,7 @@ function updateVocabEntry(item, termRaw, meaningRaw) {
   const term = (termRaw || "").replace(/\s+/g, " ").trim();
   const meaning = (meaningRaw || "").replace(/\s+/g, " ").trim();
   if (!item) return false;
-  if (!vocabEntryOk(term, meaning)) return false;
+  if (!vocabEntryOk(term)) return false;
   if (term === item.term && meaning === item.meaning) return true;
   const newKey = normalizeVocabText(term);
   if (newKey !== item.key && lessonVocabItems(vocabSource()).some(i => i.key === newKey)) {
@@ -11032,6 +11035,12 @@ setInterval(() => {
   renderVocab();
 }, 5e3);
 
+function vocabPickedKey() {
+  const listRow = vocabView === "list" && document.querySelector("#vocabList .vocab-list-row.row-selected[data-key]");
+  const selected = vocabView === "group" ? vocabSelectedKey : listRow ? listRow.dataset.key : null;
+  return selected || (isTouch() ? null : vocabHoveredKey);
+}
+
 function handleVocabKey(e) {
   if (isTypingInField()) return;
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z") {
@@ -11041,18 +11050,24 @@ function handleVocabKey(e) {
   }
   if (e.metaKey || e.ctrlKey || e.altKey || e.repeat || vocabEditingKey) return;
   if (e.code === "Backspace" || e.code === "Delete") {
-    const items = lessonVocabItems(vocabSource());
-    const hovered = vocabHoveredKey && items.find(i => i.key === vocabHoveredKey);
-    const target = hovered || (vocabView === "card" ? currentVocabItem() : null);
+    const pickedKey = vocabPickedKey();
+    const picked = pickedKey && lessonVocabItems(vocabSource()).find(i => i.key === pickedKey);
+    const target = picked || (vocabView === "card" ? currentVocabItem() : null);
     if (!target) return;
     e.preventDefault();
-    deleteByKey(() => deleteVocabEntry(target, hovered ? document.querySelector(`#vocabList .vocab-list-row[data-key="${CSS.escape(hovered.key)}"], #vocabTable tr[data-key="${CSS.escape(hovered.key)}"]`) : null));
+    deleteByKey(() => deleteVocabEntry(target, picked ? document.querySelector(`#vocabList .vocab-list-row[data-key="${CSS.escape(picked.key)}"], #vocabTable tr[data-key="${CSS.escape(picked.key)}"]`) : null));
     return;
   }
-  if (vocabView === "list") return;
+  if (vocabView === "list") {
+    const pickedKey = vocabPickedKey();
+    if (e.code !== "KeyE" || !pickedKey) return;
+    e.preventDefault();
+    openVocabEditor(pickedKey, true);
+    return;
+  }
   if (vocabView === "group") {
-    const hovered = vocabHoveredKey && currentVocabGroup().some(i => i.key === vocabHoveredKey) ? vocabHoveredKey : null;
-    const target = hovered || vocabSelectedKey;
+    const pickedKey = vocabPickedKey();
+    const target = pickedKey && currentVocabGroup().some(i => i.key === pickedKey) ? pickedKey : null;
     const row = /^Digit[1-5]$/.test(e.code) ? currentVocabGroup()[Number(e.code.slice(-1)) - 1] : null;
     if (row) toggleVocabRowSound(row.key); else if (e.code === "Space") toggleVocabGroupReveal(); else if (e.code === "KeyC") copyQuestions(currentVocabGroup().map(i => i.term)); else if (e.code === "KeyE" && target) openVocabEditor(target); else if (e.code === "KeyS") toggleVocabGroupSound(target); else if (gradeKey(e)) gradeVocabGroup(gradeKey(e) === "again", target); else return;
     e.preventDefault();
@@ -11688,7 +11703,7 @@ function revealAction() {
       current.qHidden = false;
       current.aHidden = false;
     }
-    if (groupViewStyle === "listen" && isSequencePlaying) {
+    if (isSequencePlaying) {
       stopSequenceLoop();
     } else {
       render();
