@@ -308,11 +308,10 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-card-inner{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .45s cubic-bezier(.3,.7,.3,1);}
   .vocab-card.flipped .vocab-card-inner{transform:rotateY(180deg);}
   .vocab-face{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;gap:14px;padding:36px 24px;text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow-md);backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:auto;}
-  .vocab-back{transform:rotateY(180deg);background:var(--a-bg);justify-content:flex-start;gap:16px;padding:16px;overflow-y:auto;overscroll-behavior:contain;}
+  .vocab-back{transform:rotateY(180deg);background:var(--a-bg);justify-content:flex-start;gap:0;padding:16px;overflow-y:auto;overscroll-behavior:contain;}
   .vocab-face.vocab-back > .vocab-back-main{padding-top:20px;}
-  .vocab-back .vocab-meaning{margin-bottom:-.3em;}
   .vocab-face.vocab-back > .vocab-back-main{margin:0;display:flex;flex-direction:column;align-items:center;gap:14px;width:100%;flex:none;}
-  .vocab-face.vocab-back > .vocab-back-stroke, .vocab-face.vocab-back > .vocab-back-dict{margin:0;flex:none;}
+  .vocab-face.vocab-back > .vocab-back-stroke, .vocab-face.vocab-back > .vocab-back-dict{margin:16px 0 0;flex:none;}
   .vocab-back-dict{width:100%;height:360px;box-sizing:border-box;overflow:hidden;border:1px solid var(--border);border-radius:8px;background:#fff;}
   .vocab-dict-frame{display:block;width:100%;height:100%;border:0;}
   .vocab-deck{position:relative;z-index:0;}
@@ -3634,6 +3633,7 @@ function refreshJapaneseReadings() {
   if (!item || !back) return;
   back.innerHTML = vocabBackInner(item);
   fitReadings(back);
+  balanceVocabBack(document.getElementById("vocabCard"));
 }
 
 function lessonLooksJapanese(row) {
@@ -9973,6 +9973,55 @@ function buildVocabCard(item) {
   return el;
 }
 
+const inkCanvas = document.createElement("canvas").getContext("2d");
+
+function inkBounds(el) {
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, {
+    acceptNode: n => n.parentElement.closest(".rd, rt") || !n.textContent.trim() ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT
+  });
+  const range = document.createRange();
+  let top = Infinity, bottom = -Infinity, text = "";
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+    range.selectNodeContents(n);
+    [ ...range.getClientRects() ].filter(r => r.width && r.height).forEach(r => {
+      top = Math.min(top, r.top);
+      bottom = Math.max(bottom, r.bottom);
+    });
+    text += n.textContent;
+  }
+  if (top === Infinity) return null;
+  const cs = getComputedStyle(el);
+  inkCanvas.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+  const m = inkCanvas.measureText(text.trim());
+  if (m.fontBoundingBoxAscent != null) {
+    top += m.fontBoundingBoxAscent - m.actualBoundingBoxAscent;
+    bottom -= m.fontBoundingBoxDescent - m.actualBoundingBoxDescent;
+  }
+  el.querySelectorAll("mark").forEach(mark => {
+    bottom = Math.max(bottom, mark.getBoundingClientRect().bottom);
+  });
+  return {
+    top: top,
+    bottom: bottom
+  };
+}
+
+function balanceVocabBack(card) {
+  const main = card && card.querySelector(".vocab-back-main");
+  const ctxs = main ? main.querySelectorAll(".vocab-ctx") : [];
+  const meaning = main && main.querySelector(".vocab-meaning");
+  const sentence = ctxs.length ? inkBounds(ctxs[ctxs.length - 1]) : null;
+  const words = meaning ? inkBounds(meaning) : null;
+  if (!sentence || !words) return;
+  const gap = Math.max(8, Math.round(words.top - sentence.bottom));
+  const under = main.getBoundingClientRect().bottom - words.bottom;
+  const stroke = card.querySelector(".vocab-back-stroke");
+  const dict = card.querySelector(".vocab-back-dict");
+  const strokeShown = stroke.style.display !== "none" && stroke.childElementCount;
+  stroke.style.marginTop = Math.max(0, gap - under) + "px";
+  dict.style.marginTop = (strokeShown ? gap : Math.max(0, gap - under)) + "px";
+}
+
 function fillVocabCard(el, item) {
   el.classList.toggle("answer-first", vocabFront === "a");
   el.querySelector(".vocab-term").textContent = vocabFront === "a" ? item.meaning : item.term;
@@ -9982,6 +10031,7 @@ function fillVocabCard(el, item) {
   main.dataset.html = html;
   main.innerHTML = html;
   fitReadings(main);
+  balanceVocabBack(el);
 }
 
 function showVocabDeck(stage, item) {
@@ -10969,6 +11019,7 @@ function flipVocab() {
     card.classList.toggle("flipped", vocabSession.flipped);
     clearTimeout(card.growTimer);
     card.querySelector(".vocab-back").scrollTop = 0;
+    balanceVocabBack(card);
     if (vocabSession.flipped) card.growTimer = setTimeout(() => card.querySelectorAll(".vocab-back-stroke .stroke-target").forEach(t => t.dispatchEvent(new Event("click"))), VOCAB_FLIP_MS * .5);
   }
   if (!vocabSession.flipped) stopVocabSound(); else playVocabSound(item);
