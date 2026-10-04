@@ -4562,14 +4562,26 @@ dictPanelsHost.addEventListener("mouseleave", () => {
   hoveredRowId = null;
 });
 
-let panelSoundRowId = null;
+let panelFocusId = null;
+
+let panelHushId = null;
+
+function soundSilent() {
+  return !isSequencePlaying && loopingRowId === null && !ttsPlaying;
+}
+
+function notePanelHush() {
+  panelHushId = panelFocusId !== null && soundSilent() ? panelFocusId : null;
+}
 
 function loopPanelRow(target) {
   if (!groupState || groupViewStyle !== "table" || currentView !== "study") return;
   const panel = target && target.closest && target.closest("#dictPanels > .stroke-order-panel:not(.dict-pending)");
   const row = panel && rows.find(r => r.id === Number(panel.dataset.rowId));
-  if (!row || panelSoundRowId === row.id) return;
-  panelSoundRowId = row.id;
+  if (!row) return;
+  panelFocusId = row.id;
+  if (panelHushId === row.id && soundSilent()) return;
+  panelHushId = null;
   if (vocabVideoIdFor(row)) {
     if (isSequencePlaying || loopingRowId !== row.id) startLoop(row);
   } else if (!(ttsPlaying && ttsOnlyId === row.id)) startTts("q", row.id);
@@ -4588,8 +4600,10 @@ window.addEventListener("blur", () => setTimeout(() => {
 }, 0));
 
 document.getElementById("cardTable").addEventListener("pointerdown", () => {
-  panelSoundRowId = null;
+  panelFocusId = panelHushId = null;
 }, true);
+
+document.getElementById("btnPlaySequence").addEventListener("click", () => setTimeout(notePanelHush, 0));
 
 function rowDictPanel(id) {
   return document.querySelector(`#dictPanels > [data-row-id="${id}"]:not(.dict-pending)`);
@@ -11919,6 +11933,7 @@ document.addEventListener("keydown", e => {
     const row = groupRows[pos];
     if (!row) return;
     if (vocabVideoIdFor(row)) toggleLoopForRow(row); else if (ttsPlaying && ttsOnlyId === row.id) stopTts(); else startTts("q", row.id);
+    setTimeout(notePanelHush, 0);
     return;
   }
   const letter = !e.metaKey && !e.ctrlKey && !e.altKey && !e.repeat;
