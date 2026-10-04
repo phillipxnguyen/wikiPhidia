@@ -60,8 +60,8 @@ A lesson is either a video lesson (it has a YouTube, TikTok or Douyin link, or c
 | F | In Vocabulary, switch which side shows first (⇄) |
 | [ and ] | Slower or faster sound (the speed beside the sound button) |
 | Y | Make the video large or put it back in the bar |
-| A | Add a card or word (the ＋ in ☰ Full or ☰ List; elsewhere it opens Add cards or Add vocabularies) |
-| ⌘⌥N (Ctrl+Alt+N) | New lesson. The sidebar's shortcuts (N, I, B, W, Q, T) need ⌘ and ⌥ on a Mac, Ctrl and Alt elsewhere, so they are not pressed by accident; ⌘⌥I replaces the browser's developer tools while the app is in front |
+| ⌘⌥A (Ctrl+Alt+A) | Add a card or word (the ＋ in ☰ Full or ☰ List; elsewhere it opens Add cards or Add vocabularies) |
+| ⌘⌥N (Ctrl+Alt+N) | New lesson. The sidebar's shortcuts (N, I, B, W, Q, T) and A need ⌘ and ⌥ on a Mac, Ctrl and Alt elsewhere, so they are not pressed by accident; ⌘⌥I replaces the browser's developer tools while the app is in front |
 | ⌘⌥I (Ctrl+Alt+I) | Import a file |
 | ⌘⌥B (Ctrl+Alt+B) | Back up |
 | ⌘⌥W (Ctrl+Alt+W) | Statistics |
