@@ -9948,6 +9948,8 @@ function fillVocabCard(el, item) {
   fitReadings(main);
 }
 
+const VOCAB_CARD_GAP = 18;
+
 function fitVocabCards() {
   const cards = document.querySelectorAll(".vocab-deck > .vocab-card");
   const toolbar = document.getElementById("vocabToolbar");
@@ -9959,10 +9961,10 @@ function fitVocabCards() {
   const below = card.getBoundingClientRect().top - toolbarTop;
   toolbar.style.position = "";
   const bar = document.getElementById("touchBar");
-  const sel = document.getElementById("selBar");
-  const reserve = 16 + (bar.hidden ? 0 : bar.offsetHeight) + (sel.hidden ? 0 : sel.offsetHeight);
+  const sel = document.querySelector("#selBar:not([hidden]) .segmented");
+  const floor = Math.min(window.innerHeight, bar.hidden ? Infinity : bar.getBoundingClientRect().top, sel ? sel.getBoundingClientRect().top : Infinity);
   const min = parseFloat(getComputedStyle(card).getPropertyValue("--front-h")) || 320;
-  const height = Math.max(min, Math.floor(window.innerHeight - stickyTop - below - reserve)) + "px";
+  const height = Math.max(min, Math.round(floor - VOCAB_CARD_GAP - stickyTop - below)) + "px";
   cards.forEach(el => el.style.height = height);
 }
 
