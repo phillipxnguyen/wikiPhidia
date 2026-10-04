@@ -664,6 +664,7 @@ window.onYouTubeIframeAPIReady = function(){
   .rich-editor:empty::before{content:attr(data-placeholder);color:darkgray;}
   .dict-source mark.vocab-own, .rich-editor mark.vocab-own{background:color-mix(in srgb, var(--text) 22%, transparent);color:inherit;}
   .dict-source mark.vocab-hit, .rich-editor mark.vocab-hit{background:var(--vocab-bg);color:var(--vocab-text);cursor:pointer;}
+  .dict-source mark.vocab-own{cursor:pointer;}
   .dict-source mark.vocab-stack, .rich-editor mark.vocab-stack{background:linear-gradient(color-mix(in srgb, var(--text) 16%, transparent), color-mix(in srgb, var(--text) 16%, transparent)), var(--vocab-bg);}
   .dict-source mark.vocab-own.vocab-stack:not(.vocab-hit), .rich-editor mark.vocab-own.vocab-stack:not(.vocab-hit){background:color-mix(in srgb, var(--text) 36%, transparent);}
   .dict-source mark.vs, .rich-editor mark.vs{border-top-left-radius:3px;border-bottom-left-radius:3px;padding-left:1px;}
@@ -4178,6 +4179,7 @@ function highlightVocabInHtml(html, excludeId) {
         a: a,
         b: b,
         key: key,
+        term: entries[0].term,
         hit: entries.some(e => e.card !== exclude)
       });
     });
@@ -4195,6 +4197,7 @@ function highlightVocabInHtml(html, excludeId) {
       const hitKeys = cover.filter(w => w.hit).map(w => w.key);
       mark.className = [ hitKeys.length ? "vocab-hit" : "", hitKeys.length < cover.length ? "vocab-own" : "", cover.length > 1 ? "vocab-stack" : "", cover.some(w => w.a < a) ? "" : "vs", cover.some(w => w.b > b) ? "" : "ve" ].filter(Boolean).join(" ");
       if (hitKeys.length) mark.dataset.terms = hitKeys.join("\n");
+      if (hitKeys.length < cover.length) mark.dataset.own = cover.filter(w => !w.hit).map(w => w.term).join("\n");
       mark.textContent = text.slice(a, b);
       frag.appendChild(mark);
     }
@@ -11570,7 +11573,7 @@ function hideVocabAddPopup() {
   vocabAddPopup = null;
 }
 
-function showVocabAddPopup(row, term, rect) {
+function showVocabAddPopup(row, term, rect, editing) {
   hideVocabAddPopup();
   hideVocabPopup();
   const popup = document.createElement("div");
@@ -11582,7 +11585,7 @@ function showVocabAddPopup(row, term, rect) {
   if (term) {
     const bold = document.createElement("b");
     bold.textContent = term;
-    input.append(bold, ": ");
+    input.append(bold, ": " + (editing ? editing.meaning : ""));
   }
   const box = popup.getBoundingClientRect();
   let top = rect.bottom + 8;
@@ -11615,6 +11618,10 @@ function showVocabAddPopup(row, term, rect) {
     const m = input.textContent.match(VOCAB_LINE_RE);
     if (!m) {
       showToast("Write it as word: meaning");
+      return;
+    }
+    if (editing) {
+      if (updateVocabEntry(editing, m[1], m[2])) hideVocabAddPopup();
       return;
     }
     if (existingVocab(m[1])) {
@@ -11813,6 +11820,16 @@ dictPanelsHost.addEventListener("click", e => {
       el: field,
       row: row
     });
+    return;
+  }
+  const own = e.target.closest(".dict-source mark.vocab-own:not(.vocab-hit)");
+  if (own && getSelection().isCollapsed) {
+    const row = dictSourceRow(own.closest(".dict-source"));
+    const key = normalizeVocabText((own.dataset.own || "").split("\n")[0]);
+    const entry = row && vocabEntriesOf(row).find(x => x.key === key);
+    if (entry) showVocabAddPopup(row, entry.term, own.getBoundingClientRect(), Object.assign({
+      card: row
+    }, entry));
     return;
   }
   const hit = e.target.closest(".dict-source mark.vocab-hit");
