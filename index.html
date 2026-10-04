@@ -898,6 +898,12 @@ window.onYouTubeIframeAPIReady = function(){
   .dict-source:has(.rd){line-height:2;margin:11px 0 -14px;}
   .dict-answer{color:var(--a-text);}
   .stroke-order-panel > .dict-source, .stroke-order-panel > .dict-answer{box-sizing:border-box;width:fit-content;max-width:100%;margin-left:auto;margin-right:auto;padding:0 16px;text-align:left;}
+  .stroke-order-panel{position:relative;}
+  .panel-play{position:absolute;top:8px;left:8px;width:32px;height:28px;min-width:0;padding:0;border:0;border-radius:6px;background:var(--accent-soft);color:var(--accent);font-size:14px;line-height:1;cursor:pointer;}
+  @media (hover:hover){.panel-play:hover{background:var(--accent-soft);border:0;filter:brightness(1.1);}}
+  .panel-play.looping, .panel-play.looping:hover{background:var(--accent);color:var(--on-accent);}
+  #dictPanels:not(.with-source) .panel-play, .stroke-order-panel.editing > .panel-play{display:none;}
+  #dictPanels.with-source > .stroke-order-panel > .dict-source, #dictPanels.with-source > .stroke-order-panel > .dict-answer{padding:0 32px;}
   .stroke-order-panel.editing > .dict-source, .stroke-order-panel.editing > .dict-answer{display:none;}
   .panel-edit{text-align:left;}
   .dict-editing{border-radius:var(--radius-sm);outline:none;box-shadow:0 0 0 2px var(--accent);cursor:text;}
@@ -2220,7 +2226,27 @@ function markPlayingRow() {
   document.querySelectorAll(".loop-time").forEach(el => {
     el.classList.toggle("looping", Number(el.dataset.id) === loopingRowId);
   });
+  syncPanelPlay();
+  updateSequenceBtnUI();
   syncVocabSound();
+}
+
+function panelRowOn(id) {
+  return !isSequencePlaying && loopingRowId === id || ttsPlaying && ttsOnlyId === id;
+}
+
+function syncPanelPlay() {
+  document.querySelectorAll("#dictPanels .panel-play").forEach(el => {
+    const row = rows.find(r => r.id === Number(el.parentElement.dataset.rowId));
+    if (!row) return;
+    const on = panelRowOn(row.id), video = !!vocabVideoIdFor(row);
+    const face = on + ":" + video;
+    if (el.dataset.face === face) return;
+    el.dataset.face = face;
+    el.classList.toggle("looping", on);
+    el.setAttribute("aria-label", on ? "Stop this sentence" : "Play this sentence over and over");
+    el.innerHTML = vocabPlayFace(video, on);
+  });
 }
 
 function playListenCardAudio(row) {
@@ -2240,9 +2266,9 @@ function stopLoop() {
   render();
   if (wasSequencePlaying) {
     isSequencePlaying = true;
-    updateSequenceBtnUI();
     setTimeout(() => playNextSequenceStep(), 300);
   }
+  markPlayingRow();
 }
 
 function stopPlaybackForRemovedRow(id) {
@@ -2588,8 +2614,12 @@ function sequenceReadsAloud() {
 }
 
 function toggleSequenceLoop() {
+  if (lessonSoundOn()) {
+    stopLessonSound();
+    return;
+  }
   if (sequenceReadsAloud()) {
-    if (ttsPlaying && ttsField === "q") stopTts(); else startTts("q");
+    startTts("q");
     return;
   }
   if (ytHasError) return;
@@ -2597,12 +2627,20 @@ function toggleSequenceLoop() {
     showToast(ytHasVideo ? "Video is still loading…" : "Add a YouTube video first");
     return;
   }
-  if (isSequencePlaying) {
-    stopSequenceLoop();
-  } else {
-    const currentRow = isCardMode() ? getCurrentSingleCardRow() : null;
-    const stillInQuizPhase = !!currentRow && currentRow.qHidden;
-    startSequenceLoop(stillInQuizPhase);
+  const currentRow = isCardMode() ? getCurrentSingleCardRow() : null;
+  startSequenceLoop(!!currentRow && currentRow.qHidden);
+}
+
+function lessonSoundOn() {
+  return isSequencePlaying || loopingRowId !== null || ttsPlaying;
+}
+
+function stopLessonSound() {
+  if (isSequencePlaying) stopSequenceLoop();
+  if (ttsPlaying) cancelSpeechOnly();
+  if (loopingRowId !== null) {
+    loopingRowData = null;
+    stopLoop();
   }
 }
 
@@ -2673,7 +2711,7 @@ function updateSequenceBtnUI() {
     return;
   }
   if (sequenceReadsAloud()) {
-    const on = ttsPlaying && ttsField === "q";
+    const on = ttsPlaying;
     btn.style.display = "inline-block";
     speedSel.style.display = "none";
     speedSel.style.display = "inline-block";
@@ -2691,8 +2729,8 @@ function updateSequenceBtnUI() {
   btn.style.display = "inline-block";
   speedSel.style.display = "inline-block";
   speedSel.value = String(sequenceSpeed);
-  btn.innerHTML = playFace(isSequencePlaying ? YT_PAUSE_ICON : YT_ICON);
-  setSequenceBtnState(btn, isSequencePlaying, true);
+  btn.innerHTML = playFace(lessonSoundOn() ? YT_PAUSE_ICON : YT_ICON);
+  setSequenceBtnState(btn, lessonSoundOn(), true);
 }
 
 function setSequenceBtnState(btn, on, enabled) {
@@ -2956,7 +2994,7 @@ function renderDictPanels() {
       el.className = "stroke-order-panel dict-pending";
       el.dataset.url = url;
       el.dataset.field = field;
-      el.innerHTML = `<div class="dict-source" data-field="${field}"></div><div class="dict-answer"></div><div class="dict-stroke"></div><iframe class="dict-frame"></iframe>`;
+      el.innerHTML = `<button class="panel-play" tabindex="-1"></button><div class="dict-source" data-field="${field}"></div><div class="dict-answer"></div><div class="dict-stroke"></div><iframe class="dict-frame"></iframe>`;
       el.querySelector("iframe").src = url;
       host.appendChild(el);
     }
@@ -2991,6 +3029,7 @@ function renderDictPanels() {
     }
   });
   Array.from(host.children).forEach(el => el.classList.toggle("dict-pending", !visible.has(el)));
+  syncPanelPlay();
   visible.forEach(fitReadings);
   if (visible.size) guardDictFocus();
   const stale = Array.from(host.children).filter(el => Number(el.dataset.used) !== now).sort((a, b) => a.dataset.used - b.dataset.used);
@@ -4582,16 +4621,29 @@ function loopPanelRow(target) {
   panelFocusId = row.id;
   if (panelHushId === row.id && soundSilent()) return;
   panelHushId = null;
-  if (vocabVideoIdFor(row)) {
-    if (isSequencePlaying || loopingRowId !== row.id) startLoop(row);
-  } else if (!(ttsPlaying && ttsOnlyId === row.id)) startTts("q", row.id);
+  if (!panelRowOn(row.id)) startRowSound(row);
+}
+
+function startRowSound(row) {
+  if (vocabVideoIdFor(row)) startLoop(row); else startTts("q", row.id);
 }
 
 dictPanelsHost.addEventListener("pointerdown", e => {
-  if (e.pointerType === "mouse") loopPanelRow(e.target);
+  if (e.pointerType === "mouse" && !e.target.closest(".panel-play")) loopPanelRow(e.target);
 }, true);
 
 dictPanelsHost.addEventListener("click", e => {
+  const play = e.target.closest(".panel-play");
+  if (play) {
+    e.stopPropagation();
+    play.blur();
+    const row = groupState && rows.find(r => r.id === Number(play.parentElement.dataset.rowId));
+    if (!row) return;
+    panelFocusId = row.id;
+    if (panelRowOn(row.id)) stopLessonSound(); else startRowSound(row);
+    notePanelHush();
+    return;
+  }
   if (isTouch()) loopPanelRow(e.target);
 }, true);
 
