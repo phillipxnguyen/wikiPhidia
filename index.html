@@ -508,7 +508,7 @@ window.onYouTubeIframeAPIReady = function(){
   .add-target{display:flex;align-items:center;gap:8px;color:var(--text-2);font-size:14px;}
   .add-target select{max-width:420px;font-weight:600;}
   #importText{min-height:180px;}
-  .add-single{display:block;width:100%;margin-bottom:10px;padding:8px;font-size:18px;font-weight:700;line-height:1;color:var(--accent);background:var(--accent-soft);border:0;border-radius:var(--radius-sm);}
+  .add-single{display:block;width:100%;margin-bottom:16px;padding:8px;font-size:18px;font-weight:700;line-height:1;color:var(--accent);background:var(--accent-soft);border:0;border-radius:var(--radius-sm);}
   @media (hover:hover){.add-single:hover{background:color-mix(in srgb, var(--accent) 20%, transparent);}}
   .row-flex{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
   .muted-label{font-size:13px;color:var(--text-2);}
@@ -819,7 +819,6 @@ window.onYouTubeIframeAPIReady = function(){
   .single-card-body.ielts-card{background:none;border:0;box-shadow:none;padding:0;}
   .ielts-paper{--line:32px;position:relative;box-sizing:border-box;width:100%;max-width:780px;margin:0 auto;padding:30px 36px 34px;background:var(--paper);color:var(--paper-ink);border:1px solid var(--paper-edge);border-radius:3px;box-shadow:0 1px 0 var(--paper-edge), 0 14px 30px var(--paper-shadow);font-family:Georgia, "Times New Roman", serif;}
   .paper-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;padding-bottom:12px;margin-bottom:26px;border-bottom:2px solid var(--paper-ink);}
-  .paper-kicker{font-size:12px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--paper-ink-2);}
   .paper-topic{margin-top:6px;font-size:22px;font-weight:700;line-height:1.3;}
   .paper-meta{text-align:right;font-size:14px;color:var(--paper-ink-2);white-space:nowrap;}
   .paper-timer{margin-top:4px;font:600 22px/1.2 ui-monospace, "SF Mono", Menlo, Consolas, monospace;color:var(--paper-ink);}
@@ -1344,6 +1343,8 @@ let isSequencePlaying = false;
 let sequenceIndex = 0;
 
 let sequenceSpeed = 1.5;
+
+let ttsSpeed = 1;
 
 let seqToken = 0;
 
@@ -2634,6 +2635,10 @@ const YT_ICON = '<svg class="yt-icon" viewBox="0 0 28 20" aria-hidden="true"><re
 
 const YT_PAUSE_ICON = '<svg class="yt-icon" viewBox="0 0 28 20" aria-hidden="true"><rect width="28" height="20" rx="5" fill="#FF0000"/><rect x="9.5" y="5.5" width="3" height="9" rx=".8" fill="#fff"/><rect x="15.5" y="5.5" width="3" height="9" rx=".8" fill="#fff"/></svg>';
 
+function soundIsTts() {
+  return currentView === "vocab" ? !vocabShownIsVideo : sequenceReadsAloud();
+}
+
 function updateSequenceBtnUI() {
   const btn = document.getElementById("btnPlaySequence");
   const speedSel = document.getElementById("playbackSpeed");
@@ -2648,6 +2653,7 @@ function updateSequenceBtnUI() {
     btn.style.display = "inline-block";
     speedSel.style.display = "none";
     speedSel.style.display = "inline-block";
+    speedSel.value = String(ttsSpeed);
     btn.innerHTML = playFace(on ? "⏸" : "🔊");
     setSequenceBtnState(btn, on, true);
     return;
@@ -2660,6 +2666,7 @@ function updateSequenceBtnUI() {
   }
   btn.style.display = "inline-block";
   speedSel.style.display = "inline-block";
+  speedSel.value = String(sequenceSpeed);
   btn.innerHTML = playFace(isSequencePlaying ? YT_PAUSE_ICON : YT_ICON);
   setSequenceBtnState(btn, isSequencePlaying, true);
 }
@@ -2737,7 +2744,7 @@ function playNextSequenceStep() {
     }
     const utter = new SpeechSynthesisUtterance(textToRead);
     utter.lang = resolveSpeechLang(textToRead);
-    utter.rate = sequenceSpeed;
+    utter.rate = ttsSpeed;
     const voice = pickVoice(utter.lang);
     if (voice) utter.voice = voice;
     utter.onend = utter.onerror = () => {
@@ -2752,6 +2759,10 @@ function playNextSequenceStep() {
 document.getElementById("btnPlaySequence").onclick = toggleSequenceLoop;
 
 document.getElementById("playbackSpeed").onchange = e => {
+  if (soundIsTts()) {
+    ttsSpeed = parseFloat(e.target.value) || 1;
+    return;
+  }
   sequenceSpeed = parseFloat(e.target.value) || 1.5;
   if (ytPlayer && ytReady && typeof ytPlayer.setPlaybackRate === "function") {
     ytPlayer.setPlaybackRate(sequenceSpeed);
@@ -3129,7 +3140,7 @@ function ieltsPaperHtml(row) {
   const answer = row.aHidden ? hints.length ? '<div class="cell hidden paper-prompt paper-hint" data-field="a"><ol>' + hints.map(m => `<li>${escapeHtml(m)}</li>`).join("") + "</ol></div>" : '<div class="cell hidden paper-prompt" data-field="a">···</div>' : `<div class="cell shown paper-lines" data-field="a">${words.reduce((html, i) => highlightTermInNotesHtml(html, i.term), aCellContent(row))}</div>`;
   const notes = words.length ? '<aside class="paper-notes"><div class="paper-label">Notes</div><ol>' + words.map(i => `<li><b>${escapeHtml(i.term)}</b>${i.meaning ? " — " + escapeHtml(i.meaning) : ""}</li>`).join("") + "</ol></aside>" : "";
   const extras = row.aHidden ? "" : '<div class="paper-extras"><div class="paper-stroke"></div><div class="paper-dict" hidden></div></div>';
-  return `<article class="ielts-paper${notes ? " with-notes" : ""}">` + `<header class="paper-head"><div><div class="paper-kicker">Speaking</div>${topic ? `<div class="paper-topic">${escapeHtml(topic)}</div>` : ""}</div>` + `<div class="paper-meta"><div>Question <b>${n}</b> of ${ieltsAnswered + singleCardQueue().length}</div><div id="ieltsTimer" class="paper-timer${row.aHidden ? "" : " stopped"}">${ieltsClockText()}</div></div></header>` + '<div class="paper-body"><div class="paper-main">' + `<div class="paper-question"><span class="paper-num">${n}.</span><div class="cell shown" data-field="q">${qCellContent(row)}</div></div>` + `<div class="paper-answer">${answer}</div></div>${notes}</div>` + extras + "</article>";
+  return `<article class="ielts-paper${notes ? " with-notes" : ""}">` + `<header class="paper-head"><div>${topic ? `<div class="paper-topic">${escapeHtml(topic)}</div>` : ""}</div>` + `<div class="paper-meta"><div>Question <b>${n}</b> of ${ieltsAnswered + singleCardQueue().length}</div><div id="ieltsTimer" class="paper-timer${row.aHidden ? "" : " stopped"}">${ieltsClockText()}</div></div></header>` + '<div class="paper-body"><div class="paper-main">' + `<div class="paper-question"><span class="paper-num">${n}.</span><div class="cell shown" data-field="q">${qCellContent(row)}</div></div>` + `<div class="paper-answer">${answer}</div></div>${notes}</div>` + extras + "</article>";
 }
 
 function renderSingleCard(visibleRows) {
@@ -4628,7 +4639,9 @@ function findDuplicateCard(q, a, time, except) {
   return rows.find(r => r !== except && r.id !== draftRowId && (!except || r.srcLessonId === except.srcLessonId) && normalizeImportText(r.q || "") === nq && (time == null || r.time == null || r.time === time) && (!na || !(r.a || "").trim() || normalizeImportText(r.a) === na)) || null;
 }
 
-const VOCAB_TERM_MAX = 100;
+const VOCAB_TERM_MAX = 300;
+
+const NOTE_TERM_MAX = 100;
 
 function watchTermLimit(input, termOf, saveBtn) {
   const row = document.createElement("div");
@@ -6106,7 +6119,7 @@ function speakNext() {
   const text = ttsQueue[ttsIndex++];
   const utter = new SpeechSynthesisUtterance(text);
   utter.lang = resolveSpeechLang(text);
-  utter.rate = sequenceSpeed;
+  utter.rate = ttsSpeed;
   const voice = pickVoice(utter.lang);
   if (voice) utter.voice = voice;
   utter.onend = () => speakNext();
@@ -6464,7 +6477,7 @@ const Q_LABEL_RE = /^(?:q|question)\s*[:：]\s*/i;
 
 const A_LABEL_RE = /^(?:a|answer)\s*[:：]\s*/i;
 
-const WORD_PAIR_RE = new RegExp(`^([^=＝:：]{1,${VOCAB_TERM_MAX}}?)\\s*(={1,2}|＝|[:：])\\s*(.*?)\\s*$`);
+const WORD_PAIR_RE = new RegExp(`^([^=＝:：]{1,${NOTE_TERM_MAX}}?)\\s*(={1,2}|＝|[:：])\\s*(.*?)\\s*$`);
 
 function wordPairOf(line, bulleted) {
   if (matchSpacedTimestamp(line)) return null;
@@ -6491,7 +6504,7 @@ function analyzeMixed(text, side) {
     } : null;
   }).filter(Boolean);
   const items = [];
-  const isShort = l => !/[.!?。！？]$/.test(l.s) && l.s.length <= VOCAB_TERM_MAX;
+  const isShort = l => !/[.!?。！？]$/.test(l.s) && l.s.length <= NOTE_TERM_MAX;
   const isAnswerLine = l => !!l && !l.pair && !l.bulleted && !Q_LABEL_RE.test(l.s) && !/[?？]$/.test(l.s) && (A_LABEL_RE.test(l.s) || SENTENCE_END_RE.test(l.s));
   let skipTo = -1;
   info.forEach((l, i) => {
@@ -10750,7 +10763,7 @@ function syncVocabSound() {
   btn.hidden = !shown;
   speed.hidden = !shown;
   if (!speed.options.length) speed.innerHTML = document.getElementById("playbackSpeed").innerHTML;
-  speed.value = String(sequenceSpeed);
+  speed.value = String(vocabShownIsVideo ? sequenceSpeed : ttsSpeed);
   const on = vocabSoundOn();
   btn.innerHTML = playFace(vocabShownIsVideo ? on ? YT_PAUSE_ICON : YT_ICON : on ? "⏸" : "🔊");
   btn.classList.toggle("active", on);
@@ -10903,7 +10916,7 @@ function playVocabSound(item, then) {
     if (!vocabTtsOn || token !== vocabTtsToken) return;
     const utter = new SpeechSynthesisUtterance(cleanForSpeech(text));
     utter.lang = resolveSpeechLang(text);
-    utter.rate = sequenceSpeed;
+    utter.rate = ttsSpeed;
     const voice = pickVoice(utter.lang);
     if (voice) utter.voice = voice;
     utter.onend = () => setTimeout(() => {
@@ -11107,7 +11120,7 @@ function handleVocabKey(e) {
     const pickedKey = vocabPickedKey();
     const target = pickedKey && currentVocabGroup().some(i => i.key === pickedKey) ? pickedKey : null;
     const row = /^Digit[1-5]$/.test(e.code) ? currentVocabGroup()[Number(e.code.slice(-1)) - 1] : null;
-    if (row) toggleVocabRowSound(row.key); else if (e.code === "Space") toggleVocabGroupReveal(); else if (e.code === "KeyC") copyQuestions(currentVocabGroup().map(i => i.term)); else if (e.code === "KeyE" && target) openVocabEditor(target); else if (e.code === "KeyS") toggleVocabGroupSound(target); else if (gradeKey(e)) gradeVocabGroup(gradeKey(e) === "again", target); else return;
+    if (row) toggleVocabRowSound(row.key); else if (e.code === "Space") toggleVocabGroupReveal(); else if (e.code === "KeyC") copyQuestions(currentVocabGroup().map(i => i.term)); else if (e.code === "KeyE" && target) openVocabEditor(target); else if (e.code === "KeyS") toggleVocabGroupSound(target); else if (e.key === "Enter" && !vocabSession.shown) toggleVocabGroupReveal(); else if (gradeKey(e)) gradeVocabGroup(gradeKey(e) === "again", target); else return;
     e.preventDefault();
     if (document.activeElement && document.activeElement.tagName === "BUTTON") document.activeElement.blur();
     return;
@@ -11123,7 +11136,7 @@ function handleVocabKey(e) {
   if (!gradeKey(e) || !currentVocabItem()) return;
   e.preventDefault();
   if (document.activeElement && document.activeElement.tagName === "BUTTON") document.activeElement.blur();
-  flyVocab(gradeKey(e) === "again");
+  if (e.key === "Enter" && !vocabSession.flipped) flipVocab(); else flyVocab(gradeKey(e) === "again");
 }
 
 function setAppMode(mode) {
@@ -11560,6 +11573,16 @@ document.getElementById("lessonName").addEventListener("keydown", e => {
   e.target.blur();
 });
 
+function studyCardsHidden() {
+  if (!groupState) return false;
+  if (isCardMode()) {
+    const row = getCurrentSingleCardRow();
+    return !!row && (row.qHidden || row.aHidden);
+  }
+  const ids = groupState.groups[groupState.index] || [];
+  return rows.some(r => ids.includes(r.id) && (r.qHidden || r.aHidden));
+}
+
 function gradeKey(e) {
   if (e.metaKey || e.ctrlKey || e.altKey) return null;
   if (e.key === "Enter") return e.shiftKey ? "again" : "good";
@@ -11602,6 +11625,7 @@ function cycleMode() {
 
 function stepSpeed(step) {
   const sel = document.getElementById("playbackSpeed");
+  sel.value = String(soundIsTts() ? ttsSpeed : sequenceSpeed);
   const i = Math.min(sel.options.length - 1, Math.max(0, sel.selectedIndex + step));
   if (i === sel.selectedIndex) return;
   sel.selectedIndex = i;
@@ -11704,7 +11728,7 @@ document.addEventListener("keydown", e => {
   if (gradeKey(e)) {
     if (e.repeat || !groupState) return;
     e.preventDefault();
-    gradeAction(gradeKey(e) === "again");
+    if (e.key === "Enter" && studyCardsHidden()) revealAction(); else gradeAction(gradeKey(e) === "again");
     return;
   }
   if (e.code === "Space" || e.key === " ") {
