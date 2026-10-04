@@ -677,7 +677,7 @@ window.onYouTubeIframeAPIReady = function(){
     color:var(--popup-text);
     font-size:12.5px;
     line-height:1.4;
-    padding:5px 9px;
+    padding:6px 10px;
     border-radius:6px;
     z-index:1000;
     pointer-events:none;
@@ -686,6 +686,8 @@ window.onYouTubeIframeAPIReady = function(){
     white-space:pre-line;
     display:none;
   }
+  .hover-tooltip.on-popup{z-index:10001;padding:5px 9px;border:1px solid #333c48;}
+  .vocab-popup .vocab-sentence, .vocab-popup .vocab-note li, .vocab-popup .vocab-note > div{cursor:default;}
   .vocab-popup{
     position:fixed;
     z-index:10000;
@@ -3729,6 +3731,7 @@ function showTooltip(cellEl, text) {
   const tip = getTooltipEl();
   tip.textContent = text;
   tip.anchor = cellEl;
+  tip.classList.toggle("on-popup", !!(vocabPopupEl && vocabPopupEl.contains(cellEl)));
   const rect = cellEl.getBoundingClientRect();
   tip.style.left = rect.left + window.scrollX + "px";
   tip.style.top = rect.bottom + window.scrollY + 4 + "px";
@@ -4240,6 +4243,19 @@ function getVocabPopupEl() {
         renderVocabPopup();
       }
     });
+    vocabPopupEl.addEventListener("mouseover", e => {
+      if (isTouch()) return;
+      if (!showPopupReading(e.target)) hideTooltip();
+    });
+    vocabPopupEl.addEventListener("mouseleave", () => {
+      if (!isTouch()) hideTooltip();
+    });
+    vocabPopupEl.addEventListener("click", e => {
+      if (!isTouch() || e.target.closest(".vocab-nav")) return;
+      const tip = hoverTooltip;
+      const shownFor = tip && tip.style.display === "block" && vocabPopupEl.contains(tip.anchor) ? tip.anchor : null;
+      if (shownFor && popupReadingTarget(e.target) === shownFor) hideTooltip(); else if (!showPopupReading(e.target)) hideTooltip();
+    });
   }
   return vocabPopupEl;
 }
@@ -4263,8 +4279,25 @@ function highlightTermInNotesHtml(html, term) {
   return container.innerHTML;
 }
 
+function popupReadingTarget(el) {
+  const word = el.closest(".vocab-sentence mark");
+  if (word) return word;
+  const item = el.closest(".vocab-note li, .vocab-note > div");
+  return item ? item.querySelector("b, strong") || item : el.closest(".vocab-sentence");
+}
+
+function showPopupReading(el) {
+  const m = vocabMatches[vocabIndex];
+  const target = m && popupReadingTarget(el);
+  if (!target) return false;
+  if (hoverTooltip && hoverTooltip.style.display === "block" && hoverTooltip.anchor === target) return true;
+  const text = target.matches(".vocab-sentence") ? m.sentence : target.matches("mark") ? target.textContent : (target.matches("b, strong") ? target.textContent : target.textContent.split(/[:：]/)[0]).trim();
+  return !!showReading(target, text, m.row, "popup:" + text);
+}
+
 function renderVocabPopup() {
   const popup = getVocabPopupEl();
+  if (hoverTooltip && hoverTooltip.classList.contains("on-popup")) hideTooltip();
   const m = vocabMatches[vocabIndex];
   popup.querySelector(".vocab-sentence").innerHTML = highlightMatch(m.sentence, m.term);
   const notesHtml = m.row.notesHtml || escapeHtml(m.row.notes || "");
@@ -4293,7 +4326,9 @@ function showVocabPopup(matches, anchorRect) {
 }
 
 function hideVocabPopup() {
-  if (vocabPopupEl) vocabPopupEl.style.display = "none";
+  if (!vocabPopupEl) return;
+  vocabPopupEl.style.display = "none";
+  if (hoverTooltip && hoverTooltip.classList.contains("on-popup")) hideTooltip();
 }
 
 document.addEventListener("mousedown", e => {
