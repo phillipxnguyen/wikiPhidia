@@ -6056,20 +6056,22 @@ function studyParts() {
 
 function ghostFor(parts) {
   const row = parts.length === 1 && parts[0] && parts[0].tagName === "TR" || parts.length > 0 && parts.every(el => el && el.parentElement && el.parentElement.classList.contains("vocab-list-row"));
-  const pad = row ? 0 : 14;
-  const rects = parts.filter(el => el && el.offsetParent).map(el => el.getBoundingClientRect()).filter(r => r.height > 1);
+  const shown = parts.filter(el => el && el.offsetParent && el.getBoundingClientRect().height > 1);
+  const rects = shown.map(el => el.getBoundingClientRect());
   if (!rects.length) return null;
-  const left = Math.min(...rects.map(r => r.left)) - pad;
-  const top = Math.min(...rects.map(r => r.top)) - pad;
-  const bottom = Math.max(...rects.map(r => r.bottom)) + pad;
+  const left = Math.min(...rects.map(r => r.left));
+  const top = Math.min(...rects.map(r => r.top));
+  const bottom = Math.max(...rects.map(r => r.bottom));
+  const shape = shown.length === 1 && (shown[0].querySelector(":scope > .vocab-card-inner > .vocab-face") || shown[0]);
   const ghost = document.createElement("div");
   ghost.className = "swipe-ghost" + (row ? " row" : "") + (currentView === "vocab" ? " mark" : "");
   Object.assign(ghost.style, {
     left: left + "px",
     top: top + "px",
-    width: Math.max(...rects.map(r => r.right)) + pad - left + "px",
+    width: Math.max(...rects.map(r => r.right)) - left + "px",
     height: bottom - top + "px"
   });
+  if (!row) ghost.style.borderRadius = shape ? getComputedStyle(shape).borderTopLeftRadius : "var(--radius)";
   if (!row) ghost.style.paddingTop = (Math.max(top, 0) + Math.min(bottom, window.innerHeight)) / 2 - top - 25 + "px";
   document.body.appendChild(ghost);
   return ghost;

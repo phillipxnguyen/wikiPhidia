@@ -75,7 +75,7 @@ A lesson is either a video lesson (it has a YouTube, TikTok or Douyin link, or c
 
 The same keys work in every study mode, in Lessons and in Vocabulary. In a Lesson group, pointing at a row, or at the dictionary panel under the table that belongs to it, makes the grading keys grade just that card.
 
-On a phone, swipe a card right for Good and left for Again. In a Lesson group, swiping one row or its dictionary panel grades just that card; swiping anywhere else grades the whole group.
+On a phone, swipe a card right for Good and left for Again. Whatever flies off (a row, a dictionary panel, a card, a whole group) is outlined exactly at its own edges, with its own rounded corners (a table row flies as a rounded strip). In a Lesson group, swiping one row or its dictionary panel grades just that card; swiping anywhere else grades the whole group.
 
 ## Vocabulary
 
