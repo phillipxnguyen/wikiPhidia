@@ -56,6 +56,16 @@ A lesson is either a video lesson (it has a YouTube, TikTok or Douyin link, or c
 | Delete or Backspace | Delete the card. Nothing happens while a card is open for editing, or when a Vietnamese typing tool (Telex, VNI) sends Backspace to turn a letter into ê, đ, é and so on |
 | Shift (with text selected above a dictionary) | Select part of the question to add it as a word; select the whole question or the whole answer to edit it right there. On a computer the answer also opens by clicking it, as in the table. On a phone, tap the ✎ just before the first word of the question or the answer; it hides while you edit. Return saves, Esc cancels |
 | Esc | Close a popup |
+| M | Next study mode (☰ → Group / Listening / Speaking in Lessons, ☰ → 📑 → 🗃️ in Vocabulary) |
+| F | In Vocabulary, switch which side shows first (⇄) |
+| [ and ] | Slower or faster sound (the speed beside the sound button) |
+| Y | Make the video large or put it back in the bar |
+| A | Add a card or word (the ＋ in ☰ Full or ☰ List; elsewhere it opens Add cards or Add vocabularies) |
+| N | New lesson |
+| I | Import a file |
+| B | Back up |
+| W | Statistics |
+| Q | Switch between Lessons and Vocabulary |
 
 The same keys work in every study mode, in Lessons and in Vocabulary. In a Lesson group, pointing at a row, or at the dictionary panel under the table that belongs to it, makes the grading keys grade just that card.
 

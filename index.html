@@ -11592,6 +11592,61 @@ function isTypingInField() {
   return tag === "INPUT" || tag === "TEXTAREA" || el.isContentEditable;
 }
 
+function cycleMode() {
+  const buttons = currentView === "vocab" ? [ ...document.querySelectorAll("#vocabToolbar [data-view]") ].filter(b => !b.hidden) : [ "fullModeBtn", "groupBtn", "listenModeBtn", "ieltsModeBtn" ].map(id => document.getElementById(id)).filter(b => b.style.display !== "none");
+  if (buttons.length < 2) return false;
+  const at = buttons.findIndex(b => b.classList.contains("active"));
+  buttons[(at + 1) % buttons.length].click();
+  return true;
+}
+
+function stepSpeed(step) {
+  const sel = document.getElementById("playbackSpeed");
+  const i = Math.min(sel.options.length - 1, Math.max(0, sel.selectedIndex + step));
+  if (i === sel.selectedIndex) return;
+  sel.selectedIndex = i;
+  sel.dispatchEvent(new Event("change"));
+  if (currentView === "vocab") syncVocabSound();
+  showToast("Speed " + sel.options[i].textContent);
+}
+
+function toggleBigVideo() {
+  const grow = document.getElementById("mediaGrow");
+  const shrink = document.getElementById("mediaShrink");
+  const btn = [ shrink, grow ].find(b => b.getClientRects().length);
+  if (!btn) return false;
+  btn.click();
+  return true;
+}
+
+function addFromKey() {
+  const plus = [ document.getElementById("listAddCard"), document.getElementById("vocabAddWord") ].find(b => b && !b.hidden && b.getClientRects().length);
+  (plus || document.getElementById("btnAddCards")).click();
+}
+
+const APP_KEYS = {
+  KeyN: () => document.getElementById("btnNewLesson").click(),
+  KeyB: () => document.getElementById("btnBackupAll").click(),
+  KeyW: () => document.getElementById("btnStats").click(),
+  KeyI: () => document.getElementById("btnOpenFile").click(),
+  KeyQ: () => document.getElementById("btnAppMode").click(),
+  KeyA: () => addFromKey(),
+  KeyM: () => (currentView === "study" || currentView === "vocab") && cycleMode(),
+  KeyF: () => currentView === "vocab" && !document.getElementById("vocabFrontBtn").hidden && document.getElementById("vocabFrontBtn").click(),
+  KeyY: () => currentView === "study" && toggleBigVideo(),
+  BracketLeft: () => (currentView === "study" || currentView === "vocab") && stepSpeed(-1),
+  BracketRight: () => (currentView === "study" || currentView === "vocab") && stepSpeed(1)
+};
+
+document.addEventListener("keydown", e => {
+  if (e.isComposing || e.keyCode === 229 || e.metaKey || e.ctrlKey || e.altKey || e.shiftKey || e.repeat || tabPaused) return;
+  const act = APP_KEYS[e.code];
+  if (!act || isTypingInField() || !document.getElementById("cloudDialog").hidden) return;
+  if (currentView === "vocab" && vocabEditingKey || activeEdit) return;
+  e.preventDefault();
+  act();
+});
+
 document.addEventListener("keydown", e => {
   if (e.isComposing || e.keyCode === 229) return;
   const cloudDialog = document.getElementById("cloudDialog");
