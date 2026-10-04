@@ -308,10 +308,13 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-card-inner{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .6s cubic-bezier(.45,.05,.2,1);}
   .vocab-card.flipped .vocab-card-inner{transform:rotateX(180deg);}
   .vocab-face{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;gap:14px;padding:36px 24px;text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow-md);backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:auto;}
-  .vocab-back{transform:rotateX(180deg);background:var(--a-bg);justify-content:flex-start;gap:28px;overflow:hidden;}
+  .vocab-back{transform:rotateX(180deg);background:var(--a-bg);justify-content:flex-start;gap:32px;padding:32px 24px;overflow:hidden;}
   .vocab-face.vocab-back > .vocab-back-main{margin:0;display:flex;flex-direction:column;align-items:center;gap:14px;width:100%;flex:none;}
   .vocab-face.vocab-back > .vocab-back-stroke, .vocab-face.vocab-back > .vocab-back-dict{margin:0;flex:none;}
-  .vocab-back-dict{width:100%;height:360px;border-radius:10px;background:var(--surface);}
+  .vocab-back-dict{width:100%;height:360px;box-sizing:border-box;overflow:hidden;border:1px solid var(--border);border-radius:10px;background:var(--surface);}
+  .vocab-dict-frame{display:block;width:100%;height:100%;border:0;}
+  .vocab-deck{position:relative;z-index:0;}
+  .vocab-card.pending{position:absolute;top:0;left:0;right:0;opacity:0;pointer-events:none;z-index:-1;}
   .vocab-back-dict[hidden]{display:none;}
   .vocab-face > :first-child{margin-top:auto;}
   .vocab-face > :last-child{margin-bottom:auto;}
@@ -9935,11 +9938,79 @@ function vocabBackInner(item) {
   return main + `<div class="vocab-meaning">${escapeHtml(item.meaning)}</div>`;
 }
 
-function vocabCardHtml(item) {
-  const frontText = vocabFront === "a" ? item.meaning : item.term;
-  const front = `<div class="vocab-face vocab-front"><div class="vocab-term">${escapeHtml(frontText)}</div></div>`;
-  const back = `<div class="vocab-face vocab-back"><div class="vocab-back-main">${vocabBackInner(item)}</div><div class="vocab-back-stroke"></div><div class="vocab-back-dict" hidden></div></div>`;
-  return `<div class="vocab-card${vocabFront === "a" ? " answer-first" : ""}${vocabSession.flipped ? " flipped" : ""}" id="vocabCard">` + `<div class="vocab-card-inner">${front}${back}</div>` + '<span class="vocab-actions vocab-card-actions vocab-touch-only"><button class="vocab-act-edit" aria-label="Edit this word">&#9998;</button><button class="vocab-act-del" aria-label="Delete this word">&#10005;</button></span>' + "</div>";
+const VOCAB_CARD_ACTIONS = '<span class="vocab-actions vocab-card-actions vocab-touch-only"><button class="vocab-act-edit" aria-label="Edit this word">&#9998;</button><button class="vocab-act-del" aria-label="Delete this word">&#10005;</button></span>';
+
+let vocabCardSeq = 0;
+
+function buildVocabCard(item) {
+  const el = document.createElement("div");
+  const url = vocabDictUrl(item) || "";
+  el.className = "vocab-card";
+  el.dataset.key = item.key;
+  el.dataset.term = item.term;
+  el.dataset.url = url;
+  el.innerHTML = '<div class="vocab-card-inner"><div class="vocab-face vocab-front"><div class="vocab-term"></div></div>' + `<div class="vocab-face vocab-back"><div class="vocab-back-main"></div><div class="vocab-back-stroke"></div><div class="vocab-back-dict"${url ? "" : " hidden"}>${url ? '<iframe class="vocab-dict-frame"></iframe>' : ""}</div></div></div>` + VOCAB_CARD_ACTIONS;
+  if (url) el.querySelector("iframe").src = url;
+  drawStrokeOrder(el.querySelector(".vocab-back-stroke"), item.term, cjkScriptFor(item.term, item.card) === "ja", "vocabStroke" + ++vocabCardSeq);
+  const current = () => {
+    const it = el.id === "vocabCard" ? currentVocabItem() : null;
+    return it && it.key === el.dataset.key ? it : null;
+  };
+  el.querySelector(".vocab-act-edit").onclick = e => {
+    e.stopPropagation();
+    if (current()) openVocabEditor(el.dataset.key);
+  };
+  el.querySelector(".vocab-act-del").onclick = e => {
+    e.stopPropagation();
+    const it = current();
+    if (it) deleteVocabEntry(it);
+  };
+  el.addEventListener("click", e => {
+    if (current() && !e.target.closest(".vocab-actions, .vocab-back-stroke")) flipVocab();
+  });
+  return el;
+}
+
+function fillVocabCard(el, item) {
+  el.classList.toggle("answer-first", vocabFront === "a");
+  el.querySelector(".vocab-term").textContent = vocabFront === "a" ? item.meaning : item.term;
+  const main = el.querySelector(".vocab-back-main");
+  const html = vocabBackInner(item);
+  if (main.dataset.html === html) return;
+  main.dataset.html = html;
+  main.innerHTML = html;
+  fitReadings(main);
+}
+
+function showVocabDeck(stage, item) {
+  let deck = stage.children.length === 1 && stage.firstElementChild.classList.contains("vocab-deck") ? stage.firstElementChild : null;
+  if (!deck) {
+    stage.innerHTML = '<div class="vocab-deck"></div>';
+    deck = stage.firstElementChild;
+  }
+  const nextKey = vocabSession && vocabSession.queue[1];
+  const next = nextKey && nextKey !== item.key ? lessonVocabItems(vocabSource()).find(i => i.key === nextKey) : null;
+  const want = [ item, next ].filter(Boolean);
+  const same = (el, it) => el.dataset.key === it.key && el.dataset.term === it.term && el.dataset.url === (vocabDictUrl(it) || "");
+  [ ...deck.children ].forEach(el => {
+    if (!want.some(it => same(el, it))) el.remove();
+  });
+  const cardFor = it => [ ...deck.children ].find(el => same(el, it)) || deck.appendChild(buildVocabCard(it));
+  const card = cardFor(item);
+  const pending = next ? cardFor(next) : null;
+  [ ...deck.children ].forEach(el => {
+    el.removeAttribute("id");
+    el.classList.toggle("pending", el !== card);
+  });
+  card.id = "vocabCard";
+  fillVocabCard(card, item);
+  card.classList.toggle("flipped", !!vocabSession.flipped);
+  sizeVocabCard(card);
+  if (pending) {
+    fillVocabCard(pending, next);
+    pending.classList.remove("flipped");
+    sizeVocabCard(pending);
+  }
 }
 
 function vocabTableHtml(group) {
@@ -9974,20 +10045,6 @@ function sizeVocabCard(card) {
   if (!card) return;
   const back = card.querySelector(".vocab-back");
   card.style.height = (card.classList.contains("flipped") && back ? Math.max(vocabFrontHeight(card), back.scrollHeight) : vocabFrontHeight(card)) + "px";
-}
-
-function showVocabBack(card, item) {
-  if (!card || !card.classList.contains("flipped")) return;
-  const stroke = card.querySelector(".vocab-back-stroke");
-  if (stroke && stroke.dataset.term !== item.term) {
-    stroke.dataset.term = item.term;
-    drawStrokeOrder(stroke, item.term, cjkScriptFor(item.term, item.card) === "ja", "vocabBackStroke");
-  }
-  const holder = card.querySelector(".vocab-back-dict");
-  const url = vocabDictUrl(item);
-  holder.hidden = !url;
-  sizeVocabCard(card);
-  if (url) showDictOverlay(holder, url);
 }
 
 function renderVocab() {
@@ -10103,9 +10160,7 @@ function renderVocab() {
   if (vocabEditingKey === item.key && !vocabEditingInList) {
     stage.innerHTML = vocabEditorHtml(item);
   } else {
-    stage.innerHTML = vocabCardHtml(item);
-    fitReadings(stage);
-    wireVocabCard(item);
+    showVocabDeck(stage, item);
   }
   wireVocabEditor(items);
   syncVocabSound();
@@ -10914,11 +10969,11 @@ function flipVocab() {
     card.classList.toggle("flipped", vocabSession.flipped);
     clearTimeout(card.growTimer);
     if (vocabSession.flipped) {
-      card.growTimer = setTimeout(() => sizeVocabCard(card), VOCAB_FLIP_MS * .5);
-      card.dictTimer = setTimeout(() => showVocabBack(card, item), VOCAB_FLIP_MS);
+      card.growTimer = setTimeout(() => {
+        sizeVocabCard(card);
+        card.querySelectorAll(".vocab-back-stroke .stroke-target").forEach(t => t.dispatchEvent(new Event("click")));
+      }, VOCAB_FLIP_MS * .5);
     } else {
-      clearTimeout(card.dictTimer);
-      hideDictOverlay();
       sizeVocabCard(card);
     }
   }
@@ -11028,29 +11083,6 @@ setInterval(() => {
   startVocabSession();
   renderVocab();
 }, 5e3);
-
-function wireVocabCard(item) {
-  const card = document.getElementById("vocabCard");
-  card.querySelector(".vocab-act-edit").onclick = e => {
-    e.stopPropagation();
-    openVocabEditor(item.key);
-  };
-  card.querySelector(".vocab-act-del").onclick = e => {
-    e.stopPropagation();
-    deleteVocabEntry(item);
-  };
-  card.addEventListener("click", e => {
-    if (!e.target.closest(".vocab-actions, .vocab-back-stroke")) flipVocab();
-  });
-  sizeVocabCard(card);
-  const ownUrl = vocabDictUrl(item);
-  if (ownUrl) getDictIframe(ownUrl);
-  showVocabBack(card, item);
-  const nextKey = vocabSession && vocabSession.queue[1];
-  const next = nextKey && lessonVocabItems(vocabSource()).find(i => i.key === nextKey);
-  const nextUrl = next && vocabDictUrl(next);
-  if (nextUrl) getDictIframe(nextUrl);
-}
 
 function handleVocabKey(e) {
   if (isTypingInField()) return;
