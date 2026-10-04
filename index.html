@@ -460,7 +460,7 @@ window.onYouTubeIframeAPIReady = function(){
   .touch-bar.tools-only{justify-content:center;}
   .sel-bar{position:fixed;left:0;right:0;bottom:var(--tb-h, 70px);z-index:951;display:flex;justify-content:center;padding-bottom:10px;pointer-events:none;}
   .sel-bar[hidden]{display:none;}
-  html.touch #spTools, html.touch #vocabTools{display:none !important;}
+  html.touch #spTools{display:none !important;}
   @media (min-width:821px){.sel-bar{left:268px;}}
   .sel-bar .segmented{pointer-events:auto;box-shadow:var(--shadow-md);}
   .sel-bar .segmented button{min-width:58px;padding:9px 14px;font-size:19px;}
@@ -1184,7 +1184,6 @@ window.onYouTubeIframeAPIReady = function(){
       <button id="vocabFrontBtn" class="sep-before" aria-label="Switch which side shows first">⇄</button>
     </div>
     <div class="toolbar-right">
-      <div id="vocabTools" class="segmented" role="group" aria-label="Word" hidden><button id="vocabEdit" aria-label="Edit">&#9998;</button><button id="vocabDelete" class="sep-before" aria-label="Delete">&#10005;</button></div>
       <button id="vocabSpeak" aria-label="Play the sentence">🔊</button>
       <select id="vocabSpeed" aria-label="Playback speed" hidden></select>
     </div>
@@ -5381,7 +5380,7 @@ function syncModeButtonHighlights() {
   btn.classList.toggle("active", !!groupState && groupViewStyle === "table");
   listenBtn.classList.toggle("active", !!groupState && groupViewStyle === "listen");
   ieltsBtn.classList.toggle("active", !!groupState && groupViewStyle === "ielts");
-  document.getElementById("spTools").hidden = !(groupState && isCardMode() && getCurrentSingleCardRow());
+  document.getElementById("spTools").hidden = !(groupState && groupViewStyle === "ielts" && getCurrentSingleCardRow());
   document.getElementById("spVocab").hidden = isVirtualLesson() || isVideoLesson();
 }
 
@@ -10759,7 +10758,6 @@ function syncVocabSound() {
   });
   btn.hidden = !shown;
   speed.hidden = !shown;
-  document.getElementById("vocabTools").hidden = !document.getElementById("vocabCard");
   if (!speed.options.length) speed.innerHTML = document.getElementById("playbackSpeed").innerHTML;
   speed.value = String(sequenceSpeed);
   const on = vocabSoundOn();
@@ -10775,18 +10773,6 @@ document.getElementById("vocabSpeak").onclick = e => {
     if (item) toggleVocabSound(item);
   }
   e.currentTarget.blur();
-};
-
-document.getElementById("vocabEdit").onclick = e => {
-  e.currentTarget.blur();
-  const item = currentVocabItem();
-  if (item && document.getElementById("vocabCard")) openVocabEditor(item.key);
-};
-
-document.getElementById("vocabDelete").onclick = e => {
-  e.currentTarget.blur();
-  const item = currentVocabItem();
-  if (item && document.getElementById("vocabCard")) deleteVocabEntry(item);
 };
 
 document.getElementById("vocabSpeed").onchange = e => {
