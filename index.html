@@ -307,14 +307,20 @@ window.onYouTubeIframeAPIReady = function(){
   #vocabFrontBtn.active{color:var(--accent);}
   .vocab-badges{margin:-8px 0 16px;}
   .vocab-toolbar:not([hidden]) + .vocab-badges{margin-top:0;}
-  .vocab-card{--front-h:320px;--back-h:var(--fit-h, var(--front-h));position:relative;margin-bottom:16px;height:calc(var(--back-h) / 2);touch-action:pan-y;cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;}
+  .vocab-card{--front-h:320px;--back-h:var(--fit-h, var(--front-h));position:relative;margin-bottom:16px;height:calc(var(--back-h) / 2);perspective:4000px;perspective-origin:50% calc(var(--back-h) / 2);touch-action:pan-y;cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;}
   .vocab-card.flipped{height:var(--back-h);}
   .vocab-card.sizing{transition:height .45s cubic-bezier(.4,0,.2,1);}
   .vocab-card-inner{position:absolute;inset:0;overflow:hidden;border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);}
   .vocab-face{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;gap:14px;padding:32px 24px;text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);overflow:auto;}
-  .vocab-front{z-index:2;bottom:auto;height:calc(var(--back-h) / 2);transform-origin:50% 100%;-webkit-backface-visibility:hidden;backface-visibility:hidden;transition:transform .45s cubic-bezier(.4,0,.2,1), visibility 0s;}
-  .vocab-card.flipped .vocab-front{transform:perspective(4000px) rotateX(-180deg);visibility:hidden;pointer-events:none;transition:transform .45s cubic-bezier(.4,0,.2,1), visibility 0s .45s;}
-  .vocab-card.no-turn, .vocab-card.no-turn .vocab-front{transition:none;}
+  .vocab-card:not(.flipped) .vocab-card-inner, .vocab-card.folding .vocab-card-inner{bottom:auto;height:calc(var(--back-h) / 2);border-bottom:0;border-bottom-left-radius:0;border-bottom-right-radius:0;}
+  .vocab-fold{position:absolute;left:0;right:0;top:calc(var(--back-h) / 2);z-index:2;height:var(--fold-h, calc(var(--back-h) / 2));transform-origin:50% 0;transform-style:preserve-3d;transform:rotateX(180deg);transition:transform .45s cubic-bezier(.4,0,.2,1);}
+  .vocab-card.flipped .vocab-fold{transform:rotateX(0deg);}
+  .vocab-card.flipped:not(.folding) .vocab-fold{visibility:hidden;}
+  .vocab-fold > *{-webkit-backface-visibility:hidden;backface-visibility:hidden;}
+  .vocab-front{bottom:auto;height:calc(var(--back-h) / 2);transform:rotateX(180deg);}
+  .vocab-fold-in{position:absolute;inset:0;overflow:hidden;border:1px solid var(--border);border-top:0;border-radius:0 0 var(--radius) var(--radius);box-shadow:var(--shadow-md);background:var(--a-bg);}
+  .vocab-card.answer-first .vocab-fold-in{background:var(--surface);}
+  .vocab-card.no-turn, .vocab-card.no-turn .vocab-fold{transition:none;}
   .vocab-back{bottom:auto;height:calc(var(--back-h) - 2px);border:0;border-radius:0;box-shadow:none;background:var(--a-bg);justify-content:flex-start;gap:16px;padding:16px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;}
   @media (max-width:600px){.vocab-front{padding:24px 16px;}}
   .vocab-back .vocab-ctx, .vocab-back .vocab-meaning{box-sizing:border-box;width:fit-content;max-width:100%;padding:0 16px;font-size:28px;line-height:1.3;margin:-2px 0 -4px;text-align:left;}
@@ -398,7 +404,7 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-add-popup{position:fixed;z-index:2000;width:min(340px, calc(100vw - 16px));padding:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);}
   .vocab-add-field{min-height:36px;padding:8px 10px;border:1px solid var(--accent);border-radius:var(--radius-sm);box-shadow:0 0 0 4px var(--accent-soft);background:var(--surface);color:var(--text);font-size:14px;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere;cursor:text;outline:none;}
   .vocab-add-field:empty::before{content:attr(data-placeholder);color:darkgray;}
-  @media (prefers-reduced-motion: reduce){.vocab-card.sizing, .vocab-front, .vocab-card.flipped .vocab-front{transition:none;}.vocab-card.vocab-swap, #vocabTable.vocab-swap{animation:none;}}
+  @media (prefers-reduced-motion: reduce){.vocab-card.sizing, .vocab-fold{transition:none;}.vocab-card.vocab-swap, #vocabTable.vocab-swap{animation:none;}}
   @media (max-width:600px){.vocab-card{--front-h:260px;}.vocab-term{font-size:32px;}.vocab-ctx, .vocab-meaning{font-size:24px;}}
   .sidebar .primary{width:100%;}
   #lessonSearch{width:100%;}
@@ -10398,7 +10404,7 @@ function buildVocabCard(item) {
   el.dataset.key = item.key;
   el.dataset.term = item.term;
   el.dataset.url = url;
-  el.innerHTML = `<div class="vocab-card-inner"><div class="vocab-face vocab-back"><div class="vocab-back-main"></div><div class="vocab-back-stroke"></div><div class="vocab-back-dict"${url ? "" : " hidden"}>${url ? '<iframe class="vocab-dict-frame"></iframe>' : ""}</div></div></div>` + '<div class="vocab-face vocab-front"><div class="vocab-term"></div></div>';
+  el.innerHTML = `<div class="vocab-card-inner"><div class="vocab-face vocab-back"><div class="vocab-back-main"></div><div class="vocab-back-stroke"></div><div class="vocab-back-dict"${url ? "" : " hidden"}>${url ? '<iframe class="vocab-dict-frame"></iframe>' : ""}</div></div></div>` + '<div class="vocab-fold"><div class="vocab-face vocab-front"><div class="vocab-term"></div></div><div class="vocab-fold-in"></div></div>';
   if (url) el.querySelector("iframe").src = url;
   drawStrokeOrder(el.querySelector(".vocab-back-stroke"), item.term, cjkScriptFor(item.term, item.card) === "ja");
   const current = () => {
@@ -10456,7 +10462,9 @@ function syncVocabCard(card, open) {
   clearTimeout(card.openTimer);
   card.openTimer = null;
   card.classList.add("no-turn");
-  card.classList.remove("sizing");
+  card.classList.remove("sizing", "folding");
+  card.querySelector(".vocab-fold-in").replaceChildren();
+  card.style.removeProperty("--fold-h");
   card.style.height = "";
   card.classList.toggle("flipped", open);
   card.classList.toggle("grown", open);
@@ -10466,27 +10474,32 @@ function syncVocabCard(card, open) {
 
 function turnVocabCard(card, open) {
   clearTimeout(card.openTimer);
-  if (open) {
-    const back = card.querySelector(".vocab-back");
-    back.scrollTop = 0;
-    const full = parseFloat(getComputedStyle(card).getPropertyValue("--fit-h")) || parseFloat(getComputedStyle(card).getPropertyValue("--front-h"));
-    const need = Math.ceil(back.scrollHeight) + 2;
-    card.classList.add("sizing");
-    if (document.documentElement.classList.contains("touch") && need > full) card.style.height = need + "px";
-  } else {
-    if (card.classList.contains("grown")) {
-      card.style.height = card.getBoundingClientRect().height + "px";
-      card.classList.remove("grown");
-      void card.offsetWidth;
-    }
-    card.classList.add("sizing");
-    card.style.height = "";
+  const back = card.querySelector(".vocab-back");
+  const style = getComputedStyle(card);
+  const half = (parseFloat(style.getPropertyValue("--fit-h")) || parseFloat(style.getPropertyValue("--front-h"))) / 2;
+  if (open) back.scrollTop = 0;
+  if (card.classList.contains("grown")) {
+    card.style.height = card.getBoundingClientRect().height + "px";
+    card.classList.remove("grown");
   }
+  const tall = document.documentElement.classList.contains("touch") ? Math.max(half * 2, Math.ceil(back.scrollHeight) + 2) : half * 2;
+  card.style.setProperty("--fold-h", tall - half + "px");
+  const copy = back.cloneNode(true);
+  copy.querySelectorAll("iframe").forEach(f => f.remove());
+  copy.style.top = 1 - half + "px";
+  const inside = card.querySelector(".vocab-fold-in");
+  inside.replaceChildren(copy);
+  copy.scrollTop = back.scrollTop;
+  card.classList.add("folding");
+  void card.offsetWidth;
+  card.classList.add("sizing");
+  card.style.height = open ? tall + "px" : "";
   card.classList.toggle("flipped", open);
   card.openTimer = setTimeout(() => {
     card.openTimer = null;
-    card.classList.remove("sizing");
-    if (!open) return;
+    card.classList.remove("sizing", "folding");
+    inside.replaceChildren();
+    if (!open) return card.style.removeProperty("--fold-h");
     card.classList.add("grown");
     card.style.height = "";
   }, VOCAB_FLIP_MS);
