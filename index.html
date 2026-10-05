@@ -316,6 +316,7 @@ window.onYouTubeIframeAPIReady = function(){
   @media (max-width:600px){.vocab-front{padding:24px 16px;}}
   .vocab-back .vocab-ctx, .vocab-back .vocab-meaning{box-sizing:border-box;width:fit-content;max-width:100%;padding:0 16px;font-size:28px;line-height:1.3;margin:-2px 0 -4px;text-align:left;}
   .vocab-back .vocab-ctx.small{font-size:20px;}
+  .vocab-back .vocab-ctx + .vocab-meaning{margin-top:-4px;}
   .vocab-back .vocab-ctx mark, .vocab-back .vocab-ctx mark:has(.rd){display:inline;padding:0 1px;margin:0;border-radius:3px;line-height:inherit;}
   .vocab-back .vocab-ctx:first-child{margin-top:5px;}
   .vocab-back .vocab-ctx:first-child:has(.rd){line-height:2;margin:11px 0 -14px;}
@@ -329,6 +330,9 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-card.settled .vocab-card-inner{transform:none;transition:none;}
   .vocab-card.settled .vocab-back{transform:none;}
   .vocab-card.settled .vocab-front{visibility:hidden;}
+  html.touch .vocab-card.settled{height:auto !important;min-height:var(--fit-h, var(--front-h));}
+  html.touch .vocab-card.settled .vocab-card-inner{position:relative;inset:auto;min-height:inherit;}
+  html.touch .vocab-card.settled .vocab-back{position:relative;inset:auto;min-height:var(--fit-h, var(--front-h));box-sizing:border-box;overflow:visible;}
   .vocab-face > :first-child{margin-top:auto;}
   .vocab-face > :last-child{margin-bottom:auto;}
   .vocab-card.answer-first .vocab-front{background:var(--a-bg);}
@@ -425,6 +429,19 @@ window.onYouTubeIframeAPIReady = function(){
   .lesson-group-label{padding:10px 10px 4px;font-size:18px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);}
   .lesson-group-label:first-child{padding-top:2px;}
   .lesson-list-empty{padding:10px;color:var(--text-2);font-size:13px;}
+  .lesson-group-label{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .lesson-view-toggle{display:inline-flex;gap:2px;padding:2px;border-radius:8px;background:color-mix(in srgb, var(--accent) 12%, var(--bg));letter-spacing:0;text-transform:none;}
+  .lesson-view-toggle button{min-width:0;width:28px;height:24px;padding:0;border:0;border-radius:6px;background:transparent;color:var(--text-2);font-size:14px;line-height:1;}
+  .lesson-view-toggle button.active{background:var(--surface);color:var(--text);box-shadow:var(--shadow-sm);}
+  .lesson-list.folders .lesson-group{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .lesson-list.folders .lesson-group > .lesson-group-label, .lesson-list.folders .lesson-item.all-vocab{grid-column:1 / -1;}
+  .lesson-item.tile{gap:4px;min-width:0;padding:6px;}
+  .lesson-item.tile .lesson-item-name{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;font-size:13px;line-height:1.3;}
+  .lesson-item.tile .lesson-item-meta{gap:6px;font-size:11px;}
+  .lesson-item.tile .lesson-item-meta > :first-child, .lesson-item.tile .lesson-item-meta > .sep{display:none;}
+  .lesson-thumb{display:flex;align-items:center;justify-content:center;width:100%;aspect-ratio:16 / 9;overflow:hidden;border-radius:6px;background:#000;}
+  .lesson-thumb img{display:block;width:100%;height:100%;object-fit:cover;}
+  .lesson-thumb.text{background:var(--accent-soft);color:var(--accent);font-size:22px;font-weight:700;}
   .sidebar-footer{display:flex;flex-direction:column;gap:2px;border-top:1px solid var(--border);padding-top:10px;}
   .sidebar-footer button{text-align:left;width:100%;}
   .sidebar-footer button.active{background:var(--accent-soft);color:var(--accent);}
@@ -8407,6 +8424,17 @@ function updateLessonListItem(lesson) {
   if (all) all.outerHTML = allVocabItemHtml();
 }
 
+const LESSON_VIEW_KEY = "flashcards.lessonView";
+
+let lessonListView = readLocal(LESSON_VIEW_KEY) === "folder" ? "folder" : "list";
+
+function lessonThumbHtml(l) {
+  const id = l.mediaUrl ? extractYouTubeId(l.mediaUrl) : null;
+  if (id) return `<span class="lesson-thumb"><img src="https://i.ytimg.com/vi/${encodeURIComponent(id)}/mqdefault.jpg" alt="" loading="lazy"></span>`;
+  const name = (l.name || "Untitled lesson").trim();
+  return `<span class="lesson-thumb text">${escapeHtml(Array.from(name.replace(/\s+/g, "")).slice(0, 2).join(""))}</span>`;
+}
+
 function renderLessonList() {
   const list = document.getElementById("lessonList");
   document.querySelector(".shell").classList.toggle("bare", !library.length);
@@ -8420,15 +8448,23 @@ function renderLessonList() {
     list.innerHTML = '<div class="lesson-list-empty">No matching lessons.</div>';
     return;
   }
+  const folders = lessonListView === "folder";
+  list.classList.toggle("folders", folders);
   const itemHtml = l => {
     const active = l.id === currentLessonId && (currentView === "study" || currentView === "vocab");
-    return `<button class="lesson-item${active ? " active" : ""}" data-lesson-id="${escapeAttr(l.id)}"${active ? ' aria-current="page"' : ""}>` + `<span class="lesson-item-name">${escapeHtml(l.name || "Untitled lesson")}</span>` + `<span class="lesson-item-meta">${lessonItemMeta(l)}</span></button>`;
+    return `<button class="lesson-item${folders ? " tile" : ""}${active ? " active" : ""}" data-lesson-id="${escapeAttr(l.id)}"${active ? ' aria-current="page"' : ""}>` + (folders ? lessonThumbHtml(l) : "") + `<span class="lesson-item-name">${escapeHtml(l.name || "Untitled lesson")}</span>` + `<span class="lesson-item-meta">${lessonItemMeta(l)}</span></button>`;
   };
+  const toggle = `<span class="lesson-view-toggle" role="group" aria-label="Show lessons as"><button data-lesson-view="list" class="${folders ? "" : "active"}" aria-label="List" title="List">☰</button><button data-lesson-view="folder" class="${folders ? "active" : ""}" aria-label="Folders" title="Folders">▦</button></span>`;
   if (q) {
-    list.innerHTML = items.map(itemHtml).join("");
+    list.innerHTML = `<div class="lesson-group lessons">${items.map(itemHtml).join("")}</div>`;
     return;
   }
-  const group = (cls, label, html) => `<div class="lesson-group ${cls}">${label ? `<div class="lesson-group-label">${label}</div>` : ""}${html}</div>`;
+  let toggled = false;
+  const group = (cls, label, html) => {
+    const withToggle = label && !toggled;
+    if (withToggle) toggled = true;
+    return `<div class="lesson-group ${cls}">${label ? `<div class="lesson-group-label"><span>${label}</span>${withToggle ? toggle : ""}</div>` : ""}${html}</div>`;
+  };
   const allVocab = appMode === "vocab" ? group("vocab", "", allVocabItemHtml()) : "";
   const recent = recentLessonIds().map(id => items.find(l => l.id === id)).filter(Boolean).slice(0, RECENT_MAX);
   const rest = items.filter(l => !recent.includes(l));
@@ -8936,6 +8972,15 @@ document.getElementById("fileInput").addEventListener("change", e => {
 });
 
 document.getElementById("lessonList").addEventListener("click", e => {
+  const view = e.target.closest("[data-lesson-view]");
+  if (view) {
+    lessonListView = view.dataset.lessonView;
+    try {
+      localStorage.setItem(LESSON_VIEW_KEY, JSON.stringify(lessonListView));
+    } catch (err) {}
+    renderLessonList();
+    return;
+  }
   const item = e.target.closest(".lesson-item:not([data-all-vocab])");
   if (item) switchToLesson(item.dataset.lessonId);
 });
@@ -10322,7 +10367,10 @@ function fitVocabCards() {
   const floor = Math.min(window.innerHeight, bar.hidden ? Infinity : bar.getBoundingClientRect().top, sel ? sel.getBoundingClientRect().top : Infinity);
   const min = parseFloat(getComputedStyle(card).getPropertyValue("--front-h")) || 320;
   const height = Math.max(min, floor - VOCAB_CARD_GAP - stickyTop - below) + "px";
-  cards.forEach(el => el.style.height = height);
+  cards.forEach(el => {
+    el.style.height = height;
+    el.style.setProperty("--fit-h", height);
+  });
 }
 
 window.addEventListener("resize", fitVocabCards);
