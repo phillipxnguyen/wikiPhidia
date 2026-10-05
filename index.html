@@ -307,12 +307,14 @@ window.onYouTubeIframeAPIReady = function(){
   #vocabFrontBtn.active{color:var(--accent);}
   .vocab-badges{margin:-8px 0 16px;}
   .vocab-toolbar:not([hidden]) + .vocab-badges{margin-top:0;}
-  .vocab-card{--front-h:320px;position:relative;margin-bottom:16px;height:var(--front-h);perspective:1400px;touch-action:pan-y;cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;}
-  .vocab-card-inner{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .45s cubic-bezier(.3,.7,.3,1);}
-  .vocab-card.flipped .vocab-card-inner{transform:rotateY(180deg);}
-  .vocab-card.no-turn .vocab-card-inner{transition:none;}
-  .vocab-face{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;gap:14px;padding:32px 24px;text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:auto;}
-  .vocab-back{transform:rotateY(180deg);background:var(--a-bg);justify-content:flex-start;gap:16px;padding:16px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;}
+  .vocab-card{--front-h:320px;position:relative;margin-bottom:16px;height:var(--fit-h, var(--front-h));touch-action:pan-y;cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;}
+  .vocab-card.sizing{transition:height .45s cubic-bezier(.3,.7,.3,1);}
+  .vocab-card-inner{position:absolute;inset:0;}
+  .vocab-face{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;gap:14px;padding:32px 24px;text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);overflow:auto;}
+  .vocab-front{z-index:1;bottom:auto;height:var(--fit-h, var(--front-h));transform-origin:50% 0;transition:transform .45s cubic-bezier(.3,.7,.3,1), visibility 0s;}
+  .vocab-card.flipped .vocab-front{transform:perspective(1600px) rotateX(-90deg);visibility:hidden;pointer-events:none;transition:transform .45s cubic-bezier(.3,.7,.3,1), visibility 0s .45s;}
+  .vocab-card.no-turn, .vocab-card.no-turn .vocab-front{transition:none;}
+  .vocab-back{background:var(--a-bg);justify-content:flex-start;gap:16px;padding:16px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;}
   @media (max-width:600px){.vocab-front{padding:24px 16px;}}
   .vocab-back .vocab-ctx, .vocab-back .vocab-meaning{box-sizing:border-box;width:fit-content;max-width:100%;padding:0 16px;font-size:28px;line-height:1.3;margin:-2px 0 -4px;text-align:left;}
   .vocab-back .vocab-ctx.small{font-size:20px;}
@@ -328,15 +330,10 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-deck{position:relative;z-index:0;}
   .vocab-card.pending{position:absolute;top:0;left:0;right:0;opacity:0;pointer-events:none;z-index:-1;}
   .vocab-back-dict[hidden]{display:none;}
-  .vocab-card.settled .vocab-card-inner{transform:none;transition:none;}
-  .vocab-card.settled .vocab-back{transform:none;}
-  .vocab-card.settled .vocab-front{visibility:hidden;}
-  .vocab-card.settled{perspective:none;}
-  .vocab-card.settled .vocab-card-inner{transform-style:flat;}
-  .vocab-card.settled .vocab-face{-webkit-backface-visibility:visible;backface-visibility:visible;}
-  html.touch .vocab-card.settled{height:auto !important;min-height:var(--fit-h, var(--front-h));}
-  html.touch .vocab-card.settled .vocab-card-inner{position:relative;inset:auto;min-height:inherit;}
-  html.touch .vocab-card.settled .vocab-back{position:relative;inset:auto;min-height:var(--fit-h, var(--front-h));box-sizing:border-box;overflow:visible;}
+  html.touch .vocab-back{overflow:hidden;}
+  html.touch .vocab-card.grown{height:auto;min-height:var(--fit-h, var(--front-h));}
+  html.touch .vocab-card.grown .vocab-card-inner{position:relative;inset:auto;min-height:inherit;}
+  html.touch .vocab-card.grown .vocab-back{position:relative;inset:auto;min-height:var(--fit-h, var(--front-h));overflow:visible;}
   .vocab-face > :first-child{margin-top:auto;}
   .vocab-face > :last-child{margin-bottom:auto;}
   .vocab-card.answer-first .vocab-front{background:var(--a-bg);}
@@ -400,7 +397,7 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-add-popup{position:fixed;z-index:2000;width:min(340px, calc(100vw - 16px));padding:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);}
   .vocab-add-field{min-height:36px;padding:8px 10px;border:1px solid var(--accent);border-radius:var(--radius-sm);box-shadow:0 0 0 3px var(--accent-soft);background:var(--surface);color:var(--text);font-size:14px;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere;cursor:text;outline:none;}
   .vocab-add-field:empty::before{content:attr(data-placeholder);color:darkgray;}
-  @media (prefers-reduced-motion: reduce){.vocab-card-inner{transition:none;}.vocab-card.vocab-swap, #vocabTable.vocab-swap{animation:none;}}
+  @media (prefers-reduced-motion: reduce){.vocab-card.sizing, .vocab-front, .vocab-card.flipped .vocab-front{transition:none;}.vocab-card.vocab-swap, #vocabTable.vocab-swap{animation:none;}}
   @media (max-width:600px){.vocab-card{--front-h:260px;}.vocab-term{font-size:32px;}.vocab-ctx, .vocab-meaning{font-size:24px;}}
   .sidebar .primary{width:100%;}
   #lessonSearch{width:100%;}
@@ -10460,10 +10457,7 @@ function fitVocabCards() {
   const floor = Math.min(window.innerHeight, bar.hidden ? Infinity : bar.getBoundingClientRect().top, sel ? sel.getBoundingClientRect().top : Infinity);
   const min = parseFloat(getComputedStyle(card).getPropertyValue("--front-h")) || 320;
   const height = Math.max(min, floor - VOCAB_CARD_GAP - stickyTop - below) + "px";
-  cards.forEach(el => {
-    el.style.height = height;
-    el.style.setProperty("--fit-h", height);
-  });
+  cards.forEach(el => el.style.setProperty("--fit-h", height));
 }
 
 window.addEventListener("resize", fitVocabCards);
@@ -10476,12 +10470,43 @@ vocabFitObserver.observe(document.getElementById("touchBar"));
 
 vocabFitObserver.observe(document.getElementById("selBar"));
 
-function settleVocabCard(card, on) {
-  if (!card || card.classList.contains("settled") === on) return;
+function syncVocabCard(card, open) {
+  clearTimeout(card.openTimer);
+  card.openTimer = null;
   card.classList.add("no-turn");
-  card.classList.toggle("settled", on);
+  card.classList.remove("sizing");
+  card.style.height = "";
+  card.classList.toggle("flipped", open);
+  card.classList.toggle("grown", open);
   void card.offsetWidth;
   card.classList.remove("no-turn");
+}
+
+function turnVocabCard(card, open) {
+  clearTimeout(card.openTimer);
+  if (open) {
+    const back = card.querySelector(".vocab-back");
+    back.scrollTop = 0;
+    const now = card.getBoundingClientRect().height;
+    card.classList.add("sizing");
+    if (document.documentElement.classList.contains("touch") && back.scrollHeight > now + .5) card.style.height = back.scrollHeight + "px";
+  } else {
+    if (card.classList.contains("grown")) {
+      card.style.height = card.getBoundingClientRect().height + "px";
+      card.classList.remove("grown");
+      void card.offsetWidth;
+    }
+    card.classList.add("sizing");
+    card.style.height = "";
+  }
+  card.classList.toggle("flipped", open);
+  card.openTimer = setTimeout(() => {
+    card.openTimer = null;
+    card.classList.remove("sizing");
+    if (!open) return;
+    card.classList.add("grown");
+    card.style.height = "";
+  }, VOCAB_FLIP_MS);
 }
 
 function showVocabDeck(stage, item) {
@@ -10506,13 +10531,10 @@ function showVocabDeck(stage, item) {
   });
   card.id = "vocabCard";
   fillVocabCard(card, item);
-  if (!vocabSession.flipped) settleVocabCard(card, false);
-  card.classList.toggle("flipped", !!vocabSession.flipped);
-  if (vocabSession.flipped && !card.settleTimer) settleVocabCard(card, true);
+  if (!card.openTimer || card.classList.contains("flipped") !== !!vocabSession.flipped) syncVocabCard(card, !!vocabSession.flipped);
   if (pending) {
     fillVocabCard(pending, next);
-    settleVocabCard(pending, false);
-    pending.classList.remove("flipped");
+    syncVocabCard(pending, false);
   }
   fitVocabCards();
   setTimeout(fitVocabCards, 0);
@@ -11513,15 +11535,8 @@ function flipVocab() {
   if (vocabSession.flipped) pinVocabArea();
   const card = document.getElementById("vocabCard");
   if (card) {
-    clearTimeout(card.settleTimer);
-    settleVocabCard(card, false);
-    card.classList.toggle("flipped", vocabSession.flipped);
-    card.settleTimer = vocabSession.flipped ? setTimeout(() => {
-      card.settleTimer = null;
-      settleVocabCard(card, true);
-    }, VOCAB_FLIP_MS) : null;
+    turnVocabCard(card, vocabSession.flipped);
     clearTimeout(card.strokeTimer);
-    card.querySelector(".vocab-back").scrollTop = 0;
     if (vocabSession.flipped) card.strokeTimer = setTimeout(() => card.querySelectorAll(".vocab-back-stroke .stroke-target").forEach(t => t.dispatchEvent(new Event("click"))), VOCAB_FLIP_MS * .5);
   }
   if (!vocabSession.flipped) stopVocabSound(); else playVocabSound(item);
