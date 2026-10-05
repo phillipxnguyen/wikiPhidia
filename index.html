@@ -640,9 +640,10 @@ window.onYouTubeIframeAPIReady = function(){
   .edit-actions{display:flex;gap:6px;}
   .empty-msg{padding:24px;text-align:center;color:var(--text-2);font-size:14px;}
   table.no-answer-col .a-col{display:none;}
+  #cardTable.no-head thead{display:none;}
   #cardTable.notebook{--line:30px;display:block;position:relative;overflow:visible;padding:18px 0 26px;background:var(--paper);color:var(--paper-ink);border:1px solid var(--paper-edge);border-radius:4px;box-shadow:0 1px 0 var(--paper-edge), 0 14px 30px var(--paper-shadow);font-family:Georgia, "Times New Roman", serif;}
   #cardTable.notebook::before{content:"";position:absolute;top:0;bottom:0;left:64px;border-left:2px solid var(--paper-margin);pointer-events:none;}
-  #cardTable.notebook colgroup{display:none;}
+  #cardTable.notebook colgroup, #cardTable.notebook thead{display:none;}
   #cardTable.notebook tbody{display:block;}
   #cardTable.notebook tbody tr{display:grid;grid-template-columns:64px minmax(0, 1fr);padding:14px 36px 14px 0;background:none;}
   #cardTable.notebook tbody td{display:block;border:0;padding:0;overflow:visible;}
@@ -1326,6 +1327,12 @@ window.onYouTubeIframeAPIReady = function(){
       <col>
       <col>
     </colgroup>
+    <thead>
+      <tr>
+        <th>Question</th>
+        <th class="a-col">Answer</th>
+      </tr>
+    </thead>
     <tbody id="tbody"></tbody>
   </table>
 
@@ -3112,12 +3119,14 @@ function renderDictPanels() {
 
 function updateLessonChrome() {
   const hasCards = rows.some(r => r.id !== draftRowId && ((r.q || "").trim() || (r.a || "").trim()));
+  const hasQuestion = rows.some(r => r.id !== draftRowId && (r.q || "").trim());
   const virtual = isVirtualLesson();
   document.getElementById("btnSaveFile").hidden = !virtual && !hasCards;
   document.getElementById("btnResetLesson").hidden = !virtual && !hasCards;
   document.getElementById("btnDeleteLesson").hidden = false;
   document.getElementById("fileStatus").hidden = !virtual && !hasCards;
   document.querySelector("#viewStudy .toolbar").hidden = !virtual && !hasCards;
+  document.getElementById("cardTable").classList.toggle("no-head", !hasQuestion);
 }
 
 function renderStudy() {
@@ -5725,6 +5734,7 @@ function applyColumnLayout() {
   listAdd.hidden = !!groupState || isVirtualLesson() || !rows.length;
   listAdd.textContent = rows.length + " ＋";
   table.classList.toggle("no-answer-col", noAnswer);
+  table.querySelector("thead th:not(.a-col)").colSpan = noAnswer ? 2 : 1;
   cols.forEach(c => c.style.width = "");
 }
 
@@ -10519,7 +10529,8 @@ function vocabTableHtml(group) {
     const play = field === "q" ? `<span class="loop-time vocab-play" data-key="${escapeAttr(item.key)}"${video ? " data-video" : ""}>${vocabPlayFace(video, false)}</span>` : "";
     return `<div class="cell ${hidden ? "hidden" : "shown"}" data-field="${field}">${play}${hidden ? "···" : escapeHtml(field === "q" ? item.term : item.meaning)}</div>`;
   };
-  return '<table id="vocabTable"><colgroup><col><col></colgroup><tbody>' + group.map(item => item.key === vocabEditingKey && !vocabEditingInList ? `<tr class="edit-row"><td colspan="2">${vocabEditorHtml(item)}</td></tr>` : `<tr data-key="${escapeAttr(item.key)}"${item.key === vocabSelectedKey ? ' class="row-selected"' : ""}><td>${cell(item, "q")}</td><td class="a-col">${cell(item, "a")}</td></tr>`).join("") + "</tbody></table>";
+  const head = field => `<th${field === "a" ? ' class="a-col"' : ""}>${field === "q" ? "Question" : "Answer"}</th>`;
+  return '<table id="vocabTable"><colgroup><col><col></colgroup><thead><tr>' + head("q") + head("a") + "</tr></thead><tbody>" + group.map(item => item.key === vocabEditingKey && !vocabEditingInList ? `<tr class="edit-row"><td colspan="2">${vocabEditorHtml(item)}</td></tr>` : `<tr data-key="${escapeAttr(item.key)}"${item.key === vocabSelectedKey ? ' class="row-selected"' : ""}><td>${cell(item, "q")}</td><td class="a-col">${cell(item, "a")}</td></tr>`).join("") + "</tbody></table>";
 }
 
 function wordNotesOf(item) {
