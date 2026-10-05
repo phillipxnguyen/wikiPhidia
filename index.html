@@ -503,6 +503,7 @@ window.onYouTubeIframeAPIReady = function(){
   .sel-bar .segmented button{min-width:58px;padding:10px 14px;font-size:20px;}
   .sel-bar .segmented .sep-before{margin-left:10px;}
   .sel-bar .segmented .sep-before::before{left:-6px;}
+  .copy-icon{display:block;width:20px;height:20px;margin:0 auto;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
   html.sel-on .main{padding-bottom:calc(138px + env(safe-area-inset-bottom));}
   .touch-bar button{flex:1;min-height:48px;font-size:15px;font-weight:600;border-radius:10px;}
   .touch-bar .tb-icon{flex:0 0 48px;display:flex;align-items:center;justify-content:center;padding:0;}
@@ -1131,7 +1132,7 @@ window.onYouTubeIframeAPIReady = function(){
   <button id="tbAgain" class="tb-again">Again</button>
   <button id="tbGood" class="tb-good">Good</button>
 </div>
-<div id="selBar" class="sel-bar" hidden><div class="segmented" role="group" aria-label="Selected"><button id="selEdit" aria-label="Edit">&#9998;</button><button id="selDelete" class="sep-before" aria-label="Delete">&#10005;</button><button id="selVocab" class="sep-before sp-vocab" aria-label="Move to Vocabulary">字</button></div></div>
+<div id="selBar" class="sel-bar" hidden><div class="segmented" role="group" aria-label="Selected"><button id="selCopy" aria-label="Copy"><svg class="copy-icon" viewBox="0 0 20 20" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2"/><path d="M13 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/></svg></button><button id="selEdit" class="sep-before" aria-label="Edit">&#9998;</button><button id="selDelete" class="sep-before" aria-label="Delete">&#10005;</button><button id="selVocab" class="sep-before sp-vocab" aria-label="Move to Vocabulary">字</button></div></div>
 
 <main class="main">
 <div class="main-inner">
@@ -4515,14 +4516,7 @@ function handleCardAreaClick(e) {
       return;
     }
     const field = e.target.dataset.field;
-    const text = isVideoLesson() || isVirtualLesson() ? field === "q" ? row.q : row.a : [ row.q, row.a ].map(t => (t || "").trim()).filter(Boolean).join("\n");
-    if (text) {
-      navigator.clipboard.writeText(text).then(() => {
-        showToast("Copied");
-      }).catch(() => {
-        showToast("Could not copy");
-      });
-    }
+    copyText(isVideoLesson() || isVirtualLesson() ? field === "q" ? row.q : row.a : cardText(row.q, row.a));
     return;
   }
 }
@@ -4580,6 +4574,15 @@ function selectionTarget() {
   } : null;
 }
 
+function cardText(question, answer) {
+  return [ question, answer ].map(t => (t || "").trim()).filter(Boolean).join("\n");
+}
+
+function copyText(text) {
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => showToast("Copied")).catch(() => showToast("Could not copy"));
+}
+
 function updateSelBar() {
   const bar = document.getElementById("selBar");
   const touchBar = document.getElementById("touchBar");
@@ -4591,6 +4594,12 @@ function updateSelBar() {
   document.getElementById("selDelete").hidden = !!target.row && isVirtualLesson();
   document.getElementById("selVocab").hidden = !target.row || isVirtualLesson() || isVideoLesson();
 }
+
+document.getElementById("selCopy").onclick = e => {
+  e.currentTarget.blur();
+  const target = selectionTarget();
+  if (target) copyText(target.item ? cardText(target.item.term, target.item.meaning) : cardText(target.row.q, target.row.a));
+};
 
 document.getElementById("selEdit").onclick = e => {
   e.currentTarget.blur();
