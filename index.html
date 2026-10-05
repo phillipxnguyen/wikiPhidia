@@ -649,7 +649,7 @@ window.onYouTubeIframeAPIReady = function(){
   #cardTable.notebook .cell{display:block;max-width:none;margin:0;padding:0 4px;border-radius:2px;color:var(--paper-ink);}
   #cardTable.notebook .cell[data-field="q"]{margin-bottom:6px;font-size:20px;font-weight:700;line-height:1.4;color:var(--accent);}
   #cardTable.notebook .cell[data-field="a"]{font-size:18px;line-height:var(--line);background-image:linear-gradient(to bottom, transparent calc(var(--line) - 1px), var(--paper-rule) calc(var(--line) - 1px));background-size:100% var(--line);}
-  @media (hover:hover){#cardTable.notebook .cell.shown:hover{background-color:color-mix(in srgb, var(--paper-ink) 6%, transparent);}}
+  @media (hover:hover){#cardTable.notebook tr:has(.cell.shown:hover) .cell.shown{background-color:color-mix(in srgb, var(--paper-ink) 6%, transparent);}}
   #cardTable.notebook tbody tr.row-selected, #cardTable.notebook tbody tr.row-playing{background:color-mix(in srgb, var(--paper-mark) 45%, transparent) !important;}
   html.touch #cardTable.notebook tbody tr.row-selected > td:first-child{box-shadow:none;}
   html.touch #cardTable.notebook tbody tr.row-selected .cell.shown[data-field="q"]{color:var(--paper-ink);}
@@ -4515,7 +4515,7 @@ function handleCardAreaClick(e) {
       return;
     }
     const field = e.target.dataset.field;
-    const text = field === "q" ? row.q : row.a;
+    const text = isVideoLesson() || isVirtualLesson() ? field === "q" ? row.q : row.a : [ row.q, row.a ].map(t => (t || "").trim()).filter(Boolean).join("\n");
     if (text) {
       navigator.clipboard.writeText(text).then(() => {
         showToast("Copied");
