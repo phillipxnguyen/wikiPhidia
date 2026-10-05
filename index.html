@@ -316,7 +316,7 @@ window.onYouTubeIframeAPIReady = function(){
   @media (max-width:600px){.vocab-front{padding:24px 16px;}}
   .vocab-back .vocab-ctx, .vocab-back .vocab-meaning{box-sizing:border-box;width:fit-content;max-width:100%;padding:0 16px;font-size:28px;line-height:1.3;margin:-2px 0 -4px;text-align:left;}
   .vocab-back .vocab-ctx.small{font-size:20px;}
-  .vocab-back .vocab-ctx + .vocab-meaning{margin-top:-4px;}
+  .vocab-back .vocab-meaning{font-weight:400;}
   .vocab-back .vocab-ctx mark, .vocab-back .vocab-ctx mark:has(.rd){display:inline;padding:0 1px;margin:0;border-radius:3px;line-height:inherit;}
   .vocab-back .vocab-ctx:first-child{margin-top:5px;}
   .vocab-back .vocab-ctx:first-child:has(.rd){line-height:2;margin:11px 0 -14px;}
@@ -437,11 +437,12 @@ window.onYouTubeIframeAPIReady = function(){
   .lesson-list.folders .lesson-group > .lesson-group-label, .lesson-list.folders .lesson-item.all-vocab{grid-column:1 / -1;}
   .lesson-item.tile{gap:4px;min-width:0;padding:6px;}
   .lesson-item.tile .lesson-item-name{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;font-size:13px;line-height:1.3;}
-  .lesson-item.tile .lesson-item-meta{gap:6px;font-size:11px;}
-  .lesson-item.tile .lesson-item-meta > :first-child, .lesson-item.tile .lesson-item-meta > .sep{display:none;}
+  .lesson-item.tile .lesson-item-meta{flex-wrap:wrap;gap:2px 6px;font-size:11px;white-space:normal;}
   .lesson-thumb{display:flex;align-items:center;justify-content:center;width:100%;aspect-ratio:16 / 9;overflow:hidden;border-radius:6px;background:#000;}
   .lesson-thumb img{display:block;width:100%;height:100%;object-fit:cover;}
-  .lesson-thumb.text{background:var(--accent-soft);color:var(--accent);font-size:22px;font-weight:700;}
+  .lesson-thumb.text{box-sizing:border-box;padding:8px;background:var(--surface-2);color:var(--text);font-size:13px;font-weight:600;line-height:1.3;text-align:center;}
+  .lesson-thumb.text > span{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;}
+  .lesson-item.tile.active .lesson-thumb.text{color:var(--accent);}
   .sidebar-footer{display:flex;flex-direction:column;gap:2px;border-top:1px solid var(--border);padding-top:10px;}
   .sidebar-footer button{text-align:left;width:100%;}
   .sidebar-footer button.active{background:var(--accent-soft);color:var(--accent);}
@@ -936,7 +937,12 @@ window.onYouTubeIframeAPIReady = function(){
   .dict-answer{color:var(--a-text);}
   .stroke-order-panel > .dict-source, .stroke-order-panel > .dict-answer{box-sizing:border-box;width:fit-content;max-width:100%;margin-left:auto;margin-right:auto;padding:0 16px;text-align:left;}
   .dict-source > .loop-time{vertical-align:middle;}
-  .stroke-order-panel.editing > .dict-source, .stroke-order-panel.editing > .dict-answer{display:none;}
+  .stroke-order-panel.editing > .dict-source, .stroke-order-panel.editing > .dict-answer, .stroke-order-panel.editing > .dict-notes, #dictPanels:not(.with-source) .dict-notes{display:none;}
+  .stroke-order-panel > .dict-notes{box-sizing:border-box;width:fit-content;max-width:100%;margin:0 auto;padding:0 16px;font-size:16px;line-height:1.5;text-align:left;color:var(--text);overflow-wrap:break-word;}
+  .dict-notes[hidden]{display:none;}
+  .dict-notes ul, .dict-notes ol{margin:4px 0;padding-left:24px;}
+  .dict-notes > :first-child{margin-top:0;}
+  .dict-notes > :last-child{margin-bottom:0;}
   .panel-edit{text-align:left;}
   .dict-editing{border-radius:var(--radius-sm);outline:none;box-shadow:0 0 0 2px var(--accent);cursor:text;}
   .dict-frame{display:block;width:100%;height:360px;border:1px solid var(--border);border-radius:10px;background:#fff;}
@@ -3072,7 +3078,7 @@ function renderDictPanels() {
       el.className = "stroke-order-panel dict-pending";
       el.dataset.url = url;
       el.dataset.field = field;
-      el.innerHTML = `<div class="dict-source" data-field="${field}"></div><div class="dict-answer"></div><div class="dict-stroke"></div><iframe class="dict-frame"></iframe>`;
+      el.innerHTML = `<div class="dict-source" data-field="${field}"></div><div class="dict-answer"></div><div class="dict-notes"></div><div class="dict-stroke"></div><iframe class="dict-frame"></iframe>`;
       el.querySelector("iframe").src = url;
       host.appendChild(el);
     }
@@ -3094,6 +3100,13 @@ function renderDictPanels() {
       answer.innerHTML = answerHtml;
     }
     answer.hidden = field === "a" || !(r.a || "").trim() || r.aHidden;
+    const notes = el.querySelector(".dict-notes");
+    const notesHtml = (r.notes || "").trim() ? r.notesHtml || escapeHtml(r.notes).replace(/\n/g, "<br>") : "";
+    if (notes.dataset.html !== notesHtml) {
+      notes.dataset.html = notesHtml;
+      notes.innerHTML = notesHtml;
+    }
+    notes.hidden = field === "a" || !notesHtml || r.aHidden;
     return el;
   };
   preload.forEach(panelFor);
@@ -8428,11 +8441,14 @@ const LESSON_VIEW_KEY = "flashcards.lessonView";
 
 let lessonListView = readLocal(LESSON_VIEW_KEY) === "folder" ? "folder" : "list";
 
+function lessonThumbId(l) {
+  return l.mediaUrl ? extractYouTubeId(l.mediaUrl) : null;
+}
+
 function lessonThumbHtml(l) {
-  const id = l.mediaUrl ? extractYouTubeId(l.mediaUrl) : null;
+  const id = lessonThumbId(l);
   if (id) return `<span class="lesson-thumb"><img src="https://i.ytimg.com/vi/${encodeURIComponent(id)}/mqdefault.jpg" alt="" loading="lazy"></span>`;
-  const name = (l.name || "Untitled lesson").trim();
-  return `<span class="lesson-thumb text">${escapeHtml(Array.from(name.replace(/\s+/g, "")).slice(0, 2).join(""))}</span>`;
+  return `<span class="lesson-thumb text"><span>${escapeHtml(l.name || "Untitled lesson")}</span></span>`;
 }
 
 function renderLessonList() {
@@ -8452,7 +8468,7 @@ function renderLessonList() {
   list.classList.toggle("folders", folders);
   const itemHtml = l => {
     const active = l.id === currentLessonId && (currentView === "study" || currentView === "vocab");
-    return `<button class="lesson-item${folders ? " tile" : ""}${active ? " active" : ""}" data-lesson-id="${escapeAttr(l.id)}"${active ? ' aria-current="page"' : ""}>` + (folders ? lessonThumbHtml(l) : "") + `<span class="lesson-item-name">${escapeHtml(l.name || "Untitled lesson")}</span>` + `<span class="lesson-item-meta">${lessonItemMeta(l)}</span></button>`;
+    return `<button class="lesson-item${folders ? " tile" : ""}${active ? " active" : ""}" data-lesson-id="${escapeAttr(l.id)}"${active ? ' aria-current="page"' : ""}>` + (folders ? lessonThumbHtml(l) : "") + (folders && !lessonThumbId(l) ? "" : `<span class="lesson-item-name">${escapeHtml(l.name || "Untitled lesson")}</span>`) + `<span class="lesson-item-meta">${lessonItemMeta(l)}</span></button>`;
   };
   const toggle = `<span class="lesson-view-toggle" role="group" aria-label="Show lessons as"><button data-lesson-view="list" class="${folders ? "" : "active"}" aria-label="List" title="List">☰</button><button data-lesson-view="folder" class="${folders ? "active" : ""}" aria-label="Folders" title="Folders">▦</button></span>`;
   if (q) {
