@@ -40,7 +40,7 @@ A lesson is either a video lesson (it has a YouTube, TikTok or Douyin link, or c
 
 **List first.** Opening a lesson, switching between Lessons and Vocabulary, or going to another page (Add cards, Statistics…) and coming back always lands on the list: ☰ Full in Lessons, ☰ List in Vocabulary, never straight into a study mode. A group you were in the middle of is kept: choosing Group again carries on where you left off.
 
-**Rounded like the flashcard.** Every card, panel, table, popup and dialog has the flashcard's 16 px corners; what sits inside them (dictionaries, stroke-order boxes, the small video, buttons, fields) is rounded a little less, 10–12 px. The Speaking paper keeps its nearly square sheet corners.
+**Corners.** Rounding is kept modest and tells the parts apart: cards, panels, tables, popups and dialogs 12 px (the most anywhere); what sits inside them (dictionaries, stroke-order boxes, the small video, the bottom buttons, the mode switch) 10 px; long bars, buttons and fields (+ New lesson, search, the ＋ bar) 8 px; small details (mode buttons, highlights, the pinyin box, time badges) 6–8 px. The Speaking paper keeps its nearly square sheet corners. Whatever flies off when you swipe is outlined exactly at its own edges and corners.
 
 **Done is done.** When nothing is left to study, the study modes are hidden and the lesson goes back to ☰ Full: 🎉 sits above the list, with confetti, without the New, Due and Done counts (the same in Vocabulary). There is no button to study ahead; the modes come back when cards are due again. (**Reset** makes a whole lesson New again, if you want to start it over.)
 
