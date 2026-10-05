@@ -32,7 +32,7 @@ A lesson is either a video lesson (it has a YouTube, TikTok or Douyin link, or c
 
 **Out of the way while you study.** In every study mode (Group, Listening and Speaking in Lessons; Group and Flashcards in Vocabulary) the lesson's name, Save, Reset and Delete are hidden, with the language and video link in Lessons; they come back in ☰ Full and ☰ List, and when everything is studied. What is pinned in a study mode (the video bar and the mode buttons in Lessons, the toolbar in Vocabulary) sits 6 px below the top of the window from the start and stays exactly there as you scroll, so nothing slides up first; on a phone it sits 6 px under the bar with the logo, also when the video is large. The same 6 px is used at the bottom on a phone: the buttons of the bottom bar sit 6 px from the bottom edge and from the bar's top line, and the ✎ ✕ 字 bar sits 6 px above it. ☰ Full and ☰ List keep their space above.
 
-**No grey text.** Everything you read while studying (column headings, the ··· of hidden fields, Question and the progress line on a card, and on the Speaking paper its heading, question count, clock and Notes label) is in the normal text colour.
+**No grey text.** Everything you read while studying (the ··· of hidden fields, Question and the progress line on a card, and on the Speaking paper its heading, question count, clock and Notes label) is in the normal text colour.
 
 **Back to the card.** Revealing or flipping a card, and moving on to the next one, jumps in one step to the top of the study area, in Lessons and in Vocabulary.
 
