@@ -327,17 +327,12 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-deck{position:relative;z-index:0;}
   .vocab-card.pending{position:absolute;top:0;left:0;right:0;opacity:0;pointer-events:none;z-index:-1;}
   .vocab-back-dict[hidden]{display:none;}
-  html.touch .vocab-back-dict{position:relative;}
-  .dict-clip{position:absolute;inset:0;overflow:hidden;}
-  .dict-clip > .vocab-dict-frame{height:3000px;}
-  .dict-slider{position:absolute;top:8px;right:2px;bottom:8px;width:32px;touch-action:none;cursor:pointer;opacity:.6;transition:opacity .2s ease;}
-  .dict-slider.dragging{opacity:1;}
-  .dict-slider::before{content:"";position:absolute;top:0;bottom:0;left:14px;width:4px;border-radius:2px;background:rgba(120,120,128,.14);}
-  .dict-thumb{position:absolute;left:5px;top:0;width:22px;height:44px;border-radius:11px;background:rgba(255,255,255,.08);-webkit-backdrop-filter:blur(1.5px) saturate(180%) brightness(1.06);backdrop-filter:blur(1.5px) saturate(180%) brightness(1.06);border:1px solid rgba(255,255,255,.55);box-shadow:0 4px 12px rgba(0,0,0,.14), 0 0 0 .5px rgba(0,0,0,.12), inset 1px 1px 1px rgba(255,255,255,.85), inset -1px -1px 1px rgba(0,0,0,.06);transition:transform .1s ease;}
-  .dict-slider.dragging .dict-thumb{transform:scale(1.08);}
   .vocab-card.settled .vocab-card-inner{transform:none;transition:none;}
   .vocab-card.settled .vocab-back{transform:none;}
   .vocab-card.settled .vocab-front{visibility:hidden;}
+  .vocab-card.settled{perspective:none;}
+  .vocab-card.settled .vocab-card-inner{transform-style:flat;}
+  .vocab-card.settled .vocab-face{-webkit-backface-visibility:visible;backface-visibility:visible;}
   html.touch .vocab-card.settled{height:auto !important;min-height:var(--fit-h, var(--front-h));}
   html.touch .vocab-card.settled .vocab-card-inner{position:relative;inset:auto;min-height:inherit;}
   html.touch .vocab-card.settled .vocab-back{position:relative;inset:auto;min-height:var(--fit-h, var(--front-h));box-sizing:border-box;overflow:visible;}
@@ -501,10 +496,8 @@ window.onYouTubeIframeAPIReady = function(){
   html.touch tbody tr.row-selected .cell.shown[data-field="q"]{color:var(--accent);}
   html.touch #tbody{-webkit-tap-highlight-color:transparent;}
   html.touch #viewStudy.focus-study{touch-action:pan-y;}
-  html.touch #viewStudy.focus-study #mediaContainer iframe:not(.live){pointer-events:none;}
   .media-container{transition:box-shadow .18s ease-out;}
   .media-video{transition:box-shadow .18s ease-out;}
-  .media-container:not(.big):has(iframe.live) .media-video{box-shadow:0 0 0 4px color-mix(in srgb, var(--text) 16%, transparent);}
   .touch-bar{position:fixed;left:0;right:0;bottom:0;z-index:950;display:flex;gap:8px;padding:6px 12px calc(6px + env(safe-area-inset-bottom));background:var(--surface);border-top:1px solid var(--border);box-shadow:0 -4px 16px rgba(20,30,50,.06);}
   @media (min-width:821px){.touch-bar{left:268px;}}
   .touch-bar.tools-only{justify-content:center;}
@@ -964,8 +957,6 @@ window.onYouTubeIframeAPIReady = function(){
   .panel-edit{text-align:left;}
   .dict-editing{border-radius:var(--radius-sm);outline:none;box-shadow:0 0 0 2px var(--accent);cursor:text;}
   .dict-frame{display:block;width:100%;height:360px;border:1px solid var(--border);border-radius:10px;background:#fff;}
-  html.touch .dict-frame:not(.live), html.touch .vocab-dict-frame:not(.dict-clip > *){pointer-events:none;}
-  .dict-frame.live, .dict-layer iframe.live{box-shadow:0 0 0 4px color-mix(in srgb, var(--text) 16%, transparent);}
 
   .session-complete{
     display:none;
@@ -2159,32 +2150,6 @@ document.getElementById("btnClearMedia").onclick = () => {
   scheduleAutoSave();
 };
 
-document.addEventListener("pointerdown", () => {
-  document.querySelectorAll("iframe.live").forEach(f => f.classList.remove("live"));
-  if (activeDictOverlay && isTouch()) activeDictOverlay.iframe.style.pointerEvents = "none";
-}, true);
-
-document.addEventListener("click", e => {
-  if (!isTouch()) return;
-  const inside = f => {
-    const r = f.getBoundingClientRect();
-    return r.width && e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
-  };
-  const frames = Array.from(document.querySelectorAll(".dict-frame")).filter(f => f.offsetParent && f.parentElement.contains(e.target));
-  if (activeDictOverlay && activeDictOverlay.placeholder.contains(e.target)) frames.push(activeDictOverlay.iframe);
-  const frame = frames.find(inside);
-  if (!frame) return;
-  e.stopPropagation();
-  e.preventDefault();
-  frame.classList.add("live");
-  if (activeDictOverlay && frame === activeDictOverlay.iframe) frame.style.pointerEvents = "auto";
-}, true);
-
-document.getElementById("mediaContainer").addEventListener("click", () => {
-  const frame = mediaBox().querySelector("iframe");
-  if (frame && isTouch()) frame.classList.add("live");
-});
-
 function segmentReached(start, end) {
   const t = ytPlayer.getCurrentTime();
   if (typeof t !== "number" || isNaN(t)) return false;
@@ -3016,14 +2981,21 @@ let nextOrderReady = false;
 
 let dictGuard = {
   until: 0,
-  y: 0
+  y: 0,
+  frames: new Set
 };
 
-function guardDictFocus() {
+function guardDictFocus(frames) {
+  const keep = Date.now() <= dictGuard.until ? [ ...dictGuard.frames ] : [];
   dictGuard = {
     until: Date.now() + 2500,
-    y: window.scrollY
+    y: Date.now() <= dictGuard.until ? dictGuard.y : window.scrollY,
+    frames: new Set(keep.concat(frames))
   };
+}
+
+function guardedFrameFocused() {
+  return Date.now() <= dictGuard.until && dictGuard.frames.has(document.activeElement);
 }
 
 function dictFrameFocused() {
@@ -3032,11 +3004,11 @@ function dictFrameFocused() {
 }
 
 document.addEventListener("load", e => {
-  if (e.target.tagName === "IFRAME" && !e.target.closest("#mediaContainer")) guardDictFocus();
+  if (e.target.tagName === "IFRAME" && !e.target.closest("#mediaContainer")) guardDictFocus([ e.target ]);
 }, true);
 
 window.addEventListener("blur", () => setTimeout(() => {
-  if (Date.now() > dictGuard.until || !dictFrameFocused()) return;
+  if (!guardedFrameFocused()) return;
   document.activeElement.blur();
   window.focus();
   window.scrollTo({
@@ -3047,7 +3019,7 @@ window.addEventListener("blur", () => setTimeout(() => {
 
 window.addEventListener("scroll", () => {
   if (Date.now() > dictGuard.until) return;
-  if (dictFrameFocused()) window.scrollTo({
+  if (guardedFrameFocused()) window.scrollTo({
     top: dictGuard.y,
     behavior: "instant"
   }); else dictGuard.y = window.scrollY;
@@ -3139,10 +3111,11 @@ function renderDictPanels() {
       drawStrokeOrder(el.querySelector(".dict-stroke"), text, cjkScriptFor(text, r) === "ja");
     }
   });
+  const shown = [ ...visible ].filter(el => el.classList.contains("dict-pending")).map(el => el.querySelector("iframe"));
   Array.from(host.children).forEach(el => el.classList.toggle("dict-pending", !visible.has(el)));
   syncRowBadges();
   visible.forEach(fitReadings);
-  if (visible.size) guardDictFocus();
+  if (shown.length) guardDictFocus(shown);
   const stale = Array.from(host.children).filter(el => Number(el.dataset.used) !== now).sort((a, b) => a.dataset.used - b.dataset.used);
   stale.slice(0, Math.max(0, host.children.length - 40)).forEach(el => el.remove());
 }
@@ -4806,7 +4779,7 @@ dictPanelsHost.addEventListener("click", e => {
 }, true);
 
 window.addEventListener("blur", () => setTimeout(() => {
-  if (Date.now() > dictGuard.until && dictFrameFocused()) loopPanelRow(document.activeElement);
+  if (!guardedFrameFocused() && dictFrameFocused()) loopPanelRow(document.activeElement);
 }, 0));
 
 document.getElementById("cardTable").addEventListener("pointerdown", () => {
@@ -4886,7 +4859,6 @@ function positionDictOverlay() {
 function hideDictOverlay() {
   if (!activeDictOverlay) return;
   cancelAnimationFrame(activeDictOverlay.rafId);
-  activeDictOverlay.iframe.classList.remove("live");
   Object.assign(activeDictOverlay.iframe.style, {
     position: "fixed",
     top: "0",
@@ -4903,7 +4875,7 @@ function showDictOverlay(placeholder, url) {
   Object.assign(iframe.style, {
     position: "absolute",
     opacity: "1",
-    pointerEvents: isTouch() ? "none" : "auto"
+    pointerEvents: "auto"
   });
   activeDictOverlay = {
     iframe: iframe,
@@ -6260,7 +6232,7 @@ window.addEventListener("pointermove", e => {
 });
 
 function vocabDragStart(e) {
-  if (vocabEditingKey || !e.target.closest("#vocabStage") || e.target.closest("button, input, select, textarea, .edit-row, .vocab-play, .dict-slider")) return null;
+  if (vocabEditingKey || !e.target.closest("#vocabStage") || e.target.closest("button, input, select, textarea, .edit-row, .vocab-play")) return null;
   const card = document.getElementById("vocabCard");
   const table = document.getElementById("vocabTable");
   if (!card && !table) return null;
@@ -10446,7 +10418,7 @@ function buildVocabCard(item) {
   el.dataset.key = item.key;
   el.dataset.term = item.term;
   el.dataset.url = url;
-  el.innerHTML = '<div class="vocab-card-inner"><div class="vocab-face vocab-front"><div class="vocab-term"></div></div>' + `<div class="vocab-face vocab-back"><div class="vocab-back-main"></div><div class="vocab-back-stroke"></div><div class="vocab-back-dict"${url ? "" : " hidden"}>${url ? isTouch() ? '<div class="dict-clip"><iframe class="vocab-dict-frame"></iframe></div><div class="dict-slider" role="scrollbar" aria-orientation="vertical" aria-label="Scroll dictionary"><div class="dict-thumb"></div></div>' : '<iframe class="vocab-dict-frame"></iframe>' : ""}</div></div></div>`;
+  el.innerHTML = '<div class="vocab-card-inner"><div class="vocab-face vocab-front"><div class="vocab-term"></div></div>' + `<div class="vocab-face vocab-back"><div class="vocab-back-main"></div><div class="vocab-back-stroke"></div><div class="vocab-back-dict"${url ? "" : " hidden"}>${url ? '<iframe class="vocab-dict-frame"></iframe>' : ""}</div></div></div>`;
   if (url) el.querySelector("iframe").src = url;
   drawStrokeOrder(el.querySelector(".vocab-back-stroke"), item.term, cjkScriptFor(item.term, item.card) === "ja");
   const current = () => {
@@ -10456,33 +10428,6 @@ function buildVocabCard(item) {
   el.addEventListener("click", e => {
     if (current() && !e.target.closest(".vocab-back-stroke, .vocab-back-dict")) flipVocab();
   });
-  const clip = el.querySelector(".dict-clip");
-  if (clip) {
-    const slider = el.querySelector(".dict-slider"), thumb = slider.querySelector(".dict-thumb");
-    const room = () => slider.clientHeight - thumb.offsetHeight;
-    const sync = () => {
-      const max = clip.scrollHeight - clip.clientHeight;
-      thumb.style.top = (max > 0 ? clip.scrollTop / max * room() : 0) + "px";
-    };
-    const seek = y => {
-      const r = slider.getBoundingClientRect();
-      const ratio = Math.min(1, Math.max(0, (y - r.top - thumb.offsetHeight / 2) / room()));
-      clip.scrollTop = ratio * (clip.scrollHeight - clip.clientHeight);
-    };
-    clip.addEventListener("scroll", sync);
-    slider.addEventListener("pointerdown", e => {
-      e.stopPropagation();
-      slider.setPointerCapture(e.pointerId);
-      slider.classList.add("dragging");
-      seek(e.clientY);
-    });
-    slider.addEventListener("pointermove", e => {
-      if (slider.hasPointerCapture(e.pointerId)) seek(e.clientY);
-    });
-    const end = () => slider.classList.remove("dragging");
-    slider.addEventListener("pointerup", end);
-    slider.addEventListener("pointercancel", end);
-  }
   return el;
 }
 
