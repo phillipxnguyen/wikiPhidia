@@ -938,7 +938,7 @@ window.onYouTubeIframeAPIReady = function(){
   #dictPanels{display:flex;flex-direction:column;position:relative;}
   #dictPanels .dict-pending{position:absolute;top:0;left:0;right:0;height:0;overflow:hidden;visibility:hidden;pointer-events:none;}
   #dictPanels:not(.with-source) .dict-source, #dictPanels:not(.with-source) .dict-answer{display:none;}
-  html.touch .dict-source:not(.dict-editing)::before, html.touch .dict-answer:not(.dict-editing)::before{content:"\270E";margin-right:.4em;font-size:20px;color:var(--text-2);}
+  html.touch .dict-source:not(.dict-editing)::before{content:"\270E";margin-right:.4em;font-size:20px;color:var(--text-2);}
   #viewStudy.focus-study > .lesson-header, #viewStudy.focus-study > .save-status, #viewStudy.focus-study > .lesson-meta, #viewVocab.focus-study > .vocab-head{display:none;}
   .swipe-ghost{position:fixed;z-index:1000;box-sizing:border-box;display:flex;justify-content:center;border:3px solid var(--border);border-radius:28px;background:var(--surface);box-shadow:var(--shadow-md);font-size:34px;font-weight:700;pointer-events:none;}
   .swipe-ghost.row{align-items:center;border-radius:var(--radius);font-size:20px;}
@@ -12152,13 +12152,13 @@ document.getElementById("dictPanels").addEventListener("mouseup", e => {
 });
 
 dictPanelsHost.addEventListener("click", e => {
-  const notesEl = isTouch() && e.target.closest(".dict-notes:not(.dict-editing)");
-  if (notesEl) {
+  const notesEl = isTouch() && e.target.closest(".dict-notes:not(.dict-editing), .dict-answer:not(.dict-editing)");
+  if (notesEl && getSelection().isCollapsed) {
     const row = dictSourceRow(notesEl);
     if (row) editDictField(notesEl, row);
     return;
   }
-  const field = isTouch() && e.target.closest(".dict-source:not(.dict-editing), .dict-answer:not(.dict-editing)");
+  const field = isTouch() && e.target.closest(".dict-source:not(.dict-editing)");
   if (field && tapsEditMark(field, e)) {
     const row = dictSourceRow(field);
     if (row) editWholeDictField({
