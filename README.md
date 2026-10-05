@@ -38,7 +38,7 @@ A lesson is either a video lesson (it has a YouTube, TikTok or Douyin link, or c
 
 **Scheduling.** *Again* brings a card back in 10 minutes. Each *Good* counts towards a streak; until the fifth Good in a row the card returns the next day. After five it is **done**, and the gaps grow to 1, 3 and then 7 days.
 
-**Lessons in the sidebar.** The switch beside the LESSONS heading shows them as a list (☰) or as folders (▦): two per row, each with the YouTube thumbnail of its video on the cover and its name under it, then four plain numbers without icons, lined up in two columns: total and New on top, Due and Done below (New, Due and Done in their usual colours). Tiles in a row are the same height, with the numbers at the bottom. A lesson without a video shows its name on the cover, left-aligned and centred top to bottom. The choice is remembered, in Lessons and Vocabulary alike.
+**Lessons in the sidebar.** The switch beside the LESSONS heading shows them as a plain list (☰) or with pictures (▦), one lesson per row like a playlist: a small YouTube thumbnail on the left (a neutral box with ▶ for a video lesson without a YouTube picture, 🗒️ for a text lesson), and on the right the name (up to two lines) with the same counts as the list. Every row is the same height. The choice is remembered, in Lessons and Vocabulary alike.
 
 **List first.** Opening a lesson, switching between Lessons and Vocabulary, or going to another page (Add cards, Statistics…) and coming back always lands on the list: ☰ Full in Lessons, ☰ List in Vocabulary, never straight into a study mode. A group you were in the middle of is kept: choosing Group again carries on where you left off.
 
