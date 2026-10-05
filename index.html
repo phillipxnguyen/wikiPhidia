@@ -937,6 +937,7 @@ window.onYouTubeIframeAPIReady = function(){
   .stroke-order-panel.editing > .dict-source, .stroke-order-panel.editing > .dict-answer, .stroke-order-panel.editing > .dict-notes, #dictPanels:not(.with-source) .dict-notes{display:none;}
   .stroke-order-panel > .dict-notes{box-sizing:border-box;width:fit-content;max-width:100%;margin:0 auto;padding:0 16px;font-size:16px;line-height:1.5;text-align:left;color:var(--text);overflow-wrap:break-word;}
   .dict-notes[hidden]{display:none;}
+  .stroke-order-panel > .dict-notes{cursor:text;}
   .dict-notes ul, .dict-notes ol{margin:4px 0;padding-left:24px;}
   .dict-notes > :first-child{margin-top:0;}
   .dict-notes > :last-child{margin-bottom:0;}
@@ -11902,7 +11903,7 @@ function editWholeDictField(whole) {
 }
 
 function editDictField(el, row, keepSelection) {
-  const field = el.classList.contains("dict-source") ? el.dataset.field || "q" : "a";
+  const field = el.classList.contains("dict-source") ? el.dataset.field || "q" : el.classList.contains("dict-notes") ? "notes" : "a";
   hideVocabPopup();
   hideVocabAddPopup();
   const sel = getSelection();
@@ -11940,12 +11941,14 @@ function editDictField(el, row, keepSelection) {
     listeners.abort();
     el.removeAttribute("contenteditable");
     el.classList.remove("dict-editing");
-    const html = sanitizeHtml(el.innerHTML, "br");
+    const html = field === "notes" ? sanitizeHtml(el.innerHTML) : sanitizeHtml(el.innerHTML, "br");
     const text = plainTextOf(html, "\n");
-    if (save && (text || field === "a") && (html !== row[field + "Html"] || text !== row[field])) {
+    if (save && (text || field !== "q") && (html !== row[field + "Html"] || text !== row[field])) {
       pushUndo("Edited card");
+      const before = vocabKeysOf(row);
       row[field] = text;
-      row[field + "Html"] = html;
+      row[field + "Html"] = text.trim() ? html : "";
+      if (field === "notes") stampNewVocab(row, before);
       scheduleAutoSave();
     }
     delete el.dataset.key;
@@ -11989,7 +11992,7 @@ document.addEventListener("keydown", e => {
 });
 
 document.getElementById("dictPanels").addEventListener("mouseup", e => {
-  const answer = e.button === 0 && !e.shiftKey && !isTouch() && e.target.closest(".dict-answer");
+  const answer = e.button === 0 && !e.shiftKey && !isTouch() && e.target.closest(".dict-answer, .dict-notes");
   const sel = getSelection();
   if (answer && !sel.isCollapsed && !answer.contains(sel.anchorNode)) return;
   const answerRow = answer && !answer.isContentEditable && dictSourceRow(answer);
@@ -12009,6 +12012,12 @@ document.getElementById("dictPanels").addEventListener("mouseup", e => {
 });
 
 dictPanelsHost.addEventListener("click", e => {
+  const notesEl = isTouch() && e.target.closest(".dict-notes:not(.dict-editing)");
+  if (notesEl) {
+    const row = dictSourceRow(notesEl);
+    if (row) editDictField(notesEl, row);
+    return;
+  }
   const field = isTouch() && e.target.closest(".dict-source:not(.dict-editing), .dict-answer:not(.dict-editing)");
   if (field && tapsEditMark(field, e)) {
     const row = dictSourceRow(field);
