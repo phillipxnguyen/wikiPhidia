@@ -320,19 +320,16 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-back .vocab-ctx mark, .vocab-back .vocab-ctx mark:has(.rd){display:inline;padding:0 1px;margin:0;border-radius:4px;line-height:inherit;}
   .vocab-back .vocab-ctx:first-child{margin-top:5px;}
   .vocab-back .vocab-ctx:first-child:has(.rd){line-height:2;margin:10px 0 -14px;}
-  .vocab-face.vocab-back > .vocab-back-main{margin:0;display:flex;flex-direction:column;align-items:center;gap:16px;width:100%;flex:none;}
-  .vocab-face.vocab-back > .vocab-back-stroke{margin:0;flex:none;}
-  .vocab-face.vocab-back > .vocab-back-main{margin-top:auto;}
-  .vocab-face.vocab-back > .vocab-back-stroke{margin-bottom:auto;}
+  .vocab-face.vocab-back > .vocab-back-main{margin:auto 0 0;display:flex;flex-direction:column;align-items:center;gap:16px;width:100%;flex:none;}
+  .vocab-face.vocab-back > .vocab-back-stroke{margin:0 0 auto;flex:none;}
   .vocab-face.vocab-back:has(> .vocab-back-stroke:empty) > .vocab-back-main{margin-bottom:auto;}
   .vocab-deck{position:relative;z-index:0;}
   @media (min-width:821px){.main:has(#vocabCard){padding-bottom:24px;}}
   .vocab-card.pending{position:absolute;top:0;left:0;right:0;opacity:0;pointer-events:none;z-index:-1;}
-  .vocab-card.settled .vocab-card-inner{transform:none;transition:none;}
+  .vocab-card.settled .vocab-card-inner{transform:none;transition:none;transform-style:flat;}
   .vocab-card.settled .vocab-back{transform:none;}
   .vocab-card.settled .vocab-front{visibility:hidden;}
   .vocab-card.settled{perspective:none;}
-  .vocab-card.settled .vocab-card-inner{transform-style:flat;}
   .vocab-card.settled .vocab-face{-webkit-backface-visibility:visible;backface-visibility:visible;}
   .vocab-face > :first-child{margin-top:auto;}
   .vocab-face > :last-child{margin-bottom:auto;}
@@ -10480,7 +10477,9 @@ function showVocabDeck(stage, item) {
   const want = [ item, next ].filter(Boolean);
   const same = (el, it) => el.dataset.key === it.key && el.dataset.term === it.term;
   [ ...deck.children ].forEach(el => {
-    if (!want.some(it => same(el, it))) el.remove();
+    if (want.some(it => same(el, it))) return;
+    vocabFitObserver.unobserve(el.querySelector(".vocab-back-main"));
+    el.remove();
   });
   const cardFor = it => [ ...deck.children ].find(el => same(el, it)) || deck.appendChild(buildVocabCard(it));
   const card = cardFor(item);
