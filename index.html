@@ -47,6 +47,7 @@ window.onYouTubeIframeAPIReady = function(){
     --text-2:#4b5668;
     --lesson-color:#2f6fd6;
     --accent:#2f6fd6;
+    --lesson-accent:#2f6fd6;
     --accent-hover:#2459b3;
     --accent-soft:rgba(47,111,214,.12);
     --on-accent:#ffffff;
@@ -99,6 +100,8 @@ window.onYouTubeIframeAPIReady = function(){
       --text-2:#a9b3c1;
       --lesson-color:#5d8ff0;
       --accent:#5d8ff0;
+    --lesson-accent:#5d8ff0;
+      --lesson-accent:#5d8ff0;
       --accent-hover:#7ca5f4;
       --accent-soft:rgba(93,143,240,.16);
       --on-accent:#0c1220;
@@ -137,6 +140,7 @@ window.onYouTubeIframeAPIReady = function(){
     --text-2:#a9b3c1;
     --lesson-color:#5d8ff0;
     --accent:#5d8ff0;
+    --lesson-accent:#5d8ff0;
     --accent-hover:#7ca5f4;
     --accent-soft:rgba(93,143,240,.16);
     --on-accent:#0c1220;
@@ -351,6 +355,13 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-editor{display:flex;flex-direction:column;gap:8px;padding:16px;margin-bottom:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);}
   .vocab-list .vocab-editor{margin:4px 0;box-shadow:none;}
   .vocab-editor textarea{width:100%;font-size:16px;}
+  #vocabEditTerm, #vocabEditMeaning, #vocabEditNotes{border-left:4px solid var(--lesson-accent);}
+  #vocabEditMeaning{border-left-color:var(--a-label);}
+  #vocabEditNotes{border-left-color:var(--border-strong);font-size:16px;}
+  .vocab-back .vocab-word-notes{box-sizing:border-box;width:100%;padding:0 16px;font-size:16px;line-height:1.5;text-align:left;color:var(--text);overflow-wrap:break-word;}
+  .vocab-word-notes ul, .vocab-word-notes ol{margin:4px 0;padding-left:24px;}
+  .vocab-word-notes > :first-child{margin-top:0;}
+  .vocab-word-notes > :last-child{margin-bottom:0;}
   .vocab-editor-actions{display:flex;justify-content:flex-end;gap:8px;}
   .over-limit, .over-limit:focus, .vocab-add-field.over-limit{border-color:var(--danger);box-shadow:0 0 0 3px var(--danger-soft);}
   .limit-row{display:flex;gap:8px;margin-top:4px;font-size:13px;}
@@ -2441,6 +2452,7 @@ function moveCardsToVocab(list) {
     });
   });
   if (carry.length) appendWordItems(ensureVocabExtras(), carry);
+  carryWordNotes(ok, carry);
   if (activeEdit && moving.has(activeEdit.row)) discardActiveEdit();
   rows = rows.filter(r => !moving.has(r));
   ok.forEach(r => {
@@ -2454,6 +2466,14 @@ function moveCardsToVocab(list) {
   renderLessonList();
 }
 
+function carryWordNotes(cards, carry) {
+  carry.forEach(([term]) => {
+    const key = normalizeVocabText(term);
+    const st = cards.map(c => c.vocab && c.vocab[key]).find(x => x && x.notes);
+    if (st) setWordNotes(vocabExtras, key, st.notes, st.notesAt);
+  });
+}
+
 function moveOneCardToVocab(row) {
   const term = (row.q || "").replace(/\s+/g, " ").trim();
   const meaning = (row.a || "").replace(/\s+/g, " ").trim();
@@ -2463,6 +2483,7 @@ function moveOneCardToVocab(row) {
   if (!carry.some(([t]) => normalizeVocabText(t) === normalizeVocabText(term)) && !existingVocab(term, others)) carry.unshift([ term, meaning ]);
   pushUndo("Moved to Vocabulary — " + cardSummary(row));
   if (carry.length) appendWordItems(ensureVocabExtras(), carry);
+  carryWordNotes([ row ], carry);
   const parts = isCardMode() ? studyParts() : [ document.querySelector(`#tbody tr[data-id="${row.id}"]`) ].filter(Boolean);
   if (activeEdit && activeEdit.row.id === row.id) discardActiveEdit();
   rows = rows.filter(r => r !== row);
@@ -9233,6 +9254,11 @@ function mergeLessons(a, b) {
     Object.keys(o.vocab || {}).forEach(k => {
       const x = c.vocab && c.vocab[k], y = o.vocab[k];
       if (y && (!x || (y.last || 0) > (x.last || 0))) vocab[k] = y;
+      const notesFrom = [ x, y ].filter(Boolean).sort((a, b) => (b.notesAt || 0) - (a.notesAt || 0))[0];
+      if (notesFrom && vocab[k] !== notesFrom && (notesFrom.notesAt || 0) > (vocab[k].notesAt || 0)) vocab[k] = Object.assign({}, vocab[k], {
+        notes: notesFrom.notes,
+        notesAt: notesFrom.notesAt
+      });
     });
     return Object.assign({}, c, {
       srs: srs,
@@ -9943,8 +9969,13 @@ function stampNewVocab(card, before) {
 function keepVocabAdded(vocab) {
   const out = {};
   Object.keys(vocab || {}).forEach(k => {
-    if (vocab[k] && vocab[k].added) out[k] = Object.assign(newSrsState(), {
-      added: vocab[k].added
+    const st = vocab[k];
+    if (!st || !st.added && !st.notes) return;
+    out[k] = newSrsState();
+    if (st.added) out[k].added = st.added;
+    if (st.notes) Object.assign(out[k], {
+      notes: st.notes,
+      notesAt: st.notesAt || 0
     });
   });
   return out;
@@ -9967,6 +9998,10 @@ function normalizeVocabSrs(vocab) {
       if (typeof st[f] === "number" && isFinite(st[f])) clean[f] = st[f];
     });
     if (typeof st.added === "number" && isFinite(st.added)) clean.added = st.added;
+    if (typeof st.notes === "string" && st.notes.trim()) {
+      clean.notes = sanitizeHtml(st.notes);
+      clean.notesAt = typeof st.notesAt === "number" && isFinite(st.notesAt) ? st.notesAt : 0;
+    }
     out[k] = clean;
   });
   return out;
@@ -10234,7 +10269,8 @@ function vocabBackInner(item) {
   const {card: card, sentence: sentence} = vocabContext(item);
   const inSentence = sentence && !!findTermIn(sentence.normalize("NFC"), item.term);
   const main = inSentence ? `<div class="vocab-ctx">${vocabSentenceHtml(sentence, item.term, card)}</div>` : `<div class="vocab-ctx"><mark>${vocabSentenceHtml(item.term, "", card)}</mark></div>` + (sentence ? `<div class="vocab-ctx small">${vocabSentenceHtml(sentence, "", card)}</div>` : "");
-  return main + `<div class="vocab-meaning">${escapeHtml(item.meaning)}</div>`;
+  const notes = wordNotesOf(item);
+  return main + `<div class="vocab-meaning">${escapeHtml(item.meaning)}</div>` + (notes ? `<div class="vocab-word-notes">${notes}</div>` : "");
 }
 
 function buildVocabCard(item) {
@@ -10352,8 +10388,26 @@ function vocabTableHtml(group) {
   return '<table id="vocabTable"><colgroup><col><col></colgroup><thead><tr>' + head("q") + head("a") + "</tr></thead><tbody>" + group.map(item => item.key === vocabEditingKey && !vocabEditingInList ? `<tr class="edit-row"><td colspan="2">${vocabEditorHtml(item)}</td></tr>` : `<tr data-key="${escapeAttr(item.key)}"${item.key === vocabSelectedKey ? ' class="row-selected"' : ""}><td>${cell(item, "q")}</td><td class="a-col">${cell(item, "a")}</td></tr>`).join("") + "</tbody></table>";
 }
 
+function wordNotesOf(item) {
+  const st = item && item.card && item.card.vocab && item.card.vocab[item.key];
+  return st && st.notes || "";
+}
+
+function setWordNotes(card, key, html, at) {
+  const notes = sanitizeHtml(html || "");
+  const clean = plainTextOf(notes, "\n").trim() ? notes : "";
+  if (!card.vocab) card.vocab = {};
+  const st = card.vocab[key];
+  if ((st && st.notes || "") === clean) return false;
+  card.vocab[key] = Object.assign(st || newSrsState(), {
+    notes: clean,
+    notesAt: at || Date.now()
+  });
+  return true;
+}
+
 function vocabEditorHtml(item) {
-  return '<div class="vocab-editor">' + `<textarea id="vocabEditTerm" class="autofit oneline" rows="1" autocomplete="off" placeholder="Question" aria-label="Question">${escapeHtml(item.term)}</textarea>` + `<textarea id="vocabEditMeaning" class="autofit oneline" rows="1" autocomplete="off" placeholder="Answer" aria-label="Answer">${escapeHtml(item.meaning)}</textarea>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
+  return '<div class="vocab-editor">' + `<textarea id="vocabEditTerm" class="autofit oneline" rows="1" autocomplete="off" placeholder="Question" aria-label="Question">${escapeHtml(item.term)}</textarea>` + `<textarea id="vocabEditMeaning" class="autofit oneline" rows="1" autocomplete="off" placeholder="Answer" aria-label="Answer">${escapeHtml(item.meaning)}</textarea>` + `<div id="vocabEditNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes" aria-label="Notes">${wordNotesOf(item)}</div>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
 }
 
 function vocabDictUrl(item) {
@@ -10492,14 +10546,23 @@ function wireVocabEditor(items) {
   fitTextarea(meaning);
   const item = items.find(i => i.key === vocabEditingKey);
   const overLimit = watchTermLimit(term, () => term.value.replace(/\s+/g, " ").trim(), document.getElementById("vocabEditSave"));
+  const notes = document.getElementById("vocabEditNotes");
+  notes.addEventListener("paste", e => {
+    e.preventDefault();
+    document.execCommand("insertHTML", false, pastedHtml(e));
+  });
   const save = () => {
     if (overLimit()) return;
-    if (!(vocabEditingKey === NEW_WORD_KEY ? addExtraWord(term.value, meaning.value, true) : updateVocabEntry(item, term.value, meaning.value))) return;
+    const key = vocabEditingKey;
     vocabEditingKey = null;
+    if (!saveVocabEditor(item, term.value, meaning.value, notes.innerHTML, true)) {
+      vocabEditingKey = key;
+      return;
+    }
     renderVocab();
   };
   document.getElementById("vocabEditSave").onclick = save;
-  [ term, meaning ].forEach(input => input.addEventListener("keydown", e => {
+  [ term, meaning, notes ].forEach(input => input.addEventListener("keydown", e => {
     e.stopPropagation();
     if (e.isComposing || e.keyCode === 229) return;
     if (e.key === "Enter" && !e.shiftKey) {
@@ -10782,10 +10845,32 @@ function commitVocabEdit() {
   if (!vocabEditingKey) return false;
   const term = document.getElementById("vocabEditTerm");
   const meaning = document.getElementById("vocabEditMeaning");
+  const notes = document.getElementById("vocabEditNotes");
   const item = lessonVocabItems(vocabSource()).find(i => i.key === vocabEditingKey);
   const isNew = vocabEditingKey === NEW_WORD_KEY;
   vocabEditingKey = null;
-  if (term && meaning && isNew) addExtraWord(term.value, meaning.value, false); else if (term && meaning && item) updateVocabEntry(item, term.value, meaning.value);
+  if (term && meaning && (isNew || item)) saveVocabEditor(isNew ? null : item, term.value, meaning.value, notes ? notes.innerHTML : "", false);
+  return true;
+}
+
+function saveVocabEditor(item, termRaw, meaningRaw, notesHtml, explicit) {
+  const term = (termRaw || "").replace(/\s+/g, " ").trim();
+  const key = normalizeVocabText(term);
+  if (!item) {
+    if (!addExtraWord(termRaw, meaningRaw, explicit)) return false;
+    if (term && vocabExtras) setWordNotes(vocabExtras, key, notesHtml);
+    scheduleAutoSave();
+    return true;
+  }
+  const meaning = (meaningRaw || "").replace(/\s+/g, " ").trim();
+  const notesChanged = sanitizeHtml(notesHtml || "") !== wordNotesOf(item);
+  if (term === item.term && meaning === item.meaning) {
+    if (!notesChanged) return true;
+    if (!vocabEntryOk(term)) return false;
+    pushUndo("Edited word — " + term);
+  } else if (!updateVocabEntry(item, termRaw, meaningRaw)) return false;
+  if (notesChanged) setWordNotes(item.card, key, notesHtml);
+  scheduleAutoSave();
   return true;
 }
 

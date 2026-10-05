@@ -91,6 +91,8 @@ Switch from **Lessons** to **Vocabulary** with the 字 button at the top. Words 
 
 The mode buttons have no tooltips, and there is no separate dictionary button: the dictionary lives on the back of the flashcard. 🔊 reads the sentence that really holds the word (also a sentence inside a long answer), or the word itself when no sentence has it.
 
+Editing a word (E, ✎, or ＋ for a new one) opens the same three boxes as a card in Lessons, with the same coloured lines: Question (blue), Answer (green) and Notes (grey). Notes take anything you type or paste, formatting included, with no look-ups or highlighting; Return saves (Shift + Return for a new line) and undo works as usual. A word's notes show on the back of its flashcard, under the meaning, and stay with the word when it is renamed, reset, or moved over from a lesson.
+
 Group and Flashcards share one queue, and a word marked Again comes back after 10 minutes. The toolbar stays pinned to the top of the screen as you scroll, in both modes, as in Lessons. The 🌐 button picks the language; ⇄ picks which side is shown first and hides the other side again (the card gives a short squash, and the side it starts on is labelled and coloured Question or Answer). On a phone, Undo, Redo, Show, Again and Good sit in a bar fixed to the bottom of the screen, as in Lessons; on a computer the keys do the same.
 
 As in Lessons, pointing at a word (or tapping its row on a phone) shows its pinyin or reading.
