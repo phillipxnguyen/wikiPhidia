@@ -307,14 +307,15 @@ window.onYouTubeIframeAPIReady = function(){
   #vocabFrontBtn.active{color:var(--accent);}
   .vocab-badges{margin:-8px 0 16px;}
   .vocab-toolbar:not([hidden]) + .vocab-badges{margin-top:0;}
-  .vocab-card{--front-h:320px;position:relative;margin-bottom:16px;height:var(--fit-h, var(--front-h));touch-action:pan-y;cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;}
-  .vocab-card.sizing{transition:height .45s cubic-bezier(.3,.7,.3,1);}
-  .vocab-card-inner{position:absolute;inset:0;}
+  .vocab-card{--front-h:320px;--back-h:var(--fit-h, var(--front-h));position:relative;margin-bottom:16px;height:calc(var(--back-h) / 2);touch-action:pan-y;cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;}
+  .vocab-card.flipped{height:var(--back-h);}
+  .vocab-card.sizing{transition:height .45s cubic-bezier(.4,0,.2,1);}
+  .vocab-card-inner{position:absolute;inset:0;overflow:hidden;border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);}
   .vocab-face{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;gap:14px;padding:32px 24px;text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);overflow:auto;}
-  .vocab-front{z-index:1;bottom:auto;height:var(--fit-h, var(--front-h));transform-origin:50% 0;transition:transform .45s cubic-bezier(.3,.7,.3,1), visibility 0s;}
-  .vocab-card.flipped .vocab-front{transform:perspective(1600px) rotateX(-90deg);visibility:hidden;pointer-events:none;transition:transform .45s cubic-bezier(.3,.7,.3,1), visibility 0s .45s;}
+  .vocab-front{z-index:2;bottom:auto;height:calc(var(--back-h) / 2);transform-origin:50% 100%;-webkit-backface-visibility:hidden;backface-visibility:hidden;transition:transform .45s cubic-bezier(.4,0,.2,1), visibility 0s;}
+  .vocab-card.flipped .vocab-front{transform:perspective(4000px) rotateX(-180deg);visibility:hidden;pointer-events:none;transition:transform .45s cubic-bezier(.4,0,.2,1), visibility 0s .45s;}
   .vocab-card.no-turn, .vocab-card.no-turn .vocab-front{transition:none;}
-  .vocab-back{background:var(--a-bg);justify-content:flex-start;gap:16px;padding:16px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;}
+  .vocab-back{bottom:auto;height:calc(var(--back-h) - 2px);border:0;border-radius:0;box-shadow:none;background:var(--a-bg);justify-content:flex-start;gap:16px;padding:16px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;}
   @media (max-width:600px){.vocab-front{padding:24px 16px;}}
   .vocab-back .vocab-ctx, .vocab-back .vocab-meaning{box-sizing:border-box;width:fit-content;max-width:100%;padding:0 16px;font-size:28px;line-height:1.3;margin:-2px 0 -4px;text-align:left;}
   .vocab-back .vocab-ctx.small{font-size:20px;}
@@ -330,10 +331,10 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-deck{position:relative;z-index:0;}
   .vocab-card.pending{position:absolute;top:0;left:0;right:0;opacity:0;pointer-events:none;z-index:-1;}
   .vocab-back-dict[hidden]{display:none;}
-  html.touch .vocab-back{overflow:hidden;}
-  html.touch .vocab-card.grown{height:auto;min-height:var(--fit-h, var(--front-h));}
+  html.touch .vocab-back{overflow:visible;}
+  html.touch .vocab-card.grown{height:auto;min-height:var(--back-h);}
   html.touch .vocab-card.grown .vocab-card-inner{position:relative;inset:auto;min-height:inherit;}
-  html.touch .vocab-card.grown .vocab-back{position:relative;inset:auto;min-height:var(--fit-h, var(--front-h));overflow:visible;}
+  html.touch .vocab-card.grown .vocab-back{position:relative;inset:auto;height:auto;min-height:calc(var(--back-h) - 2px);}
   .vocab-face > :first-child{margin-top:auto;}
   .vocab-face > :last-child{margin-bottom:auto;}
   .vocab-card.answer-first .vocab-front{background:var(--a-bg);}
@@ -6106,7 +6107,7 @@ function ghostFor(parts) {
   const left = Math.min(...rects.map(r => r.left));
   const top = Math.min(...rects.map(r => r.top));
   const bottom = Math.max(...rects.map(r => r.bottom));
-  const shape = shown.length === 1 && (shown[0].querySelector(":scope > .vocab-card-inner > .vocab-face") || shown[0]);
+  const shape = shown.length === 1 && (shown[0].querySelector(":scope > .vocab-card-inner") || shown[0]);
   const ghost = document.createElement("div");
   ghost.className = "swipe-ghost" + (row ? " row" : "") + (currentView === "vocab" ? " mark" : "");
   Object.assign(ghost.style, {
@@ -10397,7 +10398,7 @@ function buildVocabCard(item) {
   el.dataset.key = item.key;
   el.dataset.term = item.term;
   el.dataset.url = url;
-  el.innerHTML = '<div class="vocab-card-inner"><div class="vocab-face vocab-front"><div class="vocab-term"></div></div>' + `<div class="vocab-face vocab-back"><div class="vocab-back-main"></div><div class="vocab-back-stroke"></div><div class="vocab-back-dict"${url ? "" : " hidden"}>${url ? '<iframe class="vocab-dict-frame"></iframe>' : ""}</div></div></div>`;
+  el.innerHTML = `<div class="vocab-card-inner"><div class="vocab-face vocab-back"><div class="vocab-back-main"></div><div class="vocab-back-stroke"></div><div class="vocab-back-dict"${url ? "" : " hidden"}>${url ? '<iframe class="vocab-dict-frame"></iframe>' : ""}</div></div></div>` + '<div class="vocab-face vocab-front"><div class="vocab-term"></div></div>';
   if (url) el.querySelector("iframe").src = url;
   drawStrokeOrder(el.querySelector(".vocab-back-stroke"), item.term, cjkScriptFor(item.term, item.card) === "ja");
   const current = () => {
@@ -10437,7 +10438,7 @@ function fitVocabCards() {
   const sel = document.querySelector("#selBar:not([hidden]) .segmented");
   const floor = Math.min(window.innerHeight, bar.hidden ? Infinity : bar.getBoundingClientRect().top, sel ? sel.getBoundingClientRect().top : Infinity);
   const min = parseFloat(getComputedStyle(card).getPropertyValue("--front-h")) || 320;
-  const height = Math.floor(Math.max(min, floor - VOCAB_CARD_GAP - stickyTop - below)) + "px";
+  const height = Math.floor(Math.max(min, floor - VOCAB_CARD_GAP - stickyTop - below) / 2) * 2 + "px";
   cards.forEach(el => el.style.setProperty("--fit-h", height));
 }
 
@@ -10468,9 +10469,10 @@ function turnVocabCard(card, open) {
   if (open) {
     const back = card.querySelector(".vocab-back");
     back.scrollTop = 0;
-    const now = card.getBoundingClientRect().height;
+    const full = parseFloat(getComputedStyle(card).getPropertyValue("--fit-h")) || parseFloat(getComputedStyle(card).getPropertyValue("--front-h"));
+    const need = Math.ceil(back.scrollHeight) + 2;
     card.classList.add("sizing");
-    if (document.documentElement.classList.contains("touch") && back.scrollHeight > now + .5) card.style.height = Math.ceil(back.scrollHeight) + "px";
+    if (document.documentElement.classList.contains("touch") && need > full) card.style.height = need + "px";
   } else {
     if (card.classList.contains("grown")) {
       card.style.height = card.getBoundingClientRect().height + "px";
