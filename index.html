@@ -931,8 +931,7 @@ window.onYouTubeIframeAPIReady = function(){
   #viewStudy.focus-study > .lesson-header, #viewStudy.focus-study > .save-status, #viewStudy.focus-study > .lesson-meta, #viewVocab.focus-study > .vocab-head{display:none;}
   .swipe-ghost{position:fixed;z-index:1000;box-sizing:border-box;display:flex;justify-content:center;border:4px solid var(--border);border-radius:28px;background:var(--surface);box-shadow:var(--shadow-md);font-size:34px;font-weight:700;pointer-events:none;}
   .swipe-ghost.row{align-items:center;border-radius:var(--radius);font-size:20px;}
-  .swipe-ghost.multi{border-width:0;border-radius:0;background:none;box-shadow:none;}
-  .swipe-piece{position:absolute;box-sizing:border-box;display:flex;justify-content:center;border:4px solid;border-color:inherit;background:var(--surface);box-shadow:var(--shadow-md);}
+  .swipe-fade{position:fixed;z-index:999;overflow:hidden;pointer-events:none;}
   .swipe-ghost.good{color:var(--a-label);border-color:currentColor;}
   .swipe-ghost.again{color:var(--danger);border-color:currentColor;}
   .swipe-ghost.again.mark, .swipe-ghost.delete, .touch-bar .tb-again.tb-mark{-webkit-text-stroke:.04em currentColor;}
@@ -6103,7 +6102,55 @@ function pinStudyArea() {
 }
 
 function studyParts() {
-  return [ "mediaContainer", "tableProgress", "cardTable", "singleCardView" ].map(id => document.getElementById(id)).concat(document.querySelector(".study-head .toolbar"), Array.from(document.querySelectorAll("#dictPanels > :not(.dict-pending)")));
+  return [ document.getElementById(isCardMode() ? "singleCardView" : "cardTable") ];
+}
+
+function swipeCompanions(parts) {
+  if (currentView !== "study" || parts.length !== 1 || !parts[0]) return [];
+  const el = parts[0];
+  if (el.id === "cardTable" || el.id === "singleCardView") return dictPanelsInOrder();
+  if (el.tagName === "TR" && el.dataset.id) return [ rowDictPanel(el.dataset.id) ];
+  if (el.dataset.rowId) return [ document.querySelector(`#tbody tr[data-id="${el.dataset.rowId}"]`) ];
+  return [];
+}
+
+function fadeAway(el) {
+  if (!el || !el.offsetParent || getComputedStyle(el).visibility === "hidden") return;
+  const rect = el.getBoundingClientRect();
+  if (rect.height <= 1) return;
+  const copy = el.cloneNode(true);
+  const from = [ el, ...el.querySelectorAll("*") ], to = [ copy, ...copy.querySelectorAll("*") ];
+  from.forEach((node, i) => {
+    const style = getComputedStyle(node);
+    to[i].removeAttribute("id");
+    to[i].style.cssText = Array.from(style).map(k => k + ":" + style.getPropertyValue(k)).join(";");
+  });
+  copy.querySelectorAll("iframe").forEach(frame => {
+    const box = document.createElement("div");
+    box.style.cssText = frame.style.cssText;
+    frame.replaceWith(box);
+  });
+  copy.style.margin = "0";
+  const holder = document.createElement("div");
+  holder.className = "swipe-fade";
+  Object.assign(holder.style, {
+    left: Math.round(rect.left) + "px",
+    top: Math.round(rect.top) + "px",
+    width: Math.round(rect.width) + "px",
+    height: Math.round(rect.height) + "px"
+  });
+  holder.appendChild(copy);
+  document.body.appendChild(holder);
+  holder.animate([ {
+    opacity: 1
+  }, {
+    opacity: 0
+  } ], {
+    duration: 450,
+    easing: "ease-out",
+    fill: "forwards"
+  });
+  setTimeout(() => holder.remove(), 450);
 }
 
 function hasOwnBox(el) {
@@ -6114,60 +6161,38 @@ function hasOwnBox(el) {
 }
 
 function swipeShapes(el, depth = 0) {
-  if (!el || !el.offsetParent || el.matches('input[type="range"]') || el.getBoundingClientRect().height <= 1 || el.getBoundingClientRect().width <= 1) return [];
+  if (!el || !el.offsetParent || el.matches('input[type="range"], .progress-badge') || el.getBoundingClientRect().height <= 1 || el.getBoundingClientRect().width <= 1) return [];
   if (depth >= 4 || hasOwnBox(el)) return [ el ];
   return Array.from(el.children).flatMap(child => swipeShapes(child, depth + 1));
 }
 
-function setGhostMark(ghost, text) {
-  (ghost.querySelector(".swipe-mark") || ghost).textContent = text;
+function contentShape(el) {
+  const shapes = swipeShapes(el);
+  return shapes.reduce((best, cur) => {
+    const a = cur.getBoundingClientRect(), b = best.getBoundingClientRect();
+    return a.width * a.height > b.width * b.height ? cur : best;
+  }, shapes[0] || el);
 }
 
 function ghostFor(parts) {
   const row = parts.length === 1 && parts[0] && parts[0].tagName === "TR" || parts.length > 0 && parts.every(el => el && el.parentElement && el.parentElement.classList.contains("vocab-list-row"));
-  const shown = parts.filter(el => el && el.offsetParent && el.getBoundingClientRect().height > 1);
-  const multi = !row && shown.length > 1;
-  const shapes = multi ? shown.flatMap(el => swipeShapes(el)) : shown;
-  const rects = shapes.map(el => el.getBoundingClientRect());
+  const shown = parts.filter(el => el && el.offsetParent && el.getBoundingClientRect().height > 1).map(el => el.id === "cardTable" || el.id === "singleCardView" ? contentShape(el) : el);
+  const rects = shown.map(el => el.getBoundingClientRect());
   if (!rects.length) return null;
   const left = Math.min(...rects.map(r => r.left));
   const top = Math.min(...rects.map(r => r.top));
   const bottom = Math.max(...rects.map(r => r.bottom));
   const shape = shown.length === 1 && (shown[0].querySelector(":scope > .vocab-card-inner > .vocab-face") || shown[0]);
   const ghost = document.createElement("div");
-  ghost.className = "swipe-ghost" + (row ? " row" : "") + (multi ? " multi" : "") + (currentView === "vocab" ? " mark" : "");
+  ghost.className = "swipe-ghost" + (row ? " row" : "") + (currentView === "vocab" ? " mark" : "");
   Object.assign(ghost.style, {
     left: left + "px",
     top: top + "px",
     width: Math.max(...rects.map(r => r.right)) - left + "px",
     height: bottom - top + "px"
   });
-  const markAt = (box, r) => box.style.paddingTop = (Math.max(r.top, 0) + Math.min(r.bottom, window.innerHeight)) / 2 - r.top - 25 + "px";
-  if (multi) {
-    const main = rects.reduce((best, r, i) => r.width * r.height > rects[best].width * rects[best].height ? i : best, 0);
-    shapes.forEach((el, i) => {
-      const piece = document.createElement("div");
-      piece.className = "swipe-piece";
-      Object.assign(piece.style, {
-        left: rects[i].left - left + "px",
-        top: rects[i].top - top + "px",
-        width: rects[i].width + "px",
-        height: rects[i].height + "px",
-        borderRadius: getComputedStyle(el).borderRadius
-      });
-      if (i === main) {
-        piece.innerHTML = '<span class="swipe-mark"></span>';
-        markAt(piece, rects[i]);
-      }
-      ghost.appendChild(piece);
-    });
-  } else if (!row) {
-    ghost.style.borderRadius = shape ? getComputedStyle(shape).borderTopLeftRadius : "var(--radius)";
-    markAt(ghost, {
-      top: top,
-      bottom: bottom
-    });
-  }
+  if (!row) ghost.style.borderRadius = shape ? getComputedStyle(shape).borderTopLeftRadius : "var(--radius)";
+  if (!row) ghost.style.paddingTop = (Math.max(top, 0) + Math.min(bottom, window.innerHeight)) / 2 - top - 25 + "px";
   document.body.appendChild(ghost);
   return ghost;
 }
@@ -6180,13 +6205,14 @@ function gradeMark(isAgain) {
 
 function swipe(parts, dir, update, next, label = dir > 0 ? "Good" : "Again") {
   const motion = !matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (motion) swipeCompanions(parts).forEach(fadeAway);
   const ghost = dragGhost || (motion ? ghostFor(parts) : null);
   const from = dragGhost ? dragGhost.style.transform : "none";
   dragGhost = null;
   if (ghost) {
     ghost.classList.remove("good", "again");
     ghost.classList.add(label === "Delete" ? "delete" : label === "Vocab" ? "to-vocab" : dir > 0 ? "good" : "again");
-    setGhostMark(ghost, label === "Delete" ? "✕" : label === "Vocab" ? "字" : gradeMark(dir < 0));
+    ghost.textContent = label === "Delete" ? "✕" : label === "Vocab" ? "字" : gradeMark(dir < 0);
     ghost.animate([ {
       transform: from
     }, {
@@ -6275,7 +6301,7 @@ window.addEventListener("pointermove", e => {
   const again = dx < 0;
   drag.ghost.classList.toggle("again", again);
   drag.ghost.classList.toggle("good", !again);
-  setGhostMark(drag.ghost, gradeMark(again));
+  drag.ghost.textContent = gradeMark(again);
   drag.ghost.style.transform = `translate(${dx}px, ${dy / 4}px) rotate(${dx / 20}deg)`;
 });
 
