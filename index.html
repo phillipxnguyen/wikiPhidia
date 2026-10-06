@@ -931,6 +931,8 @@ window.onYouTubeIframeAPIReady = function(){
   #viewStudy.focus-study > .lesson-header, #viewStudy.focus-study > .save-status, #viewStudy.focus-study > .lesson-meta, #viewVocab.focus-study > .vocab-head{display:none;}
   .swipe-ghost{position:fixed;z-index:1000;box-sizing:border-box;display:flex;justify-content:center;border:4px solid var(--border);border-radius:28px;background:var(--surface);box-shadow:var(--shadow-md);font-size:34px;font-weight:700;pointer-events:none;}
   .swipe-ghost.row{align-items:center;border-radius:var(--radius);font-size:20px;}
+  .swipe-ghost.multi{border-width:0;border-radius:0;background:none;box-shadow:none;}
+  .swipe-piece{position:absolute;box-sizing:border-box;display:flex;justify-content:center;border:4px solid;border-color:inherit;background:var(--surface);box-shadow:var(--shadow-md);}
   .swipe-ghost.good{color:var(--a-label);border-color:currentColor;}
   .swipe-ghost.again{color:var(--danger);border-color:currentColor;}
   .swipe-ghost.again.mark, .swipe-ghost.delete, .touch-bar .tb-again.tb-mark{-webkit-text-stroke:.04em currentColor;}
@@ -6104,25 +6106,68 @@ function studyParts() {
   return [ "mediaContainer", "tableProgress", "cardTable", "singleCardView" ].map(id => document.getElementById(id)).concat(document.querySelector(".study-head .toolbar"), Array.from(document.querySelectorAll("#dictPanels > :not(.dict-pending)")));
 }
 
+function hasOwnBox(el) {
+  if (/^(IMG|IFRAME|CANVAS|VIDEO|TABLE|TR|SELECT|BUTTON)$/.test(el.tagName)) return true;
+  const style = getComputedStyle(el);
+  const paint = style.backgroundColor;
+  return !/rgba\([^)]*,\s*0\)$|^transparent$/.test(paint) || style.backgroundImage !== "none" || style.boxShadow !== "none" || [ "Top", "Right", "Bottom", "Left" ].some(side => parseFloat(style["border" + side + "Width"]) > 0);
+}
+
+function swipeShapes(el, depth = 0) {
+  if (!el || !el.offsetParent || el.matches('input[type="range"]') || el.getBoundingClientRect().height <= 1 || el.getBoundingClientRect().width <= 1) return [];
+  if (depth >= 4 || hasOwnBox(el)) return [ el ];
+  return Array.from(el.children).flatMap(child => swipeShapes(child, depth + 1));
+}
+
+function setGhostMark(ghost, text) {
+  (ghost.querySelector(".swipe-mark") || ghost).textContent = text;
+}
+
 function ghostFor(parts) {
   const row = parts.length === 1 && parts[0] && parts[0].tagName === "TR" || parts.length > 0 && parts.every(el => el && el.parentElement && el.parentElement.classList.contains("vocab-list-row"));
   const shown = parts.filter(el => el && el.offsetParent && el.getBoundingClientRect().height > 1);
-  const rects = shown.map(el => el.getBoundingClientRect());
+  const multi = !row && shown.length > 1;
+  const shapes = multi ? shown.flatMap(el => swipeShapes(el)) : shown;
+  const rects = shapes.map(el => el.getBoundingClientRect());
   if (!rects.length) return null;
   const left = Math.min(...rects.map(r => r.left));
   const top = Math.min(...rects.map(r => r.top));
   const bottom = Math.max(...rects.map(r => r.bottom));
   const shape = shown.length === 1 && (shown[0].querySelector(":scope > .vocab-card-inner > .vocab-face") || shown[0]);
   const ghost = document.createElement("div");
-  ghost.className = "swipe-ghost" + (row ? " row" : "") + (currentView === "vocab" ? " mark" : "");
+  ghost.className = "swipe-ghost" + (row ? " row" : "") + (multi ? " multi" : "") + (currentView === "vocab" ? " mark" : "");
   Object.assign(ghost.style, {
     left: left + "px",
     top: top + "px",
     width: Math.max(...rects.map(r => r.right)) - left + "px",
     height: bottom - top + "px"
   });
-  if (!row) ghost.style.borderRadius = shape ? getComputedStyle(shape).borderTopLeftRadius : "var(--radius)";
-  if (!row) ghost.style.paddingTop = (Math.max(top, 0) + Math.min(bottom, window.innerHeight)) / 2 - top - 25 + "px";
+  const markAt = (box, r) => box.style.paddingTop = (Math.max(r.top, 0) + Math.min(r.bottom, window.innerHeight)) / 2 - r.top - 25 + "px";
+  if (multi) {
+    const main = rects.reduce((best, r, i) => r.width * r.height > rects[best].width * rects[best].height ? i : best, 0);
+    shapes.forEach((el, i) => {
+      const piece = document.createElement("div");
+      piece.className = "swipe-piece";
+      Object.assign(piece.style, {
+        left: rects[i].left - left + "px",
+        top: rects[i].top - top + "px",
+        width: rects[i].width + "px",
+        height: rects[i].height + "px",
+        borderRadius: getComputedStyle(el).borderRadius
+      });
+      if (i === main) {
+        piece.innerHTML = '<span class="swipe-mark"></span>';
+        markAt(piece, rects[i]);
+      }
+      ghost.appendChild(piece);
+    });
+  } else if (!row) {
+    ghost.style.borderRadius = shape ? getComputedStyle(shape).borderTopLeftRadius : "var(--radius)";
+    markAt(ghost, {
+      top: top,
+      bottom: bottom
+    });
+  }
   document.body.appendChild(ghost);
   return ghost;
 }
@@ -6141,7 +6186,7 @@ function swipe(parts, dir, update, next, label = dir > 0 ? "Good" : "Again") {
   if (ghost) {
     ghost.classList.remove("good", "again");
     ghost.classList.add(label === "Delete" ? "delete" : label === "Vocab" ? "to-vocab" : dir > 0 ? "good" : "again");
-    ghost.textContent = label === "Delete" ? "✕" : label === "Vocab" ? "字" : gradeMark(dir < 0);
+    setGhostMark(ghost, label === "Delete" ? "✕" : label === "Vocab" ? "字" : gradeMark(dir < 0));
     ghost.animate([ {
       transform: from
     }, {
@@ -6230,7 +6275,7 @@ window.addEventListener("pointermove", e => {
   const again = dx < 0;
   drag.ghost.classList.toggle("again", again);
   drag.ghost.classList.toggle("good", !again);
-  drag.ghost.textContent = gradeMark(again);
+  setGhostMark(drag.ghost, gradeMark(again));
   drag.ghost.style.transform = `translate(${dx}px, ${dy / 4}px) rotate(${dx / 20}deg)`;
 });
 
