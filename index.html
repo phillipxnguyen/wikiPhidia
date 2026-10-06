@@ -1903,7 +1903,7 @@ function pinMediaHead() {
   const c = mediaBox();
   const head = document.querySelector("#viewStudy .study-head");
   head.style.top = "";
-  if (c.classList.contains("big") && c.style.display === "flex") head.style.top = (parseFloat(getComputedStyle(head).top) || 0) - c.offsetHeight - (parseFloat(getComputedStyle(c).marginBottom) || 0) + "px";
+  if (c.classList.contains("big") && c.style.display === "flex") head.style.top = Math.round((parseFloat(getComputedStyle(head).top) || 0) - c.offsetHeight - (parseFloat(getComputedStyle(c).marginBottom) || 0)) + "px";
 }
 
 window.addEventListener("resize", pinMediaHead);
@@ -4813,7 +4813,7 @@ function getDictIframe(url) {
   let iframe = dictIframeCache.get(url);
   if (!iframe) {
     iframe = document.createElement("iframe");
-    iframe.style.cssText = `position:fixed;top:0;left:0;width:${Math.min(720, document.querySelector(".main-inner").clientWidth || 720)}px;height:360px;opacity:0;border:1px solid var(--border);border-radius:10px;pointer-events:none;`;
+    iframe.style.cssText = `position:fixed;top:0;left:0;width:${wholePx(Math.min(720, document.querySelector(".main-inner").clientWidth || 720))}px;height:360px;opacity:0;border:1px solid var(--border);border-radius:10px;pointer-events:none;`;
     iframe.src = url;
     dictOverlayLayer.appendChild(iframe);
     dictIframeCache.set(url, iframe);
@@ -4842,10 +4842,10 @@ function positionDictOverlay() {
   if (!activeDictOverlay) return;
   const rect = activeDictOverlay.placeholder.getBoundingClientRect();
   const iframe = activeDictOverlay.iframe;
-  iframe.style.top = rect.top + window.scrollY + "px";
-  iframe.style.left = rect.left + window.scrollX + "px";
-  iframe.style.width = rect.width + "px";
-  iframe.style.height = rect.height + "px";
+  iframe.style.top = Math.round(rect.top + window.scrollY) + "px";
+  iframe.style.left = Math.round(rect.left + window.scrollX) + "px";
+  iframe.style.width = Math.round(rect.width) + "px";
+  iframe.style.height = Math.round(rect.height) + "px";
   activeDictOverlay.rafId = requestAnimationFrame(positionDictOverlay);
 }
 
@@ -6115,25 +6115,31 @@ function contentShape(el) {
   }, shapes[0] || el);
 }
 
+function wholePx(n, up) {
+  const round = up ? Math.ceil : Math.floor;
+  const five = round(n / 5) * 5;
+  return Math.abs(n - five) <= 1 ? five : round(n / 2) * 2;
+}
+
 function ghostFor(parts) {
   const row = parts.length === 1 && parts[0] && parts[0].tagName === "TR" || parts.length > 0 && parts.every(el => el && el.parentElement && el.parentElement.classList.contains("vocab-list-row"));
   const shown = parts.filter(el => el && el.offsetParent && el.getBoundingClientRect().height > 1).map(el => el.id === "cardTable" || el.id === "singleCardView" ? contentShape(el) : el);
   const rects = shown.map(el => el.getBoundingClientRect());
   if (!rects.length) return null;
-  const left = Math.min(...rects.map(r => r.left));
-  const top = Math.min(...rects.map(r => r.top));
-  const bottom = Math.max(...rects.map(r => r.bottom));
+  const left = Math.round(Math.min(...rects.map(r => r.left)));
+  const top = Math.round(Math.min(...rects.map(r => r.top)));
+  const bottom = Math.round(Math.max(...rects.map(r => r.bottom)));
   const shape = shown[0].querySelector(":scope > .vocab-card-inner > .vocab-face") || shown[0];
   const ghost = document.createElement("div");
   ghost.className = "swipe-ghost" + (row ? " row" : "") + (currentView === "vocab" ? " mark" : "");
   Object.assign(ghost.style, {
     left: left + "px",
     top: top + "px",
-    width: Math.max(...rects.map(r => r.right)) - left + "px",
+    width: Math.round(Math.max(...rects.map(r => r.right))) - left + "px",
     height: bottom - top + "px"
   });
   if (!row) ghost.style.borderRadius = getComputedStyle(shape).borderTopLeftRadius;
-  if (!row) ghost.style.paddingTop = (Math.max(top, 0) + Math.min(bottom, window.innerHeight)) / 2 - top - 25 + "px";
+  if (!row) ghost.style.paddingTop = Math.round((Math.max(top, 0) + Math.min(bottom, window.innerHeight)) / 2 - top - 25) + "px";
   document.body.appendChild(ghost);
   return ghost;
 }
@@ -8522,7 +8528,7 @@ function fitThumbWords(el) {
     best = [ text, size ];
   }
   span.textContent = best[0];
-  span.style.fontSize = best[1] + "px";
+  span.style.fontSize = wholePx(best[1]) + "px";
 }
 
 function renderLessonList() {
@@ -8951,8 +8957,8 @@ function renderHeatmap() {
     cell.addEventListener("mouseenter", () => {
       const r = cell.getBoundingClientRect(), box = panel.getBoundingClientRect();
       tipEl.textContent = cell.dataset.tip;
-      tipEl.style.left = r.left - box.left + r.width / 2 + "px";
-      tipEl.style.top = r.top - box.top - 6 + "px";
+      tipEl.style.left = Math.round(r.left - box.left + r.width / 2) + "px";
+      tipEl.style.top = Math.round(r.top - box.top) - 6 + "px";
       tipEl.style.display = "block";
     });
     cell.addEventListener("mouseleave", () => {
@@ -10493,7 +10499,7 @@ function fitVocabCards() {
   const floor = Math.min(window.innerHeight, bar.hidden ? Infinity : bar.getBoundingClientRect().top, sel ? sel.getBoundingClientRect().top : Infinity);
   const min = parseFloat(getComputedStyle(card).getPropertyValue("--front-h")) || 320;
   const fit = Math.max(min, floor - VOCAB_CARD_GAP - stickyTop - below);
-  cards.forEach(el => el.style.setProperty("--fit-h", Math.floor(Math.min(fit, Math.max(VOCAB_CARD_MIN, vocabCardNeed(el))) / 2) * 2 + "px"));
+  cards.forEach(el => el.style.setProperty("--fit-h", Math.min(wholePx(fit), wholePx(Math.max(VOCAB_CARD_MIN, vocabCardNeed(el)), true)) + "px"));
 }
 
 window.addEventListener("resize", fitVocabCards);
@@ -11949,7 +11955,7 @@ document.addEventListener("pointerdown", e => {
 
 window.addEventListener("scroll", () => {
   if (!vocabAddPopup) return;
-  vocabAddPopup.style.top = parseFloat(vocabAddPopup.style.top) - (window.scrollY - vocabAddPopupScrollY) + "px";
+  vocabAddPopup.style.top = Math.round(parseFloat(vocabAddPopup.style.top) - (window.scrollY - vocabAddPopupScrollY)) + "px";
   vocabAddPopupScrollY = window.scrollY;
   const band = visibleBand();
   const r = vocabAddPopup.getBoundingClientRect();
