@@ -930,8 +930,6 @@ window.onYouTubeIframeAPIReady = function(){
   #viewStudy.focus-study > .lesson-header, #viewStudy.focus-study > .save-status, #viewStudy.focus-study > .lesson-meta, #viewVocab.focus-study > .vocab-head{display:none;}
   .swipe-ghost{position:fixed;z-index:1000;box-sizing:border-box;display:flex;justify-content:center;border:4px solid var(--border);border-radius:28px;background:var(--surface);box-shadow:var(--shadow-md);font-size:34px;font-weight:700;pointer-events:none;}
   .swipe-ghost.row{align-items:center;border-radius:var(--radius);font-size:20px;}
-  .swipe-ghost.multi{border-width:0;border-radius:0;background:none;box-shadow:none;}
-  .swipe-piece{position:absolute;box-sizing:border-box;display:flex;justify-content:center;border:4px solid;border-color:inherit;background:var(--surface);box-shadow:var(--shadow-md);}
   .swipe-ghost.good{color:var(--a-label);border-color:currentColor;}
   .swipe-ghost.again{color:var(--danger);border-color:currentColor;}
   .swipe-ghost.again.mark, .swipe-ghost.delete, .touch-bar .tb-again.tb-mark{-webkit-text-stroke:.04em currentColor;}
@@ -4815,7 +4813,7 @@ function getDictIframe(url) {
   let iframe = dictIframeCache.get(url);
   if (!iframe) {
     iframe = document.createElement("iframe");
-    iframe.style.cssText = "position:fixed;top:0;left:0;width:720px;height:380px;opacity:0;border:1px solid var(--border);border-radius:10px;pointer-events:none;";
+    iframe.style.cssText = `position:fixed;top:0;left:0;width:${Math.min(720, document.querySelector(".main-inner").clientWidth || 720)}px;height:360px;opacity:0;border:1px solid var(--border);border-radius:10px;pointer-events:none;`;
     iframe.src = url;
     dictOverlayLayer.appendChild(iframe);
     dictIframeCache.set(url, iframe);
@@ -6122,52 +6120,22 @@ function ghostFor(parts) {
   const shown = parts.filter(el => el && el.offsetParent && el.getBoundingClientRect().height > 1).map(el => el.id === "cardTable" || el.id === "singleCardView" ? contentShape(el) : el);
   const rects = shown.map(el => el.getBoundingClientRect());
   if (!rects.length) return null;
-  const multi = !row && shown.length > 1;
   const left = Math.min(...rects.map(r => r.left));
   const top = Math.min(...rects.map(r => r.top));
   const bottom = Math.max(...rects.map(r => r.bottom));
-  const shape = shown.length === 1 && (shown[0].querySelector(":scope > .vocab-card-inner > .vocab-face") || shown[0]);
+  const shape = shown[0].querySelector(":scope > .vocab-card-inner > .vocab-face") || shown[0];
   const ghost = document.createElement("div");
-  ghost.className = "swipe-ghost" + (row ? " row" : "") + (multi ? " multi" : "") + (currentView === "vocab" ? " mark" : "");
+  ghost.className = "swipe-ghost" + (row ? " row" : "") + (currentView === "vocab" ? " mark" : "");
   Object.assign(ghost.style, {
     left: left + "px",
     top: top + "px",
     width: Math.max(...rects.map(r => r.right)) - left + "px",
     height: bottom - top + "px"
   });
-  const markAt = (box, r) => box.style.paddingTop = (Math.max(r.top, 0) + Math.min(r.bottom, window.innerHeight)) / 2 - r.top - 25 + "px";
-  if (multi) {
-    const seen = r => Math.max(0, Math.min(r.bottom, window.innerHeight) - Math.max(r.top, 0)) * r.width;
-    const main = rects.reduce((best, r, i) => seen(r) > seen(rects[best]) ? i : best, 0);
-    shown.forEach((el, i) => {
-      const piece = document.createElement("div");
-      piece.className = "swipe-piece";
-      Object.assign(piece.style, {
-        left: rects[i].left - left + "px",
-        top: rects[i].top - top + "px",
-        width: rects[i].width + "px",
-        height: rects[i].height + "px",
-        borderRadius: getComputedStyle(el).borderTopLeftRadius
-      });
-      if (i === main) {
-        piece.innerHTML = '<span class="swipe-mark"></span>';
-        markAt(piece, rects[i]);
-      }
-      ghost.appendChild(piece);
-    });
-  } else if (!row) {
-    ghost.style.borderRadius = shape ? getComputedStyle(shape).borderTopLeftRadius : "var(--radius)";
-    markAt(ghost, {
-      top: top,
-      bottom: bottom
-    });
-  }
+  if (!row) ghost.style.borderRadius = getComputedStyle(shape).borderTopLeftRadius;
+  if (!row) ghost.style.paddingTop = (Math.max(top, 0) + Math.min(bottom, window.innerHeight)) / 2 - top - 25 + "px";
   document.body.appendChild(ghost);
   return ghost;
-}
-
-function setGhostMark(ghost, text) {
-  (ghost.querySelector(".swipe-mark") || ghost).textContent = text;
 }
 
 let dragGhost = null;
@@ -6184,7 +6152,7 @@ function swipe(parts, dir, update, next, label = dir > 0 ? "Good" : "Again") {
   if (ghost) {
     ghost.classList.remove("good", "again");
     ghost.classList.add(label === "Delete" ? "delete" : label === "Vocab" ? "to-vocab" : dir > 0 ? "good" : "again");
-    setGhostMark(ghost, label === "Delete" ? "✕" : label === "Vocab" ? "字" : gradeMark(dir < 0));
+    ghost.textContent = label === "Delete" ? "✕" : label === "Vocab" ? "字" : gradeMark(dir < 0);
     ghost.animate([ {
       transform: from
     }, {
@@ -6273,7 +6241,7 @@ window.addEventListener("pointermove", e => {
   const again = dx < 0;
   drag.ghost.classList.toggle("again", again);
   drag.ghost.classList.toggle("good", !again);
-  setGhostMark(drag.ghost, gradeMark(again));
+  drag.ghost.textContent = gradeMark(again);
   drag.ghost.style.transform = `translate(${dx}px, ${dy / 4}px) rotate(${dx / 20}deg)`;
 });
 
