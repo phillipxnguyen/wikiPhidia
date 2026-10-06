@@ -4669,6 +4669,7 @@ function updateTouchBar() {
     return;
   }
   showBtn.removeAttribute("aria-label");
+  showBtn.disabled = false;
   const seqBtn = document.getElementById("btnPlaySequence");
   let showLabel = "Show";
   if (vocab) {
@@ -4679,7 +4680,8 @@ function updateTouchBar() {
     showBtn.setAttribute("aria-label", playing ? "Pause" : "Play");
   } else if (groupState && groupViewStyle === "ielts") {
     const current = getCurrentSingleCardRow();
-    if (current && !current.aHidden) showLabel = "Hide"; else if (ieltsHintNext(current)) showLabel = "Hint";
+    if (ieltsHintNext(current)) showLabel = "Hint";
+    showBtn.disabled = !!current && !current.aHidden;
   } else if (groupState && groupViewStyle !== "listen") {
     const ids = groupState.groups[groupState.index] || [];
     if (ids.length && rows.filter(r => ids.includes(r.id)).every(r => !r.qHidden && !r.aHidden)) showLabel = "Hide";
@@ -12488,19 +12490,19 @@ function revealAction() {
     seqBtn.click();
     return;
   }
-  window.scrollTo(0, studyAreaTop());
   if (groupViewStyle === "ielts") {
     const current = getCurrentSingleCardRow();
-    if (current) {
-      current.qHidden = false;
-      if (ieltsHintNext(current)) ieltsHintId = current.id; else {
-        current.aHidden = !current.aHidden;
-        ieltsHintId = null;
-      }
+    if (!current || !current.aHidden) return;
+    window.scrollTo(0, studyAreaTop());
+    current.qHidden = false;
+    if (ieltsHintNext(current)) ieltsHintId = current.id; else {
+      current.aHidden = false;
+      ieltsHintId = null;
     }
     render();
     return;
   }
+  window.scrollTo(0, studyAreaTop());
   if (groupViewStyle === "listen") {
     const current = getCurrentSingleCardRow();
     if (current) {
