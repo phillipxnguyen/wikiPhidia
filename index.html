@@ -874,7 +874,6 @@ window.onYouTubeIframeAPIReady = function(){
   .paper-meta{text-align:right;font-size:14px;color:var(--paper-ink-2);white-space:nowrap;}
   .paper-timer{margin-top:4px;font:600 22px/1.2 ui-monospace, "SF Mono", Menlo, Consolas, monospace;color:var(--paper-ink);}
   .paper-timer.stopped{color:var(--paper-ink-2);}
-  .paper-timer:not(.stopped){cursor:pointer;}
   .ielts-paper .cell.hidden.paper-hint, .ielts-paper .cell.hidden.paper-hint:hover{font-style:normal;color:var(--paper-ink);}
   .ielts-paper .paper-prompt:not(.paper-hint):hover{color:var(--paper-ink-2);}
   .paper-hint ol, .paper-notes ol{margin:0;padding:0;list-style:none;counter-reset:paper-n;}
@@ -3255,14 +3254,8 @@ function showPaperExtras(bodyEl, row) {
 
 let ieltsHintId = null;
 
-function toggleIeltsHint(row) {
-  if (!row || !row.aHidden) return;
-  if (ieltsHintId !== row.id && !ieltsHints(row).length) {
-    showToast("No notes to hint for this question");
-    return;
-  }
-  ieltsHintId = ieltsHintId === row.id ? null : row.id;
-  render();
+function ieltsHintNext(row) {
+  return !!row && row.aHidden && ieltsHintId !== row.id && ieltsHints(row).length > 0;
 }
 
 function ieltsHints(row) {
@@ -4486,11 +4479,6 @@ function handleCardAreaClick(e) {
   const row = rows.find(r => r.id === id);
   if (!row) return;
   const isSingleCard = container.id === "singleCardBody";
-  if (e.target.closest("#ieltsTimer")) {
-    e.stopPropagation();
-    toggleIeltsHint(row);
-    return;
-  }
   if (e.target.closest(".loop-time")) {
     e.stopPropagation();
     toggleRowPlay(row);
@@ -4691,7 +4679,7 @@ function updateTouchBar() {
     showBtn.setAttribute("aria-label", playing ? "Pause" : "Play");
   } else if (groupState && groupViewStyle === "ielts") {
     const current = getCurrentSingleCardRow();
-    if (current && !current.aHidden) showLabel = "Hide";
+    if (current && !current.aHidden) showLabel = "Hide"; else if (ieltsHintNext(current)) showLabel = "Hint";
   } else if (groupState && groupViewStyle !== "listen") {
     const ids = groupState.groups[groupState.index] || [];
     if (ids.length && rows.filter(r => ids.includes(r.id)).every(r => !r.qHidden && !r.aHidden)) showLabel = "Hide";
@@ -12456,12 +12444,6 @@ document.addEventListener("keydown", e => {
     openEdit(tr, row);
     return;
   }
-  if (letter && e.code === "KeyH") {
-    if (!groupState || groupViewStyle !== "ielts") return;
-    e.preventDefault();
-    toggleIeltsHint(getCurrentSingleCardRow());
-    return;
-  }
   if (letter && e.code === "KeyV") {
     if (isVideoLesson() || isVirtualLesson() || activeEdit) return;
     const id = isCardMode() ? (getCurrentSingleCardRow() || {}).id : selectedRowId !== null ? selectedRowId : isTouch() ? null : hoveredRowId;
@@ -12511,7 +12493,10 @@ function revealAction() {
     const current = getCurrentSingleCardRow();
     if (current) {
       current.qHidden = false;
-      current.aHidden = !current.aHidden;
+      if (ieltsHintNext(current)) ieltsHintId = current.id; else {
+        current.aHidden = !current.aHidden;
+        ieltsHintId = null;
+      }
     }
     render();
     return;
