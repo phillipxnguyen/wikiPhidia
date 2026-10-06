@@ -931,7 +931,6 @@ window.onYouTubeIframeAPIReady = function(){
   #viewStudy.focus-study > .lesson-header, #viewStudy.focus-study > .save-status, #viewStudy.focus-study > .lesson-meta, #viewVocab.focus-study > .vocab-head{display:none;}
   .swipe-ghost{position:fixed;z-index:1000;box-sizing:border-box;display:flex;justify-content:center;border:4px solid var(--border);border-radius:28px;background:var(--surface);box-shadow:var(--shadow-md);font-size:34px;font-weight:700;pointer-events:none;}
   .swipe-ghost.row{align-items:center;border-radius:var(--radius);font-size:20px;}
-  .swipe-fade{position:fixed;z-index:999;overflow:hidden;pointer-events:none;}
   .swipe-ghost.good{color:var(--a-label);border-color:currentColor;}
   .swipe-ghost.again{color:var(--danger);border-color:currentColor;}
   .swipe-ghost.again.mark, .swipe-ghost.delete, .touch-bar .tb-again.tb-mark{-webkit-text-stroke:.04em currentColor;}
@@ -6105,54 +6104,6 @@ function studyParts() {
   return [ document.getElementById(isCardMode() ? "singleCardView" : "cardTable") ];
 }
 
-function swipeCompanions(parts) {
-  if (currentView !== "study" || parts.length !== 1 || !parts[0]) return [];
-  const el = parts[0];
-  if (el.id === "cardTable" || el.id === "singleCardView") return dictPanelsInOrder();
-  if (el.tagName === "TR" && el.dataset.id) return [ rowDictPanel(el.dataset.id) ];
-  if (el.dataset.rowId) return [ document.querySelector(`#tbody tr[data-id="${el.dataset.rowId}"]`) ];
-  return [];
-}
-
-function fadeAway(el) {
-  if (!el || !el.offsetParent || getComputedStyle(el).visibility === "hidden") return;
-  const rect = el.getBoundingClientRect();
-  if (rect.height <= 1) return;
-  const copy = el.cloneNode(true);
-  const from = [ el, ...el.querySelectorAll("*") ], to = [ copy, ...copy.querySelectorAll("*") ];
-  from.forEach((node, i) => {
-    const style = getComputedStyle(node);
-    to[i].removeAttribute("id");
-    to[i].style.cssText = Array.from(style).map(k => k + ":" + style.getPropertyValue(k)).join(";");
-  });
-  copy.querySelectorAll("iframe").forEach(frame => {
-    const box = document.createElement("div");
-    box.style.cssText = frame.style.cssText;
-    frame.replaceWith(box);
-  });
-  copy.style.margin = "0";
-  const holder = document.createElement("div");
-  holder.className = "swipe-fade";
-  Object.assign(holder.style, {
-    left: Math.round(rect.left) + "px",
-    top: Math.round(rect.top) + "px",
-    width: Math.round(rect.width) + "px",
-    height: Math.round(rect.height) + "px"
-  });
-  holder.appendChild(copy);
-  document.body.appendChild(holder);
-  holder.animate([ {
-    opacity: 1
-  }, {
-    opacity: 0
-  } ], {
-    duration: 450,
-    easing: "ease-out",
-    fill: "forwards"
-  });
-  setTimeout(() => holder.remove(), 450);
-}
-
 function hasOwnBox(el) {
   if (/^(IMG|IFRAME|CANVAS|VIDEO|TABLE|TR|SELECT|BUTTON)$/.test(el.tagName)) return true;
   const style = getComputedStyle(el);
@@ -6205,7 +6156,6 @@ function gradeMark(isAgain) {
 
 function swipe(parts, dir, update, next, label = dir > 0 ? "Good" : "Again") {
   const motion = !matchMedia("(prefers-reduced-motion: reduce)").matches;
-  if (motion) swipeCompanions(parts).forEach(fadeAway);
   const ghost = dragGhost || (motion ? ghostFor(parts) : null);
   const from = dragGhost ? dragGhost.style.transform : "none";
   dragGhost = null;
