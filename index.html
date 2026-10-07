@@ -858,6 +858,8 @@ window.onYouTubeIframeAPIReady = function(){
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
     min-height:72px;border-radius:10px;padding:18px 18px;
   }
+  .single-card-field.listen-lines{align-items:stretch;gap:10px;}
+  .single-card-field.listen-lines .cell{border-radius:8px;}
   .single-card-field::before{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;}
   .single-card-q{background:var(--q-bg);}
   .single-card-q::before{content:"Question";color:var(--text);}
@@ -2268,7 +2270,7 @@ function startLoop(row) {
 }
 
 function markPlayingRow() {
-  document.querySelectorAll("#tbody tr[data-id]:not(.edit-row), #singleCardBody:not(.edit-row)").forEach(el => {
+  document.querySelectorAll("#tbody tr[data-id]:not(.edit-row), #singleCardBody:not(.edit-row), #singleCardBody .listen-line").forEach(el => {
     const id = Number(el.dataset.id);
     el.classList.toggle("row-playing", id === loopingRowId || ttsPlaying && id === ttsOnlyId);
   });
@@ -2510,13 +2512,13 @@ function moveOneCardToVocab(row) {
 }
 
 function deleteRow(id) {
-  const full = !!groupState && (groupViewStyle !== "table" || (groupState.groups[groupState.index] || []).length <= 1);
+  const full = !!groupState && (groupViewStyle === "table" ? (groupState.groups[groupState.index] || []).length <= 1 : currentCardRows().length <= 1);
   if (groupState && !full) holdPage();
   const panel = groupState && groupViewStyle === "table" ? rowDictPanel(id) : null;
   const fromPanel = !!panel && panel.matches(":hover");
   const focus = groupState && groupViewStyle === "table" ? dictFocusBefore(fromPanel ? panel : null) : null;
   const deletedSlot = dictPanelsInOrder().indexOf(panel);
-  deleteRows([ id ], full ? studyParts() : [ fromPanel ? panel : document.querySelector(`#tbody tr[data-id="${id}"]`) || document.querySelector(`#singleCardBody[data-id="${id}"]`) ], full);
+  deleteRows([ id ], full ? studyParts() : [ fromPanel ? panel : document.querySelector(`#tbody tr[data-id="${id}"]`) || document.querySelector(`#singleCardBody .listen-line[data-id="${id}"], #singleCardBody[data-id="${id}"]`) ], full);
   if (focus) keepDictFocus(focus, full ? 0 : deletedSlot !== -1 && deletedSlot < focus.slot ? focus.slot - 1 : focus.slot);
 }
 
@@ -2528,8 +2530,10 @@ function deleteAction() {
     return;
   }
   if (groupViewStyle !== "table") {
-    const current = getCurrentSingleCardRow();
-    if (current) deleteRow(current.id);
+    const batch = currentCardRows();
+    const id = selectedRowId !== null ? selectedRowId : isTouch() ? null : hoveredRowId;
+    const picked = batch.find(r => r.id === id);
+    if (batch.length > 1 && !picked) deleteRows(batch.map(r => r.id), studyParts(), true); else if (batch.length) deleteRow((picked || batch[0]).id);
     return;
   }
   const ids = groupState.groups[groupState.index] || [];
@@ -2648,11 +2652,57 @@ function getCurrentSingleCardRow() {
   return getVisibleRows()[0];
 }
 
+function freshListenBatch(queue) {
+  if (!queue.length || hasAnswer(queue[0])) return queue.slice(0, 1);
+  const batch = [];
+  for (const r of queue) {
+    if (hasAnswer(r) || batch.length === GROUP_SIZE) break;
+    batch.push(r);
+  }
+  return batch;
+}
+
+let listenBatchKept = {
+  lesson: null,
+  ids: []
+};
+
+function listenBatch() {
+  const queue = singleCardQueue();
+  const kept = listenBatchKept.lesson === currentLessonId ? listenBatchKept.ids.map(id => queue.find(r => r.id === id)).filter(Boolean) : [];
+  if (kept.length) return kept;
+  const batch = freshListenBatch(queue);
+  listenBatchKept = {
+    lesson: currentLessonId,
+    ids: batch.map(r => r.id)
+  };
+  return batch;
+}
+
+function nextListenBatch() {
+  const current = listenBatch();
+  return freshListenBatch(singleCardQueue().filter(r => !current.includes(r)));
+}
+
+function currentCardRows() {
+  if (!isCardMode()) return [];
+  return isListenMode() ? listenBatch() : singleCardQueue().slice(0, 1);
+}
+
+function pickedCardRow() {
+  const batch = currentCardRows();
+  const id = selectedRowId !== null ? selectedRowId : isTouch() ? null : hoveredRowId;
+  return batch.find(r => r.id === id) || batch[0];
+}
+
+function listenLinesHtml(batch) {
+  return '<div class="single-card-field single-card-q listen-lines">' + batch.map(r => `<div class="cell listen-line ${r.qHidden ? "hidden" : "shown"}" data-field="q" data-id="${r.id}">${qCellContent(r)}</div>`).join("") + "</div>";
+}
+
 function currentBadgeIds() {
   if (!groupState) return [];
   if (groupViewStyle === "table") return groupState.groups[groupState.index] || [];
-  const row = singleCardQueue()[0];
-  return row ? [ row.id ] : [];
+  return currentCardRows().map(r => r.id);
 }
 
 function refreshBadges() {
@@ -2716,6 +2766,7 @@ function stopLessonSound() {
 }
 
 function sequencePlaybackRows() {
+  if (isListenMode()) return listenBatch();
   return isCardMode() ? singleCardQueue() : getVisibleRows();
 }
 
@@ -2819,9 +2870,14 @@ function playNextSequenceStep() {
     stopSequenceLoop();
     return;
   }
-  if (isCardMode()) {
+  const oneCard = isCardMode() && visible.length === 1;
+  if (oneCard) {
     sequenceIndex = 0;
   } else if (sequenceIndex >= visible.length) {
+    if (isCardMode() && listenAutoPlayOnce) {
+      stopSequenceLoop();
+      return;
+    }
     sequenceIndex = 0;
   }
   const currentRow = visible[sequenceIndex];
@@ -2853,7 +2909,7 @@ function playNextSequenceStep() {
         clearInterval(loopInterval);
         loopInterval = null;
         pauseVideoProgrammatically();
-        if (isCardMode()) {
+        if (oneCard) {
           if (listenAutoPlayOnce) {
             stopSequenceLoop();
             return;
@@ -3044,8 +3100,10 @@ function renderDictPanels() {
       current = getVisibleRows();
       preload = current.concat(rows.filter(r => next.includes(r.id)));
     } else if (groupState && inSingle) {
-      preload = singleCardQueue().slice(0, 2);
-      current = groupViewStyle === "ielts" ? [] : preload.slice(0, 1);
+      const queue = singleCardQueue();
+      const batch = isListenMode() ? listenBatch() : queue.slice(0, 1);
+      preload = batch.concat(isListenMode() ? nextListenBatch() : queue.slice(1, 2));
+      current = groupViewStyle === "ielts" ? [] : batch;
     } else if (!groupState && isVideoLesson()) {
       if (!nextOrderReady) {
         reshuffleCardOrder();
@@ -3294,12 +3352,16 @@ function renderSingleCard(visibleRows) {
   const bodyEl = document.getElementById("singleCardBody");
   if (!bodyEl) return;
   const row = visibleRows[0];
-  if (progressEl) progressEl.innerHTML = progressBadgesHtml(modeKey(), [ row.id ]);
-  const firstShow = lastShownCardId !== row.id;
+  const batch = isListenMode() ? listenBatch() : [ row ];
+  if (progressEl) progressEl.innerHTML = progressBadgesHtml(modeKey(), batch.map(r => r.id));
+  const showKey = isListenMode() ? "L" + listenBatchKept.ids.join(",") : row.id;
+  const firstShow = lastShownCardId !== showKey;
   if (firstShow) {
-    lastShownCardId = row.id;
-    row.qHidden = entryHidden().q;
-    row.aHidden = entryHidden().a;
+    lastShownCardId = showKey;
+    batch.forEach(r => {
+      r.qHidden = entryHidden().q;
+      r.aHidden = entryHidden().a;
+    });
   }
   const autoPlay = firstShow && groupViewStyle === "listen";
   if (groupViewStyle === "ielts") {
@@ -3323,7 +3385,7 @@ function renderSingleCard(visibleRows) {
   bodyEl.classList.remove("edit-row");
   bodyEl.classList.toggle("row-playing", loopingRowId === row.id);
   bodyEl.classList.toggle("ielts-card", groupViewStyle === "ielts");
-  bodyEl.innerHTML = groupViewStyle === "ielts" ? ieltsPaperHtml(row) : singleCardFieldsHtml(row);
+  bodyEl.innerHTML = groupViewStyle === "ielts" ? ieltsPaperHtml(row) : batch.length > 1 ? listenLinesHtml(batch) : singleCardFieldsHtml(row);
   if (groupViewStyle === "ielts") {
     if (isTranslationCard(row) && !isVirtualLesson()) setTimeout(() => {
       if (groupState && groupViewStyle === "ielts" && getCurrentSingleCardRow() === row) warnTranslationCard(row);
@@ -4487,7 +4549,8 @@ function handleCardAreaClick(e) {
   const id = Number(container.dataset.id);
   const row = rows.find(r => r.id === id);
   if (!row) return;
-  const isSingleCard = container.id === "singleCardBody";
+  const isSingleCard = !!container.closest("#singleCardBody");
+  const cardBody = isSingleCard ? document.getElementById("singleCardBody") : container;
   if (e.target.closest(".loop-time")) {
     e.stopPropagation();
     toggleRowPlay(row);
@@ -4495,7 +4558,7 @@ function handleCardAreaClick(e) {
   }
   if (isTouch() && !(activeEdit && activeEdit.tr === container)) {
     if (isSingleCard) {
-      if (container.querySelector(".cell.hidden")) revealAction(); else if (hoverTooltip && hoverTooltip.style.display === "block" && container.contains(hoverTooltip.anchor)) hideTooltip(); else showRowPinyin(container);
+      if (cardBody.querySelector(".cell.hidden")) revealAction(); else if (hoverTooltip && hoverTooltip.style.display === "block" && cardBody.contains(hoverTooltip.anchor)) hideTooltip(); else showRowPinyin(cardBody);
       return;
     } else if (groupState || !isVirtualLesson()) {
       selectRow(id);
@@ -4543,9 +4606,10 @@ function clearRowSelection() {
 function selectionTarget() {
   if (!isTouch()) return null;
   if (currentView === "study" && groupState && isCardMode()) {
-    const row = getCurrentSingleCardRow();
-    return row ? {
-      row: row,
+    const batch = currentCardRows();
+    return batch.length ? {
+      row: batch[0],
+      rows: batch,
       card: true
     } : null;
   }
@@ -4597,7 +4661,7 @@ function updateSelBar() {
 document.getElementById("selCopy").onclick = e => {
   e.currentTarget.blur();
   const target = selectionTarget();
-  if (target) copyText(target.item ? cardText(target.item.term, target.item.meaning) : cardText(target.row.q, target.row.a));
+  if (target) copyText(target.item ? cardText(target.item.term, target.item.meaning) : (target.rows || [ target.row ]).map(r => cardText(r.q, r.a)).join("\n"));
 };
 
 document.getElementById("selEdit").onclick = e => {
@@ -6018,6 +6082,22 @@ function gradeCurrentGroupAndAdvance(isAgain) {
   if (focus) keepDictFocus(focus, 0);
 }
 
+function gradeCardBatch(batch, isAgain) {
+  stopTts();
+  batch.forEach(r => {
+    stopPlaybackForRemovedRow(r.id);
+    adjustSequenceIndexForRemoval(r.id);
+  });
+  const label = "Graded " + batch.length + " cards — " + gradeLabel(isAgain);
+  pushUndo(label);
+  const now = Date.now();
+  batch.forEach(r => applyGrade(r, isAgain, modeKey(), now));
+  showToast(label);
+  scheduleAutoSave();
+  hoveredRowId = null;
+  swipe(studyParts(), isAgain ? -1 : 1, render, true);
+}
+
 function gradeCard(row, isAgain) {
   if (!groupState || !row) return;
   const mode = modeKey();
@@ -6035,13 +6115,14 @@ function gradeCard(row, isAgain) {
   showToast(gradeLabel(isAgain) + " — " + cardSummary(row));
   scheduleAutoSave();
   if (hoveredRowId === row.id) hoveredRowId = null;
-  const next = !ids || ids.length === 1;
+  const lines = isListenMode() ? listenBatch() : [];
+  const next = ids ? ids.length === 1 : lines.length <= 1;
   if (!next) holdPage();
   const panel = rowDictPanel(row.id);
   const fromPanel = !!panel && panel.matches(":hover");
   const focus = dictFocusBefore(fromPanel ? panel : null);
   const gradedSlot = dictPanelsInOrder().indexOf(panel);
-  swipe(next ? studyParts() : [ fromPanel ? panel : document.querySelector(`#tbody tr[data-id="${row.id}"]`) ], isAgain ? -1 : 1, () => {
+  swipe(next ? studyParts() : [ fromPanel ? panel : document.querySelector(`#tbody tr[data-id="${row.id}"], #singleCardBody .listen-line[data-id="${row.id}"]`) ], isAgain ? -1 : 1, () => {
     if (ids) {
       ids.splice(ids.indexOf(row.id), 1);
       if (ids.length === 0) advanceToNextGroup(); else updateGroupUI();
@@ -6403,11 +6484,12 @@ function showNextUnderSwipe(row) {
     next.forEach(r => tbody.appendChild(buildRowTr(entryCopy(r))));
     if (!next.length) hide(document.getElementById("cardTable"));
   } else {
-    const next = singleCardQueue()[1];
+    const nextBatch = (isListenMode() ? nextListenBatch() : singleCardQueue().slice(1, 2)).map(entryCopy);
+    const next = nextBatch[0];
     const body = document.getElementById("singleCardBody");
     if (next) {
       Array.from(body.children).forEach(el => el.style.display = "none");
-      body.insertAdjacentHTML("beforeend", groupViewStyle === "ielts" ? ieltsPaperHtml(entryCopy(next), 1) : singleCardFieldsHtml(entryCopy(next)));
+      body.insertAdjacentHTML("beforeend", groupViewStyle === "ielts" ? ieltsPaperHtml(next, 1) : nextBatch.length > 1 ? listenLinesHtml(nextBatch) : singleCardFieldsHtml(next));
     } else {
       hide(body);
     }
@@ -6486,7 +6568,7 @@ let ttsIndex = 0;
 
 function currentGroupTexts(field) {
   if (!groupState) return [];
-  const ids = isCardMode() ? singleCardQueue().slice(0, 1).map(r => r.id) : groupState.groups[groupState.index];
+  const ids = isCardMode() ? currentCardRows().map(r => r.id) : groupState.groups[groupState.index];
   return rows.filter(r => ids.includes(r.id)).map(r => ((field === "q" ? r.q : r.a) || "").trim()).filter(Boolean);
 }
 
@@ -12283,10 +12365,7 @@ document.getElementById("lessonName").addEventListener("keydown", e => {
 
 function studyCardsHidden() {
   if (!groupState) return false;
-  if (isCardMode()) {
-    const row = getCurrentSingleCardRow();
-    return !!row && (row.qHidden || row.aHidden);
-  }
+  if (isCardMode()) return currentCardRows().some(r => r.qHidden || r.aHidden);
   const ids = groupState.groups[groupState.index] || [];
   return rows.some(r => ids.includes(r.id) && (r.qHidden || r.aHidden));
 }
@@ -12474,7 +12553,7 @@ document.addEventListener("keydown", e => {
   }
   if (letter && e.code === "KeyE") {
     if (isCardMode()) {
-      const current = getCurrentSingleCardRow();
+      const current = pickedCardRow();
       if (!current) return;
       e.preventDefault();
       openSingleCardEdit(current);
@@ -12490,7 +12569,7 @@ document.addEventListener("keydown", e => {
   }
   if (letter && e.code === "KeyV") {
     if (isVideoLesson() || isVirtualLesson() || activeEdit) return;
-    const id = isCardMode() ? (getCurrentSingleCardRow() || {}).id : selectedRowId !== null ? selectedRowId : isTouch() ? null : hoveredRowId;
+    const id = isCardMode() ? (pickedCardRow() || {}).id : selectedRowId !== null ? selectedRowId : isTouch() ? null : hoveredRowId;
     const row = id != null && rows.find(r => r.id === id);
     if (!row) return;
     e.preventDefault();
@@ -12506,7 +12585,11 @@ document.addEventListener("keydown", e => {
 function gradeAction(isAgain) {
   if (!groupState) return;
   if (isCardMode()) {
-    gradeCard(getCurrentSingleCardRow(), isAgain);
+    const batch = currentCardRows();
+    const id = selectedRowId !== null ? selectedRowId : isTouch() ? null : hoveredRowId;
+    const pointed = batch.length > 1 ? batch.find(r => r.id === id) : null;
+    selectedRowId = null;
+    if (batch.length > 1 && !pointed) gradeCardBatch(batch, isAgain); else gradeCard(pointed || batch[0], isAgain);
     return;
   }
   const ids = groupState.groups[groupState.index];
@@ -12546,11 +12629,10 @@ function revealAction() {
   }
   scrollToPinned(studyAreaTop());
   if (groupViewStyle === "listen") {
-    const current = getCurrentSingleCardRow();
-    if (current) {
-      current.qHidden = false;
-      current.aHidden = false;
-    }
+    currentCardRows().forEach(r => {
+      r.qHidden = false;
+      r.aHidden = false;
+    });
     if (isSequencePlaying) {
       stopSequenceLoop();
     } else {
