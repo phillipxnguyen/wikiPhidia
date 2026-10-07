@@ -2544,8 +2544,17 @@ function deleteAction() {
   if (ids.includes(pickedId)) deleteRow(pickedId); else if (ids.length) deleteRows(ids, studyParts(), true);
 }
 
+function byVideoTime(a, b) {
+  const ta = a && a.time != null ? a.time : Infinity, tb = b && b.time != null ? b.time : Infinity;
+  return ta === tb ? 0 : ta < tb ? -1 : 1;
+}
+
+function groupRows(ids) {
+  return rows.filter(r => ids.includes(r.id)).sort(byVideoTime);
+}
+
 function getVisibleRows() {
-  return groupState ? rows.filter(r => groupState.groups[groupState.index].includes(r.id)) : rows;
+  return groupState ? groupRows(groupState.groups[groupState.index]) : rows;
 }
 
 function deckHasVideoCards() {
@@ -2656,12 +2665,9 @@ function getCurrentSingleCardRow() {
 
 function freshListenBatch(queue) {
   if (!queue.length || hasAnswer(queue[0])) return queue.slice(0, 1);
-  const batch = [];
-  for (const r of queue) {
-    if (hasAnswer(r) || batch.length === GROUP_SIZE) break;
-    batch.push(r);
-  }
-  return batch;
+  const questionOnly = queue.filter(r => !hasAnswer(r));
+  const first = splitIntoGroups(questionOnly.map(r => r.id))[0] || [];
+  return questionOnly.filter(r => first.includes(r.id)).sort(byVideoTime);
 }
 
 let listenBatchKept = {
@@ -2671,7 +2677,7 @@ let listenBatchKept = {
 
 function listenBatch() {
   const queue = singleCardQueue();
-  const kept = listenBatchKept.lesson === currentLessonId ? listenBatchKept.ids.map(id => queue.find(r => r.id === id)).filter(Boolean) : [];
+  const kept = listenBatchKept.lesson === currentLessonId ? listenBatchKept.ids.map(id => queue.find(r => r.id === id)).filter(Boolean).sort(byVideoTime) : [];
   if (kept.length) return kept;
   const batch = freshListenBatch(queue);
   listenBatchKept = {
@@ -6439,7 +6445,7 @@ function hideUnderSwipe(parts) {
     const nextKeys = splitIntoGroups(rest)[0] || [];
     const shown = s.shown;
     s.shown = false;
-    const html = nextKeys.length ? vocabTableHtml(nextKeys.map(k => byKey.get(k))) : "";
+    const html = nextKeys.length ? vocabTableHtml(nextKeys.map(k => byKey.get(k)).sort((a, b) => byVideoTime(a.card, b.card))) : "";
     s.shown = shown;
     el.style.display = "none";
     el.insertAdjacentHTML("afterend", html);
@@ -6480,7 +6486,7 @@ function showNextUnderSwipe(row) {
   });
   if (groupViewStyle === "table") {
     const nextIds = groupState.groups[groupState.index + 1] || [];
-    const next = rows.filter(r => nextIds.includes(r.id));
+    const next = groupRows(nextIds);
     const tbody = document.getElementById("tbody");
     Array.from(tbody.children).forEach(tr => tr.style.display = "none");
     next.forEach(r => tbody.appendChild(buildRowTr(entryCopy(r))));
@@ -6571,7 +6577,7 @@ let ttsIndex = 0;
 function currentGroupTexts(field) {
   if (!groupState) return [];
   const ids = isCardMode() ? currentCardRows().map(r => r.id) : groupState.groups[groupState.index];
-  return rows.filter(r => ids.includes(r.id)).map(r => ((field === "q" ? r.q : r.a) || "").trim()).filter(Boolean);
+  return (isCardMode() ? currentCardRows() : groupRows(ids)).map(r => ((field === "q" ? r.q : r.a) || "").trim()).filter(Boolean);
 }
 
 function cleanForSpeech(text) {
@@ -10472,7 +10478,7 @@ function currentVocabGroup() {
     s.shown = false;
     vocabSelectedKey = null;
   }
-  return s.group.map(k => byKey.get(k));
+  return s.group.map(k => byKey.get(k)).sort((a, b) => byVideoTime(a.card, b.card));
 }
 
 function renameVocabSessionKey(from, to) {
