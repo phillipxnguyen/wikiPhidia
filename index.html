@@ -65,6 +65,9 @@ window.onYouTubeIframeAPIReady = function(){
     --due-color:#c9801a;
     --done-color:var(--text-2);
     --q-bg:#eef2f8;
+    --imsg-in:#e9e9eb;
+    --imsg-in-text:#000;
+    --imsg-out:#0b84fe;
     --a-bg:#e9f5ee;
     --a-text:#1b6b44;
     --a-label:#2a8a58;
@@ -110,6 +113,9 @@ window.onYouTubeIframeAPIReady = function(){
       --new-color:#3cc48d;
       --due-color:#e9a443;
       --q-bg:#1f2735;
+      --imsg-in:#3b3b3d;
+      --imsg-in-text:#fff;
+      --imsg-out:#0a84ff;
       --a-bg:#1a2b25;
       --a-text:#8fdcb2;
       --a-label:#5ec893;
@@ -149,6 +155,9 @@ window.onYouTubeIframeAPIReady = function(){
     --new-color:#3cc48d;
     --due-color:#e9a443;
     --q-bg:#1f2735;
+    --imsg-in:#3b3b3d;
+    --imsg-in-text:#fff;
+    --imsg-out:#0a84ff;
     --a-bg:#1a2b25;
     --a-text:#8fdcb2;
     --a-label:#5ec893;
@@ -689,18 +698,25 @@ window.onYouTubeIframeAPIReady = function(){
   :is(#cardTable, #vocabTable).chat tbody td.a-col{justify-content:flex-end;}
   :is(#cardTable, #vocabTable).chat tbody tr.edit-row{display:block;padding:0;}
   :is(#cardTable, #vocabTable).chat tbody tr.edit-row td{display:block;}
-  :is(#cardTable, #vocabTable).chat .cell{display:block;max-width:80%;margin:0;padding:10px 15px;font-size:20px;line-height:1.5;border-radius:20px 20px 20px 5px;background:var(--q-bg);}
-  :is(#cardTable, #vocabTable).chat .a-col .cell{border-radius:20px 20px 5px 20px;background:var(--a-bg);}
-  :is(#cardTable, #vocabTable).chat .a-col .cell.shown{color:var(--a-text);}
+  :is(#cardTable, #vocabTable).chat{--chat-bg:var(--surface);}
+  :is(#cardTable, #vocabTable).chat tbody tr.row-playing, html.touch :is(#cardTable, #vocabTable).chat tbody tr.row-selected{--chat-bg:var(--row-playing);}
+  :is(#cardTable, #vocabTable).chat tbody td.q-col, #vocabTable.chat tbody td:first-child{padding-left:10px;}
+  :is(#cardTable, #vocabTable).chat tbody td.a-col{padding-right:10px;}
+  :is(#cardTable, #vocabTable).chat .cell{position:relative;display:block;max-width:75%;margin:0;padding:10px 15px;font-size:20px;line-height:1.4;border-radius:20px;background:var(--imsg-in);color:var(--imsg-in-text);}
+  :is(#cardTable, #vocabTable).chat .cell::before, :is(#cardTable, #vocabTable).chat .cell::after{content:"";position:absolute;bottom:0;height:20px;pointer-events:none;}
+  :is(#cardTable, #vocabTable).chat .cell::before{left:-6px;width:20px;background:var(--imsg-in);border-bottom-right-radius:15px;}
+  :is(#cardTable, #vocabTable).chat .cell::after{left:-10px;width:10px;background:var(--chat-bg);border-bottom-right-radius:10px;}
+  :is(#cardTable, #vocabTable).chat .a-col .cell{background:var(--imsg-out);}
+  :is(#cardTable, #vocabTable).chat .a-col .cell::before{left:auto;right:-6px;background:var(--imsg-out);border-bottom-right-radius:0;border-bottom-left-radius:15px;}
+  :is(#cardTable, #vocabTable).chat .a-col .cell::after{left:auto;right:-10px;border-bottom-right-radius:0;border-bottom-left-radius:10px;}
+  :is(#cardTable, #vocabTable).chat .cell.hidden, :is(#cardTable, #vocabTable).chat .cell.shown{color:var(--imsg-in-text);font-style:normal;}
+  :is(#cardTable, #vocabTable).chat .a-col .cell.hidden, :is(#cardTable, #vocabTable).chat .a-col .cell.shown{color:#fff;}
   @media (hover:hover){
-    :is(#cardTable, #vocabTable).chat .cell.shown:hover{background:var(--q-bg);box-shadow:0 0 0 2px var(--accent-soft);}
-    :is(#cardTable, #vocabTable).chat .a-col .cell.shown:hover{background:var(--a-bg);}
+    :is(#cardTable, #vocabTable).chat .cell.shown:hover, :is(#cardTable, #vocabTable).chat .cell.hidden:hover{background:var(--imsg-in);box-shadow:0 0 0 2px var(--accent-soft);}
+    :is(#cardTable, #vocabTable).chat .a-col .cell.shown:hover, :is(#cardTable, #vocabTable).chat .a-col .cell.hidden:hover{background:var(--imsg-out);color:#fff;}
+    :is(#cardTable, #vocabTable).chat .cell.hidden:hover{color:var(--imsg-in-text);}
   }
-  :is(#cardTable, #vocabTable).chat .cell.hidden{font-size:0;line-height:0;font-style:normal;}
-  :is(#cardTable, #vocabTable).chat .cell.hidden::after{content:"";display:block;width:40px;height:15px;margin:5px 0;opacity:.6;--dot:radial-gradient(circle closest-side, var(--text-2) 90%, transparent);background:var(--dot) 0 5px / 10px 10px no-repeat, var(--dot) 15px 5px / 10px 10px no-repeat, var(--dot) 30px 5px / 10px 10px no-repeat;animation:chat-typing 1.2s ease-in-out infinite;}
-  :is(#cardTable, #vocabTable).chat .cell.hidden > .loop-time{display:block;width:fit-content;margin:0 0 5px;line-height:1.5;}
-  @keyframes chat-typing{0%, 80%, 100%{background-position:0 5px, 15px 5px, 30px 5px;}20%{background-position:0 0, 15px 5px, 30px 5px;}40%{background-position:0 5px, 15px 0, 30px 5px;}60%{background-position:0 5px, 15px 5px, 30px 0;}}
-  @media (prefers-reduced-motion: reduce){:is(#cardTable, #vocabTable).chat .cell.hidden::after{animation:none;}}
+  :is(#cardTable, #vocabTable).chat .a-col .loop-time{background:rgba(255,255,255,.25);color:#fff;}
   @media (max-width:600px){
     .shell :is(#cardTable, #vocabTable).chat{padding:10px;}
     .shell :is(#cardTable, #vocabTable).chat tbody tr{padding:5px;}
