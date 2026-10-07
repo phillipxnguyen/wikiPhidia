@@ -656,6 +656,15 @@ window.onYouTubeIframeAPIReady = function(){
   .empty-msg{padding:24px;text-align:center;color:var(--text-2);font-size:14px;}
   table.no-answer-col .a-col{display:none;}
   #cardTable.no-head thead{display:none;}
+  #cardTable.full-list thead th.a-col, #cardTable.full-list:not(.bar-head) thead{display:none;}
+  #cardTable.bar-head thead, #cardTable.bar-head.no-head thead{display:table-header-group;}
+  #cardTable.bar-head thead tr{background:none;}
+  #cardTable.bar-head thead th{padding:10px 10px 0;border-bottom:0;}
+  #cardTable.bar-head #listAddCard{margin:0;}
+  #cardTable.notebook.bar-head thead{display:block;position:relative;z-index:1;padding:0 20px 10px;}
+  #cardTable.notebook.bar-head thead tr, #cardTable.notebook.bar-head thead th:not(.a-col){display:block;padding:0;}
+  #cardTable.notebook.bar-head #listAddCard{font-family:system-ui, -apple-system, "Segoe UI", sans-serif;}
+  #cardTable.notebook.bar-head::before{top:64px;}
   #cardTable.notebook{--line:30px;display:block;position:relative;overflow:visible;padding:18px 0 26px;background:var(--paper);color:var(--paper-ink);border:1px solid var(--paper-edge);border-radius:4px;box-shadow:0 1px 0 var(--paper-edge), 0 14px 30px var(--paper-shadow);font-family:Georgia, "Times New Roman", serif;}
   #cardTable.notebook::before{content:"";position:absolute;top:0;bottom:0;left:64px;border-left:2px solid var(--paper-margin);pointer-events:none;}
   #cardTable.notebook colgroup, #cardTable.notebook thead{display:none;}
@@ -5885,7 +5894,17 @@ function applyColumnLayout() {
   listAdd.hidden = !!groupState || isVirtualLesson() || !rows.length;
   listAdd.textContent = rows.length + " ＋";
   table.classList.toggle("no-answer-col", noAnswer);
-  table.querySelector("thead th:not(.a-col)").colSpan = noAnswer ? 2 : 1;
+  const headTh = table.querySelector("thead th:not(.a-col)");
+  if (!groupState && listAdd.parentElement !== headTh) {
+    headTh.textContent = "";
+    headTh.appendChild(listAdd);
+  } else if (groupState && listAdd.parentElement === headTh) {
+    table.before(listAdd);
+    headTh.textContent = "Question";
+  }
+  table.classList.toggle("full-list", !groupState);
+  table.classList.toggle("bar-head", !groupState && !listAdd.hidden);
+  headTh.colSpan = noAnswer || !groupState ? 2 : 1;
   cols.forEach(c => c.style.width = "");
 }
 
@@ -8310,9 +8329,28 @@ function fairyTarget() {
   return [ ...document.querySelectorAll(".main-inner .progress-badges") ].find(onScreen) || [ document.querySelector(".lesson-item.active:not(.all-vocab) .lesson-item-meta"), document.getElementById(appMode === "vocab" ? "vocabStage" : "cardTable") ].find(onScreen) || null;
 }
 
-function fairyDust() {
+function holdCounts(before) {
+  if (!before) return () => {};
+  const kinds = [ "new", "due", "done" ];
+  const els = [ ...document.querySelectorAll(".main-inner .progress-badges > .progress-badge, .lesson-item.active:not(.all-vocab) .lesson-item-meta > :is(.new, .due, .done)") ];
+  const saved = els.map(el => [ el, el.innerHTML, el.className ]);
+  els.forEach(el => {
+    const kind = kinds.find(k => el.classList.contains(k));
+    el.textContent = el.textContent.replace(/\d+/, before[kind]);
+    if (el.classList.contains("progress-badge")) el.classList.toggle("active", before[kind] > 0);
+  });
+  return () => saved.forEach(([ el, html, cls ]) => {
+    if (!el.isConnected) return;
+    el.innerHTML = html;
+    el.className = cls;
+  });
+}
+
+function fairyDust(before) {
   const target = fairyTarget();
+  const release = holdCounts(before);
   const touch = () => {
+    release();
     if (!target) return;
     target.classList.remove("fairy-touched");
     void target.offsetWidth;
@@ -8516,6 +8554,11 @@ function resetLessonProgress() {
   commitActiveEdit();
   haltAllPlayback();
   pushUndo("Reset progress — " + name);
+  const before = {
+    new: newCardCount("Table"),
+    due: dueCardCount("Table"),
+    done: doneCardCount("Table")
+  };
   const at = Date.now();
   rows.forEach(r => {
     r.srs = {
@@ -8534,7 +8577,7 @@ function resetLessonProgress() {
   updateGroupUI();
   render();
   scheduleAutoSave();
-  fairyDust();
+  fairyDust(before);
   showToast("All cards are New again — ⌘Z to undo");
 }
 
@@ -11116,7 +11159,7 @@ function renderVocab() {
   const anyDue = !!currentVocabItem();
   document.querySelectorAll("#vocabToolbar [data-view], #vocabFrontBtn").forEach(btn => btn.hidden = btn.dataset.view === "list" ? false : !anyDue || btn.dataset.view === "group" && items.length < VOCAB_GROUP_MIN || btn.id === "vocabFrontBtn" && vocabView === "list");
   if (vocabView === "list") {
-    badges.innerHTML = studying.length ? badgesHtml(c.fresh, c.due, c.done, { new: c.fresh > 0, due: c.due > 0, done: c.done > 0 }) : "";
+    badges.innerHTML = anyDue ? badgesHtml(c.fresh, c.due, c.done, { new: c.fresh > 0, due: c.due > 0, done: c.done > 0 }) : "";
     stage.innerHTML = "";
     wireVocabEditor(items);
     syncVocabSound();
@@ -11432,6 +11475,7 @@ function resetVocabProgress() {
   commitVocabEdit();
   stopVocabSound();
   pushUndo("Reset words — " + name);
+  const was = vocabCounts(items);
   const at = Date.now();
   vocabSource().forEach(c => {
     c.vocab = keepVocabAdded(c.vocab, at);
@@ -11440,7 +11484,11 @@ function resetVocabProgress() {
   scheduleAutoSave();
   renderVocab();
   renderLessonList();
-  fairyDust();
+  fairyDust({
+    new: was.fresh,
+    due: was.due,
+    done: was.done
+  });
 }
 
 document.getElementById("vocabSaveBtn").onclick = e => exportCurrentLesson(e);
