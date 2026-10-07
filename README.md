@@ -34,7 +34,7 @@ A lesson is either a video lesson (it has a YouTube, TikTok or Douyin link, or c
 
 **No grey text.** Everything you read while studying (column headings, the ··· of hidden fields, Question and the progress line on a card, and on the Speaking paper its heading, question count, clock and Notes label) is in the normal text colour.
 
-**Back to the card.** Revealing or flipping a card brings the study area to the top in one step, in Lessons and in Vocabulary. Moving on to the next card or group never scrolls the page, even if you graded it far down (say, from its last dictionary panel): the page stays where it is and the next card simply starts right under the pinned bar, where you are already looking, so nothing jumps even though an unanswered card is shorter. The space this leaves above it is taken away by itself, without anything moving, once you scroll back up.
+**Back to the card.** Revealing or flipping a card brings the study area to the top in one step, in Lessons and in Vocabulary. Moving on to the next card or group never scrolls the page, even if you graded it far down (say, from its last dictionary panel): the page stays where it is and the next card simply starts right under the pinned bar, where you are already looking, so nothing jumps even though an unanswered card is shorter. The space this leaves above it is taken away by itself, without anything moving, the moment you next touch the screen, turn the mouse wheel or press a key, before the page starts to move, so scrolling back up afterwards is smooth.
 
 **Scheduling.** *Again* brings a card back in 10 minutes. Each *Good* counts towards a streak; until the fifth Good in a row the card returns the next day. After five it is **done**, and the gaps grow to 1, 3 and then 7 days.
 
