@@ -481,6 +481,8 @@ window.onYouTubeIframeAPIReady = function(){
     .shell .single-card-body{padding:24px 16px;}
     .shell .single-card-field{padding:14px 10px;}
     .shell .single-card-field .cell{font-size:20px;padding:2px 6px;}
+    .shell .listen-batch .listen-pair .cell{padding:0 5px;}
+    .shell .listen-batch .listen-pair .single-card-a .cell{font-size:15px;}
   }
   html.touch input[type=text], html.touch input[type=search], html.touch input[type=email], html.touch input[type=password], html.touch textarea, html.touch select{font-size:16px;}
   html.touch .segmented button{min-width:46px;padding:8px 12px;}
@@ -858,9 +860,14 @@ window.onYouTubeIframeAPIReady = function(){
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
     min-height:72px;border-radius:10px;padding:18px 18px;
   }
-  .single-card-body.listen-batch:not(.edit-row){gap:30px;}
-  .listen-pair{display:flex;flex-direction:column;gap:10px;border-radius:12px;transition:box-shadow .15s ease;}
+  .single-card-body.listen-batch:not(.edit-row){gap:20px;}
+  .listen-pair{display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px;border-radius:12px;transition:box-shadow .15s ease;}
   .listen-pair.row-playing{box-shadow:0 0 0 4px var(--accent-soft);}
+  .listen-batch .listen-pair .single-card-field{min-height:0;padding:0;background:none;border-radius:0;}
+  .listen-batch .listen-pair .cell{padding:0 10px;text-align:center;}
+  .listen-batch .listen-pair .single-card-q .cell.shown{font-weight:600;}
+  .listen-batch .listen-pair .single-card-a .cell{font-size:20px;}
+  .listen-batch .listen-pair .single-card-q .cell > .loop-time:first-child{display:block;width:fit-content;margin:0 auto 5px;font-weight:400;}
   .single-card-q{background:var(--q-bg);}
   .single-card-a{background:var(--a-bg);}
   .single-card-field .cell{font-size:24px;line-height:1.5;text-align:left;padding:2px 16px;border-radius:8px;}
@@ -3118,7 +3125,7 @@ function renderDictPanels() {
       preload = rows.filter(r => ids.includes(r.id)).concat(dueRows("Listen").slice(0, 1));
     }
   }
-  host.classList.toggle("with-source", !!groupState && inTable);
+  host.classList.toggle("with-source", !!groupState && (inTable || inSingle && isListenMode()));
   const now = Date.now();
   let notesLen = 0;
   rows.forEach(r => {
@@ -3387,10 +3394,10 @@ function renderSingleCard(visibleRows) {
   }
   bodyEl.dataset.id = row.id;
   bodyEl.classList.remove("edit-row");
-  bodyEl.classList.toggle("row-playing", batch.length === 1 && loopingRowId === row.id);
+  bodyEl.classList.toggle("row-playing", !isListenMode() && loopingRowId === row.id);
   bodyEl.classList.toggle("ielts-card", groupViewStyle === "ielts");
-  bodyEl.classList.toggle("listen-batch", batch.length > 1);
-  bodyEl.innerHTML = groupViewStyle === "ielts" ? ieltsPaperHtml(row) : batch.length > 1 ? listenPairsHtml(batch) : singleCardFieldsHtml(row);
+  bodyEl.classList.toggle("listen-batch", isListenMode());
+  bodyEl.innerHTML = groupViewStyle === "ielts" ? ieltsPaperHtml(row) : isListenMode() ? listenPairsHtml(batch) : singleCardFieldsHtml(row);
   if (groupViewStyle === "ielts") {
     if (isTranslationCard(row) && !isVirtualLesson()) setTimeout(() => {
       if (groupState && groupViewStyle === "ielts" && getCurrentSingleCardRow() === row) warnTranslationCard(row);
@@ -6494,7 +6501,7 @@ function showNextUnderSwipe(row) {
     const body = document.getElementById("singleCardBody");
     if (next) {
       Array.from(body.children).forEach(el => el.style.display = "none");
-      body.insertAdjacentHTML("beforeend", groupViewStyle === "ielts" ? ieltsPaperHtml(next, 1) : nextBatch.length > 1 ? listenPairsHtml(nextBatch) : singleCardFieldsHtml(next));
+      body.insertAdjacentHTML("beforeend", groupViewStyle === "ielts" ? ieltsPaperHtml(next, 1) : isListenMode() ? listenPairsHtml(nextBatch) : singleCardFieldsHtml(next));
     } else {
       hide(body);
     }
