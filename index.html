@@ -8310,17 +8310,18 @@ function fairyDust() {
   document.body.appendChild(canvas);
   const ctx = canvas.getContext("2d");
   ctx.scale(dpr, dpr);
-  const hues = [ [ 240, 185, 50 ], [ 250, 215, 120 ], [ 120, 180, 245 ], [ 150, 130, 245 ] ];
+  const hues = [ [ 235, 170, 20 ], [ 245, 195, 45 ], [ 60, 135, 240 ], [ 115, 95, 240 ] ];
   const specks = Array.from({
-    length: Math.round(Math.min(90, w * h / 9000))
+    length: Math.round(Math.min(220, w * h / 4500))
   }, () => ({
     x: Math.random() * w,
     y: Math.random() * h,
-    vx: (Math.random() - .5) * .25,
-    vy: .15 + Math.random() * .35,
-    r: .6 + Math.random() * 1.4,
-    delay: Math.random() * 700,
-    span: 900 + Math.random() * 900,
+    vx: (Math.random() - .5) * .4,
+    vy: .25 + Math.random() * .55,
+    r: 1.2 + Math.random() * 2.4,
+    star: Math.random() < .3,
+    delay: Math.random() * 900,
+    span: 1400 + Math.random() * 1200,
     c: hues[Math.floor(Math.random() * hues.length)],
     tw: Math.random() * 6
   }));
@@ -8336,14 +8337,25 @@ function fairyDust() {
       if (age < 0) return;
       p.x += p.vx;
       p.y += p.vy;
-      const alpha = Math.sin(age * Math.PI) * (.6 + .4 * Math.sin(p.tw + now / 70));
-      const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 4);
-      glow.addColorStop(0, `rgba(${p.c[0]},${p.c[1]},${p.c[2]},${alpha})`);
-      glow.addColorStop(.4, `rgba(${p.c[0]},${p.c[1]},${p.c[2]},${alpha * .4})`);
-      glow.addColorStop(1, `rgba(${p.c[0]},${p.c[1]},${p.c[2]},0)`);
+      const alpha = Math.min(1, Math.sin(age * Math.PI) * 1.4) * (.7 + .3 * Math.sin(p.tw + now / 70));
+      const rgb = `${p.c[0]},${p.c[1]},${p.c[2]}`;
+      const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 5);
+      glow.addColorStop(0, `rgba(${rgb},${alpha * .55})`);
+      glow.addColorStop(1, `rgba(${rgb},0)`);
       ctx.fillStyle = glow;
       ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r * 4, 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, p.r * 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = `rgba(${rgb},${alpha})`;
+      ctx.beginPath();
+      if (p.star) {
+        const s = p.r * 3.5 * (.8 + .2 * Math.sin(p.tw + now / 90)), k = p.r * .6;
+        ctx.moveTo(p.x, p.y - s);
+        ctx.quadraticCurveTo(p.x + k, p.y - k, p.x + s, p.y);
+        ctx.quadraticCurveTo(p.x + k, p.y + k, p.x, p.y + s);
+        ctx.quadraticCurveTo(p.x - k, p.y + k, p.x - s, p.y);
+        ctx.quadraticCurveTo(p.x - k, p.y - k, p.x, p.y - s);
+      } else ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
       ctx.fill();
     });
     if (alive) requestAnimationFrame(step); else canvas.remove();
