@@ -966,6 +966,13 @@ window.onYouTubeIframeAPIReady = function(){
     position:absolute;top:-10px;width:8px;height:8px;border-radius:2px;opacity:.9;
     animation-name:confetti-fall;animation-timing-function:ease-in;animation-fill-mode:forwards;
   }
+  .fairy-dust{position:fixed;inset:0;z-index:1500;pointer-events:none;overflow:hidden;}
+  .fairy-dot{position:absolute;background:currentColor;filter:drop-shadow(0 0 4px currentColor);clip-path:polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);opacity:0;animation:fairyTwinkle 1.4s ease-out forwards;}
+  .fairy-dot.round{clip-path:circle(50%);}
+  .fairy-sweep{position:absolute;border-radius:var(--radius);background:linear-gradient(110deg, transparent 35%, color-mix(in srgb, var(--accent) 30%, transparent) 50%, transparent 65%) no-repeat;background-size:250% 100%;animation:fairySweep 1s ease-in-out forwards;}
+  @keyframes fairySweep{from{background-position:100% 0;}to{background-position:-50% 0;}}
+  @keyframes fairyTwinkle{0%{opacity:0;transform:scale(0) rotate(0);}30%{opacity:1;transform:scale(1.2) rotate(45deg);}60%{opacity:.9;transform:translateY(-10px) scale(.9) rotate(90deg);}100%{opacity:0;transform:translateY(-30px) scale(.2) rotate(180deg);}}
+  @media (prefers-reduced-motion: reduce){.fairy-dust{display:none;}}
   @keyframes confetti-fall{0%{transform:translateY(0) rotate(0deg);opacity:1;}100%{transform:translateY(240px) rotate(360deg);opacity:0;}}
   .session-complete .emoji{font-size:52px;display:inline-block;animation:bounce-in .6s cubic-bezier(.34,1.56,.64,1);}
   @keyframes bounce-in{0%{transform:scale(0);opacity:0;}60%{transform:scale(1.15);opacity:1;}100%{transform:scale(1);}}
@@ -8219,6 +8226,45 @@ async function createLesson() {
   focusLessonName();
 }
 
+function fairyDust(area) {
+  const box = area && area.getBoundingClientRect();
+  if (!box || !box.width) return;
+  const top = Math.max(0, box.top), bottom = Math.min(window.innerHeight, box.bottom);
+  if (bottom - top < 20) return;
+  const layer = document.createElement("div");
+  layer.className = "fairy-dust";
+  const content = area.querySelector("#cardTable, #vocabStage, #singleCardView");
+  const sweep = content && content.getBoundingClientRect();
+  if (sweep && sweep.height > 1) {
+    const band = document.createElement("div");
+    band.className = "fairy-sweep";
+    Object.assign(band.style, {
+      left: Math.round(sweep.left) + "px",
+      top: Math.round(sweep.top) + "px",
+      width: Math.round(sweep.width) + "px",
+      height: Math.round(Math.min(sweep.height, window.innerHeight)) + "px"
+    });
+    layer.appendChild(band);
+  }
+  const colors = [ "var(--accent)", "#f5c84c", "#f59fd0", "#8fd3ff", "#b18cff" ];
+  for (let i = 0; i < 70; i++) {
+    const dot = document.createElement("span");
+    const size = [ 8, 10, 12, 14, 16, 20 ][Math.floor(Math.random() * 6)];
+    dot.className = "fairy-dot" + (Math.random() < .3 ? " round" : "");
+    Object.assign(dot.style, {
+      left: Math.round(box.left + Math.random() * (box.width - size)) + "px",
+      top: Math.round(top + Math.random() * (bottom - top - size)) + "px",
+      width: size + "px",
+      height: size + "px",
+      color: colors[i % colors.length],
+      animationDelay: Math.round(Math.random() * 600) + "ms"
+    });
+    layer.appendChild(dot);
+  }
+  document.body.appendChild(layer);
+  setTimeout(() => layer.remove(), 2100);
+}
+
 function resetLessonProgress() {
   if (!currentLessonId || isVirtualLesson() || !rows.length) return;
   const name = document.getElementById("lessonName").value.trim() || "this lesson";
@@ -8244,6 +8290,7 @@ function resetLessonProgress() {
   updateGroupUI();
   render();
   scheduleAutoSave();
+  fairyDust(document.getElementById("viewStudy"));
   showToast("All cards are New again — ⌘Z to undo");
 }
 
@@ -11149,6 +11196,7 @@ function resetVocabProgress() {
   scheduleAutoSave();
   renderVocab();
   renderLessonList();
+  fairyDust(document.getElementById("viewVocab"));
 }
 
 document.getElementById("vocabSaveBtn").onclick = e => exportCurrentLesson(e);
