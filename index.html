@@ -4683,7 +4683,7 @@ function updateTouchBar() {
   let showLabel = "Show";
   if (vocab) {
     if (vocabSession && vocabSession.shown) showLabel = "Hide";
-  } else if (listenCardShown() && !seqBtn.disabled) {
+  } else if (groupState && groupViewStyle !== "ielts" && !studyCardsHidden() && !seqBtn.disabled) {
     const playing = seqBtn.classList.contains("active");
     showLabel = playing ? "⏸" : "▶";
     showBtn.setAttribute("aria-label", playing ? "Pause" : "Play");
@@ -4691,9 +4691,6 @@ function updateTouchBar() {
     const current = getCurrentSingleCardRow();
     if (ieltsHintNext(current)) showLabel = "Hint";
     showBtn.disabled = !!current && !current.aHidden;
-  } else if (groupState && groupViewStyle !== "listen") {
-    const ids = groupState.groups[groupState.index] || [];
-    if (ids.length && rows.filter(r => ids.includes(r.id)).every(r => !r.qHidden && !r.aHidden)) showLabel = "Hide";
   }
   showBtn.textContent = showLabel;
 }
@@ -12468,10 +12465,8 @@ document.addEventListener("keydown", e => {
   }
   const letter = !e.metaKey && !e.ctrlKey && !e.altKey && !e.repeat;
   if (letter && e.code === "KeyS") {
-    const seqBtn = document.getElementById("btnPlaySequence");
-    if (seqBtn.disabled) return;
     e.preventDefault();
-    seqBtn.click();
+    studySoundKey();
     return;
   }
   if (letter && e.code === "KeyC") {
@@ -12528,21 +12523,29 @@ function gradeAction(isAgain) {
   }
 }
 
-function listenCardShown() {
-  const current = isListenMode() ? getCurrentSingleCardRow() : null;
-  return !!current && !current.qHidden && !current.aHidden;
+function studySoundKey() {
+  if (groupState && groupViewStyle === "ielts") return;
+  const id = selectedRowId !== null ? selectedRowId : isTouch() ? null : hoveredRowId;
+  const ids = groupState && groupViewStyle === "table" ? groupState.groups[groupState.index] || [] : [];
+  const row = id !== null && ids.includes(id) ? rows.find(r => r.id === id) : null;
+  if (row) {
+    toggleRowPlay(row);
+    setTimeout(notePanelHush, 0);
+    return;
+  }
+  const seqBtn = document.getElementById("btnPlaySequence");
+  if (!seqBtn.disabled) seqBtn.click();
 }
 
 function revealAction() {
   if (!groupState) return;
-  const seqBtn = document.getElementById("btnPlaySequence");
-  if (listenCardShown() && !seqBtn.disabled) {
-    seqBtn.click();
+  if (!studyCardsHidden()) {
+    studySoundKey();
     return;
   }
   if (groupViewStyle === "ielts") {
     const current = getCurrentSingleCardRow();
-    if (!current || !current.aHidden) return;
+    if (!current) return;
     scrollToPinned(studyAreaTop());
     current.qHidden = false;
     if (ieltsHintNext(current)) ieltsHintId = current.id; else {
@@ -12569,34 +12572,20 @@ function revealAction() {
   loopingRowData = null;
   stopLoop();
   const ids = groupState.groups[groupState.index];
-  const groupCards = rows.filter(r => ids.includes(r.id));
   const videoAvailable = !!ytPlayer && ytReady && ytHasVideo && !ytHasError;
-  const allShown = groupCards.every(r => !r.qHidden && !r.aHidden);
-  if (allShown) {
-    rows.forEach(r => {
-      if (ids.includes(r.id)) {
-        r.qHidden = true;
-        r.aHidden = false;
-      }
-    });
+  rows.forEach(r => {
+    if (ids.includes(r.id)) {
+      r.qHidden = false;
+      r.aHidden = false;
+    }
+  });
+  if (videoAvailable) {
+    stopTts();
+    if (!isSequencePlaying) toggleSequenceLoop();
+  } else if (ttsPlaying && ttsField === "q") {
     stopTts();
   } else {
-    rows.forEach(r => {
-      if (ids.includes(r.id)) {
-        r.qHidden = false;
-        r.aHidden = false;
-      }
-    });
-    if (videoAvailable) {
-      stopTts();
-      if (!isSequencePlaying) toggleSequenceLoop();
-    } else {
-      if (ttsPlaying && ttsField === "q") {
-        stopTts();
-      } else {
-        startTts("q");
-      }
-    }
+    startTts("q");
   }
   render();
 }
