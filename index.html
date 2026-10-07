@@ -6082,12 +6082,64 @@ function studyAreaTop() {
   return Math.max(0, Math.round((naturalTop - stickyTop) * dpr) / dpr);
 }
 
-function pinStudyArea() {
-  const target = studyAreaTop();
-  if (window.scrollY > target) window.scrollTo({
+let pinHoldOn = false;
+
+function holdPageTo(bottom) {
+  const px = Math.ceil(bottom);
+  pinHoldOn = px > window.innerHeight;
+  document.body.style.minHeight = pinHoldOn ? px + "px" : "";
+}
+
+function scrollToPinned(target) {
+  holdPageTo(target + window.innerHeight);
+  window.scrollTo({
     top: target,
     behavior: "instant"
   });
+}
+
+let liftPx = 0;
+
+function setLift(px) {
+  let el = document.getElementById("swipeLift");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "swipeLift";
+    el.setAttribute("aria-hidden", "true");
+    const inner = document.querySelector(".main-inner");
+    inner.insertBefore(el, inner.firstChild);
+  }
+  liftPx = Math.max(0, Math.round(px));
+  el.style.height = liftPx + "px";
+}
+
+function dropLift() {
+  if (!liftPx) return;
+  const y = Math.max(0, window.scrollY - liftPx);
+  setLift(0);
+  holdPageTo(y + window.innerHeight);
+  window.scrollTo({
+    top: y,
+    behavior: "instant"
+  });
+}
+
+function showFromTop(target) {
+  const below = window.scrollY - target;
+  if (below <= 0) return scrollToPinned(target);
+  setLift(liftPx + below);
+  holdPageTo(window.scrollY + window.innerHeight);
+}
+
+window.addEventListener("scroll", () => {
+  if (liftPx && window.scrollY < liftPx) dropLift(); else if (pinHoldOn && window.scrollY + window.innerHeight < parseFloat(document.body.style.minHeight)) holdPageTo(window.scrollY + window.innerHeight);
+}, {
+  passive: true
+});
+
+function pinStudyArea() {
+  const target = studyAreaTop();
+  if (window.scrollY > target) scrollToPinned(target);
 }
 
 function studyParts() {
@@ -6170,11 +6222,9 @@ function swipe(parts, dir, update, next, label = dir > 0 ? "Good" : "Again") {
     });
     setTimeout(() => ghost.remove(), 750);
   }
+  if (next) holdPageTo(window.scrollY + window.innerHeight);
   update();
-  if (next) window.scrollTo({
-    top: 0,
-    behavior: "instant"
-  });
+  if (next) showFromTop(studyAreaTop());
 }
 
 let drag = null;
@@ -11516,7 +11566,7 @@ function toggleVocabSound(item) {
   if (vocabSoundOn()) stopVocabSound(); else playVocabSound(item);
 }
 
-function pinVocabArea() {
+function pinVocabArea(next) {
   const toolbar = document.getElementById("vocabToolbar");
   if (toolbar.hidden) {
     const bar = document.querySelector(".sidebar");
@@ -11528,7 +11578,8 @@ function pinVocabArea() {
   toolbar.style.position = "static";
   const naturalTop = toolbar.getBoundingClientRect().top + window.scrollY;
   toolbar.style.position = "";
-  window.scrollTo(0, Math.max(0, naturalTop - stickyTop));
+  const target = Math.max(0, Math.round(naturalTop - stickyTop));
+  if (next) showFromTop(target); else scrollToPinned(target);
 }
 
 function closeVocabList() {
@@ -11599,8 +11650,9 @@ function gradeVocabItems(items, isAgain, label) {
   s.flipped = false;
   closeVocabList();
   scheduleAutoSave();
+  holdPageTo(window.scrollY + window.innerHeight);
   renderVocab();
-  pinVocabArea();
+  pinVocabArea(true);
   renderLessonList();
 }
 
@@ -12467,7 +12519,7 @@ function revealAction() {
   if (groupViewStyle === "ielts") {
     const current = getCurrentSingleCardRow();
     if (!current || !current.aHidden) return;
-    window.scrollTo(0, studyAreaTop());
+    scrollToPinned(studyAreaTop());
     current.qHidden = false;
     if (ieltsHintNext(current)) ieltsHintId = current.id; else {
       current.aHidden = false;
@@ -12476,7 +12528,7 @@ function revealAction() {
     render();
     return;
   }
-  window.scrollTo(0, studyAreaTop());
+  scrollToPinned(studyAreaTop());
   if (groupViewStyle === "listen") {
     const current = getCurrentSingleCardRow();
     if (current) {
