@@ -1043,6 +1043,10 @@ window.onYouTubeIframeAPIReady = function(){
   .fairy-touched{animation:fairy-touched 1.5s ease-out;}
   @keyframes fairy-touched{0%, 100%{filter:none;}30%{filter:drop-shadow(0 0 6px rgba(245,185,30,.9)) brightness(1.15);}}
   .fairy-dust{position:fixed;inset:0;z-index:1500;pointer-events:none;}
+  ::view-transition-old(root), ::view-transition-new(root){animation:none;mix-blend-mode:normal;}
+  ::view-transition-group(fairy-magic){animation:none;z-index:2;}
+  ::view-transition-old(fairy-magic){display:none;}
+  ::view-transition-new(fairy-magic){animation:none;}
   @media (prefers-reduced-motion: reduce){.fairy-dust{display:none;}}
   @keyframes confetti-fall{0%{transform:translateY(0) rotate(0deg);opacity:1;}100%{transform:translateY(240px) rotate(360deg);opacity:0;}}
   .session-complete .emoji{font-size:52px;display:inline-block;animation:bounce-in .6s cubic-bezier(.34,1.56,.64,1);}
@@ -1633,6 +1637,8 @@ function restoreFrom(fromStack, toStack, verb) {
   discardActiveEdit();
   haltAllPlayback();
   const entry = fromStack.pop();
+  const resetMagic = /^Reset (progress|words) — /.test(entry.label);
+  const countsBefore = resetMagic ? currentCounts() : null;
   const oppositeEntry = takeSnapshot(entry.label, entry.expiresAt);
   toStack.push(oppositeEntry);
   if (toStack.length > 50) toStack.shift();
@@ -1701,6 +1707,23 @@ function restoreFrom(fromStack, toStack, verb) {
   }
   showToast(verb + " — " + entry.label);
   scheduleAutoSave();
+  if (resetMagic) fairyDust(countsBefore, currentCounts(), verb === "Undo");
+}
+
+function currentCounts() {
+  if (appMode === "vocab") {
+    const c = vocabCounts(lessonVocabItems(vocabSource()));
+    return {
+      new: c.fresh,
+      due: c.due,
+      done: c.done
+    };
+  }
+  return {
+    new: newCardCount("Table"),
+    due: dueCardCount("Table"),
+    done: doneCardCount("Table")
+  };
 }
 
 function undo() {
@@ -2227,6 +2250,7 @@ function applyMediaUrl(auto) {
 document.getElementById("btnEmbedMedia").onclick = () => {
   applyMediaUrl(false);
   scheduleAutoSave();
+  if (extractYouTubeId(document.getElementById("mediaUrl").value.trim())) setTimeout(() => fairyGlow(document.getElementById("mediaContainer"), "sweep"), 300);
 };
 
 document.getElementById("btnClearMedia").onclick = () => {
@@ -2304,7 +2328,7 @@ function startLoop(row) {
   if (switchRowVideo(row, () => startLoop(row))) return;
   if (ytHasError) return;
   if (!ytPlayer || !ytReady || !ytHasVideo || typeof ytPlayer.seekTo !== "function") {
-    showToast(ytHasVideo ? "Video is still loading…" : "Add a YouTube video first");
+    if (ytHasVideo) fairyWait(); else showToast("Add a YouTube video first");
     return;
   }
   const wasSequencePlaying = loopingRowData ? loopingRowData.wasSequencePlaying : isSequencePlaying;
@@ -2832,7 +2856,7 @@ function toggleSequenceLoop() {
   }
   if (ytHasError) return;
   if (!ytPlayer || !ytReady || !ytHasVideo) {
-    showToast(ytHasVideo ? "Video is still loading…" : "Add a YouTube video first");
+    if (ytHasVideo) fairyWait(); else showToast("Add a YouTube video first");
     return;
   }
   const currentRow = isCardMode() ? getCurrentSingleCardRow() : null;
@@ -6417,16 +6441,29 @@ function swipe(parts, dir, update, next, label = dir > 0 ? "Good" : "Again") {
     ghost.classList.remove("good", "again");
     ghost.classList.add(label === "Delete" ? "delete" : label === "Vocab" ? "to-vocab" : dir > 0 ? "good" : "again");
     ghost.textContent = label === "Delete" ? "✕" : label === "Vocab" ? "字" : gradeMark(dir < 0);
-    ghost.animate([ {
-      transform: from
-    }, {
-      transform: `translate(${dir * 110}vw, ${label === "Delete" || label === "Vocab" ? -25 : 25}vh) rotate(${dir * 24}deg)`
-    } ], {
-      duration: 750,
-      easing: "ease-in-out",
-      fill: "forwards"
-    });
-    setTimeout(() => ghost.remove(), 750);
+    if (label === "Delete") {
+      fairyFly({
+        kind: "tap",
+        box: ghost.getBoundingClientRect(),
+        dissolve: ghost,
+        times: {
+          in: 450,
+          act: 400,
+          out: 450
+        }
+      });
+    } else {
+      ghost.animate([ {
+        transform: from
+      }, {
+        transform: `translate(${dir * 110}vw, ${label === "Vocab" ? -25 : 25}vh) rotate(${dir * 24}deg)`
+      } ], {
+        duration: 750,
+        easing: "ease-in-out",
+        fill: "forwards"
+      });
+      setTimeout(() => ghost.remove(), 750);
+    }
   }
   if (next) holdPageTo(window.scrollY + window.innerHeight);
   update();
@@ -7401,6 +7438,7 @@ function applyImportedMediaUrl(url) {
   applyMediaUrl(true);
   scheduleAutoSave();
   showToast("Video link added");
+  setTimeout(() => fairyGlow(document.getElementById("mediaContainer"), "sweep"), 300);
 }
 
 function takeMediaUrl(text) {
@@ -8326,6 +8364,7 @@ async function createLesson() {
   openLesson(lesson);
   showView("study");
   focusLessonName();
+  requestAnimationFrame(() => fairyGlow([ document.querySelector(".lesson-item.active:not(.all-vocab)"), document.getElementById("lessonName") ].find(onScreenBox)));
 }
 
 function fairyTarget() {
@@ -8380,59 +8419,124 @@ function holdCounts(before, after) {
   };
 }
 
-function fairyDust(before, after) {
-  const target = fairyTarget();
-  const release = holdCounts(before, after);
-  const touch = () => {
-    release();
-    if (!target) return;
-    target.classList.remove("fairy-touched");
-    void target.offsetWidth;
-    target.classList.add("fairy-touched");
-    setTimeout(() => target.classList.remove("fairy-touched"), 1500);
+const reducedMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+function glowTouch(el) {
+  if (!el) return;
+  el.classList.remove("fairy-touched");
+  void el.offsetWidth;
+  el.classList.add("fairy-touched");
+  setTimeout(() => el.classList.remove("fairy-touched"), 1500);
+}
+
+function onScreenBox(el) {
+  if (!el || !el.offsetParent) return null;
+  const r = el.getBoundingClientRect();
+  return r.width > 0 && r.height > 0 && r.bottom > 0 && r.top < window.innerHeight && r.right > 0 && r.left < window.innerWidth ? r : null;
+}
+
+function unionBox(rects) {
+  rects = rects.filter(Boolean);
+  if (!rects.length) return null;
+  const left = Math.min(...rects.map(r => r.left)), top = Math.min(...rects.map(r => r.top));
+  return {
+    left: left,
+    top: top,
+    width: Math.max(...rects.map(r => r.right)) - left,
+    height: Math.max(...rects.map(r => r.bottom)) - top
   };
-  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return touch();
-  const w = window.innerWidth, h = window.innerHeight, dpr = window.devicePixelRatio || 1;
+}
+
+// The fairy: a little girl with wings and a star-tipped wand, drawn on a canvas over the page.
+// kind: "sweep" floats along the top of box, "tap" touches the middle of box with the wand,
+// "circle" flies round box until until() is true, "pass" crosses the screen at box's height.
+// onTouch(x, y) runs once, with the wand's tip, when the dust (or the tap) reaches the target;
+// reverse draws dust from the target into the wand; dissolve turns the box into dust at the touch.
+function fairyFly(o) {
+  const w = window.innerWidth, h = window.innerHeight;
+  const box = o.box || {
+    left: w / 2 - 60,
+    top: h / 3,
+    width: 120,
+    height: 30
+  };
+  if (reducedMotion()) {
+    if (o.dissolve) o.dissolve.remove();
+    if (o.onTouch) o.onTouch(box.left + box.width / 2, box.top + box.height / 2);
+    if (o.onDone) o.onDone();
+    return {
+      stop() {}
+    };
+  }
+  const dpr = window.devicePixelRatio || 1;
   const canvas = document.createElement("canvas");
   canvas.className = "fairy-dust";
   canvas.width = Math.round(w * dpr);
   canvas.height = Math.round(h * dpr);
   canvas.style.width = w + "px";
   canvas.style.height = h + "px";
+  if (o.liveName) canvas.style.viewTransitionName = o.liveName;
   document.body.appendChild(canvas);
   const ctx = canvas.getContext("2d");
   ctx.scale(dpr, dpr);
-  const parts = target ? [ ...target.querySelectorAll(":scope > .progress-badge") ].map(el => el.getBoundingClientRect()) : [];
-  const box = parts.length ? {
-    left: Math.min(...parts.map(r => r.left)),
-    width: Math.max(...parts.map(r => r.right)) - Math.min(...parts.map(r => r.left)),
-    top: Math.min(...parts.map(r => r.top))
-  } : target ? target.getBoundingClientRect() : { left: w / 2 - 60, width: 120, top: h / 3 };
-  const fromLeft = box.left + box.width / 2 > w / 2;
-  const y = Math.max(40, box.top - 35);
-  const x0 = Math.max(10, box.left), x1 = Math.min(w - 10, box.left + box.width);
+  const kind = o.kind || "sweep";
+  const cx = box.left + box.width / 2, cy = box.top + box.height / 2;
+  const fromLeft = o.fromLeft != null ? o.fromLeft : cx > w / 2;
+  const facing = fromLeft ? 1 : -1;
   const [ sx, ex ] = fromLeft ? [ -40, w + 40 ] : [ w + 40, -40 ];
-  const [ ax, bx ] = fromLeft ? [ x0, x1 ] : [ x1, x0 ];
+  const SCALE = 1.4;
   const bez = (a, b, c, d, t) => (1 - t) ** 3 * a + 3 * (1 - t) ** 2 * t * b + 3 * (1 - t) * t * t * c + t ** 3 * d;
   const ease = t => t < .5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
-  const IN = 900, SWEEP = 1800, OUT = 700;
+  const T = Object.assign({
+    sweep: { in: 900, act: 1800, out: 700 },
+    tap: { in: 650, act: 700, out: 600 },
+    circle: { in: 700, act: 9000, out: 600 },
+    pass: { in: 0, act: 1300, out: 0 }
+  }[kind], o.times || {});
+  // where the fairy hovers while acting, and where the act starts and ends
+  const y = kind === "sweep" ? Math.max(40, box.top - 35) : kind === "pass" ? cy : Math.max(40, cy - 40);
+  const x0 = Math.max(10, box.left), x1 = Math.min(w - 10, box.left + box.width);
+  const [ ax, bx ] = kind === "sweep" ? fromLeft ? [ x0, x1 ] : [ x1, x0 ] : kind === "pass" ? [ sx, ex ] : [ cx - facing * 25, cx - facing * 25 ];
+  const orbit = Math.max(box.width, box.height) / 2 + 30;
+  let actEnd = T.in + T.act, stopped = false;
+  const actPos = (t, k) => {
+    if (kind === "sweep") return [ ax + (bx - ax) * (k - Math.sin(k * Math.PI * 2) / (Math.PI * 2) * .6), y + Math.sin(k * Math.PI * 3) * 5 ];
+    if (kind === "pass") return [ ax + (bx - ax) * ease(k), y + Math.sin(k * Math.PI * 2) * 25 ];
+    if (kind === "circle") {
+      const a = -Math.PI / 2 - facing * (t - T.in) / 380;
+      return [ cx + Math.cos(a) * orbit, cy + Math.sin(a) * orbit * .7 ];
+    }
+    return [ ax, y + Math.sin(k * Math.PI * 2) * 3 ];
+  };
   const pos = t => {
-    if (t < IN) {
-      const k = ease(t / IN);
-      return [ bez(sx, sx + (ax - sx) * .3, ax - (fromLeft ? 80 : -80), ax, k), bez(Math.min(h - 40, y + 220), y + 160, y - 60, y, k) ];
+    if (t < T.in) {
+      const k = ease(t / T.in), [ tx, ty ] = actPos(T.in, 0);
+      return [ bez(sx, sx + (tx - sx) * .3, tx - facing * 80, tx, k), bez(Math.min(h - 40, ty + 220), ty + 160, ty - 60, ty, k) ];
     }
-    if (t < IN + SWEEP) {
-      const k = (t - IN) / SWEEP;
-      return [ ax + (bx - ax) * (k - Math.sin(k * Math.PI * 2) / (Math.PI * 2) * .6), y + Math.sin(k * Math.PI * 3) * 5 ];
-    }
-    const k = ease(Math.min(1, (t - IN - SWEEP) / OUT));
-    return [ bez(bx, bx + (fromLeft ? 60 : -60), ex - (fromLeft ? 120 : -120), ex, k), bez(y, y - 20, y - 120, Math.max(-40, y - 220), k) ];
+    if (t < actEnd) return actPos(t, (t - T.in) / T.act);
+    const k = ease(Math.min(1, (t - actEnd) / (T.out || 1))), [ fx, fy ] = actPos(actEnd, 1);
+    return [ bez(fx, fx + facing * 60, ex - facing * 120, ex, k), bez(fy, fy - 20, fy - 120, Math.max(-40, fy - 220), k) ];
+  };
+  const acting = t => t >= T.in && t < actEnd;
+  const wandAngle = t => kind === "tap" && acting(t) ? -.4 + .9 * Math.sin(Math.min(1, (t - T.in) / T.act) * Math.PI) : -.9 + (acting(t) ? .7 : .35) * Math.sin(t / (acting(t) ? 110 : 140));
+  const wandTip = (fx, fy, t) => {
+    const a = wandAngle(t), hx = 3 + 8 * Math.cos(a), hy = -5 + 8 * Math.sin(a);
+    return [ fx + facing * SCALE * (hx + 13 * Math.cos(a + .5)), fy + SCALE * (hy + 13 * Math.sin(a + .5)) ];
   };
   const hues = [ [ 240, 180, 30 ], [ 250, 205, 70 ], [ 255, 225, 120 ], [ 80, 150, 240 ] ];
   const dust = [];
-  let touched = false;
-  const start = performance.now();
-  let last = start;
+  const spawn = (x, y, vx, vy, life, extra) => dust.push(Object.assign({
+    x: x,
+    y: y,
+    vx: vx,
+    vy: vy,
+    born: performance.now() - start,
+    life: life,
+    r: 1 + Math.random() * 1.6,
+    star: Math.random() < .5,
+    c: hues[Math.floor(Math.random() * hues.length)],
+    tw: Math.random() * 6
+  }, extra || {}));
   const star = (x, y, s) => {
     const k = s * .3;
     ctx.moveTo(x, y - s);
@@ -8440,13 +8544,6 @@ function fairyDust(before, after) {
     ctx.quadraticCurveTo(x + k, y + k, x, y + s);
     ctx.quadraticCurveTo(x - k, y + k, x - s, y);
     ctx.quadraticCurveTo(x - k, y - k, x, y - s);
-  };
-  const SCALE = 1.4;
-  const facing = fromLeft ? 1 : -1;
-  const wandAngle = t => -.9 + (t >= IN && t < IN + SWEEP ? .7 : .35) * Math.sin(t / (t >= IN && t < IN + SWEEP ? 110 : 140));
-  const wandTip = (fx, fy, t) => {
-    const a = wandAngle(t), hx = 3 + 8 * Math.cos(a), hy = -5 + 8 * Math.sin(a);
-    return [ fx + facing * SCALE * (hx + 13 * Math.cos(a + .5)), fy + SCALE * (hy + 13 * Math.sin(a + .5)) ];
   };
   const drawFairy = (fx, fy, t) => {
     const flap = .3 + .7 * Math.abs(Math.sin(t / 40));
@@ -8535,30 +8632,49 @@ function fairyDust(before, after) {
     ctx.fill();
     ctx.restore();
   };
+  let touched = false;
+  const touchAt = T.in + (o.touchAt != null ? o.touchAt : kind === "sweep" ? 400 : kind === "tap" ? T.act / 2 : 0);
+  const dissolve = () => {
+    const d = o.dissolve;
+    if (!d) return;
+    const area = d.getBoundingClientRect();
+    for (let n = Math.min(90, Math.round(area.width * area.height / 260)); n > 0; n--) spawn(area.left + Math.random() * area.width, area.top + Math.random() * area.height, (Math.random() - .5) * .08, -.02 - Math.random() * .06, 600 + Math.random() * 600);
+    d.animate([ { opacity: 1, filter: "blur(0)", transform: "scale(1)" }, { opacity: 0, filter: "blur(6px)", transform: "scale(1.04)" } ], {
+      duration: 600,
+      easing: "ease-out",
+      fill: "forwards"
+    }).onfinish = () => d.remove();
+  };
+  const start = performance.now();
+  let last = start;
   const step = now => {
     const t = now - start, dt = Math.min(40, now - last);
     last = now;
+    if (kind === "circle" && acting(t) && (stopped || o.until && o.until())) actEnd = t;
+    if (stopped && !acting(t) && t < T.in) actEnd = T.in;
     ctx.clearRect(0, 0, w, h);
-    const flying = t < IN + SWEEP + OUT;
+    const flying = t < actEnd + T.out;
     if (flying) {
       const [ fx, fy ] = wandTip(...pos(t), t);
-      const sprinkling = t >= IN && t < IN + SWEEP;
-      for (let n = sprinkling ? (Math.random() < .6 ? 2 : 1) : (Math.random() < .5 ? 1 : 0); n > 0; n--) dust.push({
-        x: fx + (Math.random() - .5) * 6,
-        y: fy + (Math.random() - .5) * 6,
-        vx: (Math.random() - .5) * .04,
-        vy: sprinkling ? .03 + Math.random() * .05 : Math.random() * .02,
-        born: t,
-        life: 700 + Math.random() * 500,
-        r: 1 + Math.random() * 1.6,
-        star: Math.random() < .5,
-        c: hues[Math.floor(Math.random() * hues.length)],
-        tw: Math.random() * 6
-      });
-      if (sprinkling && !touched && t >= IN + 400) {
-        touched = true;
-        touch();
+      if (o.reverse) {
+        if (acting(t)) for (let n = Math.random() < .6 ? 2 : 1; n > 0; n--) spawn(x0 + Math.random() * (x1 - x0), box.top + Math.random() * Math.max(10, box.height), 0, 0, 900, {
+          home: true
+        });
+      } else {
+        const heavy = acting(t) && kind !== "circle";
+        for (let n = heavy ? Math.random() < .6 ? 2 : 1 : Math.random() < .5 ? 1 : 0; n > 0; n--) spawn(fx + (Math.random() - .5) * 6, fy + (Math.random() - .5) * 6, (Math.random() - .5) * .04, heavy ? .03 + Math.random() * .05 : Math.random() * .02, 700 + Math.random() * 500);
       }
+      if (!touched && t >= touchAt) {
+        touched = true;
+        dissolve();
+        if (o.onTouch) o.onTouch(fx, fy);
+      }
+      dust.forEach(d => {
+        if (d.home) {
+          d.vx += ((fx - d.x) * .00004 - d.vx * .02) * dt;
+          d.vy += ((fy - d.y) * .00004 - d.vy * .02) * dt;
+        }
+      });
     }
     for (let i = dust.length - 1; i >= 0; i--) {
       const d = dust[i], age = (t - d.born) / d.life;
@@ -8566,19 +8682,105 @@ function fairyDust(before, after) {
         dust.splice(i, 1);
         continue;
       }
-      d.vy += .00012 * dt;
+      if (!d.home) d.vy += .00012 * dt;
       d.x += d.vx * dt;
       d.y += d.vy * dt;
-      const a = (1 - age) * (.55 + .45 * Math.sin(d.tw + now / 45));
+      const a = (d.home ? Math.sin(age * Math.PI) : 1 - age) * (.55 + .45 * Math.sin(d.tw + now / 45));
       ctx.fillStyle = `rgba(${d.c[0]},${d.c[1]},${d.c[2]},${a})`;
       ctx.beginPath();
       if (d.star) star(d.x, d.y, d.r * 3); else ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
       ctx.fill();
     }
     if (flying) drawFairy(...pos(t), t);
-    if (flying || dust.length) requestAnimationFrame(step); else canvas.remove();
+    if (flying || dust.length) requestAnimationFrame(step); else {
+      canvas.remove();
+      if (o.onDone) o.onDone();
+    }
   };
   requestAnimationFrame(step);
+  return {
+    stop() {
+      stopped = true;
+    }
+  };
+}
+
+let fairyWaiting = null;
+
+// While the video is still loading, the fairy flies round it until it can play.
+function fairyWait() {
+  if (fairyWaiting) return;
+  const box = onScreenBox(document.getElementById("mediaVideo"));
+  if (!box || reducedMotion()) return showToast("Video is still loading…");
+  const since = Date.now();
+  fairyWaiting = fairyFly({
+    kind: "circle",
+    box: box,
+    until: () => ytReady || !ytHasVideo || ytHasError || Date.now() - since > 10000,
+    onDone: () => fairyWaiting = null
+  });
+}
+
+function fairyDust(before, after, reverse) {
+  const target = fairyTarget();
+  const release = holdCounts(before, after);
+  const parts = target ? [ ...target.querySelectorAll(":scope > .progress-badge") ].map(el => el.getBoundingClientRect()) : [];
+  fairyFly({
+    kind: "sweep",
+    box: unionBox(parts) || (target ? target.getBoundingClientRect() : null),
+    reverse: reverse,
+    onTouch: () => {
+      release();
+      glowTouch(target);
+    }
+  });
+}
+
+// A copy of el laid over it, so el itself can go while the copy turns into fairy dust.
+function dustGhost(el) {
+  const box = onScreenBox(el);
+  if (!box) return null;
+  const copy = el.cloneNode(true);
+  copy.removeAttribute("id");
+  copy.querySelectorAll("[id]").forEach(n => n.removeAttribute("id"));
+  const cs = getComputedStyle(el);
+  Object.assign(copy.style, {
+    position: "fixed",
+    left: box.left + "px",
+    top: box.top + "px",
+    width: box.width + "px",
+    height: box.height + "px",
+    margin: "0",
+    boxSizing: "border-box",
+    zIndex: "1400",
+    pointerEvents: "none",
+    background: cs.backgroundColor === "rgba(0, 0, 0, 0)" ? getComputedStyle(document.body).backgroundColor : cs.backgroundColor
+  });
+  if (copy.tagName === "INPUT") copy.value = el.value;
+  document.body.appendChild(copy);
+  return copy;
+}
+
+function fairyDissolve(el) {
+  const copy = dustGhost(el);
+  if (!copy) return;
+  if (reducedMotion()) return copy.remove();
+  fairyFly({
+    kind: "tap",
+    box: copy.getBoundingClientRect(),
+    dissolve: copy,
+    times: { in: 450, act: 400, out: 450 }
+  });
+}
+
+function fairyGlow(el, kind) {
+  const box = onScreenBox(el);
+  if (!box) return;
+  fairyFly({
+    kind: kind || "tap",
+    box: box,
+    onTouch: () => glowTouch(el)
+  });
 }
 
 function resetLessonProgress() {
@@ -8626,6 +8828,7 @@ async function deleteCurrentLesson() {
   const words = lessonVocabItems(vocabSource()).length;
   const what = appMode === "vocab" ? `${words} word(s)` + (rows.length ? ` and ${rows.length} card(s)` : "") : `${rows.length} card(s)`;
   if (!confirm(`Delete "${name}" and its ${what}? This can't be undone — click Save first if you want a copy.`)) return;
+  fairyDissolve([ document.querySelector(".lesson-item.active:not(.all-vocab)"), document.getElementById("lessonName") ].find(onScreenBox));
   clearTimeout(autoSaveDebounceTimer);
   autoSaveDebounceTimer = null;
   library = library.filter(l => l.id !== lesson.id);
@@ -8759,6 +8962,7 @@ async function exportCurrentLesson(e) {
       });
       refreshSaveReminders();
       showToast(savedFileMessage("Saved", result));
+      fairyGlow([ document.getElementById("btnSaveFile"), document.getElementById("vocabSaveBtn") ].find(onScreenBox));
     }
   } catch (err) {
     showToast("Could not save the file — try again");
@@ -8822,6 +9026,7 @@ async function backupEverything(e) {
       });
       refreshSaveReminders();
       showToast(savedFileMessage("Backed up " + library.length + " lesson(s)", result));
+      fairyGlow(document.getElementById("btnBackupAll"));
     }
   } catch (err) {
     showToast("Could not back up — try again");
@@ -8856,6 +9061,7 @@ async function importLessonFiles(files) {
   await discardIfEmptyDraft();
   await flushAutoSave();
   let lastImported = null, imported = 0;
+  const arrivedIds = [];
   const restoredIds = [];
   const failed = [];
   for (const file of files) {
@@ -8883,6 +9089,7 @@ async function importLessonFiles(files) {
     upsertLibrary(lesson);
     await dbPut("lessons", lesson).catch(() => {});
     lastImported = lesson;
+    arrivedIds.push(lesson.id);
     imported++;
   }
   const restored = restoredIds.length;
@@ -8913,6 +9120,20 @@ async function importLessonFiles(files) {
   renderStreakChip();
   refreshSaveReminders();
   if (parts.length) showToast(parts.join(" · "));
+  requestAnimationFrame(() => fairyArrive(arrivedIds.concat(restoredIds)));
+}
+
+// New lessons in the list get a sprinkle of fairy dust (or the open lesson's name, when the list is tucked away).
+function fairyArrive(ids) {
+  if (!ids.length) return;
+  const items = [ ...document.querySelectorAll("#lessonList .lesson-item") ].filter(el => ids.includes(el.dataset.lessonId) && onScreenBox(el));
+  const box = unionBox(items.map(el => el.getBoundingClientRect()));
+  if (!box) return fairyGlow(document.getElementById("lessonName"));
+  fairyFly({
+    kind: "sweep",
+    box: box,
+    onTouch: () => items.forEach(glowTouch)
+  });
 }
 
 function isVocabOnlyLesson(l) {
@@ -9600,7 +9821,23 @@ document.getElementById("btnStats").onclick = () => showView(currentView === "st
 
 document.getElementById("btnTheme").onclick = () => {
   const next = shownTheme() === "dark" ? "light" : "dark";
-  applyTheme(next === systemTheme() ? "auto" : next);
+  const apply = () => applyTheme(next === systemTheme() ? "auto" : next);
+  if (!document.startViewTransition || reducedMotion()) return apply();
+  fairyFly({
+    kind: "tap",
+    box: onScreenBox(document.getElementById("btnTheme")),
+    liveName: "fairy-magic",
+    onTouch: (x, y) => {
+      const r = Math.ceil(Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y)));
+      document.startViewTransition(apply).ready.then(() => document.documentElement.animate({
+        clipPath: [ `circle(0px at ${Math.round(x)}px ${Math.round(y)}px)`, `circle(${r}px at ${Math.round(x)}px ${Math.round(y)}px)` ]
+      }, {
+        duration: 800,
+        easing: "ease-in-out",
+        pseudoElement: "::view-transition-new(root)"
+      })).catch(() => {});
+    }
+  });
 };
 
 document.getElementById("btnOpenFile").onclick = () => document.getElementById("fileInput").click();
@@ -10256,8 +10493,10 @@ function loadCloud() {
           }
           st.uid = user.uid;
         });
+        const fresh = !document.getElementById("cloudDialog").hidden;
         document.getElementById("cloudDialog").hidden = true;
         setCloudStatus("syncing");
+        if (fresh) setTimeout(() => fairyGlow(document.getElementById("btnCloud")), 200);
         startCloudListeners();
       } else {
         stopCloudListeners();
@@ -12302,6 +12541,16 @@ async function leaveToEmpty() {
 document.getElementById("btnAppMode").onclick = () => {
   stopAllSound();
   setAppMode(appMode === "vocab" ? "cards" : "vocab");
+  fairyFly({
+    kind: "pass",
+    fromLeft: appMode === "vocab",
+    box: {
+      left: 0,
+      top: Math.round(window.innerHeight * .35),
+      width: window.innerWidth,
+      height: 0
+    }
+  });
   replayAnimation(document.querySelector("#btnAppMode .brand-mark"), "mode-flip");
   replayAnimation(document.getElementById("brandName"), "mode-name");
   const main = document.querySelector(".main-inner");
