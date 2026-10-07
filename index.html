@@ -966,12 +966,7 @@ window.onYouTubeIframeAPIReady = function(){
     position:absolute;top:-10px;width:8px;height:8px;border-radius:2px;opacity:.9;
     animation-name:confetti-fall;animation-timing-function:ease-in;animation-fill-mode:forwards;
   }
-  .fairy-dust{position:fixed;inset:0;z-index:1500;pointer-events:none;overflow:hidden;}
-  .fairy-dot{position:absolute;background:currentColor;filter:drop-shadow(0 0 4px currentColor);clip-path:polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);opacity:0;animation:fairyTwinkle 1.4s ease-out forwards;}
-  .fairy-dot.round{clip-path:circle(50%);}
-  .fairy-sweep{position:absolute;border-radius:var(--radius);background:linear-gradient(110deg, transparent 35%, color-mix(in srgb, var(--accent) 30%, transparent) 50%, transparent 65%) no-repeat;background-size:250% 100%;animation:fairySweep 1s ease-in-out forwards;}
-  @keyframes fairySweep{from{background-position:100% 0;}to{background-position:-50% 0;}}
-  @keyframes fairyTwinkle{0%{opacity:0;transform:scale(0) rotate(0);}30%{opacity:1;transform:scale(1.2) rotate(45deg);}60%{opacity:.9;transform:translateY(-10px) scale(.9) rotate(90deg);}100%{opacity:0;transform:translateY(-30px) scale(.2) rotate(180deg);}}
+  .fairy-dust{position:fixed;inset:0;z-index:1500;pointer-events:none;}
   @media (prefers-reduced-motion: reduce){.fairy-dust{display:none;}}
   @keyframes confetti-fall{0%{transform:translateY(0) rotate(0deg);opacity:1;}100%{transform:translateY(240px) rotate(360deg);opacity:0;}}
   .session-complete .emoji{font-size:52px;display:inline-block;animation:bounce-in .6s cubic-bezier(.34,1.56,.64,1);}
@@ -8227,42 +8222,79 @@ async function createLesson() {
 }
 
 function fairyDust(area) {
-  const box = area && area.getBoundingClientRect();
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const content = area && (area.querySelector("#cardTable, #vocabStage, #singleCardView") || area);
+  const box = content && content.getBoundingClientRect();
   if (!box || !box.width) return;
-  const top = Math.max(0, box.top), bottom = Math.min(window.innerHeight, box.bottom);
+  const top = Math.max(0, box.top), bottom = Math.min(window.innerHeight, box.bottom || window.innerHeight);
   if (bottom - top < 20) return;
-  const layer = document.createElement("div");
-  layer.className = "fairy-dust";
-  const content = area.querySelector("#cardTable, #vocabStage, #singleCardView");
-  const sweep = content && content.getBoundingClientRect();
-  if (sweep && sweep.height > 1) {
-    const band = document.createElement("div");
-    band.className = "fairy-sweep";
-    Object.assign(band.style, {
-      left: Math.round(sweep.left) + "px",
-      top: Math.round(sweep.top) + "px",
-      width: Math.round(sweep.width) + "px",
-      height: Math.round(Math.min(sweep.height, window.innerHeight)) + "px"
-    });
-    layer.appendChild(band);
-  }
-  const colors = [ "var(--accent)", "#f5c84c", "#f59fd0", "#8fd3ff", "#b18cff" ];
-  for (let i = 0; i < 70; i++) {
-    const dot = document.createElement("span");
-    const size = [ 8, 10, 12, 14, 16, 20 ][Math.floor(Math.random() * 6)];
-    dot.className = "fairy-dot" + (Math.random() < .3 ? " round" : "");
-    Object.assign(dot.style, {
-      left: Math.round(box.left + Math.random() * (box.width - size)) + "px",
-      top: Math.round(top + Math.random() * (bottom - top - size)) + "px",
-      width: size + "px",
-      height: size + "px",
-      color: colors[i % colors.length],
-      animationDelay: Math.round(Math.random() * 600) + "ms"
-    });
-    layer.appendChild(dot);
-  }
-  document.body.appendChild(layer);
-  setTimeout(() => layer.remove(), 2100);
+  const dpr = window.devicePixelRatio || 1;
+  const canvas = document.createElement("canvas");
+  canvas.className = "fairy-dust";
+  canvas.width = Math.round(window.innerWidth * dpr);
+  canvas.height = Math.round(window.innerHeight * dpr);
+  canvas.style.width = window.innerWidth + "px";
+  canvas.style.height = window.innerHeight + "px";
+  document.body.appendChild(canvas);
+  const ctx = canvas.getContext("2d");
+  ctx.scale(dpr, dpr);
+  const hues = [ [ 245, 185, 40 ], [ 250, 205, 90 ], [ 240, 115, 190 ], [ 160, 120, 250 ], [ 80, 175, 240 ] ];
+  const sparks = [];
+  const travel = 1100, life = 2000, start = performance.now();
+  const mid = (top + bottom) / 2, swing = Math.min(80, (bottom - top) / 3);
+  const step = now => {
+    const t = now - start;
+    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+    if (t < travel) {
+      const k = t / travel;
+      const x = box.left + box.width * (k * 1.1 - .05);
+      const y = mid - swing * Math.sin(k * Math.PI * 2.2);
+      for (let n = 0; n < 7; n++) sparks.push({
+        x: x + (Math.random() - .5) * 18,
+        y: y + (Math.random() - .5) * 18,
+        vx: (Math.random() - .5) * .5,
+        vy: Math.random() * .4 - .2,
+        r: .6 + Math.random() * 2.2,
+        born: now,
+        span: 700 + Math.random() * 900,
+        c: hues[Math.floor(Math.random() * hues.length)],
+        tw: Math.random() * 6
+      });
+      const head = ctx.createRadialGradient(x, y, 0, x, y, 22);
+      head.addColorStop(0, "rgba(255,250,220,.9)");
+      head.addColorStop(1, "rgba(255,230,160,0)");
+      ctx.fillStyle = head;
+      ctx.beginPath();
+      ctx.arc(x, y, 22, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    for (let i = sparks.length - 1; i >= 0; i--) {
+      const p = sparks[i];
+      const age = (now - p.born) / p.span;
+      if (age >= 1) {
+        sparks.splice(i, 1);
+        continue;
+      }
+      p.vy += .012;
+      p.x += p.vx;
+      p.y += p.vy;
+      const alpha = (1 - age) * (.55 + .45 * Math.sin(p.tw + now / 60));
+      const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 4);
+      glow.addColorStop(0, `rgba(${p.c[0]},${p.c[1]},${p.c[2]},${alpha})`);
+      glow.addColorStop(.35, `rgba(${p.c[0]},${p.c[1]},${p.c[2]},${alpha * .5})`);
+      glow.addColorStop(1, `rgba(${p.c[0]},${p.c[1]},${p.c[2]},0)`);
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r * 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r * .6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    if (t < life || sparks.length) requestAnimationFrame(step); else canvas.remove();
+  };
+  requestAnimationFrame(step);
 }
 
 function resetLessonProgress() {
