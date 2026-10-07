@@ -858,13 +858,11 @@ window.onYouTubeIframeAPIReady = function(){
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
     min-height:72px;border-radius:10px;padding:18px 18px;
   }
-  .single-card-field.listen-lines{align-items:stretch;gap:10px;}
-  .single-card-field.listen-lines .cell{border-radius:8px;}
-  .single-card-field::before{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;}
+  .single-card-body.listen-batch:not(.edit-row){gap:30px;}
+  .listen-pair{display:flex;flex-direction:column;gap:10px;border-radius:12px;transition:box-shadow .15s ease;}
+  .listen-pair.row-playing{box-shadow:0 0 0 4px var(--accent-soft);}
   .single-card-q{background:var(--q-bg);}
-  .single-card-q::before{content:"Question";color:var(--text);}
   .single-card-a{background:var(--a-bg);}
-  .single-card-a::before{content:"Answer";color:var(--a-label);}
   .single-card-field .cell{font-size:24px;line-height:1.5;text-align:left;padding:2px 16px;border-radius:8px;}
   .single-card-q .cell.shown{color:var(--text);}
   .single-card-a .cell.shown{color:var(--a-text);}
@@ -2272,7 +2270,7 @@ function startLoop(row) {
 }
 
 function markPlayingRow() {
-  document.querySelectorAll("#tbody tr[data-id]:not(.edit-row), #singleCardBody:not(.edit-row), #singleCardBody .listen-line").forEach(el => {
+  document.querySelectorAll("#tbody tr[data-id]:not(.edit-row), #singleCardBody:not(.edit-row):not(.listen-batch), #singleCardBody .listen-pair").forEach(el => {
     const id = Number(el.dataset.id);
     el.classList.toggle("row-playing", id === loopingRowId || ttsPlaying && id === ttsOnlyId);
   });
@@ -2520,7 +2518,7 @@ function deleteRow(id) {
   const fromPanel = !!panel && panel.matches(":hover");
   const focus = groupState && groupViewStyle === "table" ? dictFocusBefore(fromPanel ? panel : null) : null;
   const deletedSlot = dictPanelsInOrder().indexOf(panel);
-  deleteRows([ id ], full ? studyParts() : [ fromPanel ? panel : document.querySelector(`#tbody tr[data-id="${id}"]`) || document.querySelector(`#singleCardBody .listen-line[data-id="${id}"], #singleCardBody[data-id="${id}"]`) ], full);
+  deleteRows([ id ], full ? studyParts() : [ fromPanel ? panel : document.querySelector(`#tbody tr[data-id="${id}"]`) || document.querySelector(`#singleCardBody .listen-pair[data-id="${id}"], #singleCardBody[data-id="${id}"]`) ], full);
   if (focus) keepDictFocus(focus, full ? 0 : deletedSlot !== -1 && deletedSlot < focus.slot ? focus.slot - 1 : focus.slot);
 }
 
@@ -2664,10 +2662,8 @@ function getCurrentSingleCardRow() {
 }
 
 function freshListenBatch(queue) {
-  if (!queue.length || hasAnswer(queue[0])) return queue.slice(0, 1);
-  const questionOnly = queue.filter(r => !hasAnswer(r));
-  const first = splitIntoGroups(questionOnly.map(r => r.id))[0] || [];
-  return questionOnly.filter(r => first.includes(r.id)).sort(byVideoTime);
+  const first = splitIntoGroups(queue.map(r => r.id))[0] || [];
+  return queue.filter(r => first.includes(r.id)).sort(byVideoTime);
 }
 
 let listenBatchKept = {
@@ -2703,8 +2699,8 @@ function pickedCardRow() {
   return batch.find(r => r.id === id) || batch[0];
 }
 
-function listenLinesHtml(batch) {
-  return '<div class="single-card-field single-card-q listen-lines">' + batch.map(r => `<div class="cell listen-line ${r.qHidden ? "hidden" : "shown"}" data-field="q" data-id="${r.id}">${qCellContent(r)}</div>`).join("") + "</div>";
+function listenPairsHtml(batch) {
+  return batch.map(r => `<div class="listen-pair" data-id="${r.id}">${singleCardFieldsHtml(r)}</div>`).join("");
 }
 
 function currentBadgeIds() {
@@ -3391,9 +3387,10 @@ function renderSingleCard(visibleRows) {
   }
   bodyEl.dataset.id = row.id;
   bodyEl.classList.remove("edit-row");
-  bodyEl.classList.toggle("row-playing", loopingRowId === row.id);
+  bodyEl.classList.toggle("row-playing", batch.length === 1 && loopingRowId === row.id);
   bodyEl.classList.toggle("ielts-card", groupViewStyle === "ielts");
-  bodyEl.innerHTML = groupViewStyle === "ielts" ? ieltsPaperHtml(row) : batch.length > 1 ? listenLinesHtml(batch) : singleCardFieldsHtml(row);
+  bodyEl.classList.toggle("listen-batch", batch.length > 1);
+  bodyEl.innerHTML = groupViewStyle === "ielts" ? ieltsPaperHtml(row) : batch.length > 1 ? listenPairsHtml(batch) : singleCardFieldsHtml(row);
   if (groupViewStyle === "ielts") {
     if (isTranslationCard(row) && !isVirtualLesson()) setTimeout(() => {
       if (groupState && groupViewStyle === "ielts" && getCurrentSingleCardRow() === row) warnTranslationCard(row);
@@ -6130,7 +6127,7 @@ function gradeCard(row, isAgain) {
   const fromPanel = !!panel && panel.matches(":hover");
   const focus = dictFocusBefore(fromPanel ? panel : null);
   const gradedSlot = dictPanelsInOrder().indexOf(panel);
-  swipe(next ? studyParts() : [ fromPanel ? panel : document.querySelector(`#tbody tr[data-id="${row.id}"], #singleCardBody .listen-line[data-id="${row.id}"]`) ], isAgain ? -1 : 1, () => {
+  swipe(next ? studyParts() : [ fromPanel ? panel : document.querySelector(`#tbody tr[data-id="${row.id}"], #singleCardBody .listen-pair[data-id="${row.id}"]`) ], isAgain ? -1 : 1, () => {
     if (ids) {
       ids.splice(ids.indexOf(row.id), 1);
       if (ids.length === 0) advanceToNextGroup(); else updateGroupUI();
@@ -6497,7 +6494,7 @@ function showNextUnderSwipe(row) {
     const body = document.getElementById("singleCardBody");
     if (next) {
       Array.from(body.children).forEach(el => el.style.display = "none");
-      body.insertAdjacentHTML("beforeend", groupViewStyle === "ielts" ? ieltsPaperHtml(next, 1) : nextBatch.length > 1 ? listenLinesHtml(nextBatch) : singleCardFieldsHtml(next));
+      body.insertAdjacentHTML("beforeend", groupViewStyle === "ielts" ? ieltsPaperHtml(next, 1) : nextBatch.length > 1 ? listenPairsHtml(nextBatch) : singleCardFieldsHtml(next));
     } else {
       hide(body);
     }
@@ -8227,78 +8224,55 @@ async function createLesson() {
   focusLessonName();
 }
 
-function fairyDust(area) {
+function fairyDust() {
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  const content = area && (area.querySelector("#cardTable, #vocabStage, #singleCardView") || area);
-  const box = content && content.getBoundingClientRect();
-  if (!box || !box.width) return;
-  const top = Math.max(0, box.top), bottom = Math.min(window.innerHeight, box.bottom || window.innerHeight);
-  if (bottom - top < 20) return;
-  const dpr = window.devicePixelRatio || 1;
+  const w = window.innerWidth, h = window.innerHeight, dpr = window.devicePixelRatio || 1;
   const canvas = document.createElement("canvas");
   canvas.className = "fairy-dust";
-  canvas.width = Math.round(window.innerWidth * dpr);
-  canvas.height = Math.round(window.innerHeight * dpr);
-  canvas.style.width = window.innerWidth + "px";
-  canvas.style.height = window.innerHeight + "px";
+  canvas.width = Math.round(w * dpr);
+  canvas.height = Math.round(h * dpr);
+  canvas.style.width = w + "px";
+  canvas.style.height = h + "px";
   document.body.appendChild(canvas);
   const ctx = canvas.getContext("2d");
   ctx.scale(dpr, dpr);
-  const hues = [ [ 245, 185, 40 ], [ 250, 205, 90 ], [ 240, 115, 190 ], [ 160, 120, 250 ], [ 80, 175, 240 ] ];
-  const sparks = [];
-  const travel = 1100, life = 2000, start = performance.now();
-  const mid = (top + bottom) / 2, swing = Math.min(80, (bottom - top) / 3);
+  const hues = [ [ 240, 185, 50 ], [ 250, 215, 120 ], [ 120, 180, 245 ], [ 150, 130, 245 ] ];
+  const specks = Array.from({
+    length: Math.round(Math.min(90, w * h / 9000))
+  }, () => ({
+    x: Math.random() * w,
+    y: Math.random() * h,
+    vx: (Math.random() - .5) * .25,
+    vy: .15 + Math.random() * .35,
+    r: .6 + Math.random() * 1.4,
+    delay: Math.random() * 700,
+    span: 900 + Math.random() * 900,
+    c: hues[Math.floor(Math.random() * hues.length)],
+    tw: Math.random() * 6
+  }));
+  const start = performance.now();
   const step = now => {
     const t = now - start;
-    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
-    if (t < travel) {
-      const k = t / travel;
-      const x = box.left + box.width * (k * 1.1 - .05);
-      const y = mid - swing * Math.sin(k * Math.PI * 2.2);
-      for (let n = 0; n < 7; n++) sparks.push({
-        x: x + (Math.random() - .5) * 18,
-        y: y + (Math.random() - .5) * 18,
-        vx: (Math.random() - .5) * .5,
-        vy: Math.random() * .4 - .2,
-        r: .6 + Math.random() * 2.2,
-        born: now,
-        span: 700 + Math.random() * 900,
-        c: hues[Math.floor(Math.random() * hues.length)],
-        tw: Math.random() * 6
-      });
-      const head = ctx.createRadialGradient(x, y, 0, x, y, 22);
-      head.addColorStop(0, "rgba(255,250,220,.9)");
-      head.addColorStop(1, "rgba(255,230,160,0)");
-      ctx.fillStyle = head;
-      ctx.beginPath();
-      ctx.arc(x, y, 22, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    for (let i = sparks.length - 1; i >= 0; i--) {
-      const p = sparks[i];
-      const age = (now - p.born) / p.span;
-      if (age >= 1) {
-        sparks.splice(i, 1);
-        continue;
-      }
-      p.vy += .012;
+    ctx.clearRect(0, 0, w, h);
+    let alive = false;
+    specks.forEach(p => {
+      const age = (t - p.delay) / p.span;
+      if (age >= 1) return;
+      alive = true;
+      if (age < 0) return;
       p.x += p.vx;
       p.y += p.vy;
-      const alpha = (1 - age) * (.55 + .45 * Math.sin(p.tw + now / 60));
+      const alpha = Math.sin(age * Math.PI) * (.6 + .4 * Math.sin(p.tw + now / 70));
       const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 4);
       glow.addColorStop(0, `rgba(${p.c[0]},${p.c[1]},${p.c[2]},${alpha})`);
-      glow.addColorStop(.35, `rgba(${p.c[0]},${p.c[1]},${p.c[2]},${alpha * .5})`);
+      glow.addColorStop(.4, `rgba(${p.c[0]},${p.c[1]},${p.c[2]},${alpha * .4})`);
       glow.addColorStop(1, `rgba(${p.c[0]},${p.c[1]},${p.c[2]},0)`);
       ctx.fillStyle = glow;
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.r * 4, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = `rgba(255,255,255,${alpha})`;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r * .6, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    if (t < life || sparks.length) requestAnimationFrame(step); else canvas.remove();
+    });
+    if (alive) requestAnimationFrame(step); else canvas.remove();
   };
   requestAnimationFrame(step);
 }
@@ -8328,7 +8302,7 @@ function resetLessonProgress() {
   updateGroupUI();
   render();
   scheduleAutoSave();
-  fairyDust(document.getElementById("viewStudy"));
+  fairyDust();
   showToast("All cards are New again — ⌘Z to undo");
 }
 
@@ -11234,7 +11208,7 @@ function resetVocabProgress() {
   scheduleAutoSave();
   renderVocab();
   renderLessonList();
-  fairyDust(document.getElementById("viewVocab"));
+  fairyDust();
 }
 
 document.getElementById("vocabSaveBtn").onclick = e => exportCurrentLesson(e);
