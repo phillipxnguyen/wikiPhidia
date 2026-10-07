@@ -1683,8 +1683,19 @@ function newSrsState() {
     reps: 0,
     lapses: 0,
     last: 0,
-    lastGrade: 0
+    lastGrade: 0,
+    resetAt: 0
   };
+}
+
+function srsStamp(st) {
+  return Math.max(st && st.last || 0, st && st.resetAt || 0);
+}
+
+function resetSrsState(at) {
+  return Object.assign(newSrsState(), {
+    resetAt: at
+  });
 }
 
 function newSrs() {
@@ -8127,9 +8138,14 @@ function resetLessonProgress() {
   commitActiveEdit();
   haltAllPlayback();
   pushUndo("Reset progress — " + name);
+  const at = Date.now();
   rows.forEach(r => {
-    r.srs = newSrs();
-    r.vocab = keepVocabAdded(r.vocab);
+    r.srs = {
+      Table: resetSrsState(at),
+      Listen: resetSrsState(at),
+      Write: resetSrsState(at)
+    };
+    r.vocab = keepVocabAdded(r.vocab, at);
     r.shuffleKeyTable = Math.random();
   });
   groupState = null;
@@ -9465,13 +9481,13 @@ function mergeLessons(a, b) {
     const srs = {};
     MODES.forEach(m => {
       const x = c.srs[m], y = o.srs[m];
-      srs[m] = y && (!x || (y.last || 0) > (x.last || 0)) ? y : x;
+      srs[m] = y && (!x || srsStamp(y) > srsStamp(x)) ? y : x;
     });
     mergeModeSrs(srs);
     const vocab = Object.assign({}, o.vocab, c.vocab);
     Object.keys(o.vocab || {}).forEach(k => {
       const x = c.vocab && c.vocab[k], y = o.vocab[k];
-      if (y && (!x || (y.last || 0) > (x.last || 0))) vocab[k] = y;
+      if (y && (!x || srsStamp(y) > srsStamp(x))) vocab[k] = y;
       const notesFrom = [ x, y ].filter(Boolean).sort((a, b) => (b.notesAt || 0) - (a.notesAt || 0))[0];
       if (notesFrom && vocab[k] !== notesFrom && (notesFrom.notesAt || 0) > (vocab[k].notesAt || 0)) vocab[k] = Object.assign({}, vocab[k], {
         notes: notesFrom.notes,
@@ -10184,12 +10200,12 @@ function stampNewVocab(card, before) {
   });
 }
 
-function keepVocabAdded(vocab) {
+function keepVocabAdded(vocab, at = Date.now()) {
   const out = {};
   Object.keys(vocab || {}).forEach(k => {
     const st = vocab[k];
-    if (!st || !st.added && !st.notes) return;
-    out[k] = newSrsState();
+    if (!st) return;
+    out[k] = resetSrsState(at);
     if (st.added) out[k].added = st.added;
     if (st.notes) Object.assign(out[k], {
       notes: st.notes,
@@ -11037,8 +11053,9 @@ function resetVocabProgress() {
   commitVocabEdit();
   stopVocabSound();
   pushUndo("Reset words — " + name);
+  const at = Date.now();
   vocabSource().forEach(c => {
-    c.vocab = keepVocabAdded(c.vocab);
+    c.vocab = keepVocabAdded(c.vocab, at);
   });
   vocabSession = null;
   scheduleAutoSave();
