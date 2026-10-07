@@ -927,7 +927,7 @@ window.onYouTubeIframeAPIReady = function(){
   .listen-pair{position:relative;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:5px;min-height:60px;padding:20px 20px 20px 90px;border-radius:10px;transition:opacity .2s ease;}
   .listen-pair:not(:has(.loop-time)){padding-left:20px;}
   .listen-pair + .listen-pair::before{content:"";position:absolute;top:0;left:90px;right:20px;border-top:1px solid var(--border);}
-  .listen-batch:has(.listen-pair.row-playing) .listen-pair:not(.row-playing){opacity:.4;}
+  .listen-batch:has(.listen-pair.row-playing) .listen-pair:not(.row-playing), html.touch .listen-batch:has(.listen-pair.row-selected) .listen-pair:not(.row-selected, .row-playing){opacity:.4;}
   .listen-batch .listen-pair .single-card-field{position:static;min-height:0;padding:0;background:none;border-radius:0;align-items:flex-start;}
   .listen-batch .listen-pair .cell{padding:0;text-align:left;}
   .listen-batch .listen-pair .single-card-q .cell > .loop-time:first-child{position:absolute;left:20px;top:50%;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;width:50px;height:50px;margin:0;padding:0;border-radius:50%;font-size:12px;font-weight:600;}
@@ -2485,6 +2485,8 @@ function deleteRows(ids, parts, next) {
   ids = ids.slice();
   const gone = rows.filter(r => ids.includes(r.id));
   if (!gone.length) return;
+  // outline what flies off now, before stopping the sound redraws the card under it
+  if (!dragGhost && !reducedMotion()) dragGhost = ghostFor(parts);
   if (activeEdit && ids.includes(activeEdit.row.id)) discardActiveEdit();
   if (ttsPlaying) cancelSpeechOnly();
   ids.forEach(id => {
@@ -2626,6 +2628,12 @@ function moveOneCardToVocab(row) {
   renderLessonList();
 }
 
+// The card's line on screen: its Listening line in a card mode (the hidden Full table keeps rows with the same ids), else its table row.
+function cardLineEl(id) {
+  if (groupState && isCardMode()) return document.querySelector(`#singleCardBody .listen-pair[data-id="${id}"]`) || document.getElementById("singleCardBody");
+  return document.querySelector(`#tbody tr[data-id="${id}"]`);
+}
+
 function deleteRow(id) {
   const full = !!groupState && (groupViewStyle === "table" ? (groupState.groups[groupState.index] || []).length <= 1 : currentCardRows().length <= 1);
   if (groupState && !full) holdPage();
@@ -2633,7 +2641,7 @@ function deleteRow(id) {
   const fromPanel = !!panel && panel.matches(":hover");
   const focus = groupState && groupViewStyle === "table" ? dictFocusBefore(fromPanel ? panel : null) : null;
   const deletedSlot = dictPanelsInOrder().indexOf(panel);
-  deleteRows([ id ], full ? studyParts() : [ fromPanel ? panel : document.querySelector(`#tbody tr[data-id="${id}"]`) || document.querySelector(`#singleCardBody .listen-pair[data-id="${id}"], #singleCardBody[data-id="${id}"]`) ], full);
+  deleteRows([ id ], full ? studyParts() : [ fromPanel ? panel : cardLineEl(id) ], full);
   if (focus) keepDictFocus(focus, full ? 0 : deletedSlot !== -1 && deletedSlot < focus.slot ? focus.slot - 1 : focus.slot);
 }
 
@@ -2648,6 +2656,7 @@ function deleteAction() {
     const batch = currentCardRows();
     const id = selectedRowId !== null ? selectedRowId : isTouch() ? null : hoveredRowId;
     const picked = batch.find(r => r.id === id);
+    selectedRowId = null;
     if (batch.length > 1 && !picked) deleteRows(batch.map(r => r.id), studyParts(), true); else if (batch.length) deleteRow((picked || batch[0]).id);
     return;
   }
@@ -2827,7 +2836,7 @@ function maskWidth(text, wide, narrow) {
 }
 
 function listenPairsHtml(batch) {
-  return batch.map(r => `<div class="listen-pair" data-id="${r.id}" style="--qw:${maskWidth(r.q, 24, 12)}px;--aw:${maskWidth(r.a, 24, 12)}px">${singleCardFieldsHtml(r)}</div>`).join("");
+  return batch.map(r => `<div class="listen-pair${r.id === selectedRowId ? " row-selected" : ""}" data-id="${r.id}" style="--qw:${maskWidth(r.q, 24, 12)}px;--aw:${maskWidth(r.a, 24, 12)}px">${singleCardFieldsHtml(r)}</div>`).join("");
 }
 
 function currentBadgeIds() {
@@ -4691,7 +4700,12 @@ function handleCardAreaClick(e) {
   }
   if (isTouch() && !(activeEdit && activeEdit.tr === container)) {
     if (isSingleCard) {
-      if (cardBody.querySelector(".cell.hidden")) revealAction(); else if (hoverTooltip && hoverTooltip.style.display === "block" && cardBody.contains(hoverTooltip.anchor)) hideTooltip(); else showRowPinyin(cardBody);
+      const pair = e.target.closest(".listen-pair");
+      if (cardBody.querySelector(".cell.hidden")) revealAction(); else if (pair && listenBatch().length > 1) {
+        selectRow(id);
+        hideTooltip();
+        if (selectedRowId === id) showRowPinyin(pair);
+      } else if (hoverTooltip && hoverTooltip.style.display === "block" && cardBody.contains(hoverTooltip.anchor)) hideTooltip(); else showRowPinyin(cardBody);
       return;
     } else if (groupState || !isVirtualLesson()) {
       selectRow(id);
@@ -4720,19 +4734,19 @@ function handleCardAreaClick(e) {
 window.addEventListener("resize", () => requestAnimationFrame(refreshTouchSelection));
 
 function refreshTouchSelection() {
-  if (isTouch() && currentView === "study" && selectedRowId !== null) showRowPinyin(document.querySelector(`#tbody tr[data-id="${selectedRowId}"]`));
+  if (isTouch() && currentView === "study" && selectedRowId !== null) showRowPinyin(cardLineEl(selectedRowId));
 }
 
 function selectRow(id) {
   selectedRowId = selectedRowId === id ? null : id;
-  document.querySelectorAll("#tbody tr[data-id]").forEach(tr => tr.classList.toggle("row-selected", Number(tr.dataset.id) === selectedRowId));
+  document.querySelectorAll("#tbody tr[data-id], #singleCardBody .listen-pair[data-id]").forEach(el => el.classList.toggle("row-selected", Number(el.dataset.id) === selectedRowId));
   updateSelBar();
 }
 
 function clearRowSelection() {
   if (selectedRowId === null) return;
   selectedRowId = null;
-  document.querySelectorAll("#tbody tr.row-selected").forEach(tr => tr.classList.remove("row-selected"));
+  document.querySelectorAll("#tbody tr.row-selected, #singleCardBody .listen-pair.row-selected").forEach(el => el.classList.remove("row-selected"));
   hideTooltip();
   updateSelBar();
 }
@@ -4741,6 +4755,12 @@ function selectionTarget() {
   if (!isTouch()) return null;
   if (currentView === "study" && groupState && isCardMode()) {
     const batch = currentCardRows();
+    const picked = batch.length > 1 && batch.find(r => r.id === selectedRowId);
+    if (picked) return {
+      row: picked,
+      rows: [ picked ],
+      card: true
+    };
     return batch.length ? {
       row: batch[0],
       rows: batch,
@@ -4844,7 +4864,7 @@ document.addEventListener("click", e => {
   if (isTouch() && tipHost && !tipHost.contains(e.target)) hideTooltip();
   if (selectedRowId === null) return;
   if (e.target.closest("#tbAgain, #tbGood, #selBar")) return;
-  const tr = e.target.closest("#tbody tr[data-id]");
+  const tr = e.target.closest("#tbody tr[data-id], #singleCardBody .listen-pair[data-id]");
   if (tr && Number(tr.dataset.id) === selectedRowId) return;
   clearRowSelection();
 }, true);
@@ -6267,7 +6287,7 @@ function gradeCard(row, isAgain) {
   const fromPanel = !!panel && panel.matches(":hover");
   const focus = dictFocusBefore(fromPanel ? panel : null);
   const gradedSlot = dictPanelsInOrder().indexOf(panel);
-  swipe(next ? studyParts() : [ fromPanel ? panel : document.querySelector(`#tbody tr[data-id="${row.id}"], #singleCardBody .listen-pair[data-id="${row.id}"]`) ], isAgain ? -1 : 1, () => {
+  swipe(next ? studyParts() : [ fromPanel ? panel : cardLineEl(row.id) ], isAgain ? -1 : 1, () => {
     if (ids) {
       ids.splice(ids.indexOf(row.id), 1);
       if (ids.length === 0) advanceToNextGroup(); else updateGroupUI();
@@ -6454,29 +6474,16 @@ function swipe(parts, dir, update, next, label = dir > 0 ? "Good" : "Again") {
     ghost.classList.remove("good", "again");
     ghost.classList.add(label === "Delete" ? "delete" : label === "Vocab" ? "to-vocab" : dir > 0 ? "good" : "again");
     ghost.textContent = label === "Delete" ? "✕" : label === "Vocab" ? "字" : gradeMark(dir < 0);
-    if (label === "Delete") {
-      fairyFly({
-        kind: "tap",
-        box: ghost.getBoundingClientRect(),
-        dissolve: ghost,
-        times: {
-          in: 450,
-          act: 400,
-          out: 450
-        }
-      });
-    } else {
-      ghost.animate([ {
-        transform: from
-      }, {
-        transform: `translate(${dir * 110}vw, ${label === "Vocab" ? -25 : 25}vh) rotate(${dir * 24}deg)`
-      } ], {
-        duration: 750,
-        easing: "ease-in-out",
-        fill: "forwards"
-      });
-      setTimeout(() => ghost.remove(), 750);
-    }
+    ghost.animate([ {
+      transform: from
+    }, {
+      transform: `translate(${dir * 110}vw, ${label === "Delete" || label === "Vocab" ? -25 : 25}vh) rotate(${dir * 24}deg)`
+    } ], {
+      duration: 750,
+      easing: "ease-in-out",
+      fill: "forwards"
+    });
+    setTimeout(() => ghost.remove(), 750);
   }
   if (next) holdPageTo(window.scrollY + window.innerHeight);
   update();
