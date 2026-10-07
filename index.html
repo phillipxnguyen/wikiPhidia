@@ -1031,7 +1031,7 @@ window.onYouTubeIframeAPIReady = function(){
     position:absolute;top:-10px;width:8px;height:8px;border-radius:2px;opacity:.9;
     animation-name:confetti-fall;animation-timing-function:ease-in;animation-fill-mode:forwards;
   }
-  .fairy-touched{animation:fairy-touched 1s ease-out;}
+  .fairy-touched{animation:fairy-touched 1.5s ease-out;}
   @keyframes fairy-touched{0%, 100%{filter:none;}30%{filter:drop-shadow(0 0 6px rgba(245,185,30,.9)) brightness(1.15);}}
   .fairy-dust{position:fixed;inset:0;z-index:1500;pointer-events:none;}
   @media (prefers-reduced-motion: reduce){.fairy-dust{display:none;}}
@@ -8317,7 +8317,7 @@ function fairyDust() {
     target.classList.remove("fairy-touched");
     void target.offsetWidth;
     target.classList.add("fairy-touched");
-    setTimeout(() => target.classList.remove("fairy-touched"), 1000);
+    setTimeout(() => target.classList.remove("fairy-touched"), 1500);
   };
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) return touch();
   const w = window.innerWidth, h = window.innerHeight, dpr = window.devicePixelRatio || 1;
@@ -8330,15 +8330,20 @@ function fairyDust() {
   document.body.appendChild(canvas);
   const ctx = canvas.getContext("2d");
   ctx.scale(dpr, dpr);
-  const box = target ? target.getBoundingClientRect() : { left: w / 2 - 60, width: 120, top: h / 3 };
+  const parts = target ? [ ...target.querySelectorAll(":scope > .progress-badge") ].map(el => el.getBoundingClientRect()) : [];
+  const box = parts.length ? {
+    left: Math.min(...parts.map(r => r.left)),
+    width: Math.max(...parts.map(r => r.right)) - Math.min(...parts.map(r => r.left)),
+    top: Math.min(...parts.map(r => r.top))
+  } : target ? target.getBoundingClientRect() : { left: w / 2 - 60, width: 120, top: h / 3 };
   const fromLeft = box.left + box.width / 2 > w / 2;
-  const y = Math.max(45, box.top - 45);
+  const y = Math.max(40, box.top - 35);
   const x0 = Math.max(10, box.left), x1 = Math.min(w - 10, box.left + box.width);
   const [ sx, ex ] = fromLeft ? [ -40, w + 40 ] : [ w + 40, -40 ];
   const [ ax, bx ] = fromLeft ? [ x0, x1 ] : [ x1, x0 ];
   const bez = (a, b, c, d, t) => (1 - t) ** 3 * a + 3 * (1 - t) ** 2 * t * b + 3 * (1 - t) * t * t * c + t ** 3 * d;
   const ease = t => t < .5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
-  const IN = 800, SWEEP = 700, OUT = 600;
+  const IN = 900, SWEEP = 1800, OUT = 700;
   const pos = t => {
     if (t < IN) {
       const k = ease(t / IN);
@@ -8346,7 +8351,7 @@ function fairyDust() {
     }
     if (t < IN + SWEEP) {
       const k = (t - IN) / SWEEP;
-      return [ ax + (bx - ax) * k, y + Math.sin(k * Math.PI * 2) * 6 ];
+      return [ ax + (bx - ax) * (k - Math.sin(k * Math.PI * 2) / (Math.PI * 2) * .6), y + Math.sin(k * Math.PI * 3) * 5 ];
     }
     const k = ease(Math.min(1, (t - IN - SWEEP) / OUT));
     return [ bez(bx, bx + (fromLeft ? 60 : -60), ex - (fromLeft ? 120 : -120), ex, k), bez(y, y - 20, y - 120, Math.max(-40, y - 220), k) ];
@@ -8366,7 +8371,7 @@ function fairyDust() {
   };
   const SCALE = 1.4;
   const facing = fromLeft ? 1 : -1;
-  const wandAngle = t => -.9 + (t >= IN && t < IN + SWEEP ? .9 : .35) * Math.sin(t / (t >= IN && t < IN + SWEEP ? 70 : 140));
+  const wandAngle = t => -.9 + (t >= IN && t < IN + SWEEP ? .7 : .35) * Math.sin(t / (t >= IN && t < IN + SWEEP ? 110 : 140));
   const wandTip = (fx, fy, t) => {
     const a = wandAngle(t), hx = 3 + 8 * Math.cos(a), hy = -5 + 8 * Math.sin(a);
     return [ fx + facing * SCALE * (hx + 13 * Math.cos(a + .5)), fy + SCALE * (hy + 13 * Math.sin(a + .5)) ];
@@ -8466,7 +8471,7 @@ function fairyDust() {
     if (flying) {
       const [ fx, fy ] = wandTip(...pos(t), t);
       const sprinkling = t >= IN && t < IN + SWEEP;
-      for (let n = sprinkling ? 4 : 1; n > 0; n--) dust.push({
+      for (let n = sprinkling ? (Math.random() < .6 ? 2 : 1) : (Math.random() < .5 ? 1 : 0); n > 0; n--) dust.push({
         x: fx + (Math.random() - .5) * 6,
         y: fy + (Math.random() - .5) * 6,
         vx: (Math.random() - .5) * .04,
@@ -8478,7 +8483,7 @@ function fairyDust() {
         c: hues[Math.floor(Math.random() * hues.length)],
         tw: Math.random() * 6
       });
-      if (sprinkling && !touched && t >= IN + 250) {
+      if (sprinkling && !touched && t >= IN + 400) {
         touched = true;
         touch();
       }
