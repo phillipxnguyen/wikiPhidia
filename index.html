@@ -719,6 +719,7 @@ window.onYouTubeIframeAPIReady = function(){
     :is(#cardTable, #vocabTable).chat .a-col .cell.shown:hover, :is(#cardTable, #vocabTable).chat .a-col .cell.hidden:hover{background:var(--imsg-out);color:#fff;}
     :is(#cardTable, #vocabTable).chat .cell.hidden:hover{color:var(--imsg-in-text);}
   }
+  :is(#cardTable, #vocabTable).chat .dots{display:inline-block;width:40px;height:10px;font-size:0;vertical-align:middle;--dot:radial-gradient(circle closest-side, currentColor 90%, transparent);background:var(--dot) 0 0 / 10px 10px no-repeat, var(--dot) 15px 0 / 10px 10px no-repeat, var(--dot) 30px 0 / 10px 10px no-repeat;opacity:.5;}
   :is(#cardTable, #vocabTable).chat .a-col .loop-time{background:rgba(255,255,255,.25);color:#fff;}
   @media (max-width:600px){
     .shell :is(#cardTable, #vocabTable).chat{padding:10px;}
@@ -3055,7 +3056,7 @@ function renderImportInfo() {
 }
 
 function aCellContent(r) {
-  return r.aHidden ? "···" : r.aHtml || textHtml(r.a);
+  return r.aHidden ? '<span class="dots">···</span>' : r.aHtml || textHtml(r.a);
 }
 
 function buildRowTr(r) {
@@ -3542,7 +3543,7 @@ function toggleRowPlay(row) {
 }
 
 function qCellContent(r) {
-  return rowPlayBadge(r) + (r.qHidden ? "···" : r.qHtml || textHtml(r.q));
+  return rowPlayBadge(r) + (r.qHidden ? '<span class="dots">···</span>' : r.qHtml || textHtml(r.q));
 }
 
 function escapeHtml(s) {
@@ -10847,7 +10848,7 @@ function vocabTableHtml(group) {
     const hidden = field === hide && !vocabSession.shown;
     const video = !!vocabVideoIdFor(item.card);
     const play = field === "q" ? `<span class="loop-time vocab-play" data-key="${escapeAttr(item.key)}"${video ? " data-video" : ""}>${vocabPlayFace(video, false)}</span>` : "";
-    return `<div class="cell ${hidden ? "hidden" : "shown"}" data-field="${field}">${play}${hidden ? "···" : escapeHtml(field === "q" ? item.term : item.meaning)}</div>`;
+    return `<div class="cell ${hidden ? "hidden" : "shown"}" data-field="${field}">${play}${hidden ? '<span class="dots">···</span>' : escapeHtml(field === "q" ? item.term : item.meaning)}</div>`;
   };
   const head = field => `<th${field === "a" ? ' class="a-col"' : ""}>${field === "q" ? "Question" : "Answer"}</th>`;
   return '<table id="vocabTable" class="chat"><colgroup><col><col></colgroup><thead><tr>' + head("q") + head("a") + "</tr></thead><tbody>" + group.map(item => item.key === vocabEditingKey && !vocabEditingInList ? `<tr class="edit-row"><td colspan="2">${vocabEditorHtml(item)}</td></tr>` : `<tr data-key="${escapeAttr(item.key)}"${item.key === vocabSelectedKey ? ' class="row-selected"' : ""}><td>${cell(item, "q")}</td><td class="a-col">${cell(item, "a")}</td></tr>`).join("") + "</tbody></table>";
