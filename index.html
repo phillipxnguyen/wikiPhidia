@@ -2715,6 +2715,14 @@ function progressBadgesHtml(mode, currentIds) {
 }
 
 function badgesHtml(newN, dueN, doneN, active) {
+  if (countsShown && countsShown.id === currentLessonId && countsShown.mode === appMode) {
+    [ newN, dueN, doneN ] = [ countsShown.n.new, countsShown.n.due, countsShown.n.done ];
+    active = {
+      new: newN > 0,
+      due: dueN > 0,
+      done: doneN > 0
+    };
+  }
   return '<div class="progress-badges">' + '<span class="progress-badge new' + (active.new ? " active" : "") + '">🆕 ' + newN + "</span>" + '<span class="progress-badge due' + (active.due ? " active" : "") + '">⏳ ' + dueN + "</span>" + '<span class="progress-badge done' + (active.done ? " active" : "") + '">✅ ' + doneN + "</span>" + "</div>";
 }
 
@@ -8329,26 +8337,52 @@ function fairyTarget() {
   return [ ...document.querySelectorAll(".main-inner .progress-badges") ].find(onScreen) || [ document.querySelector(".lesson-item.active:not(.all-vocab) .lesson-item-meta"), document.getElementById(appMode === "vocab" ? "vocabStage" : "cardTable") ].find(onScreen) || null;
 }
 
-function holdCounts(before) {
-  if (!before) return () => {};
-  const kinds = [ "new", "due", "done" ];
-  const els = [ ...document.querySelectorAll(".main-inner .progress-badges > .progress-badge, .lesson-item.active:not(.all-vocab) .lesson-item-meta > :is(.new, .due, .done)") ];
-  const saved = els.map(el => [ el, el.innerHTML, el.className ]);
-  els.forEach(el => {
-    const kind = kinds.find(k => el.classList.contains(k));
-    el.textContent = el.textContent.replace(/\d+/, before[kind]);
-    if (el.classList.contains("progress-badge")) el.classList.toggle("active", before[kind] > 0);
-  });
-  return () => saved.forEach(([ el, html, cls ]) => {
-    if (!el.isConnected) return;
-    el.innerHTML = html;
-    el.className = cls;
+let countsShown = null;
+
+const COUNT_KINDS = [ "new", "due", "done" ];
+
+function countEls() {
+  return [ ...document.querySelectorAll(".main-inner .progress-badges > .progress-badge, .lesson-item.active:not(.all-vocab) .lesson-item-meta > :is(.new, .due, .done)") ];
+}
+
+function paintCounts(n) {
+  countEls().forEach(el => {
+    const kind = COUNT_KINDS.find(k => el.classList.contains(k));
+    el.textContent = el.textContent.replace(/\d+/, n[kind]);
+    if (el.classList.contains("progress-badge")) el.classList.toggle("active", n[kind] > 0);
   });
 }
 
-function fairyDust(before) {
+function holdCounts(before, after) {
+  if (!before || !after) return () => {};
+  countsShown = {
+    id: currentLessonId,
+    mode: appMode,
+    n: Object.assign({}, before)
+  };
+  paintCounts(before);
+  return () => {
+    const start = performance.now(), span = matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 1100;
+    const tick = now => {
+      const k = span ? Math.min(1, (now - start) / span) : 1, e = 1 - (1 - k) ** 3;
+      if (!countsShown) return;
+      COUNT_KINDS.forEach(c => countsShown.n[c] = Math.round(before[c] + (after[c] - before[c]) * e));
+      if (k < 1) {
+        paintCounts(countsShown.n);
+        requestAnimationFrame(tick);
+      } else {
+        countsShown = null;
+        paintCounts(after);
+        if (appMode === "vocab") renderVocab(); else if (!groupState) renderStudy();
+      }
+    };
+    requestAnimationFrame(tick);
+  };
+}
+
+function fairyDust(before, after) {
   const target = fairyTarget();
-  const release = holdCounts(before);
+  const release = holdCounts(before, after);
   const touch = () => {
     release();
     if (!target) return;
@@ -8577,7 +8611,11 @@ function resetLessonProgress() {
   updateGroupUI();
   render();
   scheduleAutoSave();
-  fairyDust(before);
+  fairyDust(before, {
+    new: newCardCount("Table"),
+    due: dueCardCount("Table"),
+    done: doneCardCount("Table")
+  });
   showToast("All cards are New again — ⌘Z to undo");
 }
 
@@ -8942,7 +8980,13 @@ function lessonTileBar(c) {
 }
 
 function lessonItemMeta(lesson) {
-  const c = lessonCountsFor(lesson);
+  const real = lessonCountsFor(lesson);
+  const held = countsShown && countsShown.id === lesson.id && countsShown.mode === appMode ? countsShown.n : null;
+  const c = held ? Object.assign({}, real, {
+    fresh: held.new,
+    due: held.due,
+    done: held.done
+  }) : real;
   return `<span>${c.total}</span><span class="sep">|</span>` + `<span class="new">🆕 ${c.fresh}</span>` + `<span class="due">⏳ ${c.due}</span>` + `<span class="done">✅ ${c.done}</span>`;
 }
 
@@ -11484,10 +11528,15 @@ function resetVocabProgress() {
   scheduleAutoSave();
   renderVocab();
   renderLessonList();
+  const now = vocabCounts(lessonVocabItems(vocabSource()));
   fairyDust({
     new: was.fresh,
     due: was.due,
     done: was.done
+  }, {
+    new: now.fresh,
+    due: now.due,
+    done: now.done
   });
 }
 
