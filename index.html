@@ -481,7 +481,11 @@ window.onYouTubeIframeAPIReady = function(){
     .shell .single-card-body{padding:24px 16px;}
     .shell .single-card-field{padding:14px 10px;}
     .shell .single-card-field .cell{font-size:20px;padding:2px 6px;}
-    .shell .listen-batch .listen-pair .cell{padding:0 5px;}
+    .shell .single-card-body.listen-batch{padding:5px;}
+    .shell .listen-batch .listen-pair{padding:15px 10px 15px 70px;}
+    .shell .listen-batch .listen-pair + .listen-pair::before{left:70px;right:10px;}
+    .shell .listen-batch .listen-pair .cell{padding:0;}
+    .shell .listen-batch .listen-pair .single-card-q .cell > .loop-time:first-child{left:10px;width:50px;height:50px;}
     .shell .listen-batch .listen-pair .single-card-a .cell{font-size:15px;}
   }
   html.touch input[type=text], html.touch input[type=search], html.touch input[type=email], html.touch input[type=password], html.touch textarea, html.touch select{font-size:16px;}
@@ -860,14 +864,26 @@ window.onYouTubeIframeAPIReady = function(){
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
     min-height:72px;border-radius:10px;padding:18px 18px;
   }
-  .single-card-body.listen-batch:not(.edit-row){gap:20px;}
-  .listen-pair{display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px;border-radius:12px;transition:box-shadow .15s ease;}
-  .listen-pair.row-playing{box-shadow:0 0 0 4px var(--accent-soft);}
-  .listen-batch .listen-pair .single-card-field{min-height:0;padding:0;background:none;border-radius:0;}
-  .listen-batch .listen-pair .cell{padding:0 10px;text-align:center;}
+  .single-card-body.listen-batch{padding:10px;}
+  .single-card-body.listen-batch:not(.edit-row){gap:0;}
+  .listen-pair{position:relative;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:5px;min-height:60px;padding:20px 20px 20px 90px;border-radius:10px;transition:background .15s ease, box-shadow .15s ease;}
+  .listen-pair:not(:has(.loop-time)){padding-left:20px;}
+  .listen-pair + .listen-pair::before{content:"";position:absolute;top:0;left:90px;right:20px;border-top:1px solid var(--border);}
+  .listen-pair.row-playing{background:var(--accent-soft);box-shadow:0 0 0 4px var(--accent-soft);}
+  .listen-pair.row-playing::before, .listen-pair.row-playing + .listen-pair::before{display:none;}
+  .listen-batch .listen-pair .single-card-field{position:static;min-height:0;padding:0;background:none;border-radius:0;align-items:flex-start;}
+  .listen-batch .listen-pair .cell{padding:0;text-align:left;}
   .listen-batch .listen-pair .single-card-q .cell.shown{font-weight:600;}
   .listen-batch .listen-pair .single-card-a .cell{font-size:20px;}
-  .listen-batch .listen-pair .single-card-q .cell > .loop-time:first-child{display:block;width:fit-content;margin:0 auto 5px;font-weight:400;}
+  .listen-batch .listen-pair .single-card-q .cell > .loop-time:first-child{position:absolute;left:20px;top:50%;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;width:50px;height:50px;margin:0;padding:0;border-radius:50%;font-size:12px;font-weight:600;}
+  .listen-batch .listen-pair .loop-time.looping{animation:listen-pulse 1.2s ease-out infinite;}
+  @keyframes listen-pulse{from{box-shadow:0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent);}to{box-shadow:0 0 0 10px color-mix(in srgb, var(--accent) 0%, transparent);}}
+  .listen-batch .listen-pair .cell.hidden{font-size:0;line-height:0;}
+  .listen-batch .listen-pair .cell.hidden::after{content:"";display:block;max-width:100%;border-radius:10px;background:linear-gradient(90deg, var(--surface-3) 0%, var(--surface-2) 50%, var(--surface-3) 100%) 0 0 / 200% 100%;animation:listen-shimmer 1.6s linear infinite;}
+  .listen-batch .listen-pair .single-card-q .cell.hidden::after{width:max(60px, var(--qw));height:20px;margin:5px 0;}
+  .listen-batch .listen-pair .single-card-a .cell.hidden::after{width:max(40px, var(--aw));height:15px;margin:5px 0;opacity:.7;}
+  @keyframes listen-shimmer{to{background-position:-200% 0;}}
+  @media (prefers-reduced-motion: reduce){.listen-batch .listen-pair .loop-time.looping, .listen-batch .listen-pair .cell.hidden::after{animation:none;}}
   .single-card-q{background:var(--q-bg);}
   .single-card-a{background:var(--a-bg);}
   .single-card-field .cell{font-size:24px;line-height:1.5;text-align:left;padding:2px 16px;border-radius:8px;}
@@ -2706,8 +2722,12 @@ function pickedCardRow() {
   return batch.find(r => r.id === id) || batch[0];
 }
 
+function maskWidth(text, wide, narrow) {
+  return Math.round(Array.from((text || "").trim()).reduce((w, ch) => w + (/[⺀-鿿가-힯＀-￯]/.test(ch) ? wide : narrow), 0) / 5) * 5;
+}
+
 function listenPairsHtml(batch) {
-  return batch.map(r => `<div class="listen-pair" data-id="${r.id}">${singleCardFieldsHtml(r)}</div>`).join("");
+  return batch.map(r => `<div class="listen-pair" data-id="${r.id}" style="--qw:${maskWidth(r.q, 24, 12)}px;--aw:${maskWidth(r.a, 20, 10)}px">${singleCardFieldsHtml(r)}</div>`).join("");
 }
 
 function currentBadgeIds() {
