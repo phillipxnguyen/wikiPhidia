@@ -8381,7 +8381,8 @@ let countsShown = null;
 const COUNT_KINDS = [ "new", "due", "done" ];
 
 function countEls() {
-  return [ ...document.querySelectorAll(".main-inner .progress-badges > .progress-badge, .lesson-item.active:not(.all-vocab) .lesson-item-meta > :is(.new, .due, .done)") ];
+  const list = ".lesson-item.active:not(.all-vocab) .lesson-item-meta > :is(.new, .due, .done)";
+  return [ ...document.querySelectorAll(groupState && appMode !== "vocab" ? list : ".main-inner .progress-badges > .progress-badge, " + list) ];
 }
 
 function paintCounts(n) {
@@ -8394,7 +8395,7 @@ function paintCounts(n) {
 
 function holdCounts(before, after) {
   if (!before || !after) return () => {};
-  countsShown = {
+  const mine = countsShown = {
     id: currentLessonId,
     mode: appMode,
     n: Object.assign({}, before)
@@ -8404,15 +8405,15 @@ function holdCounts(before, after) {
     const start = performance.now(), span = matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 1100;
     const tick = now => {
       const k = span ? Math.min(1, (now - start) / span) : 1, e = 1 - (1 - k) ** 3;
-      if (!countsShown) return;
-      COUNT_KINDS.forEach(c => countsShown.n[c] = Math.round(before[c] + (after[c] - before[c]) * e));
+      if (countsShown !== mine) return;
+      COUNT_KINDS.forEach(c => mine.n[c] = Math.round(before[c] + (after[c] - before[c]) * e));
       if (k < 1) {
-        paintCounts(countsShown.n);
+        paintCounts(mine.n);
         requestAnimationFrame(tick);
       } else {
         countsShown = null;
         paintCounts(after);
-        if (appMode === "vocab") renderVocab(); else if (!groupState) renderStudy();
+        if (appMode === "vocab") renderVocab(); else if (groupState) refreshBadges(); else renderStudy();
       }
     };
     requestAnimationFrame(tick);
