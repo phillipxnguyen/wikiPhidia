@@ -5605,19 +5605,21 @@ function wireEditBox(host, row) {
   };
 }
 
+const GROUP_SIZE = 3;
+
 function splitIntoGroups(ids) {
   const groups = [];
   const n = ids.length;
   if (n === 0) return groups;
-  const numGroups = Math.ceil(n / 5);
+  const numGroups = Math.ceil(n / GROUP_SIZE);
   if (numGroups <= 1) {
     groups.push(ids.slice());
     return groups;
   }
   let idx = 0;
   for (let g = 0; g < numGroups - 2; g++) {
-    groups.push(ids.slice(idx, idx + 5));
-    idx += 5;
+    groups.push(ids.slice(idx, idx + GROUP_SIZE));
+    idx += GROUP_SIZE;
   }
   const remaining = n - idx;
   const size1 = Math.ceil(remaining / 2);
@@ -6593,7 +6595,7 @@ function startTts(field, onlyId = null) {
 }
 
 function letteredList(texts) {
-  return texts.length === 1 ? texts[0] : texts.map((t, i) => "ABCDE"[i % 5] + ". " + t).join("\n");
+  return texts.length === 1 ? texts[0] : texts.map((t, i) => "ABC"[i % 3] + ". " + t).join("\n");
 }
 
 function oneLine(text) {
@@ -11767,7 +11769,7 @@ function handleVocabKey(e) {
   if (vocabView === "group") {
     const pickedKey = vocabPickedKey();
     const target = pickedKey && currentVocabGroup().some(i => i.key === pickedKey) ? pickedKey : null;
-    const row = /^Digit[1-5]$/.test(e.code) ? currentVocabGroup()[Number(e.code.slice(-1)) - 1] : null;
+    const row = /^Digit[1-3]$/.test(e.code) ? currentVocabGroup()[Number(e.code.slice(-1)) - 1] : null;
     if (row) toggleVocabRowSound(row.key); else if (e.code === "Space") toggleVocabGroupReveal(); else if (e.code === "KeyC") copyQuestions(currentVocabGroup().map(i => i.term)); else if (e.code === "KeyE" && target) openVocabEditor(target); else if (e.key === "Enter" && !vocabSession.shown) toggleVocabGroupReveal(); else if (gradeKey(e)) gradeVocabGroup(gradeKey(e) === "again", target); else return;
     e.preventDefault();
     if (document.activeElement && document.activeElement.tagName === "BUTTON") document.activeElement.blur();
@@ -12451,7 +12453,7 @@ document.addEventListener("keydown", e => {
     if (!e.repeat) revealAction();
     return;
   }
-  if ([ "Digit1", "Digit2", "Digit3", "Digit4", "Digit5" ].includes(e.code)) {
+  if ([ "Digit1", "Digit2", "Digit3" ].includes(e.code)) {
     if (e.repeat) return;
     if (!groupState || groupViewStyle !== "table") return;
     e.preventDefault();
