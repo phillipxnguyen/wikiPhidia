@@ -5539,10 +5539,15 @@ function scheduleFollow() {
 function keepPopupInBand(popup) {
   const band = visibleBand();
   const r = popup.getBoundingClientRect();
-  if (r.bottom > band.bottom) popup.style.top = Math.round(Math.max(band.top, band.bottom - r.height)) + "px";
+  if (r.bottom > band.bottom || r.top < band.top) popup.style.top = Math.round(Math.max(band.top + 8, Math.min(r.top, band.bottom - r.height - 8))) + "px";
 }
 
-if (window.visualViewport) window.visualViewport.addEventListener("resize", scheduleFollow);
+if (window.visualViewport) {
+  window.visualViewport.addEventListener("resize", scheduleFollow);
+  window.visualViewport.addEventListener("scroll", () => {
+    if (vocabAddPopup && Date.now() - vocabAddPopupOpenedAt < 1000) keepPopupInBand(vocabAddPopup);
+  });
+}
 
 document.addEventListener("focusin", e => {
   if (followedBox && e.target.closest && e.target.closest(".edit-row, .vocab-editor")) scheduleFollow();
@@ -12469,9 +12474,13 @@ document.addEventListener("pointerdown", e => {
 
 window.addEventListener("scroll", () => {
   if (!vocabAddPopup) return;
+  if (Date.now() - vocabAddPopupOpenedAt < 1000) {
+    if (Math.abs(window.scrollY - vocabAddPopupScrollY) >= 1) window.scrollTo(0, vocabAddPopupScrollY);
+    keepPopupInBand(vocabAddPopup);
+    return;
+  }
   vocabAddPopup.style.top = Math.round(parseFloat(vocabAddPopup.style.top) - (window.scrollY - vocabAddPopupScrollY)) + "px";
   vocabAddPopupScrollY = window.scrollY;
-  if (Date.now() - vocabAddPopupOpenedAt < 1000) return;
   const band = visibleBand();
   const r = vocabAddPopup.getBoundingClientRect();
   if (r.bottom < band.top || r.top > band.bottom) hideVocabAddPopup();
