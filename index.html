@@ -495,8 +495,8 @@ window.onYouTubeIframeAPIReady = function(){
     .shell .single-card-field .cell{font-size:20px;line-height:30px;padding:2px 6px;}
     .shell .stroke-order-panel > .dict-notes, .shell .vocab-back .vocab-word-notes{font-size:18px;line-height:28px;}
     .shell .single-card-body.listen-batch{padding:5px;}
-    .shell .listen-batch .listen-pair{padding:15px 10px 15px calc(var(--tw, 50px) + 20px);}
-    .shell .listen-batch .listen-pair + .listen-pair::before{left:calc(var(--tw, 50px) + 20px);right:10px;}
+    .shell .listen-batch .listen-pair{padding:15px 10px 15px calc(var(--tx, 60px) + 20px);}
+    .shell .listen-batch .listen-pair + .listen-pair::before{left:calc(var(--tx, 60px) + 20px);right:10px;}
     .shell .listen-batch .listen-pair .cell{padding:0;}
     .shell .listen-batch .listen-pair .single-card-q .cell > .loop-time:first-child{left:10px;}
   }
@@ -922,13 +922,13 @@ window.onYouTubeIframeAPIReady = function(){
   }
   .single-card-body.listen-batch{padding:10px;}
   .single-card-body.listen-batch:not(.edit-row){gap:0;}
-  .listen-pair{position:relative;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:5px;min-height:60px;padding:20px 20px 20px calc(var(--tw, 50px) + 40px);border-radius:10px;transition:opacity .2s ease;}
+  .listen-pair{position:relative;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:5px;min-height:60px;padding:20px 20px 20px calc(var(--tx, 60px) + 40px);border-radius:10px;transition:opacity .2s ease;}
   .listen-pair:not(:has(.loop-time)){padding-left:20px;}
-  .listen-pair + .listen-pair::before{content:"";position:absolute;top:0;left:calc(var(--tw, 50px) + 40px);right:20px;border-top:1px solid var(--border);}
+  .listen-pair + .listen-pair::before{content:"";position:absolute;top:0;left:calc(var(--tx, 60px) + 40px);right:20px;border-top:1px solid var(--border);}
   html.touch .listen-batch:has(.listen-pair.row-selected) .listen-pair:not(.row-selected){opacity:.4;}
   .listen-batch .listen-pair .single-card-field{position:static;min-height:0;padding:0;background:none;border-radius:0;align-items:flex-start;}
   .listen-batch .listen-pair .cell{padding:0;text-align:left;}
-  .listen-batch .listen-pair .single-card-q .cell > .loop-time:first-child{position:absolute;left:20px;top:50%;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;width:var(--tw, 50px);height:50px;margin:0;padding:0;border-radius:25px;font-size:12px;font-weight:600;}
+  .listen-batch .listen-pair .single-card-q .cell > .loop-time:first-child{position:absolute;left:20px;top:50%;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;width:var(--tw, 60px);height:60px;margin:0;padding:0;border-radius:30px;font-size:12px;font-weight:600;}
   .listen-batch .listen-pair .loop-time.looping{animation:listen-pulse 1.2s ease-out infinite;}
   @keyframes listen-pulse{from{box-shadow:0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent);}to{box-shadow:0 0 0 10px color-mix(in srgb, var(--accent) 0%, transparent);}}
   .listen-batch .listen-pair .cell.hidden{font-size:0;line-height:0;}
@@ -2833,9 +2833,10 @@ function maskWidth(text, wide, narrow) {
 }
 
 function listenPairsHtml(batch) {
-  // one width for the batch's time buttons, wide enough for the longest time, so the lines start together
-  const tw = Math.max(50, ...batch.map(r => r.time == null ? 0 : Math.round((formatTime(r.time).length * 8 + 20) / 5) * 5));
-  return batch.map(r => `<div class="listen-pair${r.id === selectedRowId ? " row-selected" : ""}" data-id="${r.id}" style="--tw:${tw}px;--qw:${maskWidth(r.q, 24, 12)}px;--aw:${maskWidth(r.a, 24, 12)}px">${singleCardFieldsHtml(r)}</div>`).join("");
+  // a round time button, widened into a pill only for a long time; the lines start after the widest one
+  const width = r => r.time == null || formatTime(r.time).length <= 5 ? 60 : Math.round((formatTime(r.time).length * 8 + 20) / 5) * 5;
+  const tx = Math.max(...batch.map(width));
+  return batch.map(r => `<div class="listen-pair${r.id === selectedRowId ? " row-selected" : ""}" data-id="${r.id}" style="--tw:${width(r)}px;--tx:${tx}px;--qw:${maskWidth(r.q, 24, 12)}px;--aw:${maskWidth(r.a, 24, 12)}px">${singleCardFieldsHtml(r)}</div>`).join("");
 }
 
 function currentBadgeIds() {
