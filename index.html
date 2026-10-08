@@ -2632,10 +2632,9 @@ function deleteRow(id) {
   if (groupState && !full) holdPage();
   const panel = groupState && groupViewStyle === "table" ? rowDictPanel(id) : null;
   const fromPanel = !!panel && panel.matches(":hover");
-  const focus = groupState && groupViewStyle === "table" ? dictFocusBefore(fromPanel ? panel : null) : null;
-  const deletedSlot = dictPanelsInOrder().indexOf(panel);
+  const focus = full && groupState && groupViewStyle === "table" ? dictFocusBefore(null) : null;
   deleteRows([ id ], full ? studyParts() : [ fromPanel ? panel : cardLineEl(id) ], full);
-  if (focus) keepDictFocus(focus, full ? 0 : deletedSlot !== -1 && deletedSlot < focus.slot ? focus.slot - 1 : focus.slot);
+  if (focus) keepDictFocus(focus, 0);
 }
 
 function deleteAction() {
@@ -6275,8 +6274,7 @@ function gradeCard(row, isAgain) {
   if (!next) holdPage();
   const panel = rowDictPanel(row.id);
   const fromPanel = !!panel && panel.matches(":hover");
-  const focus = dictFocusBefore(fromPanel ? panel : null);
-  const gradedSlot = dictPanelsInOrder().indexOf(panel);
+  const focus = next ? dictFocusBefore(null) : null;
   swipe(next ? studyParts() : [ fromPanel ? panel : cardLineEl(row.id) ], isAgain ? -1 : 1, () => {
     if (ids) {
       ids.splice(ids.indexOf(row.id), 1);
@@ -6284,7 +6282,7 @@ function gradeCard(row, isAgain) {
     }
     render();
   }, next);
-  if (focus) keepDictFocus(focus, next ? 0 : gradedSlot !== -1 && gradedSlot < focus.slot ? focus.slot - 1 : focus.slot);
+  if (focus) keepDictFocus(focus, 0);
 }
 
 function dictPanelsInOrder() {
@@ -6476,8 +6474,27 @@ function swipe(parts, dir, update, next, label = dir > 0 ? "Good" : "Again") {
     setTimeout(() => ghost.remove(), 750);
   }
   if (next) holdPageTo(window.scrollY + window.innerHeight);
+  const settle = next ? null : keepViewAnchor();
   update();
+  if (settle) settle();
   if (next) showFromTop(studyAreaTop());
+}
+
+// Notes where the lines and panels on screen sit, so that when a card above them goes they can be put back
+// where they were (Safari keeps no scroll anchor of its own); returns the function that puts them back.
+function keepViewAnchor() {
+  const keyOf = el => (el.tagName === "TR" ? "r" : el.classList.contains("listen-pair") ? "l" : "p") + (el.dataset.id || el.dataset.rowId);
+  const seen = [ ...document.querySelectorAll("#tbody tr[data-id], #singleCardBody .listen-pair[data-id], #dictPanels > .stroke-order-panel:not(.dict-pending)") ].map(el => [ keyOf(el), el.getBoundingClientRect() ]).filter(([, r]) => r.height && r.bottom > 0).sort((a, b) => a[1].top - b[1].top);
+  return () => {
+    const now = new Map([ ...document.querySelectorAll("#tbody tr[data-id], #singleCardBody .listen-pair[data-id], #dictPanels > .stroke-order-panel:not(.dict-pending)") ].map(el => [ keyOf(el), el ]));
+    for (const [ key, was ] of seen) {
+      const el = now.get(key);
+      if (!el || !el.getBoundingClientRect().height) continue;
+      const moved = Math.round(el.getBoundingClientRect().top - was.top);
+      if (moved) window.scrollBy(0, moved);
+      return;
+    }
+  };
 }
 
 let drag = null;
