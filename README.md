@@ -131,7 +131,7 @@ Words are found by the kind of writing at their edges, with no language setting 
 
 ## Progress and sync
 
-- **Stats** shows your daily streak, a review heatmap, progress per lesson, and your hardest cards. **🎯 Practise all** studies the hard cards from every lesson together (only the ones that are due).
+- **Stats** shows your daily streak, a review heatmap and progress per lesson.
 - Everything is stored in the browser; no account is needed.
 - Sign in with Google or email to sync lessons and reviews across devices through Firebase.
 - Light and dark themes.

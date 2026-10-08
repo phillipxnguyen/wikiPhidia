@@ -1297,12 +1297,6 @@ window.onYouTubeIframeAPIReady = function(){
   <div class="panel">
     <div id="statLessons"></div>
   </div>
-  <div class="panel">
-    <div class="panel-head end">
-      <button id="btnPractiseAll" class="primary" hidden>🎯 Practise all</button>
-    </div>
-    <div id="statHardest"></div>
-  </div>
 </section>
 
 <section id="viewVocab" hidden>
@@ -2191,7 +2185,6 @@ whenYtApiReady(ensurePlayer);
 function onPlayerStateChange(event) {
   if (event.data === YT.PlayerState.CUED) {
     vocabCueDone();
-    rowCueDone();
   }
   if (event.data === YT.PlayerState.PLAYING) {
     if (speechSynthesis.speaking || speechSynthesis.pending || ttsPlaying) {
@@ -2300,36 +2293,8 @@ function toggleLoopForRow(row) {
   startLoop(row);
 }
 
-let rowCueWait = null;
-
-let rowCueTimer = null;
-
-function rowCueDone() {
-  const then = rowCueWait;
-  rowCueWait = null;
-  clearTimeout(rowCueTimer);
-  if (then) then();
-}
-
-function switchRowVideo(row, then) {
-  if (currentLessonId !== HARD_LESSON_ID || row.time == null) return false;
-  const lesson = library.find(l => l.id === row.srcLessonId);
-  const url = lesson ? (lesson.mediaUrl || "").trim() : "";
-  const id = url ? extractYouTubeId(url) : null;
-  if (!id || id === vocabVideoId && ytHasVideo && !ytHasError) return false;
-  vocabVideoId = id;
-  ytHasError = false;
-  document.getElementById("mediaUrl").value = url;
-  applyMediaUrl(true);
-  rowCueWait = then;
-  clearTimeout(rowCueTimer);
-  rowCueTimer = setTimeout(rowCueDone, 4e3);
-  return true;
-}
-
 function startLoop(row) {
   if (row.time == null) return;
-  if (switchRowVideo(row, () => startLoop(row))) return;
   if (ytHasError) return;
   if (!ytPlayer || !ytReady || !ytHasVideo || typeof ytPlayer.seekTo !== "function") {
     if (ytHasVideo) fairyWait(); else showToast("Add a YouTube video first");
@@ -3007,16 +2972,6 @@ function playNextSequenceStep() {
     sequenceIndex = 0;
   }
   const currentRow = visible[sequenceIndex];
-  const resumeAt = sequenceIndex;
-  const resumeOnce = listenAutoPlayOnce;
-  if (switchRowVideo(currentRow, () => {
-    if (!ytPlayer || !ytReady || !ytHasVideo || ytHasError) return;
-    isSequencePlaying = true;
-    sequenceIndex = resumeAt;
-    listenAutoPlayOnce = resumeOnce;
-    updateSequenceBtnUI();
-    playNextSequenceStep();
-  })) return;
   loopingRowId = currentRow.id;
   soundStartedAt = Date.now();
   markPlayingRow();
@@ -6002,58 +5957,10 @@ function setReviewMode(style) {
   render();
 }
 
-function totalLapses(card) {
-  return srsOf(card).lapses || 0;
-}
-
-const HARD_LESSON_ID = "__hard__";
-
 const VOCAB_ALL_ID = "__vocab__";
 
-function isVirtualId(id) {
-  return id === HARD_LESSON_ID || id === VOCAB_ALL_ID;
-}
-
 function isVirtualLesson() {
-  return isVirtualId(currentLessonId);
-}
-
-function allHardCards() {
-  const picks = [];
-  library.forEach(l => l.cards.forEach(c => {
-    if (hasAnswer(c) && totalLapses(c) > 0) picks.push({
-      card: c,
-      lesson: l
-    });
-  }));
-  return picks.sort((a, b) => totalLapses(b.card) - totalLapses(a.card));
-}
-
-async function practiceAllHardCards() {
-  if (appMode === "vocab") setAppMode("cards");
-  commitActiveEdit();
-  await discardIfEmptyDraft();
-  await flushAutoSave();
-  const picks = allHardCards();
-  if (!picks.length) {
-    showToast("No hard cards yet");
-    return;
-  }
-  const langs = new Set(picks.map(p => p.lesson.studyLang || "auto"));
-  const firstVideo = picks.find(p => p.card.time != null && extractYouTubeId(p.lesson.mediaUrl || ""));
-  vocabVideoId = firstVideo ? extractYouTubeId(firstVideo.lesson.mediaUrl) : null;
-  openLesson({
-    id: HARD_LESSON_ID,
-    name: "🎯 Hard cards",
-    mediaUrl: firstVideo ? firstVideo.lesson.mediaUrl : "",
-    studyLang: langs.size === 1 ? Array.from(langs)[0] : "auto",
-    importHistory: [],
-    cards: picks.map(p => p.card)
-  });
-  rows.forEach((r, i) => {
-    r.srcLessonId = picks[i].lesson.id;
-  });
-  showView("study");
+  return currentLessonId === VOCAB_ALL_ID;
 }
 
 function saveVirtualLesson() {
@@ -8282,7 +8189,7 @@ function openLesson(lesson) {
     destroyYtPlayer();
   }
   setFileNote("");
-  const virtual = isVirtualId(lesson.id);
+  const virtual = lesson.id === VOCAB_ALL_ID;
   document.body.classList.toggle("virtual-lesson", virtual);
   document.getElementById("lessonName").readOnly = virtual;
   refreshSaveReminders();
@@ -9082,8 +8989,6 @@ async function importLessonFiles(files) {
     noteRecentLesson(lastImported.id);
     openLesson(lastImported);
     showView("study");
-  } else if (isVirtualLesson() && restoredIds.length) {
-    practiceAllHardCards();
   } else if (currentLessonId && restoredIds.includes(currentLessonId)) {
     openLesson(library.find(l => l.id === currentLessonId));
     showView("study");
@@ -9332,7 +9237,7 @@ function recentLessonIds() {
 }
 
 function noteRecentLesson(id) {
-  if (!id || isVirtualId(id)) return;
+  if (!id || id === VOCAB_ALL_ID) return;
   try {
     localStorage.setItem(RECENT_KEY, JSON.stringify([ id ].concat(recentLessonIds().filter(x => x !== id)).slice(0, 10)));
   } catch (e) {}
@@ -9349,7 +9254,7 @@ function showListModes() {
 
 function showView(view) {
   if (view === "study" && !currentLessonId) view = "empty";
-  if (view === "study" && (currentLessonId === VOCAB_ALL_ID || appMode === "vocab" && !isVirtualLesson())) view = "vocab";
+  if (view === "study" && (isVirtualLesson() || appMode === "vocab")) view = "vocab";
   if (view === "vocab" && currentView !== "vocab") vocabSession = null;
   if (view !== "vocab") {
     commitVocabEdit();
@@ -9749,26 +9654,7 @@ function renderStats() {
     })).map(x => `<tr><td title="${escapeAttr(x.l.name || "Untitled lesson")}"><span class="clamp">${escapeHtml(x.l.name || "Untitled lesson")}</span></td><td class="num">${x.l.cards.length}</td><td class="num">${x.fresh}</td><td class="num">${x.due}</td><td class="num">${x.done}</td><td class="num">${x.reviews30}</td></tr>`).join("") + "</tbody></table>";
   }
 
-  const hardest = [];
-  lessons.forEach(l => l.cards.forEach(c => {
-    const lapses = totalLapses(c);
-    if (lapses > 0) hardest.push({
-      c: c,
-      l: l,
-      lapses: lapses
-    });
-  }));
-  hardest.sort((a, b) => b.lapses - a.lapses);
-  const hardestEl = document.getElementById("statHardest");
-  const practiseAll = document.getElementById("btnPractiseAll");
-  const hardWithAnswer = hardest.filter(h => hasAnswer(h.c)).length;
-  practiseAll.hidden = !hardWithAnswer;
-  practiseAll.textContent = "🎯 Practise all " + hardWithAnswer;
-  practiseAll.title = "One session with every hard card from every lesson — grades go back to each card's own lesson";
-  hardestEl.innerHTML = hardest.length ? '<table class="stats-table hardest-table"><thead><tr><th>Question</th><th>Answer</th><th>Lesson</th><th class="num" title="Times marked Again" aria-label="Times marked Again">👎</th></tr></thead><tbody>' + hardest.slice(0, 10).map(h => `<tr><td><span class="clamp">${escapeHtml(h.c.q)}</span></td><td><span class="clamp">${escapeHtml(h.c.a)}</span></td><td><span class="clamp">${escapeHtml(h.l.name || "")}</span></td><td class="num">${h.lapses}</td></tr>`).join("") + "</tbody></table>" : '<div class="stats-empty">No cards marked Again yet — keep studying!</div>';
 }
-
-document.getElementById("btnPractiseAll").onclick = practiceAllHardCards;
 
 document.getElementById("heatPrev").onclick = () => {
   heatmapPage++;
@@ -10020,7 +9906,7 @@ function cloudNoteWrite(store, value, removed) {
   if (cloudApplying) return;
   if (store === "lessons") {
     const id = removed ? value : value.id;
-    if (!id || isVirtualId(id)) return;
+    if (!id || id === VOCAB_ALL_ID) return;
     if (removed) writeCloudState(st => {
       if (st.synced[id]) st.deleted[id] = Date.now();
     });
