@@ -1147,7 +1147,6 @@ window.onYouTubeIframeAPIReady = function(){
   .ip-table td.ip-result .ip-status{padding:2px 6px;}
   .ip-table tr.ip-dim td{opacity:.6;}
   .ip-more{padding:8px 12px;font-size:12px;color:var(--text-2);}
-  /* Whole-pixel line heights where the page's 1.45 would leave fractions */
   #mbCur, #mbDur, .heat-month-name, .streak-day span{line-height:15px;}
   #fileStatus, #importInfo, #heatTitle, .cloud-or, .progress-badge, .loop-time, .streak-best, .streak-hint, thead th{line-height:18px;}
   .segmented button, .lang-pick, .empty-state p, .heat-numbers, #mediaBarTitle, #mediaLoading, #cloudError, #cloudDialog p, #editQ, #editA, .rich-editor, .add-target, .muted-label, .toast, .session-complete-sub, .streak-label, .stats-empty, .stats-table td, .stats-table .clamp, .vocab-list-row > span{line-height:20px;}
@@ -2478,7 +2477,6 @@ function deleteRows(ids, parts, next) {
   ids = ids.slice();
   const gone = rows.filter(r => ids.includes(r.id));
   if (!gone.length) return;
-  // outline what flies off now, before stopping the sound redraws the card under it
   if (!dragGhost && !reducedMotion()) dragGhost = ghostFor(parts);
   if (activeEdit && ids.includes(activeEdit.row.id)) discardActiveEdit();
   if (ttsPlaying) cancelSpeechOnly();
@@ -2621,7 +2619,6 @@ function moveOneCardToVocab(row) {
   renderLessonList();
 }
 
-// The card's line on screen: its Listening line in a card mode (the hidden Full table keeps rows with the same ids), else its table row.
 function cardLineEl(id) {
   if (groupState && isCardMode()) return document.querySelector(`#singleCardBody .listen-pair[data-id="${id}"]`) || document.getElementById("singleCardBody");
   return document.querySelector(`#tbody tr[data-id="${id}"]`);
@@ -2632,9 +2629,9 @@ function deleteRow(id) {
   if (groupState && !full) holdPage();
   const panel = groupState && groupViewStyle === "table" ? rowDictPanel(id) : null;
   const fromPanel = !!panel && panel.matches(":hover");
-  const focus = full && groupState && groupViewStyle === "table" ? dictFocusBefore(null) : null;
+  const focus = full && groupState && groupViewStyle === "table" ? dictFocusBefore() : null;
   deleteRows([ id ], full ? studyParts() : [ fromPanel ? panel : cardLineEl(id) ], full);
-  if (focus) keepDictFocus(focus, 0);
+  if (focus) keepDictFocus(focus);
 }
 
 function deleteAction() {
@@ -2828,7 +2825,6 @@ function maskWidth(text, wide, narrow) {
 }
 
 function listenPairsHtml(batch) {
-  // a round time button, widened into a pill only for a long time; the lines start after the widest one
   const width = r => r.time == null || formatTime(r.time).length <= 5 ? 60 : Math.round((formatTime(r.time).length * 8 + 20) / 5) * 5;
   const tx = Math.max(...batch.map(width));
   return batch.map(r => `<div class="listen-pair${r.id === selectedRowId ? " row-selected" : ""}" data-id="${r.id}" style="--tw:${width(r)}px;--tx:${tx}px;--qw:${maskWidth(r.q, 24, 12)}px;--aw:${maskWidth(r.a, 24, 12)}px">${singleCardFieldsHtml(r)}</div>`).join("");
@@ -4981,8 +4977,6 @@ dictPanelsHost.addEventListener("click", e => {
     notePanelHush();
     return;
   }
-  // a tap on a word's mark or on something being edited opens that, without starting the sentence's sound:
-  // starting the video would take the focus away and close the popup the tap opens
   if (isTouch() && !e.target.closest("mark.vocab-own, mark.vocab-hit, .dict-editing, input, textarea, [contenteditable]")) loopPanelRow(e.target);
 }, true);
 
@@ -6227,13 +6221,13 @@ function gradeCurrentGroupAndAdvance(isAgain) {
   });
   showToast(gradeLabel(isAgain));
   scheduleAutoSave();
-  const focus = dictFocusBefore(null);
+  const focus = dictFocusBefore();
   swipe(studyParts(), isAgain ? -1 : 1, () => {
     groupState.groups[groupState.index] = [];
     advanceToNextGroup();
     render();
   }, true);
-  if (focus) keepDictFocus(focus, 0);
+  if (focus) keepDictFocus(focus);
 }
 
 function gradeCardBatch(batch, isAgain) {
@@ -6274,7 +6268,7 @@ function gradeCard(row, isAgain) {
   if (!next) holdPage();
   const panel = rowDictPanel(row.id);
   const fromPanel = !!panel && panel.matches(":hover");
-  const focus = next ? dictFocusBefore(null) : null;
+  const focus = next ? dictFocusBefore() : null;
   swipe(next ? studyParts() : [ fromPanel ? panel : cardLineEl(row.id) ], isAgain ? -1 : 1, () => {
     if (ids) {
       ids.splice(ids.indexOf(row.id), 1);
@@ -6282,30 +6276,25 @@ function gradeCard(row, isAgain) {
     }
     render();
   }, next);
-  if (focus) keepDictFocus(focus, 0);
+  if (focus) keepDictFocus(focus);
 }
 
 function dictPanelsInOrder() {
   return Array.from(document.querySelectorAll("#dictPanels > .stroke-order-panel:not(.dict-pending)")).filter(el => el.offsetParent).sort((a, b) => (Number(a.style.order) || 0) - (Number(b.style.order) || 0));
 }
 
-function dictFocusBefore(panel) {
+function dictFocusBefore() {
   const panels = dictPanelsInOrder();
-  if (!panels.length) return null;
   const band = visibleBand();
-  if (!panels.includes(panel)) {
-    if (panels[0].getBoundingClientRect().top >= band.top) return null;
-    panel = panels.find(el => el.getBoundingClientRect().bottom > band.top);
-  }
+  if (!panels.length || panels[0].getBoundingClientRect().top >= band.top) return null;
+  const panel = panels.find(el => el.getBoundingClientRect().bottom > band.top);
   return panel ? {
-    slot: panels.indexOf(panel),
     top: panel.getBoundingClientRect().top
   } : null;
 }
 
-function keepDictFocus(focus, slot) {
-  const panels = dictPanelsInOrder();
-  const panel = panels[Math.min(slot, panels.length - 1)];
+function keepDictFocus(focus) {
+  const panel = dictPanelsInOrder()[0];
   if (!panel) return;
   const delta = panel.getBoundingClientRect().top - Math.max(focus.top, visibleBand().top);
   if (Math.abs(delta) > 1) window.scrollBy({
@@ -6480,8 +6469,6 @@ function swipe(parts, dir, update, next, label = dir > 0 ? "Good" : "Again") {
   if (next) showFromTop(studyAreaTop());
 }
 
-// Notes where the lines and panels on screen sit, so that when a card above them goes they can be put back
-// where they were (Safari keeps no scroll anchor of its own); returns the function that puts them back.
 function keepViewAnchor() {
   const keyOf = el => (el.tagName === "TR" ? "r" : el.classList.contains("listen-pair") ? "l" : "p") + (el.dataset.id || el.dataset.rowId);
   const seen = [ ...document.querySelectorAll("#tbody tr[data-id], #singleCardBody .listen-pair[data-id], #dictPanels > .stroke-order-panel:not(.dict-pending)") ].map(el => [ keyOf(el), el.getBoundingClientRect() ]).filter(([, r]) => r.height && r.bottom > 0).sort((a, b) => a[1].top - b[1].top);
@@ -8454,11 +8441,6 @@ function unionBox(rects) {
   };
 }
 
-// The fairy: a little girl with wings and a star-tipped wand, drawn on a canvas over the page.
-// kind: "sweep" floats along the top of box, "tap" touches the middle of box with the wand,
-// "circle" flies round box until until() is true, "pass" crosses the screen at box's height.
-// onTouch(x, y) runs once, with the wand's tip, when the dust (or the tap) reaches the target;
-// reverse draws dust from the target into the wand; dissolve turns the box into dust at the touch.
 function fairyFly(o) {
   const w = window.innerWidth, h = window.innerHeight;
   const box = o.box || {
@@ -8500,7 +8482,6 @@ function fairyFly(o) {
     circle: { in: 700, act: 9000, out: 600 },
     pass: { in: 0, act: 1300, out: 0 }
   }[kind], o.times || {});
-  // where the fairy hovers while acting, and where the act starts and ends
   const y = kind === "sweep" ? Math.max(40, box.top - 35) : kind === "pass" ? cy : Math.max(40, cy - 40);
   const x0 = Math.max(10, box.left), x1 = Math.min(w - 10, box.left + box.width);
   const [ ax, bx ] = kind === "sweep" ? fromLeft ? [ x0, x1 ] : [ x1, x0 ] : kind === "pass" ? [ sx, ex ] : [ cx - facing * 25, cx - facing * 25 ];
@@ -8714,7 +8695,6 @@ function fairyFly(o) {
 
 let fairyWaiting = null;
 
-// While the video is still loading, the fairy flies round it until it can play.
 function fairyWait() {
   if (fairyWaiting) return;
   const box = onScreenBox(document.getElementById("mediaVideo"));
@@ -8743,7 +8723,6 @@ function fairyDust(before, after, reverse) {
   });
 }
 
-// A copy of el laid over it, so el itself can go while the copy turns into fairy dust.
 function dustGhost(el) {
   const box = onScreenBox(el);
   if (!box) return null;
@@ -9130,7 +9109,6 @@ async function importLessonFiles(files) {
   requestAnimationFrame(() => fairyArrive(arrivedIds.concat(restoredIds)));
 }
 
-// New lessons in the list get a sprinkle of fairy dust (or the open lesson's name, when the list is tucked away).
 function fairyArrive(ids) {
   if (!ids.length) return;
   const items = [ ...document.querySelectorAll("#lessonList .lesson-item") ].filter(el => ids.includes(el.dataset.lessonId) && onScreenBox(el));
@@ -11252,7 +11230,6 @@ function fitVocabCards() {
   const min = parseFloat(getComputedStyle(card).getPropertyValue("--front-h")) || 320;
   let fit = floor - VOCAB_CARD_GAP - stickyTop - below;
   if (toolbarTop + window.scrollY <= stickyTop + 1) {
-    // nothing above the toolbar to scroll past: the page must end on screen, below the card's own margin and the page's bottom padding
     const room = window.innerHeight - card.getBoundingClientRect().top - window.scrollY - parseFloat(getComputedStyle(card).marginBottom) - parseFloat(getComputedStyle(document.querySelector(".main")).paddingBottom);
     fit = Math.min(fit, room);
   }
@@ -12609,7 +12586,6 @@ window.addEventListener("scroll", () => {
   if (!vocabAddPopup) return;
   vocabAddPopup.style.top = Math.round(parseFloat(vocabAddPopup.style.top) - (window.scrollY - vocabAddPopupScrollY)) + "px";
   vocabAddPopupScrollY = window.scrollY;
-  // a phone keyboard opening for the popup's field scrolls the page; that must not close it
   if (Date.now() - vocabAddPopupOpenedAt < 1000) return;
   const band = visibleBand();
   const r = vocabAddPopup.getBoundingClientRect();
