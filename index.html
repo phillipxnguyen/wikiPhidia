@@ -8539,8 +8539,19 @@ function fairyFly(o) {
       fill: "forwards"
     }).onfinish = () => d.remove();
   };
+  const capR = box.height / 2 + 10, capA = box.left + capR - 4, capB = box.left + box.width - capR + 4, capY = box.top + box.height / 2;
+  const inCloud = (px, py) => {
+    const dx = px < capA ? px - capA : px > capB ? px - capB : 0;
+    return Math.hypot(dx, py - capY) < capR * (.75 + .25 * Math.random());
+  };
+  const cloudPoint = () => {
+    for (;;) {
+      const px = capA - capR + Math.random() * (capB - capA + 2 * capR), py = capY - capR + Math.random() * 2 * capR;
+      if (inCloud(px, py)) return [ px, py ];
+    }
+  };
   const start = performance.now();
-  let last = start, coverDone = false;
+  let last = start, coverDone = false, covered = false;
   const step = now => {
     const t = now - start, dt = Math.min(40, now - last);
     last = now;
@@ -8558,9 +8569,24 @@ function fairyFly(o) {
         const heavy = acting(t) && kind !== "circle";
         for (let n = heavy ? 5 + Math.floor(Math.random() * 3) : 1 + Math.floor(Math.random() * 2); n > 0; n--) spawn(fx + (Math.random() - .5) * 10, fy + (Math.random() - .5) * 10, (Math.random() - .5) * .05, heavy ? .02 + Math.random() * .06 : Math.random() * .02, 700 + Math.random() * 700);
       }
-      if (o.cover && acting(t)) for (let n = 14; n > 0; n--) spawn(Math.max(box.left - 8, Math.min(box.left + box.width + 8, fx + (Math.random() - .5) * 60)), box.top - 6 + Math.random() * (box.height + 12), (Math.random() - .5) * .01, (Math.random() - .5) * .01, 1400 + Math.random() * 900, {
-        still: true
-      });
+      if (o.cover && acting(t)) {
+        if (!covered) {
+          covered = true;
+          for (let n = Math.round(box.width * box.height / 5); n > 0; n--) {
+            const [ px, py ] = cloudPoint();
+            spawn(px, py, (Math.random() - .5) * .008, (Math.random() - .5) * .008, actEnd - t + 300 + Math.random() * 700, {
+              still: true,
+              fast: true
+            });
+          }
+        }
+        for (let n = 14; n > 0; n--) {
+          const px = fx + (Math.random() - .5) * 60, py = cloudPoint()[1];
+          if (inCloud(px, py)) spawn(px, py, (Math.random() - .5) * .01, (Math.random() - .5) * .01, 1400 + Math.random() * 900, {
+            still: true
+          });
+        }
+      }
       if (!coverDone && o.onActEnd && t >= actEnd) {
         coverDone = true;
         o.onActEnd();
@@ -8586,7 +8612,7 @@ function fairyFly(o) {
       if (!d.home && !d.still) d.vy += .00008 * dt;
       d.x += d.vx * dt;
       d.y += d.vy * dt;
-      const a = (d.home ? Math.sin(age * Math.PI) : d.still ? Math.min(1, age * 6) * (1 - age) : 1 - age) * (.55 + .45 * Math.sin(d.tw + now / 45));
+      const a = (d.home ? Math.sin(age * Math.PI) : d.still ? Math.min(1, age * (d.fast ? 12 : 6), (1 - age) * 3) : 1 - age) * (.55 + .45 * Math.sin(d.tw + now / 45));
       ctx.globalAlpha = a;
       const size = d.r * 7;
       ctx.drawImage(sprites[d.c], d.x - size / 2, d.y - size / 2, size, size);
@@ -8640,8 +8666,9 @@ function fairyDust(before, after, reverse) {
     box: box,
     reverse: reverse,
     cover: counts,
+    touchAt: 0,
     onTouch: () => counts && target.animate([ { opacity: 1 }, { opacity: 0 } ], {
-      duration: 900,
+      duration: 400,
       easing: "ease-in-out",
       fill: "forwards"
     }),
