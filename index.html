@@ -8573,10 +8573,10 @@ function fairyFly(o) {
         if (!covered) {
           covered = true;
           for (let n = Math.round(box.width * box.height / 5); n > 0; n--) {
-            const [ px, py ] = cloudPoint();
-            spawn(px, py, (Math.random() - .5) * .008, (Math.random() - .5) * .008, actEnd - t + 300 + Math.random() * 700, {
+            const [ px, py ] = cloudPoint(), wait = Math.max(0, Math.min(1, (px - ax) / (bx - ax || 1))) * 900 + Math.random() * 400;
+            spawn(px, py, (Math.random() - .5) * .008, (Math.random() - .5) * .008, actEnd - t - wait + 300 + Math.random() * 700, {
               still: true,
-              fast: true
+              born: t + wait
             });
           }
         }
@@ -8609,10 +8609,11 @@ function fairyFly(o) {
         dust.splice(i, 1);
         continue;
       }
+      if (age < 0) continue;
       if (!d.home && !d.still) d.vy += .00008 * dt;
       d.x += d.vx * dt;
       d.y += d.vy * dt;
-      const a = (d.home ? Math.sin(age * Math.PI) : d.still ? Math.min(1, age * (d.fast ? 12 : 6), (1 - age) * 3) : 1 - age) * (.55 + .45 * Math.sin(d.tw + now / 45));
+      const a = (d.home ? Math.sin(age * Math.PI) : d.still ? Math.min(1, (t - d.born) / 400, (1 - age) * 3) : 1 - age) * (.8 + .2 * Math.sin(d.tw + now / 300));
       ctx.globalAlpha = a;
       const size = d.r * 7;
       ctx.drawImage(sprites[d.c], d.x - size / 2, d.y - size / 2, size, size);
@@ -8668,7 +8669,7 @@ function fairyDust(before, after, reverse) {
     cover: counts,
     touchAt: 0,
     onTouch: () => counts && target.animate([ { opacity: 1 }, { opacity: 0 } ], {
-      duration: 400,
+      duration: 1200,
       easing: "ease-in-out",
       fill: "forwards"
     }),
