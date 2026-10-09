@@ -8557,14 +8557,8 @@ function fairyFly(o) {
     const flying = t < actEnd + T.out;
     if (flying) {
       const [ fx, fy ] = wandTip(...pos(t), t);
-      if (o.reverse) {
-        if (acting(t)) for (let n = 4; n > 0; n--) spawn(Math.max(x0, Math.min(x1, fx + (Math.random() - .5) * 60)), box.top + Math.random() * Math.max(10, box.height), 0, 0, 900, {
-          home: true
-        });
-      } else {
-        const heavy = acting(t) && kind !== "circle";
-        for (let n = heavy ? 5 + Math.floor(Math.random() * 3) : 1 + Math.floor(Math.random() * 2); n > 0; n--) spawn(fx + (Math.random() - .5) * 10, fy + (Math.random() - .5) * 10, (Math.random() - .5) * .05, heavy ? .02 + Math.random() * .06 : Math.random() * .02, 700 + Math.random() * 700);
-      }
+      const heavy = acting(t) && kind !== "circle";
+      for (let n = heavy ? 5 + Math.floor(Math.random() * 3) : 1 + Math.floor(Math.random() * 2); n > 0; n--) spawn(fx + (Math.random() - .5) * 10, fy + (Math.random() - .5) * 10, (Math.random() - .5) * .05, heavy ? .02 + Math.random() * .06 : Math.random() * .02, 700 + Math.random() * 700);
       if (o.cover && acting(t)) {
         if (!covered) {
           covered = true;
@@ -8592,12 +8586,6 @@ function fairyFly(o) {
         dissolve();
         if (o.onTouch) o.onTouch(fx, fy);
       }
-      dust.forEach(d => {
-        if (d.home) {
-          d.vx += ((fx - d.x) * .00004 - d.vx * .02) * dt;
-          d.vy += ((fy - d.y) * .00004 - d.vy * .02) * dt;
-        }
-      });
     }
     for (let i = dust.length - 1; i >= 0; i--) {
       const d = dust[i], age = (t - d.born) / d.life;
@@ -8606,10 +8594,10 @@ function fairyFly(o) {
         continue;
       }
       if (age < 0) continue;
-      if (!d.home && !d.still) d.vy += .00008 * dt;
+      if (!d.still) d.vy += .00008 * dt;
       d.x += d.vx * dt;
       d.y += d.vy * dt;
-      const a = (d.home ? Math.sin(age * Math.PI) : d.still ? Math.min(1, (t - d.born) / 400, (1 - age) * 3) : 1 - age) * (.8 + .2 * Math.sin(d.tw + now / 300));
+      const a = (d.still ? Math.min(1, (t - d.born) / 400, (1 - age) * 3) : 1 - age) * (.8 + .2 * Math.sin(d.tw + now / 300));
       ctx.globalAlpha = a;
       const size = d.r * 7;
       ctx.drawImage(sprites[d.c], d.x - size / 2, d.y - size / 2, size, size);
@@ -8651,19 +8639,17 @@ function fairyWait() {
   });
 }
 
-function fairyDust(before, after, reverse) {
+function fairyDust(before, after, back) {
   const target = fairyTarget();
   const release = holdCounts(before, after);
   const parts = target ? [ ...target.querySelectorAll(":scope > .progress-badge") ].map(el => el.getBoundingClientRect()) : [];
   const box = unionBox(parts) || (target ? target.getBoundingClientRect() : null);
   if (!box || reducedMotion()) return release();
   const counts = target && target.matches(".progress-badges, .lesson-item-meta");
-  const startLeft = box.left + box.width / 2 > window.innerWidth / 2;
   fairyFly({
     kind: "sweep",
     box: box,
-    reverse: reverse,
-    fromLeft: reverse ? !startLeft : startLeft,
+    fromLeft: !back,
     cover: counts,
     touchAt: 0,
     onTouch: () => counts && target.animate([ { opacity: 1 }, { opacity: 0 } ], {
