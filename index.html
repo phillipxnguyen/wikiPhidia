@@ -489,6 +489,7 @@ window.onYouTubeIframeAPIReady = function(){
     .shell .listen-batch .listen-pair{padding:15px 10px 15px calc(var(--tx, 60px) + 20px);}
     .shell .listen-batch .listen-pair + .listen-pair::before{left:calc(var(--tx, 60px) + 20px);right:10px;}
     .shell .listen-batch .listen-pair .cell{padding:0;}
+    .shell .listen-batch .listen-pair.edit-row{padding:15px 10px;}
     .shell .listen-batch .listen-pair .single-card-q .cell > .loop-time:first-child{left:10px;}
   }
   html.touch input[type=text], html.touch input[type=search], html.touch input[type=email], html.touch input[type=password], html.touch textarea, html.touch select{font-size:16px;}
@@ -912,6 +913,7 @@ window.onYouTubeIframeAPIReady = function(){
   .single-card-body.listen-batch:not(.edit-row){gap:0;}
   .listen-pair{position:relative;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:5px;min-height:60px;padding:20px 20px 20px calc(var(--tx, 60px) + 40px);border-radius:10px;transition:opacity .2s ease;}
   .listen-pair:not(:has(.loop-time)){padding-left:20px;}
+  .listen-batch .listen-pair.edit-row{display:block;padding:20px;}
   .listen-pair + .listen-pair::before{content:"";position:absolute;top:0;left:calc(var(--tx, 60px) + 40px);right:20px;border-top:1px solid var(--border);}
   html.touch .listen-batch:has(.listen-pair.row-selected) .listen-pair:not(.row-selected){opacity:.4;}
   .listen-batch .listen-pair .single-card-field{position:static;min-height:0;padding:0;background:none;border-radius:0;align-items:flex-start;}
@@ -3329,7 +3331,7 @@ function renderSingleCard(visibleRows) {
       stopped: null
     };
   }
-  if (activeEdit && activeEdit.row.id === row.id) {
+  if (activeEdit && batch.some(r => r.id === activeEdit.row.id)) {
     if (autoPlay) playListenCardAudio(row);
     return;
   }
@@ -5248,10 +5250,11 @@ function openEdit(tr, row) {
     tr = document.querySelector(`tr[data-id="${row.id}"]`);
     if (!tr) return;
   }
+  const top = tr.getBoundingClientRect().top;
   tr.classList.add("edit-row");
   tr.innerHTML = `<td colspan="2">${buildEditBoxInner(row)}</td>`;
   wireEditBox(tr, row);
-  showEditBox(tr);
+  showEditBox(tr, top);
 }
 
 function visibleBand() {
@@ -5286,12 +5289,10 @@ function caretRect(field) {
 function scrollIntoBand(box) {
   if (!box || !box.isConnected) return;
   const band = visibleBand();
-  let r = box.getBoundingClientRect();
   const focused = document.activeElement;
-  if (r.height > band.bottom - band.top && focused && box.contains(focused)) {
-    r = focused.getBoundingClientRect();
-    if (r.height > band.bottom - band.top) r = caretRect(focused) || r;
-  }
+  const field = focused && box.contains(focused) && focused !== box ? focused : box.querySelector(".rich-editor, textarea") || box;
+  let r = field.getBoundingClientRect();
+  if (r.height > band.bottom - band.top) r = caretRect(field) || r;
   let delta = 0;
   if (r.top < band.top) delta = r.top - band.top; else if (r.bottom > band.bottom) delta = Math.min(r.bottom - band.bottom, r.top - band.top);
   if (delta > 0) {
@@ -5365,7 +5366,11 @@ document.addEventListener("focusin", e => {
   if (followedBox && e.target.closest && e.target.closest(".edit-row, .vocab-editor")) scheduleFollow();
 });
 
-function showEditBox(el) {
+function showEditBox(el, top) {
+  if (top != null) {
+    const delta = Math.round(el.getBoundingClientRect().top - Math.max(top, visibleBand().top));
+    if (delta) window.scrollBy(0, delta);
+  }
   followInView(() => activeEdit && activeEdit.tr === el ? el : null);
 }
 
@@ -5375,13 +5380,16 @@ function openSingleCardEdit(row) {
     commitActiveEdit();
     render();
   }
-  const host = document.getElementById("singleCardBody");
-  if (!host) return;
+  const body = document.getElementById("singleCardBody");
+  if (!body) return;
+  const pair = isListenMode() && listenBatch().length > 1 && body.querySelector(`.listen-pair[data-id="${row.id}"]`);
+  const host = pair || body;
+  const top = host.getBoundingClientRect().top;
   host.classList.add("edit-row");
   host.dataset.id = row.id;
   host.innerHTML = buildEditBoxInner(row);
   wireEditBox(host, row);
-  showEditBox(host);
+  showEditBox(host, top);
 }
 
 function wireEditBox(host, row) {
@@ -8933,6 +8941,7 @@ function fitThumbWords(el) {
     while (lo < hi) {
       const mid = lo + hi + 1 >> 1;
       span.style.fontSize = mid + "px";
+      span.style.lineHeight = wholePx(mid * 1.1, true) + "px";
       if (fits()) lo = mid; else hi = mid - 1;
     }
     return lo;
@@ -8947,6 +8956,7 @@ function fitThumbWords(el) {
   }
   span.textContent = best[0];
   span.style.fontSize = wholePx(best[1]) + "px";
+  span.style.lineHeight = wholePx(wholePx(best[1]) * 1.1, true) + "px";
 }
 
 function renderLessonList() {
