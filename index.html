@@ -1704,7 +1704,7 @@ function restoreFrom(fromStack, toStack, verb) {
   }
   showToast(verb + " — " + entry.label);
   scheduleAutoSave();
-  if (resetMagic) countsSparkle(countsBefore, currentCounts());
+  if (resetMagic) fairyDust(countsBefore, currentCounts(), verb === "Undo");
 }
 
 function currentCounts() {
@@ -8405,20 +8405,32 @@ function fairyFly(o) {
     const a = wandAngle(t), hx = 3 + 8 * Math.cos(a), hy = -5 + 8 * Math.sin(a);
     return [ fx + facing * SCALE * (hx + 13 * Math.cos(a + .5)), fy + SCALE * (hy + 13 * Math.sin(a + .5)) ];
   };
-  const hues = [ [ 240, 180, 30 ], [ 250, 205, 70 ], [ 255, 225, 120 ], [ 80, 150, 240 ] ];
+  const hues = [ [ 240, 180, 30 ], [ 255, 215, 90 ], [ 255, 130, 190 ], [ 90, 160, 255 ], [ 170, 130, 255 ], [ 70, 200, 170 ] ];
+  const sprites = hues.map(c => {
+    const g = document.createElement("canvas");
+    g.width = g.height = 32;
+    const gx = g.getContext("2d"), rg = gx.createRadialGradient(16, 16, 0, 16, 16, 16);
+    rg.addColorStop(0, "rgba(255,255,255,1)");
+    rg.addColorStop(.12, `rgba(${c[0]},${c[1]},${c[2]},1)`);
+    rg.addColorStop(.35, `rgba(${c[0]},${c[1]},${c[2]},.35)`);
+    rg.addColorStop(1, `rgba(${c[0]},${c[1]},${c[2]},0)`);
+    gx.fillStyle = rg;
+    gx.fillRect(0, 0, 32, 32);
+    return g;
+  });
   const dust = [];
-  const spawn = (x, y, vx, vy, life) => dust.push({
+  const spawn = (x, y, vx, vy, life, extra) => dust.push(Object.assign({
     x: x,
     y: y,
     vx: vx,
     vy: vy,
     born: performance.now() - start,
     life: life,
-    r: 1 + Math.random() * 1.6,
-    star: Math.random() < .5,
-    c: hues[Math.floor(Math.random() * hues.length)],
+    r: .4 + Math.random() * Math.random() * 1.4,
+    star: Math.random() < .04,
+    c: Math.floor(Math.random() * hues.length),
     tw: Math.random() * 6
-  });
+  }, extra || {}));
   const star = (x, y, s) => {
     const k = s * .3;
     ctx.moveTo(x, y - s);
@@ -8528,7 +8540,7 @@ function fairyFly(o) {
     }).onfinish = () => d.remove();
   };
   const start = performance.now();
-  let last = start;
+  let last = start, coverDone = false;
   const step = now => {
     const t = now - start, dt = Math.min(40, now - last);
     last = now;
@@ -8538,13 +8550,32 @@ function fairyFly(o) {
     const flying = t < actEnd + T.out;
     if (flying) {
       const [ fx, fy ] = wandTip(...pos(t), t);
-      const heavy = acting(t) && kind !== "circle";
-      for (let n = heavy ? Math.random() < .6 ? 2 : 1 : Math.random() < .5 ? 1 : 0; n > 0; n--) spawn(fx + (Math.random() - .5) * 6, fy + (Math.random() - .5) * 6, (Math.random() - .5) * .04, heavy ? .03 + Math.random() * .05 : Math.random() * .02, 700 + Math.random() * 500);
+      if (o.reverse) {
+        if (acting(t)) for (let n = Math.random() < .6 ? 2 : 1; n > 0; n--) spawn(x0 + Math.random() * (x1 - x0), box.top + Math.random() * Math.max(10, box.height), 0, 0, 900, {
+          home: true
+        });
+      } else {
+        const heavy = acting(t) && kind !== "circle";
+        for (let n = heavy ? 5 + Math.floor(Math.random() * 3) : 1 + Math.floor(Math.random() * 2); n > 0; n--) spawn(fx + (Math.random() - .5) * 10, fy + (Math.random() - .5) * 10, (Math.random() - .5) * .05, heavy ? .02 + Math.random() * .06 : Math.random() * .02, 700 + Math.random() * 700);
+      }
+      if (o.cover && acting(t)) for (let n = 14; n > 0; n--) spawn(Math.max(box.left - 8, Math.min(box.left + box.width + 8, fx + (Math.random() - .5) * 60)), box.top - 6 + Math.random() * (box.height + 12), (Math.random() - .5) * .01, (Math.random() - .5) * .01, 1400 + Math.random() * 900, {
+        still: true
+      });
+      if (!coverDone && o.onActEnd && t >= actEnd) {
+        coverDone = true;
+        o.onActEnd();
+      }
       if (!touched && t >= touchAt) {
         touched = true;
         dissolve();
         if (o.onTouch) o.onTouch(fx, fy);
       }
+      dust.forEach(d => {
+        if (d.home) {
+          d.vx += ((fx - d.x) * .00004 - d.vx * .02) * dt;
+          d.vy += ((fy - d.y) * .00004 - d.vy * .02) * dt;
+        }
+      });
     }
     for (let i = dust.length - 1; i >= 0; i--) {
       const d = dust[i], age = (t - d.born) / d.life;
@@ -8552,15 +8583,22 @@ function fairyFly(o) {
         dust.splice(i, 1);
         continue;
       }
-      d.vy += .00012 * dt;
+      if (!d.home && !d.still) d.vy += .00008 * dt;
       d.x += d.vx * dt;
       d.y += d.vy * dt;
-      const a = (1 - age) * (.55 + .45 * Math.sin(d.tw + now / 45));
-      ctx.fillStyle = `rgba(${d.c[0]},${d.c[1]},${d.c[2]},${a})`;
-      ctx.beginPath();
-      if (d.star) star(d.x, d.y, d.r * 3); else ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
-      ctx.fill();
+      const a = (d.home ? Math.sin(age * Math.PI) : d.still ? Math.min(1, age * 6) * (1 - age) : 1 - age) * (.55 + .45 * Math.sin(d.tw + now / 45));
+      ctx.globalAlpha = a;
+      const size = d.r * 7;
+      ctx.drawImage(sprites[d.c], d.x - size / 2, d.y - size / 2, size, size);
+      if (d.star) {
+        const c = hues[d.c];
+        ctx.fillStyle = `rgb(${c[0]},${c[1]},${c[2]})`;
+        ctx.beginPath();
+        star(d.x, d.y, d.r * 4);
+        ctx.fill();
+      }
     }
+    ctx.globalAlpha = 1;
     if (flying) drawFairy(...pos(t), t);
     if (flying || dust.length) requestAnimationFrame(step); else {
       canvas.remove();
@@ -8590,88 +8628,33 @@ function fairyWait() {
   });
 }
 
-function countsSparkle(before, after) {
+function fairyDust(before, after, reverse) {
   const target = fairyTarget();
   const release = holdCounts(before, after);
   const parts = target ? [ ...target.querySelectorAll(":scope > .progress-badge") ].map(el => el.getBoundingClientRect()) : [];
   const box = unionBox(parts) || (target ? target.getBoundingClientRect() : null);
   if (!box || reducedMotion()) return release();
-  const w = window.innerWidth, h = window.innerHeight, dpr = window.devicePixelRatio || 1;
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.round(w * dpr);
-  canvas.height = Math.round(h * dpr);
-  Object.assign(canvas.style, {
-    position: "fixed",
-    left: "0",
-    top: "0",
-    width: w + "px",
-    height: h + "px",
-    pointerEvents: "none",
-    zIndex: "1500"
-  });
-  document.body.appendChild(canvas);
-  const ctx = canvas.getContext("2d");
-  ctx.scale(dpr, dpr);
-  const dark = (getComputedStyle(document.body).backgroundColor.match(/\d+/g) || [ 255 ]).slice(0, 3).reduce((a, v) => a + +v, 0) < 384;
-  const hues = dark ? [ [ 255, 255, 255 ], [ 255, 236, 170 ], [ 255, 210, 80 ], [ 190, 215, 255 ] ] : [ [ 235, 170, 20 ], [ 250, 200, 60 ], [ 80, 140, 240 ], [ 170, 120, 240 ] ];
-  const sparks = [];
-  const add = (x, y, vx, vy, life, born) => sparks.push({
-    x: x,
-    y: y,
-    vx: vx,
-    vy: vy,
-    life: life,
-    born: born,
-    r: .7 + Math.random() * 1,
-    c: hues[Math.floor(Math.random() * hues.length)],
-    tw: Math.random() * 6
-  });
-  const bursts = Math.max(5, Math.round(box.width / 25));
-  for (let b = 0; b < bursts; b++) {
-    const bx = box.left + (b + .5) / bursts * box.width + (Math.random() - .5) * 20, by = box.top + box.height * (.2 + Math.random() * .6), at = Math.random() * 450;
-    for (let n = 0; n < 60; n++) {
-      const ang = Math.random() * Math.PI * 2, sp = .03 + Math.random() * .1;
-      add(bx, by, Math.cos(ang) * sp, Math.sin(ang) * sp, 700 + Math.random() * 600, at);
-    }
-  }
-  for (let n = Math.round(box.width * box.height / 10); n > 0; n--) add(box.left - 6 + Math.random() * (box.width + 12), box.top - 6 + Math.random() * (box.height + 12), (Math.random() - .5) * .01, (Math.random() - .5) * .01, 500 + Math.random() * 500, 150 + Math.random() * 450);
-  const start = performance.now();
-  let last = start, released = false;
-  const step = now => {
-    const t = now - start, dt = Math.min(40, now - last);
-    last = now;
-    if (!released && t >= 500) {
-      released = true;
+  fairyFly({
+    kind: "sweep",
+    box: box,
+    reverse: reverse,
+    cover: true,
+    onTouch: () => target && target.animate([ { opacity: 1 }, { opacity: 0 } ], {
+      duration: 900,
+      easing: "ease-in-out",
+      fill: "forwards"
+    }),
+    onActEnd: () => {
       release();
-      glowTouch(target);
+      if (target) target.getAnimations().forEach(an => an.cancel());
+      const now = fairyTarget() || target;
+      if (now) now.animate([ { opacity: 0 }, { opacity: 1 } ], {
+        duration: 700,
+        easing: "ease-in-out"
+      });
+      glowTouch(now);
     }
-    ctx.clearRect(0, 0, w, h);
-    let alive = 0;
-    sparks.forEach(p => {
-      const age = (t - p.born) / p.life;
-      if (age >= 1) return;
-      alive++;
-      if (age < 0) return;
-      p.vx *= Math.pow(.996, dt);
-      p.vy = p.vy * Math.pow(.996, dt) + .00006 * dt;
-      p.x += p.vx * dt;
-      p.y += p.vy * dt;
-      const a = (1 - age) * (.5 + .5 * Math.sin(p.tw + now / 40));
-      ctx.fillStyle = `rgba(${p.c[0]},${p.c[1]},${p.c[2]},${a})`;
-      ctx.beginPath();
-      if (p.r > 1.2) {
-        const s = p.r * 2.4, k = s * .25;
-        ctx.moveTo(p.x, p.y - s);
-        ctx.quadraticCurveTo(p.x + k, p.y - k, p.x + s, p.y);
-        ctx.quadraticCurveTo(p.x + k, p.y + k, p.x, p.y + s);
-        ctx.quadraticCurveTo(p.x - k, p.y + k, p.x - s, p.y);
-        ctx.quadraticCurveTo(p.x - k, p.y - k, p.x, p.y - s);
-      } else ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.fill();
-    });
-    if (alive || !released) requestAnimationFrame(step); else canvas.remove();
-  };
-  requestAnimationFrame(step);
+  });
 }
 
 function dustGhost(el) {
@@ -8750,7 +8733,7 @@ function resetLessonProgress() {
   updateGroupUI();
   render();
   scheduleAutoSave();
-  countsSparkle(before, {
+  fairyDust(before, {
     new: newCardCount("Table"),
     due: dueCardCount("Table"),
     done: doneCardCount("Table")
@@ -11642,7 +11625,7 @@ function resetVocabProgress() {
   renderVocab();
   renderLessonList();
   const now = vocabCounts(lessonVocabItems(vocabSource()));
-  countsSparkle({
+  fairyDust({
     new: was.fresh,
     due: was.due,
     done: was.done
