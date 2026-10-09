@@ -2708,7 +2708,7 @@ function progressBadgesHtml(mode, currentIds) {
 }
 
 function badgesHtml(newN, dueN, doneN, active) {
-  if (countsShown && countsShown.id === currentLessonId && countsShown.mode === appMode) {
+  if (countsShown && countsShown.id === currentLessonId && countsShown.mode === appMode && !(groupState && appMode !== "vocab")) {
     [ newN, dueN, doneN ] = [ countsShown.n.new, countsShown.n.due, countsShown.n.done ];
     active = {
       new: newN > 0,
@@ -8557,7 +8557,7 @@ function fairyFly(o) {
     if (flying) {
       const [ fx, fy ] = wandTip(...pos(t), t);
       if (o.reverse) {
-        if (acting(t)) for (let n = Math.random() < .6 ? 2 : 1; n > 0; n--) spawn(x0 + Math.random() * (x1 - x0), box.top + Math.random() * Math.max(10, box.height), 0, 0, 900, {
+        if (acting(t)) for (let n = 4; n > 0; n--) spawn(Math.max(x0, Math.min(x1, fx + (Math.random() - .5) * 60)), box.top + Math.random() * Math.max(10, box.height), 0, 0, 900, {
           home: true
         });
       } else {
@@ -8657,10 +8657,12 @@ function fairyDust(before, after, reverse) {
   const box = unionBox(parts) || (target ? target.getBoundingClientRect() : null);
   if (!box || reducedMotion()) return release();
   const counts = target && target.matches(".progress-badges, .lesson-item-meta");
+  const startLeft = box.left + box.width / 2 > window.innerWidth / 2;
   fairyFly({
     kind: "sweep",
     box: box,
     reverse: reverse,
+    fromLeft: reverse ? !startLeft : startLeft,
     cover: counts,
     touchAt: 0,
     onTouch: () => counts && target.animate([ { opacity: 1 }, { opacity: 0 } ], {

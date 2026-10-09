@@ -46,7 +46,7 @@ A lesson is either a video lesson (it has a YouTube, TikTok or Douyin link, or c
 
 **The fairy.** The little fairy from Reset (bun, blue dress, see-through wings, star-tipped wand) turns up for a few other moments, never for everyday grading, always with the same fine, many-coloured glowing dust:
 - **Light ☀️ / dark 🌙:** she flies to the Theme button and taps the air with her wand; the new colours spread out from the wand's tip in a growing circle until they cover the screen.
-- **Undo of a Reset (⌘Z):** she flies back over the 🆕 ⏳ ✅ counts, which disappear under the dust while she draws it up into her wand, and come back with their old numbers. Redo sprinkles them again like a Reset.
+- **Undo of a Reset (⌘Z):** she comes in from the other side and flies over the 🆕 ⏳ ✅ counts the opposite way, the dust covering them in that direction too, while she draws it up into her wand as she passes; they come back with their old numbers. Redo sprinkles them again like a Reset.
 - **Deleting a whole lesson:** she touches it with her wand and it melts into fairy dust (the lesson in the lesson list, or its name when the list is tucked away). A deleted card or word flies off marked ✕, as always.
 - **+ New lesson** and **importing lesson files:** she sprinkles the new lessons in the lesson list (or the lesson's name), and they light up.
 - **Adding a video link** (Open, or a link in pasted cards): she floats along the new video bar, sprinkling it.
