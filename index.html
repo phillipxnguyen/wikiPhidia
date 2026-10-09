@@ -434,9 +434,6 @@ window.onYouTubeIframeAPIReady = function(){
   .lesson-group-label:first-child{padding-top:2px;}
   .lesson-list-empty{padding:10px;color:var(--text-2);font-size:14px;}
   .lesson-group-label{display:flex;align-items:center;justify-content:space-between;gap:8px;}
-  .lesson-view-toggle{display:inline-flex;gap:2px;padding:2px;border-radius:8px;background:color-mix(in srgb, var(--accent) 12%, var(--bg));letter-spacing:0;text-transform:none;}
-  .lesson-view-toggle button{min-width:0;width:28px;height:24px;padding:0;border:0;border-radius:6px;background:transparent;color:var(--text-2);font-size:14px;line-height:1;}
-  .lesson-view-toggle button.active{background:var(--surface);color:var(--text);box-shadow:var(--shadow-sm);}
   .lesson-list.folders .lesson-group{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
   .lesson-list.folders .lesson-group > .lesson-group-label, .lesson-list.folders .lesson-item.all-vocab{grid-column:1 / -1;}
   .lesson-item.tile{gap:4px;min-width:0;padding:5px;border-color:var(--border);background:var(--surface);}
@@ -1129,7 +1126,6 @@ window.onYouTubeIframeAPIReady = function(){
   <input type="search" id="lessonSearch" name="lesson-search" autocomplete="off" placeholder="Search lessons…" aria-label="Search lessons">
   <nav id="lessonList" class="lesson-list" aria-label="Lessons"></nav>
   <div class="sidebar-footer">
-    <button id="btnAddCards" class="ghost" title="Paste new cards into a lesson, with a live preview">➕ Add cards</button>
     <button id="btnOpenFile" class="ghost" title="Import one or more lesson .json files, or a full backup">📥 Import file</button>
     <input type="file" id="fileInput" class="file-input-hidden" accept=".json" multiple>
     <button id="btnBackupAll" class="ghost" title="Save every lesson and your review history as YYYY-MM-DD-flashcards.json. The first time you pick a folder; after that it saves there directly (one file per day). Shift-click to pick a different folder.">💾 Back up</button>
@@ -4495,6 +4491,18 @@ function handleCardAreaMouseout(e) {
   hideTooltip();
 }
 
+let lastTap = null;
+
+function isDoubleTap(key) {
+  const now = Date.now();
+  const twice = !!lastTap && lastTap.key === key && now - lastTap.at < 400;
+  lastTap = twice ? null : {
+    key: key,
+    at: now
+  };
+  return twice;
+}
+
 function handleCardAreaClick(e) {
   const container = e.target.closest("[data-id]");
   if (!container || !container.dataset.id) return;
@@ -4509,6 +4517,13 @@ function handleCardAreaClick(e) {
     return;
   }
   if (isTouch() && !(activeEdit && activeEdit.tr === container)) {
+    const hidden = (isSingleCard ? cardBody : document.getElementById("tbody")).querySelector(".cell.hidden");
+    if ((groupState || !isVirtualLesson()) && !hidden && isDoubleTap("r" + id)) {
+      clearRowSelection();
+      hideTooltip();
+      if (isSingleCard) openSingleCardEdit(row); else openEdit(container, row);
+      return;
+    }
     if (isSingleCard) {
       const pair = e.target.closest(".listen-pair");
       if (cardBody.querySelector(".cell.hidden")) revealAction(); else if (pair && listenBatch().length > 1) {
@@ -8009,7 +8024,7 @@ function fairyTarget() {
     const r = el.getBoundingClientRect();
     return r.width > 0 && r.top >= 0 && r.bottom <= window.innerHeight;
   };
-  return [ ...document.querySelectorAll(".main-inner .progress-badges") ].find(onScreen) || [ document.querySelector(".lesson-item.active:not(.all-vocab) .lesson-item-meta"), document.getElementById(appMode === "vocab" ? "vocabStage" : "cardTable") ].find(onScreen) || null;
+  return [ ...document.querySelectorAll(".main-inner .progress-badges") ].find(onScreen) || [ document.querySelector(".lesson-item.tile.active"), document.getElementById(appMode === "vocab" ? "vocabStage" : "cardTable") ].find(onScreen) || null;
 }
 
 let countsShown = null;
@@ -8017,8 +8032,7 @@ let countsShown = null;
 const COUNT_KINDS = [ "new", "due", "done" ];
 
 function countEls() {
-  const list = ".lesson-item.active:not(.all-vocab) .lesson-item-meta > :is(.new, .due, .done)";
-  return [ ...document.querySelectorAll(groupState && appMode !== "vocab" ? list : ".main-inner .progress-badges > .progress-badge, " + list) ];
+  return groupState && appMode !== "vocab" ? [] : [ ...document.querySelectorAll(".main-inner .progress-badges > .progress-badge") ];
 }
 
 function paintCounts(n) {
@@ -8387,7 +8401,7 @@ function fairyDust(before, after, back) {
   const parts = target ? [ ...target.querySelectorAll(":scope > .progress-badge") ].map(el => el.getBoundingClientRect()) : [];
   const box = unionBox(parts) || (target ? target.getBoundingClientRect() : null);
   if (!box || reducedMotion()) return release();
-  const counts = target && target.matches(".progress-badges, .lesson-item-meta");
+  const counts = target && target.matches(".progress-badges");
   fairyFly({
     kind: "sweep",
     box: box,
@@ -8403,7 +8417,7 @@ function fairyDust(before, after, back) {
       release();
       if (counts) target.getAnimations().forEach(an => an.cancel());
       const now = fairyTarget() || target;
-      if (counts && now && now.matches(".progress-badges, .lesson-item-meta")) now.animate([ { opacity: 0 }, { opacity: 1 } ], {
+      if (counts && now && now.matches(".progress-badges")) now.animate([ { opacity: 0 }, { opacity: 1 } ], {
         duration: 700,
         easing: "ease-in-out"
       });
@@ -8872,17 +8886,6 @@ function lessonTileBar(c) {
   return `<span class="lesson-tile-bar">${part("new", c.fresh)}${part("due", c.due)}${part("later", later)}${part("done", c.done)}</span>`;
 }
 
-function lessonItemMeta(lesson) {
-  const real = lessonCountsFor(lesson);
-  const held = countsShown && countsShown.id === lesson.id && countsShown.mode === appMode ? countsShown.n : null;
-  const c = held ? Object.assign({}, real, {
-    fresh: held.new,
-    due: held.due,
-    done: held.done
-  }) : real;
-  return `<span>${c.total}</span><span class="sep">|</span>` + `<span class="new">🆕 ${c.fresh}</span>` + `<span class="due">⏳ ${c.due}</span>` + `<span class="done">✅ ${c.done}</span>`;
-}
-
 function updateLessonListItem(lesson) {
   const item = Array.from(document.querySelectorAll("#lessonList .lesson-item")).find(el => el.dataset.lessonId === lesson.id);
   if (!item || !lessonShown(lesson)) {
@@ -8895,26 +8898,16 @@ function updateLessonListItem(lesson) {
     renderLessonList();
     return;
   }
-  if (item.classList.contains("tile")) {
-    const c = lessonCountsFor(lesson);
-    const tip = lessonTileTip(name, c);
-    if (item.dataset.tip !== tip) {
-      item.dataset.tip = tip;
-      item.setAttribute("aria-label", tip.replace("\n", ", "));
-      item.querySelector(".lesson-tile-bar").outerHTML = lessonTileBar(c);
-    }
-  } else {
-    const metaEl = item.querySelector(".lesson-item-meta");
-    const meta = lessonItemMeta(lesson);
-    if (metaEl.innerHTML !== meta) metaEl.innerHTML = meta;
+  const c = lessonCountsFor(lesson);
+  const tip = lessonTileTip(name, c);
+  if (item.dataset.tip !== tip) {
+    item.dataset.tip = tip;
+    item.setAttribute("aria-label", tip.replace("\n", ", "));
+    item.querySelector(".lesson-tile-bar").outerHTML = lessonTileBar(c);
   }
   const all = document.querySelector("#lessonList [data-all-vocab]");
   if (all) all.outerHTML = allVocabItemHtml();
 }
-
-const LESSON_VIEW_KEY = "flashcards.lessonView";
-
-let lessonListView = readLocal(LESSON_VIEW_KEY) === "folder" ? "folder" : "list";
 
 function lessonThumbHtml(l) {
   const id = l.mediaUrl ? extractYouTubeId(l.mediaUrl) : null;
@@ -8969,30 +8962,20 @@ function renderLessonList() {
     list.innerHTML = '<div class="lesson-list-empty">No matching lessons.</div>';
     return;
   }
-  const folders = lessonListView === "folder";
-  list.classList.toggle("folders", folders);
+  list.classList.add("folders");
   const itemHtml = l => {
     const active = l.id === currentLessonId && (currentView === "study" || currentView === "vocab");
     const name = l.name || "Untitled lesson";
-    if (folders) {
-      const c = lessonCountsFor(l);
-      const tip = lessonTileTip(name, c);
-      return `<button class="lesson-item tile${active ? " active" : ""}" data-lesson-id="${escapeAttr(l.id)}" data-tip="${escapeAttr(tip)}" aria-label="${escapeAttr(tip.replace("\n", ", "))}"${active ? ' aria-current="page"' : ""}>` + lessonThumbHtml(l) + `<span class="lesson-item-name">${escapeHtml(name)}</span>` + lessonTileBar(c) + "</button>";
-    }
-    return `<button class="lesson-item${active ? " active" : ""}" data-lesson-id="${escapeAttr(l.id)}"${active ? ' aria-current="page"' : ""}>` + `<span class="lesson-item-name">${escapeHtml(name)}</span>` + `<span class="lesson-item-meta">${lessonItemMeta(l)}</span></button>`;
+    const c = lessonCountsFor(l);
+    const tip = lessonTileTip(name, c);
+    return `<button class="lesson-item tile${active ? " active" : ""}" data-lesson-id="${escapeAttr(l.id)}" data-tip="${escapeAttr(tip)}" aria-label="${escapeAttr(tip.replace("\n", ", "))}"${active ? ' aria-current="page"' : ""}>` + lessonThumbHtml(l) + `<span class="lesson-item-name">${escapeHtml(name)}</span>` + lessonTileBar(c) + "</button>";
   };
-  const toggle = `<span class="lesson-view-toggle" role="group" aria-label="Show lessons as"><button data-lesson-view="list" class="${folders ? "" : "active"}" aria-label="List" title="List">☰</button><button data-lesson-view="folder" class="${folders ? "active" : ""}" aria-label="Folders" title="Folders">▦</button></span>`;
   if (q) {
     list.innerHTML = `<div class="lesson-group lessons">${items.map(itemHtml).join("")}</div>`;
     watchThumbWords(list);
     return;
   }
-  let toggled = false;
-  const group = (cls, label, html) => {
-    const withToggle = label && !toggled;
-    if (withToggle) toggled = true;
-    return `<div class="lesson-group ${cls}">${label ? `<div class="lesson-group-label"><span>${label}</span>${withToggle ? toggle : ""}</div>` : ""}${html}</div>`;
-  };
+  const group = (cls, label, html) => `<div class="lesson-group ${cls}">${label ? `<div class="lesson-group-label"><span>${label}</span></div>` : ""}${html}</div>`;
   const allVocab = appMode === "vocab" ? group("vocab", "", allVocabItemHtml()) : "";
   const recent = recentLessonIds().map(id => items.find(l => l.id === id)).filter(Boolean).slice(0, RECENT_MAX);
   const rest = items.filter(l => !recent.includes(l));
@@ -9062,7 +9045,6 @@ function showView(view) {
   document.getElementById("viewEmpty").hidden = view !== "empty";
   document.getElementById("viewAdd").hidden = view !== "add";
   document.getElementById("btnStats").classList.toggle("active", view === "stats");
-  document.getElementById("btnAddCards").classList.toggle("active", view === "add");
   if (view !== "study") {
     commitActiveEdit();
     haltAllPlayback();
@@ -9454,8 +9436,6 @@ document.getElementById("heatNext").onclick = () => {
   renderHeatmap();
 };
 
-document.getElementById("btnAddCards").onclick = openAddView;
-
 document.getElementById("addTarget").addEventListener("change", e => changeAddTarget(e.target.value));
 
 document.getElementById("btnSaveFile").onclick = exportCurrentLesson;
@@ -9504,15 +9484,6 @@ document.getElementById("fileInput").addEventListener("change", e => {
 });
 
 document.getElementById("lessonList").addEventListener("click", e => {
-  const view = e.target.closest("[data-lesson-view]");
-  if (view) {
-    lessonListView = view.dataset.lessonView;
-    try {
-      localStorage.setItem(LESSON_VIEW_KEY, JSON.stringify(lessonListView));
-    } catch (err) {}
-    renderLessonList();
-    return;
-  }
   const item = e.target.closest(".lesson-item:not([data-all-vocab])");
   if (item) switchToLesson(item.dataset.lessonId);
 });
@@ -11418,7 +11389,12 @@ document.getElementById("vocabList").addEventListener("click", e => {
   if (!row) return;
   const item = lessonVocabItems(vocabSource()).find(i => i.key === row.dataset.key);
   if (!item) return;
-  if (!isTouch() && e.target.closest(".vocab-list-term, .vocab-list-meaning")) openVocabEditor(item.key, true); else if (isTouch()) {
+  if (!isTouch() && e.target.closest(".vocab-list-term, .vocab-list-meaning")) openVocabEditor(item.key, true); else if (isTouch() && isDoubleTap("v" + item.key)) {
+    row.classList.remove("row-selected");
+    updateSelBar();
+    hideTooltip();
+    openVocabEditor(item.key, true);
+  } else if (isTouch()) {
     const selected = !row.classList.contains("row-selected");
     document.querySelectorAll("#vocabList .vocab-list-row.row-selected").forEach(r => r.classList.remove("row-selected"));
     row.classList.toggle("row-selected", selected);
@@ -11953,9 +11929,6 @@ function setAppMode(mode) {
   } catch (e) {}
   document.documentElement.classList.toggle("vocab-mode", mode === "vocab");
   document.getElementById("brandName").textContent = mode === "vocab" ? "Vocabulary" : "Lesson";
-  const addBtn = document.getElementById("btnAddCards");
-  addBtn.textContent = mode === "vocab" ? "➕ Add vocabularies" : "➕ Add cards";
-  addBtn.title = mode === "vocab" ? "Add words to a lesson — one at a time or pasted as a list" : "Paste new cards into a lesson, with a live preview";
   document.getElementById("btnAppMode").title = mode === "vocab" ? "Switch to Lesson" : "Switch to Vocabulary";
 }
 
@@ -12349,7 +12322,7 @@ function focusLessonSearch() {
 
 function addFromKey() {
   const plus = [ document.getElementById("listAddCard"), document.getElementById("vocabAddWord") ].find(b => b && !b.hidden && b.getClientRects().length);
-  (plus || document.getElementById("btnAddCards")).click();
+  if (plus) plus.click(); else openAddView();
 }
 
 const SIDEBAR_KEYS = {
