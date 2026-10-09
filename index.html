@@ -8634,21 +8634,22 @@ function fairyDust(before, after, reverse) {
   const parts = target ? [ ...target.querySelectorAll(":scope > .progress-badge") ].map(el => el.getBoundingClientRect()) : [];
   const box = unionBox(parts) || (target ? target.getBoundingClientRect() : null);
   if (!box || reducedMotion()) return release();
+  const counts = target && target.matches(".progress-badges, .lesson-item-meta");
   fairyFly({
     kind: "sweep",
     box: box,
     reverse: reverse,
-    cover: true,
-    onTouch: () => target && target.animate([ { opacity: 1 }, { opacity: 0 } ], {
+    cover: counts,
+    onTouch: () => counts && target.animate([ { opacity: 1 }, { opacity: 0 } ], {
       duration: 900,
       easing: "ease-in-out",
       fill: "forwards"
     }),
     onActEnd: () => {
       release();
-      if (target) target.getAnimations().forEach(an => an.cancel());
+      if (counts) target.getAnimations().forEach(an => an.cancel());
       const now = fairyTarget() || target;
-      if (now) now.animate([ { opacity: 0 }, { opacity: 1 } ], {
+      if (counts && now && now.matches(".progress-badges, .lesson-item-meta")) now.animate([ { opacity: 0 }, { opacity: 1 } ], {
         duration: 700,
         easing: "ease-in-out"
       });
