@@ -8573,10 +8573,11 @@ function fairyFly(o) {
         if (!covered) {
           covered = true;
           for (let n = Math.round(box.width * box.height / 5); n > 0; n--) {
-            const [ px, py ] = cloudPoint(), wait = Math.max(0, Math.min(1, (px - ax) / (bx - ax || 1))) * 900 + Math.random() * 400;
+            const [ px, py ] = cloudPoint(), wait = Math.random() * 300;
             spawn(px, py, (Math.random() - .5) * .008, (Math.random() - .5) * .008, actEnd - t - wait + 300 + Math.random() * 700, {
               still: true,
-              born: t + wait
+              born: t + wait,
+              rise: 900
             });
           }
         }
@@ -8613,7 +8614,7 @@ function fairyFly(o) {
       if (!d.home && !d.still) d.vy += .00008 * dt;
       d.x += d.vx * dt;
       d.y += d.vy * dt;
-      const a = (d.home ? Math.sin(age * Math.PI) : d.still ? Math.min(1, (t - d.born) / 400, (1 - age) * 3) : 1 - age) * (.8 + .2 * Math.sin(d.tw + now / 300));
+      const a = (d.home ? Math.sin(age * Math.PI) : d.still ? Math.min(1, (t - d.born) / (d.rise || 400), (1 - age) * 3) : 1 - age) * (.8 + .2 * Math.sin(d.tw + now / 300));
       ctx.globalAlpha = a;
       const size = d.r * 7;
       ctx.drawImage(sprites[d.c], d.x - size / 2, d.y - size / 2, size, size);
