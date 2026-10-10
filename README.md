@@ -77,8 +77,8 @@ With reduced motion turned on in the system, she stays away and things simply ha
 | [ and ] | Slower or faster sound (the speed beside the sound button) |
 | Y | Make the video large or put it back in the bar; when it grows, the page scrolls back up to it |
 | ⌘⌥A (Ctrl+Alt+A) | Add a card or word (the ＋ in ☰ Full or ☰ List; elsewhere it opens Add cards or Add vocabularies) |
-| ⌘⌥N (Ctrl+Alt+N) | New lesson. The sidebar's shortcuts (N, I, B, W, Q, T) and A need ⌘ and ⌥ on a Mac, Ctrl and Alt elsewhere, so they are not pressed by accident; ⌘⌥I replaces the browser's developer tools while the app is in front |
-| ⌘⌥I (Ctrl+Alt+I) | Open a file (the same as Open file) |
+| ⌘⌥N (Ctrl+Alt+N) | New lesson. The sidebar's shortcuts (N, O, B, W, Q, T) and A need ⌘ and ⌥ on a Mac, Ctrl and Alt elsewhere, so they are not pressed by accident |
+| ⌘⌥O (Ctrl+Alt+O) | Open a file (the same as Open file) |
 | ⌘⌥B (Ctrl+Alt+B) | Back up |
 | ⌘⌥W (Ctrl+Alt+W) | Statistics |
 | ⌘⌥Q (Ctrl+Alt+Q) | Switch between Lessons and Vocabulary |
