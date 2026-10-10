@@ -747,7 +747,7 @@ window.onYouTubeIframeAPIReady = function(){
   .edit-qa.stacked #editA{line-height:1.6;}
   .edit-row .rich-editor{margin-bottom:10px;display:block;}
   .rich-editor:empty::before{content:attr(data-placeholder);color:darkgray;}
-  :is(.rich-editor, .cell) mark.vocab-own{background:color-mix(in srgb, var(--text) 22%, transparent);color:inherit;}
+  :is(.rich-editor, .cell) mark.vocab-own{background:color-mix(in srgb, var(--text) 22%, transparent);color:inherit;cursor:pointer;}
   :is(.rich-editor, .cell) mark.vocab-hit{background:var(--vocab-bg);color:var(--vocab-text);cursor:pointer;}
   :is(.rich-editor, .cell) mark.vocab-stack{background:linear-gradient(color-mix(in srgb, var(--text) 16%, transparent), color-mix(in srgb, var(--text) 16%, transparent)), var(--vocab-bg);}
   :is(.rich-editor, .cell) mark.vocab-own.vocab-stack:not(.vocab-hit){background:color-mix(in srgb, var(--text) 36%, transparent);}
@@ -949,7 +949,6 @@ window.onYouTubeIframeAPIReady = function(){
   .ielts-paper .paper-lines, .ielts-paper .paper-prompt, .ielts-paper .cell.shown.paper-lines:hover, .ielts-paper .cell.hidden.paper-prompt:hover{font-size:20px;line-height:var(--line);background-image:linear-gradient(to bottom, transparent calc(var(--line) - 1px), var(--paper-rule) calc(var(--line) - 1px));background-size:100% var(--line);}
   .ielts-paper .paper-prompt{min-height:calc(var(--line) * 5);color:var(--paper-ink-2);font-style:normal;}
   .ielts-paper .paper-lines{user-select:text;cursor:pointer;}
-  .paper-lines mark{background:var(--paper-mark);color:inherit;padding:0 2px;border-radius:2px;}
   .paper-body{display:grid;grid-template-columns:minmax(0, 1fr);column-gap:24px;}
   .ielts-paper.with-notes .paper-body{grid-template-columns:minmax(0, 1fr) fit-content(44%);}
   .paper-notes{min-width:180px;padding-left:20px;border-left:2px solid var(--paper-margin);font-size:16px;line-height:1.5;}
@@ -2764,6 +2763,31 @@ function lessonSoundAudible() {
   return state === YT.PlayerState.PLAYING || state === YT.PlayerState.BUFFERING;
 }
 
+let workFocusId = null;
+
+let workHushId = null;
+
+function soundSilent() {
+  return !isSequencePlaying && loopingRowId === null && !ttsPlaying;
+}
+
+function rowSoundOn(id) {
+  return !isSequencePlaying && loopingRowId === id || ttsPlaying && ttsOnlyId === id;
+}
+
+function noteWorkHush() {
+  workHushId = workFocusId !== null && soundSilent() ? workFocusId : null;
+}
+
+function loopWorkRow(row) {
+  if (!row || !groupState || groupViewStyle === "ielts" || currentView !== "study") return;
+  workFocusId = row.id;
+  if (workHushId === row.id && soundSilent()) return;
+  workHushId = null;
+  if (rowSoundOn(row.id)) return;
+  if (vocabVideoIdFor(row)) startLoop(row); else startTts("q", row.id);
+}
+
 function stopLessonSound() {
   if (isSequencePlaying) stopSequenceLoop();
   if (ttsPlaying) cancelSpeechOnly();
@@ -2975,9 +2999,7 @@ function renderImportInfo() {
 }
 
 function aCellContent(r) {
-  if (r.aHidden) return '<span class="dots">···</span>';
-  const html = r.aHtml || textHtml(r.a);
-  return isVideoLesson() ? html : lookupHtml(html, r);
+  return r.aHidden ? '<span class="dots">···</span>' : lookupHtml(r.aHtml || textHtml(r.a), r);
 }
 
 function buildRowTr(r) {
@@ -3260,7 +3282,7 @@ function ieltsPaperHtml(row, ahead = 0) {
   const topic = document.getElementById("lessonName").value.trim();
   const words = row.aHidden ? [] : cardWords(row);
   const hints = row.aHidden && ieltsHintId === row.id ? ieltsHints(row) : [];
-  const answer = row.aHidden ? hints.length ? '<div class="cell hidden paper-prompt paper-hint" data-field="a"><ol>' + hints.map(m => `<li>${escapeHtml(m)}</li>`).join("") + "</ol></div>" : '<div class="cell hidden paper-prompt" data-field="a">···</div>' : `<div class="cell shown paper-lines" data-field="a">${lookupHtml(words.reduce((html, i) => highlightTermInNotesHtml(html, i.term), row.aHtml || textHtml(row.a)), row, true)}</div>`;
+  const answer = row.aHidden ? hints.length ? '<div class="cell hidden paper-prompt paper-hint" data-field="a"><ol>' + hints.map(m => `<li>${escapeHtml(m)}</li>`).join("") + "</ol></div>" : '<div class="cell hidden paper-prompt" data-field="a">···</div>' : `<div class="cell shown paper-lines" data-field="a">${aCellContent(row)}</div>`;
   const notes = words.length ? '<aside class="paper-notes"><div class="paper-label">Notes</div><ol>' + words.map(i => `<li><b>${escapeHtml(i.term)}</b>${i.meaning ? " — " + escapeHtml(i.meaning) : ""}</li>`).join("") + "</ol></aside>" : "";
   const extras = row.aHidden ? "" : '<div class="paper-extras"><div class="paper-stroke"></div><div class="paper-dict" hidden></div></div>';
   return `<article class="ielts-paper${notes ? " with-notes" : ""}">` + `<header class="paper-head"><div>${topic ? `<div class="paper-topic">${escapeHtml(topic)}</div>` : ""}</div>` + `<div class="paper-meta"><div>Question <b>${n}</b> of ${ieltsAnswered + singleCardQueue().length}</div><div${ahead ? "" : ' id="ieltsTimer"'} class="paper-timer${row.aHidden ? "" : " stopped"}">${ahead ? "0:00" : ieltsClockText()}</div></div></header>` + '<div class="paper-body"><div class="paper-main">' + `<div class="paper-question"><span class="paper-num">${n}.</span><div class="cell shown" data-field="q">${qCellContent(row)}</div></div>` + `<div class="paper-answer">${answer}</div></div>${notes}</div>` + extras + "</article>";
@@ -3384,8 +3406,7 @@ function toggleRowPlay(row) {
 }
 
 function qCellContent(r) {
-  const html = r.qHtml || textHtml(r.q);
-  return rowPlayBadge(r) + (r.qHidden ? '<span class="dots">···</span>' : isVideoLesson() ? lookupHtml(html, r) : html);
+  return rowPlayBadge(r) + (r.qHidden ? '<span class="dots">···</span>' : lookupHtml(r.qHtml || textHtml(r.q), r));
 }
 
 function escapeHtml(s) {
@@ -4204,7 +4225,7 @@ function highlightMatch(sentence, needle) {
 
 const CJK_CHAR_RE = /[぀-ヿ一-鿿]/;
 
-function highlightVocabInHtml(html, excludeId, skipMarked, extraTerms) {
+function highlightVocabInHtml(html, excludeId, extraTerms) {
   if (!html) return html;
   const exclude = rows.find(r => r.id === excludeId);
   let terms = vocabTerms();
@@ -4224,7 +4245,7 @@ function highlightVocabInHtml(html, excludeId, skipMarked, extraTerms) {
   const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null);
   const textNodes = [];
   let node;
-  while (node = walker.nextNode()) if (!skipMarked || !node.parentElement.closest("mark")) textNodes.push(node);
+  while (node = walker.nextNode()) textNodes.push(node);
   const seen = new Set;
   textNodes.forEach(textNode => {
     const text = textNode.nodeValue;
@@ -4278,15 +4299,15 @@ function highlightVocabInHtml(html, excludeId, skipMarked, extraTerms) {
 
 const lookupCache = new Map;
 
-function lookupHtml(html, row, skipMarked) {
+function lookupHtml(html, row) {
   if (!html) return html;
   const sig = vocabLookup().sig;
   if (lookupCache.sig !== sig) {
     lookupCache.clear();
     lookupCache.sig = sig;
   }
-  const key = row.id + "\u0001" + (skipMarked ? 1 : 0) + "\u0001" + html;
-  if (!lookupCache.has(key)) lookupCache.set(key, highlightVocabInHtml(html, row.id, skipMarked));
+  const key = row.id + "\u0001" + html;
+  if (!lookupCache.has(key)) lookupCache.set(key, highlightVocabInHtml(html, row.id));
   return lookupCache.get(key);
 }
 
@@ -4503,6 +4524,8 @@ function handleCardAreaClick(e) {
   if (e.target.closest(".loop-time")) {
     e.stopPropagation();
     toggleRowPlay(row);
+    workFocusId = row.id;
+    noteWorkHush();
     return;
   }
   const hit = e.target.closest(".cell mark.vocab-hit");
@@ -4511,6 +4534,15 @@ function handleCardAreaClick(e) {
     hideTooltip();
     const matches = markMatches(hit, row.id);
     if (matches.length) showVocabPopup(matches, hit.getBoundingClientRect());
+    return;
+  }
+  const own = e.target.closest(".cell mark.vocab-own");
+  if (own && getSelection().isCollapsed) {
+    e.stopPropagation();
+    hideTooltip();
+    const key = normalizeVocabText((own.dataset.own || "").split("\n")[0]);
+    const item = lessonVocabItems(vocabSource()).find(i => i.key === key && i.card === row) || lessonVocabItems(vocabSource()).find(i => i.key === key);
+    if (item) showVocabAddPopup(row, item.term, own.getBoundingClientRect(), item);
     return;
   }
   if (isTouch() && !(activeEdit && activeEdit.tr === container)) {
@@ -5150,6 +5182,7 @@ function reclaimKeyboardFocus() {
 window.addEventListener("blur", () => {
   const active = document.activeElement;
   const focusedOwnDictIframe = !!(activeEdit && activeDictOverlay && active === activeDictOverlay.iframe);
+  if (focusedOwnDictIframe) loopWorkRow(activeEdit.row);
   if (activeEdit && !focusedOwnDictIframe) {
     commitActiveEdit();
     render();
@@ -5160,7 +5193,7 @@ window.addEventListener("blur", () => {
 });
 
 function buildEditBoxInner(row, stacked) {
-  return `\n    <div class="edit-qa${stacked || !isVideoLesson() ? " stacked" : ""}">\n      <div>\n        <div id="editQ" class="rich-editor" contenteditable="true" data-placeholder="Question">${isVideoLesson() ? getEditInitialHtml(row.q, row.qHtml, row.id) : row.qHtml || textHtml(row.q)}</div>\n      </div>\n      <div>\n        <div id="editA" class="rich-editor" contenteditable="true" data-placeholder="Answer">${isVideoLesson() ? row.aHtml || textHtml(row.a) : getEditInitialHtml(row.a, row.aHtml, row.id)}</div>\n      </div>\n    </div>\n    <div id="editNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes">${notesEditorHtml(row)}</div>\n    <div class="edit-actions">\n      <button id="editSave" class="primary">Save</button>\n    </div>\n    <div id="editDict"></div>\n  `;
+  return `\n    <div class="edit-qa${stacked || !isVideoLesson() ? " stacked" : ""}">\n      <div>\n        <div id="editQ" class="rich-editor" contenteditable="true" data-placeholder="Question">${getEditInitialHtml(row.q, row.qHtml, row.id)}</div>\n      </div>\n      <div>\n        <div id="editA" class="rich-editor" contenteditable="true" data-placeholder="Answer">${getEditInitialHtml(row.a, row.aHtml, row.id)}</div>\n      </div>\n    </div>\n    <div id="editNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes">${notesEditorHtml(row)}</div>\n    <div class="edit-actions">\n      <button id="editSave" class="primary">Save</button>\n    </div>\n    <div id="editDict"></div>\n  `;
 }
 
 let draftRowId = null;
@@ -5348,9 +5381,16 @@ function wireEditBox(host, row) {
   const editNotes = host.querySelector("#editNotes");
   const editDict = host.querySelector("#editDict");
   const editSrc = isVideoLesson() ? editQ : editA;
+  const noteEntryLi = key => Array.from(editNotes.querySelectorAll("li")).find(li => {
+    const entry = liVocabEntry(li);
+    return entry && entry.key === key;
+  });
   const refreshEditMarks = () => {
-    const html = highlightVocabInHtml(stripVocabHighlights(editSrc.innerHTML), row.id, false, Array.from(editNotes.querySelectorAll("li")).map(liVocabEntry).filter(Boolean).map(e => e.term));
-    if (html !== editSrc.innerHTML) editSrc.innerHTML = html;
+    const extra = Array.from(editNotes.querySelectorAll("li")).map(liVocabEntry).filter(Boolean).map(e => e.term);
+    [ editQ, editA ].forEach(el => {
+      const html = highlightVocabInHtml(stripVocabHighlights(el.innerHTML), row.id, extra);
+      if (html !== el.innerHTML) el.innerHTML = html;
+    });
   };
   let dictDebounce = null;
   function refreshDict() {
@@ -5463,29 +5503,43 @@ function wireEditBox(host, row) {
   function isWholeFieldSelection(el, text) {
     return text === (el.textContent || "").trim();
   }
-  editSrc.addEventListener("click", e => {
-    const hit = e.target.closest("mark.vocab-hit");
-    if (!hit || !editSrc.contains(hit)) return;
-    const matches = markMatches(hit, row.id);
-    if (matches.length) {
-      showVocabPopup(matches, hit.getBoundingClientRect());
-    }
+  [ editQ, editA ].forEach(field => {
+    field.addEventListener("click", e => {
+      if (!getSelection().isCollapsed) return;
+      const hit = e.target.closest("mark.vocab-hit");
+      if (hit && field.contains(hit)) {
+        const matches = markMatches(hit, row.id);
+        if (matches.length) showVocabPopup(matches, hit.getBoundingClientRect());
+        return;
+      }
+      const own = e.target.closest("mark.vocab-own");
+      const li = own && field.contains(own) && noteEntryLi(normalizeVocabText((own.dataset.own || "").split("\n")[0]));
+      const entry = li && liVocabEntry(li);
+      if (entry) showVocabAddPopup(row, entry.term, own.getBoundingClientRect(), null, (term, meaning) => {
+        const nested = Array.from(li.children).filter(el => el.tagName === "UL" || el.tagName === "OL");
+        li.innerHTML = "<b>" + escapeHtml(term) + "</b>: " + escapeHtml(meaning);
+        nested.forEach(el => li.appendChild(el));
+        autoResizeDiv(editNotes);
+        refreshEditMarks();
+      }, entry.meaning);
+    });
+    field.addEventListener("keydown", e => {
+      if (e.key !== "Shift" || e.metaKey || e.ctrlKey) return;
+      const sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0) return;
+      const selectedText = sel.toString().trim();
+      if (!selectedText || isWholeFieldSelection(field, selectedText)) return;
+      const range = sel.getRangeAt(0);
+      if (!field.contains(range.commonAncestorContainer)) return;
+      e.preventDefault();
+      if (existingVocab(selectedText) || wordAlreadyInNotes(editNotes.querySelector("ul.notes-list"), selectedText)) {
+        warnVocabExists(selectedText);
+        return;
+      }
+      showVocabAddPopup(row, selectedText, range.getBoundingClientRect(), null, (term, meaning) => appendWordToNotes(term, meaning));
+    });
   });
-  editSrc.addEventListener("keydown", e => {
-    if (e.key !== "Shift" || e.metaKey || e.ctrlKey) return;
-    const sel = window.getSelection();
-    if (!sel || sel.rangeCount === 0) return;
-    const selectedText = sel.toString().trim();
-    if (!selectedText || isWholeFieldSelection(editSrc, selectedText)) return;
-    const range = sel.getRangeAt(0);
-    if (!editSrc.contains(range.commonAncestorContainer)) return;
-    e.preventDefault();
-    if (existingVocab(selectedText) || wordAlreadyInNotes(editNotes.querySelector("ul.notes-list"), selectedText)) {
-      warnVocabExists(selectedText);
-      return;
-    }
-    showVocabAddPopup(row, selectedText, range.getBoundingClientRect(), null, (term, meaning) => appendWordToNotes(term, meaning));
-  });
+  host.addEventListener("pointerdown", () => loopWorkRow(row));
   activeEdit = {
     tr: host,
     row: row,
@@ -5500,6 +5554,7 @@ function wireEditBox(host, row) {
   activeEdit.originalAHtml = sanitizeHtml(stripVocabHighlights(editA.innerHTML || ""), "br");
   activeEdit.originalNotes = plainTextOf(editNotes.innerHTML, "\n");
   activeEdit.originalNotesHtml = sanitizeHtml(editNotes.innerHTML || "");
+  loopWorkRow(row);
   host.querySelector("#editSave").onclick = () => {
     commitActiveEdit();
     render();
@@ -5757,6 +5812,8 @@ function goToReviewMode(style) {
 document.getElementById("fullModeBtn").onclick = () => goToReviewMode("full");
 
 document.getElementById("groupBtn").onclick = () => goToReviewMode("table");
+
+document.getElementById("btnPlaySequence").addEventListener("click", () => setTimeout(noteWorkHush, 0));
 
 document.getElementById("listenModeBtn").onclick = () => goToReviewMode("listen");
 
@@ -12114,7 +12171,7 @@ function hideVocabAddPopup() {
   vocabAddPopup = null;
 }
 
-function showVocabAddPopup(row, term, rect, editing, onSave) {
+function showVocabAddPopup(row, term, rect, editing, onSave, meaning) {
   hideVocabAddPopup();
   hideVocabPopup();
   const popup = document.createElement("div");
@@ -12126,7 +12183,7 @@ function showVocabAddPopup(row, term, rect, editing, onSave) {
   if (term) {
     const bold = document.createElement("b");
     bold.textContent = term;
-    input.append(bold, ": " + (editing ? editing.meaning : ""));
+    input.append(bold, ": " + (editing ? editing.meaning : meaning || ""));
   }
   const box = popup.getBoundingClientRect();
   let top = rect.bottom + 8;
