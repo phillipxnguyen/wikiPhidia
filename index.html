@@ -6173,7 +6173,7 @@ document.addEventListener("pointerdown", e => {
   if (!groupState || currentView !== "study" || activeEdit) return;
   if (!e.target.closest("#viewStudy") || e.target.closest("button, input, select, textarea, [contenteditable], .loop-time")) return;
   if (document.getElementById("sessionCompletePanel").style.display === "block") return;
-  const lines = groupViewStyle === "table" ? "#tbody tr" : isListenMode() && listenBatch().length > 1 ? "#singleCardBody .listen-pair" : null;
+  const lines = groupViewStyle === "table" ? "#tbody tr" : isListenMode() ? "#singleCardBody .listen-pair" : null;
   const row = lines ? e.target.closest(`${lines}[data-id]`) : null;
   drag = {
     id: e.pointerId,
@@ -6270,15 +6270,10 @@ function showNextUnderSwipe(row) {
     hidden.push([ el, el.style.visibility ]);
     el.style.visibility = "hidden";
   };
-  const ids = groupState.groups[groupState.index] || [];
-  if (row && (groupViewStyle === "table" ? ids.length : listenBatch().length) > 1) {
-    const line = document.querySelector(`#strokeRows > [data-row-id="${row.dataset.id}"]`);
-    row.style.display = "none";
-    if (line) line.style.display = "none";
-    return () => {
-      row.style.display = "";
-      if (line) line.style.display = "";
-    };
+  if (row) {
+    hide(row);
+    hide(document.querySelector(`#strokeRows > [data-row-id="${row.dataset.id}"]`));
+    return () => hidden.forEach(([el, v]) => el.style.visibility = v);
   }
   hide(document.getElementById("strokeRows"));
   const entry = entryHidden();
