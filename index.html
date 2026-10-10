@@ -371,12 +371,6 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-word-notes > :first-child{margin-top:0;}
   .vocab-word-notes > :last-child{margin-bottom:0;}
   .vocab-editor-actions{display:flex;justify-content:flex-end;gap:8px;}
-  .over-limit, .over-limit:focus, .vocab-add-field.over-limit{border-color:var(--danger);box-shadow:0 0 0 4px var(--danger-soft);}
-  .limit-row{display:flex;gap:8px;margin-top:4px;font-size:14px;}
-  .limit-msg{color:var(--danger);}
-  .limit-count{margin-left:auto;color:var(--text-2);font-variant-numeric:tabular-nums;}
-  .limit-count.over{color:var(--danger);font-weight:600;}
-  .vocab-editor .limit-row{margin-top:-4px;}
   html:not(.touch) .vocab-list-term, html:not(.touch) .vocab-list-meaning{cursor:pointer;}
   .vocab-more{grid-column:1 / -1;margin-top:8px;width:100%;}
   #vocabInlineAdd{margin-bottom:16px;}
@@ -753,13 +747,13 @@ window.onYouTubeIframeAPIReady = function(){
   .edit-qa.stacked #editA{line-height:1.6;}
   .edit-row .rich-editor{margin-bottom:10px;display:block;}
   .rich-editor:empty::before{content:attr(data-placeholder);color:darkgray;}
-  .rich-editor mark.vocab-own{background:color-mix(in srgb, var(--text) 22%, transparent);color:inherit;}
-  .rich-editor mark.vocab-hit{background:var(--vocab-bg);color:var(--vocab-text);cursor:pointer;}
-  .rich-editor mark.vocab-stack{background:linear-gradient(color-mix(in srgb, var(--text) 16%, transparent), color-mix(in srgb, var(--text) 16%, transparent)), var(--vocab-bg);}
-  .rich-editor mark.vocab-own.vocab-stack:not(.vocab-hit){background:color-mix(in srgb, var(--text) 36%, transparent);}
-  .rich-editor mark.vs{border-top-left-radius:4px;border-bottom-left-radius:4px;padding-left:1px;}
-  .rich-editor mark.ve{border-top-right-radius:4px;border-bottom-right-radius:4px;padding-right:1px;}
-  .rich-editor mark.vocab-hover{background:var(--vocab-bg-hover);}
+  :is(.rich-editor, .cell) mark.vocab-own{background:color-mix(in srgb, var(--text) 22%, transparent);color:inherit;}
+  :is(.rich-editor, .cell) mark.vocab-hit{background:var(--vocab-bg);color:var(--vocab-text);cursor:pointer;}
+  :is(.rich-editor, .cell) mark.vocab-stack{background:linear-gradient(color-mix(in srgb, var(--text) 16%, transparent), color-mix(in srgb, var(--text) 16%, transparent)), var(--vocab-bg);}
+  :is(.rich-editor, .cell) mark.vocab-own.vocab-stack:not(.vocab-hit){background:color-mix(in srgb, var(--text) 36%, transparent);}
+  :is(.rich-editor, .cell) mark.vs{border-top-left-radius:4px;border-bottom-left-radius:4px;padding-left:1px;}
+  :is(.rich-editor, .cell) mark.ve{border-top-right-radius:4px;border-bottom-right-radius:4px;padding-right:1px;}
+  :is(.rich-editor, .cell) mark.vocab-hover{background:var(--vocab-bg-hover);}
   .rich-editor ul, .vocab-popup ul{margin:2px 0;padding-left:20px;}
   .rich-editor li, .vocab-popup li{margin:2px 0;}
   .hover-tooltip{
@@ -2433,40 +2427,6 @@ function isTranslationCard(row) {
   return !!q && !!a && detectLang(q).split("-")[0] !== detectLang(a).split("-")[0];
 }
 
-const translationWarned = new Set;
-
-function warnTranslationCard(row) {
-  if (translationWarned.has(row.id) || document.getElementById("translationWarn")) return;
-  const all = rows.filter(isTranslationCard);
-  const box = document.createElement("div");
-  box.id = "translationWarn";
-  box.className = "modal-backdrop";
-  box.innerHTML = '<div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="translationWarnTitle">' + '<h3 id="translationWarnTitle">This card is a translation</h3>' + `<p>“${escapeHtml(truncate(row.q.trim(), 60))}” and its answer are in different languages. Translations are learnt in Vocabulary; Speaking is for questions and answers.</p>` + '<div class="modal-actions"><button class="ghost" data-act="cancel">Cancel</button>' + (all.length > 1 ? `<button class="ghost" data-act="all">Move all ${all.length}</button>` : "") + '<button class="primary" data-act="one">Move card</button></div></div>';
-  document.body.appendChild(box);
-  const close = () => {
-    box.remove();
-    document.removeEventListener("keydown", onKey, true);
-  };
-  const act = what => {
-    close();
-    if (what === "cancel") translationWarned.add(row.id); else moveCardsToVocab(what === "all" ? rows.filter(isTranslationCard) : [ row ]);
-  };
-  const onKey = e => {
-    if (e.key === "Tab") return;
-    e.stopPropagation();
-    if (e.key === "Escape" || e.key === "Enter") {
-      e.preventDefault();
-      act(e.key === "Enter" ? "one" : "cancel");
-    }
-  };
-  document.addEventListener("keydown", onKey, true);
-  box.addEventListener("click", e => {
-    const btn = e.target.closest("[data-act]");
-    if (btn) act(btn.dataset.act); else if (e.target === box) act("cancel");
-  });
-  box.querySelector('[data-act="one"]').focus();
-}
-
 function moveCardToVocab(row) {
   moveCardsToVocab([ row ]);
 }
@@ -2475,10 +2435,10 @@ function moveCardsToVocab(list) {
   if (list.length === 1) return moveOneCardToVocab(list[0]);
   const ok = list.filter(r => {
     const t = (r.q || "").replace(/\s+/g, " ").trim();
-    return t && t.length <= VOCAB_TERM_MAX && !/[:：]/.test(t);
+    return !!t;
   });
   if (!ok.length) {
-    showToast("These cards can't become words (too long or with a colon)");
+    showToast("These cards have no question to make a word from");
     return;
   }
   pushUndo("Moved " + ok.length + " cards to Vocabulary");
@@ -2507,7 +2467,7 @@ function moveCardsToVocab(list) {
   });
   hoveredRowId = selectedRowId = null;
   swipe(studyParts(), 1, render, true, "Vocab");
-  showToast(`Moved ${ok.length} cards to Vocabulary` + (ok.length < list.length ? ` (${list.length - ok.length} left: too long or with a colon)` : ""));
+  showToast(`Moved ${ok.length} cards to Vocabulary` + (ok.length < list.length ? ` (${list.length - ok.length} left: no question)` : ""));
   scheduleAutoSave();
   renderLessonList();
 }
@@ -3015,7 +2975,7 @@ function renderImportInfo() {
 }
 
 function aCellContent(r) {
-  return r.aHidden ? '<span class="dots">···</span>' : r.aHtml || textHtml(r.a);
+  return r.aHidden ? '<span class="dots">···</span>' : lookupHtml(r.aHtml || textHtml(r.a), r);
 }
 
 function buildRowTr(r) {
@@ -3297,7 +3257,7 @@ function ieltsPaperHtml(row, ahead = 0) {
   const topic = document.getElementById("lessonName").value.trim();
   const words = row.aHidden ? [] : cardWords(row);
   const hints = row.aHidden && ieltsHintId === row.id ? ieltsHints(row) : [];
-  const answer = row.aHidden ? hints.length ? '<div class="cell hidden paper-prompt paper-hint" data-field="a"><ol>' + hints.map(m => `<li>${escapeHtml(m)}</li>`).join("") + "</ol></div>" : '<div class="cell hidden paper-prompt" data-field="a">···</div>' : `<div class="cell shown paper-lines" data-field="a">${words.reduce((html, i) => highlightTermInNotesHtml(html, i.term), aCellContent(row))}</div>`;
+  const answer = row.aHidden ? hints.length ? '<div class="cell hidden paper-prompt paper-hint" data-field="a"><ol>' + hints.map(m => `<li>${escapeHtml(m)}</li>`).join("") + "</ol></div>" : '<div class="cell hidden paper-prompt" data-field="a">···</div>' : `<div class="cell shown paper-lines" data-field="a">${lookupHtml(words.reduce((html, i) => highlightTermInNotesHtml(html, i.term), row.aHtml || textHtml(row.a)), row, true)}</div>`;
   const notes = words.length ? '<aside class="paper-notes"><div class="paper-label">Notes</div><ol>' + words.map(i => `<li><b>${escapeHtml(i.term)}</b>${i.meaning ? " — " + escapeHtml(i.meaning) : ""}</li>`).join("") + "</ol></aside>" : "";
   const extras = row.aHidden ? "" : '<div class="paper-extras"><div class="paper-stroke"></div><div class="paper-dict" hidden></div></div>';
   return `<article class="ielts-paper${notes ? " with-notes" : ""}">` + `<header class="paper-head"><div>${topic ? `<div class="paper-topic">${escapeHtml(topic)}</div>` : ""}</div>` + `<div class="paper-meta"><div>Question <b>${n}</b> of ${ieltsAnswered + singleCardQueue().length}</div><div${ahead ? "" : ' id="ieltsTimer"'} class="paper-timer${row.aHidden ? "" : " stopped"}">${ahead ? "0:00" : ieltsClockText()}</div></div></header>` + '<div class="paper-body"><div class="paper-main">' + `<div class="paper-question"><span class="paper-num">${n}.</span><div class="cell shown" data-field="q">${qCellContent(row)}</div></div>` + `<div class="paper-answer">${answer}</div></div>${notes}</div>` + extras + "</article>";
@@ -3344,9 +3304,6 @@ function renderSingleCard(visibleRows) {
   bodyEl.classList.toggle("listen-batch", isListenMode());
   bodyEl.innerHTML = groupViewStyle === "ielts" ? ieltsPaperHtml(row) : isListenMode() ? listenPairsHtml(batch) : singleCardFieldsHtml(row);
   if (groupViewStyle === "ielts") {
-    if (isTranslationCard(row) && !isVirtualLesson()) setTimeout(() => {
-      if (groupState && groupViewStyle === "ielts" && getCurrentSingleCardRow() === row) warnTranslationCard(row);
-    }, 0);
     visibleRows.slice(0, 2).forEach(r => {
       const url = dictUrlFor((r.a || "").trim(), r);
       if (url) getDictIframe(url);
@@ -3424,7 +3381,7 @@ function toggleRowPlay(row) {
 }
 
 function qCellContent(r) {
-  return rowPlayBadge(r) + (r.qHidden ? '<span class="dots">···</span>' : r.qHtml || textHtml(r.q));
+  return rowPlayBadge(r) + (r.qHidden ? '<span class="dots">···</span>' : lookupHtml(r.qHtml || textHtml(r.q), r));
 }
 
 function escapeHtml(s) {
@@ -4243,7 +4200,7 @@ function highlightMatch(sentence, needle) {
 
 const CJK_CHAR_RE = /[぀-ヿ一-鿿]/;
 
-function highlightVocabInHtml(html, excludeId) {
+function highlightVocabInHtml(html, excludeId, skipMarked) {
   if (!html) return html;
   const terms = vocabTerms();
   if (!terms.size) return html;
@@ -4253,7 +4210,7 @@ function highlightVocabInHtml(html, excludeId) {
   const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null);
   const textNodes = [];
   let node;
-  while (node = walker.nextNode()) textNodes.push(node);
+  while (node = walker.nextNode()) if (!skipMarked || !node.parentElement.closest("mark")) textNodes.push(node);
   const seen = new Set;
   textNodes.forEach(textNode => {
     const text = textNode.nodeValue;
@@ -4303,6 +4260,20 @@ function highlightVocabInHtml(html, excludeId) {
     textNode.replaceWith(frag);
   });
   return container.innerHTML;
+}
+
+const lookupCache = new Map;
+
+function lookupHtml(html, row, skipMarked) {
+  if (!html) return html;
+  const sig = vocabLookup().sig;
+  if (lookupCache.sig !== sig) {
+    lookupCache.clear();
+    lookupCache.sig = sig;
+  }
+  const key = row.id + "\u0001" + (skipMarked ? 1 : 0) + "\u0001" + html;
+  if (!lookupCache.has(key)) lookupCache.set(key, highlightVocabInHtml(html, row.id, skipMarked));
+  return lookupCache.get(key);
 }
 
 function markTerms(mark) {
@@ -4518,6 +4489,14 @@ function handleCardAreaClick(e) {
   if (e.target.closest(".loop-time")) {
     e.stopPropagation();
     toggleRowPlay(row);
+    return;
+  }
+  const hit = e.target.closest(".cell mark.vocab-hit");
+  if (hit && getSelection().isCollapsed) {
+    e.stopPropagation();
+    hideTooltip();
+    const matches = markMatches(hit, row.id);
+    if (matches.length) showVocabPopup(matches, hit.getBoundingClientRect());
     return;
   }
   if (isTouch() && !(activeEdit && activeEdit.tr === container)) {
@@ -4850,33 +4829,9 @@ function findDuplicateCard(q, a, time, except) {
   return rows.find(r => r !== except && r.id !== draftRowId && (!except || r.srcLessonId === except.srcLessonId) && normalizeImportText(r.q || "") === nq && (time == null || r.time == null || r.time === time) && (!na || !(r.a || "").trim() || normalizeImportText(r.a) === na)) || null;
 }
 
-const VOCAB_TERM_MAX = 300;
-
 const NOTE_TERM_MAX = 100;
 
-function watchTermLimit(input, termOf, saveBtn) {
-  const row = document.createElement("div");
-  row.className = "limit-row";
-  row.innerHTML = `<span class="limit-msg">You've reached ${VOCAB_TERM_MAX} characters</span><span class="limit-count"></span>`;
-  input.after(row);
-  const msg = row.firstChild, count = row.lastChild;
-  const update = () => {
-    const len = termOf().length;
-    const over = len > VOCAB_TERM_MAX;
-    row.hidden = len < Math.ceil(VOCAB_TERM_MAX * .8);
-    msg.hidden = !over;
-    count.textContent = `${len} / ${VOCAB_TERM_MAX}`;
-    count.classList.toggle("over", over);
-    input.classList.toggle("over-limit", over);
-    if (saveBtn) saveBtn.disabled = over;
-    return over;
-  };
-  input.addEventListener("input", update);
-  update();
-  return update;
-}
-
-const NOTE_VOCAB_ITEM_RE = new RegExp(`^(\\s*([^:：=＝\\n]{1,${VOCAB_TERM_MAX}}?)\\s*(?:[:：]|={1,2}|＝)\\s*)(\\S[\\s\\S]*?)\\s*$`);
+const NOTE_VOCAB_ITEM_RE = new RegExp(`^(\\s*([^:：=＝\\n]+?)\\s*(?:[:：]|={1,2}|＝)\\s*)(\\S[\\s\\S]*?)\\s*$`);
 
 function ownLiTextNodes(li) {
   const nodes = [];
@@ -6835,7 +6790,7 @@ function planWords(items) {
   items.forEach(it => {
     if (it.kind !== "word") return;
     const key = normalizeVocabText(it.term);
-    if (it.term.length > VOCAB_TERM_MAX) it.wordKind = "long"; else if (seen.has(key) || existingVocab(it.term)) it.wordKind = "duplicate"; else {
+    if (seen.has(key) || existingVocab(it.term)) it.wordKind = "duplicate"; else {
       it.wordKind = "new";
       seen.add(key);
     }
@@ -6956,44 +6911,41 @@ function appendWordItems(card, pairs) {
 }
 
 function sentenceWordsFrom(cards) {
-  const pairs = [], toTranslate = [], seen = new Set;
-  const fits = t => t && t.length <= VOCAB_TERM_MAX && !/[:：]/.test(t) && !seen.has(normalizeVocabText(t)) && !existingVocab(t);
+  const toTranslate = [], seen = new Set;
+  const fits = t => t && !seen.has(normalizeVocabText(t)) && !existingVocab(t);
   cards.forEach(c => {
     const q = (c.q || "").replace(/\s+/g, " ").trim(), a = (c.a || "").replace(/\s+/g, " ").trim();
-    if (a && !/[.!?。！？]\s+\S/.test(a)) {
-      if (fits(q)) {
-        seen.add(normalizeVocabText(q));
-        pairs.push([ q, a ]);
-      }
-      return;
-    }
+    if (a && !/[.!?。！？]\s+\S/.test(a)) return;
     splitIntoSentences(a || q).forEach(sen => {
       if (!fits(sen.text)) return;
       seen.add(normalizeVocabText(sen.text));
       toTranslate.push(sen.text);
     });
   });
-  return {
-    pairs: pairs,
-    toTranslate: toTranslate
-  };
+  return toTranslate;
 }
 
 async function addSentenceWords(cards, onStatus) {
   const lessonId = currentLessonId;
-  const {pairs: pairs, toTranslate: toTranslate} = sentenceWordsFrom(cards);
-  if (!pairs.length && !toTranslate.length) return 0;
+  const toTranslate = sentenceWordsFrom(cards);
+  if (!toTranslate.length) return 0;
   if (toTranslate.length && onStatus) onStatus(`Translating ${toTranslate.length} sentence(s) for Vocabulary…`);
   const vi = toTranslate.filter(t => detectLang(t) === "vi-VN"), other = toTranslate.filter(t => detectLang(t) !== "vi-VN");
   const [viOut, otherOut] = await Promise.all([ vi.length ? translateBatch(vi, "en") : [], other.length ? translateBatch(other, "vi") : [] ]);
   if (currentLessonId !== lessonId) return 0;
-  const found = pairs.concat(vi.map((t, i) => [ t, viOut[i] ]), other.map((t, i) => [ t, otherOut[i] ])).filter(([t, m]) => m && m.trim() && !existingVocab(t));
+  const found = vi.map((t, i) => [ t, viOut[i] ]).concat(other.map((t, i) => [ t, otherOut[i] ])).filter(([t, m]) => m && m.trim() && !existingVocab(t));
   if (!found.length) return 0;
   pushUndo("Added " + found.length + " word" + (found.length === 1 ? "" : "s") + " from sentences");
   addWordsToLesson(found, cards);
   render();
   renderLessonList();
   return found.length;
+}
+
+async function openWordsInVocab() {
+  if (appMode === "vocab" || rows.some(r => r.id !== draftRowId)) return;
+  await flushAutoSave();
+  document.getElementById("btnAppMode").click();
 }
 
 function addWordsToLesson(pairs, preferRows) {
@@ -7285,6 +7237,19 @@ function analyzeImportText(raw) {
   if (delim !== "none") lines.forEach(l => {
     l.entry = parseImportLine(l.text, delim);
   });
+  const seen = new Set(lines.filter(l => l.word).map(l => normalizeVocabText(l.word.term)));
+  lines.forEach(l => {
+    const e = l.entry;
+    if (!e || e.time != null || !isTranslationCard(e)) return;
+    const term = e.q.replace(/\s+/g, " ").trim(), key = normalizeVocabText(term);
+    l.word = {
+      term: term,
+      meaning: e.a.replace(/\s+/g, " ").trim(),
+      wordKind: seen.has(key) || existingVocab(term) ? "duplicate" : "new"
+    };
+    seen.add(key);
+    l.entry = null;
+  });
   return {
     mediaUrl: head.url,
     cleanedText: head.text,
@@ -7376,12 +7341,26 @@ document.querySelectorAll(".lang-btn").forEach(btn => {
           notes: ""
         });
       });
-      const plan = planImport(importEntries);
-      commitImport(plan, "Translated — " + plan.newRows.length + " new, " + plan.updated + " updated");
-      if (plan.newRows.length || plan.updated) render();
-      let msg = importResultMessage(plan) || "No cards imported.";
+      const seen = new Set;
+      const words = importEntries.filter(e => e.time == null).map(e => [ e.q.replace(/\s+/g, " ").trim(), e.a.replace(/\s+/g, " ").trim() ]).filter(([t]) => {
+        const key = normalizeVocabText(t);
+        if (!key || seen.has(key) || existingVocab(t)) return false;
+        seen.add(key);
+        return true;
+      });
+      const plan = planImport(importEntries.filter(e => e.time != null));
+      if (words.length && !plan.newRows.length && !plan.fills.size) pushUndo("Added " + words.length + " word" + (words.length === 1 ? "" : "s"));
+      commitImport(plan, "Translated — " + plan.newRows.length + " new, " + plan.updated + " updated" + (words.length ? ", " + words.length + " words" : ""));
+      if (words.length) {
+        addWordsToLesson(words, plan.newRows);
+        document.getElementById("importText").value = "";
+        renderImportPreview();
+      }
+      if (plan.newRows.length || plan.updated || words.length) render();
+      let msg = [ importResultMessage(plan), words.length ? `Added ${words.length} word(s) to Vocabulary.` : "" ].filter(Boolean).join(" ") || "No cards imported.";
       if (failed > 0) msg += ` ${failed} failed to translate.`;
       setImportStatus(msg);
+      if (words.length) openWordsInVocab();
     } finally {
       btns.forEach(b => b.disabled = false);
     }
@@ -7409,6 +7388,7 @@ document.getElementById("importBtn").onclick = () => {
       document.getElementById("importText").value = "";
       renderLessonList();
     }
+    openWordsInVocab();
   } else if (plan.newRows.length && !isVideoLesson()) {
     addSentenceWords(plan.newRows, setImportStatus).then(n => {
       if (n) setImportStatus(msg + ` Added ${n} word(s) to Vocabulary from the sentences.`);
@@ -7429,7 +7409,6 @@ const IMPORT_KIND_LABELS = {
   empty: [ "skip", "⚠️", "Not read — the question is empty" ],
   word: [ "new", "🔤", "New word — goes to Vocabulary" ],
   wordDup: [ "dup", "❐", "Word already in this lesson" ],
-  wordLong: [ "skip", "⚠️", `Not read — the word is over ${VOCAB_TERM_MAX} characters` ],
   heading: [ "dup", "➖", "Heading — left out" ],
   invalid: [ "skip", "⚠️", "Not read" ]
 };
@@ -7462,8 +7441,7 @@ function renderImportPreview() {
   const lineOutcomes = analysis.lines.map(l => l.entry ? plan.outcomes[k++] : {
     kind: l.word ? {
       new: "word",
-      duplicate: "wordDup",
-      long: "wordLong"
+      duplicate: "wordDup"
     }[l.word.wordKind] : l.heading ? "heading" : "invalid"
   });
   const counts = {};
@@ -7476,12 +7454,12 @@ function renderImportPreview() {
   if (counts.update) summary.push(`<span class="ip-status update">✏️ ${counts.update} fill in</span>`);
   if (counts.merged) summary.push(`<span class="ip-status update">🔗 ${counts.merged} merged</span>`);
   if (counts.duplicate || counts.wordDup) summary.push(`<span class="ip-status dup">❐ ${(counts.duplicate || 0) + (counts.wordDup || 0)} duplicate</span>`);
-  if (counts.empty || counts.invalid || counts.wordLong) summary.push(`<span class="ip-status skip">⚠️ ${(counts.empty || 0) + (counts.invalid || 0) + (counts.wordLong || 0)} skipped</span>`);
+  if (counts.empty || counts.invalid) summary.push(`<span class="ip-status skip">⚠️ ${(counts.empty || 0) + (counts.invalid || 0)} skipped</span>`);
   if (counts.heading) summary.push(`<span class="ip-status dup">➖ ${counts.heading} heading${counts.heading === 1 ? "" : "s"}</span>`);
   if (!counts.word && !counts.wordDup && !isVideoLesson()) {
     const fromSentences = sentenceWordsFrom(analysis.entries.filter((e, i) => plan.outcomes[i] && plan.outcomes[i].kind === "new"));
-    const n = fromSentences.pairs.length + fromSentences.toTranslate.length;
-    if (n) summary.push(`<span class="ip-status new" title="No word list found: the sentences themselves become Vocabulary words${fromSentences.toTranslate.length ? ", translated" : ""}">🔤 ${n} from sentences</span>`);
+    const n = fromSentences.length;
+    if (n) summary.push(`<span class="ip-status new" title="No word list found: the sentences themselves become Vocabulary words, translated">🔤 ${n} from sentences</span>`);
   }
   summary.push(`<span>Delimiter: <b>${delimName}</b>${analysis.delim !== currentDelim() ? " (auto-detected)" : ""}</span>`);
   if (analysis.title) summary.push(`<span>Title: <b>${escapeHtml(analysis.title)}</b></span>`);
@@ -10360,9 +10338,7 @@ let vocabEditingInList = false;
 
 const vocabEntryCache = new Map;
 
-const VOCAB_LINE_RE = new RegExp(`^\\s*([^:：]{1,${VOCAB_TERM_MAX}}?)\\s*[:：]\\s*(\\S[\\s\\S]*?)\\s*$`);
-
-const VOCAB_BARE_LINE_RE = new RegExp(`^\\s*([^:：]{1,${VOCAB_TERM_MAX}}?)\\s*[:：]\\s*(\\S[\\s\\S]*?)?\\s*$`);
+const VOCAB_LINE_RE = new RegExp(`^\\s*([^:：]+?)\\s*[:：]\\s*(\\S[\\s\\S]*?)\\s*$`);
 
 function existingVocab(term, rowsToCheck) {
   const key = normalizeVocabText((term || "").trim());
@@ -10382,29 +10358,59 @@ function vocabEntriesOf(card) {
   const box = document.createElement("div");
   box.innerHTML = html;
   const lines = [];
-  const bare = new Set;
   Array.from(box.querySelectorAll("li")).forEach(li => {
-    const text = ownLiText(li);
-    if (isVocabItem(li) && !li.querySelector("ul, ol")) bare.add(text);
-    lines.push(text);
+    lines.push(liVocabEntry(li) || ownLiText(li));
   });
   box.querySelectorAll("ul, ol").forEach(el => el.remove());
-  if (!plain) box.querySelectorAll("b, strong").forEach(el => el.textContent.trim() && el.before("\u0001"));
+  if (!plain) box.querySelectorAll("b, strong").forEach(el => {
+    if (!el.textContent.trim()) return;
+    el.before("\u0001");
+    el.after("\u0002");
+  });
   box.querySelectorAll("br").forEach(el => el.replaceWith("\n"));
   box.querySelectorAll("div, p").forEach(el => el.append("\n"));
   box.textContent.split("\n").forEach(line => {
     if (plain) lines.push(line); else if (/^\s*\u0001/.test(line)) {
-      lines.push(line.replace(/\u0001/g, ""));
-      bare.add(line.replace(/\u0001/g, ""));
+      const entry = boldLineEntry(line);
+      if (entry) lines.push(entry);
     }
   });
   const entries = [];
   lines.forEach(line => {
-    const m = parseVocabLine(line, bare.has(line));
+    const m = typeof line === "string" ? parseVocabLine(line) : line;
     if (m) entries.push(m);
   });
   vocabEntryCache.set(entryKey, entries);
   return entries;
+}
+
+function liVocabEntry(li) {
+  if (!isVocabItem(li)) return null;
+  const head = li.firstChild.textContent;
+  const term = head.replace(/\s+/g, " ").trim();
+  const meaning = ownLiText(li).slice(head.length).replace(/^\s*[:：]\s*/, "").replace(/\s+/g, " ").trim();
+  return meaning || !li.querySelector("ul, ol") ? {
+    key: normalizeVocabText(term),
+    term: term,
+    meaning: meaning
+  } : null;
+}
+
+function boldLineEntry(line) {
+  const m = line.match(/^\s*\u0001([^\u0002]*)\u0002\s*[:：]\s*([\s\S]*)$/);
+  const term = m && m[1].replace(/[\u0001\u0002]/g, "").replace(/\s+/g, " ").trim();
+  return term ? {
+    key: normalizeVocabText(term),
+    term: term,
+    meaning: m[2].replace(/[\u0001\u0002]/g, "").replace(/\s+/g, " ").trim()
+  } : null;
+}
+
+function popupVocabPair(input) {
+  const first = input.firstChild;
+  const rest = first && first.nodeName === "B" ? input.textContent.slice(first.textContent.length) : "";
+  if (first && first.nodeName === "B" && first.textContent.trim() && /^\s*[:：]/.test(rest)) return [ null, first.textContent, rest.replace(/^\s*[:：]\s*/, "") ];
+  return input.textContent.match(VOCAB_LINE_RE);
 }
 
 function ownLiText(li) {
@@ -10413,8 +10419,8 @@ function ownLiText(li) {
   return own.textContent;
 }
 
-function parseVocabLine(line, bare) {
-  const m = (line || "").replace(/ /g, " ").match(bare ? VOCAB_BARE_LINE_RE : VOCAB_LINE_RE);
+function parseVocabLine(line) {
+  const m = (line || "").replace(/ /g, " ").match(VOCAB_LINE_RE);
   return m ? {
     key: normalizeVocabText(m[1]),
     term: m[1],
@@ -11010,14 +11016,12 @@ function wireVocabEditor(items) {
   fitTextarea(term);
   fitTextarea(meaning);
   const item = items.find(i => i.key === vocabEditingKey);
-  const overLimit = watchTermLimit(term, () => term.value.replace(/\s+/g, " ").trim(), document.getElementById("vocabEditSave"));
   const notes = document.getElementById("vocabEditNotes");
   notes.addEventListener("paste", e => {
     e.preventDefault();
     document.execCommand("insertHTML", false, pastedHtml(e));
   });
   const save = () => {
-    if (overLimit()) return;
     const key = vocabEditingKey;
     vocabEditingKey = null;
     if (!saveVocabEditor(item, term.value, meaning.value, notes.innerHTML, true)) {
@@ -11100,7 +11104,7 @@ function parseVocabPaste(line, delim) {
   }
   term = term.replace(/\s+/g, " ").trim();
   meaning = meaning.replace(/\s+/g, " ").trim();
-  return term && meaning && !/[:：]/.test(term) ? [ term, meaning ] : null;
+  return term && meaning ? [ term, meaning ] : null;
 }
 
 function planVocabImport(text) {
@@ -11130,7 +11134,7 @@ function planVocabImport(text) {
     if (!raw.trim()) return;
     const pair = parseVocabPaste(raw, delim);
     let kind = "new";
-    if (!pair) kind = "invalid"; else if (pair[0].length > VOCAB_TERM_MAX) kind = "long"; else {
+    if (!pair) kind = "invalid"; else {
       const key = normalizeVocabText(pair[0]);
       if (seen.has(key) || existingVocab(pair[0])) kind = "duplicate"; else seen.add(key);
     }
@@ -11160,12 +11164,11 @@ function renderVocabImportPreview() {
   if (count("card")) summary.push(`<span class="ip-status new">🃏 ${count("card")} card${count("card") === 1 ? "" : "s"}</span>`);
   if (count("duplicate") || count("cardDup")) summary.push(`<span class="ip-status dup">❐ ${count("duplicate") + count("cardDup")} duplicate</span>`);
   if (count("invalid")) summary.push(`<span class="ip-status skip">⚠️ ${count("invalid")} skipped</span>`);
-  if (count("long")) summary.push(`<span class="ip-status skip">⚠️ ${count("long")} too long</span>`);
   if (count("heading")) summary.push(`<span class="ip-status dup">➖ ${count("heading")} heading${count("heading") === 1 ? "" : "s"}</span>`);
   if (!count("new") && !count("duplicate") && count("card") && !isVideoLesson()) {
     const fromSentences = sentenceWordsFrom(lines.filter(l => l.kind === "card").map(l => l.entry));
-    const n = fromSentences.pairs.length + fromSentences.toTranslate.length;
-    if (n) summary.push(`<span class="ip-status new" title="No word list found: the sentences themselves become words${fromSentences.toTranslate.length ? ", translated" : ""}">🔤 ${n} from sentences</span>`);
+    const n = fromSentences.length;
+    if (n) summary.push(`<span class="ip-status new" title="No word list found: the sentences themselves become words, translated">🔤 ${n} from sentences</span>`);
   }
   const pick = vocabDelimFor(raw);
   summary.push(`<span>Delimiter: <b>${delimLabel(pick.delim)}</b>${pick.auto ? " (auto-detected)" : ""}</span>`);
@@ -11178,15 +11181,14 @@ function renderVocabImportPreview() {
     title: [ "dup", "🏷", "Lesson title" ],
     new: [ "new", "🆕", "New word" ],
     duplicate: [ "dup", "❐", "Already in this lesson" ],
-    invalid: [ "skip", "⚠️", "Not read — no " + delimLabel(pick.delim) + " on this line" ],
-    long: [ "skip", "⚠️", `Not read — the question is over ${VOCAB_TERM_MAX} characters` ]
+    invalid: [ "skip", "⚠️", "Not read — no " + delimLabel(pick.delim) + " on this line" ]
   };
   const body = lines.slice(0, IMPORT_PREVIEW_MAX_ROWS).map(l => {
     const [cls, icon, label] = labels[l.kind];
     const status = `<td class="ip-result"><span class="ip-status ${cls}" aria-label="${escapeAttr(label)}" title="${escapeAttr(label)}">${icon}</span></td>`;
     const num = `<td class="ip-num">${l.lineNo}</td>`;
     if (!l.pair) return `<tr class="ip-dim">${num}${status}<td colspan="2" class="ip-raw">${escapeHtml(l.text)}</td></tr>`;
-    return `<tr${l.kind === "duplicate" || l.kind === "long" || l.kind === "cardDup" ? ' class="ip-dim"' : ""}>${num}${status}${previewCell(l.pair[0])}${previewCell(l.pair[1])}</tr>`;
+    return `<tr${l.kind === "duplicate" || l.kind === "cardDup" ? ' class="ip-dim"' : ""}>${num}${status}${previewCell(l.pair[0])}${previewCell(l.pair[1])}</tr>`;
   }).join("");
   const more = lines.length > IMPORT_PREVIEW_MAX_ROWS ? `<div class="ip-more">…and ${lines.length - IMPORT_PREVIEW_MAX_ROWS} more line(s)</div>` : "";
   box.innerHTML = `<div class="ip-summary">${summary.join("")}</div>` + '<div class="ip-scroll"><table class="ip-table"><colgroup><col style="width:44px"><col style="width:52px"><col><col></colgroup>' + "<thead><tr><th>#</th><th aria-label='Result'></th><th>Question</th><th>Answer</th></tr></thead>" + `<tbody>${body}</tbody></table>${more}</div>`;
@@ -11208,7 +11210,7 @@ function importVocabText(text) {
   const cardPlan = planImport(plan.filter(l => l.kind === "card").map(l => l.entry));
   const title = plan.find(l => l.kind === "title");
   const dup = plan.filter(l => l.kind === "duplicate" || l.kind === "cardDup").length;
-  const bad = plan.filter(l => l.kind === "invalid" || l.kind === "long").length;
+  const bad = plan.filter(l => l.kind === "invalid").length;
   if (pairs.length || cardPlan.newRows.length || title) {
     if (!cardPlan.newRows.length) pushUndo("Added " + pairs.length + " word" + (pairs.length === 1 ? "" : "s"));
     commitImport(cardPlan, "Imported — " + cardPlan.newRows.length + " new cards, " + pairs.length + " words", true);
@@ -11493,7 +11495,10 @@ function rewrittenVocabNotes(row, item, term, meaning) {
   const box = document.createElement("div");
   box.innerHTML = row.notesHtml;
   const html = term === null ? "" : "<b>" + escapeHtml(term) + "</b>: " + escapeHtml(meaning);
-  const li = Array.from(box.querySelectorAll("li")).find(el => matches(ownLiText(el)));
+  const li = Array.from(box.querySelectorAll("li")).find(el => {
+    const entry = liVocabEntry(el);
+    return entry ? entry.key === item.key : matches(ownLiText(el));
+  });
   if (li) {
     if (term === null) {
       const list = li.parentElement;
@@ -11530,14 +11535,6 @@ function rewrittenVocabNotes(row, item, term, meaning) {
 function vocabEntryOk(term) {
   if (!term) {
     showToast("Question can't be empty — not saved");
-    return false;
-  }
-  if (/[:：]/.test(term)) {
-    showToast("The question can't contain a colon");
-    return false;
-  }
-  if (term.length > VOCAB_TERM_MAX) {
-    showToast(`You've reached ${VOCAB_TERM_MAX} characters — not saved`);
     return false;
   }
   return true;
@@ -12128,7 +12125,6 @@ function showVocabAddPopup(row, term, rect, editing, onSave) {
     e.preventDefault();
     document.execCommand("insertText", false, e.clipboardData.getData("text/plain").replace(/\s*[\r\n]+\s*/g, " "));
   });
-  const overLimit = watchTermLimit(input, () => input.textContent.split(/[:：]/)[0].replace(/\s+/g, " ").trim());
   input.addEventListener("keydown", e => {
     e.stopPropagation();
     if (e.isComposing || e.keyCode === 229) return;
@@ -12139,8 +12135,7 @@ function showVocabAddPopup(row, term, rect, editing, onSave) {
     }
     if (e.key !== "Enter") return;
     e.preventDefault();
-    if (overLimit()) return;
-    const m = input.textContent.match(VOCAB_LINE_RE);
+    const m = popupVocabPair(input);
     if (!m) {
       showToast("Write it as word: meaning");
       return;
@@ -12206,11 +12201,11 @@ const hoverQuery = window.matchMedia("(hover: hover)");
 
 document.addEventListener("mouseover", e => {
   if (!hoverQuery.matches) return;
-  const mark = e.target.closest && e.target.closest(".rich-editor mark.vocab-hit");
+  const mark = e.target.closest && e.target.closest(":is(.rich-editor, .cell) mark.vocab-hit");
   document.querySelectorAll("mark.vocab-hover").forEach(m => m.classList.remove("vocab-hover"));
   if (!mark) return;
   const keys = markTerms(mark);
-  mark.closest(".rich-editor").querySelectorAll("mark.vocab-hit").forEach(m => {
+  mark.closest(".rich-editor, .cell").querySelectorAll("mark.vocab-hit").forEach(m => {
     if (markTerms(m).some(k => keys.includes(k))) m.classList.add("vocab-hover");
   });
 });
