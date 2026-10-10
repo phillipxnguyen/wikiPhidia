@@ -4593,17 +4593,14 @@ function selectionTarget() {
       } : null;
     }
     const el = document.querySelector("#vocabList .vocab-list-row.row-selected[data-key]");
-    const items = lessonVocabItems(vocabSource());
-    const item = el && items.find(i => i.key === el.dataset.key);
-    if (item) return {
+    const item = el && lessonVocabItems(vocabSource()).find(i => i.key === el.dataset.key);
+    return item ? {
       item: item
-    };
-    return items.length ? {
-      items: items
     } : null;
   }
   if (currentView !== "study") return null;
   const {scope: scope, picked: picked} = studyPick();
+  if (!groupState && !picked) return null;
   if (picked) return {
     row: picked,
     rows: [ picked ]
@@ -4623,6 +4620,15 @@ function copyText(text) {
   navigator.clipboard.writeText(text).then(() => showToast("Copied")).catch(() => showToast("Could not copy"));
 }
 
+function studyCopyAction() {
+  const {scope: scope, picked: picked} = studyPick();
+  if (!groupState) {
+    if (picked) copyText(isVideoLesson() || isVirtualLesson() ? picked.q : cardText(picked.q, picked.a));
+    return;
+  }
+  copyQuestions((picked ? [ picked ] : scope).map(r => (r.q || "").trim()).filter(Boolean));
+}
+
 function updateSelBar() {
   const bar = document.getElementById("selBar");
   const touchBar = document.getElementById("touchBar");
@@ -4638,8 +4644,8 @@ function updateSelBar() {
 
 document.getElementById("selCopy").onclick = e => {
   e.currentTarget.blur();
-  const target = selectionTarget();
-  if (target) copyText(target.item ? cardText(target.item.term, target.item.meaning) : target.items ? target.items.map(i => cardText(i.term, i.meaning)).join("\n") : target.rows.map(r => cardText(r.q, r.a)).join("\n"));
+  if (!selectionTarget()) return;
+  if (currentView === "vocab") vocabCopyAction(); else studyCopyAction();
 };
 
 document.getElementById("selEdit").onclick = e => {
@@ -4651,8 +4657,7 @@ document.getElementById("selEdit").onclick = e => {
 
 document.getElementById("selDelete").onclick = e => {
   e.currentTarget.blur();
-  const target = selectionTarget();
-  if (!target) return;
+  if (!selectionTarget()) return;
   if (currentView === "vocab") vocabDeleteAction(); else deleteAction();
 };
 
@@ -11865,6 +11870,12 @@ function vocabPickedKey() {
   return selected || (isTouch() ? null : vocabHoveredKey);
 }
 
+function vocabCopyAction() {
+  const pickedKey = vocabPickedKey();
+  const item = vocabView === "card" ? currentVocabItem() : pickedKey && lessonVocabItems(vocabSource()).find(i => i.key === pickedKey);
+  if (item) copyQuestions([ item.term ]);
+}
+
 function vocabDeleteAction() {
   const pickedKey = vocabPickedKey();
   const picked = pickedKey && lessonVocabItems(vocabSource()).find(i => i.key === pickedKey);
@@ -11901,7 +11912,7 @@ function handleVocabKey(e) {
     if (!item) return;
     e.preventDefault();
     if (document.activeElement && document.activeElement.tagName === "BUTTON") document.activeElement.blur();
-    if (e.code === "KeyE") openVocabEditor(item.key); else if (e.code === "KeyC") copyQuestions([ item.term ]); else flipVocab();
+    if (e.code === "KeyE") openVocabEditor(item.key); else if (e.code === "KeyC") vocabCopyAction(); else flipVocab();
     return;
   }
   if (!gradeKey(e) || !currentVocabItem()) return;
@@ -12415,8 +12426,7 @@ document.addEventListener("keydown", e => {
   if (letter && e.code === "KeyC") {
     if (!groupState) return;
     e.preventDefault();
-    const {scope: scope, picked: picked} = studyPick();
-    copyQuestions((picked ? [ picked ] : scope).map(r => (r.q || "").trim()).filter(Boolean));
+    studyCopyAction();
     return;
   }
   if (letter && e.code === "KeyE") {
