@@ -450,9 +450,11 @@ window.onYouTubeIframeAPIReady = function(){
   .lesson-tile-bar .due{background:var(--due-color);}
   .lesson-tile-bar .later{background:var(--border-strong);}
   .lesson-tile-bar .done{background:var(--done-color);}
-  .sidebar-footer{display:flex;flex-direction:column;gap:2px;}
-  .sidebar-footer button{text-align:left;width:100%;}
-  .sidebar-footer button.active{background:var(--accent-soft);color:var(--accent);}
+  .sidebar-footer{display:flex;flex-direction:column;gap:2px;padding:6px;border-radius:var(--radius);background:var(--accent);}
+  html.vocab-mode .sidebar-footer{background:var(--new-color);}
+  .sidebar-footer button{text-align:left;width:100%;color:var(--on-accent);}
+  @media (hover:hover){.sidebar-footer button:hover{background:color-mix(in srgb, var(--on-accent) 16%, transparent);color:var(--on-accent);}}
+  .sidebar-footer button.active, .sidebar-footer #btnBackupAll.needs-save{background:color-mix(in srgb, var(--on-accent) 22%, transparent);color:var(--on-accent);}
   .main{min-width:0;padding:26px 36px 64px;display:flex;justify-content:center;}
   .main-inner{width:100%;max-width:900px;display:flex;flex-direction:column;}
   .main:has(#viewStudy.focus-study:not([hidden]):not(.offscreen)), .main:has(#viewVocab.focus-study:not([hidden])){padding-top:6px;}
@@ -1127,7 +1129,7 @@ window.onYouTubeIframeAPIReady = function(){
   <input type="search" id="lessonSearch" name="lesson-search" autocomplete="off" placeholder="Search lessons…" aria-label="Search lessons">
   <nav id="lessonList" class="lesson-list" aria-label="Lessons"></nav>
   <div class="sidebar-footer">
-    <button id="btnOpenFile" class="ghost" title="Import one or more lesson .json files, or a full backup">📥 Import file</button>
+    <button id="btnOpenFile" class="ghost" title="Open one or more lesson .json files, or a full backup">📥 Open file</button>
     <input type="file" id="fileInput" class="file-input-hidden" accept=".json" multiple>
     <button id="btnBackupAll" class="ghost" title="Save every lesson and your review history as YYYY-MM-DD-flashcards.json. The first time you pick a folder; after that it saves there directly (one file per day). Shift-click to pick a different folder.">💾 Back up</button>
     <button id="btnStats" class="ghost">📊 Statistics</button>
@@ -1188,10 +1190,10 @@ window.onYouTubeIframeAPIReady = function(){
   <div class="empty-state">
     <div class="emoji">📚</div>
     <h2>Welcome to Flashcards</h2>
-    <p>Create a lesson and paste your cards, or import lesson files you saved before.</p>
+    <p>Create a lesson and paste your cards, or open lesson files you saved before.</p>
     <div class="row-flex">
       <button id="btnEmptyNew" class="primary">+ New lesson</button>
-      <button id="btnEmptyImport">📥 Import file</button>
+      <button id="btnEmptyImport">📥 Open file</button>
     </div>
   </div>
 </section>
@@ -8808,7 +8810,7 @@ async function importLessonFiles(files) {
     renderLessonList();
   }
   const parts = [];
-  if (imported) parts.push("Imported " + imported + " lesson(s)");
+  if (imported) parts.push("Opened " + imported + " lesson(s)");
   if (restored) parts.push("Restored " + restored + " lesson(s) from backup");
   if (failed.length) parts.push("Could not read " + failed.join(", "));
   renderStreakChip();
