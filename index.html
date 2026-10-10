@@ -2975,7 +2975,9 @@ function renderImportInfo() {
 }
 
 function aCellContent(r) {
-  return r.aHidden ? '<span class="dots">···</span>' : lookupHtml(r.aHtml || textHtml(r.a), r);
+  if (r.aHidden) return '<span class="dots">···</span>';
+  const html = r.aHtml || textHtml(r.a);
+  return isVideoLesson() ? html : lookupHtml(html, r);
 }
 
 function buildRowTr(r) {
@@ -3111,6 +3113,7 @@ function updateLessonChrome() {
 }
 
 function renderStudy() {
+  vocabLookupChecked = false;
   if (activeDictOverlay && activeDictOverlay.placeholder.classList.contains("paper-dict")) hideDictOverlay();
   updateLessonChrome();
   releaseHeldPage();
@@ -3381,7 +3384,8 @@ function toggleRowPlay(row) {
 }
 
 function qCellContent(r) {
-  return rowPlayBadge(r) + (r.qHidden ? '<span class="dots">···</span>' : lookupHtml(r.qHtml || textHtml(r.q), r));
+  const html = r.qHtml || textHtml(r.q);
+  return rowPlayBadge(r) + (r.qHidden ? '<span class="dots">···</span>' : isVideoLesson() ? lookupHtml(html, r) : html);
 }
 
 function escapeHtml(s) {
@@ -4200,11 +4204,21 @@ function highlightMatch(sentence, needle) {
 
 const CJK_CHAR_RE = /[぀-ヿ一-鿿]/;
 
-function highlightVocabInHtml(html, excludeId, skipMarked) {
+function highlightVocabInHtml(html, excludeId, skipMarked, extraTerms) {
   if (!html) return html;
-  const terms = vocabTerms();
-  if (!terms.size) return html;
   const exclude = rows.find(r => r.id === excludeId);
+  let terms = vocabTerms();
+  if (extraTerms && extraTerms.length) {
+    terms = new Map(terms);
+    extraTerms.forEach(term => {
+      const key = foldVocab(term);
+      if (key && !(terms.get(key) || []).some(e => e.card === exclude)) terms.set(key, (terms.get(key) || []).concat({
+        term: term,
+        card: exclude
+      }));
+    });
+  }
+  if (!terms.size) return html;
   const container = document.createElement("div");
   container.innerHTML = html;
   const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null);
@@ -5334,6 +5348,10 @@ function wireEditBox(host, row) {
   const editNotes = host.querySelector("#editNotes");
   const editDict = host.querySelector("#editDict");
   const editSrc = isVideoLesson() ? editQ : editA;
+  const refreshEditMarks = () => {
+    const html = highlightVocabInHtml(stripVocabHighlights(editSrc.innerHTML), row.id, false, Array.from(editNotes.querySelectorAll("li")).map(liVocabEntry).filter(Boolean).map(e => e.term));
+    if (html !== editSrc.innerHTML) editSrc.innerHTML = html;
+  };
   let dictDebounce = null;
   function refreshDict() {
     const text = (editSrc.textContent || "").trim();
@@ -5435,6 +5453,7 @@ function wireEditBox(host, row) {
       document.execCommand("insertHTML", false, "<li>" + item + "</li>");
     }
     autoResizeDiv(editNotes);
+    refreshEditMarks();
     editSrc.focus({
       preventScroll: true
     });
