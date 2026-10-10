@@ -2246,7 +2246,7 @@ function timeSortedRows() {
 
 function toggleLoopForRow(row) {
   if (ytHasError) return;
-  if (isCardMode()) {
+  if (groupViewStyle === "ielts" && groupState) {
     toggleSequenceLoop();
     return;
   }
@@ -2554,25 +2554,28 @@ function deleteRow(id) {
   deleteRows([ id ], full && groupViewStyle === "ielts" ? studyParts() : [ cardLineEl(id) ], full);
 }
 
+function pickedRowId() {
+  return selectedRowId !== null ? selectedRowId : isTouch() ? null : hoveredRowId;
+}
+
+function studyScope() {
+  if (!groupState) return rows.filter(r => r.id !== draftRowId);
+  return groupViewStyle === "table" ? getVisibleRows() : currentCardRows();
+}
+
+function studyPick() {
+  const scope = studyScope();
+  const id = pickedRowId();
+  return {
+    scope: scope,
+    picked: scope.find(r => r.id === id) || null
+  };
+}
+
 function deleteAction() {
-  if (!groupState) {
-    const pickedId = selectedRowId !== null ? selectedRowId : isTouch() ? null : hoveredRowId;
-    clearRowSelection();
-    if (pickedId !== null) deleteRow(pickedId);
-    return;
-  }
-  if (groupViewStyle !== "table") {
-    const batch = currentCardRows();
-    const id = selectedRowId !== null ? selectedRowId : isTouch() ? null : hoveredRowId;
-    const picked = batch.find(r => r.id === id);
-    selectedRowId = null;
-    if (batch.length > 1 && !picked) deleteRows(batch.map(r => r.id), studyParts(), true); else if (batch.length) deleteRow((picked || batch[0]).id);
-    return;
-  }
-  const ids = groupState.groups[groupState.index] || [];
-  const pickedId = selectedRowId !== null ? selectedRowId : isTouch() ? null : hoveredRowId;
-  selectedRowId = null;
-  if (ids.includes(pickedId)) deleteRow(pickedId); else if (ids.length) deleteRows(ids, studyParts(), true);
+  const {scope: scope, picked: picked} = studyPick();
+  if (groupState) selectedRowId = null; else clearRowSelection();
+  if (picked || groupState && scope.length === 1) deleteRow((picked || scope[0]).id); else if (groupState && scope.length) deleteRows(scope.map(r => r.id), studyParts(), true); else if (scope.length) showToast("Pick a card to delete it");
 }
 
 function byVideoTime(a, b) {
@@ -2732,12 +2735,6 @@ function nextListenBatch() {
 function currentCardRows() {
   if (!isCardMode()) return [];
   return isListenMode() ? listenBatch() : singleCardQueue().slice(0, 1);
-}
-
-function pickedCardRow() {
-  const batch = currentCardRows();
-  const id = selectedRowId !== null ? selectedRowId : isTouch() ? null : hoveredRowId;
-  return batch.find(r => r.id === id) || batch[0];
 }
 
 function maskWidth(text, wide, narrow) {
@@ -3415,7 +3412,7 @@ function rowPlayBadge(r) {
     if (ytHasError) badgeClasses += " disabled";
     return `<span class="${badgeClasses}" data-id="${r.id}">${formatTime(r.time)}</span>`;
   }
-  if (!groupState || groupViewStyle !== "table") return "";
+  if (!groupState || groupViewStyle === "ielts") return "";
   const on = ttsPlaying && ttsOnlyId === r.id;
   return `<span class="loop-time tts-play${on ? " looping" : ""}" data-id="${r.id}" data-face="${on ? "⏸" : "🔊"}">${playFace(on ? "⏸" : "🔊")}</span>`;
 }
@@ -4588,41 +4585,32 @@ function clearRowSelection() {
 
 function selectionTarget() {
   if (!isTouch()) return null;
-  if (currentView === "study" && groupState && isCardMode()) {
-    const batch = currentCardRows();
-    const picked = batch.find(r => r.id === selectedRowId);
-    if (isListenMode()) return picked ? {
-      row: picked,
-      rows: [ picked ],
-      card: true
-    } : null;
-    return batch.length ? {
-      row: batch[0],
-      rows: batch,
-      card: true
-    } : null;
-  }
-  if (currentView === "vocab" && vocabView === "card") {
-    const item = document.getElementById("vocabCard") && currentVocabItem();
-    return item ? {
-      item: item,
-      card: true
+  if (currentView === "vocab") {
+    if (vocabView === "card") {
+      const item = document.getElementById("vocabCard") && currentVocabItem();
+      return item ? {
+        item: item
+      } : null;
+    }
+    const el = document.querySelector("#vocabList .vocab-list-row.row-selected[data-key]");
+    const items = lessonVocabItems(vocabSource());
+    const item = el && items.find(i => i.key === el.dataset.key);
+    if (item) return {
+      item: item
+    };
+    return items.length ? {
+      items: items
     } : null;
   }
-  if (currentView === "study") {
-    const row = selectedRowId !== null && rows.find(r => r.id === selectedRowId);
-    const tr = row && document.querySelector(`#tbody tr[data-id="${row.id}"]`);
-    return tr ? {
-      row: row,
-      el: tr
-    } : null;
-  }
-  if (currentView !== "vocab") return null;
-  const el = document.querySelector("#vocabList .vocab-list-row.row-selected[data-key]");
-  const item = el && lessonVocabItems(vocabSource()).find(i => i.key === el.dataset.key);
-  return item ? {
-    item: item,
-    el: el
+  if (currentView !== "study") return null;
+  const {scope: scope, picked: picked} = studyPick();
+  if (picked) return {
+    row: picked,
+    rows: [ picked ]
+  };
+  return scope.length ? {
+    row: scope[0],
+    rows: scope
   } : null;
 }
 
@@ -4645,45 +4633,27 @@ function updateSelBar() {
   bar.style.setProperty("--tb-h", touchBar.offsetHeight + "px");
   document.getElementById("selEdit").hidden = !(currentView === "vocab" && vocabView === "card");
   document.getElementById("selDelete").hidden = !!target.row && isVirtualLesson();
-  document.getElementById("selVocab").hidden = !target.row || isVirtualLesson() || isVideoLesson();
+  document.getElementById("selVocab").hidden = !target.row || target.rows.length !== 1 || isVirtualLesson() || isVideoLesson();
 }
 
 document.getElementById("selCopy").onclick = e => {
   e.currentTarget.blur();
   const target = selectionTarget();
-  if (target) copyText(target.item ? cardText(target.item.term, target.item.meaning) : (target.rows || [ target.row ]).map(r => cardText(r.q, r.a)).join("\n"));
+  if (target) copyText(target.item ? cardText(target.item.term, target.item.meaning) : target.items ? target.items.map(i => cardText(i.term, i.meaning)).join("\n") : target.rows.map(r => cardText(r.q, r.a)).join("\n"));
 };
 
 document.getElementById("selEdit").onclick = e => {
   e.currentTarget.blur();
   const target = selectionTarget();
   if (!target) return;
-  if (target.item) {
-    openVocabEditor(target.item.key, vocabView === "list");
-    return;
-  }
-  if (target.card) {
-    openSingleCardEdit(target.row);
-    return;
-  }
-  clearRowSelection();
-  openEdit(target.el, target.row);
+  if (target.item) openVocabEditor(target.item.key, vocabView === "list");
 };
 
 document.getElementById("selDelete").onclick = e => {
   e.currentTarget.blur();
   const target = selectionTarget();
   if (!target) return;
-  if (target.item) {
-    if (target.card) deleteVocabEntry(target.item); else deleteVocabEntry(target.item, target.el);
-    return;
-  }
-  if (target.card) {
-    deleteAction();
-    return;
-  }
-  clearRowSelection();
-  deleteRow(target.row.id);
+  if (currentView === "vocab") vocabDeleteAction(); else deleteAction();
 };
 
 document.getElementById("selVocab").onclick = e => {
@@ -11895,6 +11865,17 @@ function vocabPickedKey() {
   return selected || (isTouch() ? null : vocabHoveredKey);
 }
 
+function vocabDeleteAction() {
+  const pickedKey = vocabPickedKey();
+  const picked = pickedKey && lessonVocabItems(vocabSource()).find(i => i.key === pickedKey);
+  const target = picked || (vocabView === "card" ? currentVocabItem() : null);
+  if (!target) {
+    showToast("Pick a word to delete it");
+    return;
+  }
+  deleteVocabEntry(target, picked ? document.querySelector(`#vocabList .vocab-list-row[data-key="${CSS.escape(picked.key)}"]`) : null);
+}
+
 function handleVocabKey(e) {
   if (isTypingInField()) return;
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z") {
@@ -11904,12 +11885,8 @@ function handleVocabKey(e) {
   }
   if (e.metaKey || e.ctrlKey || e.altKey || e.repeat || vocabEditingKey) return;
   if (e.code === "Backspace" || e.code === "Delete") {
-    const pickedKey = vocabPickedKey();
-    const picked = pickedKey && lessonVocabItems(vocabSource()).find(i => i.key === pickedKey);
-    const target = picked || (vocabView === "card" ? currentVocabItem() : null);
-    if (!target) return;
     e.preventDefault();
-    deleteByKey(() => deleteVocabEntry(target, picked ? document.querySelector(`#vocabList .vocab-list-row[data-key="${CSS.escape(picked.key)}"]`) : null));
+    deleteByKey(vocabDeleteAction);
     return;
   }
   if (vocabView === "list") {
@@ -12427,11 +12404,9 @@ document.addEventListener("keydown", e => {
   }
   if ([ "Digit1", "Digit2", "Digit3" ].includes(e.code)) {
     if (e.repeat) return;
-    if (!groupState || groupViewStyle !== "table") return;
+    if (!groupState || groupViewStyle === "ielts") return;
     e.preventDefault();
-    const pos = Number(e.code.slice(-1)) - 1;
-    const groupRows = getVisibleRows();
-    const row = groupRows[pos];
+    const row = studyScope()[Number(e.code.slice(-1)) - 1];
     if (!row) return;
     toggleRowPlay(row);
     return;
@@ -12440,29 +12415,23 @@ document.addEventListener("keydown", e => {
   if (letter && e.code === "KeyC") {
     if (!groupState) return;
     e.preventDefault();
-    copyQuestions(currentGroupTexts("q"));
+    const {scope: scope, picked: picked} = studyPick();
+    copyQuestions((picked ? [ picked ] : scope).map(r => (r.q || "").trim()).filter(Boolean));
     return;
   }
   if (letter && e.code === "KeyE") {
-    if (isCardMode()) {
-      const current = pickedCardRow();
-      if (!current) return;
-      e.preventDefault();
-      openSingleCardEdit(current);
-      return;
-    }
-    const id = selectedRowId !== null ? selectedRowId : isTouch() ? null : hoveredRowId;
-    const tr = id !== null && document.querySelector(`#tbody tr[data-id="${id}"]`);
-    const row = tr && rows.find(r => r.id === id);
-    if (!row) return;
+    const {scope: scope, picked: picked} = studyPick();
+    const row = picked || (groupViewStyle === "ielts" && groupState ? scope[0] : null);
+    const tr = row && !isCardMode() && document.querySelector(`#tbody tr[data-id="${row.id}"]`);
+    if (!row || !isCardMode() && !tr) return;
     e.preventDefault();
-    openEdit(tr, row);
+    if (tr) openEdit(tr, row); else openSingleCardEdit(row);
     return;
   }
   if (letter && e.code === "KeyV") {
     if (isVideoLesson() || isVirtualLesson() || activeEdit) return;
-    const id = isCardMode() ? (pickedCardRow() || {}).id : selectedRowId !== null ? selectedRowId : isTouch() ? null : hoveredRowId;
-    const row = id != null && rows.find(r => r.id === id);
+    const {scope: scope, picked: picked} = studyPick();
+    const row = picked || (groupViewStyle === "ielts" && groupState ? scope[0] : null);
     if (!row) return;
     e.preventDefault();
     moveCardToVocab(row);
@@ -12476,23 +12445,9 @@ document.addEventListener("keydown", e => {
 
 function gradeAction(isAgain) {
   if (!groupState) return;
-  if (isCardMode()) {
-    const batch = currentCardRows();
-    const id = selectedRowId !== null ? selectedRowId : isTouch() ? null : hoveredRowId;
-    const pointed = batch.length > 1 ? batch.find(r => r.id === id) : null;
-    selectedRowId = null;
-    if (batch.length > 1 && !pointed) gradeCardBatch(batch, isAgain); else gradeCard(pointed || batch[0], isAgain);
-    return;
-  }
-  const ids = groupState.groups[groupState.index];
-  const pickedId = selectedRowId !== null ? selectedRowId : isTouch() ? null : hoveredRowId;
-  const picked = pickedId !== null ? rows.find(r => r.id === pickedId) : null;
+  const {scope: scope, picked: picked} = studyPick();
   selectedRowId = null;
-  if (picked && ids.includes(picked.id)) {
-    gradeCard(picked, isAgain);
-  } else {
-    gradeCurrentGroupAndAdvance(isAgain);
-  }
+  if (picked) gradeCard(picked, isAgain); else if (!isCardMode()) gradeCurrentGroupAndAdvance(isAgain); else if (scope.length > 1) gradeCardBatch(scope, isAgain); else if (scope.length) gradeCard(scope[0], isAgain);
 }
 
 function studySoundKey() {
