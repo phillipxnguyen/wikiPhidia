@@ -4531,7 +4531,7 @@ function handleCardAreaClick(e) {
     }
     if (isSingleCard) {
       const pair = e.target.closest(".listen-pair");
-      if (cardBody.querySelector(".cell.hidden")) revealAction(); else if (pair && listenBatch().length > 1) {
+      if (cardBody.querySelector(".cell.hidden")) revealAction(); else if (pair) {
         selectRow(id);
         hideTooltip();
         if (selectedRowId === id) showRowPinyin(pair);
@@ -4588,12 +4588,12 @@ function selectionTarget() {
   if (!isTouch()) return null;
   if (currentView === "study" && groupState && isCardMode()) {
     const batch = currentCardRows();
-    const picked = batch.length > 1 && batch.find(r => r.id === selectedRowId);
-    if (picked) return {
+    const picked = batch.find(r => r.id === selectedRowId);
+    if (isListenMode()) return picked ? {
       row: picked,
       rows: [ picked ],
       card: true
-    };
+    } : null;
     return batch.length ? {
       row: batch[0],
       rows: batch,
@@ -4641,6 +4641,7 @@ function updateSelBar() {
   document.documentElement.classList.toggle("sel-on", !!target);
   if (!target) return;
   bar.style.setProperty("--tb-h", touchBar.offsetHeight + "px");
+  document.getElementById("selEdit").hidden = !(currentView === "vocab" ? vocabView === "card" : groupViewStyle === "ielts" && !!groupState);
   document.getElementById("selDelete").hidden = !!target.row && isVirtualLesson();
   document.getElementById("selVocab").hidden = !target.row || isVirtualLesson() || isVideoLesson();
 }
