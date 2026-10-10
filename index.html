@@ -747,7 +747,8 @@ window.onYouTubeIframeAPIReady = function(){
   .edit-qa.stacked #editA{line-height:1.6;}
   .edit-row .rich-editor{margin-bottom:10px;display:block;}
   .rich-editor:empty::before{content:attr(data-placeholder);color:darkgray;}
-  :is(.rich-editor, .cell) mark.vocab-own{background:color-mix(in srgb, var(--text) 22%, transparent);color:inherit;cursor:pointer;}
+  :is(.rich-editor, .cell) mark.vocab-own{background:color-mix(in srgb, var(--text) 22%, transparent);color:inherit;}
+  @media (hover:hover){:is(.rich-editor, .cell) mark.vocab-own{cursor:pointer;}}
   :is(.rich-editor, .cell) mark.vocab-hit{background:var(--vocab-bg);color:var(--vocab-text);cursor:pointer;}
   :is(.rich-editor, .cell) mark.vocab-stack{background:linear-gradient(color-mix(in srgb, var(--text) 16%, transparent), color-mix(in srgb, var(--text) 16%, transparent)), var(--vocab-bg);}
   :is(.rich-editor, .cell) mark.vocab-own.vocab-stack:not(.vocab-hit){background:color-mix(in srgb, var(--text) 36%, transparent);}
@@ -4536,7 +4537,7 @@ function handleCardAreaClick(e) {
     if (matches.length) showVocabPopup(matches, hit.getBoundingClientRect());
     return;
   }
-  const own = e.target.closest(".cell mark.vocab-own");
+  const own = !isTouch() && e.target.closest(".cell mark.vocab-own");
   if (own && getSelection().isCollapsed) {
     e.stopPropagation();
     hideTooltip();
@@ -5512,7 +5513,7 @@ function wireEditBox(host, row) {
         if (matches.length) showVocabPopup(matches, hit.getBoundingClientRect());
         return;
       }
-      const own = e.target.closest("mark.vocab-own");
+      const own = !isTouch() && e.target.closest("mark.vocab-own");
       const li = own && field.contains(own) && noteEntryLi(normalizeVocabText((own.dataset.own || "").split("\n")[0]));
       const entry = li && liVocabEntry(li);
       if (entry) showVocabAddPopup(row, entry.term, own.getBoundingClientRect(), null, (term, meaning) => {
