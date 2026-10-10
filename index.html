@@ -1525,6 +1525,9 @@ function takeSnapshot(label, expiresAt) {
     importHistory: JSON.stringify(importHistory),
     reviewCount: localReviewKeys.length,
     pinned: pinnedCardId,
+    shown: lastShownCardId,
+    listenKept: JSON.stringify(listenBatchKept),
+    ielts: [ ieltsAnswered, ieltsHintId ],
     vocabSnapshot: JSON.stringify(vocabSession),
     label: label,
     expiresAt: expiresAt
@@ -1623,7 +1626,7 @@ function restoreFrom(fromStack, toStack, verb) {
   const liveGroup = groupState || savedGroupState;
   const sessionRestored = !!snapGroup && (!liveGroup || liveGroup.sessionId === snapGroup.sessionId);
   if (sessionRestored) {
-    if (!groupState && entry.inSession) {
+    if (entry.inSession) {
       savedGroupState = null;
       groupViewStyle = entry.style;
     }
@@ -1650,13 +1653,14 @@ function restoreFrom(fromStack, toStack, verb) {
     });
   }
   pinnedCardId = entry.pinned != null ? entry.pinned : null;
-  lastShownCardId = pinnedCardId;
+  lastShownCardId = entry.shown !== undefined ? entry.shown : pinnedCardId;
+  if (entry.listenKept) listenBatchKept = JSON.parse(entry.listenKept);
+  if (entry.ielts) [ ieltsAnswered, ieltsHintId ] = entry.ielts;
   skipEmptyGroups();
   updateGroupUI();
   render();
   if (currentView === "vocab") {
     if (entry.vocabSnapshot) vocabSession = JSON.parse(entry.vocabSnapshot);
-    if (vocabSession) vocabSession.flipped = false;
     vocabTtsOn = false;
     vocabTtsToken++;
     renderVocab();
@@ -2545,7 +2549,7 @@ function cardLineEl(id) {
 function deleteRow(id) {
   const full = !!groupState && (groupViewStyle === "table" ? (groupState.groups[groupState.index] || []).length <= 1 : currentCardRows().length <= 1);
   if (groupState && !full) holdPage();
-  deleteRows([ id ], full ? studyParts() : [ cardLineEl(id) ], full);
+  deleteRows([ id ], full && groupViewStyle === "ielts" ? studyParts() : [ cardLineEl(id) ], full);
 }
 
 function deleteAction() {
@@ -5946,7 +5950,7 @@ function gradeCard(row, isAgain) {
   const ids = groupViewStyle === "table" ? groupState.groups[groupState.index] : null;
   if (ids && !ids.includes(row.id)) return;
   const next = ids ? ids.length === 1 : !isListenMode() || listenBatch().filter(r => r.id !== row.id).length <= 1;
-  const parts = next ? studyParts() : [ cardLineEl(row.id) ];
+  const parts = next && groupViewStyle === "ielts" ? studyParts() : [ cardLineEl(row.id) ];
   if (!dragGhost && !reducedMotion()) dragGhost = ghostFor(parts);
   stopPlaybackForRemovedRow(row.id);
   if (isCardMode()) stopTts();
