@@ -5945,6 +5945,9 @@ function gradeCard(row, isAgain) {
   const mode = modeKey();
   const ids = groupViewStyle === "table" ? groupState.groups[groupState.index] : null;
   if (ids && !ids.includes(row.id)) return;
+  const next = ids ? ids.length === 1 : !isListenMode() || listenBatch().filter(r => r.id !== row.id).length <= 1;
+  const parts = next ? studyParts() : [ cardLineEl(row.id) ];
+  if (!dragGhost && !reducedMotion()) dragGhost = ghostFor(parts);
   stopPlaybackForRemovedRow(row.id);
   if (isCardMode()) stopTts();
   adjustSequenceIndexForRemoval(row.id);
@@ -5957,10 +5960,8 @@ function gradeCard(row, isAgain) {
   showToast(gradeLabel(isAgain) + " — " + cardSummary(row));
   scheduleAutoSave();
   if (hoveredRowId === row.id) hoveredRowId = null;
-  const lines = isListenMode() ? listenBatch() : [];
-  const next = ids ? ids.length === 1 : lines.length <= 1;
   if (!next) holdPage();
-  swipe(next ? studyParts() : [ cardLineEl(row.id) ], isAgain ? -1 : 1, () => {
+  swipe(parts, isAgain ? -1 : 1, () => {
     if (ids) {
       ids.splice(ids.indexOf(row.id), 1);
       if (ids.length === 0) advanceToNextGroup(); else updateGroupUI();
@@ -6111,7 +6112,7 @@ function gradeMark(isAgain) {
 function swipe(parts, dir, update, next, label = dir > 0 ? "Good" : "Again") {
   const motion = !matchMedia("(prefers-reduced-motion: reduce)").matches;
   const ghost = dragGhost || (motion ? ghostFor(parts) : null);
-  const from = dragGhost ? dragGhost.style.transform : "none";
+  const from = dragGhost && dragGhost.style.transform || "none";
   dragGhost = null;
   if (ghost) {
     ghost.classList.remove("good", "again");
