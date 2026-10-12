@@ -3133,13 +3133,22 @@ function isSessionFinished() {
 
 const CONFETTI_COLORS = [ "#2f6fa8", "#e8b923", "#c0392b", "#3aa76d", "#8e6fce" ];
 
-function finishText(held, done, next, word) {
+function finishText(held, done, next, word, states) {
   const plural = n => n + " " + word + (n === 1 ? "" : "s");
+  const now = Date.now();
+  const soon = states.filter(st => st.reps && st.lastGrade === GRADE_AGAIN && st.due > now);
+  if (soon.length) return {
+    emoji: "⏳",
+    title: "Back in a moment",
+    sub: `${plural(soon.length)} you missed ${soon.length === 1 ? "comes" : "come"} back ${formatDueIn(Math.min(...soon.map(st => st.due)))}` + (held ? ` · ${held} more wait for tomorrow` : "")
+  };
   if (held) return {
+    emoji: "🎉",
     title: "Daily limit reached",
     sub: `${plural(done)} studied today · ${held} more ${word}${held === 1 ? " waits" : "s wait"} for tomorrow`
   };
   return {
+    emoji: "🎉",
     title: "All caught up!",
     sub: (done ? `${plural(done)} studied today` : "Nothing is due right now") + (next ? ` · next review ${formatDueIn(next)}` : "")
   };
@@ -3151,13 +3160,14 @@ function showSessionCompletePanel() {
   const next = rows.filter(hasAnswer).map(r => srsOf(r, "Table")).filter(st => st.reps && !isDoneState(st) && st.due > now).map(st => st.due).sort((a, b) => a - b)[0];
   const due = modeScopeRows(modeKey()).filter(r => srsOf(r, "Table").due <= now);
   const held = due.length - limitRows(due).length;
-  const text = finishText(held, studiedToday(rows, false), next, "card");
+  const text = finishText(held, studiedToday(rows, false), next, "card", modeScopeRows(modeKey()).map(r => srsOf(r, "Table")));
+  panel.querySelector(".emoji").textContent = text.emoji;
   panel.querySelector(".session-complete-title").textContent = text.title;
   panel.querySelector(".session-complete-sub").textContent = text.sub;
   panel.querySelector(".more-today").hidden = !held;
   if (panel.style.display === "block") return;
   panel.querySelectorAll(".confetti-piece").forEach(el => el.remove());
-  addConfetti(panel);
+  if (text.emoji === "🎉") addConfetti(panel);
   panel.style.display = "block";
 }
 
@@ -11456,11 +11466,11 @@ function renderVocab() {
     const next = items.map(i => vocabStateOf(i)).filter(st => st.reps && !isDoneState(st)).map(st => st.due).sort((a, b) => a - b)[0];
     const due = items.filter(i => vocabStateOf(i).due <= now);
     const held = due.length - limitVocab(due).length;
-    const text = finishText(held, studiedToday(vocabSource(), true), next, "word");
+    const text = finishText(held, studiedToday(vocabSource(), true), next, "word", items.map(vocabStateOf));
     const celebrate = !stage.querySelector(".session-complete") || stage.dataset.lessonId !== String(currentLessonId);
     stage.dataset.lessonId = currentLessonId;
-    stage.innerHTML = `<div class="session-complete" style="display:block;"><div class="emoji">🎉</div><div class="session-complete-title">${text.title}</div><div class="session-complete-sub">${text.sub}</div>${held ? '<button class="primary more-today">Study 10 more today</button>' : ""}</div>`;
-    if (celebrate) addConfetti(stage.querySelector(".session-complete"));
+    stage.innerHTML = `<div class="session-complete" style="display:block;"><div class="emoji">${text.emoji}</div><div class="session-complete-title">${text.title}</div><div class="session-complete-sub">${text.sub}</div>${held ? '<button class="primary more-today">Study 10 more today</button>' : ""}</div>`;
+    if (celebrate && text.emoji === "🎉") addConfetti(stage.querySelector(".session-complete"));
     wireVocabEditor(items);
     syncVocabSound();
     return;
