@@ -399,7 +399,6 @@ window.onYouTubeIframeAPIReady = function(){
   .sidebar .primary{width:100%;}
   #lessonSearch{width:100%;}
   #lessonSearch{box-sizing:border-box;height:36px;padding-top:0;padding-bottom:0;}
-  .vocab-mode #btnNewLesson{display:none;}
   .lesson-list{flex:1;overflow-y:auto;margin:0 -4px;padding:0 4px;display:flex;flex-direction:column;gap:2px;}
   .lesson-item{
     display:flex;flex-direction:column;gap:2px;
@@ -445,8 +444,9 @@ window.onYouTubeIframeAPIReady = function(){
   .lesson-tile-bar .due{background:var(--due-color);}
   .lesson-tile-bar .later{background:var(--border-strong);}
   .lesson-tile-bar .done{background:var(--done-color);}
-  .sidebar-footer{display:flex;flex-direction:column;gap:2px;padding:6px;border-radius:var(--radius);background:var(--accent-soft);}
-  .sidebar-footer button{text-align:left;width:100%;}
+  .sidebar-footer{display:flex;justify-content:space-between;align-items:center;gap:2px;padding:6px;border-radius:var(--radius);background:var(--accent-soft);}
+  .sidebar-footer button{display:flex;align-items:center;justify-content:center;flex:1 1 0;min-width:0;height:40px;padding:0;border-radius:8px;font-size:20px;line-height:1;}
+  .plus-mark{font-size:30px;font-weight:800;line-height:1;background:linear-gradient(90deg, var(--lesson-color), var(--new-color));-webkit-background-clip:text;background-clip:text;color:transparent;}
   .sidebar-footer button.active{background:var(--surface);color:var(--accent);box-shadow:var(--shadow-sm);}
   .main{min-width:0;padding:26px 36px 64px;display:flex;justify-content:center;}
   .main-inner{width:100%;max-width:900px;display:flex;flex-direction:column;}
@@ -1123,12 +1123,12 @@ window.onYouTubeIframeAPIReady = function(){
   <input type="search" id="lessonSearch" name="lesson-search" autocomplete="off" placeholder="Search lessons…" aria-label="Search lessons">
   <nav id="lessonList" class="lesson-list" aria-label="Lessons"></nav>
   <div class="sidebar-footer">
-    <button id="btnNewLesson" class="ghost">➕ New lesson</button>
-    <button id="btnOpenFile" class="ghost" title="Open one or more lesson .json files, or a full backup">📥 Open file</button>
+    <button id="btnNewLesson" class="ghost" title="New lesson" aria-label="New lesson"><span class="plus-mark">＋</span></button>
+    <button id="btnOpenFile" class="ghost" title="Open file — one or more lesson .json files, or a full backup" aria-label="Open file">📥</button>
     <input type="file" id="fileInput" class="file-input-hidden" accept=".json" multiple>
-    <button id="btnBackupAll" class="ghost" title="Save every lesson and your review history as YYYY-MM-DD-flashcards.json. The first time you pick a folder; after that it saves there directly (one file per day). Shift-click to pick a different folder.">💾 Back up</button>
-    <button id="btnStats" class="ghost">📊 Statistics</button>
-    <button id="btnTheme" class="ghost" title="Switch between light ☀️ and dark 🌙. Starts with your computer's setting." aria-label="Theme: light">🌓 Theme: ☀️</button>
+    <button id="btnBackupAll" class="ghost" title="Save every lesson and your review history as YYYY-MM-DD-flashcards.json. The first time you pick a folder; after that it saves there directly (one file per day). Shift-click to pick a different folder." aria-label="Back up">💾</button>
+    <button id="btnStats" class="ghost" title="Statistics" aria-label="Statistics">📊</button>
+    <button id="btnTheme" class="ghost" title="Theme — switch between light ☀️ and dark 🌙. Starts with your computer's setting." aria-label="Theme: light">☀️</button>
   </div>
 </aside>
 
@@ -7872,6 +7872,7 @@ function refreshSaveReminders() {
   backupBtn.classList.toggle("needs-save", backupBehind);
   saveBtn.setAttribute("aria-label", lessonBehind ? "Save — this lesson has changes not saved to a file" : "Save");
   backupBtn.setAttribute("aria-label", backupBehind ? "Back up — lessons changed since the last backup" : "Back up — up to date");
+  backupBtn.title = backupBtn.getAttribute("aria-label");
   renderFileNote(lessonBehind);
 }
 
@@ -7887,7 +7888,7 @@ function renderFileNote(behind) {
   if (behind && (lessonSave || saves.backup)) parts.push("Changes not saved to a file");
   if (lessonSave) parts.push("💾 Saved to " + lessonSave.name + " at " + whenText(lessonSave.at));
   if (saves.backup) parts.push("Backup at " + whenText(saves.backup.at));
-  setFileNote(parts.length ? parts.join(" · ") : "Not saved to a file yet — click Save or 💾 Back up to keep a copy");
+  setFileNote(parts.length ? parts.join(" · ") : "Not saved to a file yet — click Save or 💾 (Back up) to keep a copy");
 }
 
 function scheduleAutoSave() {
@@ -8069,7 +8070,6 @@ function focusLessonName() {
 }
 
 async function createLesson() {
-  if (appMode === "vocab") return;
   commitActiveEdit();
   await discardIfEmptyDraft();
   await flushAutoSave();
@@ -8085,7 +8085,7 @@ async function createLesson() {
     createdAt: now,
     updatedAt: now,
     cards: [],
-    vocabOnly: false
+    vocabOnly: appMode === "vocab"
   };
   upsertLibrary(lesson);
   dbPut("lessons", lesson).catch(() => {});
@@ -9243,8 +9243,8 @@ function openAddView() {
 }
 
 const THEME_LABELS = {
-  light: "🌓 Theme: ☀️",
-  dark: "🌓 Theme: 🌙"
+  light: "☀️",
+  dark: "🌙"
 };
 
 const systemDarkQuery = matchMedia("(prefers-color-scheme: dark)");
@@ -9552,10 +9552,7 @@ document.getElementById("btnDeleteLesson").onclick = deleteCurrentLesson;
 
 document.getElementById("btnNewLesson").onclick = createLesson;
 
-document.getElementById("btnEmptyNew").onclick = () => {
-  if (appMode === "vocab") setAppMode("cards");
-  createLesson();
-};
+document.getElementById("btnEmptyNew").onclick = createLesson;
 
 document.getElementById("btnBackupAll").onclick = backupEverything;
 
