@@ -12659,7 +12659,7 @@ document.addEventListener("keydown", e => {
   }
   if ([ "Digit1", "Digit2", "Digit3" ].includes(e.code)) {
     if (e.repeat) return;
-    if (!groupState || groupViewStyle === "ielts") return;
+    if (!groupState || groupViewStyle !== "table") return;
     e.preventDefault();
     const row = studyScope()[Number(e.code.slice(-1)) - 1];
     if (!row) return;
@@ -12730,15 +12730,14 @@ function revealAction() {
   }
   scrollToPinned(studyAreaTop());
   if (groupViewStyle === "listen") {
-    currentCardRows().forEach(r => {
+    const shown = currentCardRows();
+    shown.forEach(r => {
       r.qHidden = false;
       r.aHidden = false;
     });
-    if (isSequencePlaying) {
-      stopSequenceLoop();
-    } else {
-      render();
-    }
+    if (isSequencePlaying) stopSequenceLoop(); else render();
+    workHushId = null;
+    loopWorkRow(shown[0]);
     return;
   }
   loopingRowData = null;
