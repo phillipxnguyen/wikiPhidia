@@ -3333,7 +3333,11 @@ function renderStudy() {
     return;
   }
   const caughtUp = !groupState && lessonCaughtUp();
-  if (caughtUp) showSessionCompletePanel(); else panel.style.display = "none";
+  if (caughtUp) showSessionCompletePanel(); else if (panel.style.display === "block") {
+    blinkOut(panel);
+    panel.style.display = "none";
+    requestAnimationFrame(() => blinkIn(singleCard ? singleCardView : table));
+  } else panel.style.display = "none";
   if (!groupState) {
     const progress = document.getElementById("tableProgress");
     const counts = !caughtUp && rows.some(hasAnswer);
@@ -8718,6 +8722,36 @@ function dustAway(el) {
   });
 }
 
+const BLINK_FRAMES = [ {
+  opacity: 1,
+  filter: "blur(0)",
+  transform: "scale(1)"
+}, {
+  opacity: 0,
+  filter: "blur(6px)",
+  transform: "scale(1.04)"
+} ];
+
+function blinkOut(el) {
+  if (reducedMotion()) return;
+  const copy = dustGhost(el);
+  if (!copy) return;
+  copy.querySelectorAll(".confetti-piece").forEach(n => n.remove());
+  [ copy, ...copy.querySelectorAll("*") ].forEach(n => n.style.animation = "none");
+  copy.animate(BLINK_FRAMES, {
+    duration: 600,
+    easing: "ease-out",
+    fill: "forwards"
+  }).onfinish = () => copy.remove();
+}
+
+function blinkIn(el) {
+  if (el && !reducedMotion()) el.animate(BLINK_FRAMES.slice().reverse(), {
+    duration: 600,
+    easing: "ease-out"
+  });
+}
+
 function slideLessonList(before) {
   if (reducedMotion()) return;
   document.querySelectorAll("#lessonList .lesson-item").forEach(el => {
@@ -11477,11 +11511,17 @@ function renderVocab() {
   }
   vocabShownRowId = item.card.id;
   vocabShownIsVideo = !!vocabVideoIdFor(item.card);
+  const doneScreen = stage.querySelector(".session-complete");
+  if (doneScreen) {
+    blinkOut(doneScreen);
+    stage.innerHTML = "";
+  }
   if (vocabEditingKey === item.key && !vocabEditingInList) {
     stage.innerHTML = vocabEditorHtml(item);
   } else {
     showVocabDeck(stage, item);
   }
+  if (doneScreen) blinkIn(stage.firstElementChild);
   wireVocabEditor(items);
   syncVocabSound();
 }
