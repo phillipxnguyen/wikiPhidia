@@ -252,6 +252,7 @@ window.onYouTubeIframeAPIReady = function(){
   .limits-pop input{width:100px;height:30px;padding:0 8px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);color:var(--text);font:inherit;font-size:16px;text-align:right;}
   .limits-pop input{-moz-appearance:textfield;appearance:textfield;}
   .limits-pop input::-webkit-inner-spin-button, .limits-pop input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
+  #limitsClear{align-self:flex-end;padding:5px 10px;font-size:14px;line-height:20px;}
   .limits-note{margin:0;font-size:12px;line-height:18px;color:var(--text-2);}
   .cloud-chip svg{display:block;}
   .cloud-chip.synced{color:var(--a-label);background:var(--a-bg);}
@@ -1017,6 +1018,8 @@ window.onYouTubeIframeAPIReady = function(){
   @keyframes bounce-in{0%{transform:scale(0);opacity:0;}60%{transform:scale(1.15);opacity:1;}100%{transform:scale(1);}}
   .session-complete-title{font-size:22px;font-weight:700;margin-top:14px;animation:fade-up .5s ease .1s both;}
   .session-complete-sub{font-size:14px;color:var(--text);margin-top:6px;animation:fade-up .5s ease .2s both;}
+  .more-today{margin-top:16px;line-height:20px;animation:fade-up .5s ease .3s both;}
+  .more-today[hidden]{display:none;}
   @keyframes fade-up{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
   .file-input-hidden{display:none;}
 
@@ -1031,7 +1034,8 @@ window.onYouTubeIframeAPIReady = function(){
   .lesson-totals{display:flex;gap:16px;font-size:14px;color:var(--text-2);font-variant-numeric:tabular-nums;}
   .lesson-totals b{color:var(--text);font-size:15px;margin-left:4px;}
   .stats-table th .lesson-totals{text-transform:none;letter-spacing:0;font-weight:400;}
-  @media (max-width:600px){.stats-table th:first-child{white-space:normal;}.stats-table .lesson-totals{flex-wrap:wrap;gap:4px 12px;}}
+  #statLessons{overflow-x:auto;}
+  @media (max-width:600px){.stats-table td:first-child{min-width:180px;}.heat-day .heat-card{grid-template-columns:minmax(0, 1fr) auto;gap:0 10px;}.heat-day .heat-card .heat-card-a{grid-row:2;}.heat-day .heat-card > span:last-child{grid-row:1 / span 2;grid-column:2;}}
   .chart-tooltip{
     position:absolute;pointer-events:none;
     background:var(--popup-bg);color:var(--popup-text);
@@ -1157,6 +1161,7 @@ window.onYouTubeIframeAPIReady = function(){
   <label>New cards a day<input id="limitFresh" type="number" min="0" step="1" inputmode="numeric" placeholder="No limit"></label>
   <label>Reviews a day<input id="limitReview" type="number" min="0" step="1" inputmode="numeric" placeholder="No limit"></label>
   <p class="limits-note">For each lesson, in Lessons and in Vocabulary. Study modes and flashcards show only what fits; lists always show every card.</p>
+  <button id="limitsClear" class="ghost">No limit</button>
 </div>
 
 <div id="cloudDialog" class="paused-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="cloudTitle">
@@ -1372,6 +1377,7 @@ window.onYouTubeIframeAPIReady = function(){
     <div class="emoji">🎉</div>
     <div class="session-complete-title">All done!</div>
     <div class="session-complete-sub"></div>
+    <button class="primary more-today" hidden>Study 10 more today</button>
   </div>
   <button id="listAddCard" class="add-single" aria-label="Add a card" hidden>＋</button>
   <table id="cardTable">
@@ -2680,6 +2686,28 @@ try {
   if (saved) [ "fresh", "review" ].forEach(k => studyLimits[k] = Math.max(0, Math.floor(Number(saved[k]) || 0)));
 } catch (e) {}
 
+const LIMIT_EXTRA_KEY = "flashcards.limitExtra";
+
+let limitExtra = {
+  day: "",
+  fresh: 0,
+  review: 0
+};
+
+try {
+  const saved = JSON.parse(localStorage.getItem(LIMIT_EXTRA_KEY) || "null");
+  if (saved && typeof saved.day === "string") limitExtra = {
+    day: saved.day,
+    fresh: Math.max(0, Math.floor(Number(saved.fresh) || 0)),
+    review: Math.max(0, Math.floor(Number(saved.review) || 0))
+  };
+} catch (e) {}
+
+function limitOf(kind) {
+  if (!studyLimits[kind]) return 0;
+  return studyLimits[kind] + (limitExtra.day === localDayKey(Date.now()) ? limitExtra[kind] : 0);
+}
+
 function limitStudy(list, vocab, keyOf, stateOf) {
   if (!studyLimits.fresh && !studyLimits.review) return list;
   const start = new Date;
@@ -2694,8 +2722,8 @@ function limitStudy(list, vocab, keyOf, stateOf) {
     seen.add(k);
     if (e.fresh) fresh.add(k);
   }
-  let freshLeft = studyLimits.fresh ? studyLimits.fresh - fresh.size : Infinity;
-  let reviewLeft = studyLimits.review ? studyLimits.review - (seen.size - fresh.size) : Infinity;
+  let freshLeft = studyLimits.fresh ? limitOf("fresh") - fresh.size : Infinity;
+  let reviewLeft = studyLimits.review ? limitOf("review") - (seen.size - fresh.size) : Infinity;
   return list.filter(x => {
     if (seen.has(keyOf(x))) return true;
     return stateOf(x).reps ? reviewLeft-- > 0 : freshLeft-- > 0;
@@ -2728,8 +2756,7 @@ function getCurrentSingleCardRow() {
 }
 
 function freshListenBatch(queue) {
-  const first = splitIntoGroups(queue.map(r => r.id))[0] || [];
-  return queue.filter(r => first.includes(r.id)).sort(byVideoTime);
+  return queue.slice(0, 1);
 }
 
 let listenBatchKept = {
@@ -3106,6 +3133,7 @@ function showSessionCompletePanel() {
   const due = modeScopeRows(modeKey()).filter(r => srsOf(r, "Table").due <= now);
   const held = due.length - limitRows(due).length;
   panel.querySelector(".session-complete-sub").textContent = held ? heldText(held, "card") : "Nothing is due right now." + (next ? ` Next review ${formatDueIn(next)}.` : "");
+  panel.querySelector(".more-today").hidden = !held;
   if (panel.style.display === "block") return;
   panel.querySelectorAll(".confetti-piece").forEach(el => el.remove());
   addConfetti(panel);
@@ -9449,12 +9477,42 @@ function applyStudyLimits() {
   try {
     localStorage.setItem(LIMITS_KEY, JSON.stringify(studyLimits));
   } catch (e) {}
+  refreshAfterLimits();
+}
+
+function refreshAfterLimits() {
   if (currentView === "study" && groupState) setReviewMode(groupViewStyle); else if (currentView === "study") render();
   if (currentView === "vocab") {
     vocabSession = null;
     renderVocab();
   }
 }
+
+function studyMoreToday() {
+  const today = localDayKey(Date.now());
+  if (limitExtra.day !== today) limitExtra = {
+    day: today,
+    fresh: 0,
+    review: 0
+  };
+  limitExtra.fresh += 10;
+  limitExtra.review += 10;
+  try {
+    localStorage.setItem(LIMIT_EXTRA_KEY, JSON.stringify(limitExtra));
+  } catch (e) {}
+  refreshAfterLimits();
+}
+
+document.addEventListener("click", e => {
+  if (e.target.closest(".more-today")) studyMoreToday();
+});
+
+document.getElementById("limitsClear").onclick = () => {
+  document.getElementById("limitFresh").value = "";
+  document.getElementById("limitReview").value = "";
+  applyStudyLimits();
+  closeLimitsPop();
+};
 
 document.getElementById("streakChip").onclick = () => {
   const pop = document.getElementById("limitsPop");
@@ -11378,7 +11436,7 @@ function renderVocab() {
     const later = held ? " " + heldText(held, "word") : next ? ` Next review ${formatDueIn(next)}.` : "";
     const celebrate = !stage.querySelector(".session-complete") || stage.dataset.lessonId !== String(currentLessonId);
     stage.dataset.lessonId = currentLessonId;
-    stage.innerHTML = `<div class="session-complete" style="display:block;"><div class="emoji">🎉</div><div class="session-complete-title">All caught up!</div><div class="session-complete-sub">${sub}${later}</div></div>`;
+    stage.innerHTML = `<div class="session-complete" style="display:block;"><div class="emoji">🎉</div><div class="session-complete-title">All caught up!</div><div class="session-complete-sub">${sub}${later}</div>${held ? '<button class="primary more-today">Study 10 more today</button>' : ""}</div>`;
     if (celebrate) addConfetti(stage.querySelector(".session-complete"));
     wireVocabEditor(items);
     syncVocabSound();
