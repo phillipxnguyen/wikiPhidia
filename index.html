@@ -1376,7 +1376,7 @@ window.onYouTubeIframeAPIReady = function(){
   <div id="tableProgress" class="single-card-progress" style="display:none;"></div>
   <div id="sessionCompletePanel" class="session-complete">
     <div class="emoji">🎉</div>
-    <div class="session-complete-title">All done!</div>
+    <div class="session-complete-title">All caught up!</div>
     <div class="session-complete-sub"></div>
     <button class="primary more-today" hidden>Study 10 more today</button>
   </div>
@@ -2709,12 +2709,9 @@ function limitOf(kind) {
   return studyLimits[kind] + (limitExtra.day === localDayKey(Date.now()) ? limitExtra[kind] : 0);
 }
 
-function limitStudy(list, vocab, keyOf, stateOf) {
-  if (!studyLimits.fresh && !studyLimits.review) return list;
+function todayLog(vocab, lessons) {
   const start = new Date;
   start.setHours(0, 0, 0, 0);
-  const keys = new Set(list.map(keyOf));
-  const lessons = new Set(Array.from(keys, k => k.split(":")[0]));
   const seen = new Set, fresh = new Set;
   for (let i = reviewLog.length - 1; i >= 0 && reviewLog[i].ts >= start.getTime(); i--) {
     const e = reviewLog[i];
@@ -2723,6 +2720,19 @@ function limitStudy(list, vocab, keyOf, stateOf) {
     seen.add(k);
     if (e.fresh) fresh.add(k);
   }
+  return {
+    seen: seen,
+    fresh: fresh
+  };
+}
+
+function studiedToday(cards, vocab) {
+  return todayLog(vocab, new Set(cards.map(c => c.srcLessonId || currentLessonId))).seen.size;
+}
+
+function limitStudy(list, vocab, keyOf, stateOf) {
+  if (!studyLimits.fresh && !studyLimits.review) return list;
+  const {seen: seen, fresh: fresh} = todayLog(vocab, new Set(list.map(x => keyOf(x).split(":")[0])));
   let freshLeft = studyLimits.fresh ? limitOf("fresh") - fresh.size : Infinity;
   let reviewLeft = studyLimits.review ? limitOf("review") - (seen.size - fresh.size) : Infinity;
   return list.filter(x => {
@@ -3123,8 +3133,16 @@ function isSessionFinished() {
 
 const CONFETTI_COLORS = [ "#2f6fa8", "#e8b923", "#c0392b", "#3aa76d", "#8e6fce" ];
 
-function heldText(n, word) {
-  return `Today's limit is reached; ${n} more ${word}${n === 1 ? " waits" : "s wait"} for tomorrow.`;
+function finishText(held, done, next, word) {
+  const plural = n => n + " " + word + (n === 1 ? "" : "s");
+  if (held) return {
+    title: "Daily limit reached",
+    sub: `${plural(done)} studied today · ${held} more ${word}${held === 1 ? " waits" : "s wait"} for tomorrow`
+  };
+  return {
+    title: "All caught up!",
+    sub: (done ? `${plural(done)} studied today` : "Nothing is due right now") + (next ? ` · next review ${formatDueIn(next)}` : "")
+  };
 }
 
 function showSessionCompletePanel() {
@@ -3133,7 +3151,9 @@ function showSessionCompletePanel() {
   const next = rows.filter(hasAnswer).map(r => srsOf(r, "Table")).filter(st => st.reps && !isDoneState(st) && st.due > now).map(st => st.due).sort((a, b) => a - b)[0];
   const due = modeScopeRows(modeKey()).filter(r => srsOf(r, "Table").due <= now);
   const held = due.length - limitRows(due).length;
-  panel.querySelector(".session-complete-sub").textContent = held ? heldText(held, "card") : "Nothing is due right now." + (next ? ` Next review ${formatDueIn(next)}.` : "");
+  const text = finishText(held, studiedToday(rows, false), next, "card");
+  panel.querySelector(".session-complete-title").textContent = text.title;
+  panel.querySelector(".session-complete-sub").textContent = text.sub;
   panel.querySelector(".more-today").hidden = !held;
   if (panel.style.display === "block") return;
   panel.querySelectorAll(".confetti-piece").forEach(el => el.remove());
@@ -11040,7 +11060,6 @@ function startVocabSession() {
   vocabSession = {
     lessonId: currentLessonId,
     queue: allowed.map(i => i.key),
-    total: allowed.length,
     flipped: false,
     pending: []
   };
@@ -11435,13 +11454,12 @@ function renderVocab() {
   if (!studying.length) {
     badges.innerHTML = "";
     const next = items.map(i => vocabStateOf(i)).filter(st => st.reps && !isDoneState(st)).map(st => st.due).sort((a, b) => a - b)[0];
-    const sub = vocabSession.total ? `You reviewed ${vocabSession.total} word${vocabSession.total === 1 ? "" : "s"}.` : "Nothing is due right now.";
     const due = items.filter(i => vocabStateOf(i).due <= now);
     const held = due.length - limitVocab(due).length;
-    const later = held ? " " + heldText(held, "word") : next ? ` Next review ${formatDueIn(next)}.` : "";
+    const text = finishText(held, studiedToday(vocabSource(), true), next, "word");
     const celebrate = !stage.querySelector(".session-complete") || stage.dataset.lessonId !== String(currentLessonId);
     stage.dataset.lessonId = currentLessonId;
-    stage.innerHTML = `<div class="session-complete" style="display:block;"><div class="emoji">🎉</div><div class="session-complete-title">All caught up!</div><div class="session-complete-sub">${sub}${later}</div>${held ? '<button class="primary more-today">Study 10 more today</button>' : ""}</div>`;
+    stage.innerHTML = `<div class="session-complete" style="display:block;"><div class="emoji">🎉</div><div class="session-complete-title">${text.title}</div><div class="session-complete-sub">${text.sub}</div>${held ? '<button class="primary more-today">Study 10 more today</button>' : ""}</div>`;
     if (celebrate) addConfetti(stage.querySelector(".session-complete"));
     wireVocabEditor(items);
     syncVocabSound();
@@ -11841,7 +11859,6 @@ function deleteVocabEntry(item, part) {
   if (vocabSession) {
     if (vocabSession.queue[0] === item.key) vocabSession.flipped = false;
     dropVocabSessionKey(item.key);
-    vocabSession.total = Math.max(0, vocabSession.total - 1);
   }
   if (vocabEditingKey === item.key) vocabEditingKey = null;
   if (vocabHoveredKey === item.key) vocabHoveredKey = null;
