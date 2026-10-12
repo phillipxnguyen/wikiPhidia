@@ -685,7 +685,7 @@ window.onYouTubeIframeAPIReady = function(){
     #cardTable.notebook td.q-col, #cardTable.notebook td.a-col{padding-left:15px;}
     #cardTable.notebook tbody tr.edit-row{padding:12px 12px 12px 52px;}
   }
-  #cardTable.chat{display:block;padding:0 0 10px;overflow:visible;background:none;border:0;box-shadow:none;}
+  #cardTable.chat{display:block;padding:0;margin-bottom:26px;overflow:visible;background:none;border:0;box-shadow:none;}
   #cardTable.chat :is(colgroup, thead){display:none;}
   #cardTable.chat tbody{display:flex;flex-direction:column;gap:10px;}
   #cardTable.chat tbody tr{display:flex;flex-direction:column;gap:10px;padding:0 10px;border-radius:var(--radius);transition:opacity .2s ease;}
@@ -716,7 +716,6 @@ window.onYouTubeIframeAPIReady = function(){
   #cardTable.chat .dots{display:inline-block;width:40px;height:10px;font-size:0;vertical-align:middle;--dot:radial-gradient(circle closest-side, currentColor 90%, transparent);background:var(--dot) 0 0 / 10px 10px no-repeat, var(--dot) 15px 0 / 10px 10px no-repeat, var(--dot) 30px 0 / 10px 10px no-repeat;opacity:.5;}
   #cardTable.chat .a-col .loop-time{background:rgba(255,255,255,.25);color:#fff;}
   @media (max-width:600px){
-    .shell #cardTable.chat{padding:0 0 10px;}
     .shell #cardTable.chat tbody tr{padding:0 5px;}
     .shell #cardTable.chat .cell{max-width:85%;margin:0;padding:10px 15px;font-size:18px;line-height:25px;}
   }
@@ -10919,7 +10918,13 @@ function buildVocabCard(item) {
     return it && it.key === el.dataset.key ? it : null;
   };
   el.addEventListener("click", e => {
-    if (current() && !e.target.closest(".vocab-back-stroke")) flipVocab();
+    const item = current();
+    if (!item || e.target.closest(".vocab-back-stroke")) return;
+    if (!vocabSession.flipped) return flipVocab();
+    if (!isTouch() || isDoubleTap("c" + item.key)) {
+      hideTooltip();
+      openVocabEditor(item.key);
+    } else toggleVocabSound(item);
   });
   return el;
 }
