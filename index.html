@@ -253,7 +253,8 @@ window.onYouTubeIframeAPIReady = function(){
   .limits-pop input{-moz-appearance:textfield;appearance:textfield;}
   .limits-pop input::-webkit-inner-spin-button, .limits-pop input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
   #limitsClear{align-self:flex-end;padding:5px 10px;font-size:14px;line-height:20px;}
-  .limits-note{margin:0;font-size:12px;line-height:18px;color:var(--text-2);}
+  #limitsTitle{align-self:flex-start;cursor:help;}
+  .limits-pop input::placeholder{font-size:14px;}
   .cloud-chip svg{display:block;}
   .cloud-chip.synced{color:var(--a-label);background:var(--a-bg);}
   .cloud-chip.syncing{color:var(--text-2);background:var(--surface-2);}
@@ -1073,6 +1074,7 @@ window.onYouTubeIframeAPIReady = function(){
   @media (hover:hover){.heat-card:hover{background:var(--surface-3);border-color:transparent;}}
   .heat-card span{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
   .heat-card .heat-card-a{color:var(--text-2);}
+  .heat-card .heat-card-tags{display:flex;gap:10px;}
   .heat-day-empty{font-size:14px;line-height:20px;color:var(--text-2);text-align:center;}
   @media (hover:hover){.heat[data-tip]:hover{position:relative;z-index:2;outline:2px solid var(--text-2);outline-offset:1px;}}
   .heat-numbers{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 22px;margin-top:14px;font-size:14px;color:var(--text);}
@@ -1157,10 +1159,9 @@ window.onYouTubeIframeAPIReady = function(){
 </aside>
 
 <div id="limitsPop" class="limits-pop" hidden role="dialog" aria-labelledby="limitsTitle">
-  <h2 id="limitsTitle">Daily limits</h2>
+  <h2 id="limitsTitle" title="For each lesson, in Lessons and in Vocabulary. Study modes and flashcards show only what fits; lists always show every card.">Daily limits</h2>
   <label>New cards a day<input id="limitFresh" type="number" min="0" step="1" inputmode="numeric" placeholder="No limit"></label>
   <label>Reviews a day<input id="limitReview" type="number" min="0" step="1" inputmode="numeric" placeholder="No limit"></label>
-  <p class="limits-note">For each lesson, in Lessons and in Vocabulary. Study modes and flashcards show only what fits; lists always show every card.</p>
   <button id="limitsClear" class="ghost">No limit</button>
 </div>
 
@@ -9634,7 +9635,7 @@ function heatDayHtml(key, today) {
   const label = date.toLocaleDateString(undefined, {weekday: "short", month: "short", day: "numeric", year: "numeric"}) + " · " + total + " card" + (total === 1 ? "" : "s") + (future ? " due" : " learned");
   const list = Array.from(groups.values()).sort((a, b) => (a.lesson.name || "").localeCompare(b.lesson.name || "", undefined, {
     numeric: true
-  })).map(g => `<div class="heat-day-group"><div class="heat-day-lesson">${escapeHtml(g.lesson.name || "Untitled lesson")}</div>` + Array.from(g.items.values()).map(it => `<button class="heat-card" data-lesson-id="${escapeAttr(g.lesson.id)}" data-vocab="${it.vocab ? 1 : ""}"><span>${escapeHtml(it.q || "")}</span><span class="heat-card-a">${escapeHtml(it.a || "")}</span><span aria-hidden="true">${future ? "⏳" : it.vocab ? "字" : ""}${future ? "" : it.good ? "✓" : "✕"}</span></button>`).join("") + "</div>").join("");
+  })).map(g => `<div class="heat-day-group"><div class="heat-day-lesson">${escapeHtml(g.lesson.name || "Untitled lesson")}</div>` + Array.from(g.items.values()).map(it => `<button class="heat-card" data-lesson-id="${escapeAttr(g.lesson.id)}" data-vocab="${it.vocab ? 1 : ""}"><span>${escapeHtml(it.q || "")}</span><span class="heat-card-a">${escapeHtml(it.a || "")}</span><span class="heat-card-tags">${future ? '<span title="Due">⏳</span>' : (it.vocab ? '<span title="A word, from Vocabulary">字</span>' : "") + (it.good ? '<span title="Last answered Good">✓</span>' : '<span title="Last answered Again">✕</span>')}</span></button>`).join("") + "</div>").join("");
   return `<div class="heat-day"><h3 class="heat-day-head">${escapeHtml(label)}</h3>` + (total ? `<div class="heat-day-list">${list}</div>` : `<div class="heat-day-empty">${future ? "Nothing due" : "No cards learned"}</div>`) + "</div>";
 }
 
