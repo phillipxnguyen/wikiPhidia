@@ -525,7 +525,7 @@ window.onYouTubeIframeAPIReady = function(){
   }
   @media (hover:hover){.lesson-name-input:hover{background:var(--surface) !important;border-color:var(--border) !important;}}
   .lesson-name-input:focus{background:var(--surface) !important;border-color:var(--accent) !important;}
-  .fresh-lesson #viewStudy .primary{background:linear-gradient(90deg, var(--lesson-color), var(--new-color));border-color:transparent;}
+  .fresh-lesson :is(#viewStudy, #viewAdd, #viewVocab) .primary{background:linear-gradient(90deg, var(--lesson-color), var(--new-color));border-color:transparent;}
   .fresh-lesson #btnSingleCard{background:linear-gradient(90deg, var(--lesson-color), var(--new-color)) text, linear-gradient(90deg, color-mix(in srgb, var(--lesson-color) 12%, transparent), color-mix(in srgb, var(--new-color) 12%, transparent)) padding-box;-webkit-background-clip:text, padding-box;color:transparent;}
   .lesson-name-input.fresh:not(:focus):not(:hover){background:linear-gradient(90deg, var(--lesson-color), var(--new-color)) 8px 0 / var(--fresh-w, 100%) 100% no-repeat !important;-webkit-background-clip:text !important;background-clip:text !important;color:transparent;}
   .header-actions{display:flex;align-items:center;gap:4px;flex-shrink:0;}
@@ -810,8 +810,8 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-popup .vocab-note > :last-child, .vocab-popup .vocab-note li:last-child{margin-bottom:0;}
   .vocab-popup .vocab-counter:empty{display:none;}
   #listAddCard{height:36px;margin-top:-6px;}
-  #addForm, #vocabAddForm{padding-top:16px;}
-  #addForm > .add-single, #vocabAddForm > .add-single{margin-bottom:16px;}
+  #addForm{padding-top:16px;}
+  #addForm > .add-single{margin-bottom:16px;}
   .vocab-popup .vocab-sentence mark, .vocab-popup .vocab-note mark{background:var(--mark-bg);color:#20242b;border-radius:4px;padding:0 2px;font-style:normal;}
   .vocab-popup .vocab-note{font-style:italic;}
   .vocab-popup .vocab-note:empty{display:none;}
@@ -1227,17 +1227,6 @@ window.onYouTubeIframeAPIReady = function(){
   </div>
 </section>
 
-<div id="vocabAddForm" class="panel" hidden>
-  <button id="vocabAddSingle" class="add-single" aria-label="Add a single word">＋</button>
-  <textarea id="vocabImportText" rows="8" placeholder="Paste here!"></textarea>
-  <div id="vocabImportPreview" class="import-preview" hidden aria-live="polite"></div>
-  <div class="row-flex" style="margin-top:10px;">
-    <label class="muted-label" for="vocabDelim">Column delimiter</label>
-    <select id="vocabDelim"></select>
-    <button id="vocabImportBtn" class="primary">Import</button>
-    <span id="vocabImportStatus" class="muted-label"></span>
-  </div>
-</div>
 
 <section id="viewStats" hidden>
   <h1 class="stats-title both-modes">Statistics</h1>
@@ -5264,7 +5253,12 @@ function addSingleCard() {
 
 document.getElementById("btnSingleCard").onclick = e => {
   e.stopPropagation();
-  addSingleCard();
+  if (appMode !== "vocab") return addSingleCard();
+  if (!currentLessonId || isVirtualLesson()) return;
+  ensureVocabExtras();
+  showView("vocab");
+  setVocabView("list");
+  openVocabEditor(NEW_WORD_KEY, true);
 };
 
 function openEdit(tr, row) {
@@ -6781,9 +6775,7 @@ const DELIMS = {
   }
 };
 
-[ "colDelim", "vocabDelim" ].forEach(id => {
-  document.getElementById(id).innerHTML = Object.keys(DELIMS).map(d => `<option value="${d === "\t" ? "tab" : d}">${DELIMS[d].label}</option>`).join("");
-});
+document.getElementById("colDelim").innerHTML = Object.keys(DELIMS).map(d => `<option value="${d === "\t" ? "tab" : d}">${DELIMS[d].label}</option>`).join("");
 
 function findDelim(str, delim) {
   const m = DELIMS[delim].re.exec(str);
@@ -7077,10 +7069,16 @@ async function addSentenceWords(cards, onStatus) {
   return found.length;
 }
 
-async function openWordsInVocab() {
-  if (appMode === "vocab" || rows.some(r => r.id !== draftRowId)) return;
-  await flushAutoSave();
-  document.getElementById("btnAppMode").click();
+function lessonIsBlank() {
+  return !!currentLessonId && !isVirtualLesson() && !rows.some(r => r.id !== draftRowId && ((r.q || "").trim() || (r.a || "").trim())) && !lessonVocabItems(vocabSource()).length;
+}
+
+async function settleImportMode(cards, words) {
+  const target = cards && !words ? "cards" : words && !cards ? "vocab" : appMode;
+  if (target !== appMode) {
+    await flushAutoSave();
+    document.getElementById("btnAppMode").click();
+  } else if (appMode === "vocab" && currentView === "study") showView("vocab");
 }
 
 function addWordsToLesson(pairs, preferRows) {
@@ -7422,7 +7420,11 @@ function commitImport(plan, label, keepText) {
     });
   }
   rows.unshift(...newRows);
-  if (newRows.length) recordImport(newRows.length);
+  if (newRows.length) {
+    recordImport(newRows.length);
+    const entry = library.find(l => l.id === currentLessonId);
+    if (entry) entry.vocabOnly = false;
+  }
   if (!keepText) document.getElementById("importText").value = "";
   renderImportPreview();
   if (currentView === "add") renderAddView();
@@ -7496,7 +7498,7 @@ document.querySelectorAll(".lang-btn").forEach(btn => {
       let msg = [ importResultMessage(plan), words.length ? `Added ${words.length} word(s) to Vocabulary.` : "" ].filter(Boolean).join(" ") || "No cards imported.";
       if (failed > 0) msg += ` ${failed} failed to translate.`;
       setImportStatus(msg);
-      if (words.length) openWordsInVocab();
+      if (words.length || plan.newRows.length) settleImportMode(plan.newRows.length > 0, words.length > 0);
     } finally {
       btns.forEach(b => b.disabled = false);
     }
@@ -7524,7 +7526,6 @@ document.getElementById("importBtn").onclick = () => {
       document.getElementById("importText").value = "";
       renderLessonList();
     }
-    openWordsInVocab();
   } else if (plan.newRows.length && !isVideoLesson()) {
     addSentenceWords(plan.newRows, setImportStatus).then(n => {
       if (n) setImportStatus(msg + ` Added ${n} word(s) to Vocabulary from the sentences.`);
@@ -7533,6 +7534,7 @@ document.getElementById("importBtn").onclick = () => {
   if (analysis.title && !plan.newRows.length && !plan.fills.size) scheduleAutoSave();
   render();
   renderImportPreview();
+  if (words.length || plan.newRows.length) settleImportMode(plan.newRows.length > 0, words.length > 0);
 };
 
 const IMPORT_PREVIEW_MAX_ROWS = 300;
@@ -8092,7 +8094,6 @@ function focusLessonName() {
 }
 
 async function createLesson() {
-  if (appMode === "vocab") setAppMode("cards");
   commitActiveEdit();
   await discardIfEmptyDraft();
   await flushAutoSave();
@@ -9149,7 +9150,8 @@ function showListModes() {
 
 function showView(view) {
   if (view === "study" && !currentLessonId) view = "empty";
-  if (view === "study" && (isVirtualLesson() || appMode === "vocab")) view = "vocab";
+  if (view === "vocab" && lessonIsBlank()) view = "study";
+  if (view === "study" && (isVirtualLesson() || appMode === "vocab") && !lessonIsBlank()) view = "vocab";
   if (view === "vocab" && currentView !== "vocab") vocabSession = null;
   if (view !== "vocab") {
     commitVocabEdit();
@@ -9234,14 +9236,7 @@ function renderAddView() {
   document.getElementById("addTitle").textContent = vocab ? "Add vocabularies" : "Add cards";
   document.getElementById("addUnavailable").textContent = vocab && blocked ? blocked.replace("new cards", "new words").replace("add cards", "add words") : blocked;
   document.getElementById("addUnavailable").hidden = !blocked;
-  document.getElementById("addForm").hidden = !!blocked || vocab;
-  placeVocabAddForm("page");
-  document.getElementById("vocabAddForm").hidden = !!blocked || !vocab;
-  if (vocab) {
-    renderVocabImportPreview();
-    if (!blocked) document.getElementById("vocabImportText").focus();
-    return;
-  }
+  document.getElementById("addForm").hidden = !!blocked;
   renderImportInfo();
   renderImportPreview();
   if (!blocked) document.getElementById("importText").focus();
@@ -11214,15 +11209,15 @@ function wireVocabEditor(items) {
 }
 
 function placeVocabAddForm(where) {
-  const form = document.getElementById("vocabAddForm");
+  const form = document.getElementById("addForm");
   const slot = document.getElementById("vocabInlineAdd");
   if (where === "lesson") {
     if (form.parentNode !== slot) slot.appendChild(form);
     form.hidden = false;
     slot.hidden = false;
+    renderImportInfo();
   } else {
-    const home = document.getElementById("viewAdd");
-    if (form.parentNode !== home) home.appendChild(form);
+    if (form.parentNode === slot) document.getElementById("viewAdd").appendChild(form);
     slot.hidden = true;
   }
 }
@@ -11239,191 +11234,6 @@ function ensureVocabExtras() {
   };
   return vocabExtras;
 }
-
-function vocabDelimFor(text) {
-  const sel = document.getElementById("vocabDelim");
-  const cur = sel.value === "tab" ? "\t" : sel.value;
-  const lines = text.split(/\r?\n/).filter(l => l.trim()).map(stripBullet);
-  const count = d => lines.filter(l => d === ":" ? VOCAB_LINE_RE.test(l) && !QA_LABEL_RE.test(l.trim()) && !(cur === "none" && SENTENCE_END_RE.test(l.split(/[:：]/)[0])) : (findDelim(l, d) || {}).idx > 0).length;
-  const best = [ "\t", ":" ].map(d => [ d, count(d) ]).sort((a, b) => b[1] - a[1])[0];
-  const delim = cur === "none" ? best[1] * 2 > lines.length && !lines.some(isProseLine) && !(best[0] === ":" && isDialogue(lines)) ? best[0] : "none" : !best[1] && !count(cur) ? "none" : best[1] <= count(cur) ? cur : best[0];
-  return {
-    delim: delim,
-    auto: delim !== cur
-  };
-}
-
-function parseVocabPaste(line, delim) {
-  line = stripBullet(line);
-  let term = "", meaning = "";
-  if (delim !== ":") {
-    const hit = findDelim(line, delim);
-    if (hit && hit.idx > 0) {
-      term = line.slice(0, hit.idx);
-      meaning = line.slice(hit.end);
-    }
-  } else {
-    const m = line.match(/^\s*([^:：]+?)\s*[:：]\s*(\S[\s\S]*?)\s*$/);
-    if (m) {
-      term = m[1];
-      meaning = m[2];
-    }
-  }
-  term = term.replace(/\s+/g, " ").trim();
-  meaning = meaning.replace(/\s+/g, " ").trim();
-  return term && meaning ? [ term, meaning ] : null;
-}
-
-function planVocabImport(text) {
-  const seen = new Set;
-  const lines = [];
-  const delim = vocabDelimFor(text).delim;
-  if (delim === "none") {
-    const items = planWords(analyzeMixed(text, "vocab"));
-    const cards = items.filter(it => it.kind === "card");
-    const outcomes = planImport(cards.map(it => it.entry), true).outcomes;
-    cards.forEach((it, i) => it.cardKind = outcomes[i].kind === "new" ? "card" : "cardDup");
-    if (!rows.length && items[0] && items[0].kind === "heading" && cards.length) items[0].kind = "title";
-    const asked = !rows.length && items[0] && items[0].kind === "card" && items[0].entry.a && !/[.!?。！？]$/.test(items[0].entry.q);
-    if (asked) items.unshift({
-      kind: "title",
-      text: items[0].entry.q
-    });
-    return items.map((it, i) => ({
-      lineNo: i + 1,
-      text: it.text,
-      pair: it.kind === "word" ? [ it.term, it.meaning ] : it.entry ? [ it.entry.q, "" ] : null,
-      entry: it.entry || null,
-      kind: it.kind === "word" ? it.wordKind : it.kind === "card" ? it.cardKind : it.kind
-    }));
-  }
-  text.split(/\r?\n/).forEach((raw, i) => {
-    if (!raw.trim()) return;
-    const pair = parseVocabPaste(raw, delim);
-    let kind = "new";
-    if (!pair) kind = "invalid"; else {
-      const key = normalizeVocabText(pair[0]);
-      if (seen.has(key) || existingVocab(pair[0])) kind = "duplicate"; else seen.add(key);
-    }
-    lines.push({
-      lineNo: i + 1,
-      text: raw,
-      pair: pair,
-      kind: kind
-    });
-  });
-  return lines;
-}
-
-function renderVocabImportPreview() {
-  const box = document.getElementById("vocabImportPreview");
-  const raw = document.getElementById("vocabImportText").value;
-  if (!raw.trim() || !currentLessonId || isVirtualLesson()) {
-    box.hidden = true;
-    box.innerHTML = "";
-    return;
-  }
-  const lines = planVocabImport(raw);
-  const count = kind => lines.filter(l => l.kind === kind).length;
-  const shown = lines.filter(l => l.kind !== "title").length;
-  const summary = [ `<span><b>${shown}</b> ${vocabDelimFor(raw).delim === "none" ? "item" : "line"}${shown === 1 ? "" : "s"}</span>` ];
-  if (count("new")) summary.push(`<span class="ip-status new">🆕 ${count("new")}</span>`);
-  if (count("card")) summary.push(`<span class="ip-status new">🃏 ${count("card")} card${count("card") === 1 ? "" : "s"}</span>`);
-  if (count("duplicate") || count("cardDup")) summary.push(`<span class="ip-status dup">❐ ${count("duplicate") + count("cardDup")} duplicate</span>`);
-  if (count("invalid")) summary.push(`<span class="ip-status skip">⚠️ ${count("invalid")} skipped</span>`);
-  if (count("heading")) summary.push(`<span class="ip-status dup">➖ ${count("heading")} heading${count("heading") === 1 ? "" : "s"}</span>`);
-  if (!count("new") && !count("duplicate") && count("card") && !isVideoLesson()) {
-    const fromSentences = sentenceWordsFrom(lines.filter(l => l.kind === "card").map(l => l.entry));
-    const n = fromSentences.length;
-    if (n) summary.push(`<span class="ip-status new" title="No word list found: the sentences themselves become words, translated">🔤 ${n} from sentences</span>`);
-  }
-  const pick = vocabDelimFor(raw);
-  summary.push(`<span>Delimiter: <b>${delimLabel(pick.delim)}</b>${pick.auto ? " (auto-detected)" : ""}</span>`);
-  const titleLine = lines.find(l => l.kind === "title");
-  if (titleLine) summary.push(`<span>Title: <b>${escapeHtml(titleLine.text.trim())}</b></span>`);
-  const labels = {
-    card: [ "new", "🃏", "New card — goes to the lesson" ],
-    cardDup: [ "dup", "❐", "Card already in this lesson" ],
-    heading: [ "dup", "➖", "Heading — left out" ],
-    title: [ "dup", "🏷", "Lesson title" ],
-    new: [ "new", "🆕", "New word" ],
-    duplicate: [ "dup", "❐", "Already in this lesson" ],
-    invalid: [ "skip", "⚠️", "Not read — no " + delimLabel(pick.delim) + " on this line" ]
-  };
-  const body = lines.slice(0, IMPORT_PREVIEW_MAX_ROWS).map(l => {
-    const [cls, icon, label] = labels[l.kind];
-    const status = `<td class="ip-result"><span class="ip-status ${cls}" aria-label="${escapeAttr(label)}" title="${escapeAttr(label)}">${icon}</span></td>`;
-    const num = `<td class="ip-num">${l.lineNo}</td>`;
-    if (!l.pair) return `<tr class="ip-dim">${num}${status}<td colspan="2" class="ip-raw">${escapeHtml(l.text)}</td></tr>`;
-    return `<tr${l.kind === "duplicate" || l.kind === "cardDup" ? ' class="ip-dim"' : ""}>${num}${status}${previewCell(l.pair[0])}${previewCell(l.pair[1])}</tr>`;
-  }).join("");
-  const more = lines.length > IMPORT_PREVIEW_MAX_ROWS ? `<div class="ip-more">…and ${lines.length - IMPORT_PREVIEW_MAX_ROWS} more line(s)</div>` : "";
-  box.innerHTML = `<div class="ip-summary">${summary.join("")}</div>` + '<div class="ip-scroll"><table class="ip-table"><colgroup><col style="width:44px"><col style="width:52px"><col><col></colgroup>' + "<thead><tr><th>#</th><th aria-label='Result'></th><th>Question</th><th>Answer</th></tr></thead>" + `<tbody>${body}</tbody></table>${more}</div>`;
-  box.hidden = false;
-}
-
-let vocabPreviewTimer = null;
-
-document.getElementById("vocabDelim").addEventListener("change", renderVocabImportPreview);
-
-document.getElementById("vocabImportText").addEventListener("input", () => {
-  clearTimeout(vocabPreviewTimer);
-  vocabPreviewTimer = setTimeout(renderVocabImportPreview, 120);
-});
-
-function importVocabText(text) {
-  const plan = planVocabImport(text);
-  const pairs = plan.filter(l => l.kind === "new").map(l => l.pair);
-  const cardPlan = planImport(plan.filter(l => l.kind === "card").map(l => l.entry));
-  const title = plan.find(l => l.kind === "title");
-  const dup = plan.filter(l => l.kind === "duplicate" || l.kind === "cardDup").length;
-  const bad = plan.filter(l => l.kind === "invalid").length;
-  if (pairs.length || cardPlan.newRows.length || title) {
-    if (!cardPlan.newRows.length) pushUndo("Added " + pairs.length + " word" + (pairs.length === 1 ? "" : "s"));
-    commitImport(cardPlan, "Imported — " + cardPlan.newRows.length + " new cards, " + pairs.length + " words", true);
-    if (title) setLessonTitle(title.text.trim());
-    addWordsToLesson(pairs, cardPlan.newRows);
-    render();
-    renderLessonList();
-  }
-  if (!pairs.length && cardPlan.newRows.length && !isVideoLesson()) {
-    const status = document.getElementById("vocabImportStatus");
-    addSentenceWords(cardPlan.newRows, t => status.textContent = t).then(n => {
-      status.textContent = n ? `${n} word(s) added from the sentences · ${cardPlan.newRows.length} card(s) added` : status.textContent;
-      if (currentView === "vocab") renderVocab();
-    });
-  }
-  return {
-    added: pairs.length,
-    cards: cardPlan.newRows.length,
-    dup: dup,
-    bad: bad
-  };
-}
-
-document.getElementById("vocabImportBtn").onclick = () => {
-  if (!currentLessonId || isVirtualLesson()) return;
-  const ta = document.getElementById("vocabImportText");
-  const delim = vocabDelimFor(ta.value).delim;
-  document.getElementById("vocabDelim").value = delim === "\t" ? "tab" : delim;
-  const r = importVocabText(ta.value);
-  const parts = [ r.added + " word" + (r.added === 1 ? "" : "s") + " added" ];
-  if (r.cards) parts.push(r.cards + " card" + (r.cards === 1 ? "" : "s") + " added");
-  if (r.dup) parts.push(r.dup + " already there");
-  if (r.bad) parts.push(r.bad + " not read");
-  document.getElementById("vocabImportStatus").textContent = parts.join(" · ");
-  if ((r.added || r.cards) && !r.bad && !r.dup) ta.value = "";
-  renderVocabImportPreview();
-  if (currentView === "vocab") renderVocab();
-};
-
-document.getElementById("vocabAddSingle").onclick = e => {
-  e.stopPropagation();
-  if (!currentLessonId || isVirtualLesson()) return;
-  if (currentView !== "vocab") showView("study");
-  setVocabView("list");
-  openVocabEditor(NEW_WORD_KEY, true);
-};
 
 document.getElementById("vocabTitle").addEventListener("input", e => {
   const name = document.getElementById("lessonName");
