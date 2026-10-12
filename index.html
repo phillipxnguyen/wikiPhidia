@@ -446,7 +446,7 @@ window.onYouTubeIframeAPIReady = function(){
   .lesson-tile-bar .done{background:var(--done-color);}
   .sidebar-footer{display:flex;justify-content:space-between;align-items:center;gap:2px;padding:6px;border-radius:var(--radius);background:var(--accent-soft);}
   .sidebar-footer button{display:flex;align-items:center;justify-content:center;flex:1 1 0;min-width:0;height:40px;padding:0;border-radius:8px;font-size:20px;line-height:1;}
-  .plus-mark{font-size:30px;font-weight:800;line-height:1;background:linear-gradient(90deg, var(--lesson-color), var(--new-color));-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .plus-mark{font-size:30px;font-weight:800;line-height:1;color:var(--accent);}
   .sidebar-footer button.active{background:var(--surface);color:var(--accent);box-shadow:var(--shadow-sm);}
   .main{min-width:0;padding:26px 36px 64px;display:flex;justify-content:center;}
   .main-inner{width:100%;max-width:900px;display:flex;flex-direction:column;}
@@ -525,6 +525,7 @@ window.onYouTubeIframeAPIReady = function(){
   }
   @media (hover:hover){.lesson-name-input:hover{background:var(--surface) !important;border-color:var(--border) !important;}}
   .lesson-name-input:focus{background:var(--surface) !important;border-color:var(--accent) !important;}
+  .lesson-name-input.fresh:not(:focus):not(:hover){background:linear-gradient(90deg, var(--lesson-color), var(--new-color)) 8px 0 / var(--fresh-w, 100%) 100% no-repeat !important;-webkit-background-clip:text !important;background-clip:text !important;color:transparent;}
   .header-actions{display:flex;align-items:center;gap:4px;flex-shrink:0;}
   .save-status:empty{display:none;}
   .save-status{font-size:12px;color:var(--text-2);min-height:18px;margin:-6px 0 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -3128,7 +3129,25 @@ function renderStrokeRows() {
   host.replaceChildren(...lines);
 }
 
+function markFreshLesson() {
+  const fresh = !!currentLessonId && !isVirtualLesson() && [ "study", "vocab", "add" ].includes(currentView) && !rows.some(r => r.id !== draftRowId && ((r.q || "").trim() || (r.a || "").trim())) && !lessonVocabItems(vocabSource()).length;
+  [ "lessonName", "vocabTitle" ].forEach(id => {
+    const el = document.getElementById(id);
+    el.classList.toggle("fresh", fresh);
+    if (fresh) requestAnimationFrame(() => {
+      const ctx = (markFreshLesson.canvas ||= document.createElement("canvas")).getContext("2d");
+      const cs = getComputedStyle(el);
+      ctx.font = cs.fontWeight + " " + cs.fontSize + " " + cs.fontFamily;
+      el.style.setProperty("--fresh-w", Math.max(1, Math.ceil(ctx.measureText(el.value || el.placeholder).width)) + "px");
+    });
+  });
+  document.getElementById("btnNewLesson").classList.toggle("active", fresh);
+}
+
+[ "lessonName", "vocabTitle" ].forEach(id => document.getElementById(id).addEventListener("blur", markFreshLesson));
+
 function updateLessonChrome() {
+  markFreshLesson();
   const hasCards = rows.some(r => r.id !== draftRowId && ((r.q || "").trim() || (r.a || "").trim()));
   const hasQuestion = rows.some(r => r.id !== draftRowId && (r.q || "").trim());
   const virtual = isVirtualLesson();
@@ -9151,6 +9170,7 @@ function showView(view) {
   document.getElementById("viewEmpty").hidden = view !== "empty";
   document.getElementById("viewAdd").hidden = view !== "add";
   document.getElementById("btnStats").classList.toggle("active", view === "stats");
+  markFreshLesson();
   if (view !== "study") {
     commitActiveEdit();
     haltAllPlayback();
@@ -11039,6 +11059,7 @@ function vocabEditorHtml(item) {
 const VOCAB_FLIP_MS = 450;
 
 function renderVocab() {
+  markFreshLesson();
   if (currentView !== "vocab") return;
   vocabStudying = false;
   document.getElementById("viewVocab").classList.remove("focus-study");
