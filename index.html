@@ -525,6 +525,8 @@ window.onYouTubeIframeAPIReady = function(){
   }
   @media (hover:hover){.lesson-name-input:hover{background:var(--surface) !important;border-color:var(--border) !important;}}
   .lesson-name-input:focus{background:var(--surface) !important;border-color:var(--accent) !important;}
+  .fresh-lesson #viewStudy .primary{background:linear-gradient(90deg, var(--lesson-color), var(--new-color));border-color:transparent;}
+  .fresh-lesson #btnSingleCard{background:linear-gradient(90deg, var(--lesson-color), var(--new-color)) text, linear-gradient(90deg, color-mix(in srgb, var(--lesson-color) 12%, transparent), color-mix(in srgb, var(--new-color) 12%, transparent)) padding-box;-webkit-background-clip:text, padding-box;color:transparent;}
   .lesson-name-input.fresh:not(:focus):not(:hover){background:linear-gradient(90deg, var(--lesson-color), var(--new-color)) 8px 0 / var(--fresh-w, 100%) 100% no-repeat !important;-webkit-background-clip:text !important;background-clip:text !important;color:transparent;}
   .header-actions{display:flex;align-items:center;gap:4px;flex-shrink:0;}
   .save-status:empty{display:none;}
@@ -3131,6 +3133,7 @@ function renderStrokeRows() {
 
 function markFreshLesson() {
   const fresh = !!currentLessonId && !isVirtualLesson() && [ "study", "vocab", "add" ].includes(currentView) && !rows.some(r => r.id !== draftRowId && ((r.q || "").trim() || (r.a || "").trim())) && !lessonVocabItems(vocabSource()).length;
+  document.documentElement.classList.toggle("fresh-lesson", fresh);
   [ "lessonName", "vocabTitle" ].forEach(id => {
     const el = document.getElementById(id);
     el.classList.toggle("fresh", fresh);
@@ -8089,6 +8092,7 @@ function focusLessonName() {
 }
 
 async function createLesson() {
+  if (appMode === "vocab") setAppMode("cards");
   commitActiveEdit();
   await discardIfEmptyDraft();
   await flushAutoSave();
@@ -8104,7 +8108,7 @@ async function createLesson() {
     createdAt: now,
     updatedAt: now,
     cards: [],
-    vocabOnly: appMode === "vocab"
+    vocabOnly: false
   };
   upsertLibrary(lesson);
   dbPut("lessons", lesson).catch(() => {});
