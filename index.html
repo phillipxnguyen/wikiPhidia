@@ -488,12 +488,13 @@ window.onYouTubeIframeAPIReady = function(){
     .shell .single-card-field .cell{font-size:18px;line-height:25px;padding:2px 6px;}
     .shell .vocab-back .vocab-word-notes{font-size:18px;line-height:28px;}
     .shell .single-card-body.listen-batch{padding:0;}
-    .shell .listen-batch .listen-pair{padding:15px 10px 15px calc(var(--tx, 60px) + 34px);}
+    .shell .single-card-body.listen-batch.edit-row{padding-top:15px;}
+    .shell .listen-batch .listen-pair{padding:15px 10px 15px calc(var(--tx, 60px) + 20px);}
     .shell #singleCardView:has(#singleCardBody.listen-batch) + #strokeRows{margin-top:-15px;}
     .shell .listen-batch .listen-pair .cell{padding:0;}
     .shell .listen-batch .listen-pair.edit-row{padding:15px 10px;}
     .shell #singleCardView:has(#singleCardBody.listen-batch) #singleCardProgress{margin-bottom:1px;}
-    .shell .listen-batch .listen-pair .single-card-q .cell > .loop-time:first-child{left:10px;}
+    .shell .listen-batch .listen-pair .single-card-q .cell > .loop-time:first-child{left:5px;}
   }
   html.touch input[type=text], html.touch input[type=search], html.touch input[type=email], html.touch input[type=password], html.touch textarea, html.touch select{font-size:16px;}
   html.touch .segmented button{min-width:46px;padding:8px 12px;}
@@ -910,7 +911,8 @@ window.onYouTubeIframeAPIReady = function(){
   }
   .single-card-body.listen-batch{padding:0;background:none;border:0;box-shadow:none;}
   .single-card-body.listen-batch:not(.edit-row){gap:0;}
-  .listen-pair{position:relative;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:5px;min-height:60px;padding:20px 20px 20px calc(var(--tx, 60px) + 44px);border-radius:10px;transition:opacity .2s ease;}
+  .single-card-body.listen-batch.edit-row{padding-top:20px;}
+  .listen-pair{position:relative;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:5px;min-height:60px;padding:20px 20px 20px calc(var(--tx, 60px) + 40px);border-radius:10px;transition:opacity .2s ease;}
   .listen-pair:not(:has(.loop-time)){padding-left:20px;}
   .listen-batch .listen-pair.edit-row{display:block;padding:20px;}
   #singleCardView:has(#singleCardBody.listen-batch) #singleCardProgress{margin-bottom:-4px;}
@@ -920,13 +922,13 @@ window.onYouTubeIframeAPIReady = function(){
   .listen-text:not(:has(.cell.hidden)){cursor:pointer;}
   html.touch .listen-pair.row-selected .listen-text:not(:has(.cell.hidden)){background:var(--accent-soft);}
   @media (hover:hover){.listen-batch .listen-pair .cell.shown:hover{background:none;}.listen-text:not(:has(.cell.hidden)):hover, .listen-batch .listen-text:has(.cell.hidden) .cell.shown:hover{background:var(--accent-soft);}}
-  .listen-batch .listen-pair .single-card-q .cell > .loop-time:first-child{position:absolute;left:20px;top:50%;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;width:var(--tw, 60px);height:60px;margin:0;padding:0;border-radius:30px;font-size:12px;font-weight:600;}
+  .listen-batch .listen-pair .single-card-q .cell > .loop-time:first-child{position:absolute;left:15px;top:50%;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;width:var(--tw, 60px);height:60px;margin:0;padding:0;border-radius:30px;font-size:12px;font-weight:600;}
   .listen-batch .listen-pair .loop-time.looping{animation:listen-pulse 1.2s ease-out infinite;}
   @keyframes listen-pulse{from{box-shadow:0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent);}to{box-shadow:0 0 0 10px color-mix(in srgb, var(--accent) 0%, transparent);}}
   .listen-batch .listen-pair .cell.hidden{font-size:0;line-height:0;}
   .listen-batch .listen-pair .cell.hidden::after{content:"";display:block;max-width:100%;border-radius:10px;background:linear-gradient(90deg, var(--surface-3) 0%, var(--surface-2) 50%, var(--surface-3) 100%) 0 0 / 200% 100%;animation:listen-shimmer 1.6s linear infinite;}
-  .listen-batch .listen-pair .single-card-q .cell.hidden::after{width:max(60px, var(--qw));height:20px;margin:5px 0;}
-  .listen-batch .listen-pair .single-card-a .cell.hidden::after{width:max(60px, var(--aw));height:20px;margin:5px 0;}
+  .listen-batch .listen-pair .single-card-q .cell.hidden::after{width:max(60px, var(--qw, 60px));height:20px;margin:5px 0;}
+  .listen-batch .listen-pair .single-card-a .cell.hidden::after{width:max(60px, var(--aw, 60px));height:20px;margin:5px 0;}
   @keyframes listen-shimmer{to{background-position:-200% 0;}}
   @media (prefers-reduced-motion: reduce){.listen-batch .listen-pair .loop-time.looping, .listen-batch .listen-pair .cell.hidden::after{animation:none;}}
   .single-card-q{background:var(--q-bg);}
@@ -2831,14 +2833,30 @@ function currentCardRows() {
   return isListenMode() ? listenBatch() : singleCardQueue().slice(0, 1);
 }
 
-function maskWidth(text, wide, narrow) {
-  return Math.round(Array.from((text || "").trim()).reduce((w, ch) => w + (/[⺀-鿿가-힯＀-￯]/.test(ch) ? wide : narrow), 0) / 5) * 5;
+function fitListenMasks(root) {
+  if (!root.getClientRects().length) return;
+  root.querySelectorAll(".listen-pair").forEach(pair => {
+    const row = rows.find(r => r.id === Number(pair.dataset.id));
+    if (!row) return;
+    const shown = { ...row, qHidden: false, aHidden: false };
+    const cs = getComputedStyle(pair);
+    const room = pair.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    pair.querySelectorAll(".cell.hidden").forEach(cell => {
+      const probe = cell.cloneNode(false);
+      probe.classList.replace("hidden", "shown");
+      probe.innerHTML = cell.dataset.field === "q" ? qCellContent(shown) : aCellContent(shown);
+      probe.style.cssText = `position:absolute;left:0;top:0;visibility:hidden;pointer-events:none;max-width:${room}px`;
+      cell.parentElement.appendChild(probe);
+      pair.style.setProperty(cell.dataset.field === "q" ? "--qw" : "--aw", Math.round(probe.getBoundingClientRect().width) + "px");
+      probe.remove();
+    });
+  });
 }
 
 function listenPairsHtml(batch) {
   const width = r => r.time == null || formatTime(r.time).length <= 5 ? 60 : Math.round((formatTime(r.time).length * 8 + 20) / 5) * 5;
   const tx = Math.max(...batch.map(width));
-  return batch.map(r => `<div class="listen-pair${r.id === selectedRowId ? " row-selected" : ""}" data-id="${r.id}" style="--tw:${width(r)}px;--tx:${tx}px;--qw:${maskWidth(r.q, 24, 12)}px;--aw:${maskWidth(r.a, 24, 12)}px"><div class="listen-text">${singleCardFieldsHtml(r)}</div></div>`).join("");
+  return batch.map(r => `<div class="listen-pair${r.id === selectedRowId ? " row-selected" : ""}" data-id="${r.id}" style="--tw:${width(r)}px;--tx:${tx}px"><div class="listen-text">${singleCardFieldsHtml(r)}</div></div>`).join("");
 }
 
 function currentBadgeIds() {
@@ -3526,6 +3544,7 @@ function renderSingleCard(visibleRows) {
   bodyEl.classList.toggle("ielts-card", groupViewStyle === "ielts");
   bodyEl.classList.toggle("listen-batch", isListenMode());
   bodyEl.innerHTML = groupViewStyle === "ielts" ? ieltsPaperHtml(row) : isListenMode() ? listenPairsHtml(batch) : singleCardFieldsHtml(row);
+  if (isListenMode()) fitListenMasks(bodyEl);
   if (groupViewStyle === "ielts") {
     visibleRows.slice(0, 2).forEach(preloadCardDict);
     showPaperExtras(bodyEl, row);
@@ -4512,13 +4531,11 @@ function markTerms(mark) {
 
 function markMatches(mark, excludeId) {
   const exclude = rows.find(r => r.id === excludeId);
-  const hits = mark.classList.contains("vocab-hit") ? markTerms(mark).flatMap(key => termMatches(key, exclude)) : [];
-  if (!isTouch() || !mark.dataset.own) return hits;
-  return hits.concat(mark.dataset.own.split("\n").flatMap(term => termMatches(foldVocab(term), null)));
+  return mark.classList.contains("vocab-hit") ? markTerms(mark).flatMap(key => termMatches(key, exclude)) : [];
 }
 
 function lookupMark(target) {
-  return target.closest(isTouch() ? "mark.vocab-hit, mark.vocab-own" : "mark.vocab-hit");
+  return target.closest("mark.vocab-hit");
 }
 
 function stripVocabHighlights(html) {
@@ -4747,13 +4764,13 @@ function handleCardAreaClick(e) {
     if (matches.length) showVocabPopup(matches, hit.getBoundingClientRect());
     return;
   }
-  const own = !isTouch() && e.target.closest(".cell mark.vocab-own");
+  const own = e.target.closest(".cell mark.vocab-own");
   if (own && getSelection().isCollapsed) {
     e.stopPropagation();
     hideTooltip();
     const key = normalizeVocabText((own.dataset.own || "").split("\n")[0]);
     const item = lessonVocabItems(vocabSource()).find(i => i.key === key && i.card === row) || lessonVocabItems(vocabSource()).find(i => i.key === key);
-    if (item) showVocabAddPopup(row, item.term, own.getBoundingClientRect(), item);
+    if (item) showVocabAddPopup(row, item.term, own.getBoundingClientRect(), item, null, "", isTouch());
     return;
   }
   if (isTouch() && !(activeEdit && activeEdit.tr === container)) {
@@ -4794,6 +4811,10 @@ function handleCardAreaClick(e) {
 }
 
 window.addEventListener("resize", () => requestAnimationFrame(refreshTouchSelection));
+
+new ResizeObserver(([entry]) => {
+  if (entry.target.classList.contains("listen-batch")) fitListenMasks(entry.target);
+}).observe(document.getElementById("singleCardBody"));
 
 function refreshTouchSelection() {
   if (isTouch() && currentView === "study" && selectedRowId !== null) showRowPinyin(cardLineEl(selectedRowId));
@@ -5409,8 +5430,8 @@ window.addEventListener("blur", () => {
   reclaimKeyboardFocus();
 });
 
-function buildEditBoxInner(row, stacked) {
-  return `\n    <div class="edit-qa${stacked || !isVideoLesson() ? " stacked" : ""}">\n      <div>\n        <div id="editQ" class="rich-editor" contenteditable="true">${getEditInitialHtml(row.q, row.qHtml, row.id)}</div>\n      </div>\n      <div>\n        <div id="editA" class="rich-editor" contenteditable="true">${getEditInitialHtml(row.a, row.aHtml, row.id)}</div>\n      </div>\n    </div>\n    <div id="editNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes">${notesEditorHtml(row)}</div>\n    <div class="edit-actions">\n      <button id="editSave" class="primary">Save</button>\n    </div>\n    <div id="editDict"></div>\n  `;
+function buildEditBoxInner(row) {
+  return `\n    <div class="edit-qa${groupState && groupViewStyle === "table" ? "" : " stacked"}">\n      <div>\n        <div id="editQ" class="rich-editor" contenteditable="true">${getEditInitialHtml(row.q, row.qHtml, row.id)}</div>\n      </div>\n      <div>\n        <div id="editA" class="rich-editor" contenteditable="true">${getEditInitialHtml(row.a, row.aHtml, row.id)}</div>\n      </div>\n    </div>\n    <div id="editNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes">${notesEditorHtml(row)}</div>\n    <div class="edit-actions">\n      <button id="editSave" class="primary">Save</button>\n    </div>\n    <div id="editDict"></div>\n  `;
 }
 
 let draftRowId = null;
@@ -5735,7 +5756,7 @@ function wireEditBox(host, row) {
         if (matches.length) showVocabPopup(matches, hit.getBoundingClientRect());
         return;
       }
-      const own = !isTouch() && e.target.closest("mark.vocab-own");
+      const own = e.target.closest("mark.vocab-own");
       const li = own && field.contains(own) && noteEntryLi(normalizeVocabText((own.dataset.own || "").split("\n")[0]));
       const entry = li && liVocabEntry(li);
       if (entry) showVocabAddPopup(row, entry.term, own.getBoundingClientRect(), null, (term, meaning) => {
@@ -5744,7 +5765,7 @@ function wireEditBox(host, row) {
         nested.forEach(el => li.appendChild(el));
         autoResizeDiv(editNotes);
         refreshEditMarks();
-      }, entry.meaning);
+      }, entry.meaning, isTouch());
     });
     field.addEventListener("keydown", e => {
       if (e.key !== "Shift" || e.metaKey || e.ctrlKey) return;
@@ -6503,6 +6524,7 @@ function showNextUnderSwipe(row) {
     if (next) {
       Array.from(body.children).forEach(el => el.style.display = "none");
       body.insertAdjacentHTML("beforeend", groupViewStyle === "ielts" ? ieltsPaperHtml(next, 1) : isListenMode() ? listenPairsHtml(nextBatch) : singleCardFieldsHtml(next));
+      if (isListenMode()) fitListenMasks(body);
     } else {
       hide(body);
     }
@@ -12727,12 +12749,12 @@ function hideVocabAddPopup() {
   vocabAddPopup = null;
 }
 
-function showVocabAddPopup(row, term, rect, editing, onSave, meaning) {
+function showVocabAddPopup(row, term, rect, editing, onSave, meaning, readOnly) {
   hideVocabAddPopup();
   hideVocabPopup();
   const popup = document.createElement("div");
   popup.className = "vocab-add-popup";
-  popup.innerHTML = '<div class="vocab-add-field" contenteditable="true" role="textbox" aria-label="Word: meaning" data-placeholder="word: meaning"></div>';
+  popup.innerHTML = `<div class="vocab-add-field" contenteditable="${!readOnly}" role="textbox"${readOnly ? ' aria-readonly="true"' : ""} aria-label="Word: meaning" data-placeholder="word: meaning"></div>`;
   document.body.appendChild(popup);
   vocabAddPopup = popup;
   const input = popup.querySelector(".vocab-add-field");
@@ -12747,6 +12769,7 @@ function showVocabAddPopup(row, term, rect, editing, onSave, meaning) {
   popup.style.left = Math.round(Math.max(8, Math.min(rect.left, window.innerWidth - box.width - 8))) + "px";
   popup.style.top = Math.round(Math.max(8, top)) + "px";
   vocabAddPopupScrollY = window.scrollY;
+  if (readOnly) return;
   input.focus();
   const caret = document.createRange();
   caret.selectNodeContents(input);
