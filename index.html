@@ -245,15 +245,15 @@ window.onYouTubeIframeAPIReady = function(){
   .brand{display:flex;align-items:center;gap:6px;font-size:15px;font-weight:700;padding:0 4px;letter-spacing:-.01em;}
   .streak-chip{flex-shrink:0;margin-left:auto;display:inline-flex;align-items:center;gap:4px;height:20px;min-height:0;padding:0 6px;border:0;border-radius:10px;line-height:20px;font-size:12px;font-weight:700;color:var(--due-color);background:color-mix(in srgb, var(--due-color) 14%, transparent);font-variant-numeric:tabular-nums;}
   .cloud-chip{flex-shrink:0;display:inline-flex;align-items:center;margin-left:0;height:20px;min-height:0;padding:0 6px;border:0;border-radius:10px;font-size:12px;font-weight:700;line-height:20px;color:var(--accent);background:var(--accent-soft);white-space:nowrap;}
-  .limits-pop{position:fixed;z-index:2000;display:flex;flex-direction:column;gap:10px;width:260px;padding:15px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);}
+  .limits-pop{position:fixed;z-index:2000;display:flex;flex-direction:column;gap:10px;min-width:260px;padding:15px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);}
   .limits-pop[hidden]{display:none;}
-  .limits-pop h2{margin:0;font-size:15px;line-height:20px;}
-  .limits-pop label{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:14px;line-height:20px;}
+  .limits-pop label{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:14px;line-height:20px;white-space:nowrap;}
   .limits-pop input{width:100px;height:30px;padding:0 8px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);color:var(--text);font:inherit;font-size:16px;text-align:right;}
   .limits-pop input{-moz-appearance:textfield;appearance:textfield;}
   .limits-pop input::-webkit-inner-spin-button, .limits-pop input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
-  #limitsClear{align-self:flex-end;padding:5px 10px;font-size:14px;line-height:20px;}
-  #limitsTitle{align-self:flex-start;cursor:help;}
+  #limitsTitle{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;padding:0;border:0;background:none;font-size:15px;font-weight:700;line-height:20px;color:var(--text);}
+  @media (hover:hover){#limitsTitle:hover{background:none;color:var(--accent);}}
+  .limits-help{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border:1px solid currentColor;border-radius:50%;font-size:10px;line-height:16px;font-weight:700;opacity:.6;}
   .limits-pop input::placeholder{font-size:14px;}
   .cloud-chip svg{display:block;}
   .cloud-chip.synced{color:var(--a-label);background:var(--a-bg);}
@@ -1156,10 +1156,9 @@ window.onYouTubeIframeAPIReady = function(){
 </aside>
 
 <div id="limitsPop" class="limits-pop" hidden role="dialog" aria-labelledby="limitsTitle">
-  <h2 id="limitsTitle" title="For each lesson, in Lessons and in Vocabulary. Study modes and flashcards show only what fits; lists always show every card.">Daily limits</h2>
+  <button id="limitsTitle" title="Click to remove both limits. Limits count for each lesson, in Lessons and in Vocabulary. Study modes and flashcards show only what fits; lists always show every card.">Daily limits<span class="limits-help" aria-hidden="true">?</span></button>
   <label>New cards a day<input id="limitFresh" type="number" min="0" step="1" inputmode="numeric" placeholder="No limit"></label>
   <label>Reviews a day<input id="limitReview" type="number" min="0" step="1" inputmode="numeric" placeholder="No limit"></label>
-  <button id="limitsClear" class="ghost">No limit</button>
 </div>
 
 <div id="cloudDialog" class="paused-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="cloudTitle">
@@ -1375,7 +1374,7 @@ window.onYouTubeIframeAPIReady = function(){
     <div class="emoji">🎉</div>
     <div class="session-complete-title">All caught up!</div>
     <div class="session-complete-sub"></div>
-    <button class="primary more-today" hidden>Study 10 more today</button>
+    <button class="primary more-today" hidden></button>
   </div>
   <button id="listAddCard" class="add-single" aria-label="Add a card" hidden>＋</button>
   <table id="cardTable">
@@ -1547,7 +1546,7 @@ function takeSnapshot(label, expiresAt) {
     listenKept: JSON.stringify(listenBatchKept),
     ielts: [ ieltsAnswered, ieltsHintId ],
     vocabSnapshot: JSON.stringify(vocabSession),
-    limits: JSON.stringify([ studyLimits, limitExtra ]),
+    limits: JSON.stringify(studyLimits),
     label: label,
     expiresAt: expiresAt
   };
@@ -1676,7 +1675,7 @@ function restoreFrom(fromStack, toStack, verb) {
   if (entry.listenKept) listenBatchKept = JSON.parse(entry.listenKept);
   if (entry.ielts) [ ieltsAnswered, ieltsHintId ] = entry.ielts;
   if (entry.limits) {
-    [ studyLimits, limitExtra ] = JSON.parse(entry.limits);
+    studyLimits = JSON.parse(entry.limits);
     saveStudyLimits();
   }
   skipEmptyGroups();
@@ -1688,7 +1687,7 @@ function restoreFrom(fromStack, toStack, verb) {
     vocabTtsToken++;
     renderVocab();
   }
-  showToast(verb + " — " + entry.label);
+  showToast(verb);
   scheduleAutoSave();
   if (resetMagic) fairyDust(countsBefore, currentCounts(), verb === "Undo");
 }
@@ -2205,7 +2204,7 @@ function onPlayerError(event) {
   vocabPendingKey = null;
   vocabAwaitCue = false;
   syncVocabSound();
-  showToast("YouTube Error: Unable to play video" + (event && event.data != null ? " (code " + event.data + ")" : ""));
+  showToast("YouTube can't play this video");
 }
 
 function clearMedia() {
@@ -2445,7 +2444,7 @@ function deleteRows(ids, parts, next) {
     skipEmptyGroups();
   }
   swipe(parts, -1, render, next, "Delete");
-  showToast(label);
+  showToast("Deleted");
   scheduleAutoSave();
 }
 
@@ -2494,7 +2493,7 @@ function moveCardsToVocab(list) {
   });
   hoveredRowId = selectedRowId = null;
   swipe(studyParts(), 1, render, true, "Vocab");
-  showToast(`Moved ${ok.length} cards to Vocabulary` + (ok.length < list.length ? ` (${list.length - ok.length} left: no question)` : ""));
+  showToast(`Moved ${ok.length} cards to Vocabulary`);
   scheduleAutoSave();
   renderLessonList();
 }
@@ -2525,7 +2524,7 @@ function moveOneCardToVocab(row) {
   pruneIdFromGroupState(groupState, row.id);
   pruneIdFromGroupState(savedGroupState, row.id);
   swipe(parts, 1, render, isCardMode(), "Vocab");
-  showToast("Moved to Vocabulary — " + term);
+  showToast("Moved to Vocabulary");
   scheduleAutoSave();
   renderLessonList();
 }
@@ -2689,26 +2688,20 @@ try {
   if (saved) [ "fresh", "review" ].forEach(k => studyLimits[k] = Math.max(0, Math.floor(Number(saved[k]) || 0)));
 } catch (e) {}
 
-const LIMIT_EXTRA_KEY = "flashcards.limitExtra";
-
-let limitExtra = {
-  day: "",
-  fresh: 0,
-  review: 0
-};
-
-try {
-  const saved = JSON.parse(localStorage.getItem(LIMIT_EXTRA_KEY) || "null");
-  if (saved && typeof saved.day === "string") limitExtra = {
-    day: saved.day,
-    fresh: Math.max(0, Math.floor(Number(saved.fresh) || 0)),
-    review: Math.max(0, Math.floor(Number(saved.review) || 0))
+function heldMore(due, allowed, stateOf) {
+  const kept = new Set(allowed);
+  const held = due.filter(x => !kept.has(x));
+  const fresh = held.filter(x => !stateOf(x).reps).length;
+  const step = n => n <= 15 ? n : 10;
+  return {
+    total: held.length,
+    fresh: step(fresh),
+    review: step(held.length - fresh)
   };
-} catch (e) {}
+}
 
-function limitOf(kind) {
-  if (!studyLimits[kind]) return 0;
-  return studyLimits[kind] + (limitExtra.day === localDayKey(Date.now()) ? limitExtra[kind] : 0);
+function moreButtonHtml(more) {
+  return `<button class="primary more-today" data-fresh="${more.fresh}" data-review="${more.review}">Study ${more.fresh + more.review} more today</button>`;
 }
 
 function todayLog(vocab, lessons) {
@@ -2735,8 +2728,8 @@ function studiedToday(cards, vocab) {
 function limitStudy(list, vocab, keyOf, stateOf) {
   if (!studyLimits.fresh && !studyLimits.review) return list;
   const {seen: seen, fresh: fresh} = todayLog(vocab, new Set(list.map(x => keyOf(x).split(":")[0])));
-  let freshLeft = studyLimits.fresh ? limitOf("fresh") - fresh.size : Infinity;
-  let reviewLeft = studyLimits.review ? limitOf("review") - (seen.size - fresh.size) : Infinity;
+  let freshLeft = studyLimits.fresh ? studyLimits.fresh - fresh.size : Infinity;
+  let reviewLeft = studyLimits.review ? studyLimits.review - (seen.size - fresh.size) : Infinity;
   return list.filter(x => {
     if (seen.has(keyOf(x))) return true;
     return stateOf(x).reps ? reviewLeft-- > 0 : freshLeft-- > 0;
@@ -3161,12 +3154,19 @@ function showSessionCompletePanel() {
   const now = Date.now();
   const next = rows.filter(hasAnswer).map(r => srsOf(r, "Table")).filter(st => st.reps && !isDoneState(st) && st.due > now).map(st => st.due).sort((a, b) => a - b)[0];
   const due = modeScopeRows(modeKey()).filter(r => srsOf(r, "Table").due <= now);
-  const held = due.length - limitRows(due).length;
+  const more = heldMore(due, limitRows(due), r => srsOf(r, "Table"));
+  const held = more.total;
   const text = finishText(held, studiedToday(rows, false), next, "card", modeScopeRows(modeKey()).map(r => srsOf(r, "Table")));
   panel.querySelector(".emoji").textContent = text.emoji;
   panel.querySelector(".session-complete-title").textContent = text.title;
   panel.querySelector(".session-complete-sub").textContent = text.sub;
-  panel.querySelector(".more-today").hidden = !held;
+  const moreBtn = panel.querySelector(".more-today");
+  moreBtn.hidden = !held;
+  Object.assign(moreBtn.dataset, {
+    fresh: more.fresh,
+    review: more.review
+  });
+  moreBtn.textContent = `Study ${more.fresh + more.review} more today`;
   if (panel.style.display === "block") return;
   panel.querySelectorAll(".confetti-piece").forEach(el => el.remove());
   if (text.emoji === "🎉") addConfetti(panel);
@@ -3884,7 +3884,7 @@ function startJapaneseWorker() {
     if (jaWorker) jaWorker.terminate();
     jaWorker = null;
     if (hoverTooltip && hoverTooltip.textContent === "Loading readings…") hideTooltip();
-    showToast("Couldn't load Japanese readings — check the connection and reload");
+    showToast("Couldn't load Japanese readings");
   };
   try {
     const src = "(" + japaneseWorkerMain.toString() + ")(" + JSON.stringify(cfg) + ");";
@@ -5170,7 +5170,7 @@ function noteVocabKeys(box, except) {
 
 function warnVocabDuplicates(terms) {
   if (!terms.length) return;
-  if (terms.length === 1) showToast("“" + terms[0].trim() + "” is already in this note"); else showToast("Already in this note — " + terms.join(", "));
+  showToast("Already in this note");
 }
 
 function toggleVocabBullets(box) {
@@ -5277,7 +5277,7 @@ function commitActiveEdit() {
     draftRowId = null;
     if (at !== -1) rows.splice(at, 1);
     if ((newQ.trim() || newA.trim()) && findDuplicateCard(newQ, newA, row.time, row)) {
-      showToast("This card already exists — not added");
+      showToast("This card already exists");
     } else if (newQ.trim() || newA.trim()) {
       Object.assign(row, {
         q: newQ,
@@ -5298,7 +5298,7 @@ function commitActiveEdit() {
     return;
   }
   if ((newQ !== activeEdit.originalQ || newA !== activeEdit.originalA) && findDuplicateCard(newQ, newA, activeEdit.row.time, activeEdit.row)) {
-    showToast("Another card already has this question — question and answer not changed");
+    showToast("Another card already has this question");
     newQ = activeEdit.originalQ;
     newQHtml = activeEdit.originalQHtml;
     newA = activeEdit.originalA;
@@ -6130,7 +6130,7 @@ function gradeCard(row, isAgain) {
     ieltsAnswered++;
     ieltsHintId = null;
   }
-  showToast(gradeLabel(isAgain) + " — " + cardSummary(row));
+  showToast(gradeLabel(isAgain));
   scheduleAutoSave();
   if (hoveredRowId === row.id) hoveredRowId = null;
   if (!next) holdPage();
@@ -6661,9 +6661,9 @@ function copyQuestions(questions) {
   if (!questions.length) return;
   const text = letteredList(questions.map(oneLine));
   navigator.clipboard.writeText(text).then(() => {
-    showToast("Copied " + questions.length + " question(s)");
+    showToast("Copied");
   }).catch(() => {
-    showToast("Failed to copy — please try again");
+    showToast("Could not copy");
   });
 }
 
@@ -8795,7 +8795,7 @@ function resetLessonProgress() {
     due: dueCardCount("Table"),
     done: doneCardCount("Table")
   });
-  showToast("All cards are New again — ⌘Z to undo");
+  showToast("All cards are New again");
 }
 
 async function deleteCurrentLesson() {
@@ -8830,7 +8830,7 @@ async function deleteCurrentLesson() {
   }
   refreshSaveReminders();
   slideLessonList(before);
-  showToast("Deleted lesson — " + name);
+  showToast("Deleted lesson");
 }
 
 function fileNameForLesson(name) {
@@ -8877,8 +8877,7 @@ async function saveJsonFile(text, filename, handleKey, choose) {
   if (!("showSaveFilePicker" in window)) {
     downloadJsonFile(text, filename);
     return {
-      name: filename,
-      downloaded: true
+      name: filename
     };
   }
   const remembered = choose ? null : await dbGetKey("handles", handleKey);
@@ -8908,21 +8907,14 @@ async function saveJsonFile(text, filename, handleKey, choose) {
     if (err.name === "AbortError") return null;
     downloadJsonFile(text, filename);
     return {
-      name: filename,
-      downloaded: true
+      name: filename
     };
   }
   await writeToHandle(handle, text);
   await dbPutKey("handles", handle, handleKey);
   return {
-    name: handle.name,
-    chosen: true
+    name: handle.name
   };
-}
-
-function savedFileMessage(verb, result) {
-  if (result.downloaded) return verb + " — downloaded " + result.name;
-  return verb + " to " + result.name + (result.chosen ? " — next time it saves here directly (Shift-click to change)" : "");
 }
 
 async function exportCurrentLesson(e) {
@@ -8941,11 +8933,11 @@ async function exportCurrentLesson(e) {
         };
       });
       refreshSaveReminders();
-      showToast(savedFileMessage("Saved", result));
+      showToast("Saved");
       fairyGlow([ document.getElementById("btnSaveFile"), document.getElementById("vocabSaveBtn") ].find(onScreenBox));
     }
   } catch (err) {
-    showToast("Could not save the file — try again");
+    showToast("Could not save the file");
   }
 }
 
@@ -8953,8 +8945,7 @@ async function saveJsonToFolder(text, filename, handleKey, choose) {
   if (!("showDirectoryPicker" in window)) {
     downloadJsonFile(text, filename);
     return {
-      name: filename,
-      downloaded: true
+      name: filename
     };
   }
   let dir = choose ? null : await dbGetKey("handles", handleKey);
@@ -8978,8 +8969,7 @@ async function saveJsonToFolder(text, filename, handleKey, choose) {
     if (err.name === "AbortError") return null;
     downloadJsonFile(text, filename);
     return {
-      name: filename,
-      downloaded: true
+      name: filename
     };
   }
   await writeToHandle(await dir.getFileHandle(filename, {
@@ -8987,8 +8977,7 @@ async function saveJsonToFolder(text, filename, handleKey, choose) {
   }), text);
   await dbPutKey("handles", dir, handleKey);
   return {
-    name: dir.name + "/" + filename,
-    chosen: true
+    name: dir.name + "/" + filename
   };
 }
 
@@ -9005,11 +8994,11 @@ async function backupEverything(e) {
         };
       });
       refreshSaveReminders();
-      showToast(savedFileMessage("Backed up " + library.length + " lesson(s)", result));
+      showToast("Backed up");
       fairyGlow(document.getElementById("btnBackupAll"));
     }
   } catch (err) {
-    showToast("Could not back up — try again");
+    showToast("Could not back up");
   }
 }
 
@@ -9535,7 +9524,6 @@ function applyStudyLimits() {
 function saveStudyLimits() {
   try {
     localStorage.setItem(LIMITS_KEY, JSON.stringify(studyLimits));
-    localStorage.setItem(LIMIT_EXTRA_KEY, JSON.stringify(limitExtra));
   } catch (e) {}
 }
 
@@ -9547,25 +9535,22 @@ function refreshAfterLimits() {
   }
 }
 
-function studyMoreToday() {
-  pushUndo("Study 10 more today");
-  const today = localDayKey(Date.now());
-  limitExtra = limitExtra.day === today ? Object.assign({}, limitExtra) : {
-    day: today,
-    fresh: 0,
-    review: 0
+function studyMoreToday(fresh, review) {
+  pushUndo("Study " + (fresh + review) + " more today");
+  studyLimits = {
+    fresh: studyLimits.fresh && studyLimits.fresh + fresh,
+    review: studyLimits.review && studyLimits.review + review
   };
-  limitExtra.fresh += 10;
-  limitExtra.review += 10;
   saveStudyLimits();
   refreshAfterLimits();
 }
 
 document.addEventListener("click", e => {
-  if (e.target.closest(".more-today")) studyMoreToday();
+  const btn = e.target.closest(".more-today");
+  if (btn) studyMoreToday(Number(btn.dataset.fresh) || 0, Number(btn.dataset.review) || 0);
 });
 
-document.getElementById("limitsClear").onclick = () => {
+document.getElementById("limitsTitle").onclick = () => {
   document.getElementById("limitFresh").value = "";
   document.getElementById("limitReview").value = "";
   applyStudyLimits();
@@ -10680,7 +10665,7 @@ document.getElementById("btnCloud").onclick = async () => {
   if (!confirm("Signed in as " + (cloud.user.email || "your account") + ".\n\nSign out on this device? Your lessons stay here and in the cloud.")) return;
   await cloudFlush();
   await cloud.authMod.signOut(cloud.auth);
-  showToast("Signed out — this device no longer syncs");
+  showToast("Signed out");
 };
 
 document.getElementById("cloudClose").onclick = () => {
@@ -10750,7 +10735,7 @@ async function initApp() {
   } else {
     showView("empty");
   }
-  if (!dbAvailable) showToast("Browser storage is unavailable here — click Save to keep your work");
+  if (!dbAvailable) showToast("Browser storage is unavailable here");
   initCloudUi();
   if (navigator.storage && navigator.storage.persist) navigator.storage.persisted().then(done => done || navigator.storage.persist()).catch(() => {});
 }
@@ -11488,11 +11473,12 @@ function renderVocab() {
     badges.innerHTML = "";
     const next = items.map(i => vocabStateOf(i)).filter(st => st.reps && !isDoneState(st)).map(st => st.due).sort((a, b) => a - b)[0];
     const due = items.filter(i => vocabStateOf(i).due <= now);
-    const held = due.length - limitVocab(due).length;
+    const more = heldMore(due, limitVocab(due), vocabStateOf);
+    const held = more.total;
     const text = finishText(held, studiedToday(vocabSource(), true), next, "word", items.map(vocabStateOf));
     const celebrate = !stage.querySelector(".session-complete") || stage.dataset.lessonId !== String(currentLessonId);
     stage.dataset.lessonId = currentLessonId;
-    stage.innerHTML = `<div class="session-complete" style="display:block;"><div class="emoji">${text.emoji}</div><div class="session-complete-title">${text.title}</div><div class="session-complete-sub">${text.sub}</div>${held ? '<button class="primary more-today">Study 10 more today</button>' : ""}</div>`;
+    stage.innerHTML = `<div class="session-complete" style="display:block;"><div class="emoji">${text.emoji}</div><div class="session-complete-title">${text.title}</div><div class="session-complete-sub">${text.sub}</div>${held ? moreButtonHtml(more) : ""}</div>`;
     if (celebrate && text.emoji === "🎉") addConfetti(stage.querySelector(".session-complete"));
     wireVocabEditor(items);
     syncVocabSound();
@@ -11841,7 +11827,7 @@ function rewrittenVocabNotes(row, item, term, meaning) {
 
 function vocabEntryOk(term) {
   if (!term) {
-    showToast("Question can't be empty — not saved");
+    showToast("Question can't be empty");
     return false;
   }
   return true;
@@ -11861,7 +11847,7 @@ function updateVocabEntry(item, termRaw, meaningRaw) {
   const row = item.card;
   const next = rewrittenVocabNotes(row, item, term, meaning);
   if (!next) {
-    showToast("Couldn't find this word in the card's notes — edit the card instead");
+    showToast("Couldn't find this word in the card's notes");
     return false;
   }
   pushUndo("Edited word — " + term);
@@ -11887,7 +11873,7 @@ function deleteVocabEntry(item, part) {
   const row = item.card;
   const next = rewrittenVocabNotes(row, item, null, null);
   if (!next) {
-    showToast("Couldn't find this word in the card's notes — edit the card instead");
+    showToast("Couldn't find this word in the card's notes");
     return;
   }
   stopVocabSound();
@@ -11907,7 +11893,7 @@ function deleteVocabEntry(item, part) {
     renderVocab();
     renderLessonList();
   }, false, "Delete");
-  showToast("Deleted — " + item.term);
+  showToast("Deleted");
 }
 
 function syncVocabSound() {
@@ -12395,7 +12381,7 @@ function addVocabToRow(row, term, meaning) {
   stampNewVocab(row, before);
   scheduleAutoSave();
   render();
-  showToast("Added word — " + term);
+  showToast("Added word");
 }
 
 let vocabAddPopup = null;
