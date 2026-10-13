@@ -10886,10 +10886,6 @@ function chooseYouTubeImport(translate) {
   ytImport.timer = setTimeout(() => finishYouTubeImport(null, "Couldn't get the subtitles"), 6e4);
 }
 
-function enableYouTubeChoice() {
-  [ "ytTrack", "ytOnlySubs", "ytWithTranslation" ].forEach(id => document.getElementById(id).disabled = false);
-}
-
 function receiveYouTubeTracks(d, origin) {
   if (!ytImport || d.id !== ytImport.id) return;
   clearTimeout(ytImport.timer);
@@ -10900,8 +10896,9 @@ function receiveYouTubeTracks(d, origin) {
   const names = Array.isArray(d.tracks) ? d.tracks.map(String) : [];
   const select = document.getElementById("ytTrack");
   select.innerHTML = `<option value="-1">Auto-detect${names[d.guess] ? " (" + escapeHtml(names[d.guess]) + ")" : ""}</option>` + names.map((n, i) => `<option value="${i}">${escapeHtml(n)}</option>`).join("");
-  enableYouTubeChoice();
-  if (!names.length) select.disabled = true;
+  select.disabled = !names.length;
+  document.getElementById("ytOnlySubs").disabled = false;
+  document.getElementById("ytWithTranslation").disabled = false;
 }
 
 document.getElementById("ytOnlySubs").onclick = () => chooseYouTubeImport(false);
@@ -10946,6 +10943,7 @@ async function importFromYouTube(d) {
     if (name) name.textContent = ytImport.title;
   }
   const existing = library.find(l => extractYouTubeId(l.mediaUrl || "") === d.id);
+  if (appMode === "vocab") setAppMode("cards");
   if (existing) {
     noteRecentLesson(existing.id);
     openLesson(existing);
@@ -10988,7 +10986,6 @@ function receiveYouTubeImport() {
   const id = (location.hash.match(/^#yt-import=([\w-]{11})$/) || [])[1];
   if (!id || !window.opener) return;
   history.replaceState(null, "", location.pathname + location.search);
-  if (appMode === "vocab") setAppMode("cards");
   ytImport = {
     id: id,
     title: "Getting subtitles…",
@@ -11000,10 +10997,7 @@ function receiveYouTubeImport() {
   window.addEventListener("message", e => {
     if (!/^https:\/\/(www|m)\.youtube\.com$/.test(e.origin) || !e.data) return;
     if (e.data.wikiPhidia === "tracks") receiveYouTubeTracks(e.data, e.origin);
-    if (e.data.wikiPhidia === "import") {
-      enableYouTubeChoice();
-      importFromYouTube(e.data);
-    }
+    if (e.data.wikiPhidia === "import") importFromYouTube(e.data);
   });
   window.opener.postMessage({
     wikiPhidia: "ready"
