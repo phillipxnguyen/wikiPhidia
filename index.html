@@ -494,7 +494,6 @@ window.onYouTubeIframeAPIReady = function(){
     .shell .listen-batch .listen-pair .cell{padding:0;}
     .shell .listen-batch .listen-pair.edit-row{padding:15px 10px;}
     .shell #singleCardView:has(#singleCardBody.listen-batch) #singleCardProgress{margin-bottom:1px;}
-    .shell .listen-batch .listen-pair .single-card-q .cell > .loop-time:first-child{left:5px;}
   }
   html.touch input[type=text], html.touch input[type=search], html.touch input[type=email], html.touch input[type=password], html.touch textarea, html.touch select{font-size:16px;}
   html.touch .segmented button{min-width:46px;padding:8px 12px;}
@@ -801,6 +800,8 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-popup.has-nav{padding-left:36px;padding-right:36px;}
   .vocab-popup .vocab-sentence{white-space:pre-line;}
   .vocab-popup .vocab-note{margin-top:6px;}
+  .vocab-popup .vocab-sentence:empty{display:none;}
+  .vocab-popup .vocab-sentence:empty + .vocab-note{margin-top:0;}
   .vocab-popup .vocab-note > :first-child{margin-top:0;}
   .vocab-popup .vocab-note > :last-child, .vocab-popup .vocab-note li:last-child{margin-bottom:0;}
   .vocab-popup .vocab-counter:empty{display:none;}
@@ -922,7 +923,7 @@ window.onYouTubeIframeAPIReady = function(){
   .listen-text:not(:has(.cell.hidden)){cursor:pointer;}
   html.touch .listen-pair.row-selected .listen-text:not(:has(.cell.hidden)){background:var(--accent-soft);}
   @media (hover:hover){.listen-batch .listen-pair .cell.shown:hover{background:none;}.listen-text:not(:has(.cell.hidden)):hover, .listen-batch .listen-text:has(.cell.hidden) .cell.shown:hover{background:var(--accent-soft);}}
-  .listen-batch .listen-pair .single-card-q .cell > .loop-time:first-child{position:absolute;left:15px;top:50%;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;width:var(--tw, 60px);height:60px;margin:0;padding:0;border-radius:30px;font-size:12px;font-weight:600;}
+  .listen-batch .listen-pair .single-card-q .cell > .loop-time:first-child{position:absolute;left:0;top:50%;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;width:var(--tw, 60px);height:60px;margin:0;padding:0;border-radius:30px;font-size:12px;font-weight:600;}
   .listen-batch .listen-pair .loop-time.looping{animation:listen-pulse 1.2s ease-out infinite;}
   @keyframes listen-pulse{from{box-shadow:0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent);}to{box-shadow:0 0 0 10px color-mix(in srgb, var(--accent) 0%, transparent);}}
   .listen-batch .listen-pair .cell.hidden{font-size:0;line-height:0;}
@@ -4641,12 +4642,31 @@ function renderVocabPopup() {
   popup.querySelector(".next").style.display = multi && vocabIndex < vocabMatches.length - 1 ? "block" : "none";
 }
 
+function showWordView(row, term, meaning, anchorRect) {
+  vocabMatches = [ {
+    row: row,
+    term: term,
+    sentence: ""
+  } ];
+  vocabIndex = 0;
+  const popup = getVocabPopupEl();
+  popup.style.display = "block";
+  renderVocabPopup();
+  popup.querySelector(".vocab-note").innerHTML = `<div><b>${escapeHtml(term)}</b>${meaning ? ": " + escapeHtml(meaning) : ""}</div>`;
+  placeVocabPopup(anchorRect);
+}
+
 function showVocabPopup(matches, anchorRect) {
   vocabMatches = matches;
   vocabIndex = 0;
   const popup = getVocabPopupEl();
   popup.style.display = "block";
   renderVocabPopup();
+  placeVocabPopup(anchorRect);
+}
+
+function placeVocabPopup(anchorRect) {
+  const popup = getVocabPopupEl();
   const popupRect = popup.getBoundingClientRect();
   let left = anchorRect.left;
   let top = anchorRect.bottom + 8;
@@ -4770,7 +4790,7 @@ function handleCardAreaClick(e) {
     hideTooltip();
     const key = normalizeVocabText((own.dataset.own || "").split("\n")[0]);
     const item = lessonVocabItems(vocabSource()).find(i => i.key === key && i.card === row) || lessonVocabItems(vocabSource()).find(i => i.key === key);
-    if (item) showVocabAddPopup(row, item.term, own.getBoundingClientRect(), item, null, "", isTouch());
+    if (item && isTouch()) showWordView(row, item.term, item.meaning, own.getBoundingClientRect()); else if (item) showVocabAddPopup(row, item.term, own.getBoundingClientRect(), item);
     return;
   }
   if (isTouch() && !(activeEdit && activeEdit.tr === container)) {
@@ -5759,13 +5779,13 @@ function wireEditBox(host, row) {
       const own = e.target.closest("mark.vocab-own");
       const li = own && field.contains(own) && noteEntryLi(normalizeVocabText((own.dataset.own || "").split("\n")[0]));
       const entry = li && liVocabEntry(li);
-      if (entry) showVocabAddPopup(row, entry.term, own.getBoundingClientRect(), null, (term, meaning) => {
+      if (entry && isTouch()) showWordView(row, entry.term, entry.meaning, own.getBoundingClientRect()); else if (entry) showVocabAddPopup(row, entry.term, own.getBoundingClientRect(), null, (term, meaning) => {
         const nested = Array.from(li.children).filter(el => el.tagName === "UL" || el.tagName === "OL");
         li.innerHTML = "<b>" + escapeHtml(term) + "</b>: " + escapeHtml(meaning);
         nested.forEach(el => li.appendChild(el));
         autoResizeDiv(editNotes);
         refreshEditMarks();
-      }, entry.meaning, isTouch());
+      }, entry.meaning);
     });
     field.addEventListener("keydown", e => {
       if (e.key !== "Shift" || e.metaKey || e.ctrlKey) return;
@@ -12749,12 +12769,12 @@ function hideVocabAddPopup() {
   vocabAddPopup = null;
 }
 
-function showVocabAddPopup(row, term, rect, editing, onSave, meaning, readOnly) {
+function showVocabAddPopup(row, term, rect, editing, onSave, meaning) {
   hideVocabAddPopup();
   hideVocabPopup();
   const popup = document.createElement("div");
   popup.className = "vocab-add-popup";
-  popup.innerHTML = `<div class="vocab-add-field" contenteditable="${!readOnly}" role="textbox"${readOnly ? ' aria-readonly="true"' : ""} aria-label="Word: meaning" data-placeholder="word: meaning"></div>`;
+  popup.innerHTML = '<div class="vocab-add-field" contenteditable="true" role="textbox" aria-label="Word: meaning" data-placeholder="word: meaning"></div>';
   document.body.appendChild(popup);
   vocabAddPopup = popup;
   const input = popup.querySelector(".vocab-add-field");
@@ -12769,7 +12789,6 @@ function showVocabAddPopup(row, term, rect, editing, onSave, meaning, readOnly) 
   popup.style.left = Math.round(Math.max(8, Math.min(rect.left, window.innerWidth - box.width - 8))) + "px";
   popup.style.top = Math.round(Math.max(8, top)) + "px";
   vocabAddPopupScrollY = window.scrollY;
-  if (readOnly) return;
   input.focus();
   const caret = document.createRange();
   caret.selectNodeContents(input);
