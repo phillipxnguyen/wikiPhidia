@@ -10732,25 +10732,13 @@ async function ytGrab(app) {
   if (!/(^|\.)youtube\.com$/.test(location.hostname) || !id) return say("open a YouTube video first");
   const win = window.open(app + "#yt-import=" + id, "_blank");
   if (!win) return say("allow pop-ups for youtube.com and try again");
-  let ready = false, outbox = [];
-  const flush = () => {
-    if (!ready) return;
-    outbox.forEach(m => win.postMessage(m, new URL(app).origin));
-    outbox = [];
-  };
-  const post = m => {
-    outbox.push(m);
-    flush();
-  };
-  let found;
-  const foundReady = new Promise(resolve => found = resolve);
-  window.addEventListener("message", async e => {
-    if (e.source !== win || !e.data) return;
-    if (e.data.wikiPhidia === "ready") {
+  let ready = false, payload = null;
+  const send = () => ready && payload && win.postMessage(payload, new URL(app).origin);
+  window.addEventListener("message", e => {
+    if (e.source === win && e.data && e.data.wikiPhidia === "ready") {
       ready = true;
-      flush();
+      send();
     }
-    if (e.data.wikiPhidia === "fetch") post(await build(await foundReady, Number(e.data.track), !!e.data.translate));
   });
   const player = document.getElementById("movie_player");
   let resp = player && player.getPlayerResponse ? player.getPlayerResponse() : window.ytInitialPlayerResponse;
@@ -10784,51 +10772,47 @@ async function ytGrab(app) {
       return [];
     }
   };
-  const build = async (suggested, i, translate) => {
-    const track = tracks[i] || suggested;
-    const lang = track ? track.languageCode : "";
-    const target = /^en/.test(lang) ? "vi" : "en";
-    let lines = track ? await load(track.baseUrl) : [];
-    const translated = translate && lines.length && base(track) !== target ? await load(track.baseUrl + "&tlang=" + target) : [];
-    if (!lines.length) {
-      const find = () => document.querySelectorAll("ytd-transcript-segment-renderer");
-      if (!find().length) {
-        const open = document.querySelector("ytd-video-description-transcript-section-renderer button");
-        if (open) open.click();
-        for (let n = 0; n < 40 && !find().length; n++) await new Promise(r => setTimeout(r, 200));
-      }
-      lines = [ ...find() ].map(el => ({
-        t: ((el.querySelector(".segment-timestamp") || {}).textContent || "").trim().split(":").map(Number).reduce((a, b) => a * 60 + b, 0),
-        s: ((el.querySelector(".segment-text") || {}).textContent || "").replace(/\s+/g, " ").trim()
-      })).filter(e => e.s);
+  const found = (await Promise.all(tracks.map(async t => ({
+    name: t.name && (t.name.simpleText || (t.name.runs || []).map(r => r.text).join("")) || t.languageCode,
+    lang: t.languageCode,
+    guess: t === guess,
+    lines: await load(t.baseUrl),
+    target: /^en/.test(t.languageCode) ? "vi" : "en",
+    track: t
+  })))).filter(t => t.lines.length);
+  const best = found.find(t => t.guess) || found[0];
+  if (best && base(best.track) !== best.target) best.translated = await load(best.track.baseUrl + "&tlang=" + best.target);
+  if (!found.length) {
+    const find = () => document.querySelectorAll("ytd-transcript-segment-renderer");
+    if (!find().length) {
+      const open = document.querySelector("ytd-video-description-transcript-section-renderer button");
+      if (open) open.click();
+      for (let n = 0; n < 40 && !find().length; n++) await new Promise(r => setTimeout(r, 200));
     }
-    if (!lines.length) return {
-      wikiPhidia: "import",
-      id: id,
-      error: "none"
-    };
-    const byTime = new Map(translated.map(e => [ e.t, e.s ]));
-    return {
-      wikiPhidia: "import",
-      id: id,
-      title: title,
-      lang: track ? lang : "",
-      target: track ? target : "",
-      lines: lines.map(e => ({
-        t: e.t,
-        q: e.s,
-        a: byTime.get(e.t) && byTime.get(e.t) !== e.s ? byTime.get(e.t) : ""
-      }))
-    };
-  };
-  post({
+    const lines = [ ...find() ].map(el => ({
+      t: ((el.querySelector(".segment-timestamp") || {}).textContent || "").trim().split(":").map(Number).reduce((a, b) => a * 60 + b, 0),
+      s: ((el.querySelector(".segment-text") || {}).textContent || "").replace(/\s+/g, " ").trim()
+    })).filter(e => e.s);
+    if (lines.length) found.push({
+      name: "Transcript",
+      lang: "",
+      lines: lines
+    });
+  }
+  payload = {
     wikiPhidia: "tracks",
     id: id,
     title: title,
-    tracks: tracks.map(t => t.name && (t.name.simpleText || (t.name.runs || []).map(r => r.text).join("")) || t.languageCode),
-    guess: tracks.indexOf(guess)
-  });
-  found(guess);
+    best: found.indexOf(best),
+    tracks: found.map(t => ({
+      name: t.name,
+      lang: t.lang,
+      target: t.lang ? t.target : "",
+      lines: t.lines,
+      translated: t.translated || []
+    }))
+  };
+  send();
 }
 
 function ytGrabHref() {
@@ -10866,37 +10850,39 @@ function dialogOpen() {
   return !document.getElementById("cloudDialog").hidden || !document.getElementById("ytDialog").hidden;
 }
 
-const ytCancelled = new Set;
-
 function chooseYouTubeImport(translate) {
   document.getElementById("ytDialog").hidden = true;
   if (!ytImport) return;
-  if (translate === null) {
-    ytCancelled.add(ytImport.id);
-    return finishYouTubeImport(null, "Import cancelled");
-  }
-  ytImport.choose(translate);
-  if (!ytImport.origin) return;
-  window.opener.postMessage({
-    wikiPhidia: "fetch",
-    track: Number(document.getElementById("ytTrack").value),
-    translate: translate
-  }, ytImport.origin);
-  clearTimeout(ytImport.timer);
-  ytImport.timer = setTimeout(() => finishYouTubeImport(null, "Couldn't get the subtitles"), 6e4);
+  if (translate === null) return finishYouTubeImport(null, "Import cancelled");
+  const d = ytImport.data;
+  const pick = Number(document.getElementById("ytTrack").value);
+  const track = d.tracks[pick] || d.tracks[d.best] || d.tracks[0];
+  const byTime = new Map((Array.isArray(track.translated) ? track.translated : []).map(e => [ e.t, e.s ]));
+  importFromYouTube({
+    id: d.id,
+    title: d.title,
+    lang: track.lang,
+    target: track.target,
+    lines: (Array.isArray(track.lines) ? track.lines : []).map(e => ({
+      t: e.t,
+      q: e.s,
+      a: byTime.get(e.t) && byTime.get(e.t) !== e.s ? byTime.get(e.t) : ""
+    }))
+  }, translate);
 }
 
-function receiveYouTubeTracks(d, origin) {
+function receiveYouTubeTracks(d) {
   if (!ytImport || d.id !== ytImport.id) return;
   clearTimeout(ytImport.timer);
-  ytImport.origin = origin;
+  if (!Array.isArray(d.tracks) || !d.tracks.length) return finishYouTubeImport(null, "No subtitles on this video");
+  ytImport.data = d;
   ytImport.title = String(d.title || ytImport.title);
   const name = ytImport.tile && ytImport.tile.querySelector(".lesson-item-name");
   if (name) name.textContent = ytImport.title;
-  const names = Array.isArray(d.tracks) ? d.tracks.map(String) : [];
+  const names = d.tracks.map(t => String(t.name || t.lang || "Subtitles"));
   const select = document.getElementById("ytTrack");
-  select.innerHTML = `<option value="-1">Auto-detect${names[d.guess] ? " (" + escapeHtml(names[d.guess]) + ")" : ""}</option>` + names.map((n, i) => `<option value="${i}">${escapeHtml(n)}</option>`).join("");
-  select.disabled = !names.length;
+  select.innerHTML = `<option value="-1">Auto-detect${names[d.best] ? " (" + escapeHtml(names[d.best]) + ")" : ""}</option>` + names.map((n, i) => `<option value="${i}">${escapeHtml(n)}</option>`).join("");
+  select.disabled = names.length < 2;
   document.getElementById("ytOnlySubs").disabled = false;
   document.getElementById("ytWithTranslation").disabled = false;
 }
@@ -10932,16 +10918,7 @@ function finishYouTubeImport(lessonId, message) {
   showToast(message);
 }
 
-async function importFromYouTube(d) {
-  if (!d || !/^[\w-]{11}$/.test(d.id)) return;
-  if (ytImport) clearTimeout(ytImport.timer);
-  if (ytCancelled.has(d.id)) return;
-  if (d.error || !Array.isArray(d.lines) || !d.lines.length) return finishYouTubeImport(null, "No subtitles on this video");
-  if (ytImport) {
-    ytImport.title = String(d.title || ytImport.title);
-    const name = ytImport.tile && ytImport.tile.querySelector(".lesson-item-name");
-    if (name) name.textContent = ytImport.title;
-  }
+async function importFromYouTube(d, translate) {
   const existing = library.find(l => extractYouTubeId(l.mediaUrl || "") === d.id);
   if (appMode === "vocab") setAppMode("cards");
   if (existing) {
@@ -10956,8 +10933,6 @@ async function importFromYouTube(d) {
     a: typeof l.a === "string" ? l.a.trim().slice(0, 2e3) : "",
     time: Math.round(Number(l.t) * 10) / 10
   }));
-  const translate = ytImport ? await ytImport.choice : true;
-  if (ytCancelled.has(d.id)) return;
   if (!translate) cards.forEach(c => c.a = "");
   const missing = translate ? cards.filter(c => !c.a) : [];
   if (missing.length) {
@@ -10991,13 +10966,10 @@ function receiveYouTubeImport() {
     title: "Getting subtitles…",
     timer: setTimeout(() => finishYouTubeImport(null, "Couldn't get the subtitles"), 6e4)
   };
-  ytImport.choice = new Promise(resolve => ytImport.choose = resolve);
   renderLessonList();
   document.getElementById("ytDialog").hidden = false;
   window.addEventListener("message", e => {
-    if (!/^https:\/\/(www|m)\.youtube\.com$/.test(e.origin) || !e.data) return;
-    if (e.data.wikiPhidia === "tracks") receiveYouTubeTracks(e.data, e.origin);
-    if (e.data.wikiPhidia === "import") importFromYouTube(e.data);
+    if (/^https:\/\/(www|m)\.youtube\.com$/.test(e.origin) && e.data && e.data.wikiPhidia === "tracks") receiveYouTubeTracks(e.data);
   });
   window.opener.postMessage({
     wikiPhidia: "ready"
