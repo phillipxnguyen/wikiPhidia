@@ -4474,7 +4474,13 @@ function markTerms(mark) {
 
 function markMatches(mark, excludeId) {
   const exclude = rows.find(r => r.id === excludeId);
-  return markTerms(mark).flatMap(key => termMatches(key, exclude));
+  const hits = mark.classList.contains("vocab-hit") ? markTerms(mark).flatMap(key => termMatches(key, exclude)) : [];
+  if (!isTouch() || !mark.dataset.own) return hits;
+  return hits.concat(mark.dataset.own.split("\n").flatMap(term => termMatches(foldVocab(term), null)));
+}
+
+function lookupMark(target) {
+  return target.closest(isTouch() ? "mark.vocab-hit, mark.vocab-own" : "mark.vocab-hit");
 }
 
 function stripVocabHighlights(html) {
@@ -4686,7 +4692,7 @@ function handleCardAreaClick(e) {
     return;
   }
   if (!row.qHidden && !row.aHidden) loopWorkRow(row);
-  const hit = e.target.closest(".cell mark.vocab-hit");
+  const hit = e.target.closest(".cell") && lookupMark(e.target);
   if (hit && getSelection().isCollapsed) {
     e.stopPropagation();
     hideTooltip();
@@ -4735,13 +4741,8 @@ function handleCardAreaClick(e) {
   }
   if (e.target.closest(".paper-lines") && !getSelection().isCollapsed) return;
   const cellEl = e.target.closest(".cell");
-  if (cellEl && container.contains(cellEl)) {
-    if (groupState) {
-      if (isSingleCard) openSingleCardEdit(row); else openEdit(container, row);
-      return;
-    }
-    copyText(((cellEl.dataset.field === "a" ? row.a : row.q) || "").trim());
-    return;
+  if (cellEl && container.contains(cellEl) && getSelection().isCollapsed) {
+    if (isSingleCard) openSingleCardEdit(row); else openEdit(container, row);
   }
 }
 
@@ -5678,7 +5679,7 @@ function wireEditBox(host, row) {
   [ editQ, editA ].forEach(field => {
     field.addEventListener("click", e => {
       if (!getSelection().isCollapsed) return;
-      const hit = e.target.closest("mark.vocab-hit");
+      const hit = lookupMark(e.target);
       if (hit && field.contains(hit)) {
         const matches = markMatches(hit, row.id);
         if (matches.length) showVocabPopup(matches, hit.getBoundingClientRect());
