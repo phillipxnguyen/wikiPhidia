@@ -916,8 +916,10 @@ window.onYouTubeIframeAPIReady = function(){
   #singleCardView:has(#singleCardBody.listen-batch) #singleCardProgress{margin-bottom:-4px;}
   .listen-batch .listen-pair .single-card-field{position:static;min-height:0;padding:0;background:none;border-radius:0;align-items:flex-start;width:100%;min-width:0;}
   .listen-batch .listen-pair .cell{padding:0;text-align:left;max-width:100%;}
-  .listen-text{display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:0;max-width:calc(100% + 16px);margin:-2px -8px;padding:2px 8px;border-radius:8px;}
-  @media (hover:hover){.listen-batch .listen-pair .cell.shown:hover{background:none;}.listen-text:not(:has(.cell.hidden)):has(.cell.shown:hover), .listen-batch .listen-text:has(.cell.hidden) .cell.shown:hover{background:var(--accent-soft);}}
+  .listen-text{display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:0;max-width:calc(100% + 20px);margin:-4px -10px;padding:4px 10px;border-radius:10px;}
+  .listen-text:not(:has(.cell.hidden)){cursor:pointer;}
+  html.touch .listen-pair.row-selected .listen-text:not(:has(.cell.hidden)){background:var(--accent-soft);}
+  @media (hover:hover){.listen-batch .listen-pair .cell.shown:hover{background:none;}.listen-text:not(:has(.cell.hidden)):hover, .listen-batch .listen-text:has(.cell.hidden) .cell.shown:hover{background:var(--accent-soft);}}
   .listen-batch .listen-pair .single-card-q .cell > .loop-time:first-child{position:absolute;left:20px;top:50%;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;width:var(--tw, 60px);height:60px;margin:0;padding:0;border-radius:30px;font-size:12px;font-weight:600;}
   .listen-batch .listen-pair .loop-time.looping{animation:listen-pulse 1.2s ease-out infinite;}
   @keyframes listen-pulse{from{box-shadow:0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent);}to{box-shadow:0 0 0 10px color-mix(in srgb, var(--accent) 0%, transparent);}}
@@ -3963,7 +3965,7 @@ function japaneseFor(text) {
 
 function refreshJapaneseReadings() {
   const tip = hoverTooltip;
-  if (tip && tip.style.display === "block" && tip.anchor && tip.anchor.isConnected && tip.textContent === "Loading readings…") showCellPinyin(tip.anchor);
+  if (tip && tip.style.display === "block" && tip.anchor && tip.anchor.isConnected && tip.textContent === "Loading readings…") (tip.anchor.classList.contains("listen-text") ? showRowPinyin : showCellPinyin)(tip.anchor);
   if (currentView === "study") renderStrokeRows();
   if (currentView !== "vocab" || vocabEditingKey) return;
   const item = currentVocabItem();
@@ -4658,7 +4660,15 @@ let hoveredRowId = null;
 function handleCardAreaMouseover(e) {
   const container = e.target.closest("[data-id]");
   hoveredRowId = container && container.dataset.id ? Number(container.dataset.id) : null;
-  if (!isTouch()) showCellPinyin(e.target.closest(".cell.shown"));
+  if (isTouch()) return;
+  const unit = hoverUnit(e.target);
+  if (unit && hoverTooltip && hoverTooltip.style.display === "block" && hoverTooltip.anchor === unit) return;
+  if (unit && unit.classList.contains("listen-text")) showRowPinyin(unit); else showCellPinyin(unit);
+}
+
+function hoverUnit(el) {
+  const block = el.closest(".listen-text");
+  return block && !block.querySelector(".cell.hidden") ? block : el.closest(".cell.shown");
 }
 
 function showCellPinyin(cellEl) {
@@ -4673,7 +4683,8 @@ function showCellPinyin(cellEl) {
   const field = cellEl.dataset.field;
   const row = rows.find(r => r.id === id);
   if (!row || !isVideoLesson() && !isVirtualLesson()) return;
-  return showReading(cellEl, field === "q" ? row.q : row.a, row, cacheKey(id, field));
+  const block = cellEl.closest(".listen-text");
+  return showReading(block && !block.querySelector(".cell.hidden") ? block : cellEl, field === "q" ? row.q : row.a, row, cacheKey(id, field));
 }
 
 function showReading(cellEl, text, row, key) {
@@ -4695,8 +4706,8 @@ function showRowPinyin(container) {
 
 function handleCardAreaMouseout(e) {
   if (isTouch()) return;
-  const cellEl = e.target.closest(".cell.shown");
-  if (!cellEl) return;
+  const unit = hoverUnit(e.target);
+  if (!unit || unit.contains(e.relatedTarget)) return;
   hideTooltip();
 }
 
@@ -4776,7 +4787,7 @@ function handleCardAreaClick(e) {
     return;
   }
   if (e.target.closest(".paper-lines") && !getSelection().isCollapsed) return;
-  const cellEl = e.target.closest(".cell");
+  const cellEl = e.target.closest(".cell") || hoverUnit(e.target);
   if (cellEl && container.contains(cellEl) && getSelection().isCollapsed) {
     if (isSingleCard) openSingleCardEdit(row); else openEdit(container, row);
   }
