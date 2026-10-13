@@ -492,7 +492,6 @@ window.onYouTubeIframeAPIReady = function(){
     .shell .single-card-body.listen-batch{padding:0;}
     .shell .listen-batch .listen-pair{padding:15px 10px 15px calc(var(--tx, 60px) + 20px);}
     .shell #singleCardView:has(#singleCardBody.listen-batch) + #strokeRows{margin-top:-15px;}
-    .shell .listen-batch .listen-pair + .listen-pair::before{left:calc(var(--tx, 60px) + 20px);right:10px;}
     .shell .listen-batch .listen-pair .cell{padding:0;}
     .shell .listen-batch .listen-pair.edit-row{padding:15px 10px;}
     .shell #singleCardView:has(#singleCardBody.listen-batch) #singleCardProgress{margin-bottom:1px;}
@@ -919,8 +918,6 @@ window.onYouTubeIframeAPIReady = function(){
   .listen-pair:not(:has(.loop-time)){padding-left:20px;}
   .listen-batch .listen-pair.edit-row{display:block;padding:20px;}
   #singleCardView:has(#singleCardBody.listen-batch) #singleCardProgress{margin-bottom:-4px;}
-  .listen-pair + .listen-pair::before{content:"";position:absolute;top:0;left:calc(var(--tx, 60px) + 40px);right:20px;border-top:1px solid var(--border);}
-  html.touch .listen-batch:has(.listen-pair.row-selected) .listen-pair:not(.row-selected){opacity:.4;}
   .listen-batch .listen-pair .single-card-field{position:static;min-height:0;padding:0;background:none;border-radius:0;align-items:flex-start;width:100%;min-width:0;}
   .listen-batch .listen-pair .cell{padding:0;text-align:left;max-width:100%;}
   .listen-batch .listen-pair .single-card-q .cell > .loop-time:first-child{position:absolute;left:20px;top:50%;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;width:var(--tw, 60px);height:60px;margin:0;padding:0;border-radius:30px;font-size:12px;font-weight:600;}
@@ -6114,22 +6111,6 @@ function gradeCurrentGroupAndAdvance(isAgain) {
     advanceToNextGroup();
     render();
   }, true);
-}
-
-function gradeCardBatch(batch, isAgain) {
-  stopTts();
-  batch.forEach(r => {
-    stopPlaybackForRemovedRow(r.id);
-    adjustSequenceIndexForRemoval(r.id);
-  });
-  const label = "Graded " + batch.length + " cards — " + gradeLabel(isAgain);
-  pushUndo(label);
-  const now = Date.now();
-  batch.forEach(r => applyGrade(r, isAgain, modeKey(), now));
-  showToast(label);
-  scheduleAutoSave();
-  hoveredRowId = null;
-  swipe(studyParts(), isAgain ? -1 : 1, render, true);
 }
 
 function gradeCard(row, isAgain) {
@@ -12782,7 +12763,7 @@ function gradeAction(isAgain) {
   if (!groupState) return;
   const {scope: scope, picked: picked} = studyPick();
   selectedRowId = null;
-  if (picked) gradeCard(picked, isAgain); else if (!isCardMode()) gradeCurrentGroupAndAdvance(isAgain); else if (scope.length > 1) gradeCardBatch(scope, isAgain); else if (scope.length) gradeCard(scope[0], isAgain);
+  if (picked) gradeCard(picked, isAgain); else if (!isCardMode()) gradeCurrentGroupAndAdvance(isAgain); else if (scope.length) gradeCard(scope[0], isAgain);
 }
 
 function studySoundKey() {
