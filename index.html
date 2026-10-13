@@ -1016,8 +1016,13 @@ window.onYouTubeIframeAPIReady = function(){
   .session-complete-title{font-size:22px;font-weight:700;margin-top:14px;animation:fade-up .5s ease .1s both;}
   .session-complete-sub{font-size:14px;color:var(--text);margin-top:6px;animation:fade-up .5s ease .2s both;}
   .yt-grab-row{margin-top:8px;}
-  .yt-grab{display:inline-flex;align-items:center;height:34px;padding:0 10px;border:1px dashed var(--accent);border-radius:8px;color:var(--accent);font-size:14px;font-weight:600;line-height:20px;text-decoration:none;cursor:grab;}
-  .yt-grab-hint{margin-top:6px;font-size:12px;line-height:18px;}
+  .yt-grab{display:inline-flex;align-items:center;height:34px;padding:0 10px;border:1px dashed var(--accent);border-radius:8px;background:none;color:var(--accent);font-size:14px;font-weight:600;line-height:20px;text-decoration:none;cursor:grab;}
+  #ytGrabCopy{cursor:pointer;}
+  .yt-grab-hint{font-size:12px;line-height:18px;}
+  html.touch #ytGrabLink, html.touch .desk-hint, html:not(.touch) #ytGrabCopy, html:not(.touch) .touch-hint{display:none;}
+  .lesson-item.importing{pointer-events:none;animation:importBlink 1.2s ease-in-out infinite;}
+  @keyframes importBlink{0%, 100%{opacity:1;filter:blur(0);}50%{opacity:.35;filter:blur(2px);}}
+  @media (prefers-reduced-motion: reduce){.lesson-item.importing{animation:none;opacity:.6;}}
   .more-today{margin-top:16px;line-height:20px;animation:fade-up .5s ease .3s both;}
   .more-today[hidden]{display:none;}
   @keyframes fade-up{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
@@ -1252,10 +1257,11 @@ window.onYouTubeIframeAPIReady = function(){
     </div>
     <div class="row-flex yt-grab-row">
       <span class="muted-label">From YouTube</span>
-      <a id="ytGrabLink" class="yt-grab" href="#" title="Drag this to your bookmarks bar. On a YouTube video with subtitles, click it: the video and its subtitles open here as a new lesson, already translated.">→ wikiPhidia</a>
-      <button id="ytGrabCopy" class="ghost">Copy</button>
+      <a id="ytGrabLink" class="yt-grab" href="#">→ wikiPhidia</a>
+      <button id="ytGrabCopy" class="yt-grab">Copy bookmark</button>
+      <span class="muted-label yt-grab-hint desk-hint">Drag it to your bookmarks bar once, then click it on a YouTube video.</span>
+      <span class="muted-label yt-grab-hint touch-hint">Bookmark any page, then paste this as its address.</span>
     </div>
-    <div id="ytGrabHint" class="muted-label yt-grab-hint">Drag it to your bookmarks bar, then click it on any YouTube video with subtitles. On a phone, copy it, bookmark any page and paste it as the bookmark's address.</div>
     <div id="importStatus" class="muted-label" style="margin-top:6px;"></div>
     <div id="importInfo" style="font-size:12px;color:var(--text-2);margin-top:8px;"></div>
   </div>
@@ -9237,6 +9243,11 @@ function fitThumbWords(el) {
 }
 
 function renderLessonList() {
+  buildLessonList();
+  placeImportTile(document.getElementById("lessonList"));
+}
+
+function buildLessonList() {
   const list = document.getElementById("lessonList");
   document.querySelector(".shell").classList.toggle("bare", !modeLibrary().length);
   if (!modeLibrary().length) {
@@ -10704,7 +10715,7 @@ async function ytGrab(app) {
   const say = m => alert("wikiPhidia: " + m);
   const id = new URL(location.href).searchParams.get("v") || (location.pathname.match(/\/(?:shorts|live)\/([\w-]{11})/) || [])[1];
   if (!/(^|\.)youtube\.com$/.test(location.hostname) || !id) return say("open a YouTube video first");
-  const win = window.open(app + "#yt-import", "_blank");
+  const win = window.open(app + "#yt-import=" + id, "_blank");
   if (!win) return say("allow pop-ups for youtube.com and try again");
   let payload = null, ready = false;
   const send = () => ready && payload && win.postMessage(payload, new URL(app).origin);
@@ -10763,8 +10774,12 @@ async function ytGrab(app) {
     })).filter(e => e.s);
   }
   if (!lines.length) {
-    win.close();
-    return say("this video has no subtitles");
+    payload = {
+      wikiPhidia: "import",
+      id: id,
+      error: "none"
+    };
+    return send();
   }
   const byTime = new Map(translated.map(e => [ e.t, e.s ]));
   payload = {
@@ -10808,19 +10823,48 @@ const YT_STUDY_LANGS = {
   vi: "vi"
 };
 
+let ytImport = null;
+
+function placeImportTile(list) {
+  if (!ytImport) return;
+  const group = list.querySelector(".lesson-group");
+  if (!group) return;
+  const tile = document.createElement("div");
+  tile.className = "lesson-item tile importing";
+  tile.innerHTML = lessonThumbHtml({
+    mediaUrl: "https://www.youtube.com/watch?v=" + ytImport.id,
+    name: ytImport.title
+  }) + `<span class="lesson-item-name">${escapeHtml(ytImport.title)}</span>`;
+  const label = group.querySelector(".lesson-group-label");
+  if (label) label.after(tile); else group.prepend(tile);
+  ytImport.tile = tile;
+}
+
+function finishYouTubeImport(lessonId, message) {
+  const tile = ytImport && ytImport.tile;
+  clearTimeout(ytImport && ytImport.timer);
+  ytImport = null;
+  if (tile && tile.isConnected) blinkOut(tile);
+  renderLessonList();
+  const done = lessonId && document.querySelector(`#lessonList .lesson-item[data-lesson-id="${CSS.escape(lessonId)}"]`);
+  if (done) blinkIn(done);
+  showToast(message);
+}
+
 async function importFromYouTube(d) {
-  if (!d || !/^[\w-]{11}$/.test(d.id) || !Array.isArray(d.lines) || !d.lines.length) return;
-  const existing = library.find(l => extractYouTubeId(l.mediaUrl || "") === d.id);
-  if (appMode === "vocab") {
-    setAppMode("cards");
-    renderLessonList();
+  if (!d || !/^[\w-]{11}$/.test(d.id)) return;
+  if (d.error || !Array.isArray(d.lines) || !d.lines.length) return finishYouTubeImport(null, "No subtitles on this video");
+  if (ytImport) {
+    ytImport.title = String(d.title || ytImport.title);
+    const name = ytImport.tile && ytImport.tile.querySelector(".lesson-item-name");
+    if (name) name.textContent = ytImport.title;
   }
+  const existing = library.find(l => extractYouTubeId(l.mediaUrl || "") === d.id);
   if (existing) {
     noteRecentLesson(existing.id);
     openLesson(existing);
     showView("study");
-    showToast("Already in your lessons");
-    return;
+    return finishYouTubeImport(existing.id, "Already in your lessons");
   }
   const studyLang = YT_STUDY_LANGS[d.lang] || YT_STUDY_LANGS[String(d.lang).split("-")[0]] || "auto";
   const cards = d.lines.filter(l => l && typeof l.q === "string" && l.q.trim() && isFinite(Number(l.t))).map(l => ({
@@ -10831,7 +10875,6 @@ async function importFromYouTube(d) {
   const missing = cards.filter(c => !c.a);
   if (missing.length) {
     const target = d.target === "vi" || d.target === "en" ? d.target : /^[\x00-\x7F]+$/.test(missing.map(c => c.q).join("")) ? "vi" : "en";
-    showToast("Translating");
     const out = await translateBatch(missing.map(c => c.q), target);
     missing.forEach((c, i) => c.a = out[i] || "");
   }
@@ -10841,6 +10884,7 @@ async function importFromYouTube(d) {
     studyLang: studyLang,
     cards: cards
   });
+  if (!cards.length) return finishYouTubeImport(null, "No subtitles on this video");
   commitActiveEdit();
   await flushAutoSave();
   upsertLibrary(lesson);
@@ -10848,13 +10892,21 @@ async function importFromYouTube(d) {
   noteRecentLesson(lesson.id);
   openLesson(lesson);
   showView("study");
-  renderLessonList();
-  showToast("Imported " + cards.length + " sentences");
+  finishYouTubeImport(lesson.id, "Lesson created");
 }
 
 function receiveYouTubeImport() {
-  if (location.hash !== "#yt-import" || !window.opener) return;
+  const id = (location.hash.match(/^#yt-import=([\w-]{11})$/) || [])[1];
+  if (!id || !window.opener) return;
   history.replaceState(null, "", location.pathname + location.search);
+  if (appMode === "vocab") setAppMode("cards");
+  ytImport = {
+    id: id,
+    title: "Getting subtitles…",
+    timer: setTimeout(() => finishYouTubeImport(null, "Couldn't get the subtitles"), 6e4)
+  };
+  renderLessonList();
+  showToast("Getting subtitles");
   window.addEventListener("message", e => {
     if (/^https:\/\/(www|m)\.youtube\.com$/.test(e.origin) && e.data && e.data.wikiPhidia === "import") importFromYouTube(e.data);
   });
