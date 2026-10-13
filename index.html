@@ -10801,6 +10801,7 @@ async function ytGrab(app) {
   }
   payload = {
     wikiPhidia: "tracks",
+    version: 3,
     id: id,
     title: title,
     best: found.indexOf(best),
@@ -10957,10 +10958,14 @@ async function importFromYouTube(d, translate) {
   finishYouTubeImport(lesson.id, translate && cards.some(c => !c.a) ? "Lesson created, some lines not translated" : "Lesson created");
 }
 
+const YT_GRAB_VERSION = 3;
+
 function receiveYouTubeImport() {
+  if (!/^#yt-import/.test(location.hash)) return;
   const id = (location.hash.match(/^#yt-import=([\w-]{11})$/) || [])[1];
-  if (!id || !window.opener) return;
   history.replaceState(null, "", location.pathname + location.search);
+  if (!id) return showToast("Old bookmark: drag YouTube subtitles again");
+  if (!window.opener) return;
   ytImport = {
     id: id,
     title: "Getting subtitles…",
@@ -10969,7 +10974,8 @@ function receiveYouTubeImport() {
   renderLessonList();
   document.getElementById("ytDialog").hidden = false;
   window.addEventListener("message", e => {
-    if (/^https:\/\/(www|m)\.youtube\.com$/.test(e.origin) && e.data && e.data.wikiPhidia === "tracks") receiveYouTubeTracks(e.data);
+    if (!/^https:\/\/(www|m)\.youtube\.com$/.test(e.origin) || !e.data || !e.data.wikiPhidia || e.data.wikiPhidia === "ready") return;
+    if (e.data.version === YT_GRAB_VERSION && e.data.wikiPhidia === "tracks") receiveYouTubeTracks(e.data); else finishYouTubeImport(null, "Old bookmark: drag YouTube subtitles again");
   });
   window.opener.postMessage({
     wikiPhidia: "ready"
