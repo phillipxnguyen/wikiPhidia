@@ -1550,6 +1550,7 @@ function takeSnapshot(label, expiresAt) {
     listenKept: JSON.stringify(listenBatchKept),
     ielts: [ ieltsAnswered, ieltsHintId ],
     vocabSnapshot: JSON.stringify(vocabSession),
+    limits: JSON.stringify([ studyLimits, limitExtra ]),
     label: label,
     expiresAt: expiresAt
   };
@@ -1677,6 +1678,10 @@ function restoreFrom(fromStack, toStack, verb) {
   lastShownCardId = entry.shown !== undefined ? entry.shown : pinnedCardId;
   if (entry.listenKept) listenBatchKept = JSON.parse(entry.listenKept);
   if (entry.ielts) [ ieltsAnswered, ieltsHintId ] = entry.ielts;
+  if (entry.limits) {
+    [ studyLimits, limitExtra ] = JSON.parse(entry.limits);
+    saveStudyLimits();
+  }
   skipEmptyGroups();
   updateGroupUI();
   render();
@@ -4735,8 +4740,7 @@ function handleCardAreaClick(e) {
       if (isSingleCard) openSingleCardEdit(row); else openEdit(container, row);
       return;
     }
-    const field = cellEl.dataset.field;
-    copyText(isVideoLesson() || isVirtualLesson() ? field === "q" ? row.q : row.a : cardText(row.q, row.a));
+    copyText(((cellEl.dataset.field === "a" ? row.a : row.q) || "").trim());
     return;
   }
 }
@@ -4789,10 +4793,6 @@ function selectionTarget() {
   } : null;
 }
 
-function cardText(question, answer) {
-  return [ question, answer ].map(t => (t || "").trim()).filter(Boolean).join("\n");
-}
-
 function copyText(text) {
   if (!text) return;
   navigator.clipboard.writeText(text).then(() => showToast("Copied")).catch(() => showToast("Could not copy"));
@@ -4800,8 +4800,8 @@ function copyText(text) {
 
 function studyCopyAction() {
   const {scope: scope, picked: picked} = studyPick();
-  if (!groupState) {
-    if (picked) copyText(isVideoLesson() || isVirtualLesson() ? picked.q : cardText(picked.q, picked.a));
+  if (!groupState && !picked) {
+    if (scope.length) showToast("Pick a card to copy it");
     return;
   }
   copyQuestions((picked ? [ picked ] : scope).map(r => (r.q || "").trim()).filter(Boolean));
@@ -4879,6 +4879,7 @@ function updateTouchBar() {
     btn.classList.toggle("tb-mark", vocab);
     if (vocab) btn.setAttribute("aria-label", word); else btn.removeAttribute("aria-label");
   });
+  showBtn.disabled = false;
   if (vocab) {
     const back = !!vocabSession && vocabSession.flipped && !!document.getElementById("vocabCard");
     if (back) {
@@ -4892,7 +4893,6 @@ function updateTouchBar() {
     return;
   }
   showBtn.removeAttribute("aria-label");
-  showBtn.disabled = false;
   const seqBtn = document.getElementById("btnPlaySequence");
   let showLabel = "Show";
   if (groupState && groupViewStyle !== "ielts" && !studyCardsHidden() && !seqBtn.disabled) {
@@ -9542,11 +9542,17 @@ function applyStudyLimits() {
     review: read("limitReview")
   };
   if (next.fresh === studyLimits.fresh && next.review === studyLimits.review) return;
+  pushUndo("Daily limits");
   studyLimits = next;
+  saveStudyLimits();
+  refreshAfterLimits();
+}
+
+function saveStudyLimits() {
   try {
     localStorage.setItem(LIMITS_KEY, JSON.stringify(studyLimits));
+    localStorage.setItem(LIMIT_EXTRA_KEY, JSON.stringify(limitExtra));
   } catch (e) {}
-  refreshAfterLimits();
 }
 
 function refreshAfterLimits() {
@@ -9558,17 +9564,16 @@ function refreshAfterLimits() {
 }
 
 function studyMoreToday() {
+  pushUndo("Study 10 more today");
   const today = localDayKey(Date.now());
-  if (limitExtra.day !== today) limitExtra = {
+  limitExtra = limitExtra.day === today ? Object.assign({}, limitExtra) : {
     day: today,
     fresh: 0,
     review: 0
   };
   limitExtra.fresh += 10;
   limitExtra.review += 10;
-  try {
-    localStorage.setItem(LIMIT_EXTRA_KEY, JSON.stringify(limitExtra));
-  } catch (e) {}
+  saveStudyLimits();
   refreshAfterLimits();
 }
 
@@ -12219,6 +12224,11 @@ function handleVocabKey(e) {
   }
   if (vocabView === "list") {
     const pickedKey = vocabPickedKey();
+    if (e.code === "KeyC") {
+      e.preventDefault();
+      if (pickedKey) vocabCopyAction(); else showToast("Pick a word to copy it");
+      return;
+    }
     if (e.code !== "KeyE" || !pickedKey) return;
     e.preventDefault();
     openVocabEditor(pickedKey, true);
@@ -12740,7 +12750,6 @@ document.addEventListener("keydown", e => {
   }
   const letter = !e.metaKey && !e.ctrlKey && !e.altKey && !e.repeat;
   if (letter && e.code === "KeyC") {
-    if (!groupState) return;
     e.preventDefault();
     studyCopyAction();
     return;
