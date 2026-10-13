@@ -4800,8 +4800,10 @@ function copyText(text) {
 
 function studyCopyAction() {
   const {scope: scope, picked: picked} = studyPick();
-  if (!groupState && !picked) {
-    if (scope.length) showToast("Pick a card to copy it");
+  if (!groupState && !picked) return;
+  if (groupState && groupViewStyle === "ielts") {
+    const row = picked || scope[0];
+    if (row) copyText([ row.q, row.a ].map(t => (t || "").trim()).filter(Boolean).join("\n"));
     return;
   }
   copyQuestions((picked ? [ picked ] : scope).map(r => (r.q || "").trim()).filter(Boolean));
@@ -12226,7 +12228,7 @@ function handleVocabKey(e) {
     const pickedKey = vocabPickedKey();
     if (e.code === "KeyC") {
       e.preventDefault();
-      if (pickedKey) vocabCopyAction(); else showToast("Pick a word to copy it");
+      if (pickedKey) vocabCopyAction();
       return;
     }
     if (e.code !== "KeyE" || !pickedKey) return;
