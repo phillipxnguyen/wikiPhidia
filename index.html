@@ -5348,6 +5348,7 @@ function reclaimKeyboardFocus() {
     if (active && active.tagName === "IFRAME" && !stillFocusedOwnDictIframe) {
       document.body.tabIndex = -1;
       document.body.focus();
+      window.focus();
     }
   }, 0);
 }
@@ -10725,8 +10726,15 @@ async function ytGrab(app) {
   }
   const tracks = resp && resp.captions && resp.captions.playerCaptionsTracklistRenderer && resp.captions.playerCaptionsTracklistRenderer.captionTracks || [];
   const base = t => t.languageCode.split("-")[0];
+  const title = resp && resp.videoDetails && resp.videoDetails.title || document.title;
+  const script = /[\u3040-\u30ff]/.test(title) ? "ja" : /[\uac00-\ud7af]/.test(title) ? "ko" : /[\u4e00-\u9fff]/.test(title) ? "zh" : "";
+  const inLang = l => {
+    const list = tracks.filter(t => base(t) === l);
+    return list.find(t => t.kind !== "asr") || list[0];
+  };
   const spoken = tracks.find(t => t.kind === "asr");
-  const track = spoken && tracks.find(t => t.kind !== "asr" && base(t) === base(spoken)) || spoken || tracks[0];
+  const audio = tracks.length && resp.captions.playerCaptionsTracklistRenderer.audioTracks;
+  const track = script && inLang(script) || spoken && inLang(base(spoken)) || audio && audio[0] && tracks[audio[0].defaultCaptionTrackIndex] || tracks[0];
   const lang = track ? track.languageCode : "";
   const target = /^en/.test(lang) ? "vi" : "en";
   const load = async url => {
@@ -10762,13 +10770,13 @@ async function ytGrab(app) {
   payload = {
     wikiPhidia: "import",
     id: id,
-    title: resp && resp.videoDetails && resp.videoDetails.title || document.title.replace(/ - YouTube$/, ""),
+    title: title.replace(/ - YouTube$/, ""),
     lang: lang,
     target: lang ? target : "",
     lines: lines.map(e => ({
       t: e.t,
       q: e.s,
-      a: byTime.get(e.t) || ""
+      a: byTime.get(e.t) && byTime.get(e.t) !== e.s ? byTime.get(e.t) : ""
     }))
   };
   send();
@@ -12860,9 +12868,9 @@ document.addEventListener("keydown", e => {
     return;
   }
   if (e.code === "Space" || e.key === " ") {
-    if (!groupState) return;
     e.preventDefault();
-    if (!e.repeat) revealAction();
+    if (e.repeat) return;
+    if (groupState) revealAction(); else studySoundKey();
     return;
   }
   if ([ "Digit1", "Digit2", "Digit3" ].includes(e.code)) {
