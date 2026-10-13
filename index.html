@@ -1020,6 +1020,11 @@ window.onYouTubeIframeAPIReady = function(){
   #ytGrabCopy{cursor:pointer;}
   #ytDialog .cloud-row button{white-space:nowrap;}
   #ytTrack{display:block;width:100%;margin-bottom:10px;}
+  #ytDialog.loading :is(#ytTrack, .cloud-row button){background-image:linear-gradient(90deg, transparent 25%, color-mix(in srgb, var(--accent) 22%, transparent) 50%, transparent 75%);background-size:200% 100%;animation:listen-shimmer 1.2s linear infinite;cursor:progress;}
+  #ytDialog.loading .cloud-row button.primary{background-image:linear-gradient(90deg, transparent 25%, rgba(255,255,255,.4) 50%, transparent 75%);}
+  #ytDialog.loading .emoji{animation:ytBob 1s ease-in-out infinite;}
+  @keyframes ytBob{0%, 100%{transform:translateY(0);}50%{transform:translateY(-6px);}}
+  @media (prefers-reduced-motion: reduce){#ytDialog.loading :is(#ytTrack, .cloud-row button, .emoji){animation:none;}}
   .yt-grab-hint{font-size:12px;line-height:18px;}
   html.touch #ytGrabLink, html:not(.touch) #ytGrabCopy, .touch-hint:not(.shown){display:none;}
   .lesson-item.importing{pointer-events:none;animation:importBlink 1.2s ease-in-out infinite;}
@@ -1190,11 +1195,11 @@ window.onYouTubeIframeAPIReady = function(){
   </div>
 </div>
 
-<div id="ytDialog" class="paused-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="ytDialogTitle">
+<div id="ytDialog" class="paused-overlay loading" hidden role="dialog" aria-modal="true" aria-labelledby="ytDialogTitle">
   <div class="paused-card">
     <div class="emoji">🎬</div>
     <h2 id="ytDialogTitle">YouTube subtitles</h2>
-    <p>Make a lesson from this video's subtitles.</p>
+    <p id="ytDialogText">Getting the subtitles…</p>
     <select id="ytTrack" aria-label="Subtitles language" disabled>
       <option value="-1">Auto-detect</option>
     </select>
@@ -10911,6 +10916,8 @@ function receiveYouTubeTracks(d) {
   const select = document.getElementById("ytTrack");
   select.innerHTML = names.length === 1 ? `<option value="0">${escapeHtml(names[0])}</option>` : `<option value="-1">Auto-detect${names[d.best] ? " (" + escapeHtml(names[d.best]) + ")" : ""}</option>` + names.map((n, i) => `<option value="${i}">${escapeHtml(n)}</option>`).join("");
   select.disabled = names.length < 2;
+  document.getElementById("ytDialog").classList.remove("loading");
+  document.getElementById("ytDialogText").textContent = "Make a lesson from this video's subtitles.";
   document.getElementById("ytOnlySubs").disabled = false;
   document.getElementById("ytWithTranslation").disabled = false;
 }
