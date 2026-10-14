@@ -828,11 +828,10 @@ window.onYouTubeIframeAPIReady = function(){
   .media-container.warming{display:block;height:1px;min-height:0;margin:0 auto;padding:0;border:0;opacity:0;pointer-events:none;}
   #mediaLoading{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:#000;color:#e8edf3;font-size:14px;z-index:2;}
   .media-container.loading #mediaLoading{display:flex;}
-  #mediaSubtitleMask{display:none;position:absolute;inset:0;z-index:3;align-items:center;justify-content:center;background:color-mix(in srgb, var(--accent) 13%, var(--surface));color:var(--accent);font-size:20px;font-weight:600;font-variant-numeric:tabular-nums;pointer-events:none;}
+  #mediaSubtitleMask{display:none;position:absolute;inset:0;z-index:3;align-items:center;justify-content:center;background:color-mix(in srgb, var(--accent) 13%, var(--surface));color:var(--accent);font-size:30px;line-height:1;pointer-events:none;}
   .media-container.listen-mask:not(.big) #mediaSubtitleMask{display:flex;}
   .media-container.listen-mask:not(.big) .media-video{background:color-mix(in srgb, var(--accent) 13%, var(--surface));}
   #viewStudy:has(.listen-pair .loop-time.looping) .media-container.listen-mask:not(.big) :is(.media-video, #mediaSubtitleMask){background:var(--accent);color:var(--on-accent);}
-  #viewStudy:has(.listen-pair .loop-time.looping) .media-container.listen-mask:not(.big) .media-video{animation:frame-pulse 1.2s ease-out infinite;}
   .media-bar-main{flex:1;min-width:0;}
   #mediaBarTitle{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:14px;font-weight:600;color:var(--text);}
   .media-bar-progress{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:10px;font-variant-numeric:tabular-nums;color:var(--text-2);}
@@ -889,6 +888,20 @@ window.onYouTubeIframeAPIReady = function(){
   }
   .single-card-body.listen-batch{padding:0;background:none;border:0;box-shadow:none;}
   .single-card-body.listen-batch:not(.edit-row){gap:0;}
+  .voice-note{align-self:stretch;display:flex;align-items:center;gap:15px;height:60px;margin:0 -10px 20px;padding:0 20px 0 10px;border-radius:30px;background:color-mix(in srgb, var(--accent) 13%, var(--surface));color:var(--accent);cursor:pointer;-webkit-user-select:none;user-select:none;transition:background .15s, color .15s;}
+  @media (hover:hover){.voice-note:hover{filter:brightness(1.05);}}
+  .vn-play{flex:none;display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:20px;background:var(--accent);color:var(--on-accent);}
+  .vn-play svg{width:20px;height:20px;fill:currentColor;}
+  .vn-pause-icon, .listen-pair:has(.loop-time.looping) .vn-play-icon{display:none;}
+  .listen-pair:has(.loop-time.looping) .vn-pause-icon{display:block;}
+  .vn-wave{flex:1;min-width:0;height:30px;display:flex;align-items:center;gap:3px;overflow:hidden;}
+  .vn-wave i{flex:none;width:4px;border-radius:2px;background:currentColor;opacity:.5;}
+  .listen-pair:has(.loop-time.looping) .voice-note{animation:frame-pulse 1.2s ease-out infinite;}
+  .listen-pair:has(.loop-time.looping) .vn-wave i{opacity:.9;transform-origin:center;animation:vn-bounce .9s ease-in-out infinite;}
+  .listen-pair:has(.loop-time.looping) .vn-wave i:nth-child(3n+1){animation-delay:-.3s;}
+  .listen-pair:has(.loop-time.looping) .vn-wave i:nth-child(3n+2){animation-delay:-.6s;}
+  .vn-time{flex:none;font-size:15px;font-weight:600;font-variant-numeric:tabular-nums;}
+  @keyframes vn-bounce{0%, 100%{transform:scaleY(1);}50%{transform:scaleY(.4);}}
   .listen-pair{display:flex;flex-direction:column;align-items:center;padding:0 10px;transition:opacity .2s ease;}
   .listen-batch .listen-pair .single-card-field{position:static;min-height:0;padding:0;background:none;border-radius:0;align-items:flex-start;width:100%;min-width:0;}
   .listen-batch .listen-pair .cell{padding:0;font-size:28px;line-height:35px;text-align:left;max-width:100%;}
@@ -914,7 +927,7 @@ window.onYouTubeIframeAPIReady = function(){
   @keyframes listen-shimmer{to{background-position:-200% 0;}}
   @keyframes listen-quiver{0%, 100%{opacity:.7;transform:scale(1);}50%{opacity:1;transform:scale(1.02);}}
   @keyframes frame-pulse{from{box-shadow:0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent);}to{box-shadow:0 0 0 5px color-mix(in srgb, var(--accent) 0%, transparent);}}
-  @media (prefers-reduced-motion: reduce){#viewStudy .media-container .media-video, .listen-batch .listen-pair .cell.hidden::after{animation:none;}}
+  @media (prefers-reduced-motion: reduce){.voice-note, .vn-wave i, .listen-batch .listen-pair .cell.hidden::after{animation:none !important;}}
   .single-card-q{background:var(--q-bg);}
   .single-card-a{background:var(--a-bg);}
   .single-card-field .cell{font-size:20px;line-height:25px;font-weight:400;text-align:left;padding:2px 16px;border-radius:8px;}
@@ -2842,10 +2855,22 @@ function fitListenMasks(root) {
   });
 }
 
+const VOICE_BARS = [ 6, 10, 14, 18, 22, 26, 30 ];
+
+function voiceNoteHtml(r) {
+  let seed = (r.id * 9301 + 49297) % 233280;
+  const bars = Array.from({
+    length: 120
+  }, () => {
+    seed = (seed * 9301 + 49297) % 233280;
+    return `<i style="height:${VOICE_BARS[seed % VOICE_BARS.length]}px"></i>`;
+  }).join("");
+  const play = '<svg class="vn-play-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M6 4l10 6-10 6z"/></svg><svg class="vn-pause-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 4h3v12H5zM12 4h3v12h-3z"/></svg>';
+  return `<div class="voice-note" role="button" aria-label="Play"><span class="vn-play">${play}</span><span class="vn-wave">${bars}</span><span class="vn-time">${r.time == null ? "🔊" : formatTime(r.time)}</span></div>`;
+}
+
 function listenPairsHtml(batch) {
-  const width = r => r.time == null || formatTime(r.time).length <= 5 ? 60 : Math.round((formatTime(r.time).length * 8 + 20) / 5) * 5;
-  const tx = Math.max(...batch.map(width));
-  return batch.map(r => `<div class="listen-pair${r.id === selectedRowId ? " row-selected" : ""}" data-id="${r.id}" style="--tw:${width(r)}px;--tx:${tx}px"><div class="listen-text">${singleCardFieldsHtml(r)}${r.aHidden ? "" : cardNotesHtml(r)}</div></div>`).join("");
+  return batch.map(r => `<div class="listen-pair${r.id === selectedRowId ? " row-selected" : ""}" data-id="${r.id}">${voiceNoteHtml(r)}<div class="listen-text">${singleCardFieldsHtml(r)}${r.aHidden ? "" : cardNotesHtml(r)}</div></div>`).join("");
 }
 
 function currentBadgeIds() {
@@ -3556,7 +3581,7 @@ function renderSingleCard(visibleRows) {
   bodyEl.classList.toggle("listen-batch", isListenMode());
   bodyEl.innerHTML = groupViewStyle === "ielts" ? ieltsPaperHtml(row) : isListenMode() ? listenPairsHtml(batch) : singleCardFieldsHtml(row);
   if (isListenMode()) fitListenMasks(bodyEl);
-  document.getElementById("mediaSubtitleMask").textContent = isListenMode() && row && row.time != null ? formatTime(row.time) : "";
+  document.getElementById("mediaSubtitleMask").textContent = isListenMode() ? "🎧" : "";
   if (groupViewStyle === "ielts") {
     visibleRows.slice(0, 2).forEach(preloadCardDict);
     showPaperExtras(bodyEl, row);
@@ -4781,7 +4806,7 @@ function handleCardAreaClick(e) {
   if (!row) return;
   const isSingleCard = !!container.closest("#singleCardBody");
   const cardBody = isSingleCard ? document.getElementById("singleCardBody") : container;
-  if (e.target.closest(".loop-time")) {
+  if (e.target.closest(".loop-time, .voice-note")) {
     e.stopPropagation();
     toggleRowPlay(row);
     workFocusId = row.id;
