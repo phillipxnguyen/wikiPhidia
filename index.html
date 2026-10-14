@@ -489,6 +489,8 @@ window.onYouTubeIframeAPIReady = function(){
     .shell .listen-batch .listen-pair .single-card-field .cell.hidden::after{margin:1px 0;}
     .shell .vocab-back .vocab-word-notes{font-size:20px;line-height:25px;}
     .shell .single-card-body.listen-batch{padding:0;}
+    .shell .listen-pair .card-notes{font-size:15px;line-height:18px;}
+    .shell #cardTable:not(.notebook) .card-notes{padding:0 4px 4px;}
   }
   html.touch input[type=text], html.touch input[type=search], html.touch input[type=email], html.touch input[type=password], html.touch textarea, html.touch select{font-size:16px;}
   html.touch .segmented button{min-width:46px;padding:8px 12px;}
@@ -918,6 +920,15 @@ window.onYouTubeIframeAPIReady = function(){
   html.touch .listen-pair.row-selected .listen-text:not(:has(.cell.hidden)){background:var(--accent-soft);}
   @media (hover:hover){.listen-batch .listen-pair .cell.shown:hover{background:none;}.listen-text:not(:has(.cell.hidden)):hover, .listen-batch .listen-text:has(.cell.hidden) .cell.shown:hover{background:var(--accent-soft);}}
   .listen-batch .listen-pair .loop-time{display:none;}
+  .card-notes{font-size:14px;line-height:18px;color:var(--text);overflow-wrap:anywhere;}
+  .card-notes ul, .card-notes ol{margin:0;padding-left:20px;}
+  .card-notes > *{margin:0;}
+  #cardTable .card-notes{padding:0 8px 4px;}
+  .vocab-list-meaning:has(.card-notes){flex-direction:column;align-items:flex-start;justify-content:center;}
+  .vocab-list-meaning .card-notes{margin-top:4px;}
+  #cardTable.notebook .card-notes{padding:6px 4px 0;font-size:18px;line-height:22px;}
+  .listen-col{display:flex;flex-direction:column;align-items:flex-start;max-width:100%;min-width:0;}
+  .listen-pair .card-notes{max-width:100%;margin-top:10px;font-size:18px;line-height:22px;}
   @keyframes listen-pulse{from{box-shadow:0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent);}to{box-shadow:0 0 0 10px color-mix(in srgb, var(--accent) 0%, transparent);}}
   .listen-batch .listen-pair .cell.hidden{font-size:0;line-height:0;}
   .listen-batch .listen-pair .cell.hidden::after{content:"";display:block;border-radius:10px;background:linear-gradient(90deg, var(--surface-3) 0%, var(--surface-2) 50%, var(--surface-3) 100%) 0 0 / 200% 100%;animation:listen-shimmer 1.6s linear infinite;}
@@ -961,7 +972,7 @@ window.onYouTubeIframeAPIReady = function(){
   .paper-extras > *{margin-top:32px;}
   .paper-stroke .stroke-order-row{justify-content:flex-start;}
   .paper-dict{height:360px;border-radius:10px;background:var(--surface-2);}
-  .paper-dict[hidden]{display:none;}
+  .paper-dict[hidden], #viewStudy:has(#singleCardBody.edit-row) .listen-dict{display:none;}
   @media (max-width:600px){
     .ielts-paper{padding:24px 24px 28px;}
     .ielts-paper.with-notes .paper-body{grid-template-columns:minmax(0, 1fr);}
@@ -2852,7 +2863,7 @@ function fitListenMasks(root) {
 function listenPairsHtml(batch) {
   const width = r => r.time == null || formatTime(r.time).length <= 5 ? 60 : Math.round((formatTime(r.time).length * 8 + 20) / 5) * 5;
   const tx = Math.max(...batch.map(width));
-  return batch.map(r => `<div class="listen-pair${r.id === selectedRowId ? " row-selected" : ""}" data-id="${r.id}" style="--tw:${width(r)}px;--tx:${tx}px"><div class="listen-text">${singleCardFieldsHtml(r)}</div></div>`).join("");
+  return batch.map(r => `<div class="listen-pair${r.id === selectedRowId ? " row-selected" : ""}" data-id="${r.id}" style="--tw:${width(r)}px;--tx:${tx}px"><div class="listen-col"><div class="listen-text">${singleCardFieldsHtml(r)}</div>${r.aHidden ? "" : cardNotesHtml(r)}</div></div>`).join("");
 }
 
 function currentBadgeIds() {
@@ -3151,6 +3162,11 @@ function renderImportInfo() {
   el.innerHTML = lines.map(escapeHtml).join("<br>");
 }
 
+function cardNotesHtml(row) {
+  const html = notesEditorHtml(row);
+  return html ? `<div class="card-notes">${html}</div>` : "";
+}
+
 function aCellContent(r) {
   return r.aHidden ? '<span class="dots">···</span>' : lookupHtml(r.aHtml || textHtml(r.a), r);
 }
@@ -3161,7 +3177,8 @@ function buildRowTr(r) {
   if (loopingRowId === r.id) tr.classList.add("row-playing");
   if (selectedRowId === r.id) tr.classList.add("row-selected");
   const q = `<div class="cell ${r.qHidden ? "hidden" : "shown"}" data-field="q">${qCellContent(r)}</div>`;
-  const cells = document.getElementById("cardTable").classList.contains("no-answer-col") ? `<td class="q-col" colspan="2">${q}</td>` : `<td class="q-col">${q}</td><td class="a-col"><div class="cell ${r.aHidden ? "hidden" : "shown"}" data-field="a">${aCellContent(r)}</div></td>`;
+  const notes = !groupState && !r.aHidden ? cardNotesHtml(r) : "";
+  const cells = document.getElementById("cardTable").classList.contains("no-answer-col") ? `<td class="q-col" colspan="2">${q}${notes}</td>` : `<td class="q-col">${q}</td><td class="a-col"><div class="cell ${r.aHidden ? "hidden" : "shown"}" data-field="a">${aCellContent(r)}</div>${notes}</td>`;
   tr.innerHTML = cells;
   dictPreloadObserver.observe(tr);
   return tr;
@@ -3306,7 +3323,16 @@ function renderStrokeRows() {
     }
     return el;
   });
-  host.replaceChildren(...lines);
+  const listenRow = inSingle && isListenMode() && !activeEdit ? current[0] : null;
+  const url = listenRow && !listenRow.qHidden && !listenRow.aHidden ? cardDictUrl(listenRow) : "";
+  let dict = url && host.querySelector(".listen-dict");
+  if (url && (!dict || dict.dataset.url !== url)) {
+    dict = document.createElement("div");
+    dict.className = "paper-dict listen-dict";
+    dict.dataset.url = url;
+  }
+  host.replaceChildren(...lines, ...dict ? [ dict ] : []);
+  if (dict && (!activeDictOverlay || activeDictOverlay.placeholder !== dict)) showDictOverlay(dict, url); else if (!dict && activeDictOverlay && activeDictOverlay.placeholder.classList.contains("listen-dict")) hideDictOverlay();
 }
 
 function markFreshLesson() {
@@ -11805,7 +11831,7 @@ function renderVocab() {
   })}</div>` : "";
   const open = vocabView === "list" || caughtUp || !!vocabEditingKey && (vocabEditingInList || vocabEditingKey === NEW_WORD_KEY);
   list.hidden = items.length ? !open : vocabEditingKey !== NEW_WORD_KEY;
-  list.innerHTML = adder + (list.hidden ? "" : shown.map(item => item.key === vocabEditingKey && vocabEditingInList ? `<div class="vocab-list-row editing">${vocabEditorHtml(item)}</div>` : `<div class="vocab-list-row" data-key="${escapeAttr(item.key)}"><span class="vocab-list-term">${escapeHtml(item.term)}</span><span class="vocab-list-meaning">${escapeHtml(item.meaning)}</span><span class="vocab-list-status">${vocabStatusIcon(vocabStateOf(item))}</span></div>`).join("") + (more ? `<button id="vocabMore" class="vocab-more ghost">Show ${more} more</button>` : ""));
+  list.innerHTML = adder + (list.hidden ? "" : shown.map(item => item.key === vocabEditingKey && vocabEditingInList ? `<div class="vocab-list-row editing">${vocabEditorHtml(item)}</div>` : `<div class="vocab-list-row" data-key="${escapeAttr(item.key)}"><span class="vocab-list-term">${escapeHtml(item.term)}</span><span class="vocab-list-meaning">${wordNotesOf(item) ? `<span>${escapeHtml(item.meaning)}</span><div class="card-notes">${wordNotesOf(item)}</div>` : escapeHtml(item.meaning)}</span><span class="vocab-list-status">${vocabStatusIcon(vocabStateOf(item))}</span></div>`).join("") + (more ? `<button id="vocabMore" class="vocab-more ghost">Show ${more} more</button>` : ""));
   watchVocabMore();
   if (emptyLesson) {
     vocabSession = null;
