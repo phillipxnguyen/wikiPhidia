@@ -488,9 +488,6 @@ window.onYouTubeIframeAPIReady = function(){
     .shell .single-card-field .cell{font-size:18px;line-height:25px;padding:2px 6px;}
     .shell .vocab-back .vocab-word-notes{font-size:18px;line-height:28px;}
     .shell .single-card-body.listen-batch{padding:0;}
-    .shell .listen-batch .listen-pair{padding:100px 15px 20px;}
-    .shell .listen-batch .listen-pair:not(:has(.loop-time)){padding-top:20px;}
-    .shell .listen-batch .listen-pair .single-card-q .cell > .loop-time:first-child{top:20px;}
     .shell .listen-batch .listen-pair .cell{padding:0;}
   }
   html.touch input[type=text], html.touch input[type=search], html.touch input[type=email], html.touch input[type=password], html.touch textarea, html.touch select{font-size:16px;}
@@ -852,8 +849,12 @@ window.onYouTubeIframeAPIReady = function(){
   .media-container.warming{display:block;height:1px;min-height:0;margin:0 auto;padding:0;border:0;opacity:0;pointer-events:none;}
   #mediaLoading{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:#000;color:#e8edf3;font-size:14px;z-index:2;}
   .media-container.loading #mediaLoading{display:flex;}
-  #mediaSubtitleMask{display:none;position:absolute;inset:0;background:radial-gradient(circle, transparent 20%, black 20%);pointer-events:none;z-index:3;}
-  .media-container.listen-mask:not(.big) #mediaSubtitleMask{display:block;}
+  #mediaSubtitleMask{display:none;position:absolute;inset:0;z-index:3;align-items:center;justify-content:center;background:color-mix(in srgb, var(--accent) 13%, var(--surface));color:var(--accent);font-size:20px;font-weight:600;font-variant-numeric:tabular-nums;pointer-events:none;}
+  .media-container.listen-mask:not(.big) #mediaSubtitleMask{display:flex;}
+  .media-container.listen-mask:not(.big) .media-grow{cursor:pointer;}
+  @media (hover:hover){.media-container.listen-mask:not(.big) .media-video:has(.media-grow:hover) #mediaSubtitleMask{filter:brightness(1.1);}}
+  #viewStudy:has(.listen-pair .loop-time.looping) .media-container.listen-mask:not(.big) #mediaSubtitleMask{background:var(--accent);color:var(--on-accent);}
+  #viewStudy:has(.listen-pair .loop-time.looping) .media-container.listen-mask:not(.big) .media-video{animation:listen-pulse 1.2s ease-out infinite;}
   .media-bar-main{flex:1;min-width:0;}
   #mediaBarTitle{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:14px;font-weight:600;color:var(--text);}
   .media-bar-progress{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:10px;font-variant-numeric:tabular-nums;color:var(--text-2);}
@@ -910,25 +911,23 @@ window.onYouTubeIframeAPIReady = function(){
   }
   .single-card-body.listen-batch{padding:0;background:none;border:0;box-shadow:none;}
   .single-card-body.listen-batch:not(.edit-row){gap:0;}
-  .listen-pair{position:relative;display:flex;flex-direction:column;align-items:center;padding:115px 30px 30px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);transition:opacity .2s ease;}
-  .listen-pair:not(:has(.loop-time)){padding-top:30px;}
+  .listen-pair{display:flex;flex-direction:column;align-items:flex-start;padding:5px 10px;transition:opacity .2s ease;}
   .listen-batch .listen-pair.edit-row{display:block;padding:0 0 16px;}
   .listen-batch .listen-pair.edit-row:not(:first-child){padding-top:16px;}
-  .listen-batch .listen-pair .single-card-field{position:static;min-height:0;padding:0;background:none;border-radius:0;align-items:center;width:100%;min-width:0;}
-  .listen-batch .listen-pair .cell{padding:0;text-align:center;max-width:100%;}
-  .listen-text{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0;max-width:calc(100% + 20px);margin:-5px -10px;padding:5px 10px;border-radius:10px;}
+  .listen-batch .listen-pair .single-card-field{position:static;min-height:0;padding:0;background:none;border-radius:0;align-items:flex-start;width:100%;min-width:0;}
+  .listen-batch .listen-pair .cell{padding:0;text-align:left;max-width:100%;}
+  .listen-text{display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:0;max-width:calc(100% + 20px);margin:-5px -10px;padding:5px 10px;border-radius:10px;}
   .listen-text:not(:has(.cell.hidden)) .cell{cursor:pointer;}
   html.touch .listen-pair.row-selected .listen-text:not(:has(.cell.hidden)){background:var(--accent-soft);}
   @media (hover:hover){.listen-batch .listen-pair .cell.shown:hover{background:none;}.listen-text:not(:has(.cell.hidden)):hover:not(:has(.loop-time:hover)), .listen-batch .listen-text:has(.cell.hidden) .cell.shown:hover{background:var(--accent-soft);}}
-  .listen-batch .listen-pair .single-card-q .cell > .loop-time:first-child{position:absolute;left:50%;top:30px;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;width:var(--tw, 60px);height:60px;margin:0;padding:0;border-radius:30px;font-size:12px;font-weight:600;}
-  .listen-batch .listen-pair .loop-time.looping{animation:listen-pulse 1.2s ease-out infinite;}
+  .listen-batch .listen-pair .loop-time{display:none;}
   @keyframes listen-pulse{from{box-shadow:0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent);}to{box-shadow:0 0 0 10px color-mix(in srgb, var(--accent) 0%, transparent);}}
   .listen-batch .listen-pair .cell.hidden{font-size:0;line-height:0;}
   .listen-batch .listen-pair .cell.hidden::after{content:"";display:block;border-radius:10px;background:linear-gradient(90deg, var(--surface-3) 0%, var(--surface-2) 50%, var(--surface-3) 100%) 0 0 / 200% 100%;animation:listen-shimmer 1.6s linear infinite;}
-  .listen-batch .listen-pair .single-card-q .cell.hidden::after{width:max(60px, var(--qw, 60px));height:20px;margin:3px auto 2px;}
-  .listen-batch .listen-pair .single-card-a .cell.hidden::after{width:max(60px, var(--aw, 60px));height:20px;margin:3px auto 2px;}
+  .listen-batch .listen-pair .single-card-q .cell.hidden::after{width:max(60px, var(--qw, 60px));height:20px;margin:3px 0 2px;}
+  .listen-batch .listen-pair .single-card-a .cell.hidden::after{width:max(60px, var(--aw, 60px));height:20px;margin:3px 0 2px;}
   @keyframes listen-shimmer{to{background-position:-200% 0;}}
-  @media (prefers-reduced-motion: reduce){.listen-batch .listen-pair .loop-time.looping, .listen-batch .listen-pair .cell.hidden::after{animation:none;}}
+  @media (prefers-reduced-motion: reduce){#viewStudy .media-container .media-video, .listen-batch .listen-pair .cell.hidden::after{animation:none;}}
   .single-card-q{background:var(--q-bg);}
   .single-card-a{background:var(--a-bg);}
   .single-card-field .cell{font-size:20px;line-height:25px;font-weight:400;text-align:left;padding:2px 16px;border-radius:8px;}
@@ -2084,7 +2083,12 @@ function setMediaBig(big) {
 
 document.getElementById("mediaGrow").onclick = e => {
   e.stopPropagation();
-  setMediaBig(true);
+  const row = mediaBox().classList.contains("listen-mask") && isListenMode() ? listenBatch()[0] : null;
+  if (!row) return setMediaBig(true);
+  e.currentTarget.blur();
+  toggleRowPlay(row);
+  workFocusId = row.id;
+  noteWorkHush();
 };
 
 document.getElementById("mediaShrink").onclick = e => {
@@ -3544,6 +3548,7 @@ function renderSingleCard(visibleRows) {
   bodyEl.classList.toggle("listen-batch", isListenMode());
   bodyEl.innerHTML = groupViewStyle === "ielts" ? ieltsPaperHtml(row) : isListenMode() ? listenPairsHtml(batch) : singleCardFieldsHtml(row);
   if (isListenMode()) fitListenMasks(bodyEl);
+  document.getElementById("mediaSubtitleMask").textContent = isListenMode() && row && row.time != null ? formatTime(row.time) : "";
   if (groupViewStyle === "ielts") {
     visibleRows.slice(0, 2).forEach(preloadCardDict);
     showPaperExtras(bodyEl, row);
