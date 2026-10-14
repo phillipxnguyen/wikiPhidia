@@ -4743,7 +4743,7 @@ function hoverUnit(el) {
   return el ? el.closest(".cell.shown") : null;
 }
 
-const PINYIN_SEL = ".card-notes li, .card-notes > div, .vocab-word-notes li, .vocab-word-notes > div, .paper-notes li, .rich-editor li, .rich-editor > div, .rich-editor, .vocab-list-meaning > span, .vocab-list-meaning, .vocab-add-field b, .vocab-term, .vocab-ctx, .vocab-meaning, .heat-card span";
+const PINYIN_SEL = ".card-notes li, .card-notes > div, .vocab-word-notes li, .vocab-word-notes > div, .paper-notes li, .rich-editor li, .rich-editor > div, .rich-editor, .vocab-list-meaning > span, .vocab-list-meaning, .vocab-add-field b, .vocab-back :is(.vocab-ctx, .vocab-meaning), .heat-card span";
 
 function showElementPinyin(el) {
   const holder = el.closest("[data-id]");
@@ -4784,7 +4784,7 @@ function showCellPinyin(cellEl) {
   const id = Number(container.dataset.id);
   const field = cellEl.dataset.field;
   const row = rows.find(r => r.id === id);
-  if (!row) return;
+  if (!row || groupState && (row.qHidden || row.aHidden)) return;
   return showReading(cellEl, field === "q" ? row.q : row.a, row, cacheKey(id, field));
 }
 
@@ -6270,7 +6270,7 @@ function gradeCard(row, isAgain) {
   const ids = groupViewStyle === "table" ? groupState.groups[groupState.index] : null;
   if (ids && !ids.includes(row.id)) return;
   const next = ids ? ids.length === 1 : !isListenMode() || listenBatch().filter(r => r.id !== row.id).length <= 1;
-  const parts = next && groupViewStyle === "ielts" ? studyParts() : [ cardLineEl(row.id) ];
+  const parts = next ? studyParts() : [ cardLineEl(row.id) ];
   if (!dragGhost && !reducedMotion()) dragGhost = ghostFor(parts);
   stopPlaybackForRemovedRow(row.id);
   if (isCardMode()) stopTts();
@@ -6405,7 +6405,9 @@ function wholePx(n, up) {
 
 function ghostFor(parts) {
   const row = parts.length === 1 && parts[0] && (parts[0].tagName === "TR" || parts[0].classList.contains("listen-pair")) || parts.length > 0 && parts.every(el => el && el.parentElement && el.parentElement.classList.contains("vocab-list-row"));
-  const shown = parts.filter(el => el && el.offsetParent && el.getBoundingClientRect().height > 1).map(el => el.id === "cardTable" || el.id === "singleCardView" ? document.querySelector("#singleCardView:not([style*='none']) #singleCardBody.listen-batch") && el.id === "singleCardView" ? document.getElementById("singleCardBody") : contentShape(el) : el);
+  const visible = el => el && el.offsetParent && el.getBoundingClientRect().height > 1;
+  const listen = parts.some(el => el && el.id === "singleCardView") && !!document.querySelector("#singleCardBody.listen-batch");
+  const shown = parts.filter(visible).flatMap(el => el.id === "strokeRows" ? [ ...el.querySelectorAll(":scope > .stroke-line") ].filter(visible) : el.id === "singleCardView" && listen ? [ ...el.querySelectorAll(".voice-note, .listen-text") ].filter(visible) : el.id === "cardTable" || el.id === "singleCardView" ? [ contentShape(el) ] : [ el ]);
   const rects = shown.map(el => el.getBoundingClientRect());
   if (!rects.length) return null;
   const left = Math.round(Math.min(...rects.map(r => r.left)));
@@ -6420,7 +6422,7 @@ function ghostFor(parts) {
     width: Math.round(Math.max(...rects.map(r => r.right))) - left + "px",
     height: bottom - top + "px"
   });
-  if (!row || shape.classList.contains("listen-pair")) ghost.style.borderRadius = getComputedStyle(shape).borderTopLeftRadius;
+  if (!row) ghost.style.borderRadius = listen && shown.length > 1 ? getComputedStyle(document.documentElement).getPropertyValue("--radius").trim() : getComputedStyle(shape).borderTopLeftRadius;
   if (!row) ghost.style.paddingTop = Math.round((Math.max(top, 0) + Math.min(bottom, window.innerHeight)) / 2 - top - 25) + "px";
   document.body.appendChild(ghost);
   return ghost;
@@ -6491,12 +6493,10 @@ document.addEventListener("pointerdown", e => {
   if (!groupState || currentView !== "study" || activeEdit) return;
   if (!e.target.closest("#viewStudy") || e.target.closest("button, input, select, textarea, [contenteditable], .loop-time")) return;
   if (document.getElementById("sessionCompletePanel").style.display === "block") return;
-  const lines = groupViewStyle === "table" ? "#tbody tr" : isListenMode() ? "#singleCardBody .listen-pair" : null;
-  const row = lines ? e.target.closest(`${lines}[data-id]`) : null;
   drag = {
     id: e.pointerId,
-    row: row,
-    parts: row ? [ row ] : studyParts(),
+    row: null,
+    parts: studyParts(),
     x: e.clientX,
     y: e.clientY,
     dx: 0,
@@ -6594,6 +6594,7 @@ function showNextUnderSwipe(row) {
     return () => hidden.forEach(([el, v]) => el.style.visibility = v);
   }
   hide(document.getElementById("strokeRows"));
+  if (activeDictOverlay) hide(activeDictOverlay.iframe);
   const entry = entryHidden();
   const entryCopy = r => Object.assign({}, r, {
     qHidden: entry.q,
