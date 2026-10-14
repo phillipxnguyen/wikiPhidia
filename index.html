@@ -692,6 +692,7 @@ window.onYouTubeIframeAPIReady = function(){
   @media (max-width:600px){
     .shell #cardTable.chat tbody td{padding:20px;}
     .shell #cardTable.chat .cell{font-size:24px;line-height:30px;}
+    .shell #cardTable.chat .card-notes{padding:0;font-size:20px;line-height:25px;}
   }
 
   .rich-editor{
@@ -713,10 +714,9 @@ window.onYouTubeIframeAPIReady = function(){
   #editQ, #editA, #editNotes{border-left:4px solid var(--accent);}
   #editA{border-left-color:var(--a-label);}
   #editNotes{border-left-color:var(--border-strong);}
-  .edit-qa{display:flex;gap:10px;}
-  .edit-qa > div{flex:1;min-width:0;}
-  .edit-qa.stacked{flex-direction:column;gap:0;}
-  .edit-qa.stacked #editA{line-height:1.6;}
+  .edit-qa{display:flex;flex-direction:column;}
+  .edit-qa > div{min-width:0;}
+  .edit-qa #editA{line-height:1.6;}
   .edit-row .rich-editor{margin-bottom:10px;display:block;}
   .rich-editor:empty::before{content:attr(data-placeholder);color:darkgray;}
   :is(.rich-editor, .cell) mark.vocab-own{background:color-mix(in srgb, var(--text) 22%, transparent);color:inherit;}
@@ -901,6 +901,7 @@ window.onYouTubeIframeAPIReady = function(){
   .card-notes ul, .card-notes ol{margin:0;padding-left:20px;}
   .card-notes > *{margin:0;}
   #cardTable .card-notes{padding:0 8px 12px;}
+  #cardTable.chat .card-notes{margin-top:16px;padding:0;font-size:24px;line-height:30px;}
   .vocab-list-meaning:has(.card-notes){flex-direction:column;align-items:flex-start;justify-content:center;}
   .vocab-list-meaning .card-notes{margin-top:4px;}
   #cardTable.notebook .card-notes{padding:6px 4px 0;font-size:18px;line-height:22px;}
@@ -950,7 +951,7 @@ window.onYouTubeIframeAPIReady = function(){
   .paper-extras > *{margin-top:32px;}
   .paper-stroke .stroke-order-row{justify-content:flex-start;}
   .paper-dict{height:360px;border-radius:10px;background:var(--surface-2);}
-  .paper-dict[hidden], #viewStudy:has(#singleCardBody.edit-row) .listen-dict{display:none;}
+  .paper-dict[hidden], #viewStudy:has(#singleCardBody.edit-row, #tbody .edit-row) .listen-dict{display:none;}
   @media (max-width:600px){
     .ielts-paper{padding:24px 24px 28px;}
     .ielts-paper.with-notes .paper-body{grid-template-columns:minmax(0, 1fr);}
@@ -962,7 +963,7 @@ window.onYouTubeIframeAPIReady = function(){
   }
   #strokeRows{display:flex;flex-direction:column;gap:16px;margin-top:-10px;margin-bottom:16px;}
   #strokeRows:empty{display:none;}
-  #singleCardView:has(#singleCardBody.listen-batch) + #strokeRows{margin-top:0;}
+  #singleCardView:has(#singleCardBody.listen-batch) + #strokeRows, #viewStudy:has(#cardTable.chat) #strokeRows{margin-top:0;}
   .stroke-order-row{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;}
   .stroke-target:not(.stroke-fallback){cursor:pointer;}
   .stroke-target{width:60px;height:60px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2);}
@@ -3163,8 +3164,10 @@ function buildRowTr(r) {
   if (loopingRowId === r.id) tr.classList.add("row-playing");
   if (selectedRowId === r.id) tr.classList.add("row-selected");
   const q = `<div class="cell ${r.qHidden ? "hidden" : "shown"}" data-field="q">${qCellContent(r)}</div>`;
-  const notes = !groupState && !r.aHidden ? cardNotesHtml(r) : "";
-  const cells = document.getElementById("cardTable").classList.contains("no-answer-col") ? `<td class="q-col" colspan="2">${q}${notes}</td>` : `<td class="q-col">${q}</td><td class="a-col"><div class="cell ${r.aHidden ? "hidden" : "shown"}" data-field="a">${aCellContent(r)}</div>${notes}</td>`;
+  const notes = !r.aHidden && !r.qHidden ? cardNotesHtml(r) : "";
+  const qNotes = groupState && groupFront === "a" ? notes : "";
+  const aNotes = qNotes ? "" : notes;
+  const cells = document.getElementById("cardTable").classList.contains("no-answer-col") ? `<td class="q-col" colspan="2">${q}${notes}</td>` : `<td class="q-col">${q}${qNotes}</td><td class="a-col"><div class="cell ${r.aHidden ? "hidden" : "shown"}" data-field="a">${aCellContent(r)}</div>${aNotes}</td>`;
   tr.innerHTML = cells;
   dictPreloadObserver.observe(tr);
   return tr;
@@ -3309,8 +3312,8 @@ function renderStrokeRows() {
     }
     return el;
   });
-  const listenRow = inSingle && isListenMode() && !activeEdit ? current[0] : null;
-  const url = listenRow && !listenRow.qHidden && !listenRow.aHidden ? cardDictUrl(listenRow) : "";
+  const dictRow = !activeEdit && (inSingle && isListenMode() || inTable && groupViewStyle === "table") ? current[0] : null;
+  const url = dictRow && !dictRow.qHidden && !dictRow.aHidden ? cardDictUrl(dictRow) : "";
   let dict = url && host.querySelector(".listen-dict");
   if (url && (!dict || dict.dataset.url !== url)) {
     dict = document.createElement("div");
@@ -5461,7 +5464,7 @@ window.addEventListener("blur", () => {
 });
 
 function buildEditBoxInner(row) {
-  return `\n    <div class="edit-qa${groupState && groupViewStyle === "table" ? "" : " stacked"}">\n      <div>\n        <div id="editQ" class="rich-editor" contenteditable="true">${getEditInitialHtml(row.q, row.qHtml, row.id)}</div>\n      </div>\n      <div>\n        <div id="editA" class="rich-editor" contenteditable="true">${getEditInitialHtml(row.a, row.aHtml, row.id)}</div>\n      </div>\n    </div>\n    <div id="editNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes">${notesEditorHtml(row)}</div>\n    <div class="edit-actions">\n      <button id="editSave" class="primary">Save</button>\n    </div>\n    <div id="editDict"></div>\n  `;
+  return `\n    <div class="edit-qa">\n      <div>\n        <div id="editQ" class="rich-editor" contenteditable="true">${getEditInitialHtml(row.q, row.qHtml, row.id)}</div>\n      </div>\n      <div>\n        <div id="editA" class="rich-editor" contenteditable="true">${getEditInitialHtml(row.a, row.aHtml, row.id)}</div>\n      </div>\n    </div>\n    <div id="editNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes">${notesEditorHtml(row)}</div>\n    <div class="edit-actions">\n      <button id="editSave" class="primary">Save</button>\n    </div>\n    <div id="editDict"></div>\n  `;
 }
 
 let draftRowId = null;
