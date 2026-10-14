@@ -677,12 +677,19 @@ window.onYouTubeIframeAPIReady = function(){
   #cardTable.chat{display:block;padding:0;margin-bottom:16px;overflow:visible;background:none;border:0;box-shadow:none;}
   #cardTable.chat :is(colgroup, thead){display:none;}
   #cardTable.chat tbody{display:flex;flex-direction:column;gap:16px;}
-  #cardTable.chat tbody tr, #cardTable.chat tbody tr.row-playing, html.touch #cardTable.chat tbody tr.row-selected{display:flex;flex-direction:column;overflow:hidden;background:var(--surface) !important;border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);transition:opacity .2s ease;}
+  #cardTable.chat tbody tr, #cardTable.chat tbody tr.row-playing, html.touch #cardTable.chat tbody tr.row-selected{display:grid;grid-template-columns:1fr 1fr;overflow:hidden;background:var(--surface) !important;border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);transition:opacity .2s ease;}
   html.touch #cardTable.chat tbody tr.row-selected > td:first-child{box-shadow:none;}
-  #cardTable.chat tbody td{display:block;border:0;padding:25px 30px;overflow:visible;}
-  #cardTable.chat tbody td + td{border-top:1px solid var(--border);background:color-mix(in srgb, var(--accent) 5%, var(--surface));}
-  #cardTable.chat.front-a tbody td.a-col{order:-1;border-top:0;background:none;}
-  #cardTable.chat.front-a tbody td.q-col{border-top:1px solid var(--border);background:color-mix(in srgb, var(--accent) 5%, var(--surface));}
+  #cardTable.chat tbody td{display:block;min-width:0;border:0;padding:25px 30px;overflow:visible;}
+  #cardTable.chat tbody td.tl-head{grid-column:1 / -1;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:15px;padding:10px 30px;border-bottom:1px solid var(--border);}
+  #cardTable.chat .tl-lang{font-size:15px;font-weight:600;color:var(--accent);}
+  #cardTable.chat .tl-lang + .tl-swap + .tl-lang{padding-left:15px;}
+  #cardTable.chat .tl-swap{display:flex;align-items:center;justify-content:center;width:40px;height:40px;min-height:0;padding:0;border:0;border-radius:20px;background:var(--accent-soft);color:var(--accent);font-size:20px;}
+  #cardTable.chat tbody td.q-col{grid-row:2;grid-column:1;}
+  #cardTable.chat tbody td.a-col{grid-row:2;grid-column:2;border-left:1px solid var(--border);background:color-mix(in srgb, var(--accent) 5%, var(--surface));}
+  #cardTable.chat.front-a tbody td.a-col{grid-column:1;border-left:0;background:none;}
+  #cardTable.chat.front-a tbody td.q-col{grid-column:2;border-left:1px solid var(--border);background:color-mix(in srgb, var(--accent) 5%, var(--surface));}
+  #cardTable.chat .cell.hidden .dots{width:2px;height:35px;background:var(--accent);opacity:1;vertical-align:top;animation:caret-blink 1.1s steps(1) infinite;}
+  @keyframes caret-blink{50%{opacity:0;}}
   #cardTable.chat tbody tr.edit-row{display:block;}
   #cardTable.chat tbody tr.edit-row td{display:block;padding:20px;background:none;}
   #cardTable.chat .cell{display:block;width:fit-content;max-width:calc(100% + 16px);margin:-4px -8px;padding:4px 8px;font-size:28px;line-height:35px;font-weight:400;font-style:normal;border-radius:8px;color:var(--text);}
@@ -690,7 +697,14 @@ window.onYouTubeIframeAPIReady = function(){
   #cardTable.vocab-swap tbody tr{transform-origin:50% 100%;animation:vocabSquash .35s ease-out;}
   #cardTable.chat .dots{display:inline-block;width:40px;height:10px;font-size:0;vertical-align:middle;--dot:radial-gradient(circle closest-side, currentColor 90%, transparent);background:var(--dot) 0 0 / 10px 10px no-repeat, var(--dot) 15px 0 / 10px 10px no-repeat, var(--dot) 30px 0 / 10px 10px no-repeat;opacity:.5;}
   @media (max-width:600px){
+    .shell #cardTable.chat tbody tr{grid-template-columns:1fr;}
     .shell #cardTable.chat tbody td{padding:20px;}
+    .shell #cardTable.chat tbody td.tl-head{padding:10px 20px;}
+    .shell #cardTable.chat tbody td:is(.q-col, .a-col){grid-column:1;border-left:0;}
+    .shell #cardTable.chat tbody td.a-col{grid-row:3;border-top:1px solid var(--border);}
+    .shell #cardTable.chat.front-a tbody td.a-col{grid-row:2;border-top:0;}
+    .shell #cardTable.chat.front-a tbody td.q-col{grid-row:3;border-top:1px solid var(--border);}
+    .shell #cardTable.chat .cell.hidden .dots{height:30px;}
     .shell #cardTable.chat .cell{font-size:24px;line-height:30px;}
     .shell #cardTable.chat .card-notes{padding:0;font-size:20px;line-height:25px;}
   }
@@ -927,7 +941,7 @@ window.onYouTubeIframeAPIReady = function(){
   @keyframes listen-shimmer{to{background-position:-200% 0;}}
   @keyframes listen-quiver{0%, 100%{opacity:.7;transform:scale(1);}50%{opacity:1;transform:scale(1.02);}}
   @keyframes frame-pulse{from{box-shadow:0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent);}to{box-shadow:0 0 0 5px color-mix(in srgb, var(--accent) 0%, transparent);}}
-  @media (prefers-reduced-motion: reduce){.voice-note, .vn-wave i, .listen-batch .listen-pair .cell.hidden::after{animation:none !important;}}
+  @media (prefers-reduced-motion: reduce){.voice-note, .vn-wave i, #cardTable.chat .cell.hidden .dots, .listen-batch .listen-pair .cell.hidden::after{animation:none !important;}}
   .single-card-q{background:var(--q-bg);}
   .single-card-a{background:var(--a-bg);}
   .single-card-field .cell{font-size:20px;line-height:25px;font-weight:400;text-align:left;padding:2px 16px;border-radius:8px;}
@@ -3183,6 +3197,26 @@ function aCellContent(r) {
   return r.aHidden ? '<span class="dots">···</span>' : lookupHtml(r.aHtml || textHtml(r.a), r);
 }
 
+const TL_LANGS = {
+  zh: [ "🇨🇳", "中文" ],
+  ja: [ "🇯🇵", "日本語" ],
+  ko: [ "🇰🇷", "한국어" ],
+  vi: [ "🇻🇳", "Tiếng Việt" ],
+  en: [ "🇬🇧", "English" ]
+};
+
+function tlLangHtml(text, preferred) {
+  const code = (preferred && preferred !== "auto" ? preferred : detectLang(text || "")).slice(0, 2);
+  const [flag, name] = TL_LANGS[code] || TL_LANGS.en;
+  return `<span class="tl-lang">${flag} ${name}</span>`;
+}
+
+function translateHeadHtml(r) {
+  const q = tlLangHtml(r.q, studyLang);
+  const a = tlLangHtml(r.a);
+  return `<td class="tl-head">${groupFront === "a" ? a : q}<button class="tl-swap" aria-label="Switch which side shows first">⇄</button>${groupFront === "a" ? q : a}</td>`;
+}
+
 function buildRowTr(r) {
   const tr = document.createElement("tr");
   tr.dataset.id = r.id;
@@ -3193,7 +3227,7 @@ function buildRowTr(r) {
   const qNotes = groupState && groupFront === "a" ? notes : "";
   const aNotes = qNotes ? "" : notes;
   const cells = document.getElementById("cardTable").classList.contains("no-answer-col") ? `<td class="q-col" colspan="2">${q}${notes}</td>` : `<td class="q-col">${q}${qNotes}</td><td class="a-col"><div class="cell ${r.aHidden ? "hidden" : "shown"}" data-field="a">${aCellContent(r)}</div>${aNotes}</td>`;
-  tr.innerHTML = cells;
+  tr.innerHTML = (groupState && groupViewStyle === "table" ? translateHeadHtml(r) : "") + cells;
   dictPreloadObserver.observe(tr);
   return tr;
 }
@@ -4806,6 +4840,11 @@ function handleCardAreaClick(e) {
   if (!row) return;
   const isSingleCard = !!container.closest("#singleCardBody");
   const cardBody = isSingleCard ? document.getElementById("singleCardBody") : container;
+  if (e.target.closest(".tl-swap")) {
+    e.stopPropagation();
+    document.getElementById("groupFrontBtn").click();
+    return;
+  }
   if (e.target.closest(".loop-time, .voice-note")) {
     e.stopPropagation();
     toggleRowPlay(row);
