@@ -5993,8 +5993,12 @@ function toggleGroupFront() {
   try {
     localStorage.setItem(GROUP_FRONT_KEY, JSON.stringify(groupFront));
   } catch (err) {}
+  if (isSequencePlaying) stopSequenceLoop();
+  stopAllSound();
+  workHushId = null;
   if (groupState && groupViewStyle === "table") applyGroupEntryHiddenState(groupState.groups[groupState.index]);
   render();
+  updateSequenceBtnUI();
   replayAnimation(document.getElementById("cardTable"), "vocab-swap");
 }
 
@@ -6407,7 +6411,7 @@ function ghostFor(parts) {
   const row = parts.length === 1 && parts[0] && (parts[0].tagName === "TR" || parts[0].classList.contains("listen-pair")) || parts.length > 0 && parts.every(el => el && el.parentElement && el.parentElement.classList.contains("vocab-list-row"));
   const visible = el => el && el.offsetParent && el.getBoundingClientRect().height > 1;
   const listen = parts.some(el => el && el.id === "singleCardView") && !!document.querySelector("#singleCardBody.listen-batch");
-  const shown = parts.filter(visible).flatMap(el => el.id === "strokeRows" ? [ ...el.querySelectorAll(":scope > .stroke-line") ].filter(visible) : el.id === "singleCardView" && listen ? [ ...el.querySelectorAll(".voice-note, .listen-text") ].filter(visible) : el.id === "cardTable" || el.id === "singleCardView" ? [ contentShape(el) ] : [ el ]);
+  const shown = parts.filter(visible).flatMap(el => el.id === "strokeRows" ? [ ...el.children ].filter(visible) : el.id === "singleCardView" && listen ? [ ...el.querySelectorAll(".voice-note, .listen-text") ].filter(visible) : el.id === "cardTable" || el.id === "singleCardView" ? [ contentShape(el) ] : [ el ]);
   const rects = shown.map(el => el.getBoundingClientRect());
   if (!rects.length) return null;
   const left = Math.round(Math.min(...rects.map(r => r.left)));
