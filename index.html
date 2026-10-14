@@ -11305,10 +11305,6 @@ let vocabVideoId = null;
 
 let vocabHoveredKey = null;
 
-let vocabSeq = null;
-
-let vocabPendingThen = null;
-
 let vocabShownIsVideo = false;
 
 let vocabStudying = false;
@@ -12399,7 +12395,7 @@ function updateVocabEntry(item, termRaw, meaningRaw) {
 }
 
 function vocabSoundOn() {
-  return vocabTtsOn || vocabPendingKey !== null || vocabSeq !== null || loopingRowId !== null && loopingRowId === vocabShownRowId;
+  return vocabTtsOn || vocabPendingKey !== null || loopingRowId !== null && loopingRowId === vocabShownRowId;
 }
 
 function deleteVocabEntry(item, part) {
@@ -12462,8 +12458,6 @@ function stopVocabSound() {
   vocabTtsOn = false;
   vocabTtsToken++;
   vocabPendingKey = null;
-  vocabPendingThen = null;
-  vocabSeq = null;
   vocabAwaitCue = false;
   if (wasTts || loopingRowId !== null) haltAllPlayback();
   syncVocabSound();
@@ -12490,39 +12484,13 @@ function vocabCueDone() {
 function startPendingVocabVideo() {
   if (vocabPendingKey === null || vocabAwaitCue || !ytPlayer || !ytReady || !ytHasVideo) return;
   const item = lessonVocabItems(vocabSource()).find(i => i.key === vocabPendingKey);
-  const then = vocabPendingThen;
   vocabPendingKey = null;
-  vocabPendingThen = null;
-  if (item && !ytHasError) {
-    if (then) playVocabClipOnce(item.card, then); else startLoop(item.card);
-  }
+  if (item && !ytHasError) startLoop(item.card);
   syncVocabSound();
 }
 
-function playVocabClipOnce(row, then) {
-  if (row.time == null || !ytPlayer || typeof ytPlayer.seekTo !== "function") return;
-  const end = segmentEnd(row, 8);
-  if (loopInterval) clearInterval(loopInterval);
-  loopingRowId = row.id;
-  segmentArmed = false;
-  videoActionSeq++;
-  ytPlayer.seekTo(row.time, true);
-  ytPlayer.playVideo();
-  if (typeof ytPlayer.setPlaybackRate === "function") ytPlayer.setPlaybackRate(sequenceSpeed);
-  loopInterval = setInterval(() => {
-    if (loopingRowId !== row.id || !ytPlayer || typeof ytPlayer.getCurrentTime !== "function") return;
-    if (!segmentReached(row.time, end)) return;
-    clearInterval(loopInterval);
-    loopInterval = null;
-    pauseVideoProgrammatically();
-    setTimeout(then, 300);
-  }, 250);
-}
-
-function playVocabSound(item, then) {
-  const seq = vocabSeq;
+function playVocabSound(item) {
   stopVocabSound();
-  if (then) vocabSeq = seq;
   if (!item) return;
   const row = item.card;
   const videoId = vocabVideoIdFor(row);
@@ -12543,7 +12511,6 @@ function playVocabSound(item, then) {
       return;
     }
     vocabPendingKey = item.key;
-    vocabPendingThen = then || null;
     startPendingVocabVideo();
     syncVocabSound();
     return;
@@ -12560,7 +12527,7 @@ function playVocabSound(item, then) {
     const voice = pickVoice(utter.lang);
     if (voice) utter.voice = voice;
     utter.onend = () => setTimeout(() => {
-      if (token === vocabTtsToken) (then || speak)();
+      if (token === vocabTtsToken) speak();
     }, 700);
     utter.onerror = e => {
       if (e.error === "interrupted" || e.error === "canceled" || token !== vocabTtsToken) return;
