@@ -1492,6 +1492,16 @@ let listenAutoPlayOnce = false;
 
 let isSequencePlaying = false;
 
+let passThen = null;
+
+function endPass() {
+  if (!passThen) return false;
+  const then = passThen;
+  passThen = null;
+  then();
+  return true;
+}
+
 let soundStartedAt = 0;
 
 let sequenceIndex = 0;
@@ -1533,6 +1543,7 @@ function stopAllSound() {
 }
 
 function haltAllPlayback() {
+  passThen = null;
   stopTts();
   if (loopInterval) {
     clearInterval(loopInterval);
@@ -1544,6 +1555,7 @@ function haltAllPlayback() {
 }
 
 function haltPlaybackTrackingForExternalPause() {
+  passThen = null;
   isSequencePlaying = false;
   sequenceIndex = 0;
   loopingRowId = null;
@@ -2213,6 +2225,8 @@ function onPlayerStateChange(event) {
       expectingProgrammaticPause = false;
     } else if (!segmentArmed && (isSequencePlaying || loopingRowId !== null)) {
       return;
+    } else if (event.data === YT.PlayerState.ENDED && (isSequencePlaying || loopingRowId !== null) && endPass()) {
+      return;
     } else if (event.data === YT.PlayerState.ENDED && isSequencePlaying) {
       if (isCardMode() && listenAutoPlayOnce) {
         stopSequenceLoop();
@@ -2319,6 +2333,7 @@ function startLoop(row) {
   }
   const wasSequencePlaying = loopingRowData ? loopingRowData.wasSequencePlaying : isSequencePlaying;
   cancelSpeechOnly();
+  passThen = null;
   isSequencePlaying = false;
   seqToken++;
   updateSequenceBtnUI();
@@ -2349,6 +2364,7 @@ function startLoop(row) {
     if (!ytPlayer || !ytReady || typeof ytPlayer.getCurrentTime !== "function") return;
     if (loopingRowId !== row.id) return;
     if (segmentReached(row.time, end)) {
+      if (endPass()) return;
       segmentArmed = false;
       ytPlayer.seekTo(row.time, true);
       ytPlayer.playVideo();
@@ -2384,6 +2400,7 @@ function syncRowBadges() {
 
 function stopLoop() {
   const wasSequencePlaying = loopingRowData ? loopingRowData.wasSequencePlaying : false;
+  passThen = null;
   loopingRowId = null;
   loopingRowData = null;
   if (loopInterval) {
@@ -2402,6 +2419,7 @@ function stopLoop() {
 function stopPlaybackForRemovedRow(id) {
   if (ttsOnlyId === id) stopTts();
   if (loopingRowId !== id) return;
+  passThen = null;
   const shouldContinueSequence = !isCardMode() && (isSequencePlaying || (loopingRowData ? loopingRowData.wasSequencePlaying : false));
   if (loopInterval) {
     clearInterval(loopInterval);
@@ -2961,6 +2979,7 @@ function startSequenceLoop(auto) {
   loopingRowId = null;
   loopingRowData = null;
   listenAutoPlayOnce = !!auto;
+  passThen = null;
   isSequencePlaying = true;
   sequenceIndex = 0;
   updateSequenceBtnUI();
@@ -2968,6 +2987,7 @@ function startSequenceLoop(auto) {
 }
 
 function stopSequenceLoop() {
+  passThen = null;
   isSequencePlaying = false;
   seqToken++;
   sequenceIndex = 0;
@@ -3071,6 +3091,7 @@ function playNextSequenceStep() {
         clearInterval(loopInterval);
         loopInterval = null;
         pauseVideoProgrammatically();
+        if (endPass()) return;
         if (oneCard) {
           if (listenAutoPlayOnce) {
             stopSequenceLoop();
@@ -3100,7 +3121,7 @@ function playNextSequenceStep() {
     const voice = pickVoice(utter.lang);
     if (voice) utter.voice = voice;
     utter.onend = utter.onerror = () => {
-      if (token !== seqToken || !isSequencePlaying || ytHasError) return;
+      if (token !== seqToken || !isSequencePlaying || ytHasError || endPass()) return;
       sequenceIndex++;
       playNextSequenceStep();
     };
@@ -6817,7 +6838,9 @@ function speakNext() {
   utter.rate = ttsSpeed;
   const voice = pickVoice(utter.lang);
   if (voice) utter.voice = voice;
-  utter.onend = () => speakNext();
+  utter.onend = () => {
+    if (!endPass()) speakNext();
+  };
   utter.onerror = e => {
     if (e.error === "interrupted" || e.error === "canceled") return;
     stopTts();
@@ -6832,6 +6855,7 @@ function stopTts() {
 }
 
 function cancelSpeechOnly() {
+  passThen = null;
   ttsPlaying = false;
   ttsOnlyId = null;
   ttsQueue = [];
@@ -12597,7 +12621,7 @@ function flipVocab() {
     card.querySelector(".vocab-back").scrollTop = 0;
     if (vocabSession.flipped) card.strokeTimer = setTimeout(() => card.querySelectorAll(".vocab-back-stroke .stroke-target").forEach(t => t.dispatchEvent(new Event("click"))), VOCAB_FLIP_MS * .5);
   }
-  if (!vocabSession.flipped) stopVocabSound(); else playVocabSound(item);
+  if (!vocabSoundOn()) playVocabSound(item);
 }
 
 function flyVocab(isAgain) {
@@ -13300,30 +13324,49 @@ function revealAction() {
       r.qHidden = false;
       r.aHidden = false;
     });
-    if (isSequencePlaying) stopSequenceLoop(); else render();
     workHushId = null;
+    if (soundOnRows(shown)) {
+      render();
+      if (!rowSoundOn(shown[0].id)) passThen = () => {
+        stopLessonSound();
+        workHushId = null;
+        loopWorkRow(shown[0]);
+      };
+      return;
+    }
+    if (isSequencePlaying) stopSequenceLoop(); else render();
     loopWorkRow(shown[0]);
+    return;
+  }
+  const ids = groupState.groups[groupState.index];
+  const groupRows = rows.filter(r => ids.includes(r.id));
+  groupRows.forEach(r => {
+    r.qHidden = false;
+    r.aHidden = false;
+  });
+  if (soundOnRows(groupRows)) {
+    if (!(isSequencePlaying || ttsPlaying && ttsField === "q" && ttsOnlyId === null)) passThen = () => {
+      stopLessonSound();
+      playRevealedGroup();
+    };
+    render();
     return;
   }
   loopingRowData = null;
   stopLoop();
-  const ids = groupState.groups[groupState.index];
-  const videoAvailable = !!ytPlayer && ytReady && ytHasVideo && !ytHasError;
-  rows.forEach(r => {
-    if (ids.includes(r.id)) {
-      r.qHidden = false;
-      r.aHidden = false;
-    }
-  });
-  if (videoAvailable) {
+  playRevealedGroup();
+  render();
+}
+
+function soundOnRows(list) {
+  return isSequencePlaying && list.some(r => r.id === loopingRowId) || ttsPlaying && (ttsOnlyId === null || list.some(r => r.id === ttsOnlyId)) || loopingRowId !== null && list.some(r => r.id === loopingRowId);
+}
+
+function playRevealedGroup() {
+  if (ytPlayer && ytReady && ytHasVideo && !ytHasError) {
     stopTts();
     if (!isSequencePlaying) toggleSequenceLoop();
-  } else if (ttsPlaying && ttsField === "q") {
-    stopTts();
-  } else {
-    startTts("q");
-  }
-  render();
+  } else startTts("q");
 }
 
 initApp();
