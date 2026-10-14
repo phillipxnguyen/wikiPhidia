@@ -961,7 +961,7 @@ window.onYouTubeIframeAPIReady = function(){
   .paper-extras > *{margin-top:32px;}
   .paper-stroke .stroke-order-row{justify-content:flex-start;}
   .paper-dict{height:360px;border-radius:10px;background:var(--surface-2);}
-  .paper-dict[hidden], #viewStudy:has(#singleCardBody.edit-row, #tbody .edit-row) .listen-dict{display:none;}
+  .paper-dict[hidden]{display:none;}
   @media (max-width:600px){
     .ielts-paper{padding:24px 24px 28px;}
     .ielts-paper.with-notes .paper-body{grid-template-columns:minmax(0, 1fr);}
@@ -3325,7 +3325,7 @@ function renderStrokeRows() {
     }
     return el;
   });
-  const dictRow = !activeEdit && (inSingle && isListenMode() || inTable && groupViewStyle === "table") ? current[0] : null;
+  const dictRow = inSingle && isListenMode() || inTable && groupViewStyle === "table" ? current[0] : null;
   const url = dictRow && !dictRow.qHidden && !dictRow.aHidden ? cardDictUrl(dictRow) : "";
   let dict = url && host.querySelector(".listen-dict");
   if (url && (!dict || dict.dataset.url !== url)) {
@@ -5723,6 +5723,7 @@ function wireEditBox(host, row) {
   };
   let dictDebounce = null;
   function refreshDict() {
+    if (groupState && (isListenMode() || groupViewStyle === "table")) return;
     const url = dictUrlFor(plainTextOf(editSrc.innerHTML, "\n"), row);
     if (!url) {
       editDict.classList.remove("has-dict");
@@ -6439,11 +6440,50 @@ function gradeMark(isAgain) {
   return currentView === "vocab" ? isAgain ? "✕" : "✓" : isAgain ? "Again" : "Good";
 }
 
+function swipeDict(parts, ghost) {
+  const ov = activeDictOverlay;
+  if (!ov || !ghost || !ov.placeholder.classList.contains("listen-dict") || !parts.some(el => el && el.id === "strokeRows")) return null;
+  const g = ghost.getBoundingClientRect(), f = ov.iframe.getBoundingClientRect();
+  ov.iframe.style.transformOrigin = `${Math.round(g.left + g.width / 2 - f.left)}px ${Math.round(g.top + g.height / 2 - f.top)}px`;
+  return ov.iframe;
+}
+
+function flyDict(frame, from, to) {
+  if (!frame) return;
+  if (activeDictOverlay && activeDictOverlay.iframe === frame) {
+    cancelAnimationFrame(activeDictOverlay.rafId);
+    activeDictOverlay = null;
+  }
+  frame.animate([ {
+    transform: from
+  }, {
+    transform: to
+  } ], {
+    duration: 750,
+    easing: "ease-in-out",
+    fill: "forwards"
+  });
+  setTimeout(() => {
+    frame.getAnimations().forEach(a => a.cancel());
+    if (activeDictOverlay && activeDictOverlay.iframe === frame) return;
+    Object.assign(frame.style, {
+      position: "fixed",
+      top: "0",
+      left: "0",
+      opacity: "0",
+      pointerEvents: "none",
+      transform: "",
+      transformOrigin: ""
+    });
+  }, 750);
+}
+
 function swipe(parts, dir, update, next, label = dir > 0 ? "Good" : "Again") {
   const motion = !matchMedia("(prefers-reduced-motion: reduce)").matches;
   const ghost = dragGhost || (motion ? ghostFor(parts) : null);
   const from = dragGhost && dragGhost.style.transform || "none";
   dragGhost = null;
+  flyDict(swipeDict(parts, ghost), from, `translate(${dir * 110}vw, ${label === "Delete" || label === "Vocab" ? -25 : 25}vh) rotate(${dir * 24}deg)`);
   if (ghost) {
     ghost.classList.remove("good", "again");
     ghost.classList.add(label === "Delete" ? "delete" : label === "Vocab" ? "to-vocab" : dir > 0 ? "good" : "again");
@@ -6544,6 +6584,7 @@ window.addEventListener("pointermove", e => {
     getSelection().removeAllRanges();
     hideTooltip();
     drag.restore = drag.vocab ? hideUnderSwipe(drag.parts) : showNextUnderSwipe(drag.row);
+    drag.dict = drag.vocab ? null : swipeDict(drag.parts, drag.ghost);
   }
   drag.dx = dx;
   const again = dx < 0;
@@ -6551,6 +6592,7 @@ window.addEventListener("pointermove", e => {
   drag.ghost.classList.toggle("good", !again);
   drag.ghost.textContent = gradeMark(again);
   drag.ghost.style.transform = `translate(${dx}px, ${dy / 4}px) rotate(${dx / 20}deg)`;
+  if (drag.dict) drag.dict.style.transform = drag.ghost.style.transform;
 });
 
 function vocabDragStart(e) {
@@ -6599,7 +6641,6 @@ function showNextUnderSwipe(row) {
     return () => hidden.forEach(([el, v]) => el.style.visibility = v);
   }
   hide(document.getElementById("strokeRows"));
-  if (activeDictOverlay) hide(activeDictOverlay.iframe);
   const entry = entryHidden();
   const entryCopy = r => Object.assign({}, r, {
     qHidden: entry.q,
@@ -6645,6 +6686,18 @@ function endDrag(e) {
     }
     if (!dragGhost) return;
     dragGhost = null;
+  }
+  if (d.dict) {
+    d.dict.animate([ {
+      transform: d.dict.style.transform
+    }, {
+      transform: "none"
+    } ], {
+      duration: 200,
+      easing: "ease-out"
+    });
+    d.dict.style.transform = "";
+    d.dict.style.transformOrigin = "";
   }
   if (d.vocab) renderVocab(); else render();
   d.ghost.animate([ {
