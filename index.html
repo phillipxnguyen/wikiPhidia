@@ -489,7 +489,6 @@ window.onYouTubeIframeAPIReady = function(){
     .shell .listen-batch .listen-pair .single-card-field .cell.hidden::after{margin:1px 0;}
     .shell .vocab-back .vocab-word-notes{font-size:20px;line-height:25px;}
     .shell .single-card-body.listen-batch{padding:0;}
-    .shell .listen-batch .listen-pair .cell{padding:0;}
   }
   html.touch input[type=text], html.touch input[type=search], html.touch input[type=email], html.touch input[type=password], html.touch textarea, html.touch select{font-size:16px;}
   html.touch .segmented button{min-width:46px;padding:8px 12px;}
@@ -912,14 +911,12 @@ window.onYouTubeIframeAPIReady = function(){
   .single-card-body.listen-batch{padding:0;background:none;border:0;box-shadow:none;}
   .single-card-body.listen-batch:not(.edit-row){gap:0;}
   .listen-pair{display:flex;flex-direction:column;align-items:center;padding:5px 10px;transition:opacity .2s ease;}
-  .listen-batch .listen-pair.edit-row{display:block;padding:0 0 16px;}
-  .listen-batch .listen-pair.edit-row:not(:first-child){padding-top:16px;}
   .listen-batch .listen-pair .single-card-field{position:static;min-height:0;padding:0;background:none;border-radius:0;align-items:flex-start;width:100%;min-width:0;}
   .listen-batch .listen-pair .cell{padding:0;text-align:left;max-width:100%;}
   .listen-text{display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:0;max-width:calc(100% + 20px);margin:-5px -10px;padding:5px 10px;border-radius:10px;}
   .listen-text:not(:has(.cell.hidden)) .cell{cursor:pointer;}
   html.touch .listen-pair.row-selected .listen-text:not(:has(.cell.hidden)){background:var(--accent-soft);}
-  @media (hover:hover){.listen-batch .listen-pair .cell.shown:hover{background:none;}.listen-text:not(:has(.cell.hidden)):hover:not(:has(.loop-time:hover)), .listen-batch .listen-text:has(.cell.hidden) .cell.shown:hover{background:var(--accent-soft);}}
+  @media (hover:hover){.listen-batch .listen-pair .cell.shown:hover{background:none;}.listen-text:not(:has(.cell.hidden)):hover, .listen-batch .listen-text:has(.cell.hidden) .cell.shown:hover{background:var(--accent-soft);}}
   .listen-batch .listen-pair .loop-time{display:none;}
   @keyframes listen-pulse{from{box-shadow:0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent);}to{box-shadow:0 0 0 10px color-mix(in srgb, var(--accent) 0%, transparent);}}
   .listen-batch .listen-pair .cell.hidden{font-size:0;line-height:0;}
@@ -4704,7 +4701,7 @@ function handleCardAreaMouseover(e) {
 }
 
 function hoverUnit(el) {
-  if (!el || el.closest(".listen-pair .loop-time")) return null;
+  if (!el) return null;
   const block = el.closest(".listen-text");
   return block && !block.querySelector(".cell.hidden") ? block : el.closest(".cell.shown");
 }
@@ -5631,14 +5628,12 @@ function openSingleCardEdit(row) {
   }
   const body = document.getElementById("singleCardBody");
   if (!body) return;
-  const pair = isListenMode() && listenBatch().length > 1 && body.querySelector(`.listen-pair[data-id="${row.id}"]`);
-  const host = pair || body;
-  const top = host.getBoundingClientRect().top;
-  host.classList.add("edit-row");
-  host.dataset.id = row.id;
-  host.innerHTML = buildEditBoxInner(row);
-  wireEditBox(host, row);
-  showEditBox(host, top);
+  const top = body.getBoundingClientRect().top;
+  body.classList.add("edit-row");
+  body.dataset.id = row.id;
+  body.innerHTML = buildEditBoxInner(row);
+  wireEditBox(body, row);
+  showEditBox(body, top);
 }
 
 function wireEditBox(host, row) {
