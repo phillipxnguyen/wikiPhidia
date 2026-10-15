@@ -490,6 +490,7 @@ window.onYouTubeIframeAPIReady = function(){
   html.touch .segmented button{min-width:46px;padding:8px 12px;}
   html.touch .main{padding-bottom:calc(84px + env(safe-area-inset-bottom));}
   html.touch .toast-container{bottom:calc(84px + env(safe-area-inset-bottom));}
+  html.touch.sel-on .toast-container{bottom:calc(var(--sel-h, 116px) + 6px);}
   html.touch tbody tr.row-selected{background:var(--row-playing);}
   html.touch tbody tr.row-selected > td:first-child{box-shadow:inset 4px 0 0 var(--accent);}
   html.touch tbody tr.row-selected .cell.shown[data-field="q"]{color:var(--accent);}
@@ -1235,7 +1236,7 @@ window.onYouTubeIframeAPIReady = function(){
   <button id="tbAgain" class="tb-again">Again</button>
   <button id="tbGood" class="tb-good">Good</button>
 </div>
-<div id="selBar" class="sel-bar" hidden><div class="segmented" role="group" aria-label="Selected"><button id="selCopy" aria-label="Copy"><svg class="copy-icon" viewBox="0 0 20 20" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2"/><path d="M13 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/></svg></button><button id="selEdit" class="sep-before" aria-label="Edit">&#9998;</button><button id="selDelete" class="sep-before" aria-label="Delete">&#10005;</button><button id="selVocab" class="sep-before sp-vocab" aria-label="Move to Vocabulary">字</button></div></div>
+<div id="selBar" class="sel-bar" hidden><div class="segmented" role="group" aria-label="Selected"><button id="selCopy" aria-label="Copy"><svg class="copy-icon" viewBox="0 0 20 20" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2"/><path d="M13 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/></svg></button><button id="selDelete" class="sep-before" aria-label="Delete">&#10005;</button><button id="selVocab" class="sep-before sp-vocab" aria-label="Move to Vocabulary">字</button></div></div>
 
 <main class="main">
 <div class="main-inner">
@@ -4996,22 +4997,15 @@ function updateSelBar() {
   document.documentElement.classList.toggle("sel-on", !!target);
   if (!target) return;
   bar.style.setProperty("--tb-h", touchBar.offsetHeight + "px");
-  document.getElementById("selEdit").hidden = !(currentView === "vocab" && vocabView === "card");
   document.getElementById("selDelete").hidden = !!target.row && isVirtualLesson();
   document.getElementById("selVocab").hidden = !target.row || target.rows.length !== 1 || isVirtualLesson() || isVideoLesson();
+  document.documentElement.style.setProperty("--sel-h", Math.round(window.innerHeight - bar.querySelector(".segmented").getBoundingClientRect().top) + "px");
 }
 
 document.getElementById("selCopy").onclick = e => {
   e.currentTarget.blur();
   if (!selectionTarget()) return;
   if (currentView === "vocab") vocabCopyAction(); else studyCopyAction();
-};
-
-document.getElementById("selEdit").onclick = e => {
-  e.currentTarget.blur();
-  const target = selectionTarget();
-  if (!target) return;
-  if (target.item) openVocabEditor(target.item.key, vocabView === "list");
 };
 
 document.getElementById("selDelete").onclick = e => {
@@ -6276,22 +6270,6 @@ function applyGrade(r, isAgain, mode, now) {
       readyAt: st.due
     });
   }
-}
-
-function gradeCurrentGroupAndAdvance(isAgain) {
-  if (!groupState || groupState.groups[groupState.index].length === 0) return;
-  pushUndo("Graded group — " + gradeLabel(isAgain));
-  const ids = groupState.groups[groupState.index];
-  const now = Date.now();
-  rows.forEach(r => {
-    if (ids.includes(r.id)) applyGrade(r, isAgain, "Table", now);
-  });
-  scheduleAutoSave();
-  swipe(studyParts(), isAgain ? -1 : 1, () => {
-    groupState.groups[groupState.index] = [];
-    advanceToNextGroup();
-    render();
-  }, true);
 }
 
 function gradeCard(row, isAgain) {
@@ -13264,7 +13242,7 @@ function gradeAction(isAgain) {
   if (!groupState) return;
   const {scope: scope, picked: picked} = studyPick();
   selectedRowId = null;
-  if (picked) gradeCard(picked, isAgain); else if (!isCardMode()) gradeCurrentGroupAndAdvance(isAgain); else if (scope.length) gradeCard(scope[0], isAgain);
+  if (picked) gradeCard(picked, isAgain); else if (scope.length) gradeCard(scope[0], isAgain);
 }
 
 function studySoundKey() {
