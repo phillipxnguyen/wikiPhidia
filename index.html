@@ -7186,7 +7186,7 @@ function isProseLine(line) {
   return !line.includes("\t") && /[.!?。！？]\s+\S/.test(line);
 }
 
-function analyzeMixed(text, side) {
+function analyzeMixed(text) {
   const info = text.split(/\r?\n/).map((line, i) => {
     const bulleted = BULLET_RE.test(line);
     const s = stripBullet(line).trim();
@@ -7214,6 +7214,15 @@ function analyzeMixed(text, side) {
   let skipTo = -1;
   info.forEach((l, i) => {
     if (i < skipTo) return;
+    const columns = l.s.includes("\t") && parseImportLine(l.s, "\t");
+    if (columns && columns.q) {
+      items.push({
+        kind: "card",
+        text: l.s,
+        entry: columns
+      });
+      return;
+    }
     const next = info[i + 1], prev = info[i - 1];
     const short = isShort(l);
     const inList = prev && !prev.pair && !prev.bulleted && isShort(prev);
@@ -7241,10 +7250,10 @@ function analyzeMixed(text, side) {
       text: l.text,
       term: l.pair[0],
       meaning: l.pair[1]
-    }); else if (!l.bulleted && short && !inList && next && (next.pair || next.bulleted || side === "vocab" && !next.pair && !next.bulleted && SENTENCE_END_RE.test(next.s))) items.push({
+    }); else if (!l.bulleted && short && !inList && next && (next.pair || next.bulleted)) items.push({
       kind: "heading",
       text: l.text
-    }); else if (short && (l.bulleted || side === "vocab")) items.push({
+    }); else if (short && l.bulleted) items.push({
       kind: "word",
       text: l.text,
       term: l.s.replace(/\s+/g, " "),
@@ -7488,7 +7497,7 @@ function takeHeaderLines(raw) {
   });
   if (!title && rows.length === 0) {
     const i = lines.findIndex(l => l.trim());
-    if (i !== -1 && (delim === ":" ? !hasColonColumn(lines[i]) : delim === "none" ? !/[.!?。！？…]/.test(lines[i]) && !Q_LABEL_RE.test(lines[i].trim()) && lines.some((l, j) => j > i && l.trim()) : !hasDelim(lines[i], delim)) && !matchSpacedTimestamp(lines[i], delim)) {
+    if (i !== -1 && (delim === ":" ? !hasColonColumn(lines[i]) : delim === "none" ? !/[.!?。！？…\t]/.test(lines[i]) && !Q_LABEL_RE.test(lines[i].trim()) && lines.some((l, j) => j > i && l.trim()) : !hasDelim(lines[i], delim)) && !matchSpacedTimestamp(lines[i], delim)) {
       title = lines[i].trim();
       const next = lines.slice(i + 1).find(l => l.trim());
       const asked = delim === "none" && next && !BULLET_RE.test(next) && !wordPairOf(next.trim(), false) && SENTENCE_END_RE.test(next);
@@ -7709,7 +7718,7 @@ function analyzeImportText(raw) {
   const head = takeHeaderLines(raw);
   const delim = head.delim;
   const title = head.title;
-  const lines = delim === "none" ? planWords(analyzeMixed(head.text, "lesson")).map((it, i) => ({
+  const lines = delim === "none" ? planWords(analyzeMixed(head.text)).map((it, i) => ({
     text: it.text,
     lineNo: i + 1,
     entry: it.entry || null,
@@ -8568,7 +8577,12 @@ function fairyFly(o) {
   canvas.height = Math.round(h * dpr);
   canvas.style.width = w + "px";
   canvas.style.height = h + "px";
-  if (o.liveName) canvas.style.viewTransitionName = o.liveName;
+  if (o.liveName) {
+    document.querySelectorAll("canvas.fairy-dust").forEach(c => {
+      if (c.style.viewTransitionName === o.liveName) c.style.viewTransitionName = "";
+    });
+    canvas.style.viewTransitionName = o.liveName;
+  }
   document.body.appendChild(canvas);
   const ctx = canvas.getContext("2d");
   ctx.scale(dpr, dpr);
@@ -10124,10 +10138,16 @@ document.getElementById("btnBackupAll").onclick = backupEverything;
 
 document.getElementById("btnStats").onclick = () => showView(currentView === "stats" ? "study" : "stats");
 
+let pendingTheme = null;
+
 document.getElementById("btnTheme").onclick = () => {
-  const next = shownTheme() === "dark" ? "light" : "dark";
-  const apply = () => applyTheme(next === systemTheme() ? "auto" : next);
+  const next = (pendingTheme || shownTheme()) === "dark" ? "light" : "dark";
+  const apply = () => {
+    if (pendingTheme === next) pendingTheme = null;
+    applyTheme(next === systemTheme() ? "auto" : next);
+  };
   if (!document.startViewTransition || reducedMotion()) return apply();
+  pendingTheme = next;
   fairyFly({
     kind: "tap",
     box: onScreenBox(document.getElementById("btnTheme")),
