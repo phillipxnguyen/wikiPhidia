@@ -982,16 +982,13 @@ window.onYouTubeIframeAPIReady = function(){
   .stroke-target{width:60px;height:60px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2);}
   .stroke-fallback{display:flex;align-items:center;justify-content:center;font-size:28px;color:var(--text);}
   #viewStudy.focus-study > .lesson-header, #viewStudy.focus-study > .save-status, #viewStudy.focus-study > .lesson-meta, #viewVocab.focus-study > .vocab-head{display:none;}
-  .swipe-ghost{position:fixed;z-index:1000;box-sizing:border-box;pointer-events:none;}
-  .swipe-mark{position:absolute;inset:0;box-sizing:border-box;display:flex;justify-content:center;align-items:flex-start;border:4px solid var(--border);border-radius:28px;box-shadow:var(--shadow-md);font-size:34px;font-weight:700;line-height:50px;}
-  .swipe-mark > span{padding:0 15px;border-radius:10px;background:var(--surface);box-shadow:var(--shadow-md);}
-  .swipe-mark > span:empty{display:none;}
-  .swipe-ghost.row .swipe-mark{border-radius:var(--radius);font-size:20px;line-height:30px;}
-  .swipe-ghost.good .swipe-mark{color:var(--a-label);border-color:currentColor;}
-  .swipe-ghost.again .swipe-mark{color:var(--danger);border-color:currentColor;}
-  .swipe-ghost.again.mark .swipe-mark, .swipe-ghost.delete .swipe-mark, .touch-bar .tb-again.tb-mark{-webkit-text-stroke:.04em currentColor;}
-  .swipe-ghost.delete .swipe-mark{color:var(--text);border-color:currentColor;}
-  .swipe-ghost.to-vocab .swipe-mark{color:#1e9466;border-color:currentColor;}
+  .swipe-ghost{position:fixed;z-index:1000;box-sizing:border-box;display:flex;justify-content:center;border:4px solid var(--border);border-radius:28px;background:var(--surface);box-shadow:var(--shadow-md);font-size:34px;font-weight:700;pointer-events:none;}
+  .swipe-ghost.row{align-items:center;border-radius:var(--radius);font-size:20px;}
+  .swipe-ghost.good{color:var(--a-label);border-color:currentColor;}
+  .swipe-ghost.again{color:var(--danger);border-color:currentColor;}
+  .swipe-ghost.again.mark, .swipe-ghost.delete, .touch-bar .tb-again.tb-mark{-webkit-text-stroke:.04em currentColor;}
+  .swipe-ghost.delete{color:var(--text);border-color:currentColor;}
+  .swipe-ghost.to-vocab{color:#1e9466;border-color:currentColor;}
 
   .session-complete{
     display:none;
@@ -5199,7 +5196,6 @@ function hideDictOverlay() {
 function showDictOverlay(placeholder, url) {
   hideDictOverlay();
   const iframe = getDictIframe(url);
-  iframe.getAnimations().forEach(a => a.cancel());
   Object.assign(iframe.style, {
     position: "absolute",
     opacity: "1",
@@ -6419,7 +6415,7 @@ function ghostFor(parts) {
   const row = parts.length === 1 && parts[0] && (parts[0].tagName === "TR" || parts[0].classList.contains("listen-pair")) || parts.length > 0 && parts.every(el => el && el.parentElement && el.parentElement.classList.contains("vocab-list-row"));
   const visible = el => el && el.offsetParent && el.getBoundingClientRect().height > 1;
   const listen = parts.some(el => el && el.id === "singleCardView") && !!document.querySelector("#singleCardBody.listen-batch");
-  const shown = parts.filter(visible).flatMap(el => el.id === "strokeRows" ? [ ...el.children ].filter(c => visible(c) && !c.classList.contains("listen-dict")) : el.id === "singleCardView" && listen ? [ ...el.querySelectorAll(".voice-note, .listen-text") ].filter(visible) : el.id === "cardTable" || el.id === "singleCardView" ? [ contentShape(el) ] : [ el ]);
+  const shown = parts.filter(visible).flatMap(el => el.id === "strokeRows" ? [ ...el.children ].filter(visible) : el.id === "singleCardView" && listen ? [ ...el.querySelectorAll(".voice-note, .listen-text") ].filter(visible) : el.id === "cardTable" || el.id === "singleCardView" ? [ contentShape(el) ] : [ el ]);
   const rects = shown.map(el => el.getBoundingClientRect());
   if (!rects.length) return null;
   const left = Math.round(Math.min(...rects.map(r => r.left)));
@@ -6428,99 +6424,16 @@ function ghostFor(parts) {
   const shape = shown[0].querySelector(":scope > .vocab-card-inner > .vocab-face") || shown[0];
   const ghost = document.createElement("div");
   ghost.className = "swipe-ghost" + (row ? " row" : "") + (currentView === "vocab" ? " mark" : "");
-  ghost.inert = true;
   Object.assign(ghost.style, {
     left: left + "px",
     top: top + "px",
     width: Math.round(Math.max(...rects.map(r => r.right))) - left + "px",
     height: bottom - top + "px"
   });
-  const pseudo = [];
-  shown.forEach((el, i) => {
-    const copy = frozenCopy(el, pseudo);
-    Object.assign(copy.style, {
-      position: "absolute",
-      left: Math.round(rects[i].left) - left + "px",
-      top: Math.round(rects[i].top) - top + "px",
-      right: "auto",
-      bottom: "auto",
-      margin: "0",
-      boxSizing: "border-box",
-      width: Math.round(rects[i].width) + "px",
-      height: Math.round(rects[i].height) + "px",
-      transform: "none",
-      visibility: "visible"
-    });
-    ghost.appendChild(copy);
-  });
-  if (pseudo.length) {
-    const style = document.createElement("style");
-    style.textContent = pseudo.join("\n");
-    ghost.appendChild(style);
-  }
-  const mark = document.createElement("div");
-  mark.className = "swipe-mark";
-  const label = mark.appendChild(document.createElement("span"));
-  label.style.marginTop = (top < 0 ? 6 - top : row ? -17 : -27) + "px";
-  if (!row) mark.style.borderRadius = listen && shown.length > 1 ? getComputedStyle(document.documentElement).getPropertyValue("--radius").trim() : getComputedStyle(shape).borderTopLeftRadius;
-  ghost.appendChild(mark);
+  if (!row) ghost.style.borderRadius = listen && shown.length > 1 ? getComputedStyle(document.documentElement).getPropertyValue("--radius").trim() : getComputedStyle(shape).borderTopLeftRadius;
+  if (!row) ghost.style.paddingTop = Math.round((Math.max(top, 0) + Math.min(bottom, window.innerHeight)) / 2 - top - 25) + "px";
   document.body.appendChild(ghost);
   return ghost;
-}
-
-let swipeCopyCount = 0;
-
-function frozenCopy(el, pseudo) {
-  const copy = el.cloneNode(true);
-  const from = [ el, ...el.querySelectorAll("*") ], to = [ copy, ...copy.querySelectorAll("*") ];
-  from.forEach((src, i) => {
-    const dst = to[i];
-    dst.style.cssText = frozenStyle(getComputedStyle(src), src.style);
-    dst.removeAttribute("id");
-    dst.removeAttribute("contenteditable");
-    if (src.matches("iframe, video, .paper-dict, .listen-dict")) dst.style.visibility = "hidden";
-    if (src.tagName === "CANVAS" && src.width && src.height) try {
-      dst.getContext("2d").drawImage(src, 0, 0);
-    } catch (e) {}
-    [ "::before", "::after" ].forEach(at => {
-      const ps = getComputedStyle(src, at);
-      if (!ps.content || ps.content === "none" || ps.content === "normal") return;
-      if (!dst.dataset.swipeCopy) dst.dataset.swipeCopy = ++swipeCopyCount;
-      pseudo.push(`[data-swipe-copy="${dst.dataset.swipeCopy}"]${at}{${frozenStyle(ps)}}`);
-    });
-  });
-  return copy;
-}
-
-let frozenProps = null;
-
-function frozenPropList() {
-  if (frozenProps) return frozenProps;
-  const box = [ "top", "right", "bottom", "left" ];
-  const set = new Set([ "display", "position", "box-sizing", "width", "height", "color", "background-color", "font-family", "font-size", "font-weight", "font-style", "line-height", "text-align", "text-decoration-line", "vertical-align", "white-space", "list-style-type", "list-style-position", "border-collapse", "border-spacing", "visibility", "fill", "stroke", ...box.flatMap(side => [ "margin-" + side, "padding-" + side, `border-${side}-width`, `border-${side}-style`, `border-${side}-color` ]) ]);
-  const walk = rules => Array.from(rules).forEach(rule => {
-    if (rule.style) for (let i = 0; i < rule.style.length; i++) set.add(rule.style[i]);
-    if (rule.cssRules) walk(rule.cssRules);
-  });
-  Array.from(document.styleSheets).forEach(sheet => {
-    try {
-      walk(sheet.cssRules);
-    } catch (e) {}
-  });
-  frozenProps = [ ...set ].filter(prop => !prop.startsWith("--") && !/^(animation|transition)/.test(prop));
-  return frozenProps;
-}
-
-function frozenStyle(cs, inline) {
-  let text = "";
-  const props = inline && inline.length ? new Set([ ...frozenPropList(), ...Array.from(inline) ]) : frozenPropList();
-  props.forEach(prop => text += prop + ":" + cs.getPropertyValue(prop) + ";");
-  return text + "animation:none;transition:none;";
-}
-
-function setGhostMark(ghost, text) {
-  const label = ghost.querySelector(":scope > .swipe-mark > span");
-  if (label) label.textContent = text;
 }
 
 let dragGhost = null;
@@ -6533,59 +6446,16 @@ function dictUnderSwipe(parts) {
   const ov = activeDictOverlay;
   if (!ov || !parts.some(el => el && el.contains(ov.placeholder))) return null;
   cancelAnimationFrame(ov.rafId);
+  Object.assign(ov.iframe.style, {
+    opacity: "0",
+    pointerEvents: "none"
+  });
   return ov;
-}
-
-function holdDict(ov) {
-  const frame = ov.iframe;
-  if (frame.style.position === "absolute") Object.assign(frame.style, {
-    position: "fixed",
-    top: Math.round(parseFloat(frame.style.top) - window.scrollY) + "px",
-    left: Math.round(parseFloat(frame.style.left) - window.scrollX) + "px"
-  });
-  frame.style.pointerEvents = "none";
-}
-
-function fadeDict(ov) {
-  if (!ov) return;
-  const frame = ov.iframe;
-  if (activeDictOverlay === ov) activeDictOverlay = null;
-  holdDict(ov);
-  const from = getComputedStyle(frame).opacity;
-  frame.animate([ {
-    opacity: from
-  }, {
-    opacity: 0
-  } ], {
-    duration: Math.round(300 * from),
-    easing: "ease-out",
-    fill: "forwards"
-  });
-  setTimeout(() => {
-    frame.getAnimations().forEach(a => a.cancel());
-    if (activeDictOverlay && activeDictOverlay.iframe === frame) return;
-    Object.assign(frame.style, {
-      position: "fixed",
-      top: "0",
-      left: "0",
-      opacity: "0",
-      pointerEvents: "none"
-    });
-  }, 300);
 }
 
 function restoreDict(ov) {
   if (!ov || activeDictOverlay !== ov) return;
-  ov.iframe.animate([ {
-    opacity: ov.iframe.style.opacity
-  }, {
-    opacity: 1
-  } ], {
-    duration: 200,
-    easing: "ease-out"
-  });
   Object.assign(ov.iframe.style, {
-    position: "absolute",
     opacity: "1",
     pointerEvents: "auto"
   });
@@ -6597,11 +6467,11 @@ function swipe(parts, dir, update, next, label = dir > 0 ? "Good" : "Again") {
   const ghost = dragGhost || (motion ? ghostFor(parts) : null);
   const from = dragGhost && dragGhost.style.transform || "none";
   dragGhost = null;
-  fadeDict(dictUnderSwipe(parts));
+  if (dictUnderSwipe(parts)) hideDictOverlay();
   if (ghost) {
     ghost.classList.remove("good", "again");
     ghost.classList.add(label === "Delete" ? "delete" : label === "Vocab" ? "to-vocab" : dir > 0 ? "good" : "again");
-    setGhostMark(ghost, label === "Delete" ? "✕" : label === "Vocab" ? "字" : gradeMark(dir < 0));
+    ghost.textContent = label === "Delete" ? "✕" : label === "Vocab" ? "字" : gradeMark(dir < 0);
     ghost.animate([ {
       transform: from
     }, {
@@ -6699,15 +6569,13 @@ window.addEventListener("pointermove", e => {
     hideTooltip();
     drag.restore = drag.vocab ? hideUnderSwipe(drag.parts) : showNextUnderSwipe(drag.row);
     drag.dict = drag.vocab ? null : dictUnderSwipe(drag.parts);
-    if (drag.dict) holdDict(drag.dict);
   }
   drag.dx = dx;
   const again = dx < 0;
   drag.ghost.classList.toggle("again", again);
   drag.ghost.classList.toggle("good", !again);
-  setGhostMark(drag.ghost, gradeMark(again));
+  drag.ghost.textContent = gradeMark(again);
   drag.ghost.style.transform = `translate(${dx}px, ${dy / 4}px) rotate(${dx / 20}deg)`;
-  if (drag.dict) drag.dict.iframe.style.opacity = Math.max(0, 1 - Math.abs(dx) / 150).toFixed(2);
 });
 
 function vocabDragStart(e) {
