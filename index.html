@@ -985,6 +985,7 @@ window.onYouTubeIframeAPIReady = function(){
   .tr-main{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:4px;}
   #studyCard.deck .tr-current .listen-text{gap:16px;}
   #studyCard.deck .tr-current .cell{font-size:28px;line-height:40px;}
+  #studyCard.deck .tr-current .card-notes{margin-top:0;}
   #studyCard.deck .listen-batch .listen-pair .loop-time{display:inline-block;}
   #viewStudy:not(.offscreen):has(#studyCard.deck){position:relative;}
   #viewStudy:not(.offscreen):has(#studyCard.deck) .study-head{position:static;}
@@ -2893,7 +2894,7 @@ function listenPairsHtml(batch) {
       aHidden: false
     });
     const front = r.qHidden ? `<div class="tl-stack"><span class="tr-text">${rowPlayBadge(r)}<span class="dots">···</span></span><div class="tl-reserve listen-text" aria-hidden="true">${singleCardFieldsHtml(full)}</div></div>` : "";
-    return `<div class="listen-pair tr-current${r.id === selectedRowId ? " row-selected" : ""}" data-id="${r.id}"><div class="tr-main">${front}<div class="listen-text">${singleCardFieldsHtml(r)}</div></div></div>`;
+    return `<div class="listen-pair tr-current${r.id === selectedRowId ? " row-selected" : ""}" data-id="${r.id}"><div class="tr-main">${front}<div class="listen-text">${singleCardFieldsHtml(r)}${r.qHidden || r.aHidden ? "" : cardNotesHtml(r)}</div></div></div>`;
   }).join("");
 }
 
@@ -5349,7 +5350,6 @@ function hideDictOverlay() {
   if (!activeDictOverlay) return;
   cancelAnimationFrame(activeDictOverlay.rafId);
   Object.assign(activeDictOverlay.iframe.style, {
-    transition: "none",
     position: "fixed",
     top: "0",
     left: "0",
@@ -6527,8 +6527,15 @@ function holdPageTo(bottom) {
   document.body.style.minHeight = pinHoldOn ? px + "px" : "";
 }
 
+function pinLimit(target) {
+  const main = document.querySelector(".main");
+  const natural = document.querySelector(".main-inner").getBoundingClientRect().bottom + window.scrollY - liftPx + (parseFloat(getComputedStyle(main).paddingBottom) || 0);
+  return Math.min(target, Math.max(0, Math.floor(natural - window.innerHeight)));
+}
+
 function scrollToPinned(target) {
   if (deckOn()) return;
+  target = pinLimit(target);
   holdPageTo(target + window.innerHeight);
   window.scrollTo({
     top: target,
@@ -6564,6 +6571,7 @@ function dropLift() {
 
 function showFromTop(target) {
   if (deckOn()) return;
+  target = pinLimit(target);
   const below = window.scrollY - target;
   if (below <= 0) return scrollToPinned(target);
   setLift(liftPx + below);
@@ -6657,7 +6665,6 @@ function dictUnderSwipe(parts) {
   if (!ov || !parts.some(el => el && el.contains(ov.placeholder))) return null;
   cancelAnimationFrame(ov.rafId);
   Object.assign(ov.iframe.style, {
-    transition: reducedMotion() ? "none" : "opacity .25s ease-out",
     opacity: "0",
     pointerEvents: "none"
   });
@@ -6698,7 +6705,7 @@ function swipe(parts, dir, update, next, label = dir > 0 ? "Good" : "Again") {
   const settle = next ? null : keepViewAnchor();
   update();
   if (settle) settle();
-  if (ghost) fadeIn(from !== "none" ? [ document.getElementById("strokeRows") ] : currentView === "vocab" ? [ document.getElementById("vocabCard") ] : studyParts(true));
+  if (ghost && from === "none") fadeIn(currentView === "vocab" ? [ document.getElementById("vocabCard") ] : studyParts(true).filter(el => el.id !== "strokeRows"));
   if (next) showFromTop(studyAreaTop());
 }
 
@@ -6848,29 +6855,10 @@ function showNextUnderSwipe() {
   const hidden = [];
   const hide = el => {
     if (!el) return;
-    if (reducedMotion()) {
-      hidden.push([ el, el.style.visibility ]);
-      el.style.visibility = "hidden";
-      return;
-    }
-    hidden.push([ el, null, el.animate([ {
-      opacity: 1
-    }, {
-      opacity: 0
-    } ], {
-      duration: 250,
-      easing: "ease-out",
-      fill: "forwards"
-    }) ]);
+    hidden.push([ el, el.style.visibility ]);
+    el.style.visibility = "hidden";
   };
-  const restore = back => hidden.forEach(([el, v, fade]) => {
-    if (!fade) {
-      el.style.visibility = v;
-      return;
-    }
-    fade.cancel();
-    if (back) fadeIn([ el ], 200);
-  });
+  const restore = () => hidden.forEach(([el, v]) => el.style.visibility = v);
   hide(document.getElementById("strokeRows"));
   const entry = entryHidden();
   const entryCopy = r => Object.assign({}, r, {
