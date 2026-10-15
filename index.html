@@ -323,7 +323,7 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-card-inner{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .45s cubic-bezier(.3,.7,.3,1);}
   .vocab-card.flipped .vocab-card-inner{transform:rotateY(180deg);}
   .vocab-card.no-turn .vocab-card-inner{transition:none;}
-  .vocab-face{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;gap:14px;padding:32px 24px;text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:auto;}
+  .vocab-face{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;gap:14px;padding:32px 24px;text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 10px 0 -4px var(--surface), 0 10px 0 -3px var(--border), var(--shadow-md);backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:auto;}
   .vocab-back{transform:rotateY(180deg);background:var(--a-bg);justify-content:flex-start;gap:16px;padding:25px 16px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;}
   @media (max-width:600px){.vocab-front{padding:24px 16px;}}
   .vocab-back .vocab-ctx, .vocab-back .vocab-meaning{box-sizing:border-box;width:fit-content;max-width:100%;padding:0 16px;font-size:28px;line-height:35px;margin:0;text-align:left;}
@@ -705,6 +705,7 @@ window.onYouTubeIframeAPIReady = function(){
     .shell #cardTable.chat.front-a tbody td.q-col{grid-row:3;border-top:1px solid var(--border);}
     .shell #cardTable.chat .cell{font-size:24px;line-height:30px;}
     .shell #cardTable.chat .card-notes{padding:0;font-size:20px;line-height:25px;}
+    .shell #studyCard.deck > #cardTable.chat tbody tr, .shell #studyCard.deck > #cardTable.chat tbody tr.row-playing, html.touch .shell #studyCard.deck > #cardTable.chat tbody tr.row-selected{grid-template-rows:auto 1fr 1fr;}
   }
 
   .rich-editor{
@@ -977,6 +978,19 @@ window.onYouTubeIframeAPIReady = function(){
   #strokeRows{display:flex;flex-direction:column;gap:16px;margin-top:-10px;margin-bottom:16px;}
   #strokeRows:empty{display:none;}
   #singleCardView:has(#singleCardBody.listen-batch) + #strokeRows, #viewStudy:has(#cardTable.chat) #strokeRows{margin-top:0;}
+  .main:has(#viewStudy:not([hidden]):not(.offscreen) #studyCard.deck){padding-bottom:calc(var(--deck-below, 16px) - 16px);}
+  #studyCard.deck{display:flex;flex-direction:column;min-height:var(--deck-h, 0px);margin-bottom:16px;overflow:clip;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 10px 0 -4px var(--surface), 0 10px 0 -3px var(--border), var(--shadow-sm);}
+  #studyCard.deck > #cardTable.chat{flex:1 0 auto;display:flex;flex-direction:column;margin:0;}
+  #studyCard.deck > #cardTable.chat tbody{flex:1 0 auto;gap:0;}
+  #studyCard.deck > #cardTable.chat tbody tr, #studyCard.deck > #cardTable.chat tbody tr.row-playing, html.touch #studyCard.deck > #cardTable.chat tbody tr.row-selected{flex:1 0 auto;grid-template-rows:auto 1fr;border:0;border-radius:0;box-shadow:none;}
+  #studyCard.deck > #singleCardView{flex:1 0 auto;padding:16px 16px 20px;}
+  #studyCard.deck #singleCardBody{margin:0;}
+  #studyCard.deck .voice-note{margin:0 0 16px;}
+  #studyCard.deck .listen-pair{padding:0;}
+  #studyCard.deck > #strokeRows.swipe-hidden{display:none;}
+  #studyCard.deck:has(> #strokeRows:not(:empty):not(.swipe-hidden)) > :is(#cardTable, #singleCardView){flex-grow:0;}
+  #studyCard.deck > #strokeRows{flex:1 0 auto;margin:0;padding:16px;border-top:1px solid var(--border);}
+  #studyCard.deck .listen-dict{flex:1 0 auto;height:auto;min-height:250px;}
   .stroke-order-row{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;}
   .stroke-target:not(.stroke-fallback){cursor:pointer;}
   .stroke-target{width:60px;height:60px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2);}
@@ -1412,6 +1426,8 @@ window.onYouTubeIframeAPIReady = function(){
     <div class="session-complete-sub"></div>
     <button class="primary more-today" hidden></button>
   </div>
+  <div id="singleCardProgress" class="single-card-progress" hidden></div>
+  <div id="studyCard">
   <table id="cardTable">
     <colgroup>
       <col>
@@ -1428,11 +1444,11 @@ window.onYouTubeIframeAPIReady = function(){
   <button id="listAddCard" class="add-fab" data-add-card title="Add a card" aria-label="Add a card" hidden><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14"/></svg></button>
 
   <div id="singleCardView" style="display:none;">
-    <div id="singleCardProgress" class="single-card-progress"></div>
     <div id="singleCardBody" class="single-card-body"></div>
   </div>
 
   <div id="strokeRows"></div>
+  </div>
 
   <div id="inlineAddSlot" hidden></div>
 
@@ -3359,8 +3375,36 @@ function renderStrokeRows() {
     dict.dataset.url = url;
   }
   host.replaceChildren(...lines, ...dict ? [ dict ] : []);
+  syncDeck();
   if (dict && (!activeDictOverlay || activeDictOverlay.placeholder !== dict)) showDictOverlay(dict, url); else if (!dict && activeDictOverlay && activeDictOverlay.placeholder.classList.contains("listen-dict")) hideDictOverlay();
 }
+
+function deckOn() {
+  return document.getElementById("studyCard").classList.contains("deck");
+}
+
+function syncDeck() {
+  const table = document.getElementById("cardTable");
+  const single = document.getElementById("singleCardView");
+  const on = currentView === "study" && !!groupState && document.getElementById("sessionCompletePanel").style.display !== "block" && (table.style.display !== "none" && table.classList.contains("chat") || single.style.display !== "none" && document.getElementById("singleCardBody").classList.contains("listen-batch"));
+  document.getElementById("studyCard").classList.toggle("deck", on);
+  fitDeck();
+}
+
+function fitDeck() {
+  const card = document.getElementById("studyCard");
+  if (!card.classList.contains("deck")) return card.style.removeProperty("--deck-h");
+  const bar = document.getElementById("touchBar");
+  const selH = document.documentElement.classList.contains("sel-on") ? parseFloat(document.documentElement.style.getPropertyValue("--sel-h")) || 0 : 0;
+  const below = Math.max(selH, bar && !bar.hidden ? bar.offsetHeight : 0) + 16;
+  const top = card.getBoundingClientRect().top + window.scrollY - studyAreaTop();
+  document.documentElement.style.setProperty("--deck-below", below + "px");
+  card.style.setProperty("--deck-h", Math.max(0, Math.floor(window.innerHeight - top - below)) + "px");
+}
+
+window.addEventListener("resize", fitDeck);
+
+new ResizeObserver(() => fitDeck()).observe(document.querySelector(".study-head"));
 
 function markFreshLesson() {
   const fresh = [ "study", "vocab", "add" ].includes(currentView) && lessonIsBlank();
@@ -3393,6 +3437,11 @@ function updateLessonChrome() {
   document.getElementById("cardTable").classList.toggle("no-head", !hasQuestion);
 }
 
+function showSingleCard(on) {
+  document.getElementById("singleCardView").style.display = on ? "" : "none";
+  document.getElementById("singleCardProgress").hidden = !on;
+}
+
 function renderStudy() {
   vocabLookupChecked = false;
   if (activeDictOverlay && activeDictOverlay.placeholder.classList.contains("paper-dict")) hideDictOverlay();
@@ -3413,7 +3462,7 @@ function renderStudy() {
     toolbar.style.display = "none";
     table.style.display = "none";
     document.getElementById("tableProgress").style.display = "none";
-    singleCardView.style.display = "none";
+    showSingleCard(false);
     panel.style.display = "none";
     if (currentView !== "add") placeAddForm("lesson");
     return;
@@ -3437,7 +3486,7 @@ function renderStudy() {
     commitActiveEdit();
     table.style.display = "none";
     document.getElementById("tableProgress").style.display = "none";
-    singleCardView.style.display = "none";
+    showSingleCard(false);
     showSessionCompletePanel();
     return;
   }
@@ -3462,17 +3511,17 @@ function renderStudy() {
   if (singleCard) {
     table.style.display = "none";
     if (singleCardRows.length === 0) {
-      singleCardView.style.display = "none";
+      showSingleCard(false);
       lastShownCardId = null;
       showSessionCompletePanel();
       return;
     }
-    singleCardView.style.display = "";
+    showSingleCard(true);
     renderSingleCard(singleCardRows);
     return;
   }
   table.style.display = "";
-  singleCardView.style.display = "none";
+  showSingleCard(false);
   if (visibleRows.length === 0) {
     const msg = groupState ? "No cards in this group." : "No cards yet — import a list below or open a lesson file.";
     tbody.innerHTML = `<tr><td colspan="2" class="empty-msg">${msg}</td></tr>`;
@@ -4995,11 +5044,12 @@ function updateSelBar() {
   const target = touchBar.hidden ? null : selectionTarget();
   bar.hidden = !target;
   document.documentElement.classList.toggle("sel-on", !!target);
-  if (!target) return;
+  if (!target) return fitDeck();
   bar.style.setProperty("--tb-h", touchBar.offsetHeight + "px");
   document.getElementById("selDelete").hidden = !!target.row && isVirtualLesson();
   document.getElementById("selVocab").hidden = !target.row || target.rows.length !== 1 || isVirtualLesson() || isVideoLesson();
   document.documentElement.style.setProperty("--sel-h", Math.round(window.innerHeight - bar.querySelector(".segmented").getBoundingClientRect().top) + "px");
+  fitDeck();
 }
 
 document.getElementById("selCopy").onclick = e => {
@@ -5039,6 +5089,7 @@ function updateTouchBar() {
   const bar = document.getElementById("touchBar");
   const vocab = currentView === "vocab";
   bar.hidden = !isTouch() || (vocab ? document.getElementById("vocabToolbar").hidden : currentView !== "study" || !rows.length);
+  fitDeck();
   queueMicrotask(updateSelBar);
   const inSession = vocab ? vocabStudying : !!groupState && document.getElementById("sessionCompletePanel").style.display !== "block";
   bar.classList.toggle("tools-only", !inSession);
@@ -6381,6 +6432,7 @@ function pinStudyArea() {
 }
 
 function studyParts() {
+  if (deckOn()) return [ document.getElementById("studyCard") ];
   return [ document.getElementById(isCardMode() ? "singleCardView" : "cardTable"), document.getElementById("strokeRows") ].filter(el => el.offsetHeight);
 }
 
@@ -6623,7 +6675,8 @@ function showNextUnderSwipe(row) {
     hide(document.querySelector(`#strokeRows > [data-row-id="${row.dataset.id}"]`));
     return () => hidden.forEach(([el, v]) => el.style.visibility = v);
   }
-  hide(document.getElementById("strokeRows"));
+  const strokes = document.getElementById("strokeRows");
+  if (deckOn()) strokes.classList.add("swipe-hidden"); else hide(strokes);
   const entry = entryHidden();
   const entryCopy = r => Object.assign({}, r, {
     qHidden: entry.q,
@@ -6635,7 +6688,7 @@ function showNextUnderSwipe(row) {
     const tbody = document.getElementById("tbody");
     Array.from(tbody.children).forEach(tr => tr.style.display = "none");
     next.forEach(r => tbody.appendChild(buildRowTr(entryCopy(r))));
-    if (!next.length) hide(document.getElementById("cardTable"));
+    if (!next.length) hide(document.getElementById(deckOn() ? "studyCard" : "cardTable"));
   } else {
     const nextBatch = (isListenMode() ? nextListenBatch() : singleCardQueue().slice(1, 2)).map(entryCopy);
     const next = nextBatch[0];
@@ -6644,10 +6697,13 @@ function showNextUnderSwipe(row) {
       Array.from(body.children).forEach(el => el.style.display = "none");
       body.insertAdjacentHTML("beforeend", groupViewStyle === "ielts" ? ieltsPaperHtml(next, 1) : isListenMode() ? listenPairsHtml(nextBatch) : singleCardFieldsHtml(next));
     } else {
-      hide(body);
+      hide(deckOn() ? document.getElementById("studyCard") : body);
     }
   }
-  return () => hidden.forEach(([el, v]) => el.style.visibility = v);
+  return () => {
+    strokes.classList.remove("swipe-hidden");
+    hidden.forEach(([el, v]) => el.style.visibility = v);
+  };
 }
 
 function endDrag(e) {
@@ -8490,7 +8546,10 @@ function holdCounts(before, after) {
     if (countsShown !== mine) return;
     countsShown = null;
     paintCounts(after);
-    if (appMode === "vocab") renderVocab(); else if (groupState) refreshBadges(); else renderStudy();
+    if (appMode === "vocab") renderVocab(); else if (groupState) refreshBadges(); else {
+      renderStudy();
+      syncDeck();
+    }
   };
 }
 
