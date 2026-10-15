@@ -984,11 +984,11 @@ window.onYouTubeIframeAPIReady = function(){
   .le-box{display:flex;flex-direction:column;box-sizing:border-box;width:100%;max-width:720px;max-height:100%;overflow-y:auto;overscroll-behavior:contain;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);}
   .le-box > *{flex-shrink:0;}
   .le-box .edit-stroke{margin-top:10px;}
-  #studyCard.deck .listen-batch .tr-current{flex-direction:row;align-items:flex-start;gap:15px;padding:8px 16px;background:var(--row-alt);}
+  #studyCard.deck .listen-batch .tr-current{flex-direction:row;align-items:flex-start;padding:12px 16px;background:var(--row-alt);}
   .tr-main{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:4px;}
   #studyCard.deck .tr-current .listen-text{gap:4px;}
   #studyCard.deck .tr-current .cell{font-size:20px;line-height:25px;}
-  #studyCard.deck .tr-current:has(.loop-time.looping) .tr-time{background:var(--accent);color:var(--on-accent);}
+  #studyCard.deck .listen-batch .listen-pair .loop-time, .tr-line .loop-time{display:inline-block;}
   #viewStudy:not(.offscreen) .media-container.listen-slot{position:fixed;z-index:1;display:block;box-sizing:border-box;margin:0;padding:0;opacity:1;pointer-events:auto;background:none;border:0;box-shadow:none;}
   #viewStudy:not(.offscreen) .media-container.listen-slot .media-video{width:100%;height:100%;border-radius:var(--radius);}
   #viewStudy:not(.offscreen) .media-container.listen-slot .media-video iframe{width:100%;height:100%;transform:none;}
@@ -1009,11 +1009,9 @@ window.onYouTubeIframeAPIReady = function(){
   #viewStudy:has(.tr-current .loop-time.looping) .lc-wave i:nth-child(3n+2){animation-delay:-1.2s;}
   @keyframes lc-sway{0%, 100%{transform:scaleY(1);}50%{transform:scaleY(.7);}}
   .lc-time{font-size:20px;line-height:25px;font-weight:600;font-variant-numeric:tabular-nums;}
-  .tr-line{display:flex;align-items:center;gap:15px;padding:8px 16px;cursor:pointer;}
+  .tr-line{display:flex;align-items:center;padding:10px 16px;cursor:pointer;}
   @media (hover:hover){.tr-line:hover{background:var(--accent-soft);}}
   .tr-line.row-playing, #studyCard.deck .listen-batch .tr-current.row-playing{background:var(--row-playing);}
-  .tr-line.row-playing .tr-time{background:var(--accent);color:var(--on-accent);}
-  .tr-time{flex:none;padding:2px 8px;border-radius:6px;background:var(--q-bg);color:var(--accent);font-size:15px;line-height:20px;font-variant-numeric:tabular-nums;}
   .tr-text{flex:1 1 auto;min-width:0;font-size:20px;line-height:25px;color:var(--text);}
   .tr-line .tr-text{color:var(--text-2);}
   @media (max-width:600px){.tr-text, #studyCard.deck .tr-current .cell{font-size:18px;line-height:22px;}}
@@ -2899,14 +2897,14 @@ function listenPairsHtml(batch) {
       qHidden: false,
       aHidden: false
     });
-    const front = r.qHidden ? `<div class="tl-stack"><span class="tr-text">···</span><div class="tl-reserve listen-text" aria-hidden="true">${singleCardFieldsHtml(full)}</div></div>` : "";
-    return `<div class="listen-pair tr-current${r.id === selectedRowId ? " row-selected" : ""}" data-id="${r.id}"><span class="tr-time">${r.time == null ? "🔊" : formatTime(r.time)}</span><div class="tr-main">${front}<div class="listen-text">${singleCardFieldsHtml(r)}</div></div></div>`;
+    const front = r.qHidden ? `<div class="tl-stack"><span class="tr-text">${rowPlayBadge(r)}···</span><div class="tl-reserve listen-text" aria-hidden="true">${singleCardFieldsHtml(full)}</div></div>` : "";
+    return `<div class="listen-pair tr-current${r.id === selectedRowId ? " row-selected" : ""}" data-id="${r.id}"><div class="tr-main">${front}<div class="listen-text">${singleCardFieldsHtml(r)}</div></div></div>`;
   }).join("");
 }
 
 function transcriptHtml(batch) {
   const current = new Set(batch.map(r => r.id));
-  return listenPairsHtml(batch) + singleCardQueue().filter(r => !current.has(r.id)).map(r => `<div class="tr-line${loopingRowId === r.id ? " row-playing" : ""}" data-id="${r.id}"><span class="tr-time">${r.time == null ? "🔊" : formatTime(r.time)}</span><span class="tr-text">···</span></div>`).join("");
+  return listenPairsHtml(batch) + singleCardQueue().filter(r => !current.has(r.id)).map(r => `<div class="tr-line${loopingRowId === r.id ? " row-playing" : ""}" data-id="${r.id}"><span class="tr-text">${rowPlayBadge(r)}···</span></div>`).join("");
 }
 
 document.getElementById("listenCover").addEventListener("click", () => {
@@ -3231,7 +3229,7 @@ const TL_LANGS = {
   zh: [ "🇨🇳", "中文" ],
   ja: [ "🇯🇵", "日本語" ],
   ko: [ "🇰🇷", "한국어" ],
-  vi: [ "🇻🇳", "Tiếng Việt" ],
+  vi: [ "🇻🇳", "Vietnamese" ],
   en: [ "🇬🇧", "English" ]
 };
 
@@ -5030,7 +5028,7 @@ function handleCardAreaClick(e) {
     toggleGroupFront();
     return;
   }
-  if (e.target.closest(".loop-time, .tr-time")) {
+  if (e.target.closest(".loop-time")) {
     e.stopPropagation();
     toggleRowPlay(row);
     workFocusId = row.id;
@@ -6595,8 +6593,9 @@ function pinStudyArea() {
   if (window.scrollY > target) scrollToPinned(target);
 }
 
-function studyParts() {
+function studyParts(full) {
   if (deckOn() && isListenMode()) return [ document.querySelector("#singleCardBody .listen-pair") ].filter(Boolean);
+  if (!full && !isTouch() && groupState && groupViewStyle === "table") return [ document.getElementById("cardTable") ].filter(el => el.offsetHeight);
   return [ document.getElementById(isCardMode() ? "singleCardView" : "cardTable"), document.getElementById("strokeRows") ].filter(el => el.offsetHeight);
 }
 
@@ -6659,6 +6658,7 @@ function gradeMark(isAgain) {
 
 function dictUnderSwipe(parts) {
   const ov = activeDictOverlay;
+  if (parts.some(el => el && el.id === "cardTable")) parts = parts.concat(document.getElementById("strokeRows"));
   if (!ov || !parts.some(el => el && el.contains(ov.placeholder))) return null;
   cancelAnimationFrame(ov.rafId);
   Object.assign(ov.iframe.style, {
@@ -6737,7 +6737,7 @@ document.addEventListener("pointerdown", e => {
   if (!groupState || currentView !== "study" || activeEdit) return;
   if (!e.target.closest("#viewStudy") || e.target.closest("button, input, select, textarea, [contenteditable], .loop-time")) return;
   if (document.getElementById("sessionCompletePanel").style.display === "block") return;
-  const parts = studyParts();
+  const parts = groupViewStyle === "table" && e.target.closest("#cardTable") ? [ document.getElementById("cardTable") ] : studyParts();
   drag = {
     id: e.pointerId,
     row: deckOn() && isListenMode() ? parts[0] || null : null,
@@ -6911,7 +6911,7 @@ window.addEventListener("pointercancel", endDrag);
 
 document.addEventListener("click", e => {
   if (!isTouch() || currentView !== "study" || !groupState || activeEdit || !studyCardsHidden() || !(e.target instanceof Element)) return;
-  if (!e.target.closest(".main") || e.target.closest(".lesson-header, #fileStatus, .lesson-meta, .study-head, .tr-time, button, a, input, select, textarea, [contenteditable], .loop-time, .edit-row")) return;
+  if (!e.target.closest(".main") || e.target.closest(".lesson-header, #fileStatus, .lesson-meta, .study-head, button, a, input, select, textarea, [contenteditable], .loop-time, .edit-row")) return;
   revealAction();
 });
 
