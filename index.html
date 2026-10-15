@@ -852,12 +852,13 @@ window.onYouTubeIframeAPIReady = function(){
   }
   .loop-time{
     display:inline-block;margin-right:8px;
-    font-size:12px;font-variant-numeric:tabular-nums;
-    padding:2px 8px;border-radius:6px;
+    font-size:12px;line-height:16px !important;font-variant-numeric:tabular-nums;vertical-align:middle;
+    padding:0 8px;border-radius:6px;
     background:var(--accent-soft);color:var(--accent);
     cursor:pointer;user-select:none;font-style:normal;
   }
   @media (hover:hover){.loop-time:hover{filter:brightness(1.1);}}
+  #cardTable.full-list .loop-time{line-height:14px !important;}
   .loop-time.looping{background:var(--accent);color:var(--on-accent);}
   .loop-time.disabled{opacity:.4;cursor:not-allowed;background:var(--surface-3);color:var(--text-2);}
 
@@ -984,12 +985,14 @@ window.onYouTubeIframeAPIReady = function(){
   .le-box{display:flex;flex-direction:column;box-sizing:border-box;width:100%;max-width:720px;max-height:100%;overflow-y:auto;overscroll-behavior:contain;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);}
   .le-box > *{flex-shrink:0;}
   .le-box .edit-stroke{margin-top:10px;}
-  #studyCard.deck .listen-batch .tr-current{flex-direction:row;align-items:flex-start;padding:12px 16px;background:var(--row-alt);}
+  #studyCard.deck .listen-batch .tr-current{flex-direction:row;align-items:flex-start;padding:12px 16px;background:var(--surface);box-shadow:inset 4px 0 var(--accent);}
   .tr-main{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:4px;}
   #studyCard.deck .tr-current .listen-text{gap:4px;}
   #studyCard.deck .tr-current .cell{font-size:20px;line-height:25px;}
   #studyCard.deck .listen-batch .listen-pair .loop-time, .tr-line .loop-time{display:inline-block;}
-  #viewStudy:not(.offscreen) .media-container.listen-slot{position:fixed;z-index:1;display:block;box-sizing:border-box;margin:0;padding:0;opacity:1;pointer-events:auto;background:none;border:0;box-shadow:none;}
+  #viewStudy:not(.offscreen):has(#studyCard.deck){position:relative;}
+  #viewStudy:not(.offscreen):has(#studyCard.deck) .study-head{position:static;}
+  #viewStudy:not(.offscreen) .media-container.listen-slot{position:absolute;z-index:1;display:block;box-sizing:border-box;margin:0;padding:0;opacity:1;pointer-events:auto;background:none;border:0;box-shadow:none;}
   #viewStudy:not(.offscreen) .media-container.listen-slot .media-video{width:100%;height:100%;border-radius:var(--radius);}
   #viewStudy:not(.offscreen) .media-container.listen-slot .media-video iframe{width:100%;height:100%;transform:none;}
   #viewStudy:not(.offscreen) .media-container.listen-slot :is(.media-bar-main, .media-grow, .media-shrink){display:none;}
@@ -1009,7 +1012,7 @@ window.onYouTubeIframeAPIReady = function(){
   #viewStudy:has(.tr-current .loop-time.looping) .lc-wave i:nth-child(3n+2){animation-delay:-1.2s;}
   @keyframes lc-sway{0%, 100%{transform:scaleY(1);}50%{transform:scaleY(.7);}}
   .lc-time{font-size:20px;line-height:25px;font-weight:600;font-variant-numeric:tabular-nums;}
-  .tr-line{display:flex;align-items:center;padding:10px 16px;cursor:pointer;}
+  .tr-line{display:flex;align-items:center;padding:12px 16px;cursor:pointer;}
   @media (hover:hover){.tr-line:hover{background:var(--accent-soft);}}
   .tr-line.row-playing, #studyCard.deck .listen-batch .tr-current.row-playing{background:var(--row-playing);}
   .tr-text{flex:1 1 auto;min-width:0;font-size:20px;line-height:25px;color:var(--text);}
@@ -3441,7 +3444,7 @@ function fitDeck() {
   const bar = document.getElementById("touchBar");
   const selH = document.documentElement.classList.contains("sel-on") ? parseFloat(document.documentElement.style.getPropertyValue("--sel-h")) || 0 : 0;
   const below = Math.max(selH, bar && !bar.hidden ? bar.offsetHeight : 0) + 16;
-  const top = card.getBoundingClientRect().top + window.scrollY - studyAreaTop();
+  const top = card.getBoundingClientRect().top + window.scrollY;
   document.documentElement.style.setProperty("--deck-below", below + "px");
   card.style.setProperty("--deck-h", Math.max(0, Math.floor(window.innerHeight - top - below)) + "px");
 }
@@ -3666,10 +3669,10 @@ function placeListenVideo() {
     [ "left", "top", "width", "height" ].forEach(k => c.style[k] = "");
     return;
   }
-  const r = slot.getBoundingClientRect();
+  const r = slot.getBoundingClientRect(), v = document.getElementById("viewStudy").getBoundingClientRect();
   Object.assign(c.style, {
-    left: Math.round(r.left) + "px",
-    top: Math.round(r.top) + "px",
+    left: Math.round(r.left - v.left) + "px",
+    top: Math.round(r.top - v.top) + "px",
     width: Math.round(r.width) + "px",
     height: Math.round(r.height) + "px"
   });
@@ -5035,6 +5038,12 @@ function handleCardAreaClick(e) {
     noteWorkHush();
     return;
   }
+  if (groupState && studyCardsHidden()) {
+    e.stopPropagation();
+    hideTooltip();
+    revealAction();
+    return;
+  }
   if (!row.qHidden && !row.aHidden) loopWorkRow(row);
   const hit = e.target.closest(".cell") && lookupMark(e.target);
   if (hit && getSelection().isCollapsed) {
@@ -5084,7 +5093,7 @@ function handleCardAreaClick(e) {
     return;
   }
   if (e.target.closest(".paper-lines") && !getSelection().isCollapsed) return;
-  const cellEl = e.target.closest(".cell, .card-notes") || (!groupState && container.matches("tr[data-id]") ? container : null);
+  const cellEl = e.target.closest(".cell, .card-notes") || (!groupState && container.matches("tr[data-id]") || container.classList.contains("tr-current") ? container : null);
   if (cellEl && container.contains(cellEl) && getSelection().isCollapsed) {
     if (isSingleCard) openSingleCardEdit(row); else openEdit(container, row);
   }
@@ -6535,6 +6544,7 @@ function holdPageTo(bottom) {
 }
 
 function scrollToPinned(target) {
+  if (deckOn()) return;
   holdPageTo(target + window.innerHeight);
   window.scrollTo({
     top: target,
@@ -6569,6 +6579,7 @@ function dropLift() {
 }
 
 function showFromTop(target) {
+  if (deckOn()) return;
   const below = window.scrollY - target;
   if (below <= 0) return scrollToPinned(target);
   setLift(liftPx + below);
@@ -6784,6 +6795,13 @@ window.addEventListener("pointermove", e => {
     getSelection().removeAllRanges();
     hideTooltip();
     drag.restore = drag.vocab ? hideUnderSwipe(drag.parts) : showNextUnderSwipe(drag.row);
+    if (!drag.vocab && !drag.row && groupViewStyle === "table") {
+      const target = studyAreaTop();
+      if (window.scrollY > target + 1) {
+        drag.scrollWas = window.scrollY;
+        scrollToPinned(target);
+      }
+    }
     drag.dict = drag.vocab ? null : dictUnderSwipe(drag.parts);
   }
   drag.dx = dx;
@@ -6890,6 +6908,10 @@ function endDrag(e) {
     if (!dragGhost) return;
     dragGhost = null;
   }
+  if (d.scrollWas != null) requestAnimationFrame(() => window.scrollTo({
+    top: d.scrollWas,
+    behavior: "instant"
+  }));
   if (d.vocab) renderVocab(); else render();
   d.ghost.animate([ {
     transform: d.ghost.style.transform,
