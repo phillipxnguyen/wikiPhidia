@@ -898,7 +898,6 @@ window.onYouTubeIframeAPIReady = function(){
   }
   .single-card-body.listen-batch{padding:0;background:none;border:0;box-shadow:none;}
   .single-card-body.listen-batch:not(.edit-row){gap:0;}
-  @keyframes vn-bounce{0%, 100%{transform:scaleY(1);}50%{transform:scaleY(.4);}}
   .listen-pair{display:flex;flex-direction:column;align-items:center;padding:0 10px;transition:opacity .2s ease;}
   .listen-batch .listen-pair .single-card-field{position:static;min-height:0;padding:0;background:none;border-radius:0;align-items:flex-start;width:100%;min-width:0;}
   .listen-batch .listen-pair .cell{padding:0;font-size:28px;line-height:35px;text-align:left;max-width:100%;}
@@ -995,16 +994,19 @@ window.onYouTubeIframeAPIReady = function(){
   #viewStudy:not(.offscreen) .media-container.listen-slot .media-video iframe{width:100%;height:100%;transform:none;}
   #viewStudy:not(.offscreen) .media-container.listen-slot :is(.media-bar-main, .media-grow, .media-shrink){display:none;}
   .listen-cover{position:absolute;inset:0;z-index:3;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:rgba(0,0,0,.25);color:#fff;cursor:pointer;}
-  #viewStudy:not(.offscreen) .media-container.listen-slot .listen-cover{display:flex;opacity:0;pointer-events:none;transition:opacity .35s ease;}
+  #viewStudy:not(.offscreen) .media-container.listen-slot .listen-cover{display:flex;opacity:0;pointer-events:none;}
+  #viewStudy:not(.offscreen) .media-container.listen-slot.revealing .listen-cover{transition:opacity .8s ease-in-out;}
   #viewStudy:not(.offscreen) .media-container.listen-slot.covered .listen-cover{opacity:1;pointer-events:auto;}
-  #viewStudy:not(.offscreen) .media-container.listen-slot .media-video iframe{transform-origin:center;transition:filter .35s ease, transform .35s ease;}
+  #viewStudy:not(.offscreen) .media-container.listen-slot .media-video iframe{transform-origin:center;}
+  #viewStudy:not(.offscreen) .media-container.listen-slot.revealing .media-video iframe{transition:filter .8s ease-in-out, transform .8s ease-in-out;}
   #viewStudy:not(.offscreen) .media-container.listen-slot.covered .media-video iframe{filter:blur(20px);transform:scale(1.15);}
   .lc-wave i, .lc-time{filter:drop-shadow(0 1px 2px rgba(0,0,0,.4));}
   .lc-wave{display:flex;align-items:center;gap:5px;height:60px;}
   .lc-wave i{flex:none;width:6px;border-radius:3px;background:currentColor;opacity:.85;}
-  #viewStudy:has(.tr-current .loop-time.looping) .lc-wave i{transform-origin:center;animation:vn-bounce .9s ease-in-out infinite;}
-  #viewStudy:has(.tr-current .loop-time.looping) .lc-wave i:nth-child(3n+1){animation-delay:-.3s;}
-  #viewStudy:has(.tr-current .loop-time.looping) .lc-wave i:nth-child(3n+2){animation-delay:-.6s;}
+  #viewStudy:has(.tr-current .loop-time.looping) .lc-wave i{transform-origin:center;animation:lc-sway 1.8s ease-in-out infinite;}
+  #viewStudy:has(.tr-current .loop-time.looping) .lc-wave i:nth-child(3n+1){animation-delay:-.6s;}
+  #viewStudy:has(.tr-current .loop-time.looping) .lc-wave i:nth-child(3n+2){animation-delay:-1.2s;}
+  @keyframes lc-sway{0%, 100%{transform:scaleY(1);}50%{transform:scaleY(.7);}}
   .lc-time{font-size:20px;line-height:25px;font-weight:600;font-variant-numeric:tabular-nums;}
   .tr-line{display:flex;align-items:center;gap:15px;padding:8px 16px;cursor:pointer;}
   @media (hover:hover){.tr-line:hover{background:var(--row-alt);}}
@@ -3673,10 +3675,26 @@ function placeListenVideo() {
   listenSlotRaf = requestAnimationFrame(placeListenVideo);
 }
 
+let listenCoverWas = null;
+
+let listenRevealTimer = null;
+
 function syncListenCover() {
   const row = isListenMode() && deckOn() ? listenBatch()[0] : null;
   const cover = document.getElementById("listenCover");
-  mediaBox().classList.toggle("covered", !!row && (row.qHidden || !mediaPlayerReady() || ytHasError));
+  const box = mediaBox();
+  const covered = !!row && (row.qHidden || !mediaPlayerReady() || ytHasError);
+  const now = row ? row.id + ":" + row.qHidden : null;
+  if (listenCoverWas && row && listenCoverWas === row.id + ":true" && !row.qHidden && !covered && box.classList.contains("covered")) {
+    box.classList.add("revealing");
+    clearTimeout(listenRevealTimer);
+    listenRevealTimer = setTimeout(() => box.classList.remove("revealing"), 900);
+  } else if (covered) {
+    clearTimeout(listenRevealTimer);
+    box.classList.remove("revealing");
+  }
+  listenCoverWas = now;
+  box.classList.toggle("covered", covered);
   if (!row || cover.dataset.id === String(row.id)) return;
   cover.dataset.id = row.id;
   let seed = (row.id * 9301 + 49297) % 233280;
