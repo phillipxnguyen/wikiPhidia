@@ -965,9 +965,10 @@ window.onYouTubeIframeAPIReady = function(){
   @media (min-width:821px){#studyCard.deck > #singleCardView{flex:none;grid-template-rows:auto;}#studyCard.deck #singleCardBody.listen-batch{align-self:stretch;height:auto;contain:size;}}
   .edit-popup{position:fixed;inset:0;z-index:1500;}
   .edit-popup[hidden]{display:none;}
-  .le-box{position:fixed;display:flex;flex-direction:column;box-sizing:border-box;width:min(440px, calc(100vw - 32px));max-height:min(600px, 70dvh);overflow-y:auto;overscroll-behavior:contain;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);}
+  .le-box{position:fixed;display:flex;flex-direction:column;box-sizing:border-box;width:min(440px, calc(100vw - 32px));max-height:min(760px, 85dvh);overflow-y:auto;overscroll-behavior:contain;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);}
   .le-box > *{flex-shrink:0;}
   .le-box .edit-stroke{margin-top:10px;}
+  .dict-inline{display:block;box-sizing:border-box;width:100%;height:100%;border:1px solid var(--border);border-radius:10px;}
   .listen-pair{box-sizing:border-box;flex:none;display:flex;flex-direction:column;min-height:100%;padding:25px;}
   .lp-a{margin-top:11px;}
   .lp-stack{display:grid;}
@@ -5375,15 +5376,9 @@ const dictPreloadObserver = new IntersectionObserver(entries => {
 });
 
 function positionDictOverlay() {
-  if (!activeDictOverlay) return;
+  if (!activeDictOverlay || activeDictOverlay.inline) return;
   const rect = activeDictOverlay.placeholder.getBoundingClientRect();
   const iframe = activeDictOverlay.iframe;
-  const clipBox = activeDictOverlay.placeholder.closest(".le-box");
-  if (clipBox) {
-    const c = clipBox.getBoundingClientRect();
-    const top = Math.max(0, Math.round(c.top + 1 - rect.top)), bottom = Math.max(0, Math.round(rect.bottom - c.bottom + 1));
-    iframe.style.clipPath = top || bottom ? `inset(${top}px 0 ${bottom}px 0)` : "";
-  } else if (iframe.style.clipPath) iframe.style.clipPath = "";
   iframe.style.top = Math.round(rect.top + window.scrollY) + "px";
   iframe.style.left = Math.round(rect.left + window.scrollX) + "px";
   iframe.style.width = Math.round(rect.width) + "px";
@@ -5393,6 +5388,11 @@ function positionDictOverlay() {
 
 function hideDictOverlay() {
   if (!activeDictOverlay) return;
+  if (activeDictOverlay.inline) {
+    activeDictOverlay.iframe.remove();
+    activeDictOverlay = null;
+    return;
+  }
   cancelAnimationFrame(activeDictOverlay.rafId);
   Object.assign(activeDictOverlay.iframe.style, {
     position: "fixed",
@@ -5405,7 +5405,21 @@ function hideDictOverlay() {
 }
 
 function showDictOverlay(placeholder, url) {
+  if (activeDictOverlay && activeDictOverlay.inline && activeDictOverlay.placeholder === placeholder && activeDictOverlay.url === url) return;
   hideDictOverlay();
+  if (placeholder.closest(".le-box")) {
+    const inline = document.createElement("iframe");
+    inline.className = "dict-inline";
+    inline.src = url;
+    placeholder.replaceChildren(inline);
+    activeDictOverlay = {
+      iframe: inline,
+      placeholder: placeholder,
+      url: url,
+      inline: true
+    };
+    return;
+  }
   const iframe = getDictIframe(url);
   Object.assign(iframe.style, {
     position: "absolute",
@@ -5764,7 +5778,6 @@ function closeEditPopup() {
   editPopupAnchor = null;
   pop.hidden = true;
   pop.firstElementChild.innerHTML = "";
-  dictOverlayLayer.style.zIndex = "900";
 }
 
 window.addEventListener("keydown", e => {
@@ -5841,9 +5854,6 @@ function addSingleCard() {
   const tr = document.querySelector(`#tbody tr[data-id="${row.id}"]`);
   if (!tr) return;
   openEdit(tr, row);
-  activeEdit.editQ.focus({
-    preventScroll: true
-  });
 }
 
 document.getElementById("btnSingleCard").onclick = e => {
@@ -6001,7 +6011,6 @@ function openEditPopup(row) {
   box.innerHTML = buildEditBoxInner(row);
   const pop = document.getElementById("editPopup");
   pop.hidden = false;
-  dictOverlayLayer.style.zIndex = "1600";
   wireEditBox(box, row);
   placeEditPopup();
 }
@@ -12382,10 +12391,6 @@ function wireVocabEditor(items) {
       save();
     }
   }));
-  term.focus({
-    preventScroll: true
-  });
-  term.setSelectionRange(term.value.length, term.value.length);
   followInView(() => vocabEditingKey ? document.querySelector(".vocab-editor") : null);
 }
 
