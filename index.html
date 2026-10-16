@@ -957,7 +957,7 @@ window.onYouTubeIframeAPIReady = function(){
     #studyCard.deck{height:var(--deck-h, auto);}
     html:has(#viewStudy:not([hidden]):not(.offscreen) #studyCard.deck){overflow:hidden;}
   }
-  #studyCard.deck > #singleCardView{flex:1 1 0;min-height:0;display:grid;grid-template-columns:minmax(0, 1fr) 380px;grid-template-rows:minmax(0, 1fr);gap:0;align-items:start;overflow:visible;padding:0;background:none;border:0;border-radius:0;box-shadow:none;}
+  #studyCard.deck > #singleCardView{flex:1 1 0;min-height:0;display:grid;grid-template-columns:minmax(0, 1fr) 380px;grid-template-rows:minmax(0, 1fr);gap:0;align-items:start;overflow:visible;padding:0;background:none;border:0;border-radius:20px;box-shadow:none;}
   .listen-video{display:none;}
   #viewStudy{--video-radius:20px;}
   #studyCard.deck .listen-video{display:block;border-radius:var(--video-radius);background:#000;box-shadow:0 20px 40px -10px color-mix(in srgb, var(--accent) 45%, transparent);}
@@ -970,7 +970,7 @@ window.onYouTubeIframeAPIReady = function(){
   .le-box > *{flex-shrink:0;}
   .le-box .edit-stroke{margin-top:10px;}
   .listen-pair{box-sizing:border-box;flex:none;display:flex;flex-direction:column;min-height:100%;padding:25px;}
-  .lp-a{margin-top:20px;}
+  .lp-a{margin-top:19px;}
   .lp-stack{display:grid;}
   .lp-stack > *{grid-area:1 / 1;min-width:0;}
   .lp-reserve{visibility:hidden;}
@@ -979,7 +979,7 @@ window.onYouTubeIframeAPIReady = function(){
   #studyCard.deck .listen-pair :is(.cell, .lp-r){padding:0;font-size:28px;line-height:40px;font-weight:400;overflow-wrap:break-word;color:var(--text);}
   #studyCard.deck .listen-pair .cell.shown{cursor:pointer;}
   #studyCard.deck .lp-a .cell{color:var(--a-text);}
-  #studyCard.deck .listen-pair .card-notes{margin-top:20px;font-size:15px;line-height:20px;}
+  #studyCard.deck .listen-pair .card-notes{margin-top:22px;font-size:15px;line-height:20px;}
   #studyCard.deck .listen-pair .card-notes :is(ul, ol){display:flex;flex-wrap:wrap;gap:8px;margin:0;padding:0;list-style:none;}
   #studyCard.deck .listen-pair .card-notes li{padding:6px 12px;border-radius:15px;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-sm);}
   #studyCard.deck .listen-pair .loop-time{border-radius:10px;}
@@ -1005,7 +1005,7 @@ window.onYouTubeIframeAPIReady = function(){
   #viewStudy:has(.tr-current .loop-time.looping) .lc-wave i:nth-child(3n+2){animation-delay:-1.2s;}
   @keyframes lc-sway{0%, 100%{transform:scaleY(1);}50%{transform:scaleY(.7);}}
   .lc-time{font-size:20px;line-height:25px;font-weight:600;font-variant-numeric:tabular-nums;}
-  @media (max-width:600px){.lp-a{margin-top:15px;}#studyCard.deck .listen-pair :is(.cell, .lp-r){font-size:24px;line-height:35px;}#studyCard.deck .listen-pair .card-notes{margin-top:15px;}#studyCard.deck > #singleCardView{gap:0;}.listen-pair{padding:20px;}}
+  @media (max-width:600px){.lp-a{margin-top:14px;}#studyCard.deck .listen-pair :is(.cell, .lp-r){font-size:24px;line-height:35px;}#studyCard.deck .listen-pair .card-notes{margin-top:17px;}#studyCard.deck > #singleCardView{gap:0;}.listen-pair{padding:17px 20px 20px;}}
   .stroke-order-row{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;}
   .stroke-target:not(.stroke-fallback){cursor:pointer;}
   .stroke-target{width:60px;height:60px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2);}
@@ -6701,7 +6701,7 @@ function pinStudyArea() {
 }
 
 function studyParts() {
-  return [ document.getElementById(deckOn() ? "singleCardBody" : isCardMode() ? "singleCardView" : "cardTable") ].filter(el => el.offsetHeight);
+  return [ document.getElementById(isCardMode() ? "singleCardView" : "cardTable") ].filter(el => el.offsetHeight);
 }
 
 function hasOwnBox(el) {
@@ -6734,7 +6734,7 @@ function wholePx(n, up) {
 function ghostFor(parts) {
   const row = parts.length === 1 && parts[0] && (parts[0].tagName === "TR" || parts[0].classList.contains("listen-pair")) || parts.length > 0 && parts.every(el => el && el.parentElement && el.parentElement.classList.contains("vocab-list-row"));
   const visible = el => el && el.offsetParent && el.getBoundingClientRect().height > 1;
-  const shown = parts.filter(visible).flatMap(el => el.id === "cardTable" || el.id === "singleCardView" ? [ contentShape(el) ] : [ el ]);
+  const shown = parts.filter(visible).flatMap(el => el.id === "cardTable" || el.id === "singleCardView" && !deckOn() ? [ contentShape(el) ] : [ el ]);
   const rects = shown.map(el => el.getBoundingClientRect());
   if (!rects.length) return null;
   const left = Math.round(Math.min(...rects.map(r => r.left)));
