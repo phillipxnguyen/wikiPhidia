@@ -6731,11 +6731,28 @@ function wholePx(n, up) {
   return Math.abs(n - five) <= 1 ? five : round(n / 2) * 2;
 }
 
+function deckRects() {
+  const body = document.getElementById("singleCardBody");
+  const pair = body.querySelector(".listen-pair");
+  const video = document.getElementById("listenVideo").getBoundingClientRect();
+  if (!pair) return [ video ];
+  const pad = getComputedStyle(pair);
+  const seen = [ ...pair.querySelectorAll(":scope > .lp-q, :scope > .lp-a, :scope > .lp-stack > .lp-q") ].map(el => el.getBoundingClientRect()).filter(r => r.height);
+  if (!seen.length) return [ video ];
+  const view = body.getBoundingClientRect();
+  return [ video, {
+    left: Math.min(...seen.map(r => r.left)) - parseFloat(pad.paddingLeft),
+    right: Math.max(...seen.map(r => r.right)) + parseFloat(pad.paddingRight),
+    top: Math.max(view.top, Math.min(...seen.map(r => r.top)) - parseFloat(pad.paddingTop)),
+    bottom: Math.min(view.bottom, Math.max(...seen.map(r => r.bottom)) + parseFloat(pad.paddingBottom))
+  } ];
+}
+
 function ghostFor(parts) {
   const row = parts.length === 1 && parts[0] && (parts[0].tagName === "TR" || parts[0].classList.contains("listen-pair")) || parts.length > 0 && parts.every(el => el && el.parentElement && el.parentElement.classList.contains("vocab-list-row"));
   const visible = el => el && el.offsetParent && el.getBoundingClientRect().height > 1;
   const shown = parts.filter(visible).flatMap(el => el.id === "cardTable" || el.id === "singleCardView" && !deckOn() ? [ contentShape(el) ] : [ el ]);
-  const rects = shown.map(el => el.getBoundingClientRect());
+  const rects = shown.map(el => el.id === "singleCardView" && deckOn() ? deckRects() : [ el.getBoundingClientRect() ]).flat();
   if (!rects.length) return null;
   const left = Math.round(Math.min(...rects.map(r => r.left)));
   const top = Math.round(Math.min(...rects.map(r => r.top)));
