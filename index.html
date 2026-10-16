@@ -1000,7 +1000,7 @@ window.onYouTubeIframeAPIReady = function(){
   #viewStudy:has(.tr-current .loop-time.looping) .lc-wave i:nth-child(3n+2){animation-delay:-1.2s;}
   @keyframes lc-sway{0%, 100%{transform:scaleY(1);}50%{transform:scaleY(.7);}}
   .lc-time{font-size:20px;line-height:25px;font-weight:600;font-variant-numeric:tabular-nums;}
-  @media (max-width:600px){.lp-a{margin-top:15px;}#studyCard.deck .listen-pair .cell{font-size:24px;line-height:35px;}#studyCard.deck .listen-pair .card-notes{margin-top:15px;}#studyCard.deck > #singleCardView{gap:0;}.listen-pair{padding:20px;}}
+  @media (max-width:600px){.lp-a{margin-top:12px;}#studyCard.deck .listen-pair .cell{font-size:24px;line-height:35px;}#studyCard.deck .listen-pair .card-notes{margin-top:12px;}#studyCard.deck > #singleCardView{gap:0;}.listen-pair{padding:7px 18px 18px;}}
   .stroke-order-row{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;}
   .stroke-target:not(.stroke-fallback){cursor:pointer;}
   .stroke-target{width:60px;height:60px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2);}
@@ -4206,6 +4206,7 @@ function getTooltipEl() {
 function showTooltip(cellEl, text) {
   if (!text) return;
   const tip = getTooltipEl();
+  delete tip.dataset.part;
   tip.textContent = text;
   tip.anchor = cellEl;
   tip.classList.toggle("on-popup", !!(vocabPopupEl && vocabPopupEl.contains(cellEl)));
@@ -4875,8 +4876,15 @@ function handleCardAreaMouseover(e) {
   hoveredRowId = container && container.dataset.id ? Number(container.dataset.id) : null;
   if (isTouch()) return;
   const unit = hoverUnit(e.target);
+  if (unit && sentencePinyinMode()) return showSentencePinyin(unit, e.clientX, e.clientY) || hideTooltip();
   if (unit && hoverTooltip && hoverTooltip.style.display === "block" && hoverTooltip.anchor === unit) return;
   showCellPinyin(unit);
+}
+
+function handleCardAreaMousemove(e) {
+  if (isTouch() || !sentencePinyinMode()) return;
+  const unit = hoverUnit(e.target);
+  if (unit && !showSentencePinyin(unit, e.clientX, e.clientY) && hoverTooltip && hoverTooltip.anchor === unit) hideTooltip();
 }
 
 function hoverUnit(el) {
@@ -4939,6 +4947,76 @@ function showReading(cellEl, text, row, key) {
   if (!transliterationCache.has(key)) transliterationCache.set(key, getPinyin(text) || "");
   showTooltip(cellEl, transliterationCache.get(key));
   return true;
+}
+
+function sentenceAt(cell, x, y) {
+  const caret = document.caretPositionFromPoint ? document.caretPositionFromPoint(x, y) : document.caretRangeFromPoint && document.caretRangeFromPoint(x, y);
+  const node = caret && (caret.offsetNode || caret.startContainer);
+  if (!node || !cell.contains(node)) return null;
+  const texts = [];
+  let at = -1, total = 0;
+  const walker = document.createTreeWalker(cell, NodeFilter.SHOW_TEXT);
+  for (let t = walker.nextNode(); t; t = walker.nextNode()) {
+    if (t.parentElement.closest(".loop-time")) continue;
+    if (t === node) at = total + (caret.offset ?? caret.startOffset);
+    texts.push([ t, total ]);
+    total += t.data.length;
+  }
+  if (at < 0) return null;
+  const full = texts.map(([t]) => t.data).join("");
+  const re = /[^。！？!?.\n]+[。！？!?.]*[」』”"'）)]*/g;
+  for (let m = re.exec(full); m; m = re.exec(full)) {
+    if (at < m.index || at > m.index + m[0].length || !m[0].trim()) continue;
+    const point = pos => {
+      const hit = texts.find(([t, start]) => pos <= start + t.data.length) || texts[texts.length - 1];
+      return [ hit[0], Math.min(hit[0].data.length, Math.max(0, pos - hit[1])) ];
+    };
+    const range = document.createRange();
+    range.setStart(...point(m.index));
+    range.setEnd(...point(m.index + m[0].length));
+    const rects = [ ...range.getClientRects() ].filter(r => r.width);
+    if (!rects.some(r => x >= r.left && x <= r.right && y >= r.top && y <= r.bottom)) return null;
+    return {
+      text: m[0].trim(),
+      start: m.index,
+      rects: rects
+    };
+  }
+  return null;
+}
+
+function showSentencePinyin(cell, x, y) {
+  const container = cell.closest("[data-id]");
+  const row = container && rows.find(r => r.id === Number(container.dataset.id));
+  const part = row && sentenceAt(cell, x, y);
+  if (!part) return false;
+  const tip = hoverTooltip;
+  const key = cacheKey(row.id, cell.dataset.field) + ":" + part.start;
+  if (tip && tip.style.display === "block" && tip.anchor === cell && tip.dataset.part === key) return true;
+  if (!showReading(cell, part.text, row, key) || !hoverTooltip || hoverTooltip.anchor !== cell || hoverTooltip.style.display !== "block") return false;
+  const first = part.rects[0], last = part.rects[part.rects.length - 1];
+  hoverTooltip.dataset.part = key;
+  hoverTooltip.style.left = Math.round(first.left + window.scrollX) + "px";
+  hoverTooltip.style.top = Math.round(last.bottom + window.scrollY) + 4 + "px";
+  return true;
+}
+
+function sentencePinyinMode() {
+  return !!groupState && groupViewStyle === "ielts";
+}
+
+function tapPinyin(e, container) {
+  const unit = e.target.closest(".cell.shown") || e.target.closest(PINYIN_SEL);
+  const tip = hoverTooltip;
+  const open = !!tip && tip.style.display === "block";
+  if (!unit || !container.contains(unit)) return hideTooltip();
+  if (unit.matches(".cell") && sentencePinyinMode()) {
+    const was = open && tip.anchor === unit ? tip.dataset.part : null;
+    if (!showSentencePinyin(unit, e.clientX, e.clientY) || was && was === tip.dataset.part) hideTooltip();
+    return;
+  }
+  if (open && tip.anchor === unit) return hideTooltip();
+  if (!(unit.matches(".cell") ? showCellPinyin(unit) : showElementPinyin(unit))) hideTooltip();
 }
 
 function showRowPinyin(container) {
@@ -5017,18 +5095,10 @@ function handleCardAreaClick(e) {
       if (isSingleCard) openSingleCardEdit(row); else openEdit(container, row);
       return;
     }
-    if (isSingleCard) {
-      const pair = e.target.closest(".listen-pair");
-      if (cardBody.querySelector(".cell.hidden")) revealAction(); else if (pair) {
-        selectRow(id);
-        hideTooltip();
-        if (selectedRowId === id) showRowPinyin(pair);
-      } else if (hoverTooltip && hoverTooltip.style.display === "block" && cardBody.contains(hoverTooltip.anchor)) hideTooltip(); else showRowPinyin(cardBody);
+    if (groupState) {
+      if (cardBody.querySelector(".cell.hidden")) revealAction(); else tapPinyin(e, container);
       return;
-    } else if (groupState && document.querySelector("#tbody .cell.hidden")) {
-      revealAction();
-      return;
-    } else if (groupState || !isVirtualLesson()) {
+    } else if (!isVirtualLesson()) {
       selectRow(id);
       hideTooltip();
       refreshTouchSelection();
@@ -5236,6 +5306,7 @@ document.querySelector(".sidebar").addEventListener("click", e => {
 [ "tbody", "singleCardBody" ].forEach(id => {
   const el = document.getElementById(id);
   el.addEventListener("mouseover", handleCardAreaMouseover);
+  el.addEventListener("mousemove", handleCardAreaMousemove);
   el.addEventListener("mouseout", handleCardAreaMouseout);
   el.addEventListener("mouseleave", () => {
     hoveredRowId = null;
