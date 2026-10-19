@@ -464,6 +464,14 @@ window.onYouTubeIframeAPIReady = function(){
     .main:has(#viewStudy.focus-study:not([hidden]):not(.offscreen)), .main:has(#viewVocab.focus-study:not([hidden])){padding-top:calc(45px + 6px + env(safe-area-inset-top));}
     #viewStudy.focus-study .study-head, #viewVocab.focus-study > .vocab-toolbar{top:calc(45px + 6px + env(safe-area-inset-top));}
   }
+  @media (min-width:821px){
+    .shell{box-sizing:border-box;padding-top:52px;}
+    .brand{position:fixed;top:0;left:0;right:0;z-index:1000;box-sizing:border-box;height:52px;padding:0 20px;gap:8px;background:var(--surface);border-bottom:1px solid var(--border);}
+    .sidebar{top:52px;height:calc(100vh - 52px);padding-top:14px;}
+    .shell.bare .sidebar{height:auto;}
+    .shell .study-head, .shell .vocab-toolbar{top:52px;}
+    #viewStudy.focus-study .study-head, #viewVocab.focus-study > .vocab-toolbar{top:58px;}
+  }
   @media (max-width:600px){
     .shell .lesson-header{flex-wrap:wrap;}
     .shell .lesson-name-input, .shell #vocabTitle.lesson-name-input{flex-basis:100%;font-size:20px !important;}
@@ -920,14 +928,12 @@ window.onYouTubeIframeAPIReady = function(){
   .tests-key-add{display:flex;gap:8px;width:100%;}
   .tests-key-add input{flex:1;min-width:0;}
   .tests-go{display:flex;gap:12px;margin-top:16px;}
-  .test-nav{display:flex;align-items:center;gap:8px;width:100%;height:36px;flex:none;padding:0 10px;border:0;border-radius:var(--radius-sm);font-size:14px;line-height:20px;font-weight:600;color:var(--text-2);background:transparent;text-align:left;}
-  .test-nav-icon{font-size:16px;line-height:20px;}
-  .test-nav-name{flex:1;min-width:0;}
-  .test-nav-count{min-width:20px;height:20px;padding:0 6px;box-sizing:border-box;border-radius:10px;font-size:12px;line-height:20px;font-weight:700;text-align:center;color:var(--accent);background:var(--accent-soft);font-variant-numeric:tabular-nums;}
-  .test-nav-count:empty{display:none;}
-  .test-nav.due .test-nav-count{color:var(--due-color);background:color-mix(in srgb, var(--due-color) 14%, transparent);}
-  @media (hover:hover){.test-nav:hover{color:var(--text);background:var(--surface-2);}}
-  .test-nav.active{color:var(--accent);background:var(--accent-soft);}
+  .test-chip{flex-shrink:0;display:inline-flex;align-items:center;gap:4px;height:20px;min-height:0;padding:0 6px;border:0;border-radius:10px;font-size:12px;font-weight:700;line-height:20px;color:var(--accent);background:var(--accent-soft);font-variant-numeric:tabular-nums;white-space:nowrap;}
+  #testNavCount:empty{display:none;}
+  .test-chip.due{color:var(--due-color);background:color-mix(in srgb, var(--due-color) 14%, transparent);}
+  .test-chip.active{color:var(--on-accent);background:var(--accent);}
+  @media (hover:hover){.test-chip:not(.active):hover{background:color-mix(in srgb, var(--accent) 22%, transparent);}}
+  @media (max-width:820px){.test-chip-name{display:none;}}
   .tc-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px;}
   .tc-head .stats-title{margin:0;}
   .tc-tabs{display:flex;width:max-content;max-width:100%;margin-bottom:16px;overflow-x:auto;}
@@ -1063,6 +1069,10 @@ window.onYouTubeIframeAPIReady = function(){
   .exam-reason-label{margin-top:8px;font-size:14px;line-height:20px;font-style:italic;color:var(--sheet-ink-2);}
   .exam-listen{display:inline-flex;align-items:center;gap:8px;font-size:15px;line-height:20px;}
   .exam-listen span{font-size:12px;color:var(--sheet-ink-2);}
+  .exam-speak{font-size:15px;line-height:20px;}
+  .exam-audio .exam-listen + .exam-speak{margin-left:8px;}
+  .exam-sheet button.exam-speak.rec{color:#fff;background:var(--exam-red);border-color:var(--exam-red);}
+  .exam-rec-note{margin-left:12px;font-size:14px;line-height:20px;font-style:italic;color:var(--exam-red);}
   .exam-actions{display:flex;justify-content:flex-end;margin-top:24px;}
   .exam-busy{margin-top:24px;font-size:14px;line-height:20px;font-style:italic;text-align:right;color:var(--sheet-ink-2);}
   .exam-mark{position:absolute;top:-6px;left:-64px;width:48px;font-family:Georgia, "Times New Roman", serif;font-size:28px;line-height:36px;font-style:italic;text-align:center;color:var(--exam-red);}
@@ -1368,8 +1378,7 @@ window.onYouTubeIframeAPIReady = function(){
 <div class="shell">
 
 <aside class="sidebar">
-  <div class="brand"><button id="btnDrawer" class="ghost drawer-btn" aria-label="Menu">☰</button><button id="btnAppMode" class="brand-switch" title="Switch to Vocabulary"><span class="brand-mark">字</span><span id="brandName">Lessons</span></button><button id="streakChip" class="streak-chip" aria-haspopup="dialog" aria-controls="limitsPop"><span class="streak-chip-flame">🔥</span><span id="streakChipCount">0</span></button><button id="btnCloud" class="cloud-chip" hidden></button></div>
-  <button id="testNav" class="test-nav"><span class="test-nav-icon" aria-hidden="true">📝</span><span class="test-nav-name">Tests</span><span id="testNavCount" class="test-nav-count"></span></button>
+  <div class="brand"><button id="btnDrawer" class="ghost drawer-btn" aria-label="Menu">☰</button><button id="btnAppMode" class="brand-switch" title="Switch to Vocabulary"><span class="brand-mark">字</span><span id="brandName">Lessons</span></button><button id="streakChip" class="streak-chip" aria-haspopup="dialog" aria-controls="limitsPop"><span class="streak-chip-flame">🔥</span><span id="streakChipCount">0</span></button><button id="testNav" class="test-chip" aria-label="Tests"><span aria-hidden="true">📝</span><span class="test-chip-name">Tests</span><span id="testNavCount"></span></button><button id="btnCloud" class="cloud-chip" hidden></button></div>
   <input type="search" id="lessonSearch" name="lesson-search" autocomplete="off" placeholder="Search lessons…" aria-label="Search lessons">
   <nav id="lessonList" class="lesson-list" aria-label="Lessons"></nav>
   <div class="sidebar-footer">
@@ -2273,10 +2282,14 @@ function pinMediaHead() {
 
 window.addEventListener("resize", pinMediaHead);
 
+function topCover() {
+  const bar = [ ".sidebar", ".brand" ].map(sel => document.querySelector(sel)).find(el => el && getComputedStyle(el).position === "fixed");
+  return bar ? Math.max(0, Math.round(bar.getBoundingClientRect().bottom)) : 0;
+}
+
 function scrollToMedia() {
   const head = document.querySelector("#viewStudy .study-head");
-  const sidebar = document.querySelector(".sidebar");
-  const cover = sidebar && getComputedStyle(sidebar).position === "fixed" ? Math.max(0, sidebar.getBoundingClientRect().bottom) : 0;
+  const cover = topCover();
   head.style.position = "static";
   const top = head.getBoundingClientRect().top + window.scrollY - cover;
   head.style.position = "";
@@ -6097,8 +6110,7 @@ function visibleBand() {
   const vv = window.visualViewport;
   let top = vv ? vv.offsetTop : 0;
   let bottom = top + (vv ? vv.height : window.innerHeight);
-  const sidebar = document.querySelector(".sidebar");
-  if (sidebar && getComputedStyle(sidebar).position === "fixed") top = Math.max(top, sidebar.getBoundingClientRect().bottom);
+  top = Math.max(top, topCover());
   const head = currentView === "study" ? document.querySelector(".study-head") : currentView === "vocab" && document.getElementById("vocabToolbar");
   if (head && head.offsetHeight && getComputedStyle(head).position === "sticky") {
     const r = head.getBoundingClientRect();
@@ -10122,7 +10134,7 @@ function showView(view) {
     hideDictOverlay();
   }
   if (view === "stats") renderStats();
-  if (view === "test") renderTest();
+  if (view === "test") renderTest(); else stopTestSpeech();
   syncTestNav();
   if (view === "study") render();
   if (view === "vocab") renderVocab();
@@ -13090,8 +13102,7 @@ function toggleVocabSound(item) {
 function pinVocabArea(next) {
   const toolbar = document.getElementById("vocabToolbar");
   if (toolbar.hidden) {
-    const bar = document.querySelector(".sidebar");
-    const cover = getComputedStyle(bar).position === "fixed" ? bar.getBoundingClientRect().bottom : 0;
+    const cover = topCover();
     window.scrollTo(0, Math.max(0, window.scrollY + document.getElementById("vocabStage").getBoundingClientRect().top - cover - 8));
     return;
   }
@@ -13721,6 +13732,11 @@ const TEST_TYPES = {
     seconds: 90,
     rubric: "Score 1 for a correct, natural sentence that uses the word in its right meaning; 0.5 when the word is used rightly but with a grammar slip; 0 otherwise."
   },
+  speak: {
+    offline: true,
+    seconds: 120,
+    rubric: "Score out of 4 from the transcript of what was said aloud, one point each: it answers the question fully and holds together; the given words are used correctly; grammar is accurate; vocabulary is varied and natural. The transcript comes from speech recognition, so ignore punctuation, spelling and an obviously misheard word. Half points are allowed."
+  },
   write: {
     offline: true,
     seconds: 600,
@@ -13731,18 +13747,18 @@ const TEST_TYPES = {
 const TEST_FORMATS = {
   mixed: {
     name: "Vocabulary test",
-    parts: [ [ "listen", 5, "Listening", "Listen and write exactly what you hear. You may listen twice." ], [ "cloze", 5, "Vocabulary in context", "Write the missing word in each sentence. No word list is given." ], [ "order", 4, "Sentence building", "Put the words in order and write the whole sentence." ], [ "translate", 5, "Translation", "Translate each sentence. More than one answer can be right." ], [ "usesent", 3, "Using words", "Write one sentence with each word." ], [ "write", 1, "Writing", "Write 3–5 sentences that use every word given, then explain why one of them fits.", 480 ] ]
+    parts: [ [ "listen", 5, "Listening", "Listen and write exactly what you hear. You may listen twice." ], [ "cloze", 5, "Vocabulary in context", "Write the missing word in each sentence. No word list is given." ], [ "order", 4, "Sentence building", "Put the words in order and write the whole sentence." ], [ "translate", 5, "Translation", "Translate each sentence. More than one answer can be right." ], [ "usesent", 3, "Using words", "Write one sentence with each word." ], [ "speak", 2, "Speaking", "Answer each question out loud: press Speak, talk, then Stop. What you say is written down and marked." ], [ "write", 1, "Writing", "Write 3–5 sentences that use every word given, then explain why one of them fits.", 480 ] ]
   },
   ielts: {
     name: "IELTS Academic",
     langs: [ "en" ],
-    parts: [ [ "listenq", 5, "Listening", "Complete the notes. Write NO MORE THAN TWO WORDS AND/OR A NUMBER for each answer. You will hear the recording twice." ], [ "read", 5, "Reading", "Read the passage. Complete each sentence in NO MORE THAN TWO WORDS, or answer in your own words. There is no word bank." ], [ "write", 1, "Writing", "Task 2. Write at least 250 words on the topic given, using the words listed. Give reasons and examples.", 2400 ] ]
+    parts: [ [ "listenq", 5, "Listening", "Complete the notes. Write NO MORE THAN TWO WORDS AND/OR A NUMBER for each answer. You will hear the recording twice." ], [ "read", 5, "Reading", "Read the passage. Complete each sentence in NO MORE THAN TWO WORDS, or answer in your own words. There is no word bank." ], [ "write", 1, "Writing", "Task 2. Write at least 250 words on the topic given, using the words listed. Give reasons and examples.", 2400 ], [ "speak", 3, "Speaking", "Parts 1–3. Answer each question out loud for about a minute, using the words given where you can: press Speak, talk, then Stop." ] ]
   },
   hsk: {
     name: "HSK 模拟题",
     label: [ "第#题", "第#题" ],
     langs: [ "zh-CN", "zh-TW" ],
-    parts: [ [ "listenq", 3, "一、听力", "听对话（两遍），用汉语回答问题。" ], [ "cloze", 5, "二、阅读：填空", "请在横线上写一个合适的词（没有词语库）。" ], [ "read", 3, "三、阅读：理解", "读短文，用汉语回答问题。" ], [ "order", 5, "四、书写：完成句子", "把词语排成正确的句子。" ], [ "usesent", 2, "五、书写：用词写句", "用所给的词语写一句话。" ], [ "write", 1, "六、书写：写一段话", "用所给的词语写一段话（60–80字）。", 900 ] ]
+    parts: [ [ "listenq", 3, "一、听力", "听对话（两遍），用汉语回答问题。" ], [ "cloze", 5, "二、阅读：填空", "请在横线上写一个合适的词（没有词语库）。" ], [ "read", 3, "三、阅读：理解", "读短文，用汉语回答问题。" ], [ "order", 5, "四、书写：完成句子", "把词语排成正确的句子。" ], [ "usesent", 2, "五、书写：用词写句", "用所给的词语写一句话。" ], [ "write", 1, "六、书写：写一段话", "用所给的词语写一段话（60–80字）。", 900 ], [ "speak", 2, "七、口语（HSKK）", "听问题，用汉语回答一分钟左右。按 Speak 开始说，说完按 Stop。" ] ]
   },
   jlpt: {
     name: "JLPT 模擬問題",
@@ -13754,7 +13770,7 @@ const TEST_FORMATS = {
     name: "TOPIK 모의고사",
     label: [ "#번", "#번" ],
     langs: [ "ko" ],
-    parts: [ [ "listenq", 4, "듣기", "대화를 두 번 듣고 질문에 한국어로 답하십시오." ], [ "read", 4, "읽기", "글을 읽고 질문에 답하십시오. 보기는 없습니다." ], [ "cloze", 2, "쓰기 51–52", "빈칸에 알맞은 말을 쓰십시오." ], [ "write", 1, "쓰기 54", "주어진 단어를 사용하여 200–300자로 글을 쓰십시오.", 1200 ] ]
+    parts: [ [ "listenq", 4, "듣기", "대화를 두 번 듣고 질문에 한국어로 답하십시오." ], [ "read", 4, "읽기", "글을 읽고 질문에 답하십시오. 보기는 없습니다." ], [ "cloze", 2, "쓰기 51–52", "빈칸에 알맞은 말을 쓰십시오." ], [ "write", 1, "쓰기 54", "주어진 단어를 사용하여 200–300자로 글을 쓰십시오.", 1200 ], [ "speak", 2, "말하기", "질문에 한국어로 1분 정도 대답하십시오. Speak를 누르고 말한 뒤 Stop을 누르십시오." ] ]
   },
   thpt: {
     name: "THPT Quốc gia – Tiếng Anh",
@@ -14065,6 +14081,10 @@ function orderTokens(sentence, lang) {
   return shuffled;
 }
 
+function typeMax(type) {
+  return type === "write" || type === "speak" ? 4 : 1;
+}
+
 function newQuestion(t, step, type, items, k) {
   const part = t.parts[step.part];
   const level = t.levels[type] || 2;
@@ -14075,7 +14095,7 @@ function newQuestion(t, step, type, items, k) {
     n: t.questions.length + k + 1,
     level: level,
     keys: items.map(i => i.key),
-    max: type === "write" ? 4 : 1,
+    max: typeMax(type),
     plays: 2,
     why: t.ai && level === 3 && (type === "cloze" || type === "translate" || type === "fix"),
     task: part.task,
@@ -14113,7 +14133,7 @@ function offlineFill(t, q) {
     const whole = sentence && item.a && q.level > 1;
     q.sentence = whole ? item.a : meaning;
     q.answer = whole ? sentence : item.term;
-  } else if (q.type === "usesent") {
+  } else if (q.type === "usesent" || q.type === "speak") {
     q.sentence = "";
     q.answer = sentence;
   } else {
@@ -14136,7 +14156,7 @@ function applyGenerated(t, qs, next) {
     return true;
   }
   const q = qs[0];
-  if (!next.sentence && ![ "write", "usesent", "order" ].includes(q.type) || !next.answer && q.type !== "write") return false;
+  if (!next.sentence && ![ "write", "usesent", "order" ].includes(q.type) || !next.answer && q.type !== "write" && q.type !== "speak") return false;
   Object.assign(q, {
     sentence: oneLine(next.sentence),
     start: oneLine(next.start),
@@ -14176,7 +14196,7 @@ function testMarkRequest(t, q) {
     rubric: TEST_TYPES[q.type].rubric,
     task: q.task,
     passage: q.passage || "",
-    question: q.type === "write" || q.type === "usesent" ? {
+    question: q.type === "write" || q.type === "usesent" || q.type === "speak" ? {
       situation: q.sentence,
       words: q.keys.map(k => t.pool.find(i => i.key === k).term)
     } : q.type === "order" ? q.tokens.join(" / ") : q.type === "listen" ? "Dictation of the model answer" : q.sentence,
@@ -14286,6 +14306,7 @@ Writing ("write"): always a brand-new context, never one of the given sentences 
 - fix: "sentence" is a ${target} sentence using the word with exactly one grammar or word-form error; "answer" is the corrected sentence; "accepted" lists other valid corrections; "translation" says in ${mine} what the error was.
 - rewrite: "sentence" is a ${target} sentence using the word; "start" is the first words of a rewrite with the same meaning in a different structure; "answer" is the whole model rewrite beginning with "start"; "accepted" lists other correct rewrites.
 - usesent: "answer" is a model ${target} sentence using the word.
+- speak: "sentence" is a spoken-exam question or a short cue card, in the language the exam asks in, on an everyday topic where the words fit; "answer" is a model spoken answer of 3–5 ${target} sentences using the words.
 - write: "sentence" is the topic, situation or notes the task needs, in the language the exam asks in; "answer" is a model text in ${target} that uses every word.
 
 Marking ("marks"): one entry per item of "mark", in the same order. Follow each item's rubric, mark by meaning and accept every correct alternative, not only the model answer. An empty answer scores 0. "score" is between 0 and max_score in steps of 0.5. "feedback" is one or two short sentences in ${mine} saying what was right or wrong and why. "correction" is the corrected answer, or empty when the answer was fully right.
@@ -14394,7 +14415,7 @@ function planNextStep(t) {
   if (!step) return null;
   const part = t.parts[step.part];
   const group = TEST_TYPES[part.type].group;
-  const items = pickTestItems(t, part.type, part.type === "write" ? Math.min(3, t.pool.length) : group ? Math.min(4, t.pool.length) : 1);
+  const items = pickTestItems(t, part.type, part.type === "write" ? Math.min(3, t.pool.length) : part.type === "speak" ? Math.min(2, t.pool.length) : group ? Math.min(4, t.pool.length) : 1);
   const qs = [];
   for (let k = 0; k < step.count; k++) qs.push(newQuestion(t, step, part.type, items, k));
   if (!t.ai && !TEST_TYPES[part.type].offline) qs.forEach(q => q.type = TEST_TYPES[q.type].fallback);
@@ -14414,7 +14435,7 @@ async function advanceTest(t) {
     t.busy = toMark.length ? "Marking…" : "Writing the next questions…";
     renderOpen(t);
     try {
-      const heavy = toMark.some(q => q.type === "write") || next && TEST_TYPES[next[0].type].group;
+      const heavy = toMark.some(q => q.max > 1) || next && TEST_TYPES[next[0].type].group;
       reply = await askExaminer(t, toMark.length ? toMark.map(q => testMarkRequest(t, q)) : null, next ? testPrompt(t, next) : null, heavy ? "medium" : "low");
     } catch (e) {
       showToast(examinerTrouble(e) + " — marking on this device");
@@ -14436,7 +14457,7 @@ async function advanceTest(t) {
   if (toMark.length && toMark.every(q => q.score !== null)) adaptTest(t, toMark);
   if (next) {
     if (!(reply && reply.next && applyGenerated(t, next, reply.next))) next.forEach((q, k) => {
-      if (q.keys.length > 1 && q.type !== "write") q.keys = [ q.keys[k % q.keys.length] ];
+      if (q.keys.length > 1 && q.type !== "write" && q.type !== "speak") q.keys = [ q.keys[k % q.keys.length] ];
       offlineFill(t, q);
     });
     next.forEach((q, k) => q.n = t.questions.length + k + 1);
@@ -14474,6 +14495,7 @@ function submitTestStep() {
   const t = openTestRecord();
   if (!t || t.status !== "active" || t.busy) return;
   if (t.questions.some(q => q.selfMark)) return showToast("Mark the answer above first");
+  stopTestSpeech();
   const cur = stepQuestions(t, t.stepCount - 1).filter(q => !q.submitted);
   if (!cur.length) return;
   cur.forEach(q => {
@@ -14500,7 +14522,7 @@ function finishTest(t, timeUp) {
       q.feedback = timeUp ? "Not answered in time." : "";
     }
   });
-  const missed = t.steps.slice(t.stepCount).reduce((s, st) => s + (t.parts[st.part].type === "write" ? 4 : st.count), 0);
+  const missed = t.steps.slice(t.stepCount).reduce((s, st) => s + typeMax(t.parts[st.part].type) * st.count, 0);
   t.result = {
     got: t.questions.reduce((s, q) => s + q.score, 0),
     max: t.questions.reduce((s, q) => s + q.max, 0) + missed
@@ -14561,6 +14583,77 @@ function speakTest(text) {
   });
 }
 
+const TEST_SPEECH_LANGS = {
+  "zh-CN": "zh-CN",
+  "zh-TW": "zh-TW",
+  ja: "ja-JP",
+  ko: "ko-KR",
+  en: "en-US",
+  vi: "vi-VN"
+};
+
+function speechRecognizer() {
+  return window.SpeechRecognition || window.webkitSpeechRecognition || null;
+}
+
+function stopTestSpeech() {
+  if (testSpeech.rec) testSpeech.rec.stop();
+}
+
+function testSpeech(n) {
+  const t = openTestRecord();
+  const q = t && t.questions[n - 1];
+  const Rec = speechRecognizer();
+  if (!q || q.submitted || !Rec) return;
+  const same = testSpeech.rec && testSpeech.rec.n === n;
+  stopTestSpeech();
+  if (same) return;
+  speechSynthesis.cancel();
+  const rec = new Rec();
+  rec.lang = TEST_SPEECH_LANGS[t.target] || "en-US";
+  rec.continuous = true;
+  rec.interimResults = true;
+  rec.n = n;
+  let said = "";
+  const joined = (text, add) => text && add && !UNSPACED_RE.test(add) ? text + " " + add : text + add;
+  q.response = "";
+  rec.onresult = e => {
+    let heard = "";
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const part = e.results[i][0].transcript.trim();
+      if (e.results[i].isFinal) said = joined(said, part); else heard = joined(heard, part);
+    }
+    q.response = joined(said, heard).trim();
+    const box = document.querySelector(`.exam-q[data-n="${n}"] .exam-answer`);
+    if (box) {
+      box.value = q.response;
+      fitExamBox(box);
+    }
+  };
+  rec.onerror = e => {
+    if (e.error === "no-speech" || e.error === "aborted") return;
+    q.typed = true;
+    showToast(e.error === "not-allowed" || e.error === "service-not-allowed" ? "The microphone is not allowed: type your answer instead" : "Could not listen: type your answer instead");
+  };
+  rec.onend = () => {
+    if (testSpeech.rec !== rec) return;
+    testSpeech.rec = null;
+    q.response = said || q.response;
+    touchTest(t);
+    renderOpen(t);
+  };
+  testSpeech.rec = rec;
+  try {
+    rec.start();
+  } catch (e) {
+    testSpeech.rec = null;
+    q.typed = true;
+    renderTest();
+    return showToast("Could not listen: type your answer instead");
+  }
+  renderTest();
+}
+
 function playTestAudio(n) {
   const t = openTestRecord();
   const q = t && t.questions[n - 1];
@@ -14606,8 +14699,13 @@ function examQuestionHtml(t, q, live) {
   let prompt = "";
   if (q.type === "listen") {
     prompt = `<button class="exam-listen" data-listen="${q.n}"${open && q.plays ? "" : " disabled"}>▶ Listen <span>${q.plays} left</span></button>` + (marked ? `<div class="exam-context">${escapeHtml(q.answer)}${q.translation ? " — " + escapeHtml(q.translation) : ""}</div>` : "");
-  } else if (q.type === "write" || q.type === "usesent") {
-    prompt = (q.sentence ? `<div class="exam-text">${paperText(q.sentence)}</div>` : "") + `<div class="exam-text">${q.type === "usesent" ? "" : "Use: "}${words.map(i => `<b>${escapeHtml(i.term)}</b>`).join(" · ")}${q.type === "usesent" && !t.ai && words[0].meaning ? ` <i>(${escapeHtml(words[0].meaning)})</i>` : ""}</div>`;
+  } else if (q.type === "write" || q.type === "usesent" || q.type === "speak") {
+    prompt = (q.sentence ? `<div class="exam-text">${paperText(q.sentence)}</div>` : q.type === "speak" ? '<div class="exam-text">Say 3–5 sentences about yourself or your day.</div>' : "") + `<div class="exam-text">${q.type === "usesent" ? "" : "Use: "}${words.map(i => `<b>${escapeHtml(i.term)}</b>`).join(" · ")}${q.type !== "write" && !t.ai && words[0].meaning ? ` <i>(${words.map(i => escapeHtml(i.meaning)).filter(Boolean).join(" · ")})</i>` : ""}</div>`;
+    if (q.type === "speak") {
+      const can = !!speechRecognizer() && !q.typed;
+      const on = testSpeech.rec && testSpeech.rec.n === q.n;
+      prompt += can ? `<div class="exam-audio">${q.sentence ? `<button class="exam-listen" data-say="${q.n}"${open && !on ? "" : " disabled"}>▶ Hear the question</button> ` : ""}<button class="exam-speak${on ? " rec" : ""}" data-speak="${q.n}"${open ? "" : " disabled"}>${on ? "■ Stop" : q.response ? "● Speak again" : "● Speak"}</button>${on ? '<span class="exam-rec-note">Listening…</span>' : ""}</div>` : open ? `<div class="exam-context">${q.typed ? "Listening did not work here: type what you would say." : "This browser cannot listen: type what you would say."}</div>` : "";
+    }
   } else if (q.type === "order") {
     prompt = `<div class="exam-text exam-tokens">${q.tokens.map(escapeHtml).join('<span class="exam-slash">/</span>')}</div>`;
   } else if (q.type === "rewrite") {
@@ -14617,14 +14715,14 @@ function examQuestionHtml(t, q, live) {
   } else {
     prompt = `<div class="exam-text">${paperText(q.sentence)}</div>` + (q.type === "cloze" && q.translation ? `<div class="exam-context">${escapeHtml(q.translation)}</div>` : "") + (q.type === "fix" && marked && q.translation ? `<div class="exam-context">${escapeHtml(q.translation)}</div>` : "");
   }
-  const lines = q.type === "write" ? 8 : q.type === "usesent" || q.type === "rewrite" || q.type === "fix" ? 2 : 1;
-  const ro = open ? "" : " readonly";
+  const lines = q.type === "write" ? 8 : q.type === "speak" ? 3 : q.type === "usesent" || q.type === "rewrite" || q.type === "fix" ? 2 : 1;
+  const ro = open && !(q.type === "speak" && speechRecognizer() && !q.typed) ? "" : " readonly";
   const answer = `<textarea class="exam-answer" rows="${lines}" aria-label="Answer ${q.n}" spellcheck="false" autocomplete="off"${ro}>${escapeHtml(q.response)}</textarea>`;
   const reason = q.why ? `<div class="exam-reason-label">Explain why</div><textarea class="exam-reason exam-answer" rows="2" aria-label="Reason ${q.n}" spellcheck="false"${ro}>${escapeHtml(q.reason)}</textarea>` : "";
   let after = "";
   if (q.selfMark) {
     const uses = words.filter(i => containsTerm(q.response, i.term)).length;
-    after = `<div class="exam-fix"><b>Model answer:</b> ${escapeHtml(q.answer || "—")}</div><div class="exam-self"><div class="exam-self-rubric">${escapeHtml(TEST_TYPES[q.type].rubric)}${words.length > 1 || q.type === "usesent" ? ` Words used: ${uses} of ${words.length}.` : ""}</div><div class="exam-self-btns">` + (q.max === 4 ? [ 0, 1, 2, 3, 4 ] : [ 0, .5, 1 ]).map(s => `<button data-self="${s}" data-n="${q.n}">${fmtScore(s)}</button>`).join("") + "</div></div>";
+    after = `<div class="exam-fix"><b>Model answer:</b> ${escapeHtml(q.answer || "—")}</div><div class="exam-self"><div class="exam-self-rubric">${escapeHtml(TEST_TYPES[q.type].rubric)}${words.length > 1 || q.type === "usesent" || q.type === "speak" ? ` Words used: ${uses} of ${words.length}.` : ""}</div><div class="exam-self-btns">` + (q.max === 4 ? [ 0, 1, 2, 3, 4 ] : [ 0, .5, 1 ]).map(s => `<button data-self="${s}" data-n="${q.n}">${fmtScore(s)}</button>`).join("") + "</div></div>";
   } else if (marked) {
     const fix = q.correction && answerKey(q.correction) !== answerKey(q.response) ? q.correction : "";
     after = (fix ? `<div class="exam-fix">${escapeHtml(fix)}</div>` : "") + (q.feedback ? `<div class="exam-fix exam-fb">${escapeHtml(q.feedback)}</div>` : "") + (!fix && !q.feedback && q.score < q.max && q.answer ? `<div class="exam-fix">${escapeHtml(q.answer)}</div>` : "");
@@ -14680,6 +14778,7 @@ function examPaperHtml(t) {
 const TEST_SKILLS = {
   listen: "Listening",
   listenq: "Listening",
+  speak: "Speaking",
   read: "Reading",
   cloze: "Vocabulary",
   kana: "Vocabulary",
@@ -14691,7 +14790,7 @@ const TEST_SKILLS = {
   write: "Writing"
 };
 
-const TEST_SKILL_ORDER = [ "Listening", "Reading", "Vocabulary", "Grammar", "Translation", "Writing" ];
+const TEST_SKILL_ORDER = [ "Listening", "Speaking", "Reading", "Vocabulary", "Grammar", "Translation", "Writing" ];
 
 let testTab = "overview";
 
@@ -14895,7 +14994,7 @@ function reportHtml(t) {
   const pct = testPct(t);
   const rows = t.parts.map((p, i) => {
     const qs = t.questions.filter(q => q.part === i);
-    const planned = t.steps.filter(s => s.part === i).reduce((s, st) => s + (p.type === "write" ? 4 : st.count), 0);
+    const planned = t.steps.filter(s => s.part === i).reduce((s, st) => s + typeMax(p.type) * st.count, 0);
     return {
       label: p.title,
       got: qs.reduce((s, q) => s + q.score, 0),
@@ -15000,8 +15099,12 @@ document.getElementById("viewTest").addEventListener("click", e => {
     testTab = "new";
     renderTest();
     window.scrollTo(0, 0);
-  } else if (b.dataset.listen) playTestAudio(Number(b.dataset.listen)); else if (b.dataset.self !== undefined) selfMarkTest(Number(b.dataset.n), Number(b.dataset.self)); else if (act === "submit") submitTestStep(); else if (act === "pause" || act === "home") {
+  } else if (b.dataset.say) {
+    const q = t && t.questions[Number(b.dataset.say) - 1];
+    if (q) speakTest(q.sentence);
+  } else if (b.dataset.speak) testSpeech(Number(b.dataset.speak)); else if (b.dataset.listen) playTestAudio(Number(b.dataset.listen)); else if (b.dataset.self !== undefined) selfMarkTest(Number(b.dataset.n), Number(b.dataset.self)); else if (act === "submit") submitTestStep(); else if (act === "pause" || act === "home") {
     speechSynthesis.cancel();
+    stopTestSpeech();
     testOpenId = null;
     renderTest();
     window.scrollTo(0, 0);
