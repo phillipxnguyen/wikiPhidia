@@ -1079,6 +1079,9 @@ window.onYouTubeIframeAPIReady = function(){
   textarea.exam-answer[readonly]{cursor:default;}
   .exam-reason-label{margin-top:8px;font-size:15px;line-height:20px;font-style:italic;}
   .exam-sheet button.exam-play, .exam-sheet button.exam-rec{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border-radius:16px;font-size:12px;line-height:16px;}
+  .exam-sheet button.exam-play.on{color:#fff;background:var(--sheet-edge);border-color:var(--sheet-edge);}
+  .exam-sheet button.exam-play.load::after{content:"";box-sizing:border-box;width:16px;height:16px;border:2px solid var(--sheet-box-edge);border-top-color:var(--sheet-ink);border-radius:8px;animation:examSpin 800ms linear infinite;}
+  @keyframes examSpin{to{transform:rotate(360deg);}}
   .exam-sheet button.exam-rec{font-size:16px;color:var(--exam-red);}
   .exam-sheet button.exam-rec.on{color:#fff;background:var(--exam-red);border-color:var(--exam-red);}
   .exam-plays{font-size:10px;line-height:16px;letter-spacing:2px;color:var(--sheet-ink-2);}
@@ -10152,7 +10155,7 @@ function showView(view) {
   if (view === "stats") renderStats();
   if (view === "test") renderTest(); else {
     stopTestSpeech();
-    stopTestClip();
+    stopTestAudio();
   }
   syncTestNav();
   if (view === "study") render();
@@ -15113,7 +15116,7 @@ function unansweredCount(t) {
 function handInTest(t, timeUp) {
   if (!t || t.status !== "active" || t.handedIn || t.busy) return;
   stopTestSpeech();
-  stopTestClip();
+  stopTestAudio();
   speechSynthesis.cancel();
   t.questions.forEach(q => {
     const box = document.querySelector(`.exam-q[data-n="${q.n}"] .exam-answer:not(.exam-reason)`);
@@ -15182,14 +15185,20 @@ function tickTest() {
   if (t.timeLeft <= 0) handInTest(t, true);
 }
 
-function speakTest(text, lang) {
+function speakTest(text, lang, n) {
   speechSynthesis.cancel();
-  text.split(/\n+/).map(line => line.replace(/^\s*[^\s:：]{1,8}\s*[:：]\s*/, "").trim()).filter(Boolean).forEach(line => {
+  const lines = text.split(/\n+/).map(line => line.replace(/^\s*[^\s:：]{1,8}\s*[:：]\s*/, "").trim()).filter(Boolean);
+  const token = n ? testAudio.token : 0;
+  lines.forEach((line, i) => {
     const utter = new SpeechSynthesisUtterance(line);
     const t = openTestRecord();
     utter.lang = (lang || t && t.target) === "zh-TW" ? "zh-TW" : resolveSpeechLang(line);
     const voice = pickVoice(utter.lang);
     if (voice) utter.voice = voice;
+    if (token && i === 0) utter.onstart = () => startedTestAudio(token);
+    if (token && i === lines.length - 1) utter.onend = utter.onerror = () => {
+      if (testAudio.token === token && testAudio.state === "play") stopTestAudio();
+    };
     speechSynthesis.speak(utter);
   });
 }
@@ -15219,6 +15228,7 @@ function testSpeech(n) {
   const same = testSpeech.rec && testSpeech.rec.n === n;
   stopTestSpeech();
   if (same) return;
+  stopTestAudio();
   speechSynthesis.cancel();
   const rec = new Rec();
   rec.lang = TEST_SPEECH_LANGS[q.lang || t.target] || "en-US";
@@ -15265,36 +15275,116 @@ function testSpeech(n) {
   renderTest();
 }
 
-function stopTestClip() {
-  const box = document.getElementById("testClip");
-  if (box) box.remove();
-  clearTimeout(stopTestClip.timer);
+const testAudio = {
+  token: 0,
+  n: 0,
+  state: "",
+  player: null,
+  timer: 0
+};
+
+function paintTestAudio(n) {
+  const t = openTestRecord();
+  const q = t && t.questions[n - 1];
+  const b = document.querySelector(`button.exam-play[data-listen="${n}"]`);
+  if (!q || !b) return;
+  const on = testAudio.n === n ? testAudio.state : "";
+  b.classList.toggle("load", on === "load");
+  b.classList.toggle("on", on === "play");
+  b.textContent = on === "play" ? "■" : on === "load" ? "" : "▶";
+  b.disabled = !on && (!q.plays || q.submitted);
+  b.title = b.title.replace(/\d+/, q.plays);
+  b.setAttribute("aria-label", b.title);
+  const dots = b.nextElementSibling;
+  if (dots && dots.classList.contains("exam-plays")) dots.textContent = "●".repeat(q.plays) + "○".repeat(2 - q.plays);
 }
 
-function playTestClip(clip) {
-  stopTestClip();
-  speechSynthesis.cancel();
+function stopTestAudio() {
+  const n = testAudio.n;
+  clearTimeout(testAudio.timer);
+  if (testAudio.player) {
+    try {
+      testAudio.player.destroy();
+    } catch (e) {}
+  }
+  const box = document.getElementById("testClip");
+  if (box) box.remove();
+  if (testAudio.state) speechSynthesis.cancel();
+  testAudio.token++;
+  testAudio.n = 0;
+  testAudio.state = "";
+  testAudio.player = null;
+  if (n) paintTestAudio(n);
+}
+
+function startedTestAudio(token) {
+  if (testAudio.token !== token || testAudio.state !== "load") return;
+  const t = openTestRecord();
+  const q = t && t.questions[testAudio.n - 1];
+  clearTimeout(testAudio.timer);
+  testAudio.state = "play";
+  if (q && q.plays) {
+    q.plays--;
+    touchTest(t);
+  }
+  if (q && q.clip) testAudio.timer = setTimeout(stopTestAudio, (q.clip.end - q.clip.start + 6) * 1000);
+  paintTestAudio(testAudio.n);
+}
+
+function failTestAudio(token) {
+  if (testAudio.token !== token || testAudio.state !== "load") return;
+  stopTestAudio();
+  showToast("The recording could not be played; it was not counted, press ▶ to try again");
+}
+
+function playTestClip(clip, token) {
+  if (!window.YT || !window.YT.Player) return failTestAudio(token);
   const box = document.createElement("div");
   box.id = "testClip";
   box.className = "test-clip";
-  box.innerHTML = `<iframe src="https://www.youtube.com/embed/${encodeURIComponent(clip.id)}?start=${clip.start}&end=${clip.end}&autoplay=1&controls=0&disablekb=1&rel=0&playsinline=1&iv_load_policy=3" allow="autoplay; encrypted-media" title="Recording"></iframe>`;
+  const slot = document.createElement("div");
+  box.appendChild(slot);
   document.body.appendChild(box);
-  stopTestClip.timer = setTimeout(stopTestClip, (clip.end - clip.start + 6) * 1000);
+  testAudio.player = new YT.Player(slot, {
+    width: 320,
+    height: 180,
+    videoId: clip.id,
+    playerVars: {
+      start: clip.start,
+      end: clip.end,
+      autoplay: 1,
+      controls: 0,
+      disablekb: 1,
+      rel: 0,
+      playsinline: 1,
+      iv_load_policy: 3
+    },
+    events: {
+      onReady: e => {
+        if (testAudio.token === token) e.target.playVideo();
+      },
+      onStateChange: e => {
+        if (testAudio.token !== token) return;
+        if (e.data === YT.PlayerState.PLAYING) startedTestAudio(token); else if (e.data === YT.PlayerState.ENDED && testAudio.state === "play") stopTestAudio();
+      },
+      onError: () => failTestAudio(token)
+    }
+  });
 }
 
 function playTestAudio(n) {
   const t = openTestRecord();
   const q = t && t.questions[n - 1];
-  if (!q || !q.plays || q.submitted) return;
-  q.plays--;
-  if (q.clip) {
-    playTestClip(q.clip);
-    touchTest(t);
-    return renderTest();
-  }
-  speakTest(q.type === "listenq" ? q.passage : q.answer, q.lang);
-  touchTest(t);
-  renderTest();
+  if (!q || q.submitted) return;
+  const busy = testAudio.n === n;
+  stopTestAudio();
+  if (busy || !q.plays) return;
+  const token = testAudio.token;
+  testAudio.n = n;
+  testAudio.state = "load";
+  testAudio.timer = setTimeout(() => failTestAudio(token), 15000);
+  paintTestAudio(n);
+  if (q.clip) playTestClip(q.clip, token); else speakTest(q.type === "listenq" ? q.passage : q.answer, q.lang, n);
 }
 
 function fmtScore(n) {
@@ -15353,7 +15443,8 @@ function paperText(s) {
 }
 
 function playButton(attr, n, plays, enabled, title) {
-  return `<button class="exam-play" ${attr}="${n}"${enabled ? "" : " disabled"} title="${escapeAttr(title)}" aria-label="${escapeAttr(title)}">▶</button>` + (plays === null ? "" : `<span class="exam-plays" aria-hidden="true">${"●".repeat(plays)}${"○".repeat(2 - plays)}</span>`);
+  const on = attr === "data-listen" && testAudio.n === n ? testAudio.state : "";
+  return `<button class="exam-play${on ? " " + (on === "play" ? "on" : "load") : ""}" ${attr}="${n}"${enabled || on ? "" : " disabled"} title="${escapeAttr(title)}" aria-label="${escapeAttr(title)}">${on === "play" ? "■" : on === "load" ? "" : "▶"}</button>` + (plays === null ? "" : `<span class="exam-plays" aria-hidden="true">${"●".repeat(plays)}${"○".repeat(2 - plays)}</span>`);
 }
 
 function examQuestionHtml(t, q, live) {
@@ -15870,7 +15961,10 @@ document.getElementById("viewTest").addEventListener("click", e => {
     window.scrollTo(0, 0);
   } else if (b.dataset.say) {
     const q = t && t.questions[Number(b.dataset.say) - 1];
-    if (q) speakTest(q.sentence, q.lang);
+    if (q) {
+      stopTestAudio();
+      speakTest(q.sentence, q.lang);
+    }
   } else if (b.dataset.speak) testSpeech(Number(b.dataset.speak)); else if (b.dataset.listen) playTestAudio(Number(b.dataset.listen)); else if (b.dataset.self !== undefined) selfMarkTest(Number(b.dataset.n), Number(b.dataset.self)); else if (act === "submit") {
     if (!t) return;
     if (unansweredCount(t) && testHandArm !== t.id) {
@@ -15881,7 +15975,7 @@ document.getElementById("viewTest").addEventListener("click", e => {
   } else if (act === "pause" || act === "home") {
     speechSynthesis.cancel();
     stopTestSpeech();
-    stopTestClip();
+    stopTestAudio();
     testOpenId = null;
     renderTest();
     window.scrollTo(0, 0);
