@@ -13861,8 +13861,8 @@ const TEST_UI = {
     delAsk: "Delete?",
     cardMeta: "{n} questions · about {span}",
     bestPct: "best {p}%",
-    needs: "{n} parts need an AI key",
-    needs1: "1 part needs an AI key",
+    needs: "{n} parts need Claude",
+    needs1: "1 part needs Claude",
     setUp: "Set up",
     anyLang: "Any language",
     allTests: "All tests",
@@ -13943,8 +13943,8 @@ const TEST_UI = {
     delAsk: "删除？",
     cardMeta: "共{n}题 · 约{span}",
     bestPct: "最高{p}%",
-    needs: "{n}个部分需要 AI 密钥",
-    needs1: "1个部分需要 AI 密钥",
+    needs: "{n}个部分需要 Claude",
+    needs1: "1个部分需要 Claude",
     setUp: "设置",
     anyLang: "任何语言",
     allTests: "全部考试",
@@ -14025,8 +14025,8 @@ const TEST_UI = {
     delAsk: "削除しますか？",
     cardMeta: "全{n}問 · 約{span}",
     bestPct: "最高{p}%",
-    needs: "{n}つのパートに AI キーが必要",
-    needs1: "1つのパートに AI キーが必要",
+    needs: "{n}つのパートに Claude が必要",
+    needs1: "1つのパートに Claude が必要",
     setUp: "設定",
     anyLang: "すべての言語",
     allTests: "すべての試験",
@@ -14107,8 +14107,8 @@ const TEST_UI = {
     delAsk: "삭제할까요?",
     cardMeta: "총 {n}문항 · 약 {span}",
     bestPct: "최고 {p}%",
-    needs: "{n}개 영역에 AI 키 필요",
-    needs1: "1개 영역에 AI 키 필요",
+    needs: "{n}개 영역에 Claude 필요",
+    needs1: "1개 영역에 Claude 필요",
     setUp: "설정",
     anyLang: "모든 언어",
     allTests: "모든 시험",
@@ -14189,8 +14189,8 @@ const TEST_UI = {
     delAsk: "Xoá?",
     cardMeta: "{n} câu · khoảng {span}",
     bestPct: "cao nhất {p}%",
-    needs: "{n} phần cần khoá AI",
-    needs1: "1 phần cần khoá AI",
+    needs: "{n} phần cần Claude",
+    needs1: "1 phần cần Claude",
     setUp: "Chọn đề",
     anyLang: "Mọi ngôn ngữ",
     allTests: "Tất cả bài thi",
@@ -14396,7 +14396,8 @@ function mergeTests(list) {
 
 function testKey() {
   try {
-    return localStorage.getItem(TEST_KEY_STORE) || "";
+    const key = localStorage.getItem(TEST_KEY_STORE) || "";
+    return /^sk-ant-/.test(key) ? key : "";
   } catch (e) {
     return "";
   }
@@ -14885,89 +14886,9 @@ Marking ("marks"): one entry per item of "mark", in the same order. Follow each 
 When "mark" is null, return an empty "marks" list; when "write" is null, return empty strings and empty lists in "next".`;
 }
 
-const TEST_JSON_SHAPE = `
-
-Reply with one JSON object only, shaped exactly as {"marks":[{"score":0,"feedback":"","correction":""}],"next":{"items":[{"sentence":"","start":"","answer":"","accepted":[""],"translation":""}],"passage_title":"","passage":"","questions":[{"prompt":"","answer":"","accepted":[""]}]}}.`;
-
-let geminiModelName = "";
-
-function testProvider(key) {
-  return /^sk-ant-/.test(key) ? "Claude" : "Gemini";
-}
-
-async function geminiModel(key) {
-  if (geminiModelName) return geminiModelName;
-  try {
-    const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200", {
-      headers: {
-        "x-goog-api-key": key
-      }
-    });
-    const list = res.ok ? (await res.json()).models || [] : [];
-    const version = name => parseFloat((name.match(/gemini-(\d+(?:\.\d+)?)/) || [ 0, 0 ])[1]);
-    const pick = list.map(m => m.name.replace(/^models\//, "")).filter(n => /^gemini-[\d.]+-flash$/.test(n) && list.find(m => m.name.endsWith(n)).supportedGenerationMethods.includes("generateContent")).sort((a, b) => version(b) - version(a))[0];
-    geminiModelName = pick || "gemini-2.5-flash";
-  } catch (e) {
-    geminiModelName = "gemini-2.5-flash";
-  }
-  return geminiModelName;
-}
-
-async function askGemini(t, mark, write, lang, key) {
-  const model = await geminiModel(key);
-  let res;
-  try {
-    res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-goog-api-key": key
-      },
-      body: JSON.stringify({
-        systemInstruction: {
-          parts: [ {
-            text: testSystem(t, lang) + TEST_JSON_SHAPE
-          } ]
-        },
-        contents: [ {
-          role: "user",
-          parts: [ {
-            text: JSON.stringify({
-              mark: mark,
-              write: write
-            })
-          } ]
-        } ],
-        generationConfig: {
-          responseMimeType: "application/json"
-        }
-      })
-    });
-  } catch (e) {
-    throw Object.assign(new Error("offline"), {
-      kind: "net"
-    });
-  }
-  if (!res.ok) throw Object.assign(new Error("gemini " + res.status), {
-    kind: res.status === 429 ? "busy" : res.status === 400 || res.status === 401 || res.status === 403 ? "key" : "other"
-  });
-  const data = await res.json();
-  const parts = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts || [];
-  const reply = JSON.parse(parts.map(x => x.text || "").join("").replace(/^```(?:json)?\s*|\s*```$/g, ""));
-  reply.marks = reply.marks || [];
-  reply.next = Object.assign({
-    items: [],
-    passage_title: "",
-    passage: "",
-    questions: []
-  }, reply.next);
-  return reply;
-}
-
 async function askExaminer(t, mark, write, effort, lang) {
   const key = testKey();
   if (!key) throw new Error("no key");
-  if (testProvider(key) === "Gemini") return askGemini(t, mark, write, lang, key);
   if (!testSdk) testSdk = await import(ANTHROPIC_SDK);
   if (!testClient || testClientKey !== key) {
     testClient = new testSdk.default({
@@ -15002,11 +14923,10 @@ async function askExaminer(t, mark, write, effort, lang) {
 }
 
 function examinerTrouble(e) {
-  const who = testProvider(testKey());
-  if (e && e.kind === "key" || testSdk && e instanceof testSdk.AuthenticationError) return who + " did not accept the key";
-  if (e && e.kind === "busy" || testSdk && e instanceof testSdk.RateLimitError) return who + " is busy or its free limit is used up for now";
-  if (e && e.kind === "net" || testSdk && e instanceof testSdk.APIConnectionError) return who + " could not be reached";
-  return who + " could not help";
+  if (testSdk && e instanceof testSdk.AuthenticationError) return "Claude did not accept the API key";
+  if (testSdk && e instanceof testSdk.RateLimitError) return "Claude is busy";
+  if (testSdk && e instanceof testSdk.APIConnectionError) return "Claude could not be reached";
+  return "Claude could not help";
 }
 
 async function inTurns(tasks, limit) {
@@ -15096,13 +15016,12 @@ async function generateTest(t) {
   if (!plans.length) return;
   plans.forEach(p => p.ai = p.qs.filter(q => !q.useClip));
   let replies = [];
-  const limit = testProvider(testKey()) === "Gemini" ? 2 : 6;
   if (t.ai) {
     t.busy = tl(t, "writing");
     renderOpen(t);
     replies = await inTurns(plans.map(p => () => p.ai.length ? askExaminer(t, null, testPrompt(t, p.ai), TEST_TYPES[p.qs[0].type].group ? "medium" : "low", p.qs[0].lang).catch(e => ({
       failed: e
-    })) : null), limit);
+    })) : null), 6);
     const failed = replies.find(r => r && r.failed);
     if (failed) {
       showToast(examinerTrouble(failed.failed) + " — some parts use your saved sentences");
@@ -15139,7 +15058,7 @@ async function markTest(t) {
     const groups = t.parts.map((_, i) => toMark.filter(q => q.part === i)).filter(g => g.length);
     const replies = await inTurns(groups.map(g => () => askExaminer(t, g.map(q => testMarkRequest(t, q)), null, g.some(q => q.max > 1) ? "medium" : "low", g[0].lang).catch(e => ({
       failed: e
-    }))), testProvider(testKey()) === "Gemini" ? 2 : 6);
+    }))), 6);
     const failed = replies.find(r => r && r.failed);
     if (failed) showToast(examinerTrouble(failed.failed) + " — some answers are marked on this device");
     groups.forEach((g, i) => g.forEach((q, k) => {
@@ -15787,7 +15706,7 @@ function newTestHtml() {
   const format = formats.includes(prefs.format) ? prefs.format : formats[0];
   const parts = testPartsOf(format);
   const picks = prefs.format === format && Array.isArray(prefs.parts) ? prefs.parts : parts.map((_, i) => i);
-  const keyRow = key ? `<div>${testProvider(key)} writes new questions in the exam's style and marks every answer.</div><button data-act="key-remove" class="ghost">Remove key</button>` : '<div>On this device: questions come from your saved sentences and you mark open answers yourself with the rubric. For new questions every time, every exam part and automatic marking, paste a free Gemini key: sign in with Google at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>, press Create API key and copy it here (it starts with AQ. or AIza; no card, no payment). A Claude key (paid) works too.</div><form class="tests-key-add" autocomplete="off"><input type="text" name="username" value="ai-key" autocomplete="username" hidden tabindex="-1"><input type="password" id="testKeyInput" name="ai-key" placeholder="Gemini or Claude key" autocomplete="new-password"><button type="submit" data-act="key-save">Save</button></form>';
+  const keyRow = key ? '<div>Claude writes new questions in the exam\'s style and marks every answer.</div><button data-act="key-remove" class="ghost">Remove key</button>' : '<div>On this device: questions come from your saved sentences and you mark open answers yourself with the rubric. Add a Claude API key for every exam part, new questions each time and marking by Claude. A key is a personal password for the Anthropic API, made at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a>; Anthropic charges a little for each paper written and marked.</div><form class="tests-key-add" autocomplete="off"><input type="text" name="username" value="claude-api-key" autocomplete="username" hidden tabindex="-1"><input type="password" id="testKeyInput" name="claude-key" placeholder="Claude API key" autocomplete="new-password"><button type="submit" data-act="key-save">Save</button></form>';
   return '<div class="panel"><div class="tests-form">' + `<label class="tests-row"><span>Words from</span><select id="testSet">${sets.map(s => `<option value="${escapeAttr(s.id)}"${s === set ? " selected" : ""}>${escapeHtml(s.name)} (${s.items.length})</option>`).join("")}</select></label>` + `<label class="tests-row"><span>Exam</span><select id="testFormat">${formats.map(f => `<option value="${f}"${f === format ? " selected" : ""}>${escapeHtml(TEST_FORMATS[f].name)}</option>`).join("")}</select></label>` + `<div class="tests-row"><span>Parts</span><div class="tests-checks">${parts.map((p, i) => {
     const ok = key || TEST_TYPES[p.type].offline;
     return `<label class="${ok ? "" : "off"}"><input type="checkbox" value="${i}"${picks.includes(i) && ok ? " checked" : ""}${ok ? "" : " disabled"}> ${escapeHtml(p.title)}${ok ? "" : " <i>needs Claude</i>"}</label>`;
