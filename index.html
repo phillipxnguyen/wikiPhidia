@@ -3227,14 +3227,13 @@ const TL_LANGS = {
   en: [ "🇬🇧", "English" ]
 };
 
-function tlLangHtml(text, preferred) {
-  const code = (preferred && preferred !== "auto" ? preferred : detectLang(text || "")).slice(0, 2);
-  const [flag, name] = TL_LANGS[code] || TL_LANGS.en;
+function tlLangHtml(text) {
+  const [flag, name] = TL_LANGS[langCode(text).slice(0, 2)];
   return `<span class="tl-lang">${flag} ${name}</span>`;
 }
 
 function translateHeadHtml(r) {
-  const q = tlLangHtml(r.q, studyLang);
+  const q = tlLangHtml(r.q);
   const a = tlLangHtml(r.a);
   return `<td class="tl-head">${groupFront === "a" ? a : q}<button class="tl-swap" aria-label="Switch which side shows first">⇄</button>${groupFront === "a" ? q : a}</td>`;
 }
@@ -3944,6 +3943,19 @@ function effectiveScriptMode() {
   return "auto";
 }
 
+const LANG_CODES = {
+  "ja-JP": "ja",
+  "zh-CN": "zh-CN",
+  "ko-KR": "ko",
+  "vi-VN": "vi",
+  "en-US": "en"
+};
+
+function langCode(text) {
+  const code = LANG_CODES[detectLang(text || "")];
+  return code === "zh-CN" && (studyLang === "zh-TW" || studyLang === "ja") ? studyLang : code;
+}
+
 function autoDetectFlag() {
   const counts = {};
   rows.forEach(r => {
@@ -3958,18 +3970,12 @@ function autoDetectFlag() {
       bestCount = counts[lang];
     }
   }
-  const map = {
-    "ja-JP": "ja",
-    "zh-CN": "zh-CN",
-    "ko-KR": "ko",
-    "vi-VN": "vi",
-    "en-US": "en"
-  };
-  return STUDY_LANG_FLAGS[map[best]] || "🌐";
+  return STUDY_LANG_FLAGS[LANG_CODES[best]] || "🌐";
 }
 
 function updateGroupBtnFlag() {
-  document.getElementById("groupBtnFlag").textContent = studyLang === "auto" ? autoDetectFlag() : STUDY_LANG_FLAGS[studyLang] || "🌐";
+  const row = groupState ? studyScope().find(r => r.q) : null;
+  document.getElementById("groupBtnFlag").textContent = row ? STUDY_LANG_FLAGS[langCode(row.q)] : studyLang === "auto" ? autoDetectFlag() : STUDY_LANG_FLAGS[studyLang] || "🌐";
 }
 
 document.getElementById("studyLang").addEventListener("change", e => {
@@ -5189,7 +5195,7 @@ function copyText(text) {
 function studyCopyAction() {
   const {scope: scope, picked: picked} = studyPick();
   if (!groupState && !picked) return;
-  if (groupState && groupViewStyle === "ielts") {
+  if (!isVideoLesson()) {
     const row = picked || scope[0];
     if (row) copyText([ row.q, row.a ].map(t => (t || "").trim()).filter(Boolean).join("\n"));
     return;
@@ -12284,7 +12290,6 @@ function renderVocab() {
   const frontBtn = document.getElementById("vocabFrontBtn");
   document.getElementById("vocabToolbar").hidden = !items.length;
   document.querySelectorAll("#vocabToolbar [data-view]").forEach(btn => btn.classList.toggle("active", btn.dataset.view === vocabView));
-  syncVocabLang();
   frontBtn.classList.toggle("active", vocabFront === "a");
   const stage = document.getElementById("vocabStage");
   const list = document.getElementById("vocabList");
@@ -12301,6 +12306,7 @@ function renderVocab() {
   if (vocabView === "group") vocabView = "card";
   const item = items.length && vocabView === "card" ? currentVocabItem() : null;
   const studying = item ? [ item ] : [];
+  syncVocabLang(item);
   const caughtUp = items.length > 0 && !studying.length;
   if (vocabListLessonId !== currentLessonId) {
     vocabListLessonId = currentLessonId;
@@ -12581,13 +12587,13 @@ document.getElementById("vocabStage").addEventListener("mouseleave", () => {
   vocabHoveredKey = null;
 });
 
-function syncVocabLang() {
+function syncVocabLang(item) {
   const sel = document.getElementById("vocabLang");
   const all = currentLessonId === VOCAB_ALL_ID;
   sel.disabled = all;
   sel.value = all && vocabAllMultiLang ? "multi" : studyLang;
   document.getElementById("vocabLangPick").classList.toggle("disabled", all);
-  document.getElementById("vocabLangFlag").textContent = STUDY_LANG_FLAGS[sel.value] || "🌐";
+  document.getElementById("vocabLangFlag").textContent = item ? STUDY_LANG_FLAGS[langCode(item.term)] : STUDY_LANG_FLAGS[sel.value] || "🌐";
 }
 
 document.getElementById("vocabLang").onchange = e => {
