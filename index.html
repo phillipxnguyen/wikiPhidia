@@ -14892,7 +14892,7 @@ Reply with one JSON object only, shaped exactly as {"marks":[{"score":0,"feedbac
 let geminiModelName = "";
 
 function testProvider(key) {
-  return /^AIza/.test(key) ? "Gemini" : "Claude";
+  return /^sk-ant-/.test(key) ? "Claude" : "Gemini";
 }
 
 async function geminiModel(key) {
@@ -15787,7 +15787,7 @@ function newTestHtml() {
   const format = formats.includes(prefs.format) ? prefs.format : formats[0];
   const parts = testPartsOf(format);
   const picks = prefs.format === format && Array.isArray(prefs.parts) ? prefs.parts : parts.map((_, i) => i);
-  const keyRow = key ? `<div>${testProvider(key)} writes new questions in the exam's style and marks every answer.</div><button data-act="key-remove" class="ghost">Remove key</button>` : '<div>On this device: questions come from your saved sentences and you mark open answers yourself with the rubric. For new questions every time, every exam part and automatic marking, paste a free Gemini key: sign in with Google at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>, press Create API key and copy it here (no card, no payment). A Claude key (paid) works too.</div><form class="tests-key-add" autocomplete="off"><input type="text" name="username" value="ai-key" autocomplete="username" hidden tabindex="-1"><input type="password" id="testKeyInput" name="ai-key" placeholder="Gemini or Claude key" autocomplete="new-password"><button type="submit" data-act="key-save">Save</button></form>';
+  const keyRow = key ? `<div>${testProvider(key)} writes new questions in the exam's style and marks every answer.</div><button data-act="key-remove" class="ghost">Remove key</button>` : '<div>On this device: questions come from your saved sentences and you mark open answers yourself with the rubric. For new questions every time, every exam part and automatic marking, paste a free Gemini key: sign in with Google at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>, press Create API key and copy it here (it starts with AQ. or AIza; no card, no payment). A Claude key (paid) works too.</div><form class="tests-key-add" autocomplete="off"><input type="text" name="username" value="ai-key" autocomplete="username" hidden tabindex="-1"><input type="password" id="testKeyInput" name="ai-key" placeholder="Gemini or Claude key" autocomplete="new-password"><button type="submit" data-act="key-save">Save</button></form>';
   return '<div class="panel"><div class="tests-form">' + `<label class="tests-row"><span>Words from</span><select id="testSet">${sets.map(s => `<option value="${escapeAttr(s.id)}"${s === set ? " selected" : ""}>${escapeHtml(s.name)} (${s.items.length})</option>`).join("")}</select></label>` + `<label class="tests-row"><span>Exam</span><select id="testFormat">${formats.map(f => `<option value="${f}"${f === format ? " selected" : ""}>${escapeHtml(TEST_FORMATS[f].name)}</option>`).join("")}</select></label>` + `<div class="tests-row"><span>Parts</span><div class="tests-checks">${parts.map((p, i) => {
     const ok = key || TEST_TYPES[p.type].offline;
     return `<label class="${ok ? "" : "off"}"><input type="checkbox" value="${i}"${picks.includes(i) && ok ? " checked" : ""}${ok ? "" : " disabled"}> ${escapeHtml(p.title)}${ok ? "" : " <i>needs Claude</i>"}</label>`;
