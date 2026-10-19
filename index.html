@@ -464,7 +464,7 @@ window.onYouTubeIframeAPIReady = function(){
     .main:has(#viewStudy.focus-study:not([hidden]):not(.offscreen)), .main:has(#viewVocab.focus-study:not([hidden])){padding-top:calc(45px + 6px + env(safe-area-inset-top));}
     #viewStudy.focus-study .study-head, #viewVocab.focus-study > .vocab-toolbar{top:calc(45px + 6px + env(safe-area-inset-top));}
   }
-  @media (min-width:821px){#brandName{display:none;}}
+  @media (min-width:821px){#brandName{display:none;}.brand .streak-chip, .brand .cloud-chip, .brand .test-chip{height:28px;padding:0 10px;border-radius:14px;font-size:14px;line-height:28px;gap:6px;}}
   @media (max-width:600px){
     .shell .lesson-header{flex-wrap:wrap;}
     .shell .lesson-name-input, .shell #vocabTitle.lesson-name-input{flex-basis:100%;font-size:20px !important;}
@@ -921,13 +921,13 @@ window.onYouTubeIframeAPIReady = function(){
   .tests-key-add{display:flex;gap:8px;width:100%;}
   .tests-key-add input{flex:1;min-width:0;}
   .tests-go{display:flex;gap:12px;margin-top:16px;}
-  .test-chip{position:relative;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;min-height:0;margin-left:auto;padding:0;border:0;border-radius:8px;font-size:18px;line-height:20px;background:transparent;}
+  .test-chip{flex-shrink:0;display:inline-flex;align-items:center;gap:4px;height:20px;min-height:0;margin-left:auto;padding:0 6px;border:0;border-radius:10px;font-size:12px;font-weight:700;line-height:20px;color:var(--accent);background:var(--accent-soft);font-variant-numeric:tabular-nums;}
   #testNav + .streak-chip{margin-left:0;}
-  #testNavCount{position:absolute;top:-2px;right:-4px;box-sizing:border-box;min-width:12px;height:12px;padding:0 3px;border-radius:6px;font-size:8px;line-height:12px;font-weight:700;text-align:center;color:var(--on-accent);background:var(--accent);box-shadow:0 0 0 2px var(--surface);font-variant-numeric:tabular-nums;}
   #testNavCount:empty{display:none;}
-  .test-chip.due #testNavCount{color:#fff;background:var(--danger);}
-  .test-chip.active{background:var(--accent-soft);}
-  @media (hover:hover){.test-chip:not(.active):hover{background:var(--surface-2);}}
+  .test-chip.due{color:var(--due-color);background:color-mix(in srgb, var(--due-color) 14%, transparent);}
+  .test-chip.active{color:var(--on-accent);background:var(--accent);}
+  .test-chip:focus:not(:focus-visible){outline:none;}
+  @media (hover:hover){.test-chip:not(.active):hover{background:color-mix(in srgb, var(--accent) 22%, transparent);}.test-chip.due:not(.active):hover{background:color-mix(in srgb, var(--due-color) 24%, transparent);}}
   .tc-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px;}
   .tc-head .stats-title{margin:0;}
   .tc-tabs{display:flex;width:max-content;max-width:100%;margin-bottom:16px;overflow-x:auto;}
@@ -1372,7 +1372,7 @@ window.onYouTubeIframeAPIReady = function(){
 <div class="shell">
 
 <aside class="sidebar">
-  <div class="brand"><button id="btnDrawer" class="ghost drawer-btn" aria-label="Menu">☰</button><button id="btnAppMode" class="brand-switch" title="Switch to Vocabulary"><span class="brand-mark">字</span><span id="brandName">Lessons</span></button><button id="testNav" class="test-chip" aria-label="Tests"><span aria-hidden="true">📝</span><span id="testNavCount"></span></button><button id="streakChip" class="streak-chip" aria-haspopup="dialog" aria-controls="limitsPop"><span class="streak-chip-flame">🔥</span><span id="streakChipCount">0</span></button><button id="btnCloud" class="cloud-chip" hidden></button></div>
+  <div class="brand"><button id="btnDrawer" class="ghost drawer-btn" aria-label="Menu">☰</button><button id="btnAppMode" class="brand-switch" title="Switch to Vocabulary"><span class="brand-mark">字</span><span id="brandName">Lessons</span></button><button id="testNav" class="test-chip" aria-label="Tests"><span class="test-chip-icon" aria-hidden="true">📝</span><span id="testNavCount"></span></button><button id="streakChip" class="streak-chip" aria-haspopup="dialog" aria-controls="limitsPop"><span class="streak-chip-flame">🔥</span><span id="streakChipCount">0</span></button><button id="btnCloud" class="cloud-chip" hidden></button></div>
   <input type="search" id="lessonSearch" name="lesson-search" autocomplete="off" placeholder="Search lessons…" aria-label="Search lessons">
   <nav id="lessonList" class="lesson-list" aria-label="Lessons"></nav>
   <div class="sidebar-footer">
@@ -13805,6 +13805,18 @@ const TEST_UI = {
   en: {
     sub: "{set} · {n} questions · {m} minutes",
     allWords: "All vocabularies",
+    report: "Score report",
+    reportMeta: "{set} · {date} · {used} of {total} used · {right} of {n} fully right",
+    points: "{got} / {max} points",
+    allTests: "All tests",
+    retake: "Retake with new questions",
+    min: "{m} min",
+    hm: "{h} h {m} min",
+    h: "{h} h",
+    band0: "Excellent",
+    band1: "Good",
+    band2: "Pass",
+    band3: "Needs work",
     sep: ". ",
     candidate: "Candidate",
     date: "Date",
@@ -13847,6 +13859,18 @@ const TEST_UI = {
   zh: {
     sub: "{set} · 共{n}题 · {m}分钟",
     allWords: "全部词汇",
+    report: "成绩报告",
+    reportMeta: "{set} · {date} · 用时{used}／{total} · 全对{right}／{n}题",
+    points: "{got}／{max}分",
+    allTests: "全部考试",
+    retake: "换一套新题再考",
+    min: "{m}分钟",
+    hm: "{h}小时{m}分钟",
+    h: "{h}小时",
+    band0: "优秀",
+    band1: "良好",
+    band2: "及格",
+    band3: "需加强",
     sep: "：",
     candidate: "考生姓名",
     date: "日期",
@@ -13889,6 +13913,18 @@ const TEST_UI = {
   ja: {
     sub: "{set} · 全{n}問 · {m}分",
     allWords: "すべての語彙",
+    report: "成績表",
+    reportMeta: "{set} · {date} · 所要時間 {used}／{total} · 完全正解 {right}／{n}問",
+    points: "{got}／{max}点",
+    allTests: "すべての試験",
+    retake: "新しい問題で再受験",
+    min: "{m}分",
+    hm: "{h}時間{m}分",
+    h: "{h}時間",
+    band0: "優秀",
+    band1: "良好",
+    band2: "合格",
+    band3: "要努力",
     sep: "：",
     candidate: "受験者名",
     date: "日付",
@@ -13931,6 +13967,18 @@ const TEST_UI = {
   ko: {
     sub: "{set} · 총 {n}문항 · {m}분",
     allWords: "전체 어휘",
+    report: "성적표",
+    reportMeta: "{set} · {date} · 소요 시간 {used}/{total} · 완전 정답 {right}/{n}문항",
+    points: "{got}/{max}점",
+    allTests: "모든 시험",
+    retake: "새 문제로 다시 보기",
+    min: "{m}분",
+    hm: "{h}시간 {m}분",
+    h: "{h}시간",
+    band0: "우수",
+    band1: "양호",
+    band2: "합격",
+    band3: "노력 필요",
     sep: ". ",
     candidate: "수험자",
     date: "날짜",
@@ -13973,6 +14021,18 @@ const TEST_UI = {
   vi: {
     sub: "{set} · {n} câu · {m} phút",
     allWords: "Tất cả từ vựng",
+    report: "Phiếu điểm",
+    reportMeta: "{set} · {date} · làm trong {used} / {total} · đúng hoàn toàn {right}/{n} câu",
+    points: "{got} / {max} điểm",
+    allTests: "Tất cả bài thi",
+    retake: "Thi lại với đề mới",
+    min: "{m} phút",
+    hm: "{h} giờ {m} phút",
+    h: "{h} giờ",
+    band0: "Xuất sắc",
+    band1: "Khá",
+    band2: "Đạt",
+    band3: "Cần cố gắng",
     sep: ". ",
     candidate: "Thí sinh",
     date: "Ngày thi",
@@ -15031,7 +15091,7 @@ function examPaperHtml(t) {
       }) : tl(t, "handIn")}</button></div>`;
     }
     if (last && t.status === "done") html += `<div class="exam-end">${tl(t, "end")}</div>`;
-    return `<article class="exam-sheet">${html}<footer class="exam-page">${i + 1} / ${pages}</footer></article>`;
+    return `<article class="exam-sheet" lang="${TEST_FORMATS[t.format].ui === "zh" && t.target === "zh-TW" ? "zh-TW" : TEST_FORMATS[t.format].ui}">${html}<footer class="exam-page">${i + 1} / ${pages}</footer></article>`;
   });
   return (t.status === "done" ? reportHtml(t) : "") + sheets.join("");
 }
@@ -15061,18 +15121,25 @@ function testPct(t) {
   return t.result && t.result.max ? Math.round(t.result.got / t.result.max * 100) : 0;
 }
 
-function testBand(pct) {
-  return pct >= 85 ? [ "Excellent", "top" ] : pct >= 70 ? [ "Good", "good" ] : pct >= 50 ? [ "Pass", "pass" ] : [ "Needs work", "low" ];
+function testBand(pct, t) {
+  const at = pct >= 85 ? 0 : pct >= 70 ? 1 : pct >= 50 ? 2 : 3;
+  return [ t ? tl(t, "band" + at) : TEST_UI.en["band" + at], [ "top", "good", "pass", "low" ][at] ];
 }
 
-function bandHtml(pct) {
-  const [ name, cls ] = testBand(pct);
+function bandHtml(pct, t) {
+  const [ name, cls ] = testBand(pct, t);
   return `<span class="tc-band ${cls}">${name}</span>`;
 }
 
-function testSpan(seconds) {
+function testSpan(seconds, t) {
   const m = Math.round(seconds / 60);
-  return m >= 60 ? Math.floor(m / 60) + " h" + (m % 60 ? " " + m % 60 + " min" : "") : m + " min";
+  const say = (key, vars) => t ? tl(t, key, vars) : TEST_UI.en[key].replace(/\{(\w+)\}/g, (_, k) => vars[k]);
+  return m >= 60 ? say(m % 60 ? "hm" : "h", {
+    h: Math.floor(m / 60),
+    m: m % 60
+  }) : say("min", {
+    m: m
+  });
 }
 
 function syncTestNav() {
@@ -15136,10 +15203,14 @@ function trendSvg(tests) {
   return `<svg class="tc-trend" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Score of the last ${pts.length} tests">${grid}${line}${dots}${dates}</svg>`;
 }
 
-function barsHtml(rows) {
+function barsHtml(rows, t) {
   return '<div class="tc-bars">' + rows.map(r => {
     const pct = r.max ? Math.round(r.got / r.max * 100) : 0;
-    return `<div class="tc-bar" title="${escapeAttr(r.label)}: ${fmtScore(r.got)} of ${fmtScore(r.max)} points${r.n ? `, ${r.n} questions` : ""}"><span class="tc-bar-label">${escapeHtml(r.label)}</span><span class="tc-bar-track"><span class="tc-bar-fill" style="width:${pct}%"></span></span><span class="tc-bar-val">${pct}%</span></div>`;
+    const tip = t ? tl(t, "points", {
+      got: fmtScore(r.got),
+      max: fmtScore(r.max)
+    }) : `${fmtScore(r.got)} of ${fmtScore(r.max)} points${r.n ? `, ${r.n} questions` : ""}`;
+    return `<div class="tc-bar" title="${escapeAttr(r.label)}: ${escapeAttr(tip)}"><span class="tc-bar-label">${escapeHtml(r.label)}</span><span class="tc-bar-track"><span class="tc-bar-fill" style="width:${pct}%"></span></span><span class="tc-bar-val">${pct}%</span></div>`;
   }).join("") + "</div>";
 }
 
@@ -15264,7 +15335,18 @@ function reportHtml(t) {
     };
   });
   const right = t.questions.filter(q => q.score >= q.max).length;
-  return `<section class="panel tc-report"><div class="tc-report-top"><div><div class="tc-kicker">Score report</div><h2>${escapeHtml(t.title)}</h2><div class="tc-note">${escapeHtml(t.setName)} · ${escapeHtml(testDate(t.finishedAt))} · ${testSpan(t.spent || 0)} of ${testSpan(t.total)} used · ${right} of ${t.questions.length} fully right${t.timeUp ? " · time ran out" : ""}</div></div><div class="tc-overall"><b>${pct}%</b>${bandHtml(pct)}<small>${fmtScore(t.result.got)} / ${fmtScore(t.result.max)} points</small></div></div>${barsHtml(rows)}<div class="tc-report-btns"><button data-act="home">All tests</button><button class="primary" data-act="retake">Retake with new questions</button></div></section>`;
+  const meta = tl(t, "reportMeta", {
+    set: t.setId === VOCAB_ALL_ID ? tl(t, "allWords") : t.setName,
+    date: testDate(t.finishedAt, TEST_FORMATS[t.format].ui),
+    used: testSpan(t.spent || 0, t),
+    total: testSpan(t.total, t),
+    right: right,
+    n: t.questions.length
+  }) + (t.timeUp ? " · " + tl(t, "timeUp") : "");
+  return `<section class="panel tc-report" lang="${TEST_FORMATS[t.format].ui}"><div class="tc-report-top"><div><div class="tc-kicker">${tl(t, "report")}</div><h2>${escapeHtml(t.title)}</h2><div class="tc-note">${escapeHtml(meta)}</div></div><div class="tc-overall"><b>${pct}%</b>${bandHtml(pct, t)}<small>${tl(t, "points", {
+    got: fmtScore(t.result.got),
+    max: fmtScore(t.result.max)
+  })}</small></div></div>${barsHtml(rows, t)}<div class="tc-report-btns"><button data-act="home">${tl(t, "allTests")}</button><button class="primary" data-act="retake">${tl(t, "retake")}</button></div></section>`;
 }
 
 function renderTest(focus) {
@@ -15411,7 +15493,10 @@ document.getElementById("testHome").addEventListener("submit", e => {
   renderTest();
 });
 
-document.getElementById("testNav").onclick = openTests;
+document.getElementById("testNav").onclick = e => {
+  e.currentTarget.blur();
+  openTests();
+};
 
 document.getElementById("testPaper").addEventListener("input", e => {
   if (!e.target.matches("textarea.exam-answer")) return;
