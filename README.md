@@ -106,7 +106,7 @@ With reduced motion turned on in the system, she stays away and things simply ha
 | ⌘⌥O (Ctrl+Alt+O) | Open a file (the same as Open file) |
 | ⌘⌥B (Ctrl+Alt+B) | Back up |
 | ⌘⌥W (Ctrl+Alt+W) | Statistics |
-| ⌘⌥X (Ctrl+Alt+X) | Test |
+| ⌘⌥X (Ctrl+Alt+X) | Tests (switches to Vocabulary first) |
 | ⌘⌥Q (Ctrl+Alt+Q) | Switch between Lessons and Vocabulary |
 | ⌘⌥T (Ctrl+Alt+T) | Switch between the light and dark theme |
 | / | Jump to the lesson search box (on a phone it opens the menu first) |
@@ -115,23 +115,6 @@ With reduced motion turned on in the system, she stays away and things simply ha
 The same keys work in every study mode, in Lessons and in Vocabulary. In a Lesson group, pointing at a row makes the grading keys grade just that card.
 
 On a phone, swipe a card right for Good and left for Again. Whatever flies off (a card's line, a card, a whole group) is outlined exactly at its own edges, with its own rounded corners (a line flies as a rounded strip). Swiping the card grades it. While you swipe, what comes next is already shown underneath, in the same form it will have: the next translation card, the next Listening card, the next Speaking paper (its next question number and a fresh clock), and the next flashcard. The next card is simply there underneath, at once, as the swipe starts or as the buttons or keys grade the card; nothing fades in, in any mode.
-
-## Test
-
-📝 at the bottom of the sidebar (beside 📊, in Lessons and in Vocabulary alike) opens a test made from your Vocabulary words, laid out as a real exam paper: a heading with the set, the date and who marks it, a Score box and an Examiner's comments box filled in red pen at the end, a red margin line, numbered boxed questions, and answers written in blue ink on ruled lines. There is no multiple choice anywhere: every answer is typed, with no word list to pick from.
-
-Before starting, pick the words (All vocabularies or one lesson's words), the parts and how many questions each part has (3, 5 or 8; Writing is always one task). The parts come in exam order:
-
-| Part | What you do |
-|---|---|
-| Listening | ▶ Listen reads a sentence aloud, at most twice; write exactly what you hear. |
-| Vocabulary in context | Write the missing word in a sentence, with the whole sentence's meaning under it for context (a word with no saved sentence asks for the word that means its meaning). |
-| Translation | Translate a sentence into the language you are learning; more than one answer can be right. |
-| Writing | Write 3–5 sentences using three given words, and explain why one of them fits. |
-
-The words you find hardest (most lapses, never studied) come first. The test adapts as you go: each question is written only after the one before is marked, a part gets harder after a good answer and easier after a poor one, and a word you miss comes back later in another part. The paper has a time limit, the sum of each question's time (1 minute to listen, 45 seconds for a missing word, 1½ minutes to translate, 8 minutes to write), shown as a clock counting down, which turns red in the last minute and pauses while answers are being marked; when it runs out the paper is collected and unanswered questions score 0. Return moves to the next question (in Writing it starts a new line; use Next), and a question you are answering keeps what you typed if you leave the test and come back.
-
-**Marking.** With a Claude API key (added on the test's first page, kept only in this browser; Remove key takes it out), Claude writes a brand-new sentence for every question, never one you have seen, and marks each answer by its meaning against a rubric, accepting every correct alternative, not only the model answer: 1 point for a fully right answer, ½ for a small slip, 0 otherwise (Writing out of 4: the words used correctly, fitting the situation, grammar and spelling, and the explanation). At the hardest level a missing-word or translation question also asks you to explain why, and a wrong or missing reason halves its mark. Each answer gets a red ✓, ✗ or its score in the margin, the correction in red and a short comment in your own language. Without a key, or when Claude cannot be reached, the test runs on this device: questions use your saved sentences, Listening and missing words are marked by how close your answer is, and translations and Writing that do not match the model answer are marked by you, with the model answer and the rubric shown and buttons for the score. The last ten results are listed on the first page.
 
 ## Vocabulary
 
@@ -163,6 +146,30 @@ Words are found by the kind of writing at their edges, with no language setting 
 - English words also match their other forms: -s, -es, -ies, -ed, -ied and -ing (cats, watches, studied, stopped, running, making), common irregular verbs, plurals and comparisons (went for go, children for child, better for good), and each word of a phrase (gave up for give up). In a phrase, a, an and the stand for each other and may be left out (a travel pass highlights the travel pass and travel passes, issue a travel pass highlights issued travel passes), sb, sth, someone and something stand for one to three words (give sb a hand highlights gave my brother a hand), one's, your, his… stand for any of them (make up one's mind highlights made up her mind), oneself for myself, himself…, and a hyphen counts as a space (well-known and well known). A highlight means the text holds a real form of the word, and you decide whether the meaning fits (left is a form of leave even in turn left). Look-alikes that are not forms are never matched: -er, -est and -ly are left out (corner, forest, only), and evening, thing or seed are not read as forms of even, the or see.
 - Korean verbs and adjectives written with -다 match their usual conjugations: 먹다 highlights 먹어요 and 먹었어요, 가다 highlights 가요, 갔어요 and 갑니다, 보다 highlights 봐요, and 공부하다 highlights 공부해요 and 공부했어요. The common irregular verbs match too: 덥다 → 더워요, 돕다 → 도와요, 듣다 → 들어요, 낫다 → 나아요, 모르다 → 몰라요, 그렇다 → 그래요, 바쁘다 → 바빠요. A form can belong to more than one word (가요 is also a noun, 들어요 also comes from 들다); it is highlighted for each, and you decide which fits.
 - Full-width and half-width forms count as the same (ｶﾀｶﾅ and カタカナ, ＡＢＣ and ABC), katakana and hiragana count as the same (ネコ and ねこ), Vietnamese tone marks may sit on either vowel (hòa and hoà, khỏe and khoẻ, thúy and thuý), case does not matter, and line breaks count as spaces.
+
+### Tests
+
+Tests belong to Vocabulary: under All vocabularies in the sidebar, **Tests** shows how many are in progress (▶), waiting to be taken (⏰, orange once one is due) and finished (✅), and opens the test centre (⌘⌥X or Ctrl+Alt+X goes there from anywhere, switching to Vocabulary first). Every test is made from your words, and there is no multiple choice anywhere: every answer is typed, with no word list to pick from.
+
+**A new test.** Pick the words (All vocabularies or one lesson's), the exam, its parts and the length (Short, Standard or Long), then **Start now** or **Save for later**, optionally for a date (Take it on); a saved test waits under To take, marked due from that day. The exams offered follow the words' language, each laid out and worded like the real one:
+
+| Exam | Language | Parts |
+|---|---|---|
+| Vocabulary test | any | Listening (dictation), Vocabulary in context, Sentence building, Translation, Using words, Writing |
+| IELTS Academic | English | Listening (note or form completion, at most two words), Reading (a passage with sentence completion and open questions), Writing (Task 2, 250 words) |
+| HSK 模拟题 | Chinese | 听力, 阅读：填空, 阅读：理解, 书写：完成句子, 书写：用词写句, 写一段话 |
+| JLPT 模擬問題 | Japanese | 文字・語彙 (readings in hiragana), 文法, 並べ替え, 読解, 聴解, 作文 |
+| TOPIK 모의고사 | Korean | 듣기, 읽기, 쓰기 51–52, 쓰기 54 |
+| THPT Quốc gia | English | Điền từ / dạng từ, Tìm lỗi sai và sửa, Viết lại câu, Sắp xếp câu, Đọc hiểu |
+| SAT Reading & Writing | English | Words in Context, Standard English Conventions, Information and Ideas, Notes synthesis |
+
+**The exam system.** The test centre lists In progress (with the time left and how many are answered; Resume), To take (Start) and Finished (the score, Review to read the marked paper again, and Retake for a new paper with the same settings); ✕, then Delete?, removes one. A test is saved as you go, every answer as you type it: close the app, reload or come back days later, and Resume opens the paper exactly where you left it, with your typed answers and the time left. Pause on the paper does the same at once; the clock only runs while the paper is open and stops while answers are being marked. Tests are part of the backup (💾) and come back with it.
+
+**The paper.** It looks like a printed exam: warm, slightly grainy paper sheets with a soft shadow, one sheet per part with its page number (1 / 6) at the foot, the exam's name and the Candidate, Date and Marked by lines on the first sheet, a grey instructions box, then the Score and Examiner's comments boxes filled in red at the end. Each part has a grey heading bar with a dark blue edge and its instructions numbered the exam's way (Questions 1–5, 第1–5题, 問1–5, 1–5번, Câu 1–5); reading texts and recording scripts sit in grey boxes; blanks are drawn as lines, sentence-building words are split by slashes; answers are written in blue on ruled lines. The marked paper has a red ✓, ✗ or score in the margin, the correction in red and a short comment in your own language. In the dark theme the sheets stay paper-coloured, a little dimmer.
+
+**How a test runs.** The words you find hardest (most lapses, never studied) come first. Each question, or each reading or listening part as a whole, is written only once the one before is marked: a part gets harder after a good answer and easier after a poor one, and a word you miss comes back later in another part. Return moves to the next box and then hands in (in longer answers it starts a new line; use Next or Hand in). Recordings play at most twice. The time allowed adds up each question's time (for example 1 minute to listen and write, 45 seconds for a missing word, 2 minutes per reading question, 8–40 minutes for writing, by exam); the clock turns red in the last minute, and when it runs out the paper is collected and unanswered questions score 0. At the hardest level a missing-word, translation or correction question also asks you to explain why, and a wrong or missing reason halves its mark.
+
+**Marking.** With a Claude API key (added in the new-test form, kept only in this browser; Remove key takes it out), every part is offered: Claude writes brand-new questions in the exam's style for each paper and marks each answer by its meaning against a rubric, accepting every correct alternative, not only the model answer (1 point, ½ for a small slip, 0; Writing out of 4). Without a key, the parts that need Claude (reading and listening passages, readings, corrections, rewriting) are greyed out; the rest use your saved sentences, Listening, missing words and sentence building are marked by how close your answer is, and other answers that do not match the model are marked by you, with the model answer, the rubric and buttons for the score. If Claude cannot be reached during a test, the paper carries on this way.
 
 ## Language help
 
