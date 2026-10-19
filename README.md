@@ -118,7 +118,7 @@ On a phone, swipe a card right for Good and left for Again. Whatever flies off (
 
 ## Tests
 
-📝 sits beside the 🔥 streak at the top of the sidebar (and in a phone's top bar), in Lessons and in Vocabulary alike; its number counts the tests in progress and the ones due, turning orange while one is due, and ⌘⌥X (Ctrl+Alt+X) opens it too. It opens the test centre, built like an exam website, with four tabs and a ＋ New test button:
+📝 Tests is a row of its own at the top of the sidebar, under the logo and above the search box (in a phone's menu), in Lessons and in Vocabulary alike, so the logo row keeps its room; the number at its right counts the tests in progress and the ones due, turning orange while one is due, and the row is lit while the test centre is open. ⌘⌥X (Ctrl+Alt+X) opens it too. It opens the test centre, built like an exam website, with four tabs and a ＋ New test button:
 
 - **Overview**: five figures (tests taken, average score with its band, best score, time spent on tests, tests waiting), Continue (tests in progress and scheduled, with Resume or Start), a Score over time chart of the last 20 tests (point at a dot for the test, its date and score, and the change since the test before is shown above it), Skills (Listening, Reading, Vocabulary, Grammar, Translation and Writing, as bars from the last ten tests) and Words to review (the words missed most often, with how many times). Before the first test it invites you to take one.
 - **Exams**: a card for each exam that suits the languages of your words, with its parts, number of questions, length, your best score in it, and which parts need Claude; Set up opens New test with it chosen.

@@ -920,11 +920,14 @@ window.onYouTubeIframeAPIReady = function(){
   .tests-key-add{display:flex;gap:8px;width:100%;}
   .tests-key-add input{flex:1;min-width:0;}
   .tests-go{display:flex;gap:12px;margin-top:16px;}
-  .test-chip{flex-shrink:0;display:inline-flex;align-items:center;gap:4px;height:20px;min-height:0;padding:0 6px;border:0;border-radius:10px;font-size:12px;font-weight:700;line-height:20px;color:var(--accent);background:var(--accent-soft);font-variant-numeric:tabular-nums;}
-  .test-chip #testChipCount:empty{display:none;}
-  .test-chip.due{color:var(--due-color);background:color-mix(in srgb, var(--due-color) 14%, transparent);}
-  .test-chip.active{color:var(--on-accent);background:var(--accent);}
-  @media (hover:hover){.test-chip:not(.active):hover{background:color-mix(in srgb, var(--accent) 22%, transparent);}}
+  .test-nav{display:flex;align-items:center;gap:8px;width:100%;height:36px;flex:none;padding:0 10px;border:0;border-radius:var(--radius-sm);font-size:14px;line-height:20px;font-weight:600;color:var(--text-2);background:transparent;text-align:left;}
+  .test-nav-icon{font-size:16px;line-height:20px;}
+  .test-nav-name{flex:1;min-width:0;}
+  .test-nav-count{min-width:20px;height:20px;padding:0 6px;box-sizing:border-box;border-radius:10px;font-size:12px;line-height:20px;font-weight:700;text-align:center;color:var(--accent);background:var(--accent-soft);font-variant-numeric:tabular-nums;}
+  .test-nav-count:empty{display:none;}
+  .test-nav.due .test-nav-count{color:var(--due-color);background:color-mix(in srgb, var(--due-color) 14%, transparent);}
+  @media (hover:hover){.test-nav:hover{color:var(--text);background:var(--surface-2);}}
+  .test-nav.active{color:var(--accent);background:var(--accent-soft);}
   .tc-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px;}
   .tc-head .stats-title{margin:0;}
   .tc-tabs{display:flex;width:max-content;max-width:100%;margin-bottom:16px;overflow-x:auto;}
@@ -1365,7 +1368,8 @@ window.onYouTubeIframeAPIReady = function(){
 <div class="shell">
 
 <aside class="sidebar">
-  <div class="brand"><button id="btnDrawer" class="ghost drawer-btn" aria-label="Menu">☰</button><button id="btnAppMode" class="brand-switch" title="Switch to Vocabulary"><span class="brand-mark">字</span><span id="brandName">Lessons</span></button><button id="streakChip" class="streak-chip" aria-haspopup="dialog" aria-controls="limitsPop"><span class="streak-chip-flame">🔥</span><span id="streakChipCount">0</span></button><button id="testChip" class="test-chip" aria-label="Tests"><span aria-hidden="true">📝</span><span id="testChipCount"></span></button><button id="btnCloud" class="cloud-chip" hidden></button></div>
+  <div class="brand"><button id="btnDrawer" class="ghost drawer-btn" aria-label="Menu">☰</button><button id="btnAppMode" class="brand-switch" title="Switch to Vocabulary"><span class="brand-mark">字</span><span id="brandName">Lessons</span></button><button id="streakChip" class="streak-chip" aria-haspopup="dialog" aria-controls="limitsPop"><span class="streak-chip-flame">🔥</span><span id="streakChipCount">0</span></button><button id="btnCloud" class="cloud-chip" hidden></button></div>
+  <button id="testNav" class="test-nav"><span class="test-nav-icon" aria-hidden="true">📝</span><span class="test-nav-name">Tests</span><span id="testNavCount" class="test-nav-count"></span></button>
   <input type="search" id="lessonSearch" name="lesson-search" autocomplete="off" placeholder="Search lessons…" aria-label="Search lessons">
   <nav id="lessonList" class="lesson-list" aria-label="Lessons"></nav>
   <div class="sidebar-footer">
@@ -10119,7 +10123,7 @@ function showView(view) {
   }
   if (view === "stats") renderStats();
   if (view === "test") renderTest();
-  syncTestChip();
+  syncTestNav();
   if (view === "study") render();
   if (view === "vocab") renderVocab();
   fitAllTextareas();
@@ -13818,7 +13822,7 @@ function saveTests() {
   } catch (e) {
     showToast("Could not save the test");
   }
-  syncTestChip();
+  syncTestNav();
 }
 
 function touchTest(t) {
@@ -14711,13 +14715,13 @@ function testSpan(seconds) {
   return m >= 60 ? Math.floor(m / 60) + " h" + (m % 60 ? " " + m % 60 + " min" : "") : m + " min";
 }
 
-function syncTestChip() {
-  const chip = document.getElementById("testChip");
+function syncTestNav() {
+  const chip = document.getElementById("testNav");
   if (!chip) return;
   const bank = testBank();
   const going = bank.filter(t => t.status === "active").length;
   const due = bank.filter(testDue).length;
-  document.getElementById("testChipCount").textContent = going + due || "";
+  document.getElementById("testNavCount").textContent = going + due || "";
   chip.classList.toggle("active", currentView === "test");
   chip.classList.toggle("due", due > 0);
   chip.title = `Tests — ${going} in progress, ${due} due`;
@@ -15041,7 +15045,7 @@ document.getElementById("testHome").addEventListener("submit", e => {
   renderTest();
 });
 
-document.getElementById("testChip").onclick = openTests;
+document.getElementById("testNav").onclick = openTests;
 
 document.getElementById("testPaper").addEventListener("input", e => {
   if (!e.target.matches("textarea.exam-answer")) return;
@@ -15064,7 +15068,7 @@ document.getElementById("testPaper").addEventListener("keydown", e => {
   if (next) next.focus(); else submitTestStep();
 });
 
-syncTestChip();
+syncTestNav();
 
 const SIDEBAR_KEYS = {
   KeyN: "btnNewLesson",
