@@ -1084,6 +1084,8 @@ window.onYouTubeIframeAPIReady = function(){
   .exam-plays{font-size:10px;line-height:16px;letter-spacing:2px;color:var(--sheet-ink-2);}
   .exam-rec-note{font-size:14px;line-height:20px;font-style:italic;color:var(--exam-red);}
   .exam-actions{display:flex;justify-content:flex-end;margin-top:24px;}
+  .test-clip{position:fixed;left:-10000px;top:0;width:320px;height:180px;overflow:hidden;}
+  .test-clip iframe{width:320px;height:180px;border:0;}
   .exam-mark{position:absolute;top:-6px;left:-64px;width:48px;font-family:Georgia, "Times New Roman", serif;font-size:28px;line-height:36px;font-style:italic;text-align:center;color:var(--exam-red);}
   .exam-fix{margin-top:6px;font-family:Georgia, "Times New Roman", serif;font-size:17px;line-height:24px;font-style:italic;color:var(--exam-red);overflow-wrap:break-word;}
   .exam-fb{font-size:15px;line-height:20px;}
@@ -10148,7 +10150,10 @@ function showView(view) {
     hideDictOverlay();
   }
   if (view === "stats") renderStats();
-  if (view === "test") renderTest(); else stopTestSpeech();
+  if (view === "test") renderTest(); else {
+    stopTestSpeech();
+    stopTestClip();
+  }
   syncTestNav();
   if (view === "study") render();
   if (view === "vocab") renderVocab();
@@ -13856,8 +13861,8 @@ const TEST_UI = {
     delAsk: "Delete?",
     cardMeta: "{n} questions · about {span}",
     bestPct: "best {p}%",
-    needs: "{n} parts need Claude",
-    needs1: "1 part needs Claude",
+    needs: "{n} parts need an AI key",
+    needs1: "1 part needs an AI key",
     setUp: "Set up",
     anyLang: "Any language",
     allTests: "All tests",
@@ -13938,8 +13943,8 @@ const TEST_UI = {
     delAsk: "删除？",
     cardMeta: "共{n}题 · 约{span}",
     bestPct: "最高{p}%",
-    needs: "{n}个部分需要 Claude",
-    needs1: "1个部分需要 Claude",
+    needs: "{n}个部分需要 AI 密钥",
+    needs1: "1个部分需要 AI 密钥",
     setUp: "设置",
     anyLang: "任何语言",
     allTests: "全部考试",
@@ -14020,8 +14025,8 @@ const TEST_UI = {
     delAsk: "削除しますか？",
     cardMeta: "全{n}問 · 約{span}",
     bestPct: "最高{p}%",
-    needs: "{n}つのパートに Claude が必要",
-    needs1: "1つのパートに Claude が必要",
+    needs: "{n}つのパートに AI キーが必要",
+    needs1: "1つのパートに AI キーが必要",
     setUp: "設定",
     anyLang: "すべての言語",
     allTests: "すべての試験",
@@ -14102,8 +14107,8 @@ const TEST_UI = {
     delAsk: "삭제할까요?",
     cardMeta: "총 {n}문항 · 약 {span}",
     bestPct: "최고 {p}%",
-    needs: "{n}개 영역에 Claude 필요",
-    needs1: "1개 영역에 Claude 필요",
+    needs: "{n}개 영역에 AI 키 필요",
+    needs1: "1개 영역에 AI 키 필요",
     setUp: "설정",
     anyLang: "모든 언어",
     allTests: "모든 시험",
@@ -14184,8 +14189,8 @@ const TEST_UI = {
     delAsk: "Xoá?",
     cardMeta: "{n} câu · khoảng {span}",
     bestPct: "cao nhất {p}%",
-    needs: "{n} phần cần Claude",
-    needs1: "1 phần cần Claude",
+    needs: "{n} phần cần khoá AI",
+    needs1: "1 phần cần khoá AI",
     setUp: "Chọn đề",
     anyLang: "Mọi ngôn ngữ",
     allTests: "Tất cả bài thi",
@@ -14431,6 +14436,27 @@ function testSets() {
   return sets;
 }
 
+function cardClip(card) {
+  if (card.time == null) return null;
+  let lesson = null;
+  let url = "";
+  if (rows.includes(card)) {
+    if (isVirtualLesson()) lesson = library.find(l => l.id === card.srcLessonId); else url = document.getElementById("mediaUrl").value;
+  }
+  if (!url) {
+    lesson = lesson || library.find(l => l.cards.includes(card));
+    url = lesson && lesson.mediaUrl || "";
+  }
+  const id = url && extractYouTubeId(url);
+  if (!id) return null;
+  const next = (lesson ? lesson.cards : rows).filter(c => c.time != null && c.time > card.time).sort((a, b) => a.time - b.time)[0];
+  return {
+    id: id,
+    start: Math.max(0, Math.floor(card.time)),
+    end: Math.ceil(next ? next.time : card.time + 8)
+  };
+}
+
 function testWeakness(item) {
   const s = item.card.vocab && item.card.vocab[item.key] || newSrsState();
   return (s.lapses || 0) * 2 + (s.reps ? 0 : 1) - Math.min(s.streak || 0, 5) * .3 + Math.random() * 1.5;
@@ -14464,6 +14490,7 @@ function createTest(prefs) {
     q: oneLine(i.card.q),
     a: oneLine(i.card.a),
     lang: itemLangOf(i.term, set.lang),
+    clip: cardClip(i.card),
     weak: testWeakness(i)
   })).sort((a, b) => b.weak - a.weak);
   const present = setLangs(set);
@@ -14567,7 +14594,7 @@ function resumeTest(t) {
 
 function pickTestItems(t, part, count) {
   const slot = part.type + "|" + (part.lang || "");
-  const pool = t.pool.filter(i => !part.lang || !i.lang || i.lang === part.lang);
+  const pool = t.pool.filter(i => !part.lang || !i.lang || i.lang === part.lang).sort((a, b) => part.type === "listen" ? !!(b.clip && containsTerm(b.q, b.term)) - !!(a.clip && containsTerm(a.q, a.term)) : 0);
   const used = new Set(t.used[slot] || []);
   const picks = [];
   let rounds = 0;
@@ -14648,7 +14675,12 @@ function offlineFill(t, q) {
     }
     q.type = "cloze";
   }
-  if (q.type === "listen") {
+  if (q.useClip) {
+    q.sentence = item.q;
+    q.answer = item.q;
+    q.translation = item.a;
+    q.clip = item.clip;
+  } else if (q.type === "listen") {
     q.sentence = sentence && sentence.replace(/\s+/g, "").length <= 40 ? sentence : item.term;
     q.answer = q.sentence;
     q.translation = q.sentence === sentence ? item.a : meaning;
@@ -14853,9 +14885,89 @@ Marking ("marks"): one entry per item of "mark", in the same order. Follow each 
 When "mark" is null, return an empty "marks" list; when "write" is null, return empty strings and empty lists in "next".`;
 }
 
+const TEST_JSON_SHAPE = `
+
+Reply with one JSON object only, shaped exactly as {"marks":[{"score":0,"feedback":"","correction":""}],"next":{"items":[{"sentence":"","start":"","answer":"","accepted":[""],"translation":""}],"passage_title":"","passage":"","questions":[{"prompt":"","answer":"","accepted":[""]}]}}.`;
+
+let geminiModelName = "";
+
+function testProvider(key) {
+  return /^AIza/.test(key) ? "Gemini" : "Claude";
+}
+
+async function geminiModel(key) {
+  if (geminiModelName) return geminiModelName;
+  try {
+    const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200", {
+      headers: {
+        "x-goog-api-key": key
+      }
+    });
+    const list = res.ok ? (await res.json()).models || [] : [];
+    const version = name => parseFloat((name.match(/gemini-(\d+(?:\.\d+)?)/) || [ 0, 0 ])[1]);
+    const pick = list.map(m => m.name.replace(/^models\//, "")).filter(n => /^gemini-[\d.]+-flash$/.test(n) && list.find(m => m.name.endsWith(n)).supportedGenerationMethods.includes("generateContent")).sort((a, b) => version(b) - version(a))[0];
+    geminiModelName = pick || "gemini-2.5-flash";
+  } catch (e) {
+    geminiModelName = "gemini-2.5-flash";
+  }
+  return geminiModelName;
+}
+
+async function askGemini(t, mark, write, lang, key) {
+  const model = await geminiModel(key);
+  let res;
+  try {
+    res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": key
+      },
+      body: JSON.stringify({
+        systemInstruction: {
+          parts: [ {
+            text: testSystem(t, lang) + TEST_JSON_SHAPE
+          } ]
+        },
+        contents: [ {
+          role: "user",
+          parts: [ {
+            text: JSON.stringify({
+              mark: mark,
+              write: write
+            })
+          } ]
+        } ],
+        generationConfig: {
+          responseMimeType: "application/json"
+        }
+      })
+    });
+  } catch (e) {
+    throw Object.assign(new Error("offline"), {
+      kind: "net"
+    });
+  }
+  if (!res.ok) throw Object.assign(new Error("gemini " + res.status), {
+    kind: res.status === 429 ? "busy" : res.status === 400 || res.status === 401 || res.status === 403 ? "key" : "other"
+  });
+  const data = await res.json();
+  const parts = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts || [];
+  const reply = JSON.parse(parts.map(x => x.text || "").join("").replace(/^```(?:json)?\s*|\s*```$/g, ""));
+  reply.marks = reply.marks || [];
+  reply.next = Object.assign({
+    items: [],
+    passage_title: "",
+    passage: "",
+    questions: []
+  }, reply.next);
+  return reply;
+}
+
 async function askExaminer(t, mark, write, effort, lang) {
   const key = testKey();
   if (!key) throw new Error("no key");
+  if (testProvider(key) === "Gemini") return askGemini(t, mark, write, lang, key);
   if (!testSdk) testSdk = await import(ANTHROPIC_SDK);
   if (!testClient || testClientKey !== key) {
     testClient = new testSdk.default({
@@ -14890,10 +15002,26 @@ async function askExaminer(t, mark, write, effort, lang) {
 }
 
 function examinerTrouble(e) {
-  if (testSdk && e instanceof testSdk.AuthenticationError) return "Claude did not accept the API key";
-  if (testSdk && e instanceof testSdk.RateLimitError) return "Claude is busy";
-  if (testSdk && e instanceof testSdk.APIConnectionError) return "Claude could not be reached";
-  return "Claude could not help";
+  const who = testProvider(testKey());
+  if (e && e.kind === "key" || testSdk && e instanceof testSdk.AuthenticationError) return who + " did not accept the key";
+  if (e && e.kind === "busy" || testSdk && e instanceof testSdk.RateLimitError) return who + " is busy or its free limit is used up for now";
+  if (e && e.kind === "net" || testSdk && e instanceof testSdk.APIConnectionError) return who + " could not be reached";
+  return who + " could not help";
+}
+
+async function inTurns(tasks, limit) {
+  const out = new Array(tasks.length);
+  let next = 0;
+  const lane = async () => {
+    while (next < tasks.length) {
+      const at = next++;
+      out[at] = await tasks[at]();
+    }
+  };
+  await Promise.all(Array.from({
+    length: Math.min(limit, tasks.length)
+  }, lane));
+  return out;
 }
 
 function plainAnswer(s) {
@@ -14948,7 +15076,12 @@ function planParts(t) {
     if (TEST_TYPES[type].group) {
       const items = pickTestItems(t, part, 4);
       for (let k = 0; k < step.count; k++) plan.qs.push(newQuestion(t, step.part, type, items));
-    } else plan.qs.push(newQuestion(t, step.part, type, pickTestItems(t, part, type === "write" ? 3 : type === "speak" ? 2 : 1)));
+    } else {
+      const q = newQuestion(t, step.part, type, pickTestItems(t, part, type === "write" ? 3 : type === "speak" ? 2 : 1));
+      const item = t.pool.find(i => i.key === q.keys[0]);
+      q.useClip = type === "listen" && !!(item && item.clip && containsTerm(item.q, item.term));
+      plan.qs.push(q);
+    }
   });
   plans.forEach(plan => {
     const type = plan.qs[0].type;
@@ -14961,13 +15094,15 @@ function planParts(t) {
 async function generateTest(t) {
   const plans = planParts(t);
   if (!plans.length) return;
+  plans.forEach(p => p.ai = p.qs.filter(q => !q.useClip));
   let replies = [];
+  const limit = testProvider(testKey()) === "Gemini" ? 2 : 6;
   if (t.ai) {
     t.busy = tl(t, "writing");
     renderOpen(t);
-    replies = await Promise.all(plans.map(p => askExaminer(t, null, testPrompt(t, p.qs), TEST_TYPES[p.qs[0].type].group ? "medium" : "low", p.qs[0].lang).catch(e => ({
+    replies = await inTurns(plans.map(p => () => p.ai.length ? askExaminer(t, null, testPrompt(t, p.ai), TEST_TYPES[p.qs[0].type].group ? "medium" : "low", p.qs[0].lang).catch(e => ({
       failed: e
-    }))));
+    })) : null), limit);
     const failed = replies.find(r => r && r.failed);
     if (failed) {
       showToast(examinerTrouble(failed.failed) + " — some parts use your saved sentences");
@@ -14978,16 +15113,20 @@ async function generateTest(t) {
   if (!testBank().includes(t)) return;
   plans.forEach((p, i) => {
     const r = replies[i];
-    const ok = r && r.next ? applyGenerated(t, p.qs, r.next) : p.qs.map(() => false);
+    const ok = r && r.next ? applyGenerated(t, p.ai, r.next) : p.ai.map(() => false);
     const group = TEST_TYPES[p.qs[0].type].group;
     if (group && !ok[0]) p.qs.forEach((q, k) => {
       q.keys = [ q.keys[k % q.keys.length] ];
       offlineFill(t, q);
-    }); else p.qs.forEach((q, k) => ok[k] || offlineFill(t, q));
+    }); else p.qs.forEach(q => q.useClip || ok[p.ai.indexOf(q)] ? null : offlineFill(t, q));
+    p.qs.filter(q => q.useClip).forEach(q => offlineFill(t, q));
     t.questions.push(...p.qs);
   });
   t.questions.forEach((q, i) => q.n = i + 1);
   t.stepCount = t.steps.length;
+  const kept = new Set(t.questions.flatMap(q => q.keys));
+  t.pool = t.pool.filter(i => kept.has(i.key));
+  t.used = {};
   touchTest(t);
   renderOpen(t, true);
 }
@@ -14998,9 +15137,9 @@ async function markTest(t) {
     t.busy = tl(t, "marking");
     renderOpen(t);
     const groups = t.parts.map((_, i) => toMark.filter(q => q.part === i)).filter(g => g.length);
-    const replies = await Promise.all(groups.map(g => askExaminer(t, g.map(q => testMarkRequest(t, q)), null, g.some(q => q.max > 1) ? "medium" : "low", g[0].lang).catch(e => ({
+    const replies = await inTurns(groups.map(g => () => askExaminer(t, g.map(q => testMarkRequest(t, q)), null, g.some(q => q.max > 1) ? "medium" : "low", g[0].lang).catch(e => ({
       failed: e
-    }))));
+    }))), testProvider(testKey()) === "Gemini" ? 2 : 6);
     const failed = replies.find(r => r && r.failed);
     if (failed) showToast(examinerTrouble(failed.failed) + " — some answers are marked on this device");
     groups.forEach((g, i) => g.forEach((q, k) => {
@@ -15055,6 +15194,7 @@ function unansweredCount(t) {
 function handInTest(t, timeUp) {
   if (!t || t.status !== "active" || t.handedIn || t.busy) return;
   stopTestSpeech();
+  stopTestClip();
   speechSynthesis.cancel();
   t.questions.forEach(q => {
     const box = document.querySelector(`.exam-q[data-n="${q.n}"] .exam-answer:not(.exam-reason)`);
@@ -15206,11 +15346,33 @@ function testSpeech(n) {
   renderTest();
 }
 
+function stopTestClip() {
+  const box = document.getElementById("testClip");
+  if (box) box.remove();
+  clearTimeout(stopTestClip.timer);
+}
+
+function playTestClip(clip) {
+  stopTestClip();
+  speechSynthesis.cancel();
+  const box = document.createElement("div");
+  box.id = "testClip";
+  box.className = "test-clip";
+  box.innerHTML = `<iframe src="https://www.youtube.com/embed/${encodeURIComponent(clip.id)}?start=${clip.start}&end=${clip.end}&autoplay=1&controls=0&disablekb=1&rel=0&playsinline=1&iv_load_policy=3" allow="autoplay; encrypted-media" title="Recording"></iframe>`;
+  document.body.appendChild(box);
+  stopTestClip.timer = setTimeout(stopTestClip, (clip.end - clip.start + 6) * 1000);
+}
+
 function playTestAudio(n) {
   const t = openTestRecord();
   const q = t && t.questions[n - 1];
   if (!q || !q.plays || q.submitted) return;
   q.plays--;
+  if (q.clip) {
+    playTestClip(q.clip);
+    touchTest(t);
+    return renderTest();
+  }
   speakTest(q.type === "listenq" ? q.passage : q.answer, q.lang);
   touchTest(t);
   renderTest();
@@ -15625,7 +15787,7 @@ function newTestHtml() {
   const format = formats.includes(prefs.format) ? prefs.format : formats[0];
   const parts = testPartsOf(format);
   const picks = prefs.format === format && Array.isArray(prefs.parts) ? prefs.parts : parts.map((_, i) => i);
-  const keyRow = key ? '<div>Claude writes new questions in the exam\'s style and marks every answer.</div><button data-act="key-remove" class="ghost">Remove key</button>' : '<div>On this device: questions come from your saved sentences and you mark open answers yourself with the rubric. Add a Claude API key for every exam part, new questions each time and marking by Claude. A key is a personal password for the Anthropic API, made at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a>; Anthropic charges a little for each paper written and marked.</div><form class="tests-key-add" autocomplete="off"><input type="text" name="username" value="claude-api-key" autocomplete="username" hidden tabindex="-1"><input type="password" id="testKeyInput" name="claude-key" placeholder="Claude API key" autocomplete="new-password"><button type="submit" data-act="key-save">Save</button></form>';
+  const keyRow = key ? `<div>${testProvider(key)} writes new questions in the exam's style and marks every answer.</div><button data-act="key-remove" class="ghost">Remove key</button>` : '<div>On this device: questions come from your saved sentences and you mark open answers yourself with the rubric. For new questions every time, every exam part and automatic marking, paste a free Gemini key: sign in with Google at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>, press Create API key and copy it here (no card, no payment). A Claude key (paid) works too.</div><form class="tests-key-add" autocomplete="off"><input type="text" name="username" value="ai-key" autocomplete="username" hidden tabindex="-1"><input type="password" id="testKeyInput" name="ai-key" placeholder="Gemini or Claude key" autocomplete="new-password"><button type="submit" data-act="key-save">Save</button></form>';
   return '<div class="panel"><div class="tests-form">' + `<label class="tests-row"><span>Words from</span><select id="testSet">${sets.map(s => `<option value="${escapeAttr(s.id)}"${s === set ? " selected" : ""}>${escapeHtml(s.name)} (${s.items.length})</option>`).join("")}</select></label>` + `<label class="tests-row"><span>Exam</span><select id="testFormat">${formats.map(f => `<option value="${f}"${f === format ? " selected" : ""}>${escapeHtml(TEST_FORMATS[f].name)}</option>`).join("")}</select></label>` + `<div class="tests-row"><span>Parts</span><div class="tests-checks">${parts.map((p, i) => {
     const ok = key || TEST_TYPES[p.type].offline;
     return `<label class="${ok ? "" : "off"}"><input type="checkbox" value="${i}"${picks.includes(i) && ok ? " checked" : ""}${ok ? "" : " disabled"}> ${escapeHtml(p.title)}${ok ? "" : " <i>needs Claude</i>"}</label>`;
@@ -15800,6 +15962,7 @@ document.getElementById("viewTest").addEventListener("click", e => {
   } else if (act === "pause" || act === "home") {
     speechSynthesis.cancel();
     stopTestSpeech();
+    stopTestClip();
     testOpenId = null;
     renderTest();
     window.scrollTo(0, 0);
