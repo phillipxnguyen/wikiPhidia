@@ -102,10 +102,11 @@ With reduced motion turned on in the system, she stays away and things simply ha
 | [ and ] | Slower or faster sound (the speed beside the sound button) |
 | Y | Make the video large or put it back in the bar; when it grows, the page scrolls back up to it (Group shows no video, so Y does nothing there) |
 | ⌘⌥A (Ctrl+Alt+A) | Add a card or word (the ＋ in ☰ Full or ☰ List; elsewhere it opens Add cards or Add vocabularies) |
-| ⌘⌥N (Ctrl+Alt+N) | New lesson. The sidebar's shortcuts (N, O, B, W, Q, T) and A need ⌘ and ⌥ on a Mac, Ctrl and Alt elsewhere, so they are not pressed by accident |
+| ⌘⌥N (Ctrl+Alt+N) | New lesson. The sidebar's shortcuts (N, O, B, W, X, Q, T) and A need ⌘ and ⌥ on a Mac, Ctrl and Alt elsewhere, so they are not pressed by accident |
 | ⌘⌥O (Ctrl+Alt+O) | Open a file (the same as Open file) |
 | ⌘⌥B (Ctrl+Alt+B) | Back up |
 | ⌘⌥W (Ctrl+Alt+W) | Statistics |
+| ⌘⌥X (Ctrl+Alt+X) | Test |
 | ⌘⌥Q (Ctrl+Alt+Q) | Switch between Lessons and Vocabulary |
 | ⌘⌥T (Ctrl+Alt+T) | Switch between the light and dark theme |
 | / | Jump to the lesson search box (on a phone it opens the menu first) |
@@ -114,6 +115,23 @@ With reduced motion turned on in the system, she stays away and things simply ha
 The same keys work in every study mode, in Lessons and in Vocabulary. In a Lesson group, pointing at a row makes the grading keys grade just that card.
 
 On a phone, swipe a card right for Good and left for Again. Whatever flies off (a card's line, a card, a whole group) is outlined exactly at its own edges, with its own rounded corners (a line flies as a rounded strip). Swiping the card grades it. While you swipe, what comes next is already shown underneath, in the same form it will have: the next translation card, the next Listening card, the next Speaking paper (its next question number and a fresh clock), and the next flashcard. The next card is simply there underneath, at once, as the swipe starts or as the buttons or keys grade the card; nothing fades in, in any mode.
+
+## Test
+
+📝 at the bottom of the sidebar (beside 📊, in Lessons and in Vocabulary alike) opens a test made from your Vocabulary words, laid out as a real exam paper: a heading with the set, the date and who marks it, a Score box and an Examiner's comments box filled in red pen at the end, a red margin line, numbered boxed questions, and answers written in blue ink on ruled lines. There is no multiple choice anywhere: every answer is typed, with no word list to pick from.
+
+Before starting, pick the words (All vocabularies or one lesson's words), the parts and how many questions each part has (3, 5 or 8; Writing is always one task). The parts come in exam order:
+
+| Part | What you do |
+|---|---|
+| Listening | ▶ Listen reads a sentence aloud, at most twice; write exactly what you hear. |
+| Vocabulary in context | Write the missing word in a sentence, with the whole sentence's meaning under it for context (a word with no saved sentence asks for the word that means its meaning). |
+| Translation | Translate a sentence into the language you are learning; more than one answer can be right. |
+| Writing | Write 3–5 sentences using three given words, and explain why one of them fits. |
+
+The words you find hardest (most lapses, never studied) come first. The test adapts as you go: each question is written only after the one before is marked, a part gets harder after a good answer and easier after a poor one, and a word you miss comes back later in another part. The paper has a time limit, the sum of each question's time (1 minute to listen, 45 seconds for a missing word, 1½ minutes to translate, 8 minutes to write), shown as a clock counting down, which turns red in the last minute and pauses while answers are being marked; when it runs out the paper is collected and unanswered questions score 0. Return moves to the next question (in Writing it starts a new line; use Next), and a question you are answering keeps what you typed if you leave the test and come back.
+
+**Marking.** With a Claude API key (added on the test's first page, kept only in this browser; Remove key takes it out), Claude writes a brand-new sentence for every question, never one you have seen, and marks each answer by its meaning against a rubric, accepting every correct alternative, not only the model answer: 1 point for a fully right answer, ½ for a small slip, 0 otherwise (Writing out of 4: the words used correctly, fitting the situation, grammar and spelling, and the explanation). At the hardest level a missing-word or translation question also asks you to explain why, and a wrong or missing reason halves its mark. Each answer gets a red ✓, ✗ or its score in the margin, the correction in red and a short comment in your own language. Without a key, or when Claude cannot be reached, the test runs on this device: questions use your saved sentences, Listening and missing words are marked by how close your answer is, and translations and Writing that do not match the model answer are marked by you, with the model answer and the rubric shown and buttons for the score. The last ten results are listed on the first page.
 
 ## Vocabulary
 
