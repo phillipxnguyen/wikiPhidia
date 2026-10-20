@@ -3096,10 +3096,6 @@ function deckHasVideoCards() {
 
 function isVideoLesson() {
   if (isAllLessons()) return !!mixFocusId && mixStyle !== "ielts";
-  return !isVirtualLesson() && (!!document.getElementById("mediaUrl").value.trim() || deckHasVideoCards());
-}
-
-function isYouTubeLesson() {
   return !isVirtualLesson() && (!!extractYouTubeId(document.getElementById("mediaUrl").value.trim()) || deckHasVideoCards());
 }
 
@@ -5770,7 +5766,7 @@ function updateSelBar() {
   if (!target) return fitDeck();
   bar.style.setProperty("--tb-h", touchBar.offsetHeight + "px");
   document.getElementById("selDelete").hidden = !!target.row && isVirtualLesson();
-  document.getElementById("selVocab").hidden = !target.row || target.rows.length !== 1 || isVirtualLesson() || isYouTubeLesson();
+  document.getElementById("selVocab").hidden = !target.row || target.rows.length !== 1 || isVirtualLesson() || isVideoLesson();
   document.documentElement.style.setProperty("--sel-h", Math.round(window.innerHeight - bar.querySelector(".segmented").getBoundingClientRect().top) + "px");
   fitDeck();
 }
@@ -7065,7 +7061,7 @@ function mixCandidates() {
   const isVideo = r => {
     if (!video.has(r.srcLessonId)) {
       const l = library.find(o => o.id === r.srcLessonId);
-      video.set(r.srcLessonId, !!l && (!!(l.mediaUrl || "").trim() || l.cards.some(c => c.time != null)));
+      video.set(r.srcLessonId, !!l && (!!extractYouTubeId(l.mediaUrl || "") || l.cards.some(c => c.time != null)));
     }
     return video.get(r.srcLessonId);
   };
@@ -9503,6 +9499,30 @@ function openLesson(lesson) {
   try {
     localStorage.setItem("flashcards.lastLesson", lesson.id);
   } catch (e) {}
+  setTimeout(() => offerTranslationMove(lesson.id), 400);
+}
+
+function keptTranslationLessons() {
+  try {
+    return JSON.parse(localStorage.getItem("flashcards.keepTranslations")) || [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function offerTranslationMove(id) {
+  if (appMode !== "cards" || currentLessonId !== id || isVirtualLesson() || keptTranslationLessons().includes(id)) return;
+  const list = rows.filter(r => r.time == null && isTranslationCard(r));
+  if (!list.length) return;
+  const n = list.length;
+  if (!confirm(`${n === 1 ? "1 card in this lesson is a translation" : n + " cards in this lesson are translations"} (question and answer in different languages, no video time).\n\nTranslations are learnt in Vocabulary; Lessons keep Speaking and YouTube cards.\n\nMove ${n === 1 ? "it" : "all " + n} to Vocabulary? You can undo with ⌘Z. Cancel keeps them here and does not ask again for this lesson.`)) {
+    try {
+      localStorage.setItem("flashcards.keepTranslations", JSON.stringify(keptTranslationLessons().concat(id)));
+    } catch (e) {}
+    return;
+  }
+  moveCardsToVocab(list);
+  if (!rows.length) settleImportMode(false, true);
 }
 
 function isEmptyDraft() {
@@ -13886,6 +13906,7 @@ document.getElementById("btnAppMode").onclick = () => {
   const cur = library.find(l => l.id === currentLessonId);
   if (cur && lessonInMode(cur)) {
     showView("study");
+    setTimeout(() => offerTranslationMove(cur.id), 400);
     return;
   }
   const real = [ last ].concat(recentLessonIds()).map(id => library.find(l => l.id === id && lessonInMode(l))).find(Boolean) || modeLibrary()[0];
@@ -17254,7 +17275,7 @@ document.addEventListener("keydown", e => {
     return;
   }
   if (letter && e.code === "KeyV") {
-    if (isYouTubeLesson() || isVirtualLesson() || activeEdit) return;
+    if (isVideoLesson() || isVirtualLesson() || activeEdit) return;
     const {scope: scope, picked: picked} = studyPick();
     const row = picked || (groupViewStyle === "ielts" && groupState ? scope[0] : null);
     if (!row) return;
