@@ -593,6 +593,8 @@ window.onYouTubeIframeAPIReady = function(){
   .segmented[hidden], .segmented button[hidden]{display:none;}
   .segmented{align-items:center;}
   .segmented .sep-before{position:relative;margin-left:8px;}
+  .vocab-toolbar.study-only .segmented .sep-before{margin-left:0;}
+  .vocab-toolbar.study-only .segmented .sep-before::before{display:none;}
   .segmented .sep-before::before{content:"";position:absolute;left:-5px;top:6px;bottom:6px;width:1px;background:color-mix(in srgb, var(--accent) 30%, transparent);}
   .segmented .sp-vocab{font-weight:700;color:#1e9466;}
   .segmented{display:inline-flex;gap:2px;padding:4px;background:color-mix(in srgb, var(--accent) 12%, var(--bg));border-radius:10px;}
@@ -4299,11 +4301,11 @@ function langCode(text) {
   return code === "zh-CN" && (studyLang === "zh-TW" || studyLang === "ja") ? studyLang : code;
 }
 
-function autoDetectFlag() {
+function autoDetectFlag(texts) {
   const counts = {};
-  rows.forEach(r => {
-    if (!r.q) return;
-    const lang = detectLang(r.q);
+  (texts || rows.map(r => r.q)).forEach(text => {
+    if (!text) return;
+    const lang = langCode(text);
     counts[lang] = (counts[lang] || 0) + 1;
   });
   let best = null, bestCount = 0;
@@ -4313,7 +4315,7 @@ function autoDetectFlag() {
       bestCount = counts[lang];
     }
   }
-  return STUDY_LANG_FLAGS[LANG_CODES[best]] || "🌐";
+  return STUDY_LANG_FLAGS[best] || "🌐";
 }
 
 function updateGroupBtnFlag() {
@@ -12736,6 +12738,7 @@ function renderVocab() {
   const canAdd = currentLessonId !== VOCAB_ALL_ID;
   const studyOnly = !canAdd;
   if (studyOnly) vocabView = "card";
+  document.getElementById("vocabToolbar").classList.toggle("study-only", studyOnly);
   document.getElementById("vocabAddWord").hidden = !canAdd || !items.length || vocabView !== "list";
   document.getElementById("vocabSaveBtn").hidden = !canAdd || !items.length && !rows.length;
   document.getElementById("vocabResetBtn").hidden = !canAdd || !items.length;
@@ -13039,7 +13042,7 @@ function syncVocabLang(item) {
   sel.disabled = all;
   sel.value = all && vocabAllMultiLang ? "multi" : studyLang;
   document.getElementById("vocabLangPick").classList.toggle("disabled", all);
-  document.getElementById("vocabLangFlag").textContent = item ? STUDY_LANG_FLAGS[langCode(item.term)] : STUDY_LANG_FLAGS[sel.value] || "🌐";
+  document.getElementById("vocabLangFlag").textContent = item ? STUDY_LANG_FLAGS[langCode(item.term)] : STUDY_LANG_FLAGS[sel.value] || autoDetectFlag(lessonVocabItems(vocabSource()).map(i => i.term));
 }
 
 document.getElementById("vocabLang").onchange = e => {
