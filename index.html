@@ -8673,6 +8673,11 @@ function commitImport(plan, label, keepText) {
     });
   }
   rows.unshift(...newRows);
+  const joined = mergeLessonCards(rows);
+  if (joined !== rows) {
+    rows = joined.map(c => c.id != null ? c : Object.assign(newRow(c.q, c.a, c.time), c));
+    if (groupState) rebuildGroupsFromQueue();
+  }
   if (newRows.length) {
     recordImport(newRows.length);
     const entry = library.find(l => l.id === currentLessonId);
@@ -9017,7 +9022,8 @@ function normalizeCard(c) {
     notesHtml: notesHtml,
     time: time,
     srs: mergeModeSrs(c.srs ? normalizeSrs(c.srs) : migrateLegacySrs(c)),
-    vocab: normalizeVocabSrs(c.vocab)
+    vocab: normalizeVocabSrs(c.vocab),
+    merged: !!c.merged
   };
 }
 
@@ -9055,6 +9061,54 @@ function normalizeLesson(data, fileName) {
   };
 }
 
+function joinSentences(list, html) {
+  const parts = list.map(x => (x || "").trim()).filter(Boolean);
+  const sep = parts.some(x => UNSPACED_RE.test(html ? plainTextOf(x, " ") : x)) ? "" : " ";
+  return parts.join(sep);
+}
+
+function joinNotesHtml(list) {
+  const html = list.map(x => (x || "").trim()).filter(Boolean);
+  if (html.length > 1 && html.every(x => /^<ul>[\s\S]*<\/ul>$/.test(x))) return "<ul>" + html.map(x => x.slice(4, -5)).join("") + "</ul>";
+  return html.join("");
+}
+
+function mergedCard(group) {
+  const vocab = {};
+  group.forEach(c => Object.entries(c.vocab || {}).forEach(([ k, st ]) => {
+    if (!vocab[k] || (st.reps || 0) > (vocab[k].reps || 0)) vocab[k] = st;
+  }));
+  return {
+    uid: makeUid(),
+    q: joinSentences(group.map(c => c.q)),
+    a: joinSentences(group.map(c => c.a)),
+    qHtml: joinSentences(group.map(c => c.qHtml || textHtml(c.q)), true),
+    aHtml: joinSentences(group.map(c => c.aHtml || textHtml(c.a)), true),
+    notes: group.map(c => (c.notes || "").trim()).filter(Boolean).join("\n"),
+    notesHtml: joinNotesHtml(group.map(c => c.notesHtml || (c.notes ? escapeHtml(c.notes).replace(/\n/g, "<br>") : ""))),
+    time: group[0].time,
+    srs: newSrs(),
+    vocab: vocab,
+    merged: true
+  };
+}
+
+function mergeLessonCards(cards) {
+  const timed = cards.filter(c => c.time != null && !c.merged).sort((x, y) => x.time - y.time);
+  if (!timed.length) return cards;
+  const out = cards.slice();
+  for (let i = 0; i < timed.length; i += 3) {
+    const group = timed.slice(i, i + 3);
+    if (group.length === 1) {
+      group[0].merged = true;
+      continue;
+    }
+    out[out.indexOf(group[0])] = mergedCard(group);
+    group.slice(1).forEach(c => out.splice(out.indexOf(c), 1));
+  }
+  return out;
+}
+
 function serializeCard(r) {
   return {
     uid: r.uid,
@@ -9066,7 +9120,8 @@ function serializeCard(r) {
     notesHtml: r.notesHtml || "",
     time: r.time,
     srs: r.srs,
-    vocab: vocabForSave(r)
+    vocab: vocabForSave(r),
+    merged: !!r.merged
   };
 }
 
@@ -9278,7 +9333,8 @@ function openLesson(lesson) {
   resetStudyState();
   vocabView = "list";
   currentLessonId = lesson.id;
-  rows = lesson.cards.map(c => {
+  const cards = isVirtualId(lesson.id) ? lesson.cards : mergeLessonCards(lesson.cards);
+  rows = cards.map(c => {
     const r = newRow(c.q, c.a, c.time);
     Object.assign(r, normalizeCard(c));
     return r;
@@ -9304,6 +9360,7 @@ function openLesson(lesson) {
   document.getElementById("lessonName").readOnly = virtual;
   refreshSaveReminders();
   if (virtual) return;
+  if (cards !== lesson.cards) scheduleAutoSave();
   try {
     localStorage.setItem("flashcards.lastLesson", lesson.id);
   } catch (e) {}
@@ -12157,6 +12214,12 @@ async function initApp() {
         converted = true;
       }
     });
+    const joined = mergeLessonCards(l.cards);
+    if (joined !== l.cards) {
+      l.cards = joined;
+      l.updatedAt = Date.now();
+      converted = true;
+    }
     if (converted) dbPut("lessons", l).catch(() => {});
   });
   leftovers.forEach(l => {
