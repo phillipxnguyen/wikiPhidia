@@ -1135,7 +1135,7 @@ window.onYouTubeIframeAPIReady = function(){
   .exam-issuer{font-size:16px;line-height:22px;font-weight:700;letter-spacing:1px;}
   .exam-issuer::after{content:"";display:block;width:96px;margin:2px auto 0;border-bottom:1px solid var(--sheet-ink);}
   .exam-kind{margin-top:6px;font-size:15px;line-height:20px;}
-  .exam-pages{font-size:14px;line-height:20px;font-style:italic;}
+  .exam-pages{margin-top:6px;font-size:14px;line-height:20px;font-style:italic;}
   .exam-title{margin:0;font-size:18px;line-height:24px;font-weight:700;text-transform:uppercase;}
   .exam-subject{font-size:16px;line-height:22px;font-weight:700;}
   .exam-time{font-size:15px;line-height:20px;font-style:italic;}
@@ -1743,7 +1743,7 @@ window.onYouTubeIframeAPIReady = function(){
   <div class="toolbar">
     <div class="segmented" role="group" aria-label="Study mode">
       <button id="fullModeBtn" aria-label="Full">☰</button>
-      <button id="groupBtn" aria-label="Group"><span id="groupBtnFlag">🌐</span></button>
+      <button id="groupBtn" aria-label="Translate"><span id="groupBtnFlag">🌐</span></button>
       <button id="listenModeBtn" style="display:none;" aria-label="Listening">🎧</button>
       <button id="ieltsModeBtn" style="display:none;" aria-label="Speaking">🗒️</button>
     </div>
@@ -3888,7 +3888,7 @@ function renderStudy() {
   table.style.display = "";
   showSingleCard(false);
   if (visibleRows.length === 0) {
-    const msg = groupState ? "No cards in this group." : "No cards yet — import a list below or open a lesson file.";
+    const msg = groupState ? "No cards to study right now." : "No cards yet — import a list below or open a lesson file.";
     tbody.innerHTML = `<tr><td colspan="2" class="empty-msg">${msg}</td></tr>`;
     return;
   }
@@ -14192,10 +14192,11 @@ const TEST_UI = {
     resultWord: "Result:",
     timeUsed: "Time used: {used} of {total}",
     fullyRight: "Fully right: {right} of {n} questions",
-    kind: "PRACTICE PAPER",
     pagesNote: "(This paper has {n} pages)",
+    pagesNote1: "(This paper has {n} page)",
     subject: "Words: {set}",
     timeLine: "Time allowed: {m} minutes",
+    timeLine1: "Time allowed: {m} minute",
     number: "Candidate number:",
     code: "Paper: {c}",
     footer: "Page {i}/{n} – Paper {c}",
@@ -14332,7 +14333,6 @@ const TEST_UI = {
     resultWord: "结果：",
     timeUsed: "用时：{used}／{total}",
     fullyRight: "全对：{right}／{n}题",
-    kind: "模拟试卷",
     pagesNote: "（本试卷共{n}页）",
     subject: "词汇：{set}",
     timeLine: "考试时间：{m}分钟",
@@ -14472,7 +14472,6 @@ const TEST_UI = {
     resultWord: "結果：",
     timeUsed: "所要時間：{used}／{total}",
     fullyRight: "完全正解：{right}／{n}問",
-    kind: "模擬試験",
     pagesNote: "（問題用紙は全{n}ページ）",
     subject: "語彙：{set}",
     timeLine: "試験時間：{m}分",
@@ -14612,7 +14611,6 @@ const TEST_UI = {
     resultWord: "결과:",
     timeUsed: "소요 시간: {used}/{total}",
     fullyRight: "완전 정답: {right}/{n}문항",
-    kind: "모의고사",
     pagesNote: "(문제지는 총 {n}쪽)",
     subject: "어휘: {set}",
     timeLine: "시험 시간: {m}분",
@@ -15838,11 +15836,11 @@ function examHeadHtml(t, pages) {
   const ui = chromeUi(t);
   const code = paperCode(t);
   const set = t.setId === VOCAB_ALL_ID ? tl(t, "allWords") : t.setName;
-  let html = '<header class="exam-head"><div class="exam-head-left">' + `<div class="exam-issuer">WIKIPHIDIA</div><div class="exam-kind">${tl(t, "kind")}</div><div class="exam-pages">${tl(t, "pagesNote", {
+  let html = '<header class="exam-head"><div class="exam-head-left">' + `<div class="exam-issuer">PHILLIP ACADEMY</div><div class="exam-pages">${tl(t, pages === 1 && chromeUi(t) === "en" ? "pagesNote1" : "pagesNote", {
     n: String(pages).padStart(2, "0")
   })}</div></div><div class="exam-head-right"><h1 class="exam-title">${escapeHtml(t.title)}</h1><div class="exam-subject">${escapeHtml(tl(t, "subject", {
     set: set
-  }))}</div><div class="exam-time">${tl(t, "timeLine", {
+  }))}</div><div class="exam-time">${tl(t, Math.round(t.total / 60) === 1 && chromeUi(t) === "en" ? "timeLine1" : "timeLine", {
     m: Math.round(t.total / 60)
   })}</div></div></header>` + `<div class="exam-ids"><div class="exam-id-lines"><div>${tl(t, "candidate")} <span class="exam-dots"></span></div><div>${tl(t, "number")} <span class="exam-dots"></span></div></div><div class="exam-code">${tl(t, "code", {
     c: code
@@ -16465,7 +16463,7 @@ function reportHtml(t) {
   const right = t.questions.filter(q => q.score >= q.max).length;
   const set = t.setId === VOCAB_ALL_ID ? tl(t, "allWords") : t.setName;
   const body = rows.map((row, i) => `<tr><td>${i + 1}</td><td lang="${row.lang}">${escapeHtml(row.title)}</td><td>${fmtScore(row.got)}</td><td>${fmtScore(row.max)}</td><td>${row.max ? Math.round(row.got / row.max * 100) : 0}%</td></tr>`).join("");
-  const sheet = '<article class="exam-sheet exam-report" lang="' + ui + '"><header class="exam-head"><div class="exam-head-left">' + `<div class="exam-issuer">WIKIPHIDIA</div><div class="exam-kind">${tl(t, "reportKind")}</div></div><div class="exam-head-right"><h1 class="exam-title">${escapeHtml(t.title)}</h1><div class="exam-subject">${escapeHtml(tl(t, "subject", {
+  const sheet = '<article class="exam-sheet exam-report" lang="' + ui + '"><header class="exam-head"><div class="exam-head-left">' + `<div class="exam-issuer">PHILLIP ACADEMY</div><div class="exam-kind">${tl(t, "reportKind")}</div></div><div class="exam-head-right"><h1 class="exam-title">${escapeHtml(t.title)}</h1><div class="exam-subject">${escapeHtml(tl(t, "subject", {
     set: set
   }))}</div><div class="exam-time">${escapeHtml(tl(t, "examDate", {
     d: testDate(t.finishedAt, ui)
