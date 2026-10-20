@@ -1762,6 +1762,7 @@ window.onYouTubeIframeAPIReady = function(){
       <button id="listenModeBtn" style="display:none;" aria-label="Listening">🎧</button>
       <button id="ieltsModeBtn" style="display:none;" aria-label="Speaking">🗒️</button>
     </div>
+    <div id="moveAllGroup" class="segmented" hidden><button id="btnMoveAll" class="sp-vocab"></button></div>
     <div class="toolbar-right">
       <button id="btnPlaySequence" aria-label="Play"></button>
       <select id="playbackSpeed" style="display:none;">
@@ -2962,10 +2963,43 @@ function deleteRows(ids, parts, next) {
   scheduleAutoSave();
 }
 
+const translationMemo = new WeakMap;
+
 function isTranslationCard(row) {
   const q = (row.q || "").trim(), a = (row.a || "").trim();
-  return !!q && !!a && detectLang(q).split("-")[0] !== detectLang(a).split("-")[0];
+  const memo = translationMemo.get(row);
+  if (memo && memo.q === q && memo.a === a) return memo.v;
+  const v = !!q && !!a && detectLang(q).split("-")[0] !== detectLang(a).split("-")[0];
+  translationMemo.set(row, {
+    q: q,
+    a: a,
+    v: v
+  });
+  return v;
 }
+
+function isTranslationDeck(cards) {
+  const answered = cards.filter(c => (c.a || "").trim());
+  return answered.length > 0 && answered.filter(isTranslationCard).length * 2 > answered.length;
+}
+
+function movableTranslations() {
+  return appMode !== "cards" || isVirtualLesson() ? [] : rows.filter(r => r.time == null && isTranslationCard(r));
+}
+
+function syncMoveAll() {
+  const n = movableTranslations().length;
+  document.getElementById("moveAllGroup").hidden = !n;
+  if (n) document.getElementById("btnMoveAll").textContent = "字 Move all " + n;
+}
+
+document.getElementById("btnMoveAll").onclick = e => {
+  e.currentTarget.blur();
+  const list = movableTranslations();
+  if (!list.length) return;
+  moveCardsToVocab(list);
+  if (!rows.length) settleImportMode(false, true);
+};
 
 function moveCardToVocab(row) {
   moveCardsToVocab([ row ]);
@@ -3096,7 +3130,7 @@ function deckHasVideoCards() {
 
 function isVideoLesson() {
   if (isAllLessons()) return !!mixFocusId && mixStyle !== "ielts";
-  return !isVirtualLesson() && (!!document.getElementById("mediaUrl").value.trim() || deckHasVideoCards());
+  return !isVirtualLesson() && (!!extractYouTubeId(document.getElementById("mediaUrl").value.trim()) || deckHasVideoCards() || isTranslationDeck(rows));
 }
 
 function isYouTubeLesson() {
@@ -3777,6 +3811,7 @@ function addConfetti(panel) {
 }
 
 function render() {
+  syncMoveAll();
   renderStudy();
   syncDeck();
   syncMediaLayout();
@@ -7065,7 +7100,7 @@ function mixCandidates() {
   const isVideo = r => {
     if (!video.has(r.srcLessonId)) {
       const l = library.find(o => o.id === r.srcLessonId);
-      video.set(r.srcLessonId, !!l && (!!(l.mediaUrl || "").trim() || l.cards.some(c => c.time != null)));
+      video.set(r.srcLessonId, !!l && (!!extractYouTubeId(l.mediaUrl || "") || l.cards.some(c => c.time != null) || isTranslationDeck(l.cards)));
     }
     return video.get(r.srcLessonId);
   };
@@ -9503,30 +9538,6 @@ function openLesson(lesson) {
   try {
     localStorage.setItem("flashcards.lastLesson", lesson.id);
   } catch (e) {}
-  setTimeout(() => offerTranslationMove(lesson.id), 400);
-}
-
-function keptTranslationLessons() {
-  try {
-    return JSON.parse(localStorage.getItem("flashcards.keepTranslations")) || [];
-  } catch (e) {
-    return [];
-  }
-}
-
-function offerTranslationMove(id) {
-  if (appMode !== "cards" || currentLessonId !== id || isVirtualLesson() || keptTranslationLessons().includes(id)) return;
-  const list = rows.filter(r => r.time == null && isTranslationCard(r));
-  if (!list.length) return;
-  const n = list.length;
-  if (!confirm(`${n === 1 ? "1 card in this lesson is a translation" : n + " cards in this lesson are translations"} (question and answer in different languages, no video time).\n\nTranslations are learnt in Vocabulary; Lessons keep Speaking and YouTube cards.\n\nMove ${n === 1 ? "it" : "all " + n} to Vocabulary? You can undo with ⌘Z. Cancel keeps them here and does not ask again for this lesson.`)) {
-    try {
-      localStorage.setItem("flashcards.keepTranslations", JSON.stringify(keptTranslationLessons().concat(id)));
-    } catch (e) {}
-    return;
-  }
-  moveCardsToVocab(list);
-  if (!rows.length) settleImportMode(false, true);
 }
 
 function isEmptyDraft() {
@@ -13910,7 +13921,6 @@ document.getElementById("btnAppMode").onclick = () => {
   const cur = library.find(l => l.id === currentLessonId);
   if (cur && lessonInMode(cur)) {
     showView("study");
-    setTimeout(() => offerTranslationMove(cur.id), 400);
     return;
   }
   const real = [ last ].concat(recentLessonIds()).map(id => library.find(l => l.id === id && lessonInMode(l))).find(Boolean) || modeLibrary()[0];
@@ -17278,7 +17288,7 @@ document.addEventListener("keydown", e => {
     if (tr) openEdit(tr, row); else openSingleCardEdit(row);
     return;
   }
-  if (letter && e.code === "KeyV") {
+  if (letter && e.code === "KeyW") {
     if (isYouTubeLesson() || isVirtualLesson() || activeEdit) return;
     const {scope: scope, picked: picked} = studyPick();
     const row = picked || (groupViewStyle === "ielts" && groupState ? scope[0] : null);
