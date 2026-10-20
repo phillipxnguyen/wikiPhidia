@@ -1204,11 +1204,14 @@ window.onYouTubeIframeAPIReady = function(){
   .exam-mark{position:absolute;top:-6px;left:-64px;width:48px;font-family:Georgia, "Times New Roman", serif;font-size:28px;line-height:36px;font-style:italic;text-align:center;color:var(--exam-red);}
   .exam-fix{margin-top:6px;font-family:Georgia, "Times New Roman", serif;font-size:17px;line-height:24px;font-style:italic;color:var(--exam-red);overflow-wrap:break-word;}
   .exam-fix u{font-weight:700;text-decoration-thickness:2px;text-underline-offset:3px;}
+  .exam-fix s{color:var(--sheet-ink-2);text-decoration:line-through 2px var(--exam-red);}
   .exam-fb{font-size:15px;line-height:20px;}
   .exam-self{margin-top:8px;padding:10px 12px;border:1px dashed var(--sheet-box-edge);}
-  .exam-self-rubric{font-size:13px;line-height:20px;color:var(--sheet-ink-2);}
+  .exam-self-title{font-size:12px;line-height:16px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--sheet-ink-2);}
+  .exam-self .exam-fix{margin-top:4px;}
+  .exam-self-rubric{margin-top:6px;font-size:13px;line-height:20px;color:var(--sheet-ink-2);}
   .exam-self-btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
-  .exam-self-btns button{min-width:48px;}
+  .exam-self-btns button{min-width:48px;padding:6px 12px;}
   .exam-end{margin-top:40px;font-size:16px;line-height:24px;font-weight:700;text-align:center;}
   @media (max-width:600px){
     .exam-sheet{padding:32px 20px 56px 44px;}
@@ -14221,6 +14224,12 @@ const TEST_LANG_NAMES = {
 const TEST_UI = {
   en: {
     allWords: "All vocabularies",
+    selfTitle: "Mark it yourself",
+    selfHint1: "Compare your answer with the model answer: any correct, natural wording counts, not only the model's.",
+    selfHint4: "One point each: it does the task · the given words are used correctly · the grammar is accurate · the words are varied and natural.",
+    selfRight: "Right",
+    selfHalf: "Nearly",
+    selfWrong: "Wrong",
     vocabName: "Vocabulary test",
     routeKicker: "{exam} route",
     routeTitle: "Your route",
@@ -14361,6 +14370,12 @@ const TEST_UI = {
   },
   zh: {
     allWords: "全部词汇",
+    selfTitle: "自己评分",
+    selfHint1: "把你的答案和参考答案对比：意思正确、表达自然就算对，不必和参考答案一字不差。",
+    selfHint4: "每项一分：完成任务 · 正确使用所给词语 · 语法正确 · 用词丰富自然。",
+    selfRight: "对",
+    selfHalf: "基本对",
+    selfWrong: "错",
     vocabName: "词汇测试",
     routeKicker: "{exam} 学习路线",
     routeTitle: "学习路线",
@@ -14499,6 +14514,12 @@ const TEST_UI = {
   },
   ja: {
     allWords: "すべての語彙",
+    selfTitle: "自己採点",
+    selfHint1: "模範解答と比べてください。意味が正しく自然なら、言い方が違っても正解です。",
+    selfHint4: "各1点：課題に答えている・指定の言葉を正しく使っている・文法が正確・語彙が豊かで自然。",
+    selfRight: "正解",
+    selfHalf: "ほぼ正解",
+    selfWrong: "不正解",
     vocabName: "語彙テスト",
     routeKicker: "{exam} ロードマップ",
     routeTitle: "ロードマップ",
@@ -14637,6 +14658,12 @@ const TEST_UI = {
   },
   ko: {
     allWords: "전체 어휘",
+    selfTitle: "직접 채점",
+    selfHint1: "모범 답안과 비교하십시오. 뜻이 맞고 자연스러우면 표현이 달라도 정답입니다.",
+    selfHint4: "각 1점: 과제 수행 · 주어진 단어의 바른 사용 · 정확한 문법 · 다양하고 자연스러운 어휘.",
+    selfRight: "정답",
+    selfHalf: "거의 정답",
+    selfWrong: "오답",
     vocabName: "어휘 시험",
     routeKicker: "{exam} 로드맵",
     routeTitle: "학습 로드맵",
@@ -15474,24 +15501,25 @@ function plainAnswer(s) {
 
 function correctionHtml(right, given) {
   const unspaced = UNSPACED_RE.test(right);
-  const split = text => unspaced ? Array.from(text) : text.split(/(\s+)/);
+  const split = text => unspaced ? Array.from(text).filter(ch => ch.trim()) : text.split(/\s+/).filter(Boolean);
   const norm = w => w.toLowerCase().replace(/[\p{P}\p{S}\s]/gu, "");
   const a = split(right);
-  const b = split(given).map(norm).filter(Boolean);
   const A = a.map(norm);
+  const b = split(given).filter(w => norm(w));
+  const B = b.map(norm);
   const dp = Array.from({
-    length: A.length + 1
+    length: a.length + 1
   }, () => new Array(b.length + 1).fill(0));
-  for (let i = A.length - 1; i >= 0; i--) for (let j = b.length - 1; j >= 0; j--) dp[i][j] = A[i] && A[i] === b[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
-  const kept = new Set;
-  for (let i = 0, j = 0; i < A.length && j < b.length; ) {
-    if (A[i] && A[i] === b[j]) {
-      kept.add(i);
-      i++;
-      j++;
-    } else if (dp[i + 1][j] >= dp[i][j + 1]) i++; else j++;
+  for (let x = a.length - 1; x >= 0; x--) for (let y = b.length - 1; y >= 0; y--) dp[x][y] = !A[x] ? dp[x + 1][y] : A[x] === B[y] ? dp[x + 1][y + 1] + 1 : Math.max(dp[x + 1][y], dp[x][y + 1]);
+  const out = [];
+  let x = 0, y = 0;
+  while (x < a.length || y < b.length) {
+    if (x < a.length && !A[x]) out.push(escapeHtml(a[x++])); else if (x < a.length && y < b.length && A[x] === B[y]) {
+      out.push(escapeHtml(a[x++]));
+      y++;
+    } else if (y < b.length && (x >= a.length || dp[x][y + 1] >= dp[x + 1][y])) out.push(`<s>${escapeHtml(b[y++])}</s>`); else out.push(`<u>${escapeHtml(a[x++])}</u>`);
   }
-  return a.map((w, i) => !A[i] || kept.has(i) ? escapeHtml(w) : `<u>${escapeHtml(w)}</u>`).join("");
+  return out.join(unspaced ? "" : " ");
 }
 
 function answerKey(s) {
@@ -15526,7 +15554,8 @@ function offlineMark(q) {
   if (q.type === "listen") return best >= .98 ? 1 : best >= .85 ? .5 : 0;
   if (q.type === "cloze" || q.type === "kana") return best >= .98 ? 1 : best >= .75 && answerKey(q.answer).length > 2 ? .5 : 0;
   if (q.type === "order") return best >= .98 ? 1 : 0;
-  return best >= .98 ? 1 : null;
+  if (best >= .98) return 1;
+  return [ "translate", "fix", "rewrite" ].includes(q.type) && best >= .9 ? .5 : null;
 }
 
 function planParts(t) {
@@ -16040,12 +16069,13 @@ function examQuestionHtml(t, q, live) {
   let after = "";
   if (q.selfMark) {
     const uses = words.filter(i => containsTerm(q.response, i.term)).length;
-    after = `<div class="exam-fix"><b>${say("model")}</b> ${escapeHtml(q.answer || "—")}</div><div class="exam-self"><div class="exam-self-rubric">${escapeHtml(TEST_TYPES[q.type].rubric)}${words.length > 1 || q.type === "usesent" || q.type === "speak" ? " " + say("used", {
+    const grades = q.max === 4 ? [ 4, 3, 2, 1, 0 ].map(s => [ s, String(s) ]) : [ [ 1, "✓ " + say("selfRight") ], [ .5, "½ " + say("selfHalf") ], [ 0, "✗ " + say("selfWrong") ] ];
+    after = `<div class="exam-self"><div class="exam-self-title">${say("selfTitle")}</div><div class="exam-fix"><b>${say("model")}</b> ${q.answer && q.response.trim() ? correctionHtml(q.answer, q.response) : escapeHtml(q.answer || "—")}</div><div class="exam-self-rubric">${say(q.max === 4 ? "selfHint4" : "selfHint1")}${words.length > 1 || q.type === "usesent" || q.type === "speak" ? " " + say("used", {
       u: uses,
       n: words.length
-    }) : ""}</div><div class="exam-self-btns">` + (q.max === 4 ? [ 0, 1, 2, 3, 4 ] : [ 0, .5, 1 ]).map(s => `<button data-self="${s}" data-n="${q.n}">${fmtScore(s)}</button>`).join("") + "</div></div>";
+    }) : ""}</div><div class="exam-self-btns">` + grades.map(([ s, label ]) => `<button data-self="${s}" data-n="${q.n}">${escapeHtml(label)}</button>`).join("") + "</div></div>";
   } else if (marked) {
-    const right = q.correction || (q.score < q.max ? q.answer : "");
+    const right = q.score >= q.max ? "" : q.correction || q.answer;
     const fix = right && answerKey(right) !== answerKey(q.response) ? right : "";
     after = (fix ? `<div class="exam-fix">${q.response.trim() ? correctionHtml(fix, q.response) : escapeHtml(fix)}</div>` : "") + (q.feedback ? `<div class="exam-fix exam-fb">${escapeHtml(q.feedback)}</div>` : "");
   }
