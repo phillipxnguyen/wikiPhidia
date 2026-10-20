@@ -948,8 +948,7 @@ window.onYouTubeIframeAPIReady = function(){
   .w-en, .w-ko, .w-zh, .w-ja{--w-ink:color-mix(in srgb, var(--w1) var(--w-ink-mix, 100%), white);}
   @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--w-ink-mix:55%;}}
   :root[data-theme="dark"]{--w-ink-mix:55%;}
-  .ta-top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px;}
-  .ta-title{margin:0;font-size:44px;line-height:48px;font-weight:900;letter-spacing:-2px;color:transparent;background:linear-gradient(90deg, #7c3aed, #2563eb 35%, #e11d48 70%, #e68a00);-webkit-background-clip:text;background-clip:text;}
+  .ta-top{display:flex;align-items:center;justify-content:flex-end;gap:16px;margin-bottom:16px;}
   .ta-key-pill{height:36px;padding:0 16px;border-radius:18px;font-size:14px;font-weight:800;}
   .ta-key-pill.on{color:#fff;background:linear-gradient(90deg, #7c3aed, #2563eb);border-color:transparent;}
   .ta-key{display:flex;flex-direction:column;align-items:flex-start;gap:8px;margin-bottom:20px;padding:20px;border:2px dashed var(--border-strong);border-radius:20px;font-size:14px;line-height:20px;color:var(--text-2);background:var(--surface);}
@@ -1091,7 +1090,6 @@ window.onYouTubeIframeAPIReady = function(){
     .ta-split{grid-template-columns:minmax(0, 1fr);}
   }
   @media (max-width:600px){
-    .ta-title{font-size:36px;line-height:40px;}
     .ta-key-pill{padding:0 12px;font-size:13px;}
     .ta-worlds{grid-template-columns:repeat(2, minmax(0, 1fr));gap:8px;}
     .ta-world{height:96px;padding:12px;border-radius:16px;}
@@ -6452,6 +6450,11 @@ function wireEditBox(host, row) {
     el.style.height = "";
   }
   [ editQ, editA, editNotes ].forEach(el => {
+    enterSaves(el, () => {
+      if (!activeEdit || !el.isConnected) return;
+      commitActiveEdit();
+      render();
+    }, true);
     autoResizeDiv(el);
     el.addEventListener("input", () => autoResizeDiv(el));
     el.addEventListener("keydown", e => {
@@ -12833,14 +12836,19 @@ function wireVocabEditor(items) {
     renderVocab();
   };
   document.getElementById("vocabEditSave").onclick = save;
-  [ term, meaning, notes ].forEach(input => input.addEventListener("keydown", e => {
-    e.stopPropagation();
-    if (e.isComposing || e.keyCode === 229) return;
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      save();
-    }
-  }));
+  [ term, meaning, notes ].forEach(input => {
+    input.addEventListener("keydown", e => {
+      e.stopPropagation();
+      if (e.isComposing || e.keyCode === 229) return;
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        save();
+      }
+    });
+    enterSaves(input, () => {
+      if (input.isConnected) save();
+    }, input === notes);
+  });
   followInView(() => vocabEditingKey ? document.querySelector(".vocab-editor") : null);
 }
 
@@ -12868,6 +12876,8 @@ document.getElementById("vocabTitle").addEventListener("keydown", e => {
   e.preventDefault();
   e.target.blur();
 });
+
+[ "vocabTitle", "lessonName" ].forEach(id => enterSaves(document.getElementById(id), () => document.getElementById(id).blur()));
 
 function resetVocabProgress() {
   if (!currentLessonId || isVirtualLesson()) return;
@@ -13707,6 +13717,20 @@ function addVocabToRow(row, term, meaning) {
   showToast("Added word");
 }
 
+let enterShift = false;
+
+document.addEventListener("keydown", e => {
+  enterShift = e.shiftKey;
+}, true);
+
+function enterSaves(el, save, shiftBreaks) {
+  el.addEventListener("beforeinput", e => {
+    if (e.inputType !== "insertParagraph" && e.inputType !== "insertLineBreak" || shiftBreaks && enterShift) return;
+    e.preventDefault();
+    setTimeout(save, 0);
+  });
+}
+
 let vocabAddPopup = null;
 
 let vocabAddPopupScrollY = 0;
@@ -13757,6 +13781,11 @@ function showVocabAddPopup(row, term, rect, editing, onSave, meaning) {
     }
     if (e.key !== "Enter") return;
     e.preventDefault();
+    commit();
+  });
+  enterSaves(input, commit);
+  function commit() {
+    if (vocabAddPopup !== popup) return;
     const m = popupVocabPair(input);
     if (!m) {
       showToast("Write it as word: meaning");
@@ -13777,7 +13806,7 @@ function showVocabAddPopup(row, term, rect, editing, onSave, meaning) {
     }
     hideVocabAddPopup();
     addVocabToRow(row, m[1], m[2]);
-  });
+  }
 }
 
 document.addEventListener("pointerdown", e => {
@@ -16396,7 +16425,7 @@ function testHomeHtml() {
   const open = TEST_WORLDS.filter(w => (counts[w] || 0) >= 3);
   if (!open.includes(testWorld)) testWorld = open.includes(testPrefs().world) ? testPrefs().world : open[0] || "";
   const key = testKey();
-  let html = `<div class="ta-top"><h1 class="ta-title">Tests</h1><button class="ta-key-pill${key ? " on" : ""}" data-act="keypanel" aria-expanded="${testKeyOpen}">✦ ${key ? "Claude marking on" : "Add a Claude key"}</button></div>` + (testKeyOpen ? keyPanelHtml() : "") + worldTilesHtml(counts);
+  let html = `<div class="ta-top"><button class="ta-key-pill${key ? " on" : ""}" data-act="keypanel" aria-expanded="${testKeyOpen}">✦ ${key ? "Claude marking on" : "Add a Claude key"}</button></div>` + (testKeyOpen ? keyPanelHtml() : "") + worldTilesHtml(counts);
   if (!testWorld) return html + '<div class="ta-panel ta-start"><b>Pick a language to begin</b><p>Each language has its own route of tests, from recalling your words to a full mock exam. Add at least 3 words in English, Korean, Chinese or Japanese in Vocabulary to open its route.</p></div>';
   const route = routeOf(testWorld);
   return html + heroHtml(testWorld, route) + buildHtml(testWorld) + queueHtml(testWorld) + routeHtml(testWorld, route) + resultsHtml(testWorld);
@@ -16634,6 +16663,16 @@ document.getElementById("testPaper").addEventListener("input", e => {
   q[e.target.classList.contains("exam-reason") ? "reason" : "response"] = e.target.value;
   clearTimeout(fitExamBox.saveTimer);
   fitExamBox.saveTimer = setTimeout(() => touchTest(t), 400);
+});
+
+document.getElementById("testPaper").addEventListener("beforeinput", e => {
+  if (e.inputType !== "insertParagraph" && e.inputType !== "insertLineBreak" || enterShift) return;
+  const box = e.target.closest(".exam-q.current textarea");
+  if (!box || Number(box.getAttribute("rows")) > 1 && !box.classList.contains("exam-reason")) return;
+  e.preventDefault();
+  const boxes = [ ...document.querySelectorAll(".exam-q.current textarea") ];
+  const next = boxes[boxes.indexOf(box) + 1];
+  if (next) setTimeout(() => next.focus(), 0);
 });
 
 document.getElementById("testPaper").addEventListener("keydown", e => {
