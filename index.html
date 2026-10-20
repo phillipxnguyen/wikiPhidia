@@ -6828,6 +6828,8 @@ let mixStyle = "table";
 
 let mixAwaitCue = false;
 
+let mixSwiping = false;
+
 let mixCueTimer = 0;
 
 function mixCueDone() {
@@ -7002,7 +7004,8 @@ function advanceToNextGroup() {
 setInterval(() => {
   if (currentView !== "study" || tabPaused) return;
   if (isAllLessons()) {
-    if (!mixFocusId && mixCandidates().length) mixNext(); else if (groupState) refreshBadges();
+    const due = mixCandidates();
+    if (!mixSwiping && (!mixFocusId ? due.length : !due.some(([ r ]) => r.id === mixFocusId))) mixNext(); else if (groupState) refreshBadges();
     return;
   }
   if (!groupState) {
@@ -7070,8 +7073,12 @@ function gradeCard(row, isAgain) {
   scheduleAutoSave();
   if (hoveredRowId === row.id) hoveredRowId = null;
   if (!next) holdPage();
+  mixSwiping = isAllLessons();
   swipe(parts, isAgain ? -1 : 1, () => {
-    if (isAllLessons()) return mixNext();
+    if (isAllLessons()) {
+      mixSwiping = false;
+      return mixNext();
+    }
     if (ids) {
       ids.splice(ids.indexOf(row.id), 1);
       if (ids.length === 0) advanceToNextGroup(); else updateGroupUI();
@@ -10570,7 +10577,7 @@ function saveStudyLimits() {
 }
 
 function refreshAfterLimits() {
-  if (currentView === "study" && groupState) setReviewMode(groupViewStyle); else if (currentView === "study") render();
+  if (currentView === "study" && isAllLessons()) mixNext(); else if (currentView === "study" && groupState) setReviewMode(groupViewStyle); else if (currentView === "study") render();
   if (currentView === "vocab") {
     vocabSession = null;
     renderVocab();
@@ -15039,6 +15046,11 @@ function openTests() {
     window.scrollTo(0, 0);
     return;
   }
+  if (openTestRecord()) {
+    speechSynthesis.cancel();
+    stopTestSpeech();
+    stopTestAudio();
+  }
   testOpenId = null;
   testAnim = true;
   if (currentView === "test") {
@@ -15401,6 +15413,9 @@ function offlineMark(q) {
 }
 
 function planParts(t) {
+  t.used = {
+    paper: t.questions.flatMap(q => q.keys)
+  };
   const plans = [];
   t.steps.slice(t.stepCount).forEach(step => {
     const part = t.parts[step.part];
@@ -16399,7 +16414,7 @@ function buildHtml(world) {
   const formats = setFormats(set, world);
   const format = formats.includes(prefs.format) ? prefs.format : formats[0];
   const parts = testPartsOf(format);
-  const picks = prefs.format === format && Array.isArray(prefs.parts) ? prefs.parts : parts.map((_, i) => i);
+  const picks = prefs.format === format && Array.isArray(prefs.types) ? parts.map((p, i) => i).filter(i => prefs.types.includes(parts[i].type)) : parts.map((_, i) => i);
   const key = testKey();
   const length = TEST_LENGTHS[prefs.length] ? prefs.length : "standard";
   const row = (label, body) => `<div class="ta-row"><span class="ta-row-label">${label}</span><div class="ta-row-body">${body}</div></div>`;
@@ -16465,7 +16480,7 @@ function reportHtml(t) {
       title: p.title,
       lang: p.lang || t.target,
       got: qs.reduce((s, q) => s + q.score, 0),
-      max: Math.max(planned, qs.reduce((s, q) => s + q.max, 0))
+      max: qs.length ? qs.reduce((s, q) => s + q.max, 0) : planned
     };
   });
   const right = t.questions.filter(q => q.score >= q.max).length;
@@ -16534,6 +16549,7 @@ function readTestForm() {
     parts: [ ...document.querySelectorAll(".ta-toggles input:checked") ].map(i => Number(i.value)),
     length: old.length || "standard"
   };
+  prefs.types = prefs.format ? prefs.parts.map(i => testPartsOf(prefs.format)[i].type) : [];
   const set = testSets().find(o => o.id === prefs.setId);
   const formats = set ? setFormats(set, testWorld) : [];
   if (!formats.includes(prefs.format)) prefs.format = formats[0];
@@ -16545,7 +16561,7 @@ function retakeTest(t) {
   const fresh = createTest({
     setId: t.setId,
     format: t.format,
-    parts: t.partPicks,
+    parts: testPartsOf(t.format).map((p, i) => i).filter(i => t.parts.some(p => p.type === testPartsOf(t.format)[i].type)),
     length: t.length,
     world: t.world,
     stage: t.stage,
@@ -16561,6 +16577,7 @@ document.getElementById("testHome").addEventListener("change", e => {
   if (e.target.id === "testSet") {
     delete prefs.format;
     delete prefs.parts;
+    delete prefs.types;
   }
   saveTestPrefs(prefs);
   if (e.target.id === "testSet") renderTest();
@@ -16573,7 +16590,7 @@ document.getElementById("viewTest").addEventListener("click", e => {
   const t = b.dataset.id ? testBank().find(o => o.id === b.dataset.id) : openTestRecord();
   if (act !== "delete" && testDeleteArm) {
     testDeleteArm = null;
-    if (!openTestRecord()) renderTest();
+    if (!openTestRecord() && act !== "start" && act !== "later") renderTest();
   }
   if (act === "world") {
     if (b.dataset.world === testWorld) return;
@@ -16605,6 +16622,7 @@ document.getElementById("viewTest").addEventListener("click", e => {
     if (act === "b-format") {
       prefs.format = b.dataset.format;
       delete prefs.parts;
+      delete prefs.types;
     } else prefs.length = b.dataset.len;
     saveTestPrefs(prefs);
     renderTest();
