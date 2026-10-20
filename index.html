@@ -2586,6 +2586,7 @@ whenYtApiReady(ensurePlayer);
 function onPlayerStateChange(event) {
   if (event.data === YT.PlayerState.CUED) {
     vocabCueDone();
+    mixCueDone();
   }
   if (event.data === YT.PlayerState.PLAYING) {
     if (speechSynthesis.speaking || speechSynthesis.pending || ttsPlaying) {
@@ -3345,6 +3346,7 @@ function sequencePlaybackRows() {
 }
 
 function startSequenceLoop(auto) {
+  if (auto && mixAwaitCue) return;
   if (ytHasError || !ytPlayer || !ytReady || !ytHasVideo) return;
   const visible = sequencePlaybackRows();
   if (visible.length === 0) {
@@ -6823,6 +6825,17 @@ let mixFocusId = null;
 
 let mixStyle = "table";
 
+let mixAwaitCue = false;
+
+let mixCueTimer = 0;
+
+function mixCueDone() {
+  if (!mixAwaitCue) return;
+  mixAwaitCue = false;
+  clearTimeout(mixCueTimer);
+  if (isAllLessons() && currentView === "study" && isListenMode()) startSequenceLoop(true);
+}
+
 function mixCandidates() {
   const now = Date.now();
   return limitRows(rows.filter(r => (hasAnswer(r) || vocabVideoIdFor(r)) && srsOf(r).due <= now)).map(r => [ r, !vocabVideoIdFor(r) ? "ielts" : !hasAnswer(r) || Math.random() < .5 ? "listen" : "table" ]);
@@ -6833,9 +6846,15 @@ function mixShow(row, style) {
   mixStyle = style;
   const url = style === "ielts" ? "" : vocabVideoUrlFor(row);
   const input = document.getElementById("mediaUrl");
+  mixAwaitCue = false;
+  clearTimeout(mixCueTimer);
   if (input.value.trim() !== url) {
     input.value = url;
-    if (url) applyMediaUrl(true); else destroyYtPlayer();
+    if (url) {
+      mixAwaitCue = true;
+      mixCueTimer = setTimeout(mixCueDone, 4e3);
+      applyMediaUrl(true);
+    } else destroyYtPlayer();
   }
   groupState = null;
   savedGroupState = null;
