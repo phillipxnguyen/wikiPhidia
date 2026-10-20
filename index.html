@@ -1478,6 +1478,7 @@ window.onYouTubeIframeAPIReady = function(){
   .cloud-or{font-size:12px;color:var(--text-2);}
   .cloud-row{display:flex;gap:8px;}
   .cloud-row button{flex:1;}
+  .move-mark{font-weight:700;color:#1e9466;}
   .cloud-error{min-height:18px;font-size:14px;color:var(--danger);}
 
   .import-preview{margin-top:10px;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;background:var(--surface);}
@@ -1540,6 +1541,16 @@ window.onYouTubeIframeAPIReady = function(){
   <label>Reviews a day<input id="limitReview" type="number" min="0" step="1" inputmode="numeric" placeholder="No limit"></label>
 </div>
 
+<div id="moveDialog" class="paused-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="moveTitle">
+  <div class="paused-card cloud-card">
+    <div class="emoji move-mark">字</div>
+    <h2 id="moveTitle"></h2>
+    <p id="moveText"></p>
+    <button id="moveAll" class="primary"></button>
+    <button id="moveOne"></button>
+    <button id="moveLater" class="ghost">Not now</button>
+  </div>
+</div>
 <div id="cloudDialog" class="paused-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="cloudTitle">
   <div class="paused-card cloud-card">
     <div class="emoji">☁️</div>
@@ -1762,7 +1773,6 @@ window.onYouTubeIframeAPIReady = function(){
       <button id="listenModeBtn" style="display:none;" aria-label="Listening">🎧</button>
       <button id="ieltsModeBtn" style="display:none;" aria-label="Speaking">🗒️</button>
     </div>
-    <div id="moveAllGroup" class="segmented" hidden><button id="btnMoveAll" class="sp-vocab"></button></div>
     <div class="toolbar-right">
       <button id="btnPlaySequence" aria-label="Play"></button>
       <select id="playbackSpeed" style="display:none;">
@@ -2987,19 +2997,46 @@ function movableTranslations() {
   return appMode !== "cards" || isVirtualLesson() ? [] : rows.filter(r => r.time == null && isTranslationCard(r));
 }
 
-function syncMoveAll() {
-  const n = movableTranslations().length;
-  document.getElementById("moveAllGroup").hidden = !n;
-  if (n) document.getElementById("btnMoveAll").textContent = "字 Move all " + n;
-}
+const moveAsked = new Set;
 
-document.getElementById("btnMoveAll").onclick = e => {
-  e.currentTarget.blur();
+function offerMoveAll() {
+  const dialog = document.getElementById("moveDialog");
   const list = movableTranslations();
-  if (!list.length) return;
-  moveCardsToVocab(list);
-  if (!rows.length) settleImportMode(false, true);
-};
+  if (!list.length || !dialog.hidden || moveAsked.has(currentLessonId) || dialogOpen()) return;
+  moveAsked.add(currentLessonId);
+  const n = list.length;
+  const shown = groupState ? getCurrentSingleCardRow() : null;
+  const one = shown && list.includes(shown) ? shown : null;
+  document.getElementById("moveTitle").textContent = n === 1 ? "This card is a translation" : n + " cards are translations";
+  document.getElementById("moveText").textContent = (n === 1 ? `“${truncate(list[0].q.trim(), 60)}” and its answer are` : "Their questions and answers are") + " in different languages. Translations are learnt in Vocabulary; Lessons keep Speaking and YouTube.";
+  document.getElementById("moveAll").textContent = n === 1 ? "Move to Vocabulary" : "Move all " + n;
+  document.getElementById("moveOne").hidden = !one || n === 1;
+  document.getElementById("moveOne").textContent = "Move this card";
+  const close = () => {
+    dialog.hidden = true;
+    document.removeEventListener("keydown", onKey, true);
+  };
+  const act = what => {
+    close();
+    if (what === "later") return;
+    moveCardsToVocab(what === "all" ? list : [ one ]);
+    if (!rows.length) settleImportMode(false, true);
+  };
+  const onKey = e => {
+    if (e.key === "Tab") return;
+    e.stopPropagation();
+    if (e.key === "Escape" || e.key === "Enter") {
+      e.preventDefault();
+      act(e.key === "Enter" ? "all" : "later");
+    }
+  };
+  document.getElementById("moveAll").onclick = () => act("all");
+  document.getElementById("moveOne").onclick = () => act("one");
+  document.getElementById("moveLater").onclick = () => act("later");
+  dialog.onclick = e => e.target === dialog && act("later");
+  document.addEventListener("keydown", onKey, true);
+  dialog.hidden = false;
+}
 
 function moveCardToVocab(row) {
   moveCardsToVocab([ row ]);
@@ -3811,7 +3848,6 @@ function addConfetti(panel) {
 }
 
 function render() {
-  syncMoveAll();
   renderStudy();
   syncDeck();
   syncMediaLayout();
@@ -9538,6 +9574,7 @@ function openLesson(lesson) {
   try {
     localStorage.setItem("flashcards.lastLesson", lesson.id);
   } catch (e) {}
+  setTimeout(offerMoveAll, 400);
 }
 
 function isEmptyDraft() {
@@ -12230,7 +12267,7 @@ const YT_STUDY_LANGS = {
 let ytImport = null;
 
 function dialogOpen() {
-  return !document.getElementById("cloudDialog").hidden || !document.getElementById("ytDialog").hidden;
+  return !document.getElementById("cloudDialog").hidden || !document.getElementById("ytDialog").hidden || !document.getElementById("moveDialog").hidden;
 }
 
 function chooseYouTubeImport(translate) {
@@ -13921,6 +13958,7 @@ document.getElementById("btnAppMode").onclick = () => {
   const cur = library.find(l => l.id === currentLessonId);
   if (cur && lessonInMode(cur)) {
     showView("study");
+    setTimeout(offerMoveAll, 400);
     return;
   }
   const real = [ last ].concat(recentLessonIds()).map(id => library.find(l => l.id === id && lessonInMode(l))).find(Boolean) || modeLibrary()[0];
