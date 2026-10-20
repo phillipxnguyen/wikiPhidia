@@ -1203,6 +1203,7 @@ window.onYouTubeIframeAPIReady = function(){
   .test-clip iframe{width:320px;height:180px;border:0;}
   .exam-mark{position:absolute;top:-6px;left:-64px;width:48px;font-family:Georgia, "Times New Roman", serif;font-size:28px;line-height:36px;font-style:italic;text-align:center;color:var(--exam-red);}
   .exam-fix{margin-top:6px;font-family:Georgia, "Times New Roman", serif;font-size:17px;line-height:24px;font-style:italic;color:var(--exam-red);overflow-wrap:break-word;}
+  .exam-fix u{font-weight:700;text-decoration-thickness:2px;text-underline-offset:3px;}
   .exam-fb{font-size:15px;line-height:20px;}
   .exam-self{margin-top:8px;padding:10px 12px;border:1px dashed var(--sheet-box-edge);}
   .exam-self-rubric{font-size:13px;line-height:20px;color:var(--sheet-ink-2);}
@@ -15471,6 +15472,28 @@ function plainAnswer(s) {
   return (s || "").normalize("NFC").toLowerCase().replace(/[\p{P}\p{S}]/gu, " ").replace(/\s+/g, " ").trim();
 }
 
+function correctionHtml(right, given) {
+  const unspaced = UNSPACED_RE.test(right);
+  const split = text => unspaced ? Array.from(text) : text.split(/(\s+)/);
+  const norm = w => w.toLowerCase().replace(/[\p{P}\p{S}\s]/gu, "");
+  const a = split(right);
+  const b = split(given).map(norm).filter(Boolean);
+  const A = a.map(norm);
+  const dp = Array.from({
+    length: A.length + 1
+  }, () => new Array(b.length + 1).fill(0));
+  for (let i = A.length - 1; i >= 0; i--) for (let j = b.length - 1; j >= 0; j--) dp[i][j] = A[i] && A[i] === b[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+  const kept = new Set;
+  for (let i = 0, j = 0; i < A.length && j < b.length; ) {
+    if (A[i] && A[i] === b[j]) {
+      kept.add(i);
+      i++;
+      j++;
+    } else if (dp[i + 1][j] >= dp[i][j + 1]) i++; else j++;
+  }
+  return a.map((w, i) => !A[i] || kept.has(i) ? escapeHtml(w) : `<u>${escapeHtml(w)}</u>`).join("");
+}
+
 function answerKey(s) {
   const plain = plainAnswer(s);
   return UNSPACED_RE.test(plain) ? plain.replace(/\s/g, "") : plain;
@@ -15993,7 +16016,7 @@ function examQuestionHtml(t, q, live) {
   if (q.type === "listen") {
     prompt = `<div class="exam-audio">${playButton("data-listen", q.n, q.plays, open && q.plays, say("left", {
       n: q.plays
-    }))}</div>` + (marked ? `<div class="exam-context">${escapeHtml(q.answer)}${q.translation ? " — " + escapeHtml(q.translation) : ""}</div>` : "");
+    }))}</div>` + (marked && q.translation ? `<div class="exam-context">${escapeHtml(q.translation)}</div>` : "");
   } else if (q.type === "write" || q.type === "usesent" || q.type === "speak") {
     prompt = (q.sentence ? `<div class="exam-text">${paperText(q.sentence)}</div>` : q.type === "speak" ? `<div class="exam-text">${say("talk")}</div>` : "") + `<div class="exam-text">${q.type === "usesent" ? "" : escapeHtml(say("use"))}${words.map(i => `<b>${escapeHtml(i.term)}</b>`).join(" · ")}${q.type !== "write" && !t.ai && !realExam(t) && words[0].meaning ? ` <i>(${words.map(i => escapeHtml(i.meaning)).filter(Boolean).join(" · ")})</i>` : ""}</div>`;
     if (q.type === "speak") {
@@ -16022,8 +16045,9 @@ function examQuestionHtml(t, q, live) {
       n: words.length
     }) : ""}</div><div class="exam-self-btns">` + (q.max === 4 ? [ 0, 1, 2, 3, 4 ] : [ 0, .5, 1 ]).map(s => `<button data-self="${s}" data-n="${q.n}">${fmtScore(s)}</button>`).join("") + "</div></div>";
   } else if (marked) {
-    const fix = q.correction && answerKey(q.correction) !== answerKey(q.response) ? q.correction : "";
-    after = (fix ? `<div class="exam-fix">${escapeHtml(fix)}</div>` : "") + (q.feedback ? `<div class="exam-fix exam-fb">${escapeHtml(q.feedback)}</div>` : "") + (!fix && !q.feedback && q.score < q.max && q.answer ? `<div class="exam-fix">${escapeHtml(q.answer)}</div>` : "");
+    const right = q.correction || (q.score < q.max ? q.answer : "");
+    const fix = right && answerKey(right) !== answerKey(q.response) ? right : "";
+    after = (fix ? `<div class="exam-fix">${q.response.trim() ? correctionHtml(fix, q.response) : escapeHtml(fix)}</div>` : "") + (q.feedback ? `<div class="exam-fix exam-fb">${escapeHtml(q.feedback)}</div>` : "");
   }
   return `<div class="exam-q${open ? " current" : ""}" data-n="${q.n}">${examMark(q)}<div class="exam-body"><div class="exam-qhead"><b class="exam-qn">${say("qWord", {
     n: q.n
