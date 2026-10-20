@@ -874,7 +874,8 @@ window.onYouTubeIframeAPIReady = function(){
     cursor:pointer;user-select:none;font-style:normal;
   }
   @media (hover:hover){.loop-time:hover{filter:brightness(1.1);}}
-  .loop-time.looping{background:var(--accent);color:var(--on-accent);}
+  .loop-time.looping{background:linear-gradient(90deg, var(--accent) calc(var(--p, 0) * 100%), color-mix(in srgb, var(--accent) 55%, var(--surface)) 0);color:var(--on-accent);}
+  .loop-time.tts-play.looping{background:var(--accent);}
   .loop-time.disabled{opacity:.4;cursor:not-allowed;background:var(--surface-3);color:var(--text-2);}
 
   .single-card-progress{text-align:center;font-size:14px;color:var(--text);margin-bottom:16px;}
@@ -2756,12 +2757,29 @@ function startLoop(row) {
   markPlayingRow();
 }
 
+let badgeFrame = 0;
+
+function trackBadgeProgress() {
+  cancelAnimationFrame(badgeFrame);
+  const row = loopingRowId !== null ? rows.find(r => r.id === loopingRowId) : null;
+  if (!row || row.time == null) return;
+  const end = segmentEnd(row, 8);
+  const tick = () => {
+    if (loopingRowId !== row.id || !ytPlayer || typeof ytPlayer.getCurrentTime !== "function") return;
+    const p = Math.max(0, Math.min(1, (ytPlayer.getCurrentTime() - row.time) / Math.max(.1, end - row.time)));
+    document.querySelectorAll(`.loop-time.looping[data-id="${row.id}"]`).forEach(el => el.style.setProperty("--p", p.toFixed(3)));
+    badgeFrame = requestAnimationFrame(tick);
+  };
+  tick();
+}
+
 function markPlayingRow() {
   document.querySelectorAll("#tbody tr[data-id]:not(.edit-row), #singleCardBody:not(.edit-row):not(.listen-batch), #singleCardBody .listen-pair").forEach(el => {
     const id = Number(el.dataset.id);
     el.classList.toggle("row-playing", id === loopingRowId || ttsPlaying && id === ttsOnlyId);
   });
   syncRowBadges();
+  trackBadgeProgress();
   updateSequenceBtnUI();
   syncVocabSound();
 }
