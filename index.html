@@ -4346,7 +4346,7 @@ function detectScript(text) {
 
 function getPinyin(text) {
   try {
-    return pinyinPro.pinyin(text);
+    return text.replace(/[\u3400-\u4dbf\u4e00-\u9fff]+/g, run => " " + pinyinPro.pinyin(run) + " ").replace(/ +([，。！？、；：,.!?;:)）」』])/g, "$1").replace(/([（(「『]) +/g, "$1").replace(/ {2,}/g, " ").trim();
   } catch (err) {
     return "";
   }
@@ -4426,14 +4426,31 @@ function japaneseWorkerMain(cfg) {
   }
   function readingText(list) {
     const spoken = t => HAN.test(t.surface) && t.reading ? t.reading : t.surface;
-    const tidy = str => str.replace(/ ([、。！？!?,.」』）)])/g, "$1");
-    const hira = tidy(list.map(spoken).join(" "));
-    const romaji = tidy(list.map(t => {
+    const japanese = t => HAN.test(t.surface) || KANA.test(t.surface);
+    const join = read => {
+      let out = "";
+      let prev = null;
+      list.forEach(t => {
+        const jp = japanese(t);
+        const piece = jp ? read(t) : t.surface;
+        if (out && (jp || prev) && !/\s$/.test(out) && !/^[\s、。！？!?,.」』）)]/.test(piece)) out += " ";
+        out += piece;
+        prev = jp;
+      });
+      return out.replace(/ +([、。！？!?,.」』）)])/g, "$1").replace(/\s{2,}/g, " ").trim();
+    };
+    const hira = join(spoken);
+    const romaji = join(t => {
       if (t.pos === "助詞" && t.surface === "は") return "wa";
       if (t.pos === "助詞" && t.surface === "へ") return "e";
       if (t.pos === "助詞" && t.surface === "を") return "o";
       return wanakana.toRomaji(spoken(t));
-    }).join(" "));
+    }).replace(/[、。！？]/g, ch => ({
+      "、": ",",
+      "。": ".",
+      "！": "!",
+      "？": "?"
+    })[ch]);
     return hira + "\n" + romaji;
   }
   function handle(text) {
