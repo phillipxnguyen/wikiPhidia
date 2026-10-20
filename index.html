@@ -877,7 +877,7 @@ window.onYouTubeIframeAPIReady = function(){
   }
   @media (hover:hover){.loop-time:not(.looping):hover{filter:brightness(1.1);}}
   .loop-time.looping{background:var(--accent);color:var(--on-accent);}
-  .loop-time.looping.sound-fill, #btnPlaySequence.active.sound-fill, #vocabSpeak.active.sound-fill{color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.35);background:linear-gradient(90deg, color-mix(in srgb, var(--accent) 45%, var(--surface)) calc(var(--p, 0) * 100%), var(--accent) 0);border-color:transparent;background-origin:border-box;}
+  .loop-time.looping.sound-fill, #btnPlaySequence.active.sound-fill, #vocabSpeak.active.sound-fill{color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.35);background:linear-gradient(90deg, var(--accent) calc((1 - var(--p, 0)) * 100%), color-mix(in srgb, var(--accent) 45%, var(--surface)) 0);border-color:transparent;background-origin:border-box;}
   .loop-time.disabled{opacity:.4;cursor:not-allowed;background:var(--surface-3);color:var(--text-2);}
 
   .single-card-progress{text-align:center;font-size:14px;color:var(--text);margin-bottom:16px;}
@@ -1199,7 +1199,7 @@ window.onYouTubeIframeAPIReady = function(){
   textarea.exam-answer[readonly]{cursor:default;}
   .exam-reason-label{margin-top:8px;font-size:15px;line-height:20px;font-style:italic;}
   .exam-sheet button.exam-play, .exam-sheet button.exam-rec{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border-radius:16px;font-size:12px;line-height:16px;}
-  .exam-sheet button.exam-play.on.sound-fill{text-shadow:0 1px 2px rgba(0,0,0,.35);background:linear-gradient(90deg, color-mix(in srgb, var(--sheet-edge) 45%, #fff) calc(var(--p, 0) * 100%), var(--sheet-edge) 0);border-color:transparent;background-origin:border-box;}
+  .exam-sheet button.exam-play.on.sound-fill{text-shadow:0 1px 2px rgba(0,0,0,.35);background:linear-gradient(90deg, var(--sheet-edge) calc((1 - var(--p, 0)) * 100%), color-mix(in srgb, var(--sheet-edge) 45%, #fff) 0);border-color:transparent;background-origin:border-box;}
   .exam-sheet button.exam-play.on{color:#fff;background:var(--sheet-edge);border-color:var(--sheet-edge);}
   .exam-sheet button.exam-play.load::after{content:"";box-sizing:border-box;width:16px;height:16px;border:2px solid var(--sheet-box-edge);border-top-color:var(--sheet-ink);border-radius:8px;animation:examSpin 800ms linear infinite;}
   @keyframes examSpin{to{transform:rotate(360deg);}}
@@ -9125,7 +9125,7 @@ function normalizeCard(c) {
     time: time,
     srs: mergeModeSrs(c.srs ? normalizeSrs(c.srs) : migrateLegacySrs(c)),
     vocab: normalizeVocabSrs(c.vocab),
-    merged: !!c.merged
+    merged: c.merged === 2 ? 2 : !!c.merged
   };
 }
 
@@ -9164,9 +9164,7 @@ function normalizeLesson(data, fileName) {
 }
 
 function joinSentences(list, html) {
-  const parts = list.map(x => (x || "").trim()).filter(Boolean);
-  const sep = parts.some(x => UNSPACED_RE.test(html ? plainTextOf(x, " ") : x)) ? "" : " ";
-  return parts.join(sep);
+  return list.map(x => (x || "").trim()).filter(Boolean).join(html ? "<br>" : "\n");
 }
 
 function joinNotesHtml(list) {
@@ -9191,7 +9189,7 @@ function mergedCard(group) {
     time: group[0].time,
     srs: newSrs(),
     vocab: vocab,
-    merged: true
+    merged: 2
   };
 }
 
@@ -9202,7 +9200,7 @@ function mergeLessonCards(cards) {
   for (let i = 0; i < timed.length; i += 3) {
     const group = timed.slice(i, i + 3);
     if (group.length === 1) {
-      group[0].merged = true;
+      group[0].merged = 2;
       continue;
     }
     out[out.indexOf(group[0])] = mergedCard(group);
@@ -9223,7 +9221,7 @@ function serializeCard(r) {
     time: r.time,
     srs: r.srs,
     vocab: vocabForSave(r),
-    merged: !!r.merged
+    merged: r.merged || false
   };
 }
 
@@ -10295,7 +10293,12 @@ async function restoreBackup(data) {
     if (!raw || !Array.isArray(raw.cards)) continue;
     const lesson = normalizeLesson(raw);
     const existing = library.find(l => l.id === lesson.id);
-    if (existing && (existing.updatedAt || 0) >= lesson.updatedAt) continue;
+    const oldJoin = existing && existing.cards.some(c => c.merged === true) && lesson.cards.some(c => c.time != null && !c.merged);
+    if (existing && !oldJoin && (existing.updatedAt || 0) >= lesson.updatedAt) continue;
+    if (oldJoin) {
+      lesson.cards = mergeLessonCards(lesson.cards);
+      lesson.updatedAt = Date.now();
+    }
     upsertLibrary(lesson);
     await dbPut("lessons", lesson).catch(() => {});
     restoredIds.push(lesson.id);
