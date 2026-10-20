@@ -2828,16 +2828,21 @@ function soundProgressLoop() {
     }
     const speech = speechProgress();
     const exam = testAudioProgress();
-    const paint = (el, p) => {
-      el.classList.toggle("sound-fill", p != null);
-      if (p != null) el.style.setProperty("--p", p.toFixed(3)); else el.style.removeProperty("--p");
-    };
-    document.querySelectorAll(".loop-time[data-id]").forEach(el => paint(el, !el.classList.contains("looping") ? null : el.classList.contains("tts-play") ? speech : Number(el.dataset.id) === loopingRowId ? video : null));
+    const all = [];
+    const add = (el, p) => el && all.push([ el, p ]);
+    document.querySelectorAll(".loop-time[data-id]:not(.tts-play)").forEach(el => add(el, el.classList.contains("looping") && Number(el.dataset.id) === loopingRowId ? video : null));
     [ "btnPlaySequence", "vocabSpeak" ].forEach(id => {
       const el = document.getElementById(id);
-      if (el) paint(el, el.classList.contains("active") ? video ?? speech : null);
+      add(el, el && el.classList.contains("active") ? video ?? speech : null);
     });
-    document.querySelectorAll(".exam-play").forEach(el => paint(el, el.classList.contains("on") && Number(el.dataset.listen) === testAudio.n ? exam : null));
+    document.querySelectorAll(".loop-time.tts-play[data-id]").forEach(el => add(el, el.classList.contains("looping") ? speech : null));
+    document.querySelectorAll(".exam-play").forEach(el => add(el, el.classList.contains("on") && Number(el.dataset.listen) === testAudio.n ? exam : null));
+    const chosen = all.find(([ el, p ]) => p != null && el.offsetParent);
+    all.forEach(([ el, p ]) => {
+      const on = !!chosen && chosen[0] === el;
+      el.classList.toggle("sound-fill", on);
+      if (on) el.style.setProperty("--p", p.toFixed(3)); else el.style.removeProperty("--p");
+    });
     soundFrame = video != null || speech != null || exam != null ? requestAnimationFrame(tick) : 0;
   };
   tick();
