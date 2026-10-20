@@ -4344,9 +4344,41 @@ function detectScript(text) {
   return null;
 }
 
+function readingOnly(pieces) {
+  const PUNCT = /^[\s，。！？、；：,.!?;:()（）「」『』“”"'·…—-]*$/;
+  let out = "";
+  pieces.forEach((p, i) => {
+    if (p.cjk) {
+      out += (out && !/[\s（(「『]$/.test(out) ? " " : "") + p.text;
+      return;
+    }
+    const before = pieces.slice(0, i).some(x => x.cjk);
+    const after = pieces.slice(i + 1).some(x => x.cjk);
+    if (!before) {
+      if (/^\s*[A-Za-z0-9]+\s*$/.test(p.text) || /^\s*[（(「『“"]+\s*$/.test(p.text)) out += p.text.trim();
+      return;
+    }
+    if (!after) {
+      const lead = p.text.match(/^[。！？.!?)）」』]+/);
+      if (lead) out += lead[0];
+      return;
+    }
+    if (PUNCT.test(p.text)) out += p.text.trim();
+    else if (/^\s*[A-Za-z0-9]+\s*$/.test(p.text)) out += " " + p.text.trim() + " ";
+    else out += " · ";
+  });
+  return out.replace(/ +([，。！？、；：,.!?;:)）」』])/g, "$1").replace(/([（(「『]) +/g, "$1").replace(/ {2,}/g, " ").trim();
+}
+
 function getPinyin(text) {
   try {
-    return text.replace(/[\u3400-\u4dbf\u4e00-\u9fff]+/g, run => " " + pinyinPro.pinyin(run) + " ").replace(/ +([，。！？、；：,.!?;:)）」』])/g, "$1").replace(/([（(「『]) +/g, "$1").replace(/ {2,}/g, " ").trim();
+    return readingOnly(text.split(/([\u3400-\u4dbf\u4e00-\u9fff]+)/).filter(Boolean).map(part => /[\u3400-\u4dbf\u4e00-\u9fff]/.test(part) ? {
+      cjk: true,
+      text: pinyinPro.pinyin(part)
+    } : {
+      cjk: false,
+      text: part
+    }));
   } catch (err) {
     return "";
   }
@@ -4428,16 +4460,16 @@ function japaneseWorkerMain(cfg) {
     const spoken = t => HAN.test(t.surface) && t.reading ? t.reading : t.surface;
     const japanese = t => HAN.test(t.surface) || KANA.test(t.surface);
     const join = read => {
-      let out = "";
-      let prev = null;
+      const pieces = [];
       list.forEach(t => {
         const jp = japanese(t);
-        const piece = jp ? read(t) : t.surface;
-        if (out && (jp || prev) && !/\s$/.test(out) && !/^[\s、。！？!?,.」』）)]/.test(piece)) out += " ";
-        out += piece;
-        prev = jp;
+        const last = pieces[pieces.length - 1];
+        if (!jp && last && !last.cjk) last.text += t.surface; else pieces.push({
+          cjk: jp,
+          text: jp ? read(t) : t.surface
+        });
       });
-      return out.replace(/ +([、。！？!?,.」』）)])/g, "$1").replace(/\s{2,}/g, " ").trim();
+      return readingOnly(pieces);
     };
     const hira = join(spoken);
     const romaji = join(t => {
@@ -4512,7 +4544,7 @@ function startJapaneseWorker() {
     showToast("Couldn't load Japanese readings");
   };
   try {
-    const src = "(" + japaneseWorkerMain.toString() + ")(" + JSON.stringify(cfg) + ");";
+    const src = readingOnly.toString() + "\n(" + japaneseWorkerMain.toString() + ")(" + JSON.stringify(cfg) + ");";
     jaWorker = new Worker(URL.createObjectURL(new Blob([ src ], {
       type: "text/javascript"
     })));
