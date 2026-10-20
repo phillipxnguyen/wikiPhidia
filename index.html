@@ -3096,6 +3096,10 @@ function deckHasVideoCards() {
 
 function isVideoLesson() {
   if (isAllLessons()) return !!mixFocusId && mixStyle !== "ielts";
+  return !isVirtualLesson() && (!!document.getElementById("mediaUrl").value.trim() || deckHasVideoCards());
+}
+
+function isYouTubeLesson() {
   return !isVirtualLesson() && (!!extractYouTubeId(document.getElementById("mediaUrl").value.trim()) || deckHasVideoCards());
 }
 
@@ -5766,7 +5770,7 @@ function updateSelBar() {
   if (!target) return fitDeck();
   bar.style.setProperty("--tb-h", touchBar.offsetHeight + "px");
   document.getElementById("selDelete").hidden = !!target.row && isVirtualLesson();
-  document.getElementById("selVocab").hidden = !target.row || target.rows.length !== 1 || isVirtualLesson() || isVideoLesson();
+  document.getElementById("selVocab").hidden = !target.row || target.rows.length !== 1 || isVirtualLesson() || isYouTubeLesson();
   document.documentElement.style.setProperty("--sel-h", Math.round(window.innerHeight - bar.querySelector(".segmented").getBoundingClientRect().top) + "px");
   fitDeck();
 }
@@ -7061,7 +7065,7 @@ function mixCandidates() {
   const isVideo = r => {
     if (!video.has(r.srcLessonId)) {
       const l = library.find(o => o.id === r.srcLessonId);
-      video.set(r.srcLessonId, !!l && (!!extractYouTubeId(l.mediaUrl || "") || l.cards.some(c => c.time != null)));
+      video.set(r.srcLessonId, !!l && (!!(l.mediaUrl || "").trim() || l.cards.some(c => c.time != null)));
     }
     return video.get(r.srcLessonId);
   };
@@ -17275,7 +17279,7 @@ document.addEventListener("keydown", e => {
     return;
   }
   if (letter && e.code === "KeyV") {
-    if (isVideoLesson() || isVirtualLesson() || activeEdit) return;
+    if (isYouTubeLesson() || isVirtualLesson() || activeEdit) return;
     const {scope: scope, picked: picked} = studyPick();
     const row = picked || (groupViewStyle === "ielts" && groupState ? scope[0] : null);
     if (!row) return;
