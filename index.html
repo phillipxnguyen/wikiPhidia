@@ -7068,7 +7068,15 @@ function mixCueDone() {
 
 function mixCandidates() {
   const now = Date.now();
-  return limitRows(rows.filter(r => (hasAnswer(r) || vocabVideoIdFor(r)) && srsOf(r).due <= now)).map(r => [ r, !vocabVideoIdFor(r) ? "ielts" : !hasAnswer(r) || Math.random() < .5 ? "listen" : "table" ]);
+  const video = new Map;
+  const isVideo = r => {
+    if (!video.has(r.srcLessonId)) {
+      const l = library.find(o => o.id === r.srcLessonId);
+      video.set(r.srcLessonId, !!l && (!!(l.mediaUrl || "").trim() || l.cards.some(c => c.time != null)));
+    }
+    return video.get(r.srcLessonId);
+  };
+  return limitRows(rows.filter(r => srsOf(r).due <= now && (hasAnswer(r) || isVideo(r) && vocabVideoIdFor(r)))).map(r => [ r, !isVideo(r) ? "ielts" : vocabVideoIdFor(r) && (!hasAnswer(r) || Math.random() < .5) ? "listen" : "table" ]);
 }
 
 function mixShow(row, style) {
