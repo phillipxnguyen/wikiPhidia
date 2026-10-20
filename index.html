@@ -413,7 +413,10 @@ window.onYouTubeIframeAPIReady = function(){
   .lesson-group{display:flex;flex-direction:column;gap:2px;padding:6px;border-radius:var(--radius);background:var(--surface-2);}
   .lesson-group + .lesson-group{margin-top:10px;}
   .lesson-group.recent{background:color-mix(in srgb, var(--accent) 8%, var(--surface));}
-  .lesson-group.vocab{background:color-mix(in srgb, var(--due-color) 16%, var(--surface));}
+  .lesson-group.vocab{padding:0;background:none;}
+  .lesson-list .lesson-item.all-vocab{--bar-new:color-mix(in srgb, var(--new-color) 22%, var(--surface));--bar-due:color-mix(in srgb, var(--due-color) 24%, var(--surface));--bar-later:var(--surface-3);--bar-done:color-mix(in srgb, var(--done-color) 22%, var(--surface));padding:14px 16px;border:2px solid transparent;border-radius:var(--radius);background-color:var(--surface-2);}
+  @media (hover:hover){.lesson-list .lesson-item.all-vocab:hover{background-color:var(--surface-2);filter:brightness(.97);}}
+  .lesson-list .lesson-item.all-vocab.active{border-color:var(--accent);box-shadow:none;}
   .lesson-group.lessons{background:transparent;}
   .lesson-group .lesson-group-label{padding:4px 4px 2px;}
   @media (hover:hover){.lesson-group .lesson-item:hover{background:color-mix(in srgb, var(--surface) 70%, transparent);}}
@@ -13689,7 +13692,15 @@ function allVocabCards() {
 
 function allItemHtml(name, c, active) {
   const tip = lessonTileTip(name, c);
-  return `<button class="lesson-item all-vocab${active ? " active" : ""}" data-all-vocab="1" data-tip="${escapeAttr(tip)}" aria-label="${escapeAttr(tip.replace("\n", ", "))}"${active ? ' aria-current="page"' : ""}><span class="lesson-item-name">${name}</span>${lessonTileBar(c)}</button>`;
+  const later = Math.max(0, c.total - c.fresh - c.due - c.done);
+  const sum = c.fresh + c.due + later + c.done;
+  let at = 0;
+  const stops = sum ? [ [ "new", c.fresh ], [ "due", c.due ], [ "later", later ], [ "done", c.done ] ].filter(([ , n ]) => n).map(([ k, n ], i, all) => {
+    const from = at;
+    at = i === all.length - 1 ? 100 : Math.round(at + n / sum * 100);
+    return `var(--bar-${k}) ${from}% ${at}%`;
+  }) : [ "var(--bar-later) 0% 100%" ];
+  return `<button class="lesson-item all-vocab${active ? " active" : ""}" data-all-vocab="1" data-tip="${escapeAttr(tip)}" aria-label="${escapeAttr(tip.replace("\n", ", "))}" style="background-image:linear-gradient(90deg, ${stops.join(", ")})"${active ? ' aria-current="page"' : ""}><span class="lesson-item-name">${name}</span></button>`;
 }
 
 function allVocabItemHtml() {
@@ -15603,7 +15614,9 @@ async function markTest(t) {
   if (t.questions.every(q => q.score !== null)) finishTest(t);
   touchTest(t);
   renderOpen(t);
-  if (t.status !== "done") {
+  if (t.status === "done") {
+    if (currentView === "test" && testOpenId === t.id) window.scrollTo(0, 0);
+  } else {
     const first = document.querySelector(".exam-self");
     if (first) first.closest(".exam-q").scrollIntoView({
       block: "center"
@@ -15625,6 +15638,7 @@ function selfMarkTest(n, score) {
   if (t.questions.every(o => o.score !== null)) finishTest(t);
   touchTest(t);
   renderTest();
+  if (t.status === "done") window.scrollTo(0, 0);
 }
 
 function openTestRecord() {
