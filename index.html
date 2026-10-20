@@ -410,7 +410,6 @@ window.onYouTubeIframeAPIReady = function(){
   .lesson-item.active{background:var(--accent-soft);}
   .lesson-item.active .lesson-item-name{color:var(--accent);}
   .lesson-item-name{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .lesson-item-meta{display:flex;gap:8px;font-size:12px;line-height:18px;color:var(--text-2);white-space:nowrap;overflow:hidden;font-variant-numeric:tabular-nums;}
   .lesson-group{display:flex;flex-direction:column;gap:2px;padding:6px;border-radius:var(--radius);background:var(--surface-2);}
   .lesson-group + .lesson-group{margin-top:10px;}
   .lesson-group.recent{background:color-mix(in srgb, var(--accent) 8%, var(--surface));}
@@ -420,9 +419,6 @@ window.onYouTubeIframeAPIReady = function(){
   @media (hover:hover){.lesson-group .lesson-item:hover{background:color-mix(in srgb, var(--surface) 70%, transparent);}}
   .lesson-group .lesson-item.active{background:var(--surface);box-shadow:var(--shadow-sm);}
   .lesson-item.all-vocab .lesson-item-name{font-size:18px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);}
-  .lesson-item-meta .due{color:var(--due-color);font-weight:600;}
-  .lesson-item-meta .new{color:var(--new-color);font-weight:600;}
-  .lesson-item-meta .done{color:var(--done-color);font-weight:600;}
   .lesson-group-label{padding:10px 10px 4px;font-size:18px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);}
   .lesson-group-label:first-child{padding-top:2px;}
   .lesson-group-label{display:flex;align-items:center;}
@@ -2502,6 +2498,7 @@ function onPlayerReady() {
   updateSequenceBtnUI();
   render();
   startPendingVocabVideo();
+  mixCueDone();
 }
 
 function safeDestroyPlayer() {
@@ -5295,16 +5292,24 @@ function handleCardAreaMouseover(e) {
   const container = e.target.closest("[data-id]");
   hoveredRowId = container && container.dataset.id ? Number(container.dataset.id) : null;
   if (isTouch()) return;
-  const unit = hoverUnit(e.target);
-  if (unit && sentencePinyinMode()) return showSentencePinyin(unit, e.clientX, e.clientY) || hideTooltip();
-  if (unit && hoverTooltip && hoverTooltip.style.display === "block" && hoverTooltip.anchor === unit) return;
-  showCellPinyin(unit);
+  handleCardAreaMousemove(e);
 }
 
 function handleCardAreaMousemove(e) {
-  if (isTouch() || !sentencePinyinMode()) return;
+  if (isTouch()) return;
   const unit = hoverUnit(e.target);
-  if (unit && !showSentencePinyin(unit, e.clientX, e.clientY) && hoverTooltip && hoverTooltip.anchor === unit) hideTooltip();
+  const tip = hoverTooltip;
+  const mine = tip && tip.style.display === "block" && tip.anchor && tip.anchor.matches && tip.anchor.matches(".cell");
+  if (!unit || vocabAddPopup && !vocabAddPopup.contains(unit) || !cjkAtPoint(e.clientX, e.clientY, unit)) {
+    if (mine) hideTooltip();
+    return;
+  }
+  if (sentencePinyinMode()) {
+    if (!showSentencePinyin(unit, e.clientX, e.clientY) && mine) hideTooltip();
+    return;
+  }
+  if (mine && tip.anchor === unit) return;
+  showCellPinyin(unit);
 }
 
 function hoverUnit(el) {
@@ -5322,13 +5327,31 @@ function showElementPinyin(el) {
   return showReading(el, text, row, "el:" + text);
 }
 
-document.addEventListener("mouseover", e => {
+function cjkAtPoint(x, y, el) {
+  const caret = document.caretPositionFromPoint ? document.caretPositionFromPoint(x, y) : document.caretRangeFromPoint && document.caretRangeFromPoint(x, y);
+  const node = caret && (caret.offsetNode || caret.startContainer);
+  if (!node || node.nodeType !== 3 || !el.contains(node)) return false;
+  const at = caret.offset ?? caret.startOffset;
+  return [ at, at - 1 ].some(i => {
+    if (i < 0 || i >= node.data.length || !/[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]/.test(node.data[i])) return false;
+    const range = document.createRange();
+    range.setStart(node, i);
+    range.setEnd(node, i + 1);
+    const box = range.getBoundingClientRect();
+    return x >= box.left && x <= box.right && y >= box.top && y <= box.bottom;
+  });
+}
+
+document.addEventListener("mousemove", e => {
   if (isTouch() || !(e.target instanceof Element) || e.target.closest(".cell.shown, .vocab-list-term, .vocab-popup")) return;
-  const el = e.target.closest(PINYIN_SEL);
   const tip = hoverTooltip;
-  if (el && tip && tip.style.display === "block" && tip.anchor === el) return;
-  if (el && showElementPinyin(el)) return;
-  if (tip && tip.style.display === "block" && tip.anchor && tip.anchor.matches && tip.anchor.matches(PINYIN_SEL)) hideTooltip();
+  const showing = tip && tip.style.display === "block" && tip.anchor && tip.anchor.matches && tip.anchor.matches(PINYIN_SEL);
+  const el = e.target.closest(PINYIN_SEL);
+  if (el && (!vocabAddPopup || vocabAddPopup.contains(el)) && cjkAtPoint(e.clientX, e.clientY, el)) {
+    if (showing && tip.anchor === el) return;
+    if (showElementPinyin(el)) return;
+  }
+  if (showing) hideTooltip();
 });
 
 document.addEventListener("mouseout", e => {
@@ -6883,9 +6906,17 @@ let mixCueTimer = 0;
 
 function mixCueDone() {
   if (!mixAwaitCue) return;
-  mixAwaitCue = false;
   clearTimeout(mixCueTimer);
-  if (isAllLessons() && currentView === "study" && isListenMode()) startSequenceLoop(true);
+  if (!isAllLessons() || currentView !== "study") {
+    mixAwaitCue = false;
+    return;
+  }
+  if (!ytHasError && (!ytPlayer || !ytReady || !ytHasVideo)) {
+    mixCueTimer = setTimeout(mixCueDone, 500);
+    return;
+  }
+  mixAwaitCue = false;
+  if (!ytHasError && isAllLessons() && currentView === "study" && isListenMode()) startSequenceLoop(true);
 }
 
 function mixCandidates() {
@@ -6904,7 +6935,7 @@ function mixShow(row, style) {
     input.value = url;
     if (url) {
       mixAwaitCue = true;
-      mixCueTimer = setTimeout(mixCueDone, 4e3);
+      mixCueTimer = setTimeout(mixCueDone, 1500);
       applyMediaUrl(true);
     } else destroyYtPlayer();
   }
@@ -11038,7 +11069,7 @@ document.getElementById("lessonSearch").addEventListener("input", renderLessonLi
 
 document.getElementById("lessonList").addEventListener("mouseover", e => {
   if (isTouch()) return;
-  const tile = e.target.closest(".lesson-item.tile");
+  const tile = e.target.closest(".lesson-item.tile, .lesson-item.all-vocab");
   if (tile) {
     if (!hoverTooltip || hoverTooltip.style.display !== "block" || hoverTooltip.anchor !== tile) showTooltip(tile, tile.dataset.tip);
   } else if (hoverTooltip && hoverTooltip.anchor && hoverTooltip.anchor.closest && hoverTooltip.anchor.closest("#lessonList")) hideTooltip();
@@ -13656,10 +13687,13 @@ function allVocabCards() {
   return cards;
 }
 
+function allItemHtml(name, c, active) {
+  const tip = lessonTileTip(name, c);
+  return `<button class="lesson-item all-vocab${active ? " active" : ""}" data-all-vocab="1" data-tip="${escapeAttr(tip)}" aria-label="${escapeAttr(tip.replace("\n", ", "))}"${active ? ' aria-current="page"' : ""}><span class="lesson-item-name">${name}</span>${lessonTileBar(c)}</button>`;
+}
+
 function allVocabItemHtml() {
-  const c = vocabCounts(lessonVocabItems(allVocabCards()));
-  const active = currentLessonId === VOCAB_ALL_ID && currentView === "vocab";
-  return `<button class="lesson-item all-vocab${active ? " active" : ""}" data-all-vocab="1"${active ? ' aria-current="page"' : ""}>` + '<span class="lesson-item-name">All vocabularies</span>' + `<span class="lesson-item-meta"><span>${c.total}</span><span class="sep">|</span><span class="new">🆕 ${c.fresh}</span><span class="due">⏳ ${c.due}</span><span class="done">✅ ${c.done}</span></span></button>`;
+  return allItemHtml("All vocabularies", vocabCounts(lessonVocabItems(allVocabCards())), currentLessonId === VOCAB_ALL_ID && currentView === "vocab");
 }
 
 function allLessonsItemHtml() {
@@ -13675,8 +13709,7 @@ function allLessonsItemHtml() {
     }) : l);
     Object.keys(c).forEach(k => c[k] += one[k]);
   });
-  const active = isAllLessons() && currentView === "study";
-  return `<button class="lesson-item all-vocab${active ? " active" : ""}" data-all-vocab="1"${active ? ' aria-current="page"' : ""}>` + '<span class="lesson-item-name">All lessons</span>' + `<span class="lesson-item-meta"><span>${c.total}</span><span class="sep">|</span><span class="new">🆕 ${c.fresh}</span><span class="due">⏳ ${c.due}</span><span class="done">✅ ${c.done}</span></span></button>`;
+  return allItemHtml("All lessons", c, isAllLessons() && currentView === "study");
 }
 
 async function openAllLessons() {
@@ -13819,6 +13852,7 @@ function hideVocabAddPopup() {
 }
 
 function showVocabAddPopup(row, term, rect, editing, onSave, meaning) {
+  hideTooltip();
   hideVocabAddPopup();
   hideVocabPopup();
   const popup = document.createElement("div");
