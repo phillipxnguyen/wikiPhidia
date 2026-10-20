@@ -2758,6 +2758,7 @@ function startLoop(row) {
     if (segmentReached(row.time, end)) {
       if (endPass()) return;
       segmentArmed = false;
+      soundSegment.armed = false;
       ytPlayer.seekTo(row.time, true);
       ytPlayer.playVideo();
     }
@@ -2768,6 +2769,7 @@ function startLoop(row) {
 let speechTrack = null;
 
 function trackSpeech(utter, text) {
+  speechTrack = null;
   const track = {
     start: 0,
     at: 0,
@@ -2818,13 +2820,14 @@ function soundProgressLoop() {
     let video = null;
     if (row && soundSegment.id === row.id && ytPlayer && typeof ytPlayer.getCurrentTime === "function") {
       const now = ytPlayer.getCurrentTime();
-      video = now < soundSegment.start - .25 || now > soundSegment.end + .25 ? 0 : Math.max(0, Math.min(1, (now - soundSegment.start) / Math.max(.1, soundSegment.end - soundSegment.start)));
+      if (!soundSegment.armed && now >= soundSegment.start - .3 && now <= soundSegment.start + 1) soundSegment.armed = true;
+      video = soundSegment.armed ? Math.max(0, Math.min(1, (now - soundSegment.start) / Math.max(.1, soundSegment.end - soundSegment.start))) : 0;
     }
     const speech = speechProgress();
     const exam = testAudioProgress();
     const paint = (el, p) => {
       el.classList.toggle("sound-fill", p != null);
-      if (p != null) el.style.setProperty("--p", p.toFixed(3));
+      if (p != null) el.style.setProperty("--p", p.toFixed(3)); else el.style.removeProperty("--p");
     };
     document.querySelectorAll(".loop-time[data-id]").forEach(el => paint(el, !el.classList.contains("looping") ? null : el.classList.contains("tts-play") ? speech : Number(el.dataset.id) === loopingRowId ? video : null));
     [ "btnPlaySequence", "vocabSpeak" ].forEach(id => {
