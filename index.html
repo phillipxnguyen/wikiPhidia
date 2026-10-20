@@ -877,7 +877,7 @@ window.onYouTubeIframeAPIReady = function(){
   }
   @media (hover:hover){.loop-time:not(.looping):hover{filter:brightness(1.1);}}
   .loop-time.looping{background:var(--accent);color:var(--on-accent);}
-  .loop-time.looping.sound-fill, #btnPlaySequence.active.sound-fill, #vocabSpeak.active.sound-fill{color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.35);background:linear-gradient(90deg, var(--accent) calc(var(--p, 0) * 100%), color-mix(in srgb, var(--accent) 45%, var(--surface)) 0);border-color:transparent;background-origin:border-box;}
+  .loop-time.looping.sound-fill, #btnPlaySequence.active.sound-fill, #vocabSpeak.active.sound-fill{color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.35);background:linear-gradient(90deg, color-mix(in srgb, var(--accent) 45%, var(--surface)) calc(var(--p, 0) * 100%), var(--accent) 0);border-color:transparent;background-origin:border-box;}
   .loop-time.disabled{opacity:.4;cursor:not-allowed;background:var(--surface-3);color:var(--text-2);}
 
   .single-card-progress{text-align:center;font-size:14px;color:var(--text);margin-bottom:16px;}
@@ -1199,7 +1199,7 @@ window.onYouTubeIframeAPIReady = function(){
   textarea.exam-answer[readonly]{cursor:default;}
   .exam-reason-label{margin-top:8px;font-size:15px;line-height:20px;font-style:italic;}
   .exam-sheet button.exam-play, .exam-sheet button.exam-rec{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border-radius:16px;font-size:12px;line-height:16px;}
-  .exam-sheet button.exam-play.on.sound-fill{text-shadow:0 1px 2px rgba(0,0,0,.35);background:linear-gradient(90deg, var(--sheet-edge) calc(var(--p, 0) * 100%), color-mix(in srgb, var(--sheet-edge) 45%, #fff) 0);border-color:transparent;background-origin:border-box;}
+  .exam-sheet button.exam-play.on.sound-fill{text-shadow:0 1px 2px rgba(0,0,0,.35);background:linear-gradient(90deg, color-mix(in srgb, var(--sheet-edge) 45%, #fff) calc(var(--p, 0) * 100%), var(--sheet-edge) 0);border-color:transparent;background-origin:border-box;}
   .exam-sheet button.exam-play.on{color:#fff;background:var(--sheet-edge);border-color:var(--sheet-edge);}
   .exam-sheet button.exam-play.load::after{content:"";box-sizing:border-box;width:16px;height:16px;border:2px solid var(--sheet-box-edge);border-top-color:var(--sheet-ink);border-radius:8px;animation:examSpin 800ms linear infinite;}
   @keyframes examSpin{to{transform:rotate(360deg);}}
@@ -1967,7 +1967,7 @@ function takeSnapshot(label, expiresAt) {
     ielts: [ ieltsAnswered, ieltsHintId ],
     vocabSnapshot: JSON.stringify(vocabSession),
     limits: JSON.stringify(studyLimits),
-    mix: isAllLessons() ? [ mixFocusId, mixStyle ] : null,
+    mix: isAllLessons() ? [ mixFocusId, mixStyle, mixDone ] : null,
     label: label,
     expiresAt: expiresAt
   };
@@ -2101,7 +2101,10 @@ function restoreFrom(fromStack, toStack, verb) {
     saveStudyLimits();
   }
   const mixRow = isAllLessons() && entry.mix && rows.find(r => r.id === entry.mix[0]);
-  if (mixRow) mixShow(mixRow, entry.mix[1]); else {
+  if (mixRow) {
+    mixDone = entry.mix[2] || 0;
+    mixShow(mixRow, entry.mix[1]);
+  } else {
     skipEmptyGroups();
     updateGroupUI();
     render();
@@ -4061,14 +4064,17 @@ function ieltsHints(row) {
 }
 
 function ieltsPaperHtml(row, ahead = 0) {
-  const n = ieltsAnswered + 1 + ahead;
-  const topic = document.getElementById("lessonName").value.trim();
+  const done = isAllLessons() ? mixDone : ieltsAnswered;
+  const n = done + 1 + ahead;
+  const total = done + (isAllLessons() ? mixCandidates().length : singleCardQueue().length);
+  const src = row.srcLessonId && library.find(l => l.id === row.srcLessonId);
+  const topic = src ? src.name || "Untitled lesson" : document.getElementById("lessonName").value.trim();
   const words = row.aHidden ? [] : cardWords(row);
   const hints = row.aHidden && ieltsHintId === row.id ? ieltsHints(row) : [];
   const answer = row.aHidden ? hints.length ? '<div class="cell hidden paper-prompt paper-hint" data-field="a"><ol>' + hints.map(m => `<li>${escapeHtml(m)}</li>`).join("") + "</ol></div>" : '<div class="cell hidden paper-prompt" data-field="a">···</div>' : `<div class="cell shown paper-lines" data-field="a">${aCellContent(row)}</div>`;
   const notes = words.length ? '<aside class="paper-notes"><div class="paper-label">Notes</div><ol>' + words.map(i => `<li><b>${escapeHtml(i.term)}</b>${i.meaning ? " — " + escapeHtml(i.meaning) : ""}</li>`).join("") + "</ol></aside>" : "";
   const extras = row.aHidden ? "" : '<div class="paper-extras"><div class="paper-stroke"></div><div class="paper-dict" hidden></div></div>';
-  return `<article class="ielts-paper${notes ? " with-notes" : ""}">` + `<header class="paper-head"><div>${topic ? `<div class="paper-topic">${escapeHtml(topic)}</div>` : ""}</div>` + `<div class="paper-meta"><div>Question <b>${n}</b> of ${ieltsAnswered + singleCardQueue().length}</div><div${ahead ? "" : ' id="ieltsTimer"'} class="paper-timer${row.aHidden ? "" : " stopped"}">${ahead ? "0:00" : ieltsClockText()}</div></div></header>` + '<div class="paper-body"><div class="paper-main">' + `<div class="paper-question"><span class="paper-num">${n}.</span><div class="cell shown" data-field="q">${qCellContent(row)}</div></div>` + `<div class="paper-answer">${answer}</div></div>${notes}</div>` + extras + "</article>";
+  return `<article class="ielts-paper${notes ? " with-notes" : ""}">` + `<header class="paper-head"><div>${topic ? `<div class="paper-topic">${escapeHtml(topic)}</div>` : ""}</div>` + `<div class="paper-meta"><div>Question <b>${n}</b> of ${total}</div><div${ahead ? "" : ' id="ieltsTimer"'} class="paper-timer${row.aHidden ? "" : " stopped"}">${ahead ? "0:00" : ieltsClockText()}</div></div></header>` + '<div class="paper-body"><div class="paper-main">' + `<div class="paper-question"><span class="paper-num">${n}.</span><div class="cell shown" data-field="q">${qCellContent(row)}</div></div>` + `<div class="paper-answer">${answer}</div></div>${notes}</div>` + extras + "</article>";
 }
 
 let listenSlotRaf = 0;
@@ -7006,6 +7012,8 @@ let mixAwaitCue = false;
 
 let mixSwiping = false;
 
+let mixDone = 0;
+
 let mixCueTimer = 0;
 
 function mixCueDone() {
@@ -7261,6 +7269,7 @@ function gradeCard(row, isAgain) {
   swipe(parts, isAgain ? -1 : 1, () => {
     if (isAllLessons()) {
       mixSwiping = false;
+      mixDone++;
       return mixNext();
     }
     if (ids) {
@@ -13914,6 +13923,7 @@ async function openAllLessons() {
     r.srcLessonId = picks[i].lesson.id;
   });
   mixFocusId = null;
+  mixDone = 0;
   showView("study");
   mixNext();
   renderLessonList();
