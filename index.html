@@ -891,13 +891,16 @@ window.onYouTubeIframeAPIReady = function(){
   @media (hover:hover){.loop-time:not(.looping):hover{filter:brightness(1.1);}}
   .loop-time.looping{background:var(--accent);color:var(--on-accent);}
   .loop-time, .exam-play{position:relative;}
-  .sound-ring{position:absolute;overflow:visible;pointer-events:none;--ring:var(--accent);}
+  .sound-ring{position:absolute;overflow:visible;pointer-events:none;--ring:var(--accent);animation:ring-in .4s ease;}
   .exam-sheet .sound-ring{--ring:var(--sheet-edge);}
   .sound-ring path{fill:none;stroke-width:2;}
   .sound-ring .ring-track{stroke:color-mix(in srgb, var(--ring) 30%, transparent);}
   .sound-ring .ring-run{stroke:var(--ring);stroke-linecap:round;}
-  .sound-wait{background-image:linear-gradient(100deg, transparent 25%, color-mix(in srgb, var(--accent) 45%, transparent) 50%, transparent 75%);background-size:200% 100%;background-repeat:no-repeat;animation:sound-shimmer 1s linear infinite;}
+  .loop-time, #btnPlaySequence, #vocabSpeak{isolation:isolate;}
+  :is(.sound-wait, .sound-fade)::before{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;pointer-events:none;background:linear-gradient(100deg, transparent 25%, color-mix(in srgb, var(--accent) 45%, transparent) 50%, transparent 75%) no-repeat;background-size:200% 100%;animation:sound-shimmer 1s linear infinite;transition:opacity .4s ease;}
+  .sound-fade::before{opacity:0;}
   @keyframes sound-shimmer{from{background-position:150% 0;}to{background-position:-50% 0;}}
+  @keyframes ring-in{from{opacity:0;}}
   .loop-time.disabled{opacity:.4;background:var(--surface-3);color:var(--text-2);}
 
   .single-card-progress{text-align:center;font-size:14px;color:var(--text);margin-bottom:16px;}
@@ -3127,11 +3130,21 @@ new MutationObserver(records => {
 
 addEventListener("resize", queueFitBadges);
 
+function markWait(el, waiting) {
+  const was = el.classList.contains("sound-wait");
+  el.classList.toggle("sound-wait", waiting);
+  if (waiting) el.classList.remove("sound-fade");
+  if (!was || waiting) return;
+  el.classList.add("sound-fade");
+  clearTimeout(el.fadeTimer);
+  el.fadeTimer = setTimeout(() => el.classList.remove("sound-fade"), 400);
+}
+
 function syncRowBadges() {
   document.querySelectorAll(".loop-time[data-id]").forEach(el => {
     const id = Number(el.dataset.id);
     el.classList.toggle("looping", id === loopingRowId && soundHeard);
-    el.classList.toggle("sound-wait", id === loopingRowId && !soundHeard);
+    markWait(el, id === loopingRowId && !soundHeard);
   });
 }
 
@@ -3880,7 +3893,7 @@ function updateSequenceBtnUI() {
 function setSequenceBtnState(btn, on, enabled, waiting = false) {
   const before = btn.classList.contains("active") + ":" + btn.disabled;
   btn.classList.toggle("active", on);
-  btn.classList.toggle("sound-wait", waiting);
+  markWait(btn, waiting);
   btn.disabled = !enabled;
   if (before !== btn.classList.contains("active") + ":" + btn.disabled) updateTouchBar();
 }
@@ -14088,7 +14101,7 @@ function syncVocabSound() {
   const on = vocabSoundOn() && soundHeard;
   btn.innerHTML = playFace(vocabShownIsVideo ? on ? YT_PAUSE_ICON : YT_ICON : on ? "⏸" : "🔊");
   btn.classList.toggle("active", on);
-  btn.classList.toggle("sound-wait", vocabSoundOn() && !soundHeard);
+  markWait(btn, vocabSoundOn() && !soundHeard);
   if (currentView === "vocab") updateTouchBar();
 }
 
