@@ -363,9 +363,10 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-editor{display:flex;flex-direction:column;gap:10px;padding:16px;margin-bottom:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);}
   .vocab-list .vocab-editor{margin:4px 0;box-shadow:none;}
   .vocab-editor textarea{width:100%;font-size:16px;}
-  #vocabEditTerm, #vocabEditMeaning, #vocabEditNotes{border-left:4px solid var(--lesson-accent);}
-  #vocabEditMeaning{border-left-color:var(--a-label);}
-  #vocabEditNotes{border-left-color:var(--border-strong);font-size:16px;}
+  #vocabEditTerm, #vocabEditMeaning, #vocabEditNotes, #qaQ, #qaA, #qaNotes{border-left:4px solid var(--lesson-accent);}
+  #vocabEditMeaning, #qaA{border-left-color:var(--a-label);}
+  #vocabEditNotes, #qaNotes{border-left-color:var(--border-strong);font-size:16px;}
+  .quick-add{margin-bottom:12px;box-shadow:none;}
   .vocab-back .vocab-word-notes{box-sizing:border-box;width:fit-content;max-width:100%;padding:0 16px;font-size:24px;line-height:30px;text-align:left;color:var(--text);overflow-wrap:break-word;}
   .vocab-word-notes ul, .vocab-word-notes ol{margin:4px 0;padding-left:24px;}
   .vocab-word-notes > :first-child{margin-top:0;}
@@ -1668,6 +1669,12 @@ window.onYouTubeIframeAPIReady = function(){
       <select id="addTarget" aria-label="Lesson to add to"></select>
     </label>
     <button id="btnSingleCard" class="add-single" aria-label="Add a single card">＋</button>
+    <div id="quickAdd" class="vocab-editor quick-add" hidden>
+      <textarea id="qaQ" class="autofit" rows="1" autocomplete="off" aria-label="Question"></textarea>
+      <textarea id="qaA" class="autofit" rows="1" autocomplete="off" aria-label="Answer"></textarea>
+      <div id="qaNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes" aria-label="Notes"></div>
+      <div class="vocab-editor-actions"><button id="qaSave" class="primary">Save</button></div>
+    </div>
     <textarea id="importText" rows="8" placeholder="Paste here!"></textarea>
     <div id="importPreview" class="import-preview" hidden aria-live="polite"></div>
     <div class="row-flex" style="margin-top:10px;">
@@ -2025,8 +2032,6 @@ function pushUndo(label) {
 }
 
 function discardActiveEdit() {
-  if (activeEdit && activeEdit.row.id === draftRowId) rows = rows.filter(r => r.id !== draftRowId);
-  draftRowId = null;
   activeEdit = null;
   hideDictOverlay();
   closeEditPopup();
@@ -3340,7 +3345,7 @@ function pickedRowId() {
 }
 
 function studyScope() {
-  if (!groupState) return rows.filter(r => r.id !== draftRowId);
+  if (!groupState) return rows.slice();
   return groupViewStyle === "table" ? getVisibleRows() : currentCardRows();
 }
 
@@ -4207,8 +4212,8 @@ function markFreshLesson() {
 
 function updateLessonChrome() {
   markFreshLesson();
-  const hasCards = rows.some(r => r.id !== draftRowId && ((r.q || "").trim() || (r.a || "").trim()));
-  const hasQuestion = rows.some(r => r.id !== draftRowId && (r.q || "").trim());
+  const hasCards = rows.some(r => (r.q || "").trim() || (r.a || "").trim());
+  const hasQuestion = rows.some(r => (r.q || "").trim());
   const virtual = isVirtualLesson();
   document.getElementById("btnSaveFile").hidden = !virtual && !hasCards;
   document.getElementById("btnResetLesson").hidden = !virtual && !hasCards;
@@ -4237,7 +4242,7 @@ function renderStudy() {
   const panel = document.getElementById("sessionCompletePanel");
   document.getElementById("listAddCard").hidden = !!groupState || isVirtualLesson() || !rows.length;
   if (leaveEmptiedLesson("study", rows.length)) return;
-  if (rows.length === 0) {
+  if (rows.length === 0 || quickAddInline()) {
     document.getElementById("viewStudy").classList.remove("focus-study");
     toolbar.style.display = "none";
     table.style.display = "none";
@@ -6344,7 +6349,7 @@ function findDuplicateCard(q, a, time, except) {
   const nq = normalizeImportText(q || "");
   if (!nq) return null;
   const na = normalizeImportText(a || "");
-  return rows.find(r => r !== except && r.id !== draftRowId && (!except || r.srcLessonId === except.srcLessonId) && normalizeImportText(r.q || "") === nq && (time == null || r.time == null || r.time === time) && (!na || !(r.a || "").trim() || normalizeImportText(r.a) === na)) || null;
+  return rows.find(r => r !== except && (!except || r.srcLessonId === except.srcLessonId) && normalizeImportText(r.q || "") === nq && (time == null || r.time == null || r.time === time) && (!na || !(r.a || "").trim() || normalizeImportText(r.a) === na)) || null;
 }
 
 const NOTE_TERM_MAX = 100;
@@ -6577,32 +6582,6 @@ function commitActiveEdit() {
   if (activeEdit.editNotes.textContent.trim() && !activeEdit.editNotes.querySelector("*")) activeEdit.editNotes.innerHTML = "<div>" + activeEdit.editNotes.innerHTML + "</div>";
   const newNotes = plainTextOf(activeEdit.editNotes.innerHTML, "\n");
   const newNotesHtml = plainTextOf(activeEdit.editNotes.innerHTML || "", "\n").trim() ? sanitizeHtml(activeEdit.editNotes.innerHTML || "") : "";
-  if (activeEdit.row.id === draftRowId) {
-    const row = activeEdit.row;
-    const at = rows.indexOf(row);
-    draftRowId = null;
-    if (at !== -1) rows.splice(at, 1);
-    if ((newQ.trim() || newA.trim()) && findDuplicateCard(newQ, newA, row.time, row)) {
-      showToast("This card already exists");
-    } else if (newQ.trim() || newA.trim()) {
-      Object.assign(row, {
-        q: newQ,
-        qHtml: newQHtml,
-        a: newA,
-        aHtml: newAHtml,
-        notes: newNotes,
-        notesHtml: newNotesHtml
-      });
-      pushUndo("Added — " + cardSummary(row));
-      stampNewVocab(row, new Set);
-      rows.splice(at === -1 ? 0 : at, 0, row);
-      recordImport(1);
-    }
-    scheduleAutoSave();
-    hideDictOverlay();
-    activeEdit = null;
-    return;
-  }
   if ((newQ !== activeEdit.originalQ || newA !== activeEdit.originalA) && findDuplicateCard(newQ, newA, activeEdit.row.time, activeEdit.row)) {
     showToast("Card already in this lesson");
     newQ = activeEdit.originalQ;
@@ -6739,7 +6718,6 @@ function buildEditBoxInner(row) {
   return `\n    <div class="edit-qa">\n      <div>\n        <div id="editQ" class="rich-editor" contenteditable="true">${getEditInitialHtml(row.q, row.qHtml, row.id)}</div>\n      </div>\n      <div>\n        <div id="editA" class="rich-editor" contenteditable="true">${getEditInitialHtml(row.a, row.aHtml, row.id)}</div>\n      </div>\n    </div>\n    <div id="editNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes">${notesEditorHtml(row)}</div>\n    <div class="edit-actions">\n      <button id="editSave" class="primary">Save</button>\n    </div>\n    <div id="editDict"></div>\n  `;
 }
 
-let draftRowId = null;
 
 document.addEventListener("click", e => {
   const chip = e.target.closest("[data-add-card]");
@@ -6748,30 +6726,80 @@ document.addEventListener("click", e => {
   openAddPopup();
 });
 
-function addSingleCard() {
-  if (!currentLessonId || isVirtualLesson()) return;
-  if (currentView !== "study") showView("study");
-  if (groupState) goToReviewMode("full");
-  commitActiveEdit();
-  const row = newRow("", "", null);
-  rows.unshift(row);
-  draftRowId = row.id;
-  render();
-  const tr = document.querySelector(`#tbody tr[data-id="${row.id}"]`);
-  if (!tr) return;
-  openEdit(tr, row);
-}
-
 document.getElementById("btnSingleCard").onclick = e => {
   e.stopPropagation();
-  closeAddPopup();
-  if (appMode !== "vocab") return addSingleCard();
   if (!currentLessonId || isVirtualLesson()) return;
-  vocabEditingKey = NEW_WORD_KEY;
-  showView("vocab");
-  setVocabView("list");
-  openVocabEditor(NEW_WORD_KEY, true);
+  const vocab = appMode === "vocab";
+  document.getElementById("qaQ").setAttribute("aria-label", vocab ? "Word" : "Question");
+  document.getElementById("qaA").setAttribute("aria-label", vocab ? "Meaning" : "Answer");
+  document.getElementById("btnSingleCard").hidden = true;
+  document.getElementById("quickAdd").hidden = false;
+  fitTextarea(document.getElementById("qaQ"));
+  fitTextarea(document.getElementById("qaA"));
+  document.getElementById("qaQ").focus();
 };
+
+function closeQuickAdd(quiet) {
+  const box = document.getElementById("quickAdd");
+  if (box.hidden) return;
+  box.hidden = true;
+  document.getElementById("btnSingleCard").hidden = false;
+  if (quiet) return;
+  render();
+  if (appMode === "vocab" && currentView === "study" && !lessonIsBlank()) showView("vocab");
+}
+
+function saveQuickAdd() {
+  const q = document.getElementById("qaQ"), a = document.getElementById("qaA"), notes = document.getElementById("qaNotes");
+  if (!q.value.trim() || !currentLessonId || isVirtualLesson()) return q.focus();
+  if (appMode === "vocab") {
+    if (!saveVocabEditor(null, q.value, a.value, notes.innerHTML, true)) return q.focus();
+    showToast("Added 1 word");
+    renderVocab();
+  } else {
+    if (findDuplicateCard(q.value, a.value, null, null)) {
+      showToast("This card already exists");
+      return q.focus();
+    }
+    const row = newRow(q.value, a.value, null);
+    const html = sanitizeHtml(notes.innerHTML || "");
+    if (plainTextOf(html, "\n").trim()) {
+      row.notesHtml = html;
+      row.notes = plainTextOf(html, "\n");
+    }
+    pushUndo("Added — " + cardSummary(row));
+    stampNewVocab(row, new Set);
+    rows.unshift(row);
+    recordImport(1);
+    scheduleAutoSave();
+    showToast("Added 1 card");
+    render();
+  }
+  q.value = a.value = "";
+  notes.innerHTML = "";
+  fitTextarea(q);
+  fitTextarea(a);
+  renderImportInfo();
+  renderLessonList();
+  q.focus();
+}
+
+document.getElementById("qaSave").onclick = saveQuickAdd;
+
+[ "qaQ", "qaA" ].forEach(id => enterSaves(document.getElementById(id), saveQuickAdd, true));
+
+document.addEventListener("pointerdown", e => {
+  const box = document.getElementById("quickAdd");
+  if (box.hidden || box.contains(e.target) || e.target.closest("#btnSingleCard")) return;
+  closeQuickAdd(!document.getElementById("addPopup").hidden);
+}, true);
+
+document.getElementById("quickAdd").addEventListener("keydown", e => {
+  if (e.key !== "Escape") return;
+  e.preventDefault();
+  e.stopPropagation();
+  closeQuickAdd(!document.getElementById("addPopup").hidden);
+});
 
 function openEdit(tr, row) {
   if (groupState && groupViewStyle === "table") return openEditPopup(row);
@@ -8789,7 +8817,7 @@ async function addSentenceWords(cards, onStatus) {
 }
 
 function lessonIsBlank() {
-  return !!currentLessonId && !isVirtualLesson() && vocabEditingKey !== NEW_WORD_KEY && !rows.some(r => r.id !== draftRowId && ((r.q || "").trim() || (r.a || "").trim())) && !lessonVocabItems(vocabSource()).length;
+  return !!currentLessonId && !isVirtualLesson() && vocabEditingKey !== NEW_WORD_KEY && !rows.some(r => (r.q || "").trim() || (r.a || "").trim()) && !lessonVocabItems(vocabSource()).length;
 }
 
 async function settleImportMode(cards, words) {
@@ -9615,7 +9643,7 @@ function serializeCurrentLesson() {
     importHistory: importHistory,
     createdAt: prev ? prev.createdAt : Date.now(),
     updatedAt: Date.now(),
-    cards: rows.filter(r => r.id !== draftRowId).map(serializeCard),
+    cards: rows.map(serializeCard),
     extraWords: serializeExtras(vocabExtras),
     vocabOnly: !!(prev && prev.vocabOnly)
   };
@@ -10782,7 +10810,7 @@ function lessonInMode(l, mode) {
 function lessonShown(l, mode) {
   if ((mode || appMode) === "vocab") return lessonHasWords(l);
   if (isVocabOnlyLesson(l)) return false;
-  return l.id === currentLessonId ? rows.some(r => r.id !== draftRowId) : l.cards.length > 0;
+  return l.id === currentLessonId ? rows.length > 0 : l.cards.length > 0;
 }
 
 function modeLibrary(mode) {
@@ -11025,8 +11053,13 @@ function showView(view) {
   if (changed) window.scrollTo(0, 0);
 }
 
+function quickAddInline() {
+  return !document.getElementById("quickAdd").hidden && document.getElementById("addForm").parentNode === document.getElementById("inlineAddSlot");
+}
+
 function placeAddForm(where) {
   const form = document.getElementById("addForm");
+  if (where !== "popup" && !document.getElementById("addPopup").hidden) return;
   const slot = document.getElementById("inlineAddSlot");
   const home = document.getElementById("viewAdd");
   form.classList.toggle("in-popup", where === "popup");
@@ -11086,6 +11119,22 @@ function fillAddTarget() {
     return `<option value="${escapeAttr(l.id)}"${l.id === currentLessonId ? " selected" : ""}>${escapeHtml(name || "Untitled lesson")}</option>`;
   }).join("");
   select.classList.toggle("is-new", fresh);
+  fitSelect(select);
+}
+
+function fitSelect(select) {
+  const opt = select.options[select.selectedIndex];
+  if (!opt) return;
+  if (!select.offsetParent) return requestAnimationFrame(() => select.offsetParent && fitSelect(select));
+  const cs = getComputedStyle(select);
+  const probe = document.createElement("span");
+  probe.textContent = opt.textContent;
+  probe.style.cssText = `position:absolute;visibility:hidden;white-space:pre;font:${cs.font};letter-spacing:${cs.letterSpacing}`;
+  document.body.appendChild(probe);
+  const text = probe.getBoundingClientRect().width;
+  probe.remove();
+  const edges = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth);
+  select.style.width = Math.ceil(text + edges) + "px";
 }
 
 const ADD_NEW = "__new__";
@@ -11582,7 +11631,10 @@ document.getElementById("heatNext").onclick = () => {
   renderHeatmap();
 };
 
-document.getElementById("addTarget").addEventListener("change", e => changeAddTarget(e.target.value));
+document.getElementById("addTarget").addEventListener("change", e => {
+  fitSelect(e.target);
+  changeAddTarget(e.target.value);
+});
 
 document.getElementById("btnSaveFile").onclick = exportCurrentLesson;
 
@@ -12044,11 +12096,6 @@ function applyLessonToOpenRows(lesson) {
     return r;
   });
   byUid.forEach(r => {
-    if (r === editing && r.id === draftRowId) {
-      const at = Math.min(rows.indexOf(r), next.length);
-      next.splice(at, 0, r);
-      return;
-    }
     if (r === editing) discardActiveEdit();
     pruneIdFromGroupState(groupState, r.id);
     pruneIdFromGroupState(savedGroupState, r.id);
@@ -14812,9 +14859,11 @@ function closeAddPopup() {
   const pop = document.getElementById("addPopup");
   if (pop.hidden) return;
   pop.hidden = true;
+  closeQuickAdd(true);
   placeAddForm("page");
   render();
   if (currentView === "vocab") renderVocab();
+  if (appMode === "vocab" && currentView === "study" && !lessonIsBlank()) showView("vocab");
 }
 
 document.getElementById("addPopClose").onclick = closeAddPopup;
@@ -14823,12 +14872,12 @@ document.getElementById("addPopup").addEventListener("click", e => {
   if (e.target === e.currentTarget) closeAddPopup();
 });
 
-document.getElementById("addPopup").addEventListener("keydown", e => {
-  if (e.key !== "Escape") return;
+document.addEventListener("keydown", e => {
+  if (e.key !== "Escape" || document.getElementById("addPopup").hidden || !document.getElementById("quickAdd").hidden && document.getElementById("quickAdd").contains(e.target)) return;
   e.preventDefault();
   e.stopPropagation();
   closeAddPopup();
-});
+}, true);
 
 function addFromKey() {
   const plus = [ ...document.querySelectorAll("[data-add-card]") ].find(b => b.getClientRects().length);
