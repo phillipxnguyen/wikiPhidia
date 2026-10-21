@@ -2036,6 +2036,7 @@ function takeSnapshot(label, expiresAt) {
   return {
     snapshot: JSON.stringify(rows),
     extrasSnapshot: JSON.stringify(vocabExtras),
+    virtualExtras: isAllLessons() ? JSON.stringify(virtualExtras) : null,
     groupSnapshot: JSON.stringify(groupState || savedGroupState),
     inSession: !!groupState,
     style: groupViewStyle,
@@ -2139,6 +2140,7 @@ function restoreFrom(fromStack, toStack, verb) {
   } ]));
   rows = JSON.parse(entry.snapshot);
   if (entry.extrasSnapshot !== undefined) vocabExtras = JSON.parse(entry.extrasSnapshot);
+  if (entry.virtualExtras && isAllLessons()) virtualExtras = JSON.parse(entry.virtualExtras);
   if (entry.importHistory != null) importHistory = JSON.parse(entry.importHistory);
   const snapGroup = entry.groupSnapshot ? JSON.parse(entry.groupSnapshot) : null;
   const liveGroup = groupState || savedGroupState;
@@ -3243,7 +3245,6 @@ function pruneIdFromGroupState(state, id) {
 }
 
 function deleteRows(ids, parts, next) {
-  if (isVirtualLesson()) return;
   ids = ids.slice();
   const gone = rows.filter(r => ids.includes(r.id));
   if (!gone.length) return;
@@ -3269,8 +3270,15 @@ function deleteRows(ids, parts, next) {
   } else {
     skipEmptyGroups();
   }
-  swipe(parts, -1, render, next, "Delete");
+  mixSwiping = isAllLessons();
+  swipe(parts, -1, afterRemove, next, "Delete");
   scheduleAutoSave();
+}
+
+function afterRemove() {
+  if (!isAllLessons()) return render();
+  mixSwiping = false;
+  mixNext();
 }
 
 const translationMemo = new WeakMap;
@@ -3369,7 +3377,7 @@ function moveCardsToVocab(list) {
     });
   });
   if (carry.length) appendWordItems(ensureVocabExtras(), carry);
-  carryWordNotes(ok, carry);
+  carryWordNotes(ok, carry, vocabExtras);
   if (activeEdit && moving.has(activeEdit.row)) discardActiveEdit();
   rows = rows.filter(r => !moving.has(r));
   ok.forEach(r => {
@@ -3383,11 +3391,62 @@ function moveCardsToVocab(list) {
   renderLessonList();
 }
 
-function carryWordNotes(cards, carry) {
+function carryWordNotes(cards, carry, extras) {
   carry.forEach(([term]) => {
     const key = normalizeVocabText(term);
     const st = cards.map(c => c.vocab && c.vocab[key]).find(x => x && x.notes);
-    if (st) setWordNotes(vocabExtras, key, st.notes, st.notesAt);
+    if (st) setWordNotes(extras, key, st.notes, st.notesAt);
+  });
+}
+
+let virtualExtras = {};
+
+let virtualMembers = new Map;
+
+function extrasFor(row, create) {
+  if (!isAllLessons()) return create ? ensureVocabExtras() : vocabExtras;
+  const id = row.srcLessonId;
+  if (!(id in virtualExtras)) {
+    const lesson = library.find(l => l.id === id);
+    virtualExtras[id] = lesson && lesson.extraWords ? normalizeExtras(lesson.extraWords) : null;
+  }
+  if (create && !virtualExtras[id]) virtualExtras[id] = {
+    uid: EXTRA_UID,
+    q: "",
+    a: "",
+    notes: "",
+    notesHtml: "",
+    time: null,
+    vocab: {}
+  };
+  return virtualExtras[id];
+}
+
+function lessonRowsOf(row) {
+  if (!isVirtualLesson() || !row) return vocabSource();
+  const extras = isAllLessons() && virtualExtras[row.srcLessonId];
+  return rows.filter(r => r.srcLessonId === row.srcLessonId).concat(extras ? [ extras ] : []);
+}
+
+function cardInVideoLesson(row) {
+  if (!isAllLessons()) return isYouTubeLesson();
+  const lesson = library.find(l => l.id === row.srcLessonId);
+  return !!lesson && (!!extractYouTubeId(lesson.mediaUrl || "") || lesson.cards.some(c => c.time != null));
+}
+
+function noteVirtualMembers() {
+  virtualExtras = {};
+  virtualMembers = new Map;
+  rows.forEach(r => {
+    if (r.uid === EXTRA_UID) return;
+    if (!virtualMembers.has(r.srcLessonId)) {
+      const lesson = library.find(l => l.id === r.srcLessonId);
+      virtualMembers.set(r.srcLessonId, {
+        uids: new Set,
+        order: lesson ? lesson.cards.map(c => c.uid) : []
+      });
+    }
+    virtualMembers.get(r.srcLessonId).uids.add(r.uid);
   });
 }
 
@@ -3395,12 +3454,13 @@ function moveOneCardToVocab(row) {
   const term = (row.q || "").replace(/\s+/g, " ").trim();
   const meaning = (row.a || "").replace(/\s+/g, " ").trim();
   if (!vocabEntryOk(term)) return;
-  const others = rows.filter(r => r !== row).concat(vocabExtras ? [ vocabExtras ] : []);
+  extrasFor(row);
+  const others = lessonRowsOf(row).filter(r => r !== row);
   const carry = vocabEntriesOf(row).filter(e => !existingVocab(e.term, others)).map(e => [ e.term, e.meaning ]);
   if (!carry.some(([t]) => normalizeVocabText(t) === normalizeVocabText(term)) && !existingVocab(term, others)) carry.unshift([ term, meaning ]);
   pushUndo("Moved to Vocabulary — " + cardSummary(row));
-  if (carry.length) appendWordItems(ensureVocabExtras(), carry);
-  carryWordNotes([ row ], carry);
+  if (carry.length) appendWordItems(extrasFor(row, true), carry);
+  carryWordNotes([ row ], carry, extrasFor(row));
   const parts = isCardMode() ? studyParts() : [ document.querySelector(`#tbody tr[data-id="${row.id}"]`) ].filter(Boolean);
   if (activeEdit && activeEdit.row.id === row.id) discardActiveEdit();
   rows = rows.filter(r => r !== row);
@@ -3408,7 +3468,8 @@ function moveOneCardToVocab(row) {
   if (selectedRowId === row.id) selectedRowId = null;
   pruneIdFromGroupState(groupState, row.id);
   pruneIdFromGroupState(savedGroupState, row.id);
-  swipe(parts, 1, render, isCardMode(), "Vocab");
+  mixSwiping = isAllLessons();
+  swipe(parts, 1, afterRemove, isCardMode(), "Vocab");
   showToast("Moved to Vocabulary");
   scheduleAutoSave();
   renderLessonList();
@@ -6195,8 +6256,7 @@ function updateSelBar() {
   document.documentElement.classList.toggle("sel-on", !!target);
   if (!target) return fitDeck();
   bar.style.setProperty("--tb-h", touchBar.offsetHeight + "px");
-  document.getElementById("selDelete").hidden = !!target.row && isVirtualLesson();
-  document.getElementById("selVocab").hidden = !target.row || target.rows.length !== 1 || isVirtualLesson() || isYouTubeLesson();
+  document.getElementById("selVocab").hidden = !target.row || target.rows.length !== 1 || cardInVideoLesson(target.row);
   document.documentElement.style.setProperty("--sel-h", Math.round(window.innerHeight - bar.querySelector(".segmented").getBoundingClientRect().top) + "px");
   fitDeck();
 }
@@ -7631,6 +7691,36 @@ function saveVirtualLesson() {
       updatedAt: Date.now()
     }));
     changed.get(lesson.id).cards[i] = card;
+  });
+  const edit = id => {
+    const lesson = changed.get(id) || library.find(l => l.id === id);
+    if (lesson && !changed.has(id)) changed.set(id, Object.assign({}, lesson, {
+      cards: lesson.cards.slice(),
+      updatedAt: Date.now()
+    }));
+    return changed.get(id);
+  };
+  virtualMembers.forEach(({uids: uids, order: order}, id) => {
+    const lesson = changed.get(id) || library.find(l => l.id === id);
+    if (!lesson) return;
+    const mine = rows.filter(r => r.srcLessonId === id && r.uid !== EXTRA_UID);
+    const here = new Set(mine.map(r => r.uid));
+    const gone = lesson.cards.some(c => uids.has(c.uid) && !here.has(c.uid));
+    const back = mine.filter(r => !lesson.cards.some(c => c.uid === r.uid));
+    if (!gone && !back.length) return;
+    const target = edit(id);
+    target.cards = target.cards.filter(c => !uids.has(c.uid) || here.has(c.uid));
+    back.forEach(r => {
+      const after = order.slice(order.indexOf(r.uid) + 1);
+      const at = target.cards.findIndex(c => after.includes(c.uid));
+      target.cards.splice(at === -1 ? target.cards.length : at, 0, JSON.parse(JSON.stringify(serializeCard(r))));
+    });
+  });
+  Object.keys(virtualExtras).forEach(id => {
+    const lesson = changed.get(id) || library.find(l => l.id === id);
+    const extra = serializeExtras(virtualExtras[id]);
+    if (!lesson || JSON.stringify(lesson.extraWords || null) === JSON.stringify(extra)) return;
+    edit(id).extraWords = extra ? normalizeExtras(extra) : null;
   });
   const writes = [];
   changed.forEach(lesson => {
@@ -14569,6 +14659,7 @@ async function openAllLessons() {
   rows.forEach((r, i) => {
     r.srcLessonId = picks[i].lesson.id;
   });
+  noteVirtualMembers();
   mixFocusId = null;
   mixDone = 0;
   showView("study");
@@ -14604,6 +14695,7 @@ async function openAllVocabulary() {
   rows.forEach((r, i) => {
     r.srcLessonId = picks[i].lesson.id;
   });
+  noteVirtualMembers();
   vocabVideoId = null;
   vocabView = "card";
   showView("study");
@@ -14869,7 +14961,7 @@ function showVocabAddPopup(row, term, rect, editing, onSave, meaning) {
       onSave(m[1].replace(/\s+/g, " ").trim(), (m[2] || "").replace(/\s+/g, " ").trim());
       return;
     }
-    if (existingVocab(m[1])) {
+    if (existingVocab(m[1], lessonRowsOf(row))) {
       warnVocabExists(m[1]);
       return;
     }
@@ -14920,26 +15012,25 @@ function selectionHit() {
 
 document.addEventListener("keydown", e => {
   if (e.key !== "Shift" || e.repeat || e.metaKey || e.ctrlKey) return;
-  if (isVirtualLesson()) return;
   const hit = selectionHit();
-  if (!hit) return;
+  if (!hit || isVirtualLesson() && !hit.row) return;
   e.preventDefault();
-  if (existingVocab(hit.text)) warnVocabExists(hit.text); else showVocabAddPopup(hit.row, hit.text, hit.rect);
+  if (hit.row) extrasFor(hit.row);
+  if (existingVocab(hit.text, lessonRowsOf(hit.row))) warnVocabExists(hit.text); else showVocabAddPopup(hit.row, hit.text, hit.rect);
 });
 
 document.addEventListener("keydown", e => {
-  if (e.key !== "Shift" || e.repeat || e.metaKey || e.ctrlKey || isVirtualLesson()) return;
+  if (e.key !== "Shift" || e.repeat || e.metaKey || e.ctrlKey) return;
   const field = e.target.closest && e.target.closest("#vocabEditTerm, #vocabEditMeaning, #qaQ, #qaA");
   if (!field) return;
   const text = field.value.slice(field.selectionStart, field.selectionEnd).replace(/\s+/g, " ").trim();
   if (!text || text === field.value.trim()) return;
+  const item = field.id === "vocabEditTerm" || field.id === "vocabEditMeaning" ? lessonVocabItems(vocabSource()).find(i => i.key === vocabEditingKey) : null;
+  if (isVirtualLesson() && !item) return;
   e.preventDefault();
-  if (existingVocab(text)) return warnVocabExists(text);
+  if (existingVocab(text, lessonRowsOf(item && item.card))) return warnVocabExists(text);
   const rect = field.getBoundingClientRect();
-  if (field.id === "vocabEditTerm" || field.id === "vocabEditMeaning") {
-    const item = lessonVocabItems(vocabSource()).find(i => i.key === vocabEditingKey);
-    return showVocabAddPopup(item ? item.card : ensureVocabExtras(), text, rect);
-  }
+  if (field.id === "vocabEditTerm" || field.id === "vocabEditMeaning") return showVocabAddPopup(item ? item.card : ensureVocabExtras(), text, rect);
   if (appMode === "vocab") return showVocabAddPopup(ensureVocabExtras(), text, rect);
   showVocabAddPopup(null, text, rect, null, (term, meaning) => {
     const notes = document.getElementById("qaNotes");
@@ -18058,10 +18149,10 @@ document.addEventListener("keydown", e => {
     return;
   }
   if (letter && e.code === "KeyW") {
-    if (isYouTubeLesson() || isVirtualLesson() || activeEdit) return;
+    if (activeEdit) return;
     const {scope: scope, picked: picked} = studyPick();
     const row = picked || (groupViewStyle === "ielts" && groupState ? scope[0] : null);
-    if (!row) return;
+    if (!row || cardInVideoLesson(row)) return;
     e.preventDefault();
     moveCardToVocab(row);
     return;
