@@ -2972,14 +2972,10 @@ function startLoop(row) {
 
 let speechTrack = null;
 
-function trackSpeech(utter, text) {
+function trackSpeech(utter) {
   speechTrack = null;
   const track = {
     start: 0,
-    at: 0,
-    len: Math.max(1, text.length),
-    est: Math.max(.8, text.length / (UNSPACED_RE.test(text) ? 4.5 : 14) / (utter.rate || 1)),
-    boundary: false,
     done: false
   };
   utter.addEventListener("start", () => {
@@ -2987,19 +2983,13 @@ function trackSpeech(utter, text) {
     speechTrack = track;
     soundProgressLoop();
   });
-  utter.addEventListener("boundary", e => {
-    track.boundary = true;
-    track.at = e.charIndex + (e.charLength || 0);
-  });
   utter.addEventListener("end", () => track.done = true);
   return utter;
 }
 
 function speechProgress() {
   const track = speechTrack;
-  if (!track || !track.start || !speechSynthesis.speaking) return null;
-  if (track.done) return 1;
-  return track.boundary ? Math.min(1, track.at / track.len) : Math.min(.97, (performance.now() - track.start) / 1e3 / track.est);
+  return track && track.start && !track.done && speechSynthesis.speaking ? 0 : null;
 }
 
 function testAudioProgress() {
@@ -3940,7 +3930,7 @@ function playNextSequenceStep() {
     const utter = new SpeechSynthesisUtterance(textToRead);
     utter.lang = resolveSpeechLang(textToRead);
     utter.rate = ttsSpeed;
-    trackSpeech(utter, textToRead);
+    trackSpeech(utter);
     const voice = pickVoice(utter.lang);
     if (voice) utter.voice = voice;
     utter.onend = utter.onerror = () => {
@@ -8219,7 +8209,7 @@ function speakNext() {
   const utter = new SpeechSynthesisUtterance(text);
   utter.lang = resolveSpeechLang(text);
   utter.rate = ttsSpeed;
-  trackSpeech(utter, text);
+  trackSpeech(utter);
   const voice = pickVoice(utter.lang);
   if (voice) utter.voice = voice;
   utter.onend = () => {
@@ -14065,7 +14055,7 @@ function playVocabSound(item) {
     const utter = new SpeechSynthesisUtterance(cleanForSpeech(text));
     utter.lang = resolveSpeechLang(text);
     utter.rate = ttsSpeed;
-    trackSpeech(utter, cleanForSpeech(text));
+    trackSpeech(utter);
     const voice = pickVoice(utter.lang);
     if (voice) utter.voice = voice;
     utter.onend = () => setTimeout(() => {
@@ -16610,7 +16600,7 @@ function speakTest(text, lang, n) {
   const lines = text.split(/\n+/).map(line => line.replace(/^\s*[^\s:：]{1,8}\s*[:：]\s*/, "").trim()).filter(Boolean);
   const token = n ? testAudio.token : 0;
   lines.forEach((line, i) => {
-    const utter = trackSpeech(new SpeechSynthesisUtterance(line), line);
+    const utter = trackSpeech(new SpeechSynthesisUtterance(line));
     const t = openTestRecord();
     utter.lang = (lang || t && t.target) === "zh-TW" ? "zh-TW" : resolveSpeechLang(line);
     const voice = pickVoice(utter.lang);
