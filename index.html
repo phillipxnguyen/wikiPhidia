@@ -14337,21 +14337,12 @@ function allCurtain(item) {
   document.body.appendChild(curtain);
   const sides = [ ...curtain.children ];
   const out = i => i ? 1 : -1;
-  const shut = sides.map((el, i) => el.animate([ {
-    transform: `translateX(calc(${out(i) * 100}% + ${out(i) * 48}px)) skewX(0deg)`
+  curtain.animate({
+    opacity: [ 0, 1 ]
   }, {
-    transform: `translateX(${out(i) * 30}%) skewX(${out(i) * 4}deg)`,
-    offset: .45
-  }, {
-    transform: `translateX(${-out(i) * 1}%) skewX(${-out(i) * 2}deg)`,
-    offset: .8
-  }, {
-    transform: "translateX(0) skewX(0deg)"
-  } ], {
-    duration: 900,
-    easing: "cubic-bezier(.3,.6,.3,1)",
-    fill: "both"
-  }).finished);
+    duration: 200,
+    easing: "ease-out"
+  });
   let sway = [];
   const start = Date.now();
   const ready = () => ytHasError || !isVirtualLesson() || (appMode === "vocab" ? !vocabAwaitCue && !pendingVideoId : !mixAwaitCue && !pendingVideoId && !ytCueing && (!ytHasVideo || ytReady));
@@ -14385,7 +14376,7 @@ function allCurtain(item) {
       finish();
     });
   };
-  Promise.all(shut).then(() => {
+  requestAnimationFrame(() => {
     sway = sides.map((el, i) => el.animate([ {
       transform: "skewX(0deg)"
     }, {
