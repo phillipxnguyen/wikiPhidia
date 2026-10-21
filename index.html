@@ -883,7 +883,7 @@ window.onYouTubeIframeAPIReady = function(){
   .sound-ring path{fill:none;stroke-width:2;}
   .sound-ring .ring-track{stroke:color-mix(in srgb, var(--ring) 30%, transparent);}
   .sound-ring .ring-run{stroke:var(--ring);stroke-linecap:round;}
-  .loop-time.disabled{opacity:.4;cursor:not-allowed;background:var(--surface-3);color:var(--text-2);}
+  .loop-time.disabled{opacity:.4;background:var(--surface-3);color:var(--text-2);}
 
   .single-card-progress{text-align:center;font-size:14px;color:var(--text);margin-bottom:16px;}
   .progress-badges{display:flex;justify-content:center;align-items:center;gap:8px;-webkit-user-select:none;user-select:none;}
@@ -2621,6 +2621,10 @@ function onPlayerStateChange(event) {
   if (event.data === YT.PlayerState.CUED) {
     vocabCueDone();
     mixCueDone();
+    if (retryPlay) {
+      retryPlay = false;
+      if (currentView === "study") startSequenceLoop();
+    }
   }
   if (event.data === YT.PlayerState.PLAYING) {
     if (speechSynthesis.speaking || speechSynthesis.pending || ttsPlaying) {
@@ -2654,10 +2658,29 @@ function onPlayerStateChange(event) {
 
 const unplayableVideos = new Set;
 
+const retriedVideos = new Set;
+
+let retryPlay = false;
+
+function retryVideo(play) {
+  const id = extractYouTubeId(document.getElementById("mediaUrl").value.trim());
+  if (!id) return;
+  unplayableVideos.delete(id);
+  retryPlay = play;
+  createYtPlayer(id);
+}
+
 function onPlayerError(e) {
-  ytHasError = true;
   const code = e && e.data;
   const id = extractYouTubeId(document.getElementById("mediaUrl").value.trim());
+  if (id && !retriedVideos.has(id)) {
+    retriedVideos.add(id);
+    const play = isSequencePlaying || loopingRowId !== null || isAllLessons() && mixStyle === "listen";
+    stopSequenceLoop();
+    setTimeout(() => retryVideo(play), 800);
+    return;
+  }
+  ytHasError = true;
   if (id && [ 2, 100, 101, 150 ].includes(code)) unplayableVideos.add(id);
   stopSequenceLoop();
   vocabPendingKey = null;
@@ -3505,7 +3528,11 @@ function toggleSequenceLoop() {
     startTts("q");
     return;
   }
-  if (ytHasError) return;
+  if (ytHasError) {
+    retriedVideos.clear();
+    retryVideo(true);
+    return;
+  }
   if (!ytPlayer || !ytReady || !ytHasVideo) {
     if (ytHasVideo) fairyWait(); else showToast("Add a YouTube video first");
     return;
@@ -4387,7 +4414,10 @@ function rowPlayBadge(r) {
 
 function toggleRowPlay(row) {
   if (vocabVideoIdFor(row)) {
-    if (!ytHasError) toggleLoopForRow(row);
+    if (!ytHasError) toggleLoopForRow(row); else {
+      retriedVideos.clear();
+      retryVideo(true);
+    }
   } else if (ttsPlaying && ttsOnlyId === row.id) stopTts(); else startTts("q", row.id);
 }
 
@@ -7183,8 +7213,10 @@ function mixCueDone() {
     return;
   }
   mixAwaitCue = false;
-  if (ytHasError || !isAllLessons() || currentView !== "study" || !isListenMode()) return;
-  startSequenceLoop(true);
+  const id = mixFocusId;
+  setTimeout(() => {
+    if (mixFocusId === id && !mixAwaitCue && !ytHasError && isAllLessons() && currentView === "study" && isListenMode() && !isSequencePlaying) startSequenceLoop(true);
+  }, 300);
 }
 
 function mixCandidates() {
