@@ -12889,12 +12889,18 @@ function vocabKind(st, now) {
 function startVocabSession() {
   const now = Date.now();
   const items = lessonVocabItems(vocabSource());
-  const picked = items.filter(item => vocabStateOf(item).due <= now).map(item => ({
-    item: item,
-    kind: vocabKind(vocabStateOf(item), now),
-    shuffle: Math.random()
-  }));
-  picked.sort((a, b) => a.kind - b.kind || a.shuffle - b.shuffle);
+  const videoOrder = new Map;
+  const picked = items.filter(item => vocabStateOf(item).due <= now).map(item => {
+    const video = vocabVideoIdFor(item.card);
+    if (video && !videoOrder.has(video)) videoOrder.set(video, Math.random());
+    return {
+      item: item,
+      kind: vocabKind(vocabStateOf(item), now),
+      group: video ? videoOrder.get(video) : Math.random(),
+      shuffle: Math.random()
+    };
+  });
+  picked.sort((a, b) => a.kind - b.kind || a.group - b.group || a.shuffle - b.shuffle);
   const allowed = limitVocab(picked.map(p => p.item));
   vocabSession = {
     lessonId: currentLessonId,
