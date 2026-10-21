@@ -6091,13 +6091,8 @@ function copyText(text) {
 
 function studyCopyAction() {
   const {scope: scope, picked: picked} = studyPick();
-  if (!groupState && !picked) return;
-  if (!isVideoLesson()) {
-    const row = picked || scope[0];
-    if (row) copyText([ row.q, row.a ].map(t => (t || "").trim()).filter(Boolean).join("\n"));
-    return;
-  }
-  copyText((picked ? [ picked ] : scope).map(r => oneLine(r.q)).filter(Boolean).join("\n"));
+  const row = picked || groupState && scope.length === 1 && scope[0];
+  if (row) copyText(isVideoLesson() ? oneLine(row.q) : [ row.q, row.a ].map(t => (t || "").trim()).filter(Boolean).join("\n"));
 }
 
 function updateSelBar() {
@@ -14252,8 +14247,7 @@ function vocabCopyAction() {
   const pickedKey = vocabPickedKey();
   const item = vocabView === "card" ? currentVocabItem() : pickedKey && lessonVocabItems(vocabSource()).find(i => i.key === pickedKey);
   if (!item) return;
-  const sentence = vocabView === "card" ? oneLine(vocabContext(item).sentence) : "";
-  copyText(sentence || oneLine(item.term));
+  copyText(oneLine(vocabContext(item).sentence) || oneLine(item.term));
 }
 
 function vocabDeleteAction() {
