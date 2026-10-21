@@ -2686,7 +2686,7 @@ function onPlayerError(e) {
   vocabPendingKey = null;
   vocabAwaitCue = false;
   syncVocabSound();
-  showToast(code === 101 || code === 150 ? "The owner of this video only lets it play on YouTube" : code === 100 ? "This video was removed or made private" : code === 2 ? "This video link isn't valid" : "YouTube can't play this video");
+  showToast((code === 101 || code === 150 ? "The owner of this video only lets it play on YouTube" : code === 100 ? "This video was removed or made private" : code === 2 ? "This video link isn't valid" : "YouTube can't play this video") + (code != null ? ` (YouTube error ${code})` : ""));
   const row = isAllLessons() && mixStyle === "listen" ? rows.find(r => r.id === mixFocusId) : null;
   if (row) setTimeout(() => hasAnswer(row) ? mixShow(row, "table") : mixNext(), 0);
 }
@@ -3595,9 +3595,28 @@ function sequencePlaybackRows() {
   return isCardMode() ? singleCardQueue() : getVisibleRows();
 }
 
+let firstTouchWait = false;
+
+function afterFirstTouch(start) {
+  if (firstTouchWait) return;
+  firstTouchWait = true;
+  showToast("Tap anywhere or press a key to start the sound");
+  const go = e => {
+    [ "pointerdown", "keydown" ].forEach(t => removeEventListener(t, go, true));
+    firstTouchWait = false;
+    if (e.code === "Space" || e.target.closest && e.target.closest("#btnPlaySequence, #vocabSpeak, #listenCover, .loop-time, .exam-play")) return;
+    setTimeout(start, 0);
+  };
+  [ "pointerdown", "keydown" ].forEach(t => addEventListener(t, go, true));
+}
+
 function startSequenceLoop(auto) {
   if (auto && mixAwaitCue) return;
   if (ytHasError || !ytPlayer || !ytReady || !ytHasVideo) return;
+  if (auto && navigator.userActivation && !navigator.userActivation.hasBeenActive) {
+    afterFirstTouch(() => currentView === "study" && isListenMode() && !isSequencePlaying && startSequenceLoop(true));
+    return;
+  }
   const visible = sequencePlaybackRows();
   if (visible.length === 0) {
     showToast(isCardMode() ? "No YouTube sentences due right now" : "No cards to play");
@@ -13762,6 +13781,10 @@ function startPendingVocabVideo() {
 function playVocabSound(item) {
   stopVocabSound();
   if (!item) return;
+  if (navigator.userActivation && !navigator.userActivation.hasBeenActive) {
+    afterFirstTouch(() => currentView === "vocab" && vocabShownRowId === item.card.id && playVocabSound(item));
+    return;
+  }
   const row = item.card;
   const videoId = vocabVideoIdFor(row);
   if (videoId) {
