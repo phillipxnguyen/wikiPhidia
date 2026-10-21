@@ -2390,14 +2390,24 @@ function joinTimeLines(text) {
   const lines = (text || "").split(/\r?\n/);
   const out = [];
   for (let i = 0; i < lines.length; i++) {
-    const next = lines.slice(i + 1).findIndex(l => l.trim());
-    const j = next < 0 ? -1 : i + 1 + next;
-    if (TS_LINE_RE.test(lines[i]) && j > 0 && !TS_LINE_RE.test(lines[j])) {
+    let j = -1;
+    if (TS_LINE_RE.test(lines[i])) {
+      j = i + 1;
+      while (j < lines.length && !lines[j].trim()) j++;
+      if (j >= lines.length) j = -1;
+    }
+    if (j > 0 && !TS_LINE_RE.test(lines[j])) {
       out.push(lines[i].trim().replace(/^[\[(]|[\])]$/g, "") + " " + lines[j].trim());
       i = j;
     } else out.push(lines[i]);
   }
   return out.join("\n");
+}
+
+function dropLeadingText(html, text) {
+  const at = (html || "").indexOf(text);
+  if (at < 0 || plainTextOf(html.slice(0, at), "\n").trim()) return "";
+  return (html.slice(0, at) + html.slice(at + text.length)).replace(/^((?:\s*<[^>]+>)*)\s+/, "$1");
 }
 
 function liftTimestamps(cards) {
@@ -2407,11 +2417,12 @@ function liftTimestamps(cards) {
     const m = c.q.match(TS_LEAD_RE);
     c.time = parseTimeToSeconds(m[1]);
     c.q = c.q.slice(m[0].length);
-    c.qHtml = textHtml(c.q);
+    c.qHtml = dropLeadingText(c.qHtml, m[0].trim()) || textHtml(c.q);
+    c.merged = true;
     const am = (c.a || "").match(TS_LEAD_RE);
     if (am && am[1] === m[1]) {
       c.a = c.a.slice(am[0].length);
-      c.aHtml = textHtml(c.a);
+      c.aHtml = dropLeadingText(c.aHtml, am[0].trim()) || textHtml(c.a);
     }
   });
   return cards.slice();
@@ -6754,7 +6765,7 @@ function saveQuickAdd() {
   if (!q.value.trim() || !currentLessonId || isVirtualLesson()) return q.focus();
   if (appMode === "vocab") {
     if (!saveVocabEditor(null, q.value, a.value, notes.innerHTML, true)) return q.focus();
-    showToast("Added 1 card");
+    recordImport(1, "word");
     renderVocab();
   } else {
     if (findDuplicateCard(q.value, a.value, null, null)) {
@@ -6767,6 +6778,7 @@ function saveQuickAdd() {
       row.notesHtml = html;
       row.notes = plainTextOf(html, "\n");
     }
+    if (groupState) goToReviewMode("full");
     pushUndo("Added — " + cardSummary(row));
     stampNewVocab(row, new Set);
     rows.unshift(row);
@@ -6791,7 +6803,7 @@ document.getElementById("qaSave").onclick = saveQuickAdd;
 document.addEventListener("pointerdown", e => {
   const box = document.getElementById("quickAdd");
   if (box.hidden || box.contains(e.target) || e.target.closest("#btnSingleCard")) return;
-  closeQuickAdd(!document.getElementById("addPopup").hidden);
+  closeQuickAdd(!document.getElementById("addPopup").hidden || !!e.target.closest("#addForm"));
 }, true);
 
 document.getElementById("quickAdd").addEventListener("keydown", e => {
@@ -8940,7 +8952,7 @@ function detectDelim(text) {
 
 function prepareImportText() {
   const ta = document.getElementById("importText");
-  ta.value = takeMediaUrl(ta.value);
+  ta.value = joinTimeLines(takeMediaUrl(ta.value));
   const head = takeHeaderLines(ta.value);
   if (head.title) {
     setLessonTitle(head.title);
@@ -9836,6 +9848,9 @@ function resetStudyState() {
 
 function openLesson(lesson) {
   stopAllSound();
+  [ "qaQ", "qaA" ].forEach(id => document.getElementById(id).value = "");
+  document.getElementById("qaNotes").innerHTML = "";
+  closeQuickAdd(true);
   resetStudyState();
   vocabView = "list";
   currentLessonId = lesson.id;
@@ -13585,7 +13600,7 @@ function wireVocabEditor(items) {
       if (input.isConnected) save();
     }, input === notes);
   });
-  followInView(() => vocabEditingKey ? document.querySelector(".vocab-editor") : null);
+  followInView(() => vocabEditingKey ? document.querySelector(".vocab-editor:not(.quick-add)") : null);
 }
 
 function ensureVocabExtras() {
@@ -13700,7 +13715,7 @@ function saveVocabEditor(item, termRaw, meaningRaw, notesHtml, explicit) {
 
 document.addEventListener("click", e => {
   if (!vocabEditingKey) return;
-  const editor = document.querySelector(".vocab-editor");
+  const editor = document.querySelector(".vocab-editor:not(.quick-add)");
   if (editor && editor.contains(e.target)) return;
   if (commitVocabEdit()) renderVocab();
 }, true);
@@ -17764,6 +17779,7 @@ document.addEventListener("keydown", e => {
     if (e.key === "Escape") chooseYouTubeImport(null);
     return;
   }
+  if (!document.getElementById("addPopup").hidden) return;
   if (currentView === "vocab" && !tabPaused) {
     handleVocabKey(e);
     return;
