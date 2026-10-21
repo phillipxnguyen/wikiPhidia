@@ -2652,13 +2652,20 @@ function onPlayerStateChange(event) {
   }
 }
 
-function onPlayerError() {
+const unplayableVideos = new Set;
+
+function onPlayerError(e) {
   ytHasError = true;
+  const code = e && e.data;
+  const id = extractYouTubeId(document.getElementById("mediaUrl").value.trim());
+  if (id && [ 2, 100, 101, 150 ].includes(code)) unplayableVideos.add(id);
   stopSequenceLoop();
   vocabPendingKey = null;
   vocabAwaitCue = false;
   syncVocabSound();
-  showToast("YouTube can't play this video");
+  showToast(code === 101 || code === 150 ? "The owner of this video only lets it play on YouTube" : code === 100 ? "This video was removed or made private" : code === 2 ? "This video link isn't valid" : "YouTube can't play this video");
+  const row = isAllLessons() && mixStyle === "listen" ? rows.find(r => r.id === mixFocusId) : null;
+  if (row) setTimeout(() => hasAnswer(row) ? mixShow(row, "table") : mixNext(), 0);
 }
 
 function clearMedia() {
@@ -2900,23 +2907,7 @@ function fitBadges() {
   badgeFrame = 0;
   const els = [ ...document.querySelectorAll(".loop-time") ].filter(el => el.offsetParent);
   els.forEach(el => el.style.width = "");
-  const longest = rows.reduce((t, r) => r.time != null && formatTime(r.time).length > t.length ? formatTime(r.time) : t, "");
-  const widest = new Map;
-  const sized = els.map(el => {
-    const key = getComputedStyle(el).fontSize;
-    if (!widest.has(key)) {
-      const probe = el.cloneNode(false);
-      probe.dataset.probe = "";
-      probe.textContent = longest;
-      probe.style.cssText = "position:absolute;visibility:hidden;";
-      el.parentElement.appendChild(probe);
-      widest.set(key, probe.getBoundingClientRect().width);
-      probe.remove();
-    }
-    widest.set(key, Math.max(widest.get(key), el.getBoundingClientRect().width));
-    return [ el, key ];
-  });
-  sized.forEach(([ el, key ]) => el.style.width = Math.ceil(widest.get(key) / 2) * 2 + "px");
+  els.map(el => [ el, el.getBoundingClientRect().width ]).forEach(([ el, w ]) => el.style.width = Math.ceil(w / 2) * 2 + "px");
 }
 
 function queueFitBadges() {
@@ -2924,7 +2915,7 @@ function queueFitBadges() {
 }
 
 new MutationObserver(records => {
-  if (records.some(r => [ ...r.addedNodes ].some(n => n.nodeType === 1 && !("probe" in n.dataset) && (n.matches(".loop-time") || n.querySelector(".loop-time"))))) queueFitBadges();
+  if (records.some(r => [ ...r.addedNodes ].some(n => n.nodeType === 1 && (n.matches(".loop-time") || n.querySelector(".loop-time"))))) queueFitBadges();
 }).observe(document.body, {
   childList: true,
   subtree: true
@@ -7206,7 +7197,8 @@ function mixCandidates() {
     }
     return video.get(r.srcLessonId);
   };
-  return limitRows(rows.filter(r => srsOf(r).due <= now && (hasAnswer(r) || isVideo(r) && vocabVideoIdFor(r)))).map(r => [ r, !isVideo(r) ? "ielts" : vocabVideoIdFor(r) && (!hasAnswer(r) || Math.random() < .5) ? "listen" : "table" ]);
+  const playable = r => !!vocabVideoIdFor(r) && !unplayableVideos.has(vocabVideoIdFor(r));
+  return limitRows(rows.filter(r => srsOf(r).due <= now && (hasAnswer(r) || isVideo(r) && playable(r)))).map(r => [ r, !isVideo(r) ? "ielts" : playable(r) && (!hasAnswer(r) || Math.random() < .5) ? "listen" : "table" ]);
 }
 
 function mixShow(row, style) {
