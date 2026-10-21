@@ -14769,6 +14769,33 @@ document.addEventListener("keydown", e => {
   if (existingVocab(hit.text)) warnVocabExists(hit.text); else showVocabAddPopup(hit.row, hit.text, hit.rect);
 });
 
+document.addEventListener("keydown", e => {
+  if (e.key !== "Shift" || e.repeat || e.metaKey || e.ctrlKey || isVirtualLesson()) return;
+  const field = e.target.closest && e.target.closest("#vocabEditTerm, #vocabEditMeaning, #qaQ, #qaA");
+  if (!field) return;
+  const text = field.value.slice(field.selectionStart, field.selectionEnd).replace(/\s+/g, " ").trim();
+  if (!text || text === field.value.trim()) return;
+  e.preventDefault();
+  if (existingVocab(text)) return warnVocabExists(text);
+  const rect = field.getBoundingClientRect();
+  if (field.id === "vocabEditTerm" || field.id === "vocabEditMeaning") {
+    const item = lessonVocabItems(vocabSource()).find(i => i.key === vocabEditingKey);
+    return showVocabAddPopup(item ? item.card : ensureVocabExtras(), text, rect);
+  }
+  if (appMode === "vocab") return showVocabAddPopup(ensureVocabExtras(), text, rect);
+  showVocabAddPopup(null, text, rect, null, (term, meaning) => {
+    const notes = document.getElementById("qaNotes");
+    let list = notes.querySelector("ul");
+    if (!list) {
+      list = document.createElement("ul");
+      notes.appendChild(list);
+    }
+    const li = document.createElement("li");
+    li.innerHTML = "<b>" + escapeHtml(term) + "</b>: " + escapeHtml(meaning);
+    list.appendChild(li);
+  });
+}, true);
+
 const hoverQuery = window.matchMedia("(hover: hover)");
 
 document.addEventListener("mouseover", e => {
