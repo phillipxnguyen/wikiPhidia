@@ -869,7 +869,7 @@ window.onYouTubeIframeAPIReady = function(){
     .media-video iframe{transform:scale(.3371);}
   }
   .loop-time{
-    display:inline-block;margin-right:8px;
+    display:inline-block;margin-right:8px;text-align:center;
     font-size:12px;font-variant-numeric:tabular-nums;
     padding:2px 8px;border-radius:6px;
     background:var(--accent-soft);color:var(--accent);
@@ -2894,6 +2894,44 @@ function markPlayingRow() {
   syncVocabSound();
 }
 
+let badgeFrame = 0;
+
+function fitBadges() {
+  badgeFrame = 0;
+  const els = [ ...document.querySelectorAll(".loop-time") ].filter(el => el.offsetParent);
+  els.forEach(el => el.style.width = "");
+  const longest = rows.reduce((t, r) => r.time != null && formatTime(r.time).length > t.length ? formatTime(r.time) : t, "");
+  const widest = new Map;
+  const sized = els.map(el => {
+    const key = getComputedStyle(el).fontSize;
+    if (!widest.has(key)) {
+      const probe = el.cloneNode(false);
+      probe.dataset.probe = "";
+      probe.textContent = longest;
+      probe.style.cssText = "position:absolute;visibility:hidden;";
+      el.parentElement.appendChild(probe);
+      widest.set(key, probe.getBoundingClientRect().width);
+      probe.remove();
+    }
+    widest.set(key, Math.max(widest.get(key), el.getBoundingClientRect().width));
+    return [ el, key ];
+  });
+  sized.forEach(([ el, key ]) => el.style.width = Math.ceil(widest.get(key) / 2) * 2 + "px");
+}
+
+function queueFitBadges() {
+  if (!badgeFrame) badgeFrame = requestAnimationFrame(fitBadges);
+}
+
+new MutationObserver(records => {
+  if (records.some(r => [ ...r.addedNodes ].some(n => n.nodeType === 1 && !("probe" in n.dataset) && (n.matches(".loop-time") || n.querySelector(".loop-time"))))) queueFitBadges();
+}).observe(document.body, {
+  childList: true,
+  subtree: true
+});
+
+addEventListener("resize", queueFitBadges);
+
 function syncRowBadges() {
   document.querySelectorAll(".loop-time[data-id]").forEach(el => {
     const id = Number(el.dataset.id);
@@ -3871,6 +3909,7 @@ function addConfetti(panel) {
 }
 
 function render() {
+  queueFitBadges();
   renderStudy();
   syncDeck();
   syncMediaLayout();
