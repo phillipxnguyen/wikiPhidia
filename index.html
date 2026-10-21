@@ -8894,6 +8894,11 @@ function detectDelim(text) {
 function prepareImportText() {
   const ta = document.getElementById("importText");
   ta.value = takeMediaUrl(ta.value);
+  const head = takeHeaderLines(ta.value);
+  if (head.title) {
+    setLessonTitle(head.title);
+    ta.value = head.text;
+  }
   return {
     text: ta.value,
     delim: detectDelim(ta.value)
@@ -14326,7 +14331,7 @@ function afterCurtain(fn, wait) {
 function warmFirstClip(done) {
   const item = appMode === "vocab" && vocabPendingKey !== null ? lessonVocabItems(vocabSource()).find(i => i.key === vocabPendingKey) : null;
   const row = appMode === "vocab" ? item && item.card : isAllLessons() && isListenMode() ? listenBatch()[0] : null;
-  if (isTouch() || !row || row.time == null || ytHasError || !ytPlayer || !ytReady || !ytHasVideo) return done();
+  if (!row || row.time == null || ytHasError || !ytPlayer || !ytReady || !ytHasVideo) return done();
   let over = false, poll = 0, guard = 0;
   const finish = () => {
     if (over) return;
