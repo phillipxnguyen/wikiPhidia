@@ -708,7 +708,8 @@ window.onYouTubeIframeAPIReady = function(){
   #cardTable.chat tbody td{display:block;min-width:0;border:0;padding:25px 30px;overflow:visible;}
   #cardTable.chat tbody td.tl-head{grid-column:1 / -1;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:15px;padding:10px 30px;border-bottom:1px solid var(--border);}
   #cardTable.chat .tl-lang{justify-self:center;font-size:15px;font-weight:600;color:var(--accent);}
-  #cardTable.chat .tl-swap{display:flex;align-items:center;justify-content:center;width:40px;height:40px;min-height:0;padding:0;border:0;border-radius:20px;background:var(--accent-soft);color:var(--accent);font-size:20px;line-height:20px;}
+  #cardTable.chat .tl-swap{display:flex;align-items:center;justify-content:center;width:40px;height:40px;min-height:0;padding:0;border:0;border-radius:20px;background:transparent;color:var(--text-2);font-size:20px;line-height:20px;}
+  #cardTable.chat .tl-swap.on{background:var(--accent-soft);color:var(--accent);}
   #cardTable.chat tbody td.q-col{grid-row:2;grid-column:1;}
   #cardTable.chat tbody td.a-col{grid-row:2;grid-column:2;border-left:1px solid var(--border);background:var(--a-bg);}
   #cardTable.chat.front-a tbody td.a-col{grid-column:1;border-left:0;background:none;}
@@ -3998,7 +3999,7 @@ function tlLangHtml(text) {
 function translateHeadHtml(r) {
   const q = tlLangHtml(r.q);
   const a = tlLangHtml(r.a);
-  return `<td class="tl-head">${groupFront === "a" ? a : q}<button class="tl-swap" aria-label="Switch which side shows first">⇄</button>${groupFront === "a" ? q : a}</td>`;
+  return `<td class="tl-head">${groupFront === "a" ? a : q}<button class="tl-swap${groupFront === "a" ? " on" : ""}" aria-label="Switch which side shows first">⇄</button>${groupFront === "a" ? q : a}</td>`;
 }
 
 function buildRowTr(r) {
@@ -9194,8 +9195,8 @@ function commitImport(plan, label, keepText) {
 
 function importResultMessage(plan) {
   const parts = [];
-  if (plan.newRows.length) parts.push(`Imported ${plan.newRows.length} new card(s).`);
-  if (plan.updated) parts.push(`Updated ${plan.updated} existing card(s).`);
+  if (plan.newRows.length) parts.push(`Imported ${countOf(plan.newRows.length, "new card")}.`);
+  if (plan.updated) parts.push(`Updated ${countOf(plan.updated, "existing card")}.`);
   if (plan.skipped) parts.push(`Skipped ${countOf(plan.skipped, "duplicate")}.`);
   return parts.join(" ");
 }
@@ -9256,7 +9257,7 @@ document.querySelectorAll(".lang-btn").forEach(btn => {
         renderImportPreview();
       }
       if (plan.newRows.length || plan.updated || words.length) render();
-      let msg = [ importResultMessage(plan), words.length ? `Added ${countOf(words.length, "word")} to Vocabulary.` : "" ].filter(Boolean).join(" ") || "No cards imported.";
+      let msg = [ importResultMessage(plan), words.length ? `Added ${countOf(words.length, "word")} to Vocabulary.` : "" ].filter(Boolean).join(" ") || (appMode === "vocab" ? "No words imported." : "No cards imported.");
       if (failed > 0) msg += ` ${failed} failed to translate.`;
       setImportStatus(msg);
       if (words.length || plan.newRows.length || plan.updated) closeAddPopup();
@@ -9277,7 +9278,7 @@ document.getElementById("importBtn").onclick = () => {
   if (analysis.title) setLessonTitle(analysis.title);
   const plan = planImport(analysis.entries);
   const words = analysis.words;
-  let msg = [ importResultMessage(plan), words.length ? `Added ${countOf(words.length, "word")} to Vocabulary.` : "" ].filter(Boolean).join(" ") || "No new cards found — check the delimiter matches your text.";
+  let msg = [ importResultMessage(plan), words.length ? `Added ${countOf(words.length, "word")} to Vocabulary.` : "" ].filter(Boolean).join(" ") || (appMode === "vocab" ? "No new words found" : "No new cards found") + " — check the delimiter matches your text.";
   if (analysis.title) msg += ` Title set to "${analysis.title}".`;
   setImportStatus(msg);
   if (words.length && !plan.newRows.length && !plan.fills.size) pushUndo("Added " + words.length + " word" + (words.length === 1 ? "" : "s"));
@@ -9384,7 +9385,7 @@ function renderImportPreview() {
     const rowCls = o.kind === "duplicate" || o.kind === "empty" ? ' class="ip-dim"' : "";
     return `<tr${rowCls}>${num}${status}${previewCell(e.time != null ? formatTime(e.time) : "", "ip-time")}${previewCell(e.q)}${previewCell(e.a, aCls)}${previewCell(e.notes, nCls)}</tr>`;
   }).join("");
-  const more = analysis.lines.length > IMPORT_PREVIEW_MAX_ROWS ? `<div class="ip-more">…and ${analysis.lines.length - IMPORT_PREVIEW_MAX_ROWS} more line(s)</div>` : "";
+  const more = analysis.lines.length > IMPORT_PREVIEW_MAX_ROWS ? `<div class="ip-more">…and ${countOf(analysis.lines.length - IMPORT_PREVIEW_MAX_ROWS, "more line")}</div>` : "";
   box.innerHTML = `<div class="ip-summary">${summary.join("")}</div>` + '<div class="ip-scroll"><table class="ip-table"><colgroup><col style="width:44px"><col style="width:52px"><col style="width:62px"><col><col><col></colgroup>' + "<thead><tr><th>#</th><th aria-label='Result'></th><th>Time</th><th></th><th></th><th>Notes</th></tr></thead>" + `<tbody>${body}</tbody></table>${more}</div>`;
   box.hidden = false;
 }
@@ -14848,7 +14849,7 @@ function openAddPopup() {
   commitActiveEdit();
   const vocab = currentView === "vocab";
   const name = (document.getElementById("lessonName").value || "").trim() || "Untitled lesson";
-  document.getElementById("addPopTitle").textContent = (vocab ? "Add words to " : "Add cards to ") + name;
+  document.getElementById("addPopTitle").textContent = "Add to " + name;
   document.getElementById("btnSingleCard").setAttribute("aria-label", vocab ? "Add a single word" : "Add a single card");
   placeAddForm("popup");
   document.getElementById("addPopup").hidden = false;
