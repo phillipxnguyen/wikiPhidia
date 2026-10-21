@@ -1482,7 +1482,10 @@ window.onYouTubeIframeAPIReady = function(){
   .cloud-or{font-size:12px;color:var(--text-2);}
   .cloud-row{display:flex;gap:8px;}
   .cloud-row button{flex:1;}
-  .all-curtain{position:fixed;inset:0;z-index:30000;pointer-events:none;background-repeat:no-repeat;background-size:100% 100%;}
+  .all-curtain{position:fixed;inset:0;z-index:30000;pointer-events:none;overflow:hidden;}
+  .all-curtain i{position:absolute;top:0;bottom:0;width:50%;background-image:repeating-linear-gradient(90deg, rgba(255,255,255,.1) 0, rgba(0,0,0,.12) 24px, rgba(255,255,255,.1) 48px), var(--bar);background-size:auto, 200% 100%;background-repeat:repeat, no-repeat;}
+  .all-curtain .curtain-l{left:0;background-position:0 0, 0 0;box-shadow:inset -12px 0 24px rgba(0,0,0,.25);}
+  .all-curtain .curtain-r{right:0;background-position:0 0, 100% 0;box-shadow:inset 12px 0 24px rgba(0,0,0,.25);}
   .move-mark{font-weight:700;color:#1e9466;}
   .cloud-error{min-height:18px;font-size:14px;color:var(--danger);}
 
@@ -14195,37 +14198,29 @@ function afterCurtain(fn, wait) {
 
 function allCurtain(item) {
   if (reducedMotion() || document.querySelector(".all-curtain")) return;
-  const box = item.getBoundingClientRect();
   const cs = getComputedStyle(item);
   const curtain = document.createElement("div");
   curtain.className = "all-curtain";
-  curtain.style.backgroundColor = cs.backgroundColor;
-  curtain.style.backgroundImage = cs.backgroundImage;
-  document.body.appendChild(curtain);
-  const x = Math.round(box.left + box.width / 2), y = Math.round(box.top + box.height / 2);
-  const r = Math.ceil(Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y)));
-  curtain.animate({
-    clipPath: [ `inset(${Math.round(box.top)}px ${Math.round(innerWidth - box.right)}px ${Math.round(innerHeight - box.bottom)}px ${Math.round(box.left)}px round 12px)`, `circle(${r}px at ${x}px ${y}px)` ]
-  }, {
-    duration: 500,
-    easing: "cubic-bezier(.3,.7,.3,1)",
-    fill: "forwards"
+  curtain.innerHTML = '<i class="curtain-l"></i><i class="curtain-r"></i>';
+  const halves = [ ...curtain.children ];
+  halves.forEach(h => {
+    h.style.backgroundColor = cs.backgroundColor;
+    h.style.setProperty("--bar", cs.backgroundImage);
   });
+  document.body.appendChild(curtain);
+  const slide = (from, to, duration, easing) => Promise.all(halves.map((h, i) => h.animate({
+    transform: [ `translateX(${(i ? 1 : -1) * from}%)`, `translateX(${(i ? 1 : -1) * to}%)` ]
+  }, {
+    duration: duration,
+    easing: easing,
+    fill: "forwards"
+  }).finished));
   const start = Date.now();
   const ready = () => appMode === "vocab" ? !vocabAwaitCue && !pendingVideoId : !mixAwaitCue && !pendingVideoId && (!ytHasVideo || ytReady);
-  const fade = () => {
-    if (Date.now() - start < 1100 || !ready() && Date.now() - start < 3e3) return setTimeout(fade, 100);
-    curtain.animate({
-      opacity: [ 1, 0 ],
-      filter: [ "blur(0px)", "blur(16px)" ],
-      transform: [ "scale(1)", "scale(1.06)" ]
-    }, {
-      duration: 800,
-      easing: "ease-in",
-      fill: "forwards"
-    }).finished.then(() => curtain.remove());
-  };
-  setTimeout(fade, 100);
+  slide(100, 0, 450, "cubic-bezier(.3,.7,.3,1)").then(function wait() {
+    if (Date.now() - start < 1100 || !ready() && Date.now() - start < 3e3) return setTimeout(wait, 100);
+    slide(0, 100, 900, "cubic-bezier(.6,0,.2,1)").then(() => curtain.remove());
+  });
 }
 
 document.getElementById("lessonList").addEventListener("click", e => {
