@@ -601,7 +601,7 @@ window.onYouTubeIframeAPIReady = function(){
   .segmented button{border:none;background:transparent;min-width:38px;padding:5px 10px;border-radius:8px;color:var(--text-2);font-weight:600;font-size:16px;line-height:1.2;}
   @media (hover:hover){.segmented button:hover{background:color-mix(in srgb, var(--accent) 10%, var(--surface));color:var(--text);}.segmented button.sp-vocab:hover{background:transparent;color:#1e9466;}}
   .segmented button.active{background:var(--surface);color:var(--text);box-shadow:var(--shadow-sm);}
-  #btnPlaySequence{display:none;width:48px;}
+  #btnPlaySequence{visibility:hidden;width:48px;}
   #btnPlaySequence, #vocabSpeak{position:relative;}
   #btnPlaySequence:focus:not(:focus-visible), #vocabSpeak:focus:not(:focus-visible), .loop-time:focus:not(:focus-visible), .exam-play:focus:not(:focus-visible){outline:none;}
   #btnPlaySequence:focus-visible, #vocabSpeak:focus-visible, .exam-play:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
@@ -1779,7 +1779,7 @@ window.onYouTubeIframeAPIReady = function(){
     </div>
     <div class="toolbar-right">
       <button id="btnPlaySequence" aria-label="Play"></button>
-      <select id="playbackSpeed" style="display:none;">
+      <select id="playbackSpeed" style="visibility:hidden;">
         <option value="1">1x</option>
         <option value="1.25" selected>1.25x</option>
         <option value="1.5">1.5x</option>
@@ -3669,30 +3669,26 @@ function soundIsTts() {
 function updateSequenceBtnUI() {
   const btn = document.getElementById("btnPlaySequence");
   const speedSel = document.getElementById("playbackSpeed");
+  const show = on => [ btn, speedSel ].forEach(el => el.style.visibility = on ? "" : "hidden");
   if (groupState && groupViewStyle === "ielts") {
-    btn.style.display = "none";
-    speedSel.style.display = "none";
+    show(false);
     setSequenceBtnState(btn, false, false);
     return;
   }
   if (sequenceReadsAloud()) {
     const on = ttsPlaying;
-    btn.style.display = "inline-block";
-    speedSel.style.display = "none";
-    speedSel.style.display = "inline-block";
+    show(true);
     speedSel.value = String(ttsSpeed);
     btn.innerHTML = playFace(on ? "⏸" : "🔊");
     setSequenceBtnState(btn, on, true);
     return;
   }
   if (!ytPlayer || !ytReady || !ytHasVideo || ytHasError) {
-    btn.style.display = "none";
-    speedSel.style.display = "none";
+    show(false);
     setSequenceBtnState(btn, false, false);
     return;
   }
-  btn.style.display = "inline-block";
-  speedSel.style.display = "inline-block";
+  show(true);
   speedSel.value = String(sequenceSpeed);
   btn.innerHTML = playFace(lessonSoundOn() ? YT_PAUSE_ICON : YT_ICON);
   setSequenceBtnState(btn, lessonSoundOn(), true);
