@@ -4313,7 +4313,7 @@ function syncMediaLayout() {
   const wasFull = c.classList.contains("fixed-big");
   c.classList.toggle("fixed-big", full);
   c.classList.toggle("listen-slot", slot);
-  c.classList.toggle("listen-off", listen && !slot || translate);
+  c.classList.toggle("listen-off", listen && !slot || translate || !!groupState && groupViewStyle === "ielts");
   syncListenCover();
   if (slot && !listenSlotRaf) placeListenVideo();
   if (full || wasFull || listen || translate) {
@@ -7254,9 +7254,9 @@ function mixCandidates() {
 function mixShow(row, style) {
   mixFocusId = row.id;
   mixStyle = style;
-  const url = style === "ielts" ? "" : vocabVideoUrlFor(row);
+  const url = vocabVideoUrlFor(row);
   const input = document.getElementById("mediaUrl");
-  if (input.value.trim() !== url) {
+  if (style !== "ielts" && input.value.trim() !== url) {
     mixAwaitCue = false;
     clearTimeout(mixCueTimer);
     input.value = url;
@@ -7293,7 +7293,10 @@ function mixNext() {
     setReviewMode("ielts");
     return;
   }
-  const [ row, style ] = pool[Math.floor(Math.random() * pool.length)];
+  const loaded = extractYouTubeId(document.getElementById("mediaUrl").value.trim());
+  const near = loaded ? pool.filter(([ r, style ]) => style === "ielts" || extractYouTubeId(vocabVideoUrlFor(r)) === loaded) : [];
+  const from = near.length ? near : pool;
+  const [ row, style ] = from[Math.floor(Math.random() * from.length)];
   mixShow(row, style);
 }
 
