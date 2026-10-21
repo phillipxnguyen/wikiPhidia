@@ -1310,6 +1310,7 @@ window.onYouTubeIframeAPIReady = function(){
   .le-box{position:fixed;display:flex;flex-direction:column;box-sizing:border-box;width:min(440px, calc(100vw - 32px));max-height:min(760px, 80dvh);overflow-y:auto;overscroll-behavior:contain;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);}
   .le-box > *{flex-shrink:0;}
   .le-box .edit-stroke{margin-top:10px;}
+  #editPopup .vocab-editor{margin:0;padding:0;border:0;box-shadow:none;background:none;}
   .le-box #editDict{display:none;}
   .le-dict{position:relative;height:0;overflow:hidden;}
   .le-dict.on{margin-top:10px;height:var(--dict-h, 360px);}
@@ -6669,12 +6670,22 @@ function closeEditPopup() {
   if (pop.hidden) return;
   editPopupAnchor = null;
   pop.hidden = true;
+  delete pop.dataset.vocab;
+  hideDictOverlay();
   pop.querySelector(".le-content").innerHTML = "";
 }
 
 window.addEventListener("keydown", e => {
   const pop = document.getElementById("editPopup");
   if (pop.hidden) return;
+  if (e.key === "Escape" && pop.dataset.vocab) {
+    if (vocabAddPopup) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    vocabEditingKey = null;
+    renderVocab();
+    return;
+  }
   if (e.key === "Escape") {
     e.preventDefault();
     e.stopImmediatePropagation();
@@ -13514,7 +13525,7 @@ function renderVocab() {
   })}</div>` : "";
   const open = !studyOnly && (vocabView === "list" || caughtUp) || !!vocabEditingKey && (vocabEditingInList || vocabEditingKey === NEW_WORD_KEY);
   list.hidden = items.length ? !open : vocabEditingKey !== NEW_WORD_KEY;
-  list.innerHTML = adder + (list.hidden ? "" : shown.map(item => item.key === vocabEditingKey && vocabEditingInList ? `<div class="vocab-list-row editing">${vocabEditorHtml(item)}</div>` : `<div class="vocab-list-row" data-key="${escapeAttr(item.key)}"><span class="vocab-list-term">${escapeHtml(item.term)}</span><span class="vocab-list-meaning">${wordNotesOf(item) ? `<span>${escapeHtml(item.meaning)}</span><div class="card-notes">${wordNotesOf(item)}</div>` : escapeHtml(item.meaning)}</span><span class="vocab-list-status">${vocabStatusIcon(vocabStateOf(item))}</span></div>`).join("") + (more ? `<button id="vocabMore" class="vocab-more ghost">Show ${more} more</button>` : ""));
+  list.innerHTML = adder + (list.hidden ? "" : shown.map(item => `<div class="vocab-list-row" data-key="${escapeAttr(item.key)}"><span class="vocab-list-term">${escapeHtml(item.term)}</span><span class="vocab-list-meaning">${wordNotesOf(item) ? `<span>${escapeHtml(item.meaning)}</span><div class="card-notes">${wordNotesOf(item)}</div>` : escapeHtml(item.meaning)}</span><span class="vocab-list-status">${vocabStatusIcon(vocabStateOf(item))}</span></div>`).join("") + (more ? `<button id="vocabMore" class="vocab-more ghost">Show ${more} more</button>` : ""));
   watchVocabMore();
   if (emptyLesson) {
     vocabSession = null;
@@ -13573,18 +13584,42 @@ function renderVocab() {
     blinkOut(doneScreen);
     stage.innerHTML = "";
   }
-  if (vocabEditingKey === item.key && !vocabEditingInList) {
-    stage.innerHTML = vocabEditorHtml(item);
-  } else {
-    showVocabDeck(stage, item);
-  }
+  showVocabDeck(stage, item);
   wireVocabEditor(items);
   syncVocabSound();
 }
 
+function syncVocabEditPopup(items) {
+  const pop = document.getElementById("editPopup");
+  const item = vocabEditingKey && vocabEditingKey !== NEW_WORD_KEY ? items.find(i => i.key === vocabEditingKey) : null;
+  if (!item) {
+    if (pop.dataset.vocab) closeEditPopup();
+    return false;
+  }
+  if (pop.dataset.vocab === item.key && !pop.hidden) return false;
+  const {card: card, sentence: sentence} = vocabContext(item);
+  const text = sentence && findTermIn(sentence.normalize("NFC"), item.term) ? sentence : item.term;
+  pop.querySelector(".le-box").classList.remove("edit-row");
+  pop.querySelector(".le-content").innerHTML = vocabEditorHtml(item) + '<div id="vocabEditDict"></div>';
+  pop.dataset.vocab = item.key;
+  pop.hidden = false;
+  const dict = document.getElementById("vocabEditDict");
+  if (/[\p{Script=Han}]/u.test(text)) {
+    const stroke = document.createElement("div");
+    stroke.className = "edit-stroke";
+    dict.before(stroke);
+    drawStrokeOrder(stroke, text, cjkScriptFor(text, card) === "ja");
+  }
+  const url = dictUrlFor(text, card);
+  if (url) showDictOverlay(dict, url);
+  placeEditPopup();
+  return true;
+}
+
 function wireVocabEditor(items) {
+  const fresh = syncVocabEditPopup(items);
   const term = document.getElementById("vocabEditTerm");
-  if (!term) return;
+  if (!term || term.closest("#editPopup") && !fresh) return;
   const meaning = document.getElementById("vocabEditMeaning");
   fitTextarea(term);
   fitTextarea(meaning);
@@ -13617,7 +13652,7 @@ function wireVocabEditor(items) {
       if (input.isConnected) save();
     }, input === notes);
   });
-  followInView(() => vocabEditingKey ? document.querySelector(".vocab-editor:not(.quick-add)") : null);
+  if (!term.closest("#editPopup")) followInView(() => vocabEditingKey ? document.querySelector(".vocab-editor:not(.quick-add)") : null);
 }
 
 function ensureVocabExtras() {
@@ -13733,7 +13768,7 @@ function saveVocabEditor(item, termRaw, meaningRaw, notesHtml, explicit) {
 document.addEventListener("click", e => {
   if (!vocabEditingKey) return;
   const editor = document.querySelector(".vocab-editor:not(.quick-add)");
-  if (editor && editor.contains(e.target)) return;
+  if (editor && editor.contains(e.target) || e.target.closest("#editPopup[data-vocab] .le-box") || vocabAddPopup && vocabAddPopup.contains(e.target)) return;
   if (commitVocabEdit()) renderVocab();
 }, true);
 
