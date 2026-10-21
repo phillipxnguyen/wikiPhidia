@@ -877,8 +877,12 @@ window.onYouTubeIframeAPIReady = function(){
   }
   @media (hover:hover){.loop-time:not(.looping):hover{filter:brightness(1.1);}}
   .loop-time.looping{background:var(--accent);color:var(--on-accent);}
-  ::highlight(sound-past){color:var(--text-2);}
-  ::highlight(sound-now){color:var(--accent);}
+  .loop-time, .exam-play{position:relative;}
+  .sound-ring{position:absolute;left:-3px;top:-3px;overflow:visible;pointer-events:none;--ring:var(--accent);}
+  .exam-sheet .sound-ring{--ring:var(--sheet-edge);}
+  .sound-ring path{fill:none;stroke-width:2;}
+  .sound-ring .ring-track{stroke:color-mix(in srgb, var(--ring) 30%, transparent);}
+  .sound-ring .ring-run{stroke:var(--ring);stroke-linecap:round;}
   .loop-time.disabled{opacity:.4;cursor:not-allowed;background:var(--surface-3);color:var(--text-2);}
 
   .single-card-progress{text-align:center;font-size:14px;color:var(--text);margin-bottom:16px;}
@@ -2792,8 +2796,7 @@ function trackSpeech(utter, text) {
     len: Math.max(1, text.length),
     est: Math.max(.8, text.length / (UNSPACED_RE.test(text) ? 4.5 : 14) / (utter.rate || 1)),
     boundary: false,
-    done: false,
-    text: text
+    done: false
   };
   utter.addEventListener("start", () => {
     track.start = performance.now();
@@ -2815,6 +2818,13 @@ function speechProgress() {
   return track.boundary ? Math.min(1, track.at / track.len) : Math.min(.97, (performance.now() - track.start) / 1e3 / track.est);
 }
 
+function testAudioProgress() {
+  if (testAudio.state !== "play") return null;
+  const q = openTestRecord() && openTestRecord().questions[testAudio.n - 1];
+  if (q && q.clip && testAudio.player && typeof testAudio.player.getCurrentTime === "function") return Math.max(0, Math.min(1, (testAudio.player.getCurrentTime() - q.clip.start) / Math.max(.1, q.clip.end - q.clip.start)));
+  return speechProgress();
+}
+
 let soundFrame = 0;
 
 let soundSegment = {
@@ -2823,69 +2833,24 @@ let soundSegment = {
   end: 0
 };
 
-const KARAOKE_OK = typeof Highlight === "function" && !!window.CSS && !!CSS.highlights;
-
-const karaokeCache = new WeakMap;
-
-function karaokeUnits(el) {
-  const text = el.textContent;
-  const cached = karaokeCache.get(el);
-  if (cached && cached.text === text) return cached;
-  const units = [];
-  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
-  let node;
-  while (node = walker.nextNode()) {
-    if (node.parentElement.closest(".loop-time, .dots, rt, rp, [aria-hidden]")) continue;
-    for (const m of node.data.matchAll(/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\u30fc][^\s\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{L}\p{N}]*|[^\s\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]+/gu)) {
-      const letters = m[0].normalize("NFC").toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
-      units.push({
-        node: node,
-        start: m.index,
-        end: m.index + m[0].length,
-        letters: letters
-      });
-    }
+function paintRing(el, p) {
+  const w = el.offsetWidth, h = el.offsetHeight;
+  let svg = el.querySelector(":scope > .sound-ring");
+  if (!svg || svg.dataset.size !== w + "x" + h) {
+    if (svg) svg.remove();
+    const x = 1, y = 1, rw = w + 4, rh = h + 4, mid = x + Math.round(rw / 2);
+    const r = Math.min(Math.round(rh / 2), Math.round(parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0) + 2);
+    const left = `M${mid} ${y}H${x + r}A${r} ${r} 0 0 0 ${x} ${y + r}V${y + rh - r}A${r} ${r} 0 0 0 ${x + r} ${y + rh}H${mid}`;
+    const right = `M${mid} ${y}H${x + rw - r}A${r} ${r} 0 0 1 ${x + rw} ${y + r}V${y + rh - r}A${r} ${r} 0 0 1 ${x + rw - r} ${y + rh}H${mid}`;
+    el.insertAdjacentHTML("beforeend", `<svg class="sound-ring" width="${w + 6}" height="${h + 6}" data-size="${w}x${h}" aria-hidden="true">` + [ left, right ].map(d => `<path class="ring-track" d="${d}"/>`).join("") + [ left, right ].map(d => `<path class="ring-run" d="${d}" pathLength="100" stroke-dasharray="0 100"/>`).join("") + "</svg>");
+    svg = el.lastElementChild;
   }
-  let at = 0;
-  units.forEach(u => {
-    u.from = at;
-    at += u.letters.length;
+  const done = Math.max(0, Math.min(1, p)) * 100;
+  svg.querySelectorAll(".ring-run").forEach(path => {
+    path.setAttribute("stroke-dasharray", `${(100 - done).toFixed(2)} 100`);
+    path.setAttribute("stroke-dashoffset", (-done).toFixed(2));
+    path.style.visibility = done >= 100 ? "hidden" : "";
   });
-  const entry = {
-    text: text,
-    units: units,
-    letters: units.map(u => u.letters).join("")
-  };
-  karaokeCache.set(el, entry);
-  return entry;
-}
-
-function paintKaraoke(els, text, p) {
-  if (!KARAOKE_OK) return;
-  const key = (text || "").normalize("NFC").toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
-  const past = [], now = [];
-  if (p != null && key) {
-    if (!els || !els.length) els = [ ...document.querySelectorAll(".cell[data-field], .vocab-face, .vocab-list-row") ];
-    els.forEach(el => {
-      const {units: units, letters: letters} = karaokeUnits(el);
-      const from = letters.indexOf(key);
-      if (from < 0) return;
-      const inside = units.filter(u => u.letters && u.from >= from && u.from < from + key.length);
-      if (!inside.length) return;
-      const pos = from + Math.min(key.length - 1, Math.floor(p * key.length));
-      const cur = p >= 1 ? inside.length : Math.max(0, inside.findIndex(u => u.from + u.letters.length > pos));
-      const range = (a, b) => {
-        const r = document.createRange();
-        r.setStart(a.node, a.start);
-        r.setEnd(b.node, b.end);
-        return r;
-      };
-      inside.slice(0, cur).forEach(u => past.push(range(u, u)));
-      if (cur < inside.length) now.push(range(inside[cur], inside[cur]));
-    });
-  }
-  if (past.length) CSS.highlights.set("sound-past", new Highlight(...past)); else CSS.highlights.delete("sound-past");
-  if (now.length) CSS.highlights.set("sound-now", new Highlight(...now)); else CSS.highlights.delete("sound-now");
 }
 
 function soundProgressLoop() {
@@ -2899,8 +2864,20 @@ function soundProgressLoop() {
       video = soundSegment.armed ? Math.max(0, Math.min(1, (now - soundSegment.start) / Math.max(.1, soundSegment.end - soundSegment.start))) : 0;
     }
     const speech = speechProgress();
-    if (video != null) paintKaraoke([ ...document.querySelectorAll(`[data-id="${row.id}"] .cell[data-field="q"]`) ], row.q, video); else if (speech != null) paintKaraoke(null, speechTrack.text, speech); else paintKaraoke(null, "", null);
-    soundFrame = video != null || speech != null ? requestAnimationFrame(tick) : 0;
+    const exam = testAudioProgress();
+    const all = [];
+    const add = (el, p) => el && all.push([ el, p ]);
+    document.querySelectorAll(".loop-time[data-id]").forEach(el => add(el, el.classList.contains("looping") && Number(el.dataset.id) === loopingRowId ? video : null));
+    [ "btnPlaySequence", "vocabSpeak" ].forEach(id => {
+      const el = document.getElementById(id);
+      add(el, el && el.classList.contains("active") ? video ?? speech : null);
+    });
+    document.querySelectorAll(".exam-play").forEach(el => add(el, el.classList.contains("on") && Number(el.dataset.listen) === testAudio.n ? exam : null));
+    const chosen = all.find(([ el, p ]) => p != null && el.offsetParent);
+    all.forEach(([ el, p ]) => {
+      if (chosen && chosen[0] === el) paintRing(el, p); else el.querySelector(":scope > .sound-ring")?.remove();
+    });
+    soundFrame = video != null || speech != null || exam != null ? requestAnimationFrame(tick) : 0;
   };
   tick();
 }
