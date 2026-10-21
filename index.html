@@ -7456,6 +7456,16 @@ let mixCueTimer = 0;
 
 let mixCueSince = 0;
 
+let mixUpcoming = null;
+
+function preloadVideo(url) {
+  const id = extractYouTubeId(url);
+  if (!id || unplayableVideos.has(id)) return false;
+  document.getElementById("mediaUrl").value = url;
+  createYtPlayer(id);
+  return true;
+}
+
 function mixCueDone() {
   if (!mixAwaitCue) return;
   clearTimeout(mixCueTimer);
@@ -7503,6 +7513,11 @@ function mixShow(row, style) {
       mixCueTimer = setTimeout(mixCueDone, 1500);
       applyMediaUrl(true);
     } else destroyYtPlayer();
+  } else if (style !== "ielts" && ytCueing) {
+    mixAwaitCue = true;
+    mixCueSince = Date.now();
+    clearTimeout(mixCueTimer);
+    mixCueTimer = setTimeout(mixCueDone, 300);
   }
   groupState = null;
   savedGroupState = null;
@@ -7512,14 +7527,25 @@ function mixShow(row, style) {
     ids: []
   };
   setReviewMode(style);
+  mixUpcoming = style === "ielts" ? mixPick(mixCandidates()) : null;
+  const ahead = mixUpcoming && mixUpcoming[1] !== "ielts" && vocabVideoUrlFor(mixUpcoming[0]);
+  if (ahead && input.value.trim() !== ahead) preloadVideo(ahead);
+}
+
+function mixPick(picks) {
+  const others = picks.filter(([ r ]) => r.id !== mixFocusId);
+  const pool = others.length ? others : picks;
+  return pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
 }
 
 function mixNext() {
   if (!isAllLessons()) return;
   const picks = mixCandidates();
-  const others = picks.filter(([ r ]) => r.id !== mixFocusId);
-  const pool = others.length ? others : picks;
-  if (!pool.length) {
+  const up = mixUpcoming;
+  mixUpcoming = null;
+  const kept = up && up[0].id !== mixFocusId && picks.some(([ r ]) => r === up[0]) && (up[1] !== "listen" || !unplayableVideos.has(vocabVideoIdFor(up[0])));
+  const pick = kept ? up : mixPick(picks);
+  if (!pick) {
     mixFocusId = null;
     if (document.getElementById("mediaUrl").value) {
       document.getElementById("mediaUrl").value = "";
@@ -7530,8 +7556,7 @@ function mixNext() {
     setReviewMode("ielts");
     return;
   }
-  const [ row, style ] = pool[Math.floor(Math.random() * pool.length)];
-  mixShow(row, style);
+  mixShow(pick[0], pick[1]);
 }
 
 function saveVirtualLesson() {
@@ -13467,6 +13492,7 @@ function showVocabDeck(stage, item) {
   });
   card.id = "vocabCard";
   fillVocabCard(card, item);
+  if (next && !vocabVideoIdFor(item.card)) preloadVocabVideo(next);
   if (!vocabSession.flipped) settleVocabCard(card, false);
   card.classList.toggle("flipped", !!vocabSession.flipped);
   if (vocabSession.flipped && !card.settleTimer) settleVocabCard(card, true);
@@ -14109,6 +14135,12 @@ function startPendingVocabVideo() {
   syncVocabSound();
 }
 
+function preloadVocabVideo(item) {
+  const id = vocabVideoIdFor(item.card);
+  if (!id || !item.card.srcLessonId || id === vocabVideoId && ytHasVideo) return;
+  if (preloadVideo(vocabVideoUrlFor(item.card))) vocabVideoId = id;
+}
+
 function playVocabSound(item) {
   stopVocabSound();
   if (!item) return;
@@ -14128,6 +14160,10 @@ function playVocabSound(item) {
       applyMediaUrl(true);
     } else if (!row.srcLessonId && !ytHasVideo && !pendingVideoId) {
       applyMediaUrl(true);
+    } else if (ytCueing) {
+      vocabAwaitCue = true;
+      clearTimeout(vocabAwaitCueTimer);
+      vocabAwaitCueTimer = setTimeout(vocabCueDone, 4e3);
     }
     if (ytHasError) {
       showToast("This video can't be played");
