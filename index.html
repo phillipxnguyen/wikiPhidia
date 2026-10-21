@@ -1482,10 +1482,16 @@ window.onYouTubeIframeAPIReady = function(){
   .cloud-or{font-size:12px;color:var(--text-2);}
   .cloud-row{display:flex;gap:8px;}
   .cloud-row button{flex:1;}
-  .all-curtain{position:fixed;z-index:30000;pointer-events:none;overflow:hidden;}
-  .all-curtain i{position:absolute;top:0;bottom:0;width:50%;background-image:repeating-linear-gradient(90deg, rgba(255,255,255,.1) 0, rgba(0,0,0,.12) 24px, rgba(255,255,255,.1) 48px), var(--bar);background-size:auto, 200% 100%;background-repeat:repeat, no-repeat;}
-  .all-curtain .curtain-l{left:0;background-position:0 0, 0 0;box-shadow:inset -12px 0 24px rgba(0,0,0,.25);}
-  .all-curtain .curtain-r{right:0;background-position:0 0, 100% 0;box-shadow:inset 12px 0 24px rgba(0,0,0,.25);}
+  .all-curtain, .curtain-burst{position:fixed;z-index:30000;pointer-events:none;overflow:hidden;}
+  .all-curtain i{position:absolute;top:0;bottom:0;width:51%;background-color:var(--bar-base);background-image:linear-gradient(180deg, rgba(0,0,0,.35), transparent 25%, transparent 75%, rgba(0,0,0,.4)), repeating-linear-gradient(90deg, rgba(0,0,0,.32) 0, rgba(255,255,255,.16) 20px, rgba(0,0,0,.06) 38px, rgba(255,255,255,.22) 54px, rgba(0,0,0,.32) 76px), var(--bar);background-size:auto, auto, 200% 100%;background-repeat:no-repeat, repeat, no-repeat;}
+  .all-curtain .curtain-l{left:0;transform-origin:0 0;background-position:0 0, 0 0, 0 0;border-right:4px solid #e0b84f;box-shadow:inset -24px 0 32px rgba(0,0,0,.35), inset 0 -8px 0 #e0b84f;}
+  .all-curtain .curtain-r{right:0;transform-origin:100% 0;background-position:0 0, 0 0, 100% 0;border-left:4px solid #e0b84f;box-shadow:inset 24px 0 32px rgba(0,0,0,.35), inset 0 -8px 0 #e0b84f;}
+  .all-curtain .curtain-top{position:absolute;left:0;right:0;top:0;height:64px;background-color:var(--bar-base);background-image:linear-gradient(180deg, rgba(0,0,0,.45), rgba(0,0,0,.1)), repeating-linear-gradient(90deg, rgba(0,0,0,.25) 0, rgba(255,255,255,.14) 28px, rgba(0,0,0,.25) 56px), var(--bar);-webkit-mask:linear-gradient(#000, #000) 0 0 / 100% 36px no-repeat, radial-gradient(circle 28px at 28px 36px, #000 98%, transparent) 0 0 / 56px 64px repeat-x;mask:linear-gradient(#000, #000) 0 0 / 100% 36px no-repeat, radial-gradient(circle 28px at 28px 36px, #000 98%, transparent) 0 0 / 56px 64px repeat-x;}
+  .all-curtain .curtain-top::after{content:"";position:absolute;left:0;right:0;top:32px;height:4px;background:#e0b84f;}
+  .curtain-burst{background:radial-gradient(circle at 50% 0, rgba(255,236,170,.55), transparent 60%);animation:curtainGlow 1.6s ease-out forwards;}
+  @keyframes curtainGlow{from{opacity:1;}to{opacity:0;}}
+  .curtain-burst .confetti-piece{position:absolute;top:-10px;width:8px;height:12px;border-radius:2px;animation-name:curtainConfetti;animation-timing-function:cubic-bezier(.3,.6,.5,1);animation-fill-mode:forwards;}
+  @keyframes curtainConfetti{0%{transform:translateY(0) rotate(0deg);opacity:1;}100%{transform:translateY(70vh) rotate(540deg);opacity:0;}}
   .move-mark{font-weight:700;color:#1e9466;}
   .cloud-error{min-height:18px;font-size:14px;color:var(--danger);}
 
@@ -7243,7 +7249,7 @@ function mixCueDone() {
   const id = mixFocusId;
   afterCurtain(() => {
     if (mixFocusId === id && !mixAwaitCue && !ytHasError && isAllLessons() && currentView === "study" && isListenMode() && !isSequencePlaying) startSequenceLoop(true);
-  }, 300);
+  }, document.querySelector(".all-curtain") ? 0 : 300);
 }
 
 function mixCandidates() {
@@ -14201,17 +14207,38 @@ function afterCurtain(fn, wait) {
   }, wait);
 }
 
+function warmFirstClip(done) {
+  const item = appMode === "vocab" && vocabPendingKey !== null ? lessonVocabItems(vocabSource()).find(i => i.key === vocabPendingKey) : null;
+  const row = appMode === "vocab" ? item && item.card : isAllLessons() && isListenMode() ? listenBatch()[0] : null;
+  if (!row || row.time == null || ytHasError || !ytPlayer || !ytReady || !ytHasVideo) return done();
+  let over = false, poll = 0, guard = 0;
+  const finish = () => {
+    if (over) return;
+    over = true;
+    clearInterval(poll);
+    clearTimeout(guard);
+    pauseVideoProgrammatically();
+    ytPlayer.seekTo(row.time, true);
+    ytPlayer.unMute();
+    done();
+  };
+  ytPlayer.mute();
+  ytPlayer.seekTo(row.time, true);
+  ytPlayer.playVideo();
+  poll = setInterval(() => {
+    if (ytHasError || ytPlayer.getPlayerState() === YT.PlayerState.PLAYING && ytPlayer.getCurrentTime() >= row.time + .3) finish();
+  }, 50);
+  guard = setTimeout(finish, 6e3);
+}
+
 function allCurtain(item) {
   if (reducedMotion() || document.querySelector(".all-curtain")) return;
   const cs = getComputedStyle(item);
   const curtain = document.createElement("div");
   curtain.className = "all-curtain";
-  curtain.innerHTML = '<i class="curtain-l"></i><i class="curtain-r"></i>';
-  const halves = [ ...curtain.children ];
-  halves.forEach(h => {
-    h.style.backgroundColor = cs.backgroundColor;
-    h.style.setProperty("--bar", cs.backgroundImage);
-  });
+  curtain.innerHTML = '<i class="curtain-l"></i><i class="curtain-r"></i><b class="curtain-top"></b>';
+  curtain.style.setProperty("--bar", cs.backgroundImage);
+  curtain.style.setProperty("--bar-base", cs.backgroundColor);
   const main = document.querySelector(".main").getBoundingClientRect();
   const over = el => {
     const r = el && !el.hidden ? el.getBoundingClientRect() : null;
@@ -14221,25 +14248,94 @@ function allCurtain(item) {
   const top = Math.round(Math.max(0, main.top, head && head.bottom < innerHeight / 2 ? head.bottom : 0));
   const bottom = Math.round(Math.min(innerHeight, main.bottom, foot && foot.top > innerHeight / 2 ? foot.top : innerHeight));
   const left = Math.max(0, Math.round(main.left));
-  Object.assign(curtain.style, {
+  const box = {
     top: top + "px",
     left: left + "px",
     width: Math.min(innerWidth, Math.round(main.right)) - left + "px",
     height: bottom - top + "px"
-  });
+  };
+  Object.assign(curtain.style, box);
   document.body.appendChild(curtain);
-  const slide = (from, to, duration, easing) => Promise.all(halves.map((h, i) => h.animate({
-    transform: [ `translateX(${(i ? 1 : -1) * from}%)`, `translateX(${(i ? 1 : -1) * to}%)` ]
-  }, {
-    duration: duration,
-    easing: easing,
+  const [ l, r, valance ] = curtain.children;
+  const side = (el, sign) => el === l ? -sign : sign;
+  const run = (el, frames, opts) => el.animate(frames, Object.assign({
     fill: "forwards"
-  }).finished));
+  }, opts));
+  valance.animate([ {
+    transform: "translateY(-100%)"
+  }, {
+    transform: "translateY(8%)",
+    offset: .7
+  }, {
+    transform: "translateY(0)"
+  } ], {
+    duration: 600,
+    easing: "cubic-bezier(.3,.7,.3,1)",
+    fill: "forwards"
+  });
+  const close = [ l, r ].map(el => run(el, [ {
+    transform: `translateX(${side(el, 100)}%) skewX(0deg)`
+  }, {
+    transform: `translateX(${side(el, -3)}%) skewX(${side(el, 3)}deg)`,
+    offset: .7
+  }, {
+    transform: "translateX(0) skewX(0deg)"
+  } ], {
+    duration: 750,
+    easing: "cubic-bezier(.25,.8,.3,1)"
+  }).finished);
+  let sway = [];
   const start = Date.now();
   const ready = () => ytHasError || (appMode === "vocab" ? !vocabAwaitCue && !pendingVideoId : !mixAwaitCue && !pendingVideoId && !ytCueing && (!ytHasVideo || ytReady));
-  slide(100, 0, 450, "cubic-bezier(.3,.7,.3,1)").then(function wait() {
-    if (!ready() && Date.now() - start < 2e4) return setTimeout(wait, 100);
-    slide(0, 100, 900, "cubic-bezier(.6,0,.2,1)").then(() => curtain.remove());
+  const open = () => {
+    sway.forEach(a => a.cancel());
+    const burst = document.createElement("div");
+    burst.className = "curtain-burst";
+    Object.assign(burst.style, box);
+    document.body.appendChild(burst);
+    addConfetti(burst);
+    setTimeout(() => burst.remove(), 3500);
+    Promise.all([ l, r ].map(el => run(el, [ {
+      transform: "translateX(0) scaleX(1) skewX(0deg)"
+    }, {
+      transform: `translateX(${side(el, 6)}%) scaleX(.92) skewX(${side(el, -5)}deg)`,
+      offset: .3
+    }, {
+      transform: `translateX(${side(el, 100)}%) scaleX(.6) skewX(0deg)`
+    } ], {
+      duration: 1100,
+      easing: "cubic-bezier(.55,0,.25,1)"
+    }).finished).concat(run(valance, [ {
+      transform: "translateY(0)"
+    }, {
+      transform: "translateY(-100%)"
+    } ], {
+      duration: 600,
+      delay: 500,
+      easing: "ease-in"
+    }).finished)).then(() => curtain.remove());
+  };
+  Promise.all(close).then(() => {
+    sway = [ l, r ].map((el, i) => el.animate([ {
+      transform: "skewX(0deg) scaleX(1)"
+    }, {
+      transform: `skewX(${side(el, 1)}deg) scaleX(.985)`
+    }, {
+      transform: "skewX(0deg) scaleX(1)"
+    }, {
+      transform: `skewX(${side(el, -1)}deg) scaleX(1.01)`
+    }, {
+      transform: "skewX(0deg) scaleX(1)"
+    } ], {
+      duration: 2400,
+      delay: i * 300,
+      iterations: Infinity,
+      easing: "ease-in-out"
+    }));
+    (function wait() {
+      if (!ready() && Date.now() - start < 2e4) return setTimeout(wait, 100);
+      warmFirstClip(open);
+    })();
   });
 }
 
