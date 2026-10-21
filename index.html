@@ -3960,9 +3960,10 @@ function formatHistoryDate(iso) {
 function renderImportInfo() {
   const el = document.getElementById("importInfo");
   if (!el) return;
-  const lines = [ "Total cards: " + rows.length ];
-  importHistory.slice(-10).reverse().forEach(h => {
-    lines.push("+" + h.added + " on " + formatHistoryDate(h.date));
+  const vocab = appMode === "vocab";
+  const lines = [ vocab ? "Total words: " + lessonVocabItems(vocabSource()).length : "Total cards: " + rows.length ];
+  importHistory.filter(h => (h.kind === "word") === vocab).slice(-10).reverse().forEach(h => {
+    lines.push("+" + countOf(h.added, vocab ? "word" : "card") + " on " + formatHistoryDate(h.date));
   });
   el.innerHTML = lines.map(escapeHtml).join("<br>");
 }
@@ -8774,7 +8775,7 @@ async function addSentenceWords(cards, onStatus) {
   const lessonId = currentLessonId;
   const toTranslate = sentenceWordsFrom(cards);
   if (!toTranslate.length) return 0;
-  if (toTranslate.length && onStatus) onStatus(`Translating ${toTranslate.length} sentence(s) for Vocabulary…`);
+  if (toTranslate.length && onStatus) onStatus(`Translating ${countOf(toTranslate.length, "sentence")} for Vocabulary…`);
   const vi = toTranslate.filter(t => detectLang(t) === "vi-VN"), other = toTranslate.filter(t => detectLang(t) !== "vi-VN");
   const [viOut, otherOut] = await Promise.all([ vi.length ? translateBatch(vi, "en") : [], other.length ? translateBatch(other, "vi") : [] ]);
   if (currentLessonId !== lessonId) return 0;
@@ -8809,6 +8810,7 @@ function addWordsToLesson(pairs, preferRows) {
     targets.get(card).push(pair);
   });
   targets.forEach((list, card) => appendWordItems(card, list));
+  if (pairs.length) recordImport(pairs.length, "word");
   scheduleAutoSave();
 }
 
@@ -8922,11 +8924,13 @@ function prepareImportText() {
   };
 }
 
-function recordImport(added) {
-  importHistory.push({
+function recordImport(added, kind) {
+  importHistory.push(Object.assign({
     date: (new Date).toISOString(),
     added: added
-  });
+  }, kind ? {
+    kind: kind
+  } : {}));
   if (importHistory.length > 50) importHistory.shift();
 }
 
@@ -9164,7 +9168,7 @@ function importResultMessage(plan) {
   const parts = [];
   if (plan.newRows.length) parts.push(`Imported ${plan.newRows.length} new card(s).`);
   if (plan.updated) parts.push(`Updated ${plan.updated} existing card(s).`);
-  if (plan.skipped) parts.push(`Skipped ${plan.skipped} duplicate(s).`);
+  if (plan.skipped) parts.push(`Skipped ${countOf(plan.skipped, "duplicate")}.`);
   return parts.join(" ");
 }
 
@@ -9224,7 +9228,7 @@ document.querySelectorAll(".lang-btn").forEach(btn => {
         renderImportPreview();
       }
       if (plan.newRows.length || plan.updated || words.length) render();
-      let msg = [ importResultMessage(plan), words.length ? `Added ${words.length} word(s) to Vocabulary.` : "" ].filter(Boolean).join(" ") || "No cards imported.";
+      let msg = [ importResultMessage(plan), words.length ? `Added ${countOf(words.length, "word")} to Vocabulary.` : "" ].filter(Boolean).join(" ") || "No cards imported.";
       if (failed > 0) msg += ` ${failed} failed to translate.`;
       setImportStatus(msg);
       if (words.length || plan.newRows.length || plan.updated) closeAddPopup();
@@ -9245,7 +9249,7 @@ document.getElementById("importBtn").onclick = () => {
   if (analysis.title) setLessonTitle(analysis.title);
   const plan = planImport(analysis.entries);
   const words = analysis.words;
-  let msg = [ importResultMessage(plan), words.length ? `Added ${words.length} word(s) to Vocabulary.` : "" ].filter(Boolean).join(" ") || "No new cards found — check the delimiter matches your text.";
+  let msg = [ importResultMessage(plan), words.length ? `Added ${countOf(words.length, "word")} to Vocabulary.` : "" ].filter(Boolean).join(" ") || "No new cards found — check the delimiter matches your text.";
   if (analysis.title) msg += ` Title set to "${analysis.title}".`;
   setImportStatus(msg);
   if (words.length && !plan.newRows.length && !plan.fills.size) pushUndo("Added " + words.length + " word" + (words.length === 1 ? "" : "s"));
@@ -9258,7 +9262,7 @@ document.getElementById("importBtn").onclick = () => {
     }
   } else if (plan.newRows.length && !isVideoLesson()) {
     addSentenceWords(plan.newRows, setImportStatus).then(n => {
-      if (n) setImportStatus(msg + ` Added ${n} word(s) to Vocabulary from the sentences.`);
+      if (n) setImportStatus(msg + ` Added ${countOf(n, "word")} to Vocabulary from the sentences.`);
     });
   }
   if (analysis.title && !plan.newRows.length && !plan.fills.size) scheduleAutoSave();
@@ -10424,7 +10428,7 @@ function fairyGlow(el, kind) {
 function resetLessonProgress() {
   if (!currentLessonId || isVirtualLesson() || !rows.length) return;
   const name = document.getElementById("lessonName").value.trim() || "this lesson";
-  if (!confirm(`Reset "${name}"?\n\nAll ${rows.length} card(s) become New again, so you can study them from the start. Cards, notes and statistics stay.\n\nYou can undo with ⌘Z.`)) return;
+  if (!confirm(`Reset "${name}"?\n\nAll ${countOf(rows.length, "card")} become New again, so you can study them from the start. Cards, notes and statistics stay.\n\nYou can undo with ⌘Z.`)) return;
   commitActiveEdit();
   haltAllPlayback();
   pushUndo("Reset progress — " + name);
@@ -10464,7 +10468,7 @@ async function deleteCurrentLesson() {
   if (!lesson) return;
   const name = document.getElementById("lessonName").value.trim() || lesson.name;
   const words = lessonVocabItems(vocabSource()).length;
-  const what = appMode === "vocab" ? `${words} word(s)` + (rows.length ? ` and ${rows.length} card(s)` : "") : `${rows.length} card(s)`;
+  const what = appMode === "vocab" ? `${countOf(words, "word")}` + (rows.length ? ` and ${countOf(rows.length, "card")}` : "") : `${countOf(rows.length, "card")}`;
   if (!confirm(`Delete "${name}" and its ${what}? This can't be undone — click Save first if you want a copy.`)) return;
   const before = new Map([ ...document.querySelectorAll("#lessonList .lesson-item") ].map(el => [ el.dataset.lessonId, el.getBoundingClientRect() ]));
   await dustAway([ document.querySelector(".lesson-item.active:not(.all-vocab)"), document.getElementById("lessonName") ].find(onScreenBox));
@@ -10742,8 +10746,8 @@ async function importLessonFiles(files) {
     renderLessonList();
   }
   const parts = [];
-  if (imported) parts.push("Opened " + imported + " lesson(s)");
-  if (restored) parts.push("Restored " + restored + " lesson(s) from backup");
+  if (imported) parts.push("Opened " + countOf(imported, "lesson"));
+  if (restored) parts.push("Restored " + countOf(restored, "lesson") + " from backup");
   if (failed.length) parts.push("Could not read " + failed.join(", "));
   renderStreakChip();
   refreshSaveReminders();
@@ -10807,6 +10811,10 @@ function lessonCounts(lesson) {
     fresh: fresh,
     done: done
   };
+}
+
+function countOf(n, word) {
+  return n + " " + word + (n === 1 ? "" : "s");
 }
 
 function escapeAttr(s) {
@@ -13565,7 +13573,7 @@ function resetVocabProgress() {
   const items = lessonVocabItems(vocabSource());
   if (!items.length) return;
   const name = document.getElementById("lessonName").value.trim() || "this lesson";
-  if (!confirm(`Reset the words of "${name}"?\n\nAll ${items.length} word(s) become New again, so you can study them from the start. Words, cards and statistics stay.\n\nYou can undo with ⌘Z.`)) return;
+  if (!confirm(`Reset the words of "${name}"?\n\nAll ${countOf(items.length, "word")} become New again, so you can study them from the start. Words, cards and statistics stay.\n\nYou can undo with ⌘Z.`)) return;
   commitVocabEdit();
   stopVocabSound();
   pushUndo("Reset words — " + name);
