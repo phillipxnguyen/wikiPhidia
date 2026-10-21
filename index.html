@@ -1734,7 +1734,7 @@ window.onYouTubeIframeAPIReady = function(){
     <textarea id="vocabTitle" rows="1" autocomplete="off" class="stats-title lesson-name-input autofit oneline" placeholder="Lesson name" aria-label="Lesson name"></textarea>
     <div class="header-actions">
       <button id="vocabSaveBtn" class="ghost" title="Save this lesson as a .json file. Shift-click to pick a different file.">Save</button>
-      <button id="vocabResetBtn" class="ghost" title="Make every word in this lesson New again. Words, cards and statistics stay.">Reset</button>
+      <button id="vocabResetBtn" class="ghost" title="Make every card in this lesson New again. Cards and statistics stay.">Reset</button>
       <button id="vocabDeleteBtn" class="ghost danger" title="Delete this lesson">Delete</button>
     </div>
   </div>
@@ -3266,7 +3266,7 @@ function moveCardsToVocab(list) {
     return !!t;
   });
   if (!ok.length) {
-    showToast("Nothing to make a word from");
+    showToast("Nothing to make a card from");
     return;
   }
   pushUndo("Moved " + ok.length + " cards to Vocabulary");
@@ -6730,9 +6730,6 @@ document.addEventListener("click", e => {
 document.getElementById("btnSingleCard").onclick = e => {
   e.stopPropagation();
   if (!currentLessonId || isVirtualLesson()) return;
-  const vocab = appMode === "vocab";
-  document.getElementById("qaQ").setAttribute("aria-label", vocab ? "Word" : "Question");
-  document.getElementById("qaA").setAttribute("aria-label", vocab ? "Meaning" : "Answer");
   document.getElementById("btnSingleCard").hidden = true;
   document.getElementById("quickAdd").hidden = false;
   fitTextarea(document.getElementById("qaQ"));
@@ -9250,7 +9247,7 @@ document.querySelectorAll(".lang-btn").forEach(btn => {
       });
       const plan = planImport(importEntries.filter(e => e.time != null));
       if (words.length && !plan.newRows.length && !plan.fills.size) pushUndo("Added " + countOf(words.length, "card"));
-      commitImport(plan, "Translated — " + plan.newRows.length + " new, " + plan.updated + " updated" + (words.length ? ", " + words.length + " words" : ""));
+      commitImport(plan, "Translated — " + plan.newRows.length + " new, " + plan.updated + " updated" + (words.length ? ", " + countOf(words.length, "card") + " for Vocabulary" : ""));
       if (words.length) {
         addWordsToLesson(words, plan.newRows);
         document.getElementById("importText").value = "";
@@ -9282,7 +9279,7 @@ document.getElementById("importBtn").onclick = () => {
   if (analysis.title) msg += ` Title set to "${analysis.title}".`;
   setImportStatus(msg);
   if (words.length && !plan.newRows.length && !plan.fills.size) pushUndo("Added " + countOf(words.length, "card"));
-  commitImport(plan, "Imported — " + plan.newRows.length + " new, " + plan.updated + " updated" + (words.length ? ", " + words.length + " words" : ""));
+  commitImport(plan, "Imported — " + plan.newRows.length + " new, " + plan.updated + " updated" + (words.length ? ", " + countOf(words.length, "card") + " for Vocabulary" : ""));
   if (words.length) {
     addWordsToLesson(words, plan.newRows);
     if (!plan.newRows.length && !plan.fills.size) {
@@ -9310,7 +9307,7 @@ const IMPORT_KIND_LABELS = {
   duplicate: [ "dup", "❐", "Duplicate" ],
   empty: [ "skip", "⚠️", "Not read — empty" ],
   word: [ "new", "🔤", "New card — goes to Vocabulary" ],
-  wordDup: [ "dup", "❐", "Word already in this lesson" ],
+  wordDup: [ "dup", "❐", "Card already in this lesson" ],
   heading: [ "dup", "➖", "Heading — left out" ],
   invalid: [ "skip", "⚠️", "Not read" ]
 };
@@ -9352,7 +9349,7 @@ function renderImportPreview() {
   const summary = [];
   summary.push(`<span><b>${analysis.lines.length}</b> ${analysis.delim === "none" ? "item" : "line"}${analysis.lines.length === 1 ? "" : "s"}</span>`);
   if (counts.new) summary.push(`<span class="ip-status new">🆕 ${counts.new}</span>`);
-  if (counts.word) summary.push(`<span class="ip-status new">🔤 ${counts.word} word${counts.word === 1 ? "" : "s"}</span>`);
+  if (counts.word) summary.push(`<span class="ip-status new">🔤 ${countOf(counts.word, "card")}</span>`);
   if (counts.update) summary.push(`<span class="ip-status update">✏️ ${counts.update} fill in</span>`);
   if (counts.merged) summary.push(`<span class="ip-status update">🔗 ${counts.merged} merged</span>`);
   if (counts.duplicate || counts.wordDup) summary.push(`<span class="ip-status dup">❐ ${(counts.duplicate || 0) + (counts.wordDup || 0)} duplicate</span>`);
@@ -9361,7 +9358,7 @@ function renderImportPreview() {
   if (!counts.word && !counts.wordDup && !isVideoLesson()) {
     const fromSentences = sentenceWordsFrom(analysis.entries.filter((_, i) => plan.outcomes[i] && plan.outcomes[i].kind === "new"));
     const n = fromSentences.length;
-    if (n) summary.push(`<span class="ip-status new" title="No word list found: the sentences themselves become Vocabulary words, translated">🔤 ${n} from sentences</span>`);
+    if (n) summary.push(`<span class="ip-status new" title="No word list found: the sentences themselves become Vocabulary cards, translated">🔤 ${n} from sentences</span>`);
   }
   summary.push(`<span>Delimiter: <b>${delimName}</b>${analysis.delim !== currentDelim() ? " (auto-detected)" : ""}</span>`);
   if (analysis.title) summary.push(`<span>Title: <b>${escapeHtml(analysis.title)}</b></span>`);
@@ -10497,7 +10494,7 @@ async function deleteCurrentLesson() {
   if (!lesson) return;
   const name = document.getElementById("lessonName").value.trim() || lesson.name;
   const words = lessonVocabItems(vocabSource()).length;
-  const what = appMode === "vocab" ? `${countOf(words, "word")}` + (rows.length ? ` and ${countOf(rows.length, "card")}` : "") : `${countOf(rows.length, "card")}`;
+  const what = countOf(appMode === "vocab" ? words + rows.length : rows.length, "card");
   if (!confirm(`Delete "${name}" and its ${what}? This can't be undone — click Save first if you want a copy.`)) return;
   const before = new Map([ ...document.querySelectorAll("#lessonList .lesson-item") ].map(el => [ el.dataset.lessonId, el.getBoundingClientRect() ]));
   await dustAway([ document.querySelector(".lesson-item.active:not(.all-vocab)"), document.getElementById("lessonName") ].find(onScreenBox));
@@ -11104,7 +11101,7 @@ function renderAddView() {
   fillAddTarget();
   const vocab = appMode === "vocab";
   document.getElementById("addTitle").textContent = vocab ? "Add vocabularies" : "Add cards";
-  document.getElementById("addUnavailable").textContent = vocab && blocked ? blocked.replace("new cards", "new words").replace("add cards", "add words") : blocked;
+  document.getElementById("addUnavailable").textContent = blocked;
   document.getElementById("addUnavailable").hidden = !blocked;
   document.getElementById("addForm").hidden = !!blocked;
   renderImportInfo();
@@ -12874,7 +12871,7 @@ function existingVocab(term, rowsToCheck) {
 }
 
 function warnVocabExists(term) {
-  showToast("“" + term.trim() + "” is already in this lesson's words");
+  showToast("“" + term.trim() + "” is already in this lesson's cards");
 }
 
 function vocabEntriesOf(card) {
@@ -13425,7 +13422,7 @@ function setWordNotes(card, key, html, at) {
 }
 
 function vocabEditorHtml(item) {
-  return '<div class="vocab-editor">' + `<textarea id="vocabEditTerm" class="autofit oneline" rows="1" autocomplete="off" aria-label="Word">${escapeHtml(item.term)}</textarea>` + `<textarea id="vocabEditMeaning" class="autofit oneline" rows="1" autocomplete="off" aria-label="Meaning">${escapeHtml(item.meaning)}</textarea>` + `<div id="vocabEditNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes" aria-label="Notes">${wordNotesOf(item)}</div>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
+  return '<div class="vocab-editor">' + `<textarea id="vocabEditTerm" class="autofit oneline" rows="1" autocomplete="off" aria-label="Question">${escapeHtml(item.term)}</textarea>` + `<textarea id="vocabEditMeaning" class="autofit oneline" rows="1" autocomplete="off" aria-label="Answer">${escapeHtml(item.meaning)}</textarea>` + `<div id="vocabEditNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes" aria-label="Notes">${wordNotesOf(item)}</div>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
 }
 
 const VOCAB_FLIP_MS = 450;
@@ -13495,7 +13492,7 @@ function renderVocab() {
   if (!items.length) {
     vocabSession = null;
     badges.innerHTML = "";
-    stage.innerHTML = '<div class="empty-state"><div class="emoji">📖</div><h2>No words yet</h2><p>Words come from the notes of this lesson\'s cards, written as <b>word: meaning</b>.<br>Select a word in a card while editing it and press Shift, or select a word in the sentence above a dictionary and press Shift.</p></div>';
+    stage.innerHTML = '<div class="empty-state"><div class="emoji">📖</div><h2>No cards yet</h2><p>Cards come from the notes of this lesson\'s cards, written as <b>question: answer</b>.<br>Select a word or phrase in a card while editing it and press Shift, or select it in the sentence above a dictionary and press Shift.</p></div>';
     wireVocabEditor(items);
     syncVocabSound();
     return;
@@ -13526,7 +13523,7 @@ function renderVocab() {
     const due = items.filter(i => vocabStateOf(i).due <= now);
     const more = heldMore(due, limitVocab(due), vocabStateOf);
     const held = more.total;
-    const text = finishText(held, studiedToday(vocabSource(), true), next, "word", items.map(vocabStateOf));
+    const text = finishText(held, studiedToday(vocabSource(), true), next, "card", items.map(vocabStateOf));
     const celebrate = !stage.querySelector(".session-complete") || stage.dataset.lessonId !== String(currentLessonId);
     stage.dataset.lessonId = currentLessonId;
     stage.innerHTML = `<div class="session-complete" style="display:block;"><div class="emoji">${text.emoji}</div><div class="session-complete-title">${text.title}</div><div class="session-complete-sub">${text.sub}</div>${held ? moreButtonHtml(more) : ""}</div>`;
@@ -13621,10 +13618,10 @@ function resetVocabProgress() {
   const items = lessonVocabItems(vocabSource());
   if (!items.length) return;
   const name = document.getElementById("lessonName").value.trim() || "this lesson";
-  if (!confirm(`Reset the words of "${name}"?\n\nAll ${countOf(items.length, "word")} become New again, so you can study them from the start. Words, cards and statistics stay.\n\nYou can undo with ⌘Z.`)) return;
+  if (!confirm(`Reset "${name}"?\n\nAll ${countOf(items.length, "card")} become New again, so you can study them from the start. Cards and statistics stay.\n\nYou can undo with ⌘Z.`)) return;
   commitVocabEdit();
   stopVocabSound();
-  pushUndo("Reset words — " + name);
+  pushUndo("Reset cards — " + name);
   const was = vocabCounts(items);
   const at = Date.now();
   vocabSource().forEach(c => {
@@ -13692,7 +13689,7 @@ function saveVocabEditor(item, termRaw, meaningRaw, notesHtml, explicit) {
   if (term === item.term && meaning === item.meaning) {
     if (!notesChanged) return true;
     if (!vocabEntryOk(term)) return false;
-    pushUndo("Edited word — " + term);
+    pushUndo("Edited card — " + term);
   } else if (!updateVocabEntry(item, termRaw, meaningRaw)) return false;
   if (notesChanged) setWordNotes(item.card, key, notesHtml);
   scheduleAutoSave();
@@ -13900,10 +13897,10 @@ function updateVocabEntry(item, termRaw, meaningRaw) {
   const row = item.card;
   const next = rewrittenVocabNotes(row, item, term, meaning);
   if (!next) {
-    showToast("Couldn't find this word in the card's notes");
+    showToast("Couldn't find this card in the notes");
     return false;
   }
-  pushUndo("Edited word — " + term);
+  pushUndo("Edited card — " + term);
   row.notes = next.notes;
   row.notesHtml = next.notesHtml;
   if (newKey !== item.key && row.vocab && row.vocab[item.key]) {
@@ -13926,11 +13923,11 @@ function deleteVocabEntry(item, part) {
   const row = item.card;
   const next = rewrittenVocabNotes(row, item, null, null);
   if (!next) {
-    showToast("Couldn't find this word in the card's notes");
+    showToast("Couldn't find this card in the notes");
     return;
   }
   stopVocabSound();
-  pushDeleteUndo("Deleted word — " + item.term);
+  pushDeleteUndo("Deleted card — " + item.term);
   row.notes = next.notes;
   row.notesHtml = next.notesHtml;
   if (row.vocab) delete row.vocab[item.key];
@@ -14626,7 +14623,7 @@ function showVocabAddPopup(row, term, rect, editing, onSave, meaning) {
   hideVocabPopup();
   const popup = document.createElement("div");
   popup.className = "vocab-add-popup";
-  popup.innerHTML = '<div class="vocab-add-field" contenteditable="true" role="textbox" aria-label="Word: meaning" data-placeholder="word: meaning"></div>';
+  popup.innerHTML = '<div class="vocab-add-field" contenteditable="true" role="textbox" aria-label="Question: answer" data-placeholder="question: answer"></div>';
   document.body.appendChild(popup);
   vocabAddPopup = popup;
   const input = popup.querySelector(".vocab-add-field");
@@ -14668,7 +14665,7 @@ function showVocabAddPopup(row, term, rect, editing, onSave, meaning) {
     if (vocabAddPopup !== popup) return;
     const m = popupVocabPair(input);
     if (!m) {
-      showToast("Write it as word: meaning");
+      showToast("Write it as question: answer");
       return;
     }
     if (editing) {
@@ -17213,7 +17210,7 @@ function startStage(world, n) {
     world: world,
     stage: st.tag
   });
-  if (!t) return showToast("Not enough words for this step");
+  if (!t) return showToast("Not enough cards for this step");
   openTestPaper(t.id);
 }
 
@@ -17249,7 +17246,7 @@ function quickTest(world, keys, length) {
     world: world,
     keys: keys
   });
-  if (!t) return showToast("Not enough words for a test");
+  if (!t) return showToast("Not enough cards for a test");
   openTestPaper(t.id);
 }
 
@@ -17288,7 +17285,7 @@ function worldTilesHtml(counts) {
   return '<div class="ta-worlds">' + TEST_WORLDS.map(w => {
     const n = counts[w] || 0;
     const [ name, glyph ] = TEST_WORLD_INFO[w];
-    if (n < 3) return `<button class="ta-world" disabled title="Add at least 3 words in this language in Vocabulary to open it"><i aria-hidden="true">${glyph}</i><b>${name}</b><span>${n ? n + (n === 1 ? " word" : " words") + " · add more" : "No words yet"}</span></button>`;
+    if (n < 3) return `<button class="ta-world" disabled title="Add at least 3 cards in this language in Vocabulary to open it"><i aria-hidden="true">${glyph}</i><b>${name}</b><span>${n ? n + (n === 1 ? " word" : " words") + " · add more" : "No words yet"}</span></button>`;
     const route = routeOf(w).filter(s => s.state !== "key");
     const done = route.filter(s => s.state === "passed").length;
     return `<button class="ta-world w-${w}${w === testWorld ? " on" : ""}" data-act="world" data-world="${w}" aria-pressed="${w === testWorld}"><i aria-hidden="true">${glyph}</i><b>${name}</b><span>${n} words · ${done}/${route.length}</span><span class="ta-world-bar"><span style="width:${route.length ? Math.round(done / route.length * 100) : 0}%"></span></span></button>`;
@@ -17541,7 +17538,7 @@ function retakeTest(t) {
     stage: t.stage,
     keys: t.keys
   });
-  if (!fresh) return showToast("Those words are no longer in Vocabulary");
+  if (!fresh) return showToast("Those cards are no longer in Vocabulary");
   openTestPaper(fresh.id);
 }
 
