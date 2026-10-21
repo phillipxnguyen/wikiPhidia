@@ -3670,8 +3670,10 @@ function updateSequenceBtnUI() {
   const btn = document.getElementById("btnPlaySequence");
   const speedSel = document.getElementById("playbackSpeed");
   const show = on => [ btn, speedSel ].forEach(el => el.style.visibility = on ? "visible" : "hidden");
+  const waiting = isAllLessons() || ytHasVideo || !!pendingVideoId;
   if (groupState && groupViewStyle === "ielts") {
-    show(false);
+    show(isAllLessons());
+    btn.innerHTML = playFace(YT_ICON);
     setSequenceBtnState(btn, false, false);
     return;
   }
@@ -3684,8 +3686,9 @@ function updateSequenceBtnUI() {
     return;
   }
   if (!ytPlayer || !ytReady || !ytHasVideo || ytHasError) {
-    show(false);
-    setSequenceBtnState(btn, false, false);
+    show(waiting);
+    btn.innerHTML = playFace(YT_ICON);
+    setSequenceBtnState(btn, false, ytHasError && ytHasVideo);
     return;
   }
   show(true);
