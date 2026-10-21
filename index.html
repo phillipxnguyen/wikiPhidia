@@ -1762,7 +1762,7 @@ window.onYouTubeIframeAPIReady = function(){
   <div id="vocabBadges" class="vocab-badges"></div>
   <div id="vocabStage"></div>
   <div id="vocabList" class="panel vocab-list" hidden></div>
-  <button id="vocabAddWord" class="add-fab" data-add-card title="Add a word" aria-label="Add a word" hidden><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14"/></svg></button>
+  <button id="vocabAddWord" class="add-fab" data-add-card title="Add a card" aria-label="Add a card" hidden><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14"/></svg></button>
 </section>
 
 <section id="viewStudy" hidden>
@@ -3967,9 +3967,9 @@ function renderImportInfo() {
   const el = document.getElementById("importInfo");
   if (!el) return;
   const vocab = appMode === "vocab";
-  const lines = [ vocab ? "Total words: " + lessonVocabItems(vocabSource()).length : "Total cards: " + rows.length ];
+  const lines = [ "Total cards: " + (vocab ? lessonVocabItems(vocabSource()).length : rows.length) ];
   importHistory.filter(h => (h.kind === "word") === vocab).slice(-10).reverse().forEach(h => {
-    lines.push("+" + countOf(h.added, vocab ? "word" : "card") + " on " + formatHistoryDate(h.date));
+    lines.push("+" + countOf(h.added, "card") + " on " + formatHistoryDate(h.date));
   });
   el.innerHTML = lines.map(escapeHtml).join("<br>");
 }
@@ -6755,7 +6755,7 @@ function saveQuickAdd() {
   if (!q.value.trim() || !currentLessonId || isVirtualLesson()) return q.focus();
   if (appMode === "vocab") {
     if (!saveVocabEditor(null, q.value, a.value, notes.innerHTML, true)) return q.focus();
-    showToast("Added 1 word");
+    showToast("Added 1 card");
     renderVocab();
   } else {
     if (findDuplicateCard(q.value, a.value, null, null)) {
@@ -8810,7 +8810,7 @@ async function addSentenceWords(cards, onStatus) {
   if (currentLessonId !== lessonId) return 0;
   const found = vi.map((t, i) => [ t, viOut[i] ]).concat(other.map((t, i) => [ t, otherOut[i] ])).filter(([t, m]) => m && m.trim() && !existingVocab(t));
   if (!found.length) return 0;
-  pushUndo("Added " + found.length + " word" + (found.length === 1 ? "" : "s") + " from sentences");
+  pushUndo("Added " + countOf(found.length, "card") + " from sentences");
   addWordsToLesson(found, cards);
   render();
   renderLessonList();
@@ -9249,7 +9249,7 @@ document.querySelectorAll(".lang-btn").forEach(btn => {
         return true;
       });
       const plan = planImport(importEntries.filter(e => e.time != null));
-      if (words.length && !plan.newRows.length && !plan.fills.size) pushUndo("Added " + words.length + " word" + (words.length === 1 ? "" : "s"));
+      if (words.length && !plan.newRows.length && !plan.fills.size) pushUndo("Added " + countOf(words.length, "card"));
       commitImport(plan, "Translated — " + plan.newRows.length + " new, " + plan.updated + " updated" + (words.length ? ", " + words.length + " words" : ""));
       if (words.length) {
         addWordsToLesson(words, plan.newRows);
@@ -9257,7 +9257,7 @@ document.querySelectorAll(".lang-btn").forEach(btn => {
         renderImportPreview();
       }
       if (plan.newRows.length || plan.updated || words.length) render();
-      let msg = [ importResultMessage(plan), words.length ? `Added ${countOf(words.length, "word")} to Vocabulary.` : "" ].filter(Boolean).join(" ") || (appMode === "vocab" ? "No words imported." : "No cards imported.");
+      let msg = [ importResultMessage(plan), words.length ? `Added ${countOf(words.length, "card")} to Vocabulary.` : "" ].filter(Boolean).join(" ") || "No cards imported.";
       if (failed > 0) msg += ` ${failed} failed to translate.`;
       setImportStatus(msg);
       if (words.length || plan.newRows.length || plan.updated) closeAddPopup();
@@ -9278,10 +9278,10 @@ document.getElementById("importBtn").onclick = () => {
   if (analysis.title) setLessonTitle(analysis.title);
   const plan = planImport(analysis.entries);
   const words = analysis.words;
-  let msg = [ importResultMessage(plan), words.length ? `Added ${countOf(words.length, "word")} to Vocabulary.` : "" ].filter(Boolean).join(" ") || (appMode === "vocab" ? "No new words found" : "No new cards found") + " — check the delimiter matches your text.";
+  let msg = [ importResultMessage(plan), words.length ? `Added ${countOf(words.length, "card")} to Vocabulary.` : "" ].filter(Boolean).join(" ") || "No new cards found — check the delimiter matches your text.";
   if (analysis.title) msg += ` Title set to "${analysis.title}".`;
   setImportStatus(msg);
-  if (words.length && !plan.newRows.length && !plan.fills.size) pushUndo("Added " + words.length + " word" + (words.length === 1 ? "" : "s"));
+  if (words.length && !plan.newRows.length && !plan.fills.size) pushUndo("Added " + countOf(words.length, "card"));
   commitImport(plan, "Imported — " + plan.newRows.length + " new, " + plan.updated + " updated" + (words.length ? ", " + words.length + " words" : ""));
   if (words.length) {
     addWordsToLesson(words, plan.newRows);
@@ -9291,7 +9291,7 @@ document.getElementById("importBtn").onclick = () => {
     }
   } else if (plan.newRows.length && !isVideoLesson()) {
     addSentenceWords(plan.newRows, setImportStatus).then(n => {
-      if (n) setImportStatus(msg + ` Added ${countOf(n, "word")} to Vocabulary from the sentences.`);
+      if (n) setImportStatus(msg + ` Added ${countOf(n, "card")} to Vocabulary from the sentences.`);
     });
   }
   if (analysis.title && !plan.newRows.length && !plan.fills.size) scheduleAutoSave();
@@ -9309,7 +9309,7 @@ const IMPORT_KIND_LABELS = {
   merged: [ "update", "🔗", "Merged" ],
   duplicate: [ "dup", "❐", "Duplicate" ],
   empty: [ "skip", "⚠️", "Not read — empty" ],
-  word: [ "new", "🔤", "New word — goes to Vocabulary" ],
+  word: [ "new", "🔤", "New card — goes to Vocabulary" ],
   wordDup: [ "dup", "❐", "Word already in this lesson" ],
   heading: [ "dup", "➖", "Heading — left out" ],
   invalid: [ "skip", "⚠️", "Not read" ]
@@ -14586,14 +14586,14 @@ function addVocabToRow(row, term, meaning) {
     li.innerHTML = itemHtml;
     list.insertBefore(li, sentenceOrderAnchor(list, term, (row.q || "") + "\n" + (row.a || "")));
   }
-  pushUndo("Added word — " + term);
+  pushUndo("Added card — " + term);
   const before = vocabKeysOf(row);
   row.notesHtml = box.innerHTML;
   row.notes = plainTextOf(box.innerHTML, "\n");
   stampNewVocab(row, before);
   scheduleAutoSave();
   render();
-  showToast("Added word");
+  showToast("Added 1 card");
 }
 
 let enterShift = false;
@@ -14850,7 +14850,7 @@ function openAddPopup() {
   const vocab = currentView === "vocab";
   const name = (document.getElementById("lessonName").value || "").trim() || "Untitled lesson";
   document.getElementById("addPopTitle").textContent = "Add to " + name;
-  document.getElementById("btnSingleCard").setAttribute("aria-label", vocab ? "Add a single word" : "Add a single card");
+  document.getElementById("btnSingleCard").setAttribute("aria-label", "Add a single card");
   placeAddForm("popup");
   document.getElementById("addPopup").hidden = false;
   document.getElementById("importText").focus();
