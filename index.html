@@ -896,6 +896,10 @@ window.onYouTubeIframeAPIReady = function(){
   .sound-ring path{fill:none;stroke-width:2;}
   .sound-ring .ring-track{stroke:color-mix(in srgb, var(--ring) 30%, transparent);}
   .sound-ring .ring-run{stroke:var(--ring);stroke-linecap:round;}
+  .sound-ring.wait .ring-run{animation:ring-chase 1.2s linear infinite;}
+  .sound-ring.wait .ring-track{animation:ring-breathe 1.2s ease-in-out infinite alternate;}
+  @keyframes ring-chase{from{stroke-dashoffset:0;}to{stroke-dashoffset:-100;}}
+  @keyframes ring-breathe{from{opacity:.4;}to{opacity:1;}}
   .loop-time.disabled{opacity:.4;background:var(--surface-3);color:var(--text-2);}
 
   .single-card-progress{text-align:center;font-size:14px;color:var(--text);margin-bottom:16px;}
@@ -1938,7 +1942,7 @@ function endPass() {
   return true;
 }
 
-let soundStartedAt = 0;
+let soundHeard = false;
 
 let sequenceIndex = 0;
 
@@ -2940,7 +2944,7 @@ function toggleLoopForRow(row) {
     toggleSequenceLoop();
     return;
   }
-  if (loopingRowId === row.id) {
+  if (loopingRowId === row.id && soundHeard) {
     if (groupState || !loopingRowData) stopLessonSound(); else stopLoop();
     return;
   }
@@ -2961,7 +2965,7 @@ function startLoop(row) {
   seqToken++;
   updateSequenceBtnUI();
   loopingRowId = row.id;
-  soundStartedAt = Date.now();
+  soundHeard = false;
   const end = segmentEnd(row, 8);
   soundSegment = {
     id: row.id,
@@ -3034,7 +3038,7 @@ let soundSegment = {
   end: 0
 };
 
-function paintRing(el, p) {
+function paintRing(el, p, waiting) {
   const box = el.getBoundingClientRect();
   const w = Math.round(box.width * 100) / 100, h = Math.round(box.height * 100) / 100;
   let svg = el.querySelector(":scope > .sound-ring");
@@ -3048,11 +3052,22 @@ function paintRing(el, p) {
     svg.style.left = -(3 + el.clientLeft) + "px";
     svg.style.top = -(3 + el.clientTop) + "px";
   }
-  const done = Math.max(0, Math.min(1, p)) * 100;
+  svg.classList.toggle("wait", !!waiting);
   const run = svg.querySelector(".ring-run");
+  if (waiting) {
+    run.setAttribute("stroke-dasharray", "16 84");
+    run.removeAttribute("stroke-dashoffset");
+    run.style.visibility = "";
+    return;
+  }
+  const done = Math.max(0, Math.min(1, p)) * 100;
   run.setAttribute("stroke-dasharray", `${(100 - done).toFixed(2)} 100`);
   run.setAttribute("stroke-dashoffset", (-done).toFixed(2));
   run.style.visibility = done >= 100 ? "hidden" : "";
+}
+
+function queueSoundLoop() {
+  if (!soundFrame) soundFrame = requestAnimationFrame(soundProgressLoop);
 }
 
 function soundProgressLoop() {
@@ -3066,31 +3081,44 @@ function soundProgressLoop() {
       video = soundSegment.armed ? Math.max(0, Math.min(1, (now - soundSegment.start) / Math.max(.1, soundSegment.end - soundSegment.start))) : 0;
     }
     const speech = speechProgress();
+    if (!soundHeard && (speech != null || video != null && soundSegment.armed && ytPlayer.getPlayerState() === YT.PlayerState.PLAYING)) {
+      soundHeard = true;
+      paintSoundState();
+    }
     const exam = testAudioProgress();
     const all = [];
-    const add = (el, p) => el && all.push([ el, p ]);
-    document.querySelectorAll(".loop-time[data-id]").forEach(el => add(el, el.classList.contains("looping") && Number(el.dataset.id) === loopingRowId ? video : null));
+    const add = (el, p, waiting) => el && all.push([ el, p, waiting ]);
+    document.querySelectorAll(".loop-time[data-id]").forEach(el => {
+      const mine = Number(el.dataset.id) === loopingRowId;
+      const waiting = mine && el.classList.contains("sound-wait");
+      add(el, waiting ? 0 : mine && el.classList.contains("looping") ? video : null, waiting);
+    });
     [ "btnPlaySequence", "vocabSpeak" ].forEach(id => {
       const el = document.getElementById(id);
-      add(el, el && el.classList.contains("active") ? video ?? speech : null);
+      const waiting = !!el && el.classList.contains("sound-wait");
+      add(el, waiting ? 0 : el && el.classList.contains("active") ? video ?? speech : null, waiting);
     });
     document.querySelectorAll(".exam-play").forEach(el => add(el, el.classList.contains("on") && Number(el.dataset.listen) === testAudio.n ? exam : null));
     const chosen = all.find(([ el, p ]) => p != null && el.offsetParent);
-    all.forEach(([ el, p ]) => {
-      if (chosen && chosen[0] === el) paintRing(el, p); else el.querySelector(":scope > .sound-ring")?.remove();
+    all.forEach(([ el, p, waiting ]) => {
+      if (chosen && chosen[0] === el) paintRing(el, p, waiting); else el.querySelector(":scope > .sound-ring")?.remove();
     });
-    soundFrame = video != null || speech != null || exam != null ? requestAnimationFrame(tick) : 0;
+    soundFrame = video != null || speech != null || exam != null || chosen && chosen[2] ? requestAnimationFrame(tick) : 0;
   };
   tick();
 }
 
 function markPlayingRow() {
+  paintSoundState();
+  soundProgressLoop();
+}
+
+function paintSoundState() {
   document.querySelectorAll("#tbody tr[data-id]:not(.edit-row), #singleCardBody:not(.edit-row):not(.listen-batch), #singleCardBody .listen-pair").forEach(el => {
     const id = Number(el.dataset.id);
-    el.classList.toggle("row-playing", id === loopingRowId || ttsPlaying && id === ttsOnlyId);
+    el.classList.toggle("row-playing", soundHeard && (id === loopingRowId || ttsPlaying && id === ttsOnlyId));
   });
   syncRowBadges();
-  soundProgressLoop();
   updateSequenceBtnUI();
   syncVocabSound();
 }
@@ -3120,7 +3148,8 @@ addEventListener("resize", queueFitBadges);
 function syncRowBadges() {
   document.querySelectorAll(".loop-time[data-id]").forEach(el => {
     const id = Number(el.dataset.id);
-    el.classList.toggle("looping", id === loopingRowId);
+    el.classList.toggle("looping", id === loopingRowId && soundHeard);
+    el.classList.toggle("sound-wait", id === loopingRowId && !soundHeard);
   });
 }
 
@@ -3159,7 +3188,7 @@ function stopPlaybackForRemovedRow(id) {
   pauseVideoProgrammatically();
   if (shouldContinueSequence) {
     isSequencePlaying = true;
-    soundStartedAt = Date.now();
+    soundHeard = false;
     updateSequenceBtnUI();
     setTimeout(() => playNextSequenceStep(), 200);
   } else {
@@ -3692,9 +3721,9 @@ function sequenceReadsAloud() {
 
 function toggleSequenceLoop() {
   if (lessonSoundOn()) {
-    const audible = lessonSoundAudible();
+    const heard = soundHeard;
     stopLessonSound();
-    if (audible) return;
+    if (heard) return;
   }
   if (sequenceReadsAloud()) {
     startTts("q");
@@ -3715,13 +3744,6 @@ function toggleSequenceLoop() {
 
 function lessonSoundOn() {
   return isSequencePlaying || loopingRowId !== null || ttsPlaying;
-}
-
-function lessonSoundAudible() {
-  if (Date.now() - soundStartedAt < 600 || speechSynthesis.speaking || speechSynthesis.pending) return true;
-  if (ttsPlaying || !ytPlayer || typeof ytPlayer.getPlayerState !== "function") return false;
-  const state = ytPlayer.getPlayerState();
-  return state === YT.PlayerState.PLAYING || state === YT.PlayerState.BUFFERING;
 }
 
 let workFocusId = null;
@@ -3804,6 +3826,7 @@ function startSequenceLoop(auto) {
   listenAutoPlayOnce = !!auto;
   passThen = null;
   isSequencePlaying = true;
+  soundHeard = false;
   sequenceIndex = 0;
   updateSequenceBtnUI();
   playNextSequenceStep();
@@ -3852,11 +3875,11 @@ function updateSequenceBtnUI() {
     return;
   }
   if (sequenceReadsAloud()) {
-    const on = ttsPlaying;
+    const on = ttsPlaying && soundHeard;
     show(true);
     speedSel.value = String(ttsSpeed);
     btn.innerHTML = playFace(on ? "⏸" : "🔊");
-    setSequenceBtnState(btn, on, true);
+    setSequenceBtnState(btn, on, true, ttsPlaying && !soundHeard);
     return;
   }
   if (!ytPlayer || !ytReady || !ytHasVideo || ytHasError) {
@@ -3867,13 +3890,16 @@ function updateSequenceBtnUI() {
   }
   show(true);
   speedSel.value = String(sequenceSpeed);
-  btn.innerHTML = playFace(lessonSoundOn() ? YT_PAUSE_ICON : YT_ICON);
-  setSequenceBtnState(btn, lessonSoundOn(), true);
+  const on = lessonSoundOn() && soundHeard;
+  btn.innerHTML = playFace(on ? YT_PAUSE_ICON : YT_ICON);
+  setSequenceBtnState(btn, on, true, lessonSoundOn() && !soundHeard);
 }
 
-function setSequenceBtnState(btn, on, enabled) {
+function setSequenceBtnState(btn, on, enabled, waiting = false) {
   const before = btn.classList.contains("active") + ":" + btn.disabled;
   btn.classList.toggle("active", on);
+  btn.classList.toggle("sound-wait", waiting);
+  if (waiting) queueSoundLoop();
   btn.disabled = !enabled;
   if (before !== btn.classList.contains("active") + ":" + btn.disabled) updateTouchBar();
 }
@@ -3898,7 +3924,6 @@ function playNextSequenceStep() {
   }
   const currentRow = visible[sequenceIndex];
   loopingRowId = currentRow.id;
-  soundStartedAt = Date.now();
   markPlayingRow();
   if (currentRow.time != null && ytPlayer && ytReady && typeof ytPlayer.seekTo === "function") {
     const end = segmentEnd(currentRow, 5);
@@ -6210,7 +6235,7 @@ function updateTouchBar() {
   if (vocab) {
     const back = !!vocabSession && vocabSession.flipped && !!document.getElementById("vocabCard");
     if (back) {
-      const on = vocabSoundOn();
+      const on = vocabSoundOn() && soundHeard;
       showBtn.textContent = on ? "⏸" : "▶";
       showBtn.setAttribute("aria-label", on ? "Pause" : "Play");
     } else {
@@ -8332,7 +8357,7 @@ function startTts(field, onlyId = null) {
   }
   pauseVideoProgrammatically();
   ttsPlaying = true;
-  soundStartedAt = Date.now();
+  soundHeard = false;
   ttsField = field;
   ttsOnlyId = onlyId;
   updateSequenceBtnUI();
@@ -14079,9 +14104,11 @@ function syncVocabSound() {
   speed.hidden = !shown;
   if (!speed.options.length) speed.innerHTML = document.getElementById("playbackSpeed").innerHTML;
   speed.value = String(vocabShownIsVideo ? sequenceSpeed : ttsSpeed);
-  const on = vocabSoundOn();
+  const on = vocabSoundOn() && soundHeard;
   btn.innerHTML = playFace(vocabShownIsVideo ? on ? YT_PAUSE_ICON : YT_ICON : on ? "⏸" : "🔊");
   btn.classList.toggle("active", on);
+  btn.classList.toggle("sound-wait", vocabSoundOn() && !soundHeard);
+  if (vocabSoundOn() && !soundHeard) queueSoundLoop();
   if (currentView === "vocab") updateTouchBar();
 }
 
@@ -14144,6 +14171,7 @@ function preloadVocabVideo(item) {
 function playVocabSound(item) {
   stopVocabSound();
   if (!item) return;
+  soundHeard = false;
   if (navigator.userActivation && !navigator.userActivation.hasBeenActive) {
     afterFirstTouch(() => currentView === "vocab" && vocabShownRowId === item.card.id && playVocabSound(item));
     return;
@@ -14203,7 +14231,7 @@ function playVocabSound(item) {
 
 function toggleVocabSound(item) {
   if (commitVocabEdit()) renderVocab();
-  if (vocabSoundOn()) stopVocabSound(); else playVocabSound(item);
+  if (vocabSoundOn() && soundHeard) stopVocabSound(); else playVocabSound(item);
 }
 
 function pinVocabArea(next) {
