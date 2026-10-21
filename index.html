@@ -5774,11 +5774,12 @@ function handleCardAreaMousemove(e) {
   if (isTouch()) return;
   const unit = hoverUnit(e.target);
   const tip = hoverTooltip;
-  const mine = tip && tip.style.display === "block" && tip.anchor && tip.anchor.matches && tip.anchor.matches(".cell");
+  const mine = tip && tip.style.display === "block" && tip.anchor && tip.anchor.closest && tip.anchor.closest(".cell");
   if (!unit || vocabAddPopup && !vocabAddPopup.contains(unit) || !cjkAtPoint(e.clientX, e.clientY, unit)) {
     if (mine) hideTooltip();
     return;
   }
+  if (showMarkPinyin(e.target, unit)) return;
   if (sentencePinyinMode()) {
     if (!showSentencePinyin(unit, e.clientX, e.clientY) && mine) hideTooltip();
     return;
@@ -5793,9 +5794,21 @@ function hoverUnit(el) {
 
 const PINYIN_SEL = ".card-notes li, .card-notes > div, .vocab-word-notes li, .vocab-word-notes > div, .paper-notes li, .rich-editor li, .rich-editor > div, .rich-editor, .vocab-list-meaning > span, .vocab-list-meaning, .vocab-add-field b, .vocab-back :is(.vocab-ctx, .vocab-meaning), .heat-card span";
 
-function showElementPinyin(el) {
+function pinyinRow(el) {
   const holder = el.closest("[data-id]");
-  const row = holder && rows.find(r => r.id === Number(holder.dataset.id)) || activeEdit && activeEdit.row || null;
+  return holder && rows.find(r => r.id === Number(holder.dataset.id)) || activeEdit && activeEdit.row || null;
+}
+
+function showMarkPinyin(target, unit) {
+  const mark = target.closest("mark.vocab-hit, mark.vocab-own, .vocab-ctx mark");
+  if (!mark || mark === unit || !unit.contains(mark)) return false;
+  if (hoverTooltip && hoverTooltip.style.display === "block" && hoverTooltip.anchor === mark) return true;
+  const text = mark.textContent.trim();
+  return !!showReading(mark, text, pinyinRow(unit), "el:" + text);
+}
+
+function showElementPinyin(el) {
+  const row = pinyinRow(el);
   const term = el.querySelector(":scope > b, :scope > strong");
   let text = (term || el).textContent.trim();
   if (!term && el.matches("li, .card-notes > div, .vocab-word-notes > div, .rich-editor > div") && /[:：]/.test(text)) text = text.split(/[:：]/)[0].trim();
@@ -5820,9 +5833,10 @@ function cjkAtPoint(x, y, el) {
 document.addEventListener("mousemove", e => {
   if (isTouch() || !(e.target instanceof Element) || e.target.closest(".cell.shown, .vocab-list-term, .vocab-popup")) return;
   const tip = hoverTooltip;
-  const showing = tip && tip.style.display === "block" && tip.anchor && tip.anchor.matches && tip.anchor.matches(PINYIN_SEL);
+  const showing = tip && tip.style.display === "block" && tip.anchor && tip.anchor.closest && tip.anchor.closest(PINYIN_SEL);
   const el = e.target.closest(PINYIN_SEL);
   if (el && (!vocabAddPopup || vocabAddPopup.contains(el)) && cjkAtPoint(e.clientX, e.clientY, el)) {
+    if (showMarkPinyin(e.target, el)) return;
     if (showing && tip.anchor === el) return;
     if (showElementPinyin(el)) return;
   }
@@ -5832,7 +5846,7 @@ document.addEventListener("mousemove", e => {
 document.addEventListener("mouseout", e => {
   if (isTouch() || !(e.target instanceof Element)) return;
   const el = e.target.closest(PINYIN_SEL);
-  if (el && !el.contains(e.relatedTarget) && hoverTooltip && hoverTooltip.anchor === el) hideTooltip();
+  if (el && !el.contains(e.relatedTarget) && hoverTooltip && el.contains(hoverTooltip.anchor)) hideTooltip();
 });
 
 document.addEventListener("input", e => {
@@ -5928,6 +5942,11 @@ function tapPinyin(e, container) {
   const tip = hoverTooltip;
   const open = !!tip && tip.style.display === "block";
   if (!unit || !container.contains(unit)) return hideTooltip();
+  const mark = e.target.closest("mark.vocab-hit, mark.vocab-own, .vocab-ctx mark");
+  if (mark && mark !== unit && unit.contains(mark)) {
+    if (open && tip.anchor === mark || !showMarkPinyin(e.target, unit)) hideTooltip();
+    return;
+  }
   if (unit.matches(".cell") && sentencePinyinMode()) {
     const was = open && tip.anchor === unit ? tip.dataset.part : null;
     if (!showSentencePinyin(unit, e.clientX, e.clientY) || was && was === tip.dataset.part) hideTooltip();
@@ -13208,7 +13227,7 @@ function fitReadings(root) {
     if (pads.includes(null)) return;
     const pad = Math.max(0, ...pads);
     els.forEach(el => {
-      el.style.margin = pad > 0 ? `0 ${pad.toFixed(1)}px` : "";
+      el.style.margin = pad > 0 ? `0 ${Math.ceil(pad)}px` : "";
       el.dataset.fit = "";
     });
   });
