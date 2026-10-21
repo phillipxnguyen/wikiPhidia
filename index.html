@@ -14301,7 +14301,7 @@ function allCurtain(item) {
   const sides = [ ...curtain.children ];
   const out = i => i ? 1 : -1;
   const shut = sides.map((el, i) => el.animate([ {
-    transform: `translateX(${out(i) * 100}%) skewX(0deg)`
+    transform: `translateX(calc(${out(i) * 100}% + ${out(i) * 48}px)) skewX(0deg)`
   }, {
     transform: `translateX(${out(i) * 30}%) skewX(${out(i) * 4}deg)`,
     offset: .45
@@ -14320,10 +14320,12 @@ function allCurtain(item) {
   const ready = () => ytHasError || (appMode === "vocab" ? !vocabAwaitCue && !pendingVideoId : !mixAwaitCue && !pendingVideoId && !ytCueing && (!ytHasVideo || ytReady));
   const finish = () => {
     curtain.remove();
-    if (ytPlayer && typeof ytPlayer.unMute === "function" && !isSequencePlaying && loopingRowId === null) {
-      pauseVideoProgrammatically();
-      ytPlayer.unMute();
-    }
+    setTimeout(() => {
+      if (ytPlayer && typeof ytPlayer.unMute === "function" && !isSequencePlaying && loopingRowId === null) {
+        pauseVideoProgrammatically();
+        ytPlayer.unMute();
+      }
+    }, 500);
   };
   const open = () => {
     sway.forEach(a => a.cancel());
@@ -14336,14 +14338,14 @@ function allCurtain(item) {
       transform: `translateX(${out(i) * 60}%) skewX(${-out(i) * 5}deg)`,
       offset: .65
     }, {
-      transform: `translateX(${out(i) * 101}%) skewX(0deg)`
+      transform: `translateX(calc(${out(i) * 100}% + ${out(i) * 48}px)) skewX(0deg)`
     } ], {
       duration: 1100,
       easing: "cubic-bezier(.5,0,.3,1)",
       fill: "forwards"
     }).finished)).then(() => {
       curtain.classList.add("open");
-      setTimeout(finish, 300);
+      finish();
     });
   };
   Promise.all(shut).then(() => {
