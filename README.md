@@ -137,7 +137,7 @@ On a phone, swipe a card right for Good and left for Again. Whatever flies off (
 **The route.** Under the cards, a large banner in the language's colours names the next step of its route with a ring showing the steps passed, your words, tests, average and best score. Its buttons are:
 
 - ▶ **Start step N** (or Resume, while that step's paper is in progress).
-- 🎯 **Weak words**: a test of the words you missed lately and the ones with the most lapses.
+- 🎯 **Weak cards**: a test of the cards you missed lately and the ones with the most lapses.
 - ⚡ **Quick check**: a short test of missing words and translations.
 - ✎ **Build a test**: opens the builder below.
 
@@ -145,7 +145,7 @@ The route itself is a path of seven steps, each with its parts, number of questi
 
 1. **Recall**: dictation, missing words and translation.
 2. **Use**: your own sentences, speaking and writing.
-3. **Word mastery**: every vocabulary part on one paper.
+3. **Vocabulary mastery**: every vocabulary part on one paper.
 4. **Understanding**: the real exam's reading, listening and word parts.
 5. **Expression**: the real exam's writing and speaking parts.
 6. **Mock exam**: the whole exam at standard length.
@@ -158,7 +158,7 @@ The rest of the language's page:
 - **Waiting for you**: the tests in progress and scheduled, with Resume or Start and ✕.
 - **Results**: every finished test in that language with a coloured score medal, its band and date, Review, ↻ Retake and ✕, the last five first (Show all for the rest), and a small chart of the scores.
 - **Skills**: bars per skill from the last ten tests.
-- **Words to work on**: the words you missed, with 🎯 Test these words.
+- **Cards to work on**: the cards you missed, with 🎯 Test these cards.
 
 **Build your own test.** ✎ Build a test opens a builder in the language's colours. Choose the exam (Vocabulary test, or the language's exams), the words (All vocabularies or one lesson's) and the parts, which can be switched on and off. Then choose the length (Short, Standard or Long) and, optionally, a date (Take it on). Finish with ▶ **Start now** or 📅 **Save for later**; a saved test waits as Scheduled and is marked due from that day. Each exam keeps only the question types that make you think, laid out and worded like the real one:
 
@@ -178,7 +178,7 @@ The rest of the language's page:
 - a ruled table with a row per part (number, part, score, out of, %) and a bold total row;
 - the result (★ Excellent from 85 %, Good from 70 %, Pass from 50 %, otherwise Needs work), the time used and how many answers were fully right, beside the red score stamp.
 
-Once the paper is marked (straight after Hand in, or after your last own mark), the page goes back to the top, to this sheet. Under the sheet, side by side, are cards that each say what they do, in the paper's language: ← Test centre (back to your route and all your results), 🎯 Practise missed words (a short new test of the words this paper got wrong, with how many), ↻ Retake (the same exam again, with new questions) and, on a route step passed at 70 % or more, ▶ Next: step N with the step's name (the next step of your route), the one to take next filled in colour. The marked paper follows.
+Once the paper is marked (straight after Hand in, or after your last own mark), the page goes back to the top, to this sheet. Under the sheet, side by side, are cards that each say what they do, in the paper's language: ← Test centre (back to your route and all your results), 🎯 Practise missed cards (a short new test of the words this paper got wrong, with how many), ↻ Retake (the same exam again, with new questions) and, on a route step passed at 70 % or more, ▶ Next: step N with the step's name (the next step of your route), the one to take next filled in colour. The marked paper follows.
 
 A test is saved as you go, every answer as you type it. Close the app, reload or come back days later, and Resume opens the paper exactly where you left it, with your typed answers and the time left. Pause on the paper does the same at once. The clock only runs while the paper is open and stops while answers are being marked.
 
