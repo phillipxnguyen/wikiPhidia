@@ -1484,11 +1484,13 @@ window.onYouTubeIframeAPIReady = function(){
   .cloud-row{display:flex;gap:8px;}
   .cloud-row button{flex:1;}
   .all-curtain{position:fixed;z-index:30000;pointer-events:none;overflow:hidden;}
-  .curtain-side{position:absolute;top:0;bottom:0;width:50%;background-color:var(--bar-base);background-image:repeating-linear-gradient(90deg, rgba(0,0,0,.34) 0, rgba(255,255,255,.16) 22px, rgba(255,255,255,.05) 36px, rgba(0,0,0,.3) 56px), linear-gradient(180deg, rgba(0,0,0,.3), transparent 22%, transparent 80%, rgba(0,0,0,.32)), var(--bar);background-size:auto, auto, 200% 100%;background-repeat:repeat, no-repeat, no-repeat;}
-  .curtain-l{left:0;transform-origin:0 0;background-position:0 0, 0 0, 0 0;box-shadow:inset -4px 0 0 #e0b84f, inset -28px 0 32px -12px rgba(0,0,0,.45), inset 0 -8px 0 #e0b84f;}
-  .curtain-r{right:0;transform-origin:100% 0;background-position:0 0, 0 0, 100% 0;box-shadow:inset 4px 0 0 #e0b84f, inset 28px 0 32px -12px rgba(0,0,0,.45), inset 0 -8px 0 #e0b84f;}
-  .all-curtain .curtain-top{position:absolute;left:0;right:0;top:0;height:64px;z-index:1;background-color:var(--bar-base);background-image:linear-gradient(180deg, rgba(0,0,0,.45), rgba(0,0,0,.1)), repeating-linear-gradient(90deg, rgba(0,0,0,.25) 0, rgba(255,255,255,.14) 28px, rgba(0,0,0,.25) 56px), var(--bar);background-size:auto, auto, 100% 100%;-webkit-mask:linear-gradient(#000, #000) 0 0 / 100% 36px no-repeat, radial-gradient(circle 28px at 28px 36px, #000 98%, transparent) 0 0 / 56px 64px repeat-x;mask:linear-gradient(#000, #000) 0 0 / 100% 36px no-repeat, radial-gradient(circle 28px at 28px 36px, #000 98%, transparent) 0 0 / 56px 64px repeat-x;filter:drop-shadow(0 4px 6px rgba(0,0,0,.3));}
-  .all-curtain .curtain-top::after{content:"";position:absolute;left:0;right:0;top:32px;height:4px;background:#e0b84f;}
+  .curtain-side{position:absolute;top:0;bottom:0;width:50%;transform-origin:50% 0;background-color:var(--bar-base);background-image:repeating-linear-gradient(90deg, rgba(0,0,0,.34) 0, rgba(255,255,255,.16) 22px, rgba(255,255,255,.05) 36px, rgba(0,0,0,.3) 56px), linear-gradient(180deg, rgba(0,0,0,.3), transparent 22%, transparent 80%, rgba(0,0,0,.32)), var(--bar);background-size:auto, auto, 200% 100%;background-repeat:repeat, no-repeat, no-repeat;}
+  .curtain-l{left:0;background-position:0 0, 0 0, 0 0;box-shadow:inset -4px 0 0 #e0b84f, inset -28px 0 32px -12px rgba(0,0,0,.45), inset 0 -8px 0 #e0b84f, 8px 0 24px rgba(0,0,0,.25);}
+  .curtain-r{right:0;background-position:0 0, 0 0, 100% 0;box-shadow:inset 4px 0 0 #e0b84f, inset 28px 0 32px -12px rgba(0,0,0,.45), inset 0 -8px 0 #e0b84f, -8px 0 24px rgba(0,0,0,.25);}
+  .curtain-side b{position:absolute;left:0;right:0;top:0;height:64px;background-color:var(--bar-base);background-image:linear-gradient(180deg, rgba(0,0,0,.45), rgba(0,0,0,.1)), repeating-linear-gradient(90deg, rgba(0,0,0,.25) 0, rgba(255,255,255,.14) 28px, rgba(0,0,0,.25) 56px), var(--bar);background-size:auto, auto, 200% 100%;-webkit-mask:linear-gradient(#000, #000) 0 0 / 100% 36px no-repeat, radial-gradient(circle 28px at 28px 36px, #000 98%, transparent) 0 0 / 56px 64px repeat-x;mask:linear-gradient(#000, #000) 0 0 / 100% 36px no-repeat, radial-gradient(circle 28px at 28px 36px, #000 98%, transparent) 0 0 / 56px 64px repeat-x;filter:drop-shadow(0 4px 6px rgba(0,0,0,.3));}
+  .curtain-l b{background-position:0 0, 0 0, 0 0;}
+  .curtain-r b{background-position:0 0, 0 0, 100% 0;}
+  .curtain-side b::after{content:"";position:absolute;left:0;right:0;top:32px;height:4px;background:#e0b84f;}
   .move-mark{font-weight:700;color:#1e9466;}
   .cloud-error{min-height:18px;font-size:14px;color:var(--danger);}
 
@@ -14205,16 +14207,8 @@ function afterCurtain(fn, wait) {
 }
 
 function softStart(start) {
-  const soft = !!document.querySelector(".all-curtain") && ytPlayer && typeof ytPlayer.setVolume === "function";
-  if (soft) ytPlayer.setVolume(0);
   start();
-  if (!soft) return;
-  const begin = performance.now();
-  requestAnimationFrame(function rise(now) {
-    const k = Math.min(1, (now - begin) / 700);
-    ytPlayer.setVolume(Math.round(100 * k * k));
-    if (k < 1) requestAnimationFrame(rise);
-  });
+  if (ytPlayer && typeof ytPlayer.unMute === "function") ytPlayer.unMute();
 }
 
 function warmFirstClip(done) {
@@ -14227,12 +14221,10 @@ function warmFirstClip(done) {
     over = true;
     clearInterval(poll);
     clearTimeout(guard);
-    pauseVideoProgrammatically();
-    ytPlayer.seekTo(row.time, true);
-    ytPlayer.unMute();
     done();
   };
   ytPlayer.mute();
+  if (typeof ytPlayer.setPlaybackRate === "function") ytPlayer.setPlaybackRate(sequenceSpeed);
   ytPlayer.seekTo(row.time, true);
   ytPlayer.playVideo();
   poll = setInterval(() => {
@@ -14264,57 +14256,67 @@ function allCurtain(item) {
   });
   curtain.style.setProperty("--bar", cs.backgroundImage);
   curtain.style.setProperty("--bar-base", cs.backgroundColor);
-  curtain.innerHTML = '<i class="curtain-side curtain-l"></i><i class="curtain-side curtain-r"></i><b class="curtain-top"></b>';
+  curtain.innerHTML = '<i class="curtain-side curtain-l"><b></b></i><i class="curtain-side curtain-r"><b></b></i>';
   document.body.appendChild(curtain);
-  const sides = [ ...curtain.querySelectorAll(".curtain-side") ];
-  const shut = sides.map(el => el.animate([ {
-    transform: "scaleX(.12)"
+  const sides = [ ...curtain.children ];
+  const out = i => i ? 1 : -1;
+  const shut = sides.map((el, i) => el.animate([ {
+    transform: `translateX(${out(i) * 100}%) skewX(0deg)`
   }, {
-    transform: "scaleX(1.03)",
-    offset: .75
+    transform: `translateX(${out(i) * 30}%) skewX(${out(i) * 4}deg)`,
+    offset: .45
   }, {
-    transform: "scaleX(1)"
+    transform: `translateX(${-out(i) * 1}%) skewX(${-out(i) * 2}deg)`,
+    offset: .8
+  }, {
+    transform: "translateX(0) skewX(0deg)"
   } ], {
-    duration: 800,
-    easing: "cubic-bezier(.3,.8,.3,1)",
+    duration: 900,
+    easing: "cubic-bezier(.3,.6,.3,1)",
     fill: "both"
   }).finished);
   let sway = [];
   const start = Date.now();
   const ready = () => ytHasError || (appMode === "vocab" ? !vocabAwaitCue && !pendingVideoId : !mixAwaitCue && !pendingVideoId && !ytCueing && (!ytHasVideo || ytReady));
+  const finish = () => {
+    curtain.remove();
+    if (ytPlayer && typeof ytPlayer.unMute === "function" && !isSequencePlaying && loopingRowId === null) {
+      pauseVideoProgrammatically();
+      ytPlayer.unMute();
+    }
+  };
   const open = () => {
     sway.forEach(a => a.cancel());
-    Promise.all(sides.map(el => el.animate([ {
-      transform: "scaleX(1)"
+    Promise.all(sides.map((el, i) => el.animate([ {
+      transform: "translateX(0) skewX(0deg)"
     }, {
-      transform: "scaleX(.12)"
+      transform: `translateX(${-out(i) * 2}%) skewX(${out(i) * 2}deg)`,
+      offset: .15
+    }, {
+      transform: `translateX(${out(i) * 60}%) skewX(${-out(i) * 5}deg)`,
+      offset: .65
+    }, {
+      transform: `translateX(${out(i) * 101}%) skewX(0deg)`
     } ], {
       duration: 1100,
-      easing: "cubic-bezier(.65,0,.25,1)",
+      easing: "cubic-bezier(.5,0,.3,1)",
       fill: "forwards"
     }).finished)).then(() => {
       curtain.classList.add("open");
-      return curtain.animate({
-        opacity: [ 1, 0 ]
-      }, {
-        duration: 500,
-        delay: 200,
-        easing: "ease-out",
-        fill: "forwards"
-      }).finished;
-    }).then(() => curtain.remove());
+      setTimeout(finish, 300);
+    });
   };
   Promise.all(shut).then(() => {
     sway = sides.map((el, i) => el.animate([ {
-      transform: "scaleX(1) skewX(0deg)"
+      transform: "skewX(0deg)"
     }, {
-      transform: `scaleX(.99) skewX(${i ? -.6 : .6}deg)`
+      transform: `skewX(${out(i) * .8}deg)`
     }, {
-      transform: "scaleX(1) skewX(0deg)"
+      transform: "skewX(0deg)"
     }, {
-      transform: `scaleX(1.005) skewX(${i ? .4 : -.4}deg)`
+      transform: `skewX(${-out(i) * .6}deg)`
     }, {
-      transform: "scaleX(1) skewX(0deg)"
+      transform: "skewX(0deg)"
     } ], {
       duration: 2800,
       delay: i * 400,
