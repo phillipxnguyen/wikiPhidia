@@ -1948,6 +1948,8 @@ function endPass() {
 
 let soundHeard = false;
 
+let ytWarm = false;
+
 let sequenceIndex = 0;
 
 let sequenceSpeed = 1.25;
@@ -2638,6 +2640,7 @@ function onPlayerReady() {
 }
 
 function safeDestroyPlayer() {
+  ytWarm = false;
   clearInterval(volumeTimer);
   clearInterval(unmuteTimer);
   ytVolume = 100;
@@ -2689,6 +2692,7 @@ function ensurePlayer() {
 }
 
 function destroyYtPlayer() {
+  ytWarm = false;
   pendingVideoId = null;
   ytHasVideo = false;
   ytCueing = false;
@@ -2703,6 +2707,7 @@ function destroyYtPlayer() {
 
 function createYtPlayer(videoId) {
   ytHasError = false;
+  ytWarm = false;
   if (ytPlayer && !ytReady && ytRetried && !ytWatchdog) {
     safeDestroyPlayer();
     ytRetried = false;
@@ -2969,7 +2974,7 @@ function startLoop(row) {
   seqToken++;
   updateSequenceBtnUI();
   loopingRowId = row.id;
-  soundHeard = false;
+  soundHeard = ytWarm;
   const end = segmentEnd(row, 8);
   soundSegment = {
     id: row.id,
@@ -3076,6 +3081,7 @@ function soundProgressLoop() {
     const speech = speechProgress();
     if (!soundHeard && (speech != null || video != null && soundSegment.armed && ytPlayer.getPlayerState() === YT.PlayerState.PLAYING)) {
       soundHeard = true;
+      if (video != null) ytWarm = true;
       paintSoundState();
     }
     const exam = testAudioProgress();
@@ -3190,7 +3196,7 @@ function stopPlaybackForRemovedRow(id) {
   pauseVideoProgrammatically();
   if (shouldContinueSequence) {
     isSequencePlaying = true;
-    soundHeard = false;
+    soundHeard = ytWarm;
     updateSequenceBtnUI();
     setTimeout(() => playNextSequenceStep(), 200);
   } else {
@@ -3828,7 +3834,7 @@ function startSequenceLoop(auto) {
   listenAutoPlayOnce = !!auto;
   passThen = null;
   isSequencePlaying = true;
-  soundHeard = false;
+  soundHeard = ytWarm;
   sequenceIndex = 0;
   updateSequenceBtnUI();
   playNextSequenceStep();
@@ -7627,6 +7633,7 @@ function goToReviewMode(style) {
   selectedRowId = null;
   const alreadyThere = style === "full" ? !groupState : !!groupState && groupViewStyle === style;
   if (alreadyThere) return;
+  ytWarm = false;
   setReviewMode(style);
   pinStudyArea();
 }
@@ -8358,7 +8365,7 @@ function startTts(field, onlyId = null) {
   }
   pauseVideoProgrammatically();
   ttsPlaying = true;
-  soundHeard = false;
+  soundHeard = true;
   ttsField = field;
   ttsOnlyId = onlyId;
   updateSequenceBtnUI();
@@ -9994,6 +10001,7 @@ async function discardIfEmptyDraft() {
 }
 
 async function switchToLesson(id) {
+  ytWarm = false;
   if (id === currentLessonId) {
     showView("study");
     return;
@@ -11104,6 +11112,7 @@ function showListModes() {
 }
 
 function showView(view) {
+  if (view !== currentView) ytWarm = false;
   if (view === "study" && !currentLessonId) view = "empty";
   if (view === "vocab" && lessonIsBlank()) view = "study";
   if (view === "study" && (currentLessonId === VOCAB_ALL_ID || appMode === "vocab") && !lessonIsBlank()) view = "vocab";
@@ -14171,7 +14180,6 @@ function preloadVocabVideo(item) {
 function playVocabSound(item) {
   stopVocabSound();
   if (!item) return;
-  soundHeard = false;
   if (navigator.userActivation && !navigator.userActivation.hasBeenActive) {
     afterFirstTouch(() => currentView === "vocab" && vocabShownRowId === item.card.id && playVocabSound(item));
     return;
@@ -14198,6 +14206,7 @@ function playVocabSound(item) {
       stopVocabSound();
       return;
     }
+    soundHeard = ytWarm;
     vocabPendingKey = item.key;
     startPendingVocabVideo();
     syncVocabSound();
@@ -14205,6 +14214,7 @@ function playVocabSound(item) {
   }
   const ctx = vocabContext(item);
   const text = ctx.sentence && findTermIn(ctx.sentence.normalize("NFC"), item.term) ? ctx.sentence : item.term;
+  soundHeard = true;
   vocabTtsOn = true;
   const token = ++vocabTtsToken;
   const speak = () => {
@@ -14406,6 +14416,7 @@ function handleVocabKey(e) {
 }
 
 function setAppMode(mode) {
+  ytWarm = false;
   appMode = mode;
   try {
     localStorage.setItem(APP_MODE_KEY, JSON.stringify(mode));
