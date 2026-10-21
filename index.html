@@ -896,10 +896,8 @@ window.onYouTubeIframeAPIReady = function(){
   .sound-ring path{fill:none;stroke-width:2;}
   .sound-ring .ring-track{stroke:color-mix(in srgb, var(--ring) 30%, transparent);}
   .sound-ring .ring-run{stroke:var(--ring);stroke-linecap:round;}
-  .sound-ring.wait .ring-run{animation:ring-chase 1.2s linear infinite;}
-  .sound-ring.wait .ring-track{animation:ring-breathe 1.2s ease-in-out infinite alternate;}
-  @keyframes ring-chase{from{stroke-dashoffset:0;}to{stroke-dashoffset:-100;}}
-  @keyframes ring-breathe{from{opacity:.4;}to{opacity:1;}}
+  .sound-wait{background-image:linear-gradient(100deg, transparent 25%, color-mix(in srgb, var(--accent) 45%, transparent) 50%, transparent 75%);background-size:200% 100%;background-repeat:no-repeat;animation:sound-shimmer 1s linear infinite;}
+  @keyframes sound-shimmer{from{background-position:150% 0;}to{background-position:-50% 0;}}
   .loop-time.disabled{opacity:.4;background:var(--surface-3);color:var(--text-2);}
 
   .single-card-progress{text-align:center;font-size:14px;color:var(--text);margin-bottom:16px;}
@@ -3038,7 +3036,7 @@ let soundSegment = {
   end: 0
 };
 
-function paintRing(el, p, waiting) {
+function paintRing(el, p) {
   const box = el.getBoundingClientRect();
   const w = Math.round(box.width * 100) / 100, h = Math.round(box.height * 100) / 100;
   let svg = el.querySelector(":scope > .sound-ring");
@@ -3052,22 +3050,11 @@ function paintRing(el, p, waiting) {
     svg.style.left = -(3 + el.clientLeft) + "px";
     svg.style.top = -(3 + el.clientTop) + "px";
   }
-  svg.classList.toggle("wait", !!waiting);
-  const run = svg.querySelector(".ring-run");
-  if (waiting) {
-    run.setAttribute("stroke-dasharray", "16 84");
-    run.removeAttribute("stroke-dashoffset");
-    run.style.visibility = "";
-    return;
-  }
   const done = Math.max(0, Math.min(1, p)) * 100;
+  const run = svg.querySelector(".ring-run");
   run.setAttribute("stroke-dasharray", `${(100 - done).toFixed(2)} 100`);
   run.setAttribute("stroke-dashoffset", (-done).toFixed(2));
   run.style.visibility = done >= 100 ? "hidden" : "";
-}
-
-function queueSoundLoop() {
-  if (!soundFrame) soundFrame = requestAnimationFrame(soundProgressLoop);
 }
 
 function soundProgressLoop() {
@@ -3087,23 +3074,18 @@ function soundProgressLoop() {
     }
     const exam = testAudioProgress();
     const all = [];
-    const add = (el, p, waiting) => el && all.push([ el, p, waiting ]);
-    document.querySelectorAll(".loop-time[data-id]").forEach(el => {
-      const mine = Number(el.dataset.id) === loopingRowId;
-      const waiting = mine && el.classList.contains("sound-wait");
-      add(el, waiting ? 0 : mine && el.classList.contains("looping") ? video : null, waiting);
-    });
+    const add = (el, p) => el && all.push([ el, p ]);
+    document.querySelectorAll(".loop-time[data-id]").forEach(el => add(el, el.classList.contains("looping") && Number(el.dataset.id) === loopingRowId ? video : null));
     [ "btnPlaySequence", "vocabSpeak" ].forEach(id => {
       const el = document.getElementById(id);
-      const waiting = !!el && el.classList.contains("sound-wait");
-      add(el, waiting ? 0 : el && el.classList.contains("active") ? video ?? speech : null, waiting);
+      add(el, el && el.classList.contains("active") ? video ?? speech : null);
     });
     document.querySelectorAll(".exam-play").forEach(el => add(el, el.classList.contains("on") && Number(el.dataset.listen) === testAudio.n ? exam : null));
     const chosen = all.find(([ el, p ]) => p != null && el.offsetParent);
-    all.forEach(([ el, p, waiting ]) => {
-      if (chosen && chosen[0] === el) paintRing(el, p, waiting); else el.querySelector(":scope > .sound-ring")?.remove();
+    all.forEach(([ el, p ]) => {
+      if (chosen && chosen[0] === el) paintRing(el, p); else el.querySelector(":scope > .sound-ring")?.remove();
     });
-    soundFrame = video != null || speech != null || exam != null || chosen && chosen[2] ? requestAnimationFrame(tick) : 0;
+    soundFrame = video != null || speech != null || exam != null ? requestAnimationFrame(tick) : 0;
   };
   tick();
 }
@@ -3899,7 +3881,6 @@ function setSequenceBtnState(btn, on, enabled, waiting = false) {
   const before = btn.classList.contains("active") + ":" + btn.disabled;
   btn.classList.toggle("active", on);
   btn.classList.toggle("sound-wait", waiting);
-  if (waiting) queueSoundLoop();
   btn.disabled = !enabled;
   if (before !== btn.classList.contains("active") + ":" + btn.disabled) updateTouchBar();
 }
@@ -14108,7 +14089,6 @@ function syncVocabSound() {
   btn.innerHTML = playFace(vocabShownIsVideo ? on ? YT_PAUSE_ICON : YT_ICON : on ? "⏸" : "🔊");
   btn.classList.toggle("active", on);
   btn.classList.toggle("sound-wait", vocabSoundOn() && !soundHeard);
-  if (vocabSoundOn() && !soundHeard) queueSoundLoop();
   if (currentView === "vocab") updateTouchBar();
 }
 
