@@ -328,7 +328,6 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-back .vocab-ctx.small{font-size:20px;}
   .vocab-back .vocab-meaning{font-weight:400;}
   .vocab-back .vocab-ctx mark, .vocab-back .vocab-ctx mark:has(.rd){display:inline;padding:0 1px;margin:0;border-radius:4px;line-height:inherit;}
-  .vocab-ctx mark:not(.vocab-hit, .vocab-own){background:var(--accent);color:var(--on-accent);}
   .vocab-back .vocab-ctx mark:is(.vocab-hit, .vocab-own){padding:0;border-radius:0;}
   .vocab-back .vocab-ctx mark.vs{border-top-left-radius:4px;border-bottom-left-radius:4px;padding-left:1px;}
   .vocab-back .vocab-ctx mark.ve{border-top-right-radius:4px;border-bottom-right-radius:4px;padding-right:1px;}
@@ -362,6 +361,9 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-meaning{font-size:28px;font-weight:400;line-height:35px;color:var(--a-text);overflow-wrap:anywhere;}
   #vocabSpeak{width:48px;}
   #vocabSpeak.active{background:var(--accent);color:var(--on-accent);border-color:var(--accent);}
+  :root.vocab-mode{--vocab-bg:#d5e3f7;--vocab-bg-hover:#bfd3ef;--vocab-text:#1a3f73;}
+  @media (prefers-color-scheme: dark){:root.vocab-mode:not([data-theme="light"]){--vocab-bg:#2e3c50;--vocab-bg-hover:#3a4d66;--vocab-text:#c4dbf7;}}
+  :root.vocab-mode[data-theme="dark"]{--vocab-bg:#2e3c50;--vocab-bg-hover:#3a4d66;--vocab-text:#c4dbf7;}
   :root.vocab-mode{--accent:var(--new-color);--accent-hover:color-mix(in srgb, var(--new-color) 85%, black);--accent-soft:color-mix(in srgb, var(--new-color) 13%, transparent);}
   .stats-title, .lesson-name-input{color:var(--accent);}
   .vocab-editor{display:flex;flex-direction:column;gap:10px;padding:16px;margin-bottom:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);}
@@ -6095,7 +6097,7 @@ function studyCopyAction() {
     if (row) copyText([ row.q, row.a ].map(t => (t || "").trim()).filter(Boolean).join("\n"));
     return;
   }
-  copyQuestions((picked ? [ picked ] : scope).map(r => (r.q || "").trim()).filter(Boolean));
+  copyText((picked ? [ picked ] : scope).map(r => oneLine(r.q)).filter(Boolean).join("\n"));
 }
 
 function updateSelBar() {
@@ -8281,22 +8283,8 @@ function startTts(field, onlyId = null) {
   }, 60);
 }
 
-function letteredList(texts) {
-  return texts.length === 1 ? texts[0] : texts.map((t, i) => "ABC"[i % 3] + ". " + t).join("\n");
-}
-
 function oneLine(text) {
   return (text || "").replace(/(\S)\s*\n\s*(?=(\S))/g, (...m) => m[1] + (UNSPACED_RE.test(m[1]) && UNSPACED_RE.test(m[2]) ? "" : " ")).replace(/\s+/g, " ").trim();
-}
-
-function copyQuestions(questions) {
-  if (!questions.length) return;
-  const text = letteredList(questions.map(oneLine));
-  navigator.clipboard.writeText(text).then(() => {
-    showToast("Copied");
-  }).catch(() => {
-    showToast("Could not copy");
-  });
 }
 
 function dictUrlFor(text, row) {
@@ -14263,7 +14251,9 @@ function vocabPickedKey() {
 function vocabCopyAction() {
   const pickedKey = vocabPickedKey();
   const item = vocabView === "card" ? currentVocabItem() : pickedKey && lessonVocabItems(vocabSource()).find(i => i.key === pickedKey);
-  if (item) copyQuestions([ item.term ]);
+  if (!item) return;
+  const sentence = vocabView === "card" ? oneLine(vocabContext(item).sentence) : "";
+  copyText(sentence || oneLine(item.term));
 }
 
 function vocabDeleteAction() {
