@@ -2888,6 +2888,25 @@ function seamTo(time) {
   if (ytPlayer.getPlayerState() !== YT.PlayerState.PLAYING) ytPlayer.playVideo();
   fadeVolume(100, 180);
   unmuteAt(time);
+  watchStall(0);
+}
+
+let stallTimer = null;
+
+function watchStall(tries, waits = 0) {
+  clearTimeout(stallTimer);
+  const segment = soundSegment;
+  stallTimer = setTimeout(() => {
+    if (!ytPlayer || typeof ytPlayer.getPlayerState !== "function" || soundSegment !== segment || loopingRowId === null || loopingRowId !== segment.id || ttsPlaying) return;
+    const state = ytPlayer.getPlayerState();
+    if (state === YT.PlayerState.PLAYING) return;
+    if (state === YT.PlayerState.BUFFERING && waits < 4) return watchStall(tries, waits + 1);
+    if (!tries) {
+      ytPlayer.playVideo();
+      return watchStall(1);
+    }
+    if (!endPass()) haltPlaybackTrackingForExternalPause();
+  }, 1500);
 }
 
 function segmentReached(start, end, jump) {
