@@ -328,6 +328,10 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-back .vocab-ctx.small{font-size:20px;}
   .vocab-back .vocab-meaning{font-weight:400;}
   .vocab-back .vocab-ctx mark, .vocab-back .vocab-ctx mark:has(.rd){display:inline;padding:0 1px;margin:0;border-radius:4px;line-height:inherit;}
+  .vocab-ctx mark:not(.vocab-hit, .vocab-own){background:var(--accent);color:var(--on-accent);}
+  .vocab-back .vocab-ctx mark:is(.vocab-hit, .vocab-own){padding:0;border-radius:0;}
+  .vocab-back .vocab-ctx mark.vs{border-top-left-radius:4px;border-bottom-left-radius:4px;padding-left:1px;}
+  .vocab-back .vocab-ctx mark.ve{border-top-right-radius:4px;border-bottom-right-radius:4px;padding-right:1px;}
   .vocab-back .vocab-ctx:first-child:has(.rd){line-height:2;margin:5px 0 -14px;}
   .vocab-face.vocab-back > .vocab-back-main{margin:auto 0 0;display:flex;flex-direction:column;align-items:center;gap:16px;width:100%;flex:none;}
   .vocab-face.vocab-back > .vocab-back-stroke{margin:0 0 auto;flex:none;}
@@ -755,14 +759,14 @@ window.onYouTubeIframeAPIReady = function(){
   .edit-qa > div{min-width:0;}
   .edit-row .rich-editor{margin-bottom:10px;display:block;}
   .rich-editor:empty::before{content:attr(data-placeholder);color:darkgray;}
-  :is(.rich-editor, .cell) mark.vocab-own{background:color-mix(in srgb, var(--text) 22%, transparent);color:inherit;}
-  @media (hover:hover){:is(.rich-editor, .cell) mark.vocab-own{cursor:pointer;}}
-  :is(.rich-editor, .cell) mark.vocab-hit{background:var(--vocab-bg);color:var(--vocab-text);cursor:pointer;}
-  :is(.rich-editor, .cell) mark.vocab-stack{background:linear-gradient(color-mix(in srgb, var(--text) 16%, transparent), color-mix(in srgb, var(--text) 16%, transparent)), var(--vocab-bg);}
-  :is(.rich-editor, .cell) mark.vocab-own.vocab-stack:not(.vocab-hit){background:color-mix(in srgb, var(--text) 36%, transparent);}
-  :is(.rich-editor, .cell) mark.vs{border-top-left-radius:4px;border-bottom-left-radius:4px;padding-left:1px;}
-  :is(.rich-editor, .cell) mark.ve{border-top-right-radius:4px;border-bottom-right-radius:4px;padding-right:1px;}
-  :is(.rich-editor, .cell) mark.vocab-hover{background:var(--vocab-bg-hover);}
+  :is(.rich-editor, .cell, .vocab-ctx) mark.vocab-own{background:color-mix(in srgb, var(--text) 22%, transparent);color:inherit;}
+  @media (hover:hover){:is(.rich-editor, .cell, .vocab-ctx) mark.vocab-own{cursor:pointer;}}
+  :is(.rich-editor, .cell, .vocab-ctx) mark.vocab-hit{background:var(--vocab-bg);color:var(--vocab-text);cursor:pointer;}
+  :is(.rich-editor, .cell, .vocab-ctx) mark.vocab-stack{background:linear-gradient(color-mix(in srgb, var(--text) 16%, transparent), color-mix(in srgb, var(--text) 16%, transparent)), var(--vocab-bg);}
+  :is(.rich-editor, .cell, .vocab-ctx) mark.vocab-own.vocab-stack:not(.vocab-hit){background:color-mix(in srgb, var(--text) 36%, transparent);}
+  :is(.rich-editor, .cell, .vocab-ctx) mark.vs{border-top-left-radius:4px;border-bottom-left-radius:4px;padding-left:1px;}
+  :is(.rich-editor, .cell, .vocab-ctx) mark.ve{border-top-right-radius:4px;border-bottom-right-radius:4px;padding-right:1px;}
+  :is(.rich-editor, .cell, .vocab-ctx) mark.vocab-hover{background:var(--vocab-bg-hover);}
   .rich-editor ul, .vocab-popup ul{margin:2px 0;padding-left:20px;}
   .rich-editor li, .vocab-popup li{margin:2px 0;}
   .hover-tooltip{
@@ -13295,7 +13299,7 @@ function lookupOthers(html, item) {
   const tmp = document.createElement("div");
   tmp.innerHTML = lookupHtml(html, item.card);
   const own = foldVocab(item.term);
-  tmp.querySelectorAll("mark.vocab-hit").forEach(m => {
+  tmp.querySelectorAll("mark.vocab-hit, mark.vocab-own").forEach(m => {
     if (markTerms(m).includes(own) || m.parentElement.closest("mark")) m.replaceWith(...m.childNodes);
   });
   return tmp.innerHTML;
@@ -14835,11 +14839,11 @@ const hoverQuery = window.matchMedia("(hover: hover)");
 
 document.addEventListener("mouseover", e => {
   if (!hoverQuery.matches) return;
-  const mark = e.target.closest && e.target.closest(":is(.rich-editor, .cell) mark.vocab-hit");
+  const mark = e.target.closest && e.target.closest(":is(.rich-editor, .cell, .vocab-ctx) mark.vocab-hit");
   document.querySelectorAll("mark.vocab-hover").forEach(m => m.classList.remove("vocab-hover"));
   if (!mark) return;
   const keys = markTerms(mark);
-  mark.closest(".rich-editor, .cell").querySelectorAll("mark.vocab-hit").forEach(m => {
+  mark.closest(".rich-editor, .cell, .vocab-ctx").querySelectorAll("mark.vocab-hit").forEach(m => {
     if (markTerms(m).some(k => keys.includes(k))) m.classList.add("vocab-hover");
   });
 });
