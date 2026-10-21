@@ -2552,6 +2552,11 @@ function onPlayerReady() {
 }
 
 function safeDestroyPlayer() {
+  clearInterval(volumeTimer);
+  clearInterval(unmuteTimer);
+  ytVolume = 100;
+  ytWarming = false;
+  ytCueing = false;
   if (ytPlayer && typeof ytPlayer.destroy === "function") {
     try {
       ytPlayer.destroy();
@@ -2600,6 +2605,7 @@ function ensurePlayer() {
 function destroyYtPlayer() {
   pendingVideoId = null;
   ytHasVideo = false;
+  ytCueing = false;
   if (ytPlayer && ytReady && typeof ytPlayer.stopVideo === "function") {
     try {
       ytPlayer.stopVideo();
@@ -2637,10 +2643,9 @@ function onPlayerStateChange(event) {
     ytCueing = false;
     vocabCueDone();
     mixCueDone();
-    if (retryPlay) {
-      retryPlay = false;
-      if (currentView === "study") startSequenceLoop();
-    }
+    const retried = retryPlay;
+    retryPlay = null;
+    if (retried && currentView === "study" && retried === extractYouTubeId(document.getElementById("mediaUrl").value.trim())) startSequenceLoop(isAllLessons() && isListenMode());
   }
   if (event.data === YT.PlayerState.PLAYING) {
     if (speechSynthesis.speaking || speechSynthesis.pending || ttsPlaying) {
@@ -2676,13 +2681,20 @@ const unplayableVideos = new Set;
 
 const retriedVideos = new Set;
 
-let retryPlay = false;
+let retryPlay = null;
 
 function retryVideo(play) {
   const id = extractYouTubeId(document.getElementById("mediaUrl").value.trim());
   if (!id) return;
   unplayableVideos.delete(id);
-  retryPlay = play;
+  retryPlay = play && currentView === "study" ? id : null;
+  if (play && currentView === "vocab" && vocabShownRowId !== null) {
+    const item = lessonVocabItems(vocabSource()).find(i => i.card.id === vocabShownRowId);
+    if (item) {
+      vocabPendingKey = item.key;
+      vocabAwaitCue = true;
+    }
+  }
   createYtPlayer(id);
 }
 
@@ -2698,6 +2710,7 @@ function onPlayerError(e) {
     return;
   }
   ytHasError = true;
+  retryPlay = null;
   if (id && [ 2, 100, 101, 150 ].includes(code)) unplayableVideos.add(id);
   stopSequenceLoop();
   vocabPendingKey = null;
@@ -2750,6 +2763,7 @@ function fadeVolume(to, ms) {
   clearInterval(volumeTimer);
   const from = ytVolume, begin = performance.now();
   const step = () => {
+    if (!ytPlayer || typeof ytPlayer.setVolume !== "function") return clearInterval(volumeTimer);
     const k = Math.min(1, (performance.now() - begin) / ms);
     ytVolume = Math.round(from + (to - from) * k);
     ytPlayer.setVolume(ytVolume);
@@ -2763,6 +2777,27 @@ function fullVolume() {
   clearInterval(volumeTimer);
   ytVolume = 100;
   if (ytPlayer && typeof ytPlayer.setVolume === "function") ytPlayer.setVolume(100);
+  unmuteNow();
+}
+
+let ytWarming = false;
+
+let unmuteTimer = 0;
+
+function unmuteNow() {
+  clearInterval(unmuteTimer);
+  ytWarming = false;
+  if (ytPlayer && typeof ytPlayer.unMute === "function") ytPlayer.unMute();
+}
+
+function unmuteAt(time) {
+  if (!ytWarming) return;
+  const begin = performance.now();
+  clearInterval(unmuteTimer);
+  unmuteTimer = setInterval(() => {
+    const t = ytPlayer && typeof ytPlayer.getCurrentTime === "function" ? ytPlayer.getCurrentTime() : time;
+    if (Math.abs(t - time) < .25 || performance.now() - begin > 600) unmuteNow();
+  }, 20);
 }
 
 function playbackRateOnce() {
@@ -2773,6 +2808,7 @@ function seamTo(time) {
   ytPlayer.seekTo(time, true);
   if (ytPlayer.getPlayerState() !== YT.PlayerState.PLAYING) ytPlayer.playVideo();
   fadeVolume(100, 180);
+  unmuteAt(time);
 }
 
 function segmentReached(start, end, jump) {
@@ -3687,6 +3723,7 @@ function startSequenceLoop(auto) {
 
 function stopSequenceLoop() {
   passThen = null;
+  retryPlay = null;
   isSequencePlaying = false;
   seqToken++;
   sequenceIndex = 0;
@@ -3787,7 +3824,10 @@ function playNextSequenceStep() {
     const here = ytPlayer.getCurrentTime();
     const flowing = ytPlayer.getPlayerState() === YT.PlayerState.PLAYING && typeof here === "number" && Math.abs(here - currentRow.time) < .3;
     playbackRateOnce();
-    if (flowing) fadeVolume(100, 180); else seamTo(currentRow.time);
+    if (flowing) {
+      fadeVolume(100, 180);
+      unmuteNow();
+    } else seamTo(currentRow.time);
     videoActionSeq++;
     const next = oneCard ? currentRow : visible[sequenceIndex + 1] || (listenAutoPlayOnce && isCardMode() ? null : visible[0]);
     const jump = !next || next.time == null || Math.abs(next.time - end) > .3;
@@ -7287,7 +7327,7 @@ function mixCueDone() {
   mixAwaitCue = false;
   const id = mixFocusId;
   afterCurtain(() => {
-    if (mixFocusId === id && !mixAwaitCue && !ytHasError && isAllLessons() && currentView === "study" && isListenMode() && !isSequencePlaying) softStart(() => startSequenceLoop(true));
+    if (mixFocusId === id && !mixAwaitCue && !ytHasError && isAllLessons() && currentView === "study" && isListenMode() && !isSequencePlaying) startSequenceLoop(true);
   }, document.querySelector(".all-curtain") ? 0 : 300);
 }
 
@@ -13828,7 +13868,7 @@ function startPendingVocabVideo() {
   if (document.querySelector(".all-curtain:not(.open)")) return afterCurtain(startPendingVocabVideo, 0);
   const item = lessonVocabItems(vocabSource()).find(i => i.key === vocabPendingKey);
   vocabPendingKey = null;
-  if (item && !ytHasError) softStart(() => startLoop(item.card));
+  if (item && !ytHasError) startLoop(item.card);
   syncVocabSound();
 }
 
@@ -14246,11 +14286,6 @@ function afterCurtain(fn, wait) {
   }, wait);
 }
 
-function softStart(start) {
-  start();
-  if (ytPlayer && typeof ytPlayer.unMute === "function") ytPlayer.unMute();
-}
-
 function warmFirstClip(done) {
   const item = appMode === "vocab" && vocabPendingKey !== null ? lessonVocabItems(vocabSource()).find(i => i.key === vocabPendingKey) : null;
   const row = appMode === "vocab" ? item && item.card : isAllLessons() && isListenMode() ? listenBatch()[0] : null;
@@ -14263,11 +14298,13 @@ function warmFirstClip(done) {
     clearTimeout(guard);
     done();
   };
+  ytWarming = true;
   ytPlayer.mute();
   if (typeof ytPlayer.setPlaybackRate === "function") ytPlayer.setPlaybackRate(sequenceSpeed);
   ytPlayer.seekTo(row.time, true);
   ytPlayer.playVideo();
   poll = setInterval(() => {
+    if (!ytPlayer || typeof ytPlayer.getPlayerState !== "function" || !isVirtualLesson()) return finish();
     if (ytHasError || ytPlayer.getPlayerState() === YT.PlayerState.PLAYING && ytPlayer.getCurrentTime() >= row.time + .3) finish();
   }, 50);
   guard = setTimeout(finish, 6e3);
@@ -14317,13 +14354,13 @@ function allCurtain(item) {
   }).finished);
   let sway = [];
   const start = Date.now();
-  const ready = () => ytHasError || (appMode === "vocab" ? !vocabAwaitCue && !pendingVideoId : !mixAwaitCue && !pendingVideoId && !ytCueing && (!ytHasVideo || ytReady));
+  const ready = () => ytHasError || !isVirtualLesson() || (appMode === "vocab" ? !vocabAwaitCue && !pendingVideoId : !mixAwaitCue && !pendingVideoId && !ytCueing && (!ytHasVideo || ytReady));
   const finish = () => {
     curtain.remove();
     setTimeout(() => {
-      if (ytPlayer && typeof ytPlayer.unMute === "function" && !isSequencePlaying && loopingRowId === null) {
+      if (ytWarming && !isSequencePlaying && loopingRowId === null) {
         pauseVideoProgrammatically();
-        ytPlayer.unMute();
+        unmuteNow();
       }
     }, 500);
   };
