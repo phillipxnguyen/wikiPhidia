@@ -877,7 +877,8 @@ window.onYouTubeIframeAPIReady = function(){
   }
   @media (hover:hover){.loop-time:not(.looping):hover{filter:brightness(1.1);}}
   .loop-time.looping{background:var(--accent);color:var(--on-accent);}
-  .loop-time.looping.sound-fill, #btnPlaySequence.active.sound-fill, #vocabSpeak.active.sound-fill{color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.35);background:linear-gradient(90deg, var(--accent) calc((1 - var(--p, 0)) * 100%), color-mix(in srgb, var(--accent) 45%, var(--surface)) 0);border-color:transparent;background-origin:border-box;}
+  ::highlight(sound-past){color:var(--text-2);}
+  ::highlight(sound-now){color:var(--accent);}
   .loop-time.disabled{opacity:.4;cursor:not-allowed;background:var(--surface-3);color:var(--text-2);}
 
   .single-card-progress{text-align:center;font-size:14px;color:var(--text);margin-bottom:16px;}
@@ -1199,7 +1200,6 @@ window.onYouTubeIframeAPIReady = function(){
   textarea.exam-answer[readonly]{cursor:default;}
   .exam-reason-label{margin-top:8px;font-size:15px;line-height:20px;font-style:italic;}
   .exam-sheet button.exam-play, .exam-sheet button.exam-rec{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border-radius:16px;font-size:12px;line-height:16px;}
-  .exam-sheet button.exam-play.on.sound-fill{text-shadow:0 1px 2px rgba(0,0,0,.35);background:linear-gradient(90deg, var(--sheet-edge) calc((1 - var(--p, 0)) * 100%), color-mix(in srgb, var(--sheet-edge) 45%, #fff) 0);border-color:transparent;background-origin:border-box;}
   .exam-sheet button.exam-play.on{color:#fff;background:var(--sheet-edge);border-color:var(--sheet-edge);}
   .exam-sheet button.exam-play.load::after{content:"";box-sizing:border-box;width:16px;height:16px;border:2px solid var(--sheet-box-edge);border-top-color:var(--sheet-ink);border-radius:8px;animation:examSpin 800ms linear infinite;}
   @keyframes examSpin{to{transform:rotate(360deg);}}
@@ -2792,7 +2792,8 @@ function trackSpeech(utter, text) {
     len: Math.max(1, text.length),
     est: Math.max(.8, text.length / (UNSPACED_RE.test(text) ? 4.5 : 14) / (utter.rate || 1)),
     boundary: false,
-    done: false
+    done: false,
+    text: text
   };
   utter.addEventListener("start", () => {
     track.start = performance.now();
@@ -2814,13 +2815,6 @@ function speechProgress() {
   return track.boundary ? Math.min(1, track.at / track.len) : Math.min(.97, (performance.now() - track.start) / 1e3 / track.est);
 }
 
-function testAudioProgress() {
-  if (testAudio.state !== "play") return null;
-  const q = openTestRecord() && openTestRecord().questions[testAudio.n - 1];
-  if (q && q.clip && testAudio.player && typeof testAudio.player.getCurrentTime === "function") return Math.max(0, Math.min(1, (testAudio.player.getCurrentTime() - q.clip.start) / Math.max(.1, q.clip.end - q.clip.start)));
-  return speechProgress();
-}
-
 let soundFrame = 0;
 
 let soundSegment = {
@@ -2828,6 +2822,71 @@ let soundSegment = {
   start: 0,
   end: 0
 };
+
+const KARAOKE_OK = typeof Highlight === "function" && !!window.CSS && !!CSS.highlights;
+
+const karaokeCache = new WeakMap;
+
+function karaokeUnits(el) {
+  const text = el.textContent;
+  const cached = karaokeCache.get(el);
+  if (cached && cached.text === text) return cached;
+  const units = [];
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  let node;
+  while (node = walker.nextNode()) {
+    if (node.parentElement.closest(".loop-time, .dots, rt, rp, [aria-hidden]")) continue;
+    for (const m of node.data.matchAll(/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\u30fc][^\s\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{L}\p{N}]*|[^\s\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]+/gu)) {
+      const letters = m[0].normalize("NFC").toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
+      units.push({
+        node: node,
+        start: m.index,
+        end: m.index + m[0].length,
+        letters: letters
+      });
+    }
+  }
+  let at = 0;
+  units.forEach(u => {
+    u.from = at;
+    at += u.letters.length;
+  });
+  const entry = {
+    text: text,
+    units: units,
+    letters: units.map(u => u.letters).join("")
+  };
+  karaokeCache.set(el, entry);
+  return entry;
+}
+
+function paintKaraoke(els, text, p) {
+  if (!KARAOKE_OK) return;
+  const key = (text || "").normalize("NFC").toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
+  const past = [], now = [];
+  if (p != null && key) {
+    if (!els || !els.length) els = [ ...document.querySelectorAll(".cell[data-field], .vocab-face, .vocab-list-row") ];
+    els.forEach(el => {
+      const {units: units, letters: letters} = karaokeUnits(el);
+      const from = letters.indexOf(key);
+      if (from < 0) return;
+      const inside = units.filter(u => u.letters && u.from >= from && u.from < from + key.length);
+      if (!inside.length) return;
+      const pos = from + Math.min(key.length - 1, Math.floor(p * key.length));
+      const cur = p >= 1 ? inside.length : Math.max(0, inside.findIndex(u => u.from + u.letters.length > pos));
+      const range = (a, b) => {
+        const r = document.createRange();
+        r.setStart(a.node, a.start);
+        r.setEnd(b.node, b.end);
+        return r;
+      };
+      inside.slice(0, cur).forEach(u => past.push(range(u, u)));
+      if (cur < inside.length) now.push(range(inside[cur], inside[cur]));
+    });
+  }
+  if (past.length) CSS.highlights.set("sound-past", new Highlight(...past)); else CSS.highlights.delete("sound-past");
+  if (now.length) CSS.highlights.set("sound-now", new Highlight(...now)); else CSS.highlights.delete("sound-now");
+}
 
 function soundProgressLoop() {
   cancelAnimationFrame(soundFrame);
@@ -2840,22 +2899,8 @@ function soundProgressLoop() {
       video = soundSegment.armed ? Math.max(0, Math.min(1, (now - soundSegment.start) / Math.max(.1, soundSegment.end - soundSegment.start))) : 0;
     }
     const speech = speechProgress();
-    const exam = testAudioProgress();
-    const all = [];
-    const add = (el, p) => el && all.push([ el, p ]);
-    document.querySelectorAll(".loop-time[data-id]").forEach(el => add(el, el.classList.contains("looping") && Number(el.dataset.id) === loopingRowId ? video : null));
-    [ "btnPlaySequence", "vocabSpeak" ].forEach(id => {
-      const el = document.getElementById(id);
-      add(el, el && el.classList.contains("active") ? video ?? speech : null);
-    });
-    document.querySelectorAll(".exam-play").forEach(el => add(el, el.classList.contains("on") && Number(el.dataset.listen) === testAudio.n ? exam : null));
-    const chosen = all.find(([ el, p ]) => p != null && el.offsetParent);
-    all.forEach(([ el, p ]) => {
-      const on = !!chosen && chosen[0] === el;
-      el.classList.toggle("sound-fill", on);
-      if (on) el.style.setProperty("--p", p.toFixed(3)); else el.style.removeProperty("--p");
-    });
-    soundFrame = video != null || speech != null || exam != null ? requestAnimationFrame(tick) : 0;
+    if (video != null) paintKaraoke([ ...document.querySelectorAll(`[data-id="${row.id}"] .cell[data-field="q"]`) ], row.q, video); else if (speech != null) paintKaraoke(null, speechTrack.text, speech); else paintKaraoke(null, "", null);
+    soundFrame = video != null || speech != null ? requestAnimationFrame(tick) : 0;
   };
   tick();
 }
