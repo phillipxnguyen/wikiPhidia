@@ -1482,6 +1482,7 @@ window.onYouTubeIframeAPIReady = function(){
   .cloud-or{font-size:12px;color:var(--text-2);}
   .cloud-row{display:flex;gap:8px;}
   .cloud-row button{flex:1;}
+  .all-curtain{position:fixed;inset:0;z-index:30000;pointer-events:none;background-repeat:no-repeat;background-size:100% 100%;}
   .move-mark{font-weight:700;color:#1e9466;}
   .cloud-error{min-height:18px;font-size:14px;color:var(--danger);}
 
@@ -7232,7 +7233,7 @@ function mixCueDone() {
   }
   mixAwaitCue = false;
   const id = mixFocusId;
-  setTimeout(() => {
+  afterCurtain(() => {
     if (mixFocusId === id && !mixAwaitCue && !ytHasError && isAllLessons() && currentView === "study" && isListenMode() && !isSequencePlaying) startSequenceLoop(true);
   }, 300);
 }
@@ -7293,10 +7294,7 @@ function mixNext() {
     setReviewMode("ielts");
     return;
   }
-  const loaded = extractYouTubeId(document.getElementById("mediaUrl").value.trim());
-  const near = loaded ? pool.filter(([ r, style ]) => style === "ielts" || extractYouTubeId(vocabVideoUrlFor(r)) === loaded) : [];
-  const from = near.length ? near : pool;
-  const [ row, style ] = from[Math.floor(Math.random() * from.length)];
+  const [ row, style ] = pool[Math.floor(Math.random() * pool.length)];
   mixShow(row, style);
 }
 
@@ -12889,18 +12887,12 @@ function vocabKind(st, now) {
 function startVocabSession() {
   const now = Date.now();
   const items = lessonVocabItems(vocabSource());
-  const videoOrder = new Map;
-  const picked = items.filter(item => vocabStateOf(item).due <= now).map(item => {
-    const video = vocabVideoIdFor(item.card);
-    if (video && !videoOrder.has(video)) videoOrder.set(video, Math.random());
-    return {
-      item: item,
-      kind: vocabKind(vocabStateOf(item), now),
-      group: video ? videoOrder.get(video) : Math.random(),
-      shuffle: Math.random()
-    };
-  });
-  picked.sort((a, b) => a.kind - b.kind || a.group - b.group || a.shuffle - b.shuffle);
+  const picked = items.filter(item => vocabStateOf(item).due <= now).map(item => ({
+    item: item,
+    kind: vocabKind(vocabStateOf(item), now),
+    shuffle: Math.random()
+  }));
+  picked.sort((a, b) => a.kind - b.kind || a.shuffle - b.shuffle);
   const allowed = limitVocab(picked.map(p => p.item));
   vocabSession = {
     lessonId: currentLessonId,
@@ -13780,6 +13772,7 @@ function vocabCueDone() {
 
 function startPendingVocabVideo() {
   if (vocabPendingKey === null || vocabAwaitCue || !ytPlayer || !ytReady || !ytHasVideo) return;
+  if (document.querySelector(".all-curtain")) return afterCurtain(startPendingVocabVideo, 0);
   const item = lessonVocabItems(vocabSource()).find(i => i.key === vocabPendingKey);
   vocabPendingKey = null;
   if (item && !ytHasError) startLoop(item.card);
@@ -13838,7 +13831,7 @@ function playVocabSound(item) {
     };
     speechSynthesis.speak(utter);
   };
-  speak();
+  afterCurtain(speak, 0);
   syncVocabSound();
 }
 
@@ -14194,8 +14187,51 @@ async function openAllVocabulary() {
   showView("study");
 }
 
+function afterCurtain(fn, wait) {
+  setTimeout(function check() {
+    if (document.querySelector(".all-curtain")) setTimeout(check, 100); else fn();
+  }, wait);
+}
+
+function allCurtain(item) {
+  if (reducedMotion() || document.querySelector(".all-curtain")) return;
+  const box = item.getBoundingClientRect();
+  const cs = getComputedStyle(item);
+  const curtain = document.createElement("div");
+  curtain.className = "all-curtain";
+  curtain.style.backgroundColor = cs.backgroundColor;
+  curtain.style.backgroundImage = cs.backgroundImage;
+  document.body.appendChild(curtain);
+  const x = Math.round(box.left + box.width / 2), y = Math.round(box.top + box.height / 2);
+  const r = Math.ceil(Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y)));
+  curtain.animate({
+    clipPath: [ `inset(${Math.round(box.top)}px ${Math.round(innerWidth - box.right)}px ${Math.round(innerHeight - box.bottom)}px ${Math.round(box.left)}px round 12px)`, `circle(${r}px at ${x}px ${y}px)` ]
+  }, {
+    duration: 500,
+    easing: "cubic-bezier(.3,.7,.3,1)",
+    fill: "forwards"
+  });
+  const start = Date.now();
+  const ready = () => appMode === "vocab" ? !vocabAwaitCue && !pendingVideoId : !mixAwaitCue && !pendingVideoId && (!ytHasVideo || ytReady);
+  const fade = () => {
+    if (Date.now() - start < 1100 || !ready() && Date.now() - start < 3e3) return setTimeout(fade, 100);
+    curtain.animate({
+      opacity: [ 1, 0 ],
+      filter: [ "blur(0px)", "blur(16px)" ],
+      transform: [ "scale(1)", "scale(1.06)" ]
+    }, {
+      duration: 800,
+      easing: "ease-in",
+      fill: "forwards"
+    }).finished.then(() => curtain.remove());
+  };
+  setTimeout(fade, 100);
+}
+
 document.getElementById("lessonList").addEventListener("click", e => {
-  if (!e.target.closest("[data-all-vocab]")) return;
+  const item = e.target.closest("[data-all-vocab]");
+  if (!item) return;
+  if (!item.classList.contains("active")) allCurtain(item);
   document.querySelector(".shell").classList.remove("drawer-open");
   if (appMode === "vocab") openAllVocabulary(); else openAllLessons();
 });
