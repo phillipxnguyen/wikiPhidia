@@ -571,8 +571,8 @@ window.onYouTubeIframeAPIReady = function(){
   .add-target{display:flex;align-items:center;gap:8px;color:var(--text-2);font-size:14px;}
   .add-target{margin-bottom:12px;}
   .add-target select{max-width:420px;font-weight:600;}
-  .add-target select.is-new{color:var(--on-accent);background-color:var(--accent);border-color:var(--accent);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23ffffff' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");}
-  .add-target select.is-new option{color:var(--text);background-color:var(--surface);}
+  .add-target select.is-new{color:var(--accent);background-color:var(--surface);border:2px solid var(--accent);padding:7px 27px 7px 11px;}
+  .add-target select.is-new option{color:var(--text);}
   #importText{min-height:180px;}
   .add-single{display:block;width:100%;margin-bottom:10px;padding:8px;font-size:18px;font-weight:700;line-height:1;color:var(--accent);background:var(--accent-soft);border:0;border-radius:var(--radius-sm);}
   @media (hover:hover){.add-single:hover{background:color-mix(in srgb, var(--accent) 20%, transparent);}}
@@ -1495,6 +1495,13 @@ window.onYouTubeIframeAPIReady = function(){
   .curtain-l b{background-position:0 0, 0 0, 0 0;}
   .curtain-r b{background-position:0 0, 0 0, 100% 0;}
   .curtain-side b::after{content:"";position:absolute;left:0;right:0;top:32px;height:4px;background:#e0b84f;}
+  .add-popup{align-items:flex-start;overflow-y:auto;}
+  .add-pop-card{box-sizing:border-box;width:100%;max-width:760px;margin:40px auto;padding:20px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);}
+  .add-pop-head{display:flex;align-items:center;gap:12px;margin-bottom:12px;}
+  .add-pop-head h2{flex:1;min-width:0;margin:0;font-size:20px;line-height:25px;color:var(--accent);overflow-wrap:anywhere;}
+  #addForm.in-popup{padding:0;border:0;box-shadow:none;background:none;}
+  #addForm.in-popup :is(.add-target, .yt-grab-row){display:none;}
+  @media (max-width:600px){.add-pop-card{margin:12px auto;padding:16px;}}
   .move-mark{font-weight:700;color:#1e9466;}
   .cloud-error{min-height:18px;font-size:14px;color:var(--danger);}
 
@@ -1558,6 +1565,12 @@ window.onYouTubeIframeAPIReady = function(){
   <label>Reviews a day<input id="limitReview" type="number" min="0" step="1" inputmode="numeric" placeholder="No limit"></label>
 </div>
 
+<div id="addPopup" class="paused-overlay add-popup" hidden role="dialog" aria-modal="true" aria-labelledby="addPopTitle">
+  <div class="add-pop-card">
+    <div class="add-pop-head"><h2 id="addPopTitle"></h2><button id="addPopClose" class="ghost" aria-label="Close">✕</button></div>
+    <div id="addPopSlot"></div>
+  </div>
+</div>
 <div id="moveDialog" class="paused-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="moveTitle">
   <div class="paused-card cloud-card">
     <div class="emoji move-mark">字</div>
@@ -6731,7 +6744,7 @@ document.addEventListener("click", e => {
   const chip = e.target.closest("[data-add-card]");
   if (!chip) return;
   chip.blur();
-  if (currentView === "vocab") openVocabEditor(NEW_WORD_KEY, true); else addSingleCard();
+  openAddPopup();
 });
 
 function addSingleCard() {
@@ -6750,6 +6763,7 @@ function addSingleCard() {
 
 document.getElementById("btnSingleCard").onclick = e => {
   e.stopPropagation();
+  closeAddPopup();
   if (appMode !== "vocab") return addSingleCard();
   if (!currentLessonId || isVirtualLesson()) return;
   vocabEditingKey = NEW_WORD_KEY;
@@ -9213,6 +9227,7 @@ document.querySelectorAll(".lang-btn").forEach(btn => {
       let msg = [ importResultMessage(plan), words.length ? `Added ${words.length} word(s) to Vocabulary.` : "" ].filter(Boolean).join(" ") || "No cards imported.";
       if (failed > 0) msg += ` ${failed} failed to translate.`;
       setImportStatus(msg);
+      if (words.length || plan.newRows.length || plan.updated) closeAddPopup();
       if (words.length || plan.newRows.length) settleImportMode(plan.newRows.length > 0, words.length > 0);
     } finally {
       btns.forEach(b => b.disabled = false);
@@ -9249,6 +9264,7 @@ document.getElementById("importBtn").onclick = () => {
   if (analysis.title && !plan.newRows.length && !plan.fills.size) scheduleAutoSave();
   render();
   renderImportPreview();
+  if (words.length || plan.newRows.length || plan.fills.size) closeAddPopup();
   if (words.length || plan.newRows.length) settleImportMode(plan.newRows.length > 0, words.length > 0);
 };
 
@@ -11005,7 +11021,14 @@ function placeAddForm(where) {
   const form = document.getElementById("addForm");
   const slot = document.getElementById("inlineAddSlot");
   const home = document.getElementById("viewAdd");
-  if (where === "lesson") {
+  form.classList.toggle("in-popup", where === "popup");
+  if (where === "popup") {
+    document.getElementById("addPopSlot").appendChild(form);
+    form.hidden = false;
+    slot.hidden = true;
+    renderImportInfo();
+    renderImportPreview();
+  } else if (where === "lesson") {
     if (form.parentNode !== slot) slot.appendChild(form);
     form.hidden = false;
     slot.hidden = false;
@@ -11050,7 +11073,7 @@ function renderAddView() {
 function fillAddTarget() {
   const select = document.getElementById("addTarget");
   const fresh = isEmptyDraft();
-  select.innerHTML = `<option value="${ADD_NEW}"${fresh ? " selected" : ""}>＋ New lesson</option>` + (isVirtualLesson() || !currentLessonId ? '<option value="" selected>Choose a lesson…</option>' : "") + sortedLibrary().filter(l => l.id === currentLessonId ? !fresh : lessonShown(l)).map(l => {
+  select.innerHTML = `<option value="${ADD_NEW}"${fresh ? " selected" : ""}>🆕 New lesson</option>` + (isVirtualLesson() || !currentLessonId ? '<option value="" selected>Choose a lesson…</option>' : "") + sortedLibrary().filter(l => l.id === currentLessonId ? !fresh : lessonShown(l)).map(l => {
     const name = l.id === currentLessonId ? document.getElementById("lessonName").value.trim() || l.name : l.name;
     return `<option value="${escapeAttr(l.id)}"${l.id === currentLessonId ? " selected" : ""}>${escapeHtml(name || "Untitled lesson")}</option>`;
   }).join("");
@@ -12531,7 +12554,7 @@ const YT_STUDY_LANGS = {
 let ytImport = null;
 
 function dialogOpen() {
-  return !document.getElementById("cloudDialog").hidden || !document.getElementById("ytDialog").hidden || !document.getElementById("moveDialog").hidden;
+  return !document.getElementById("cloudDialog").hidden || !document.getElementById("ytDialog").hidden || !document.getElementById("moveDialog").hidden || !document.getElementById("addPopup").hidden;
 }
 
 function chooseYouTubeImport(translate) {
@@ -14764,6 +14787,40 @@ function focusLessonSearch() {
   box.focus();
   box.select();
 }
+
+function openAddPopup() {
+  if (!currentLessonId || isVirtualLesson()) return;
+  commitActiveEdit();
+  const vocab = currentView === "vocab";
+  const name = (document.getElementById("lessonName").value || "").trim() || "Untitled lesson";
+  document.getElementById("addPopTitle").textContent = (vocab ? "Add words to " : "Add cards to ") + name;
+  document.getElementById("btnSingleCard").setAttribute("aria-label", vocab ? "Add a single word" : "Add a single card");
+  placeAddForm("popup");
+  document.getElementById("addPopup").hidden = false;
+  document.getElementById("importText").focus();
+}
+
+function closeAddPopup() {
+  const pop = document.getElementById("addPopup");
+  if (pop.hidden) return;
+  pop.hidden = true;
+  placeAddForm("page");
+  render();
+  if (currentView === "vocab") renderVocab();
+}
+
+document.getElementById("addPopClose").onclick = closeAddPopup;
+
+document.getElementById("addPopup").addEventListener("click", e => {
+  if (e.target === e.currentTarget) closeAddPopup();
+});
+
+document.getElementById("addPopup").addEventListener("keydown", e => {
+  if (e.key !== "Escape") return;
+  e.preventDefault();
+  e.stopPropagation();
+  closeAddPopup();
+});
 
 function addFromKey() {
   const plus = [ ...document.querySelectorAll("[data-add-card]") ].find(b => b.getClientRects().length);
