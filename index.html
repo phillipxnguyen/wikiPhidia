@@ -897,13 +897,13 @@ window.onYouTubeIframeAPIReady = function(){
   .sound-ring .ring-track{stroke:color-mix(in srgb, var(--ring) 30%, transparent);}
   .sound-ring .ring-run{stroke:var(--ring);stroke-linecap:round;}
   .loop-time, #btnPlaySequence, #vocabSpeak{isolation:isolate;}
-  :is(.sound-wait, .sound-fill, .sound-fade)::before{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;pointer-events:none;}
-  :is(.sound-wait, .sound-fade)::before{background:linear-gradient(100deg, transparent 25%, color-mix(in srgb, var(--accent) 45%, transparent) 50%, transparent 75%) no-repeat;background-size:200% 100%;animation:sound-shimmer 1s linear infinite;transition:opacity .4s ease;}
+  :is(.sound-wait, .sound-fill, .sound-fade)::before{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;pointer-events:none;transition:opacity .4s ease;}
+  :is(.sound-wait, .sound-fade):not(.sound-load)::before{background:linear-gradient(100deg, transparent 25%, color-mix(in srgb, var(--accent) 45%, transparent) 50%, transparent 75%) no-repeat;background-size:200% 100%;animation:sound-shimmer 1s linear infinite;}
+  :is(.sound-load, .sound-fill)::before{right:auto;width:calc(var(--fill, 0) * 100%);background-color:color-mix(in srgb, var(--accent) 35%, transparent);}
+  .sound-fill::before{width:100%;background-color:var(--accent);transition:width .25s ease-out, background-color .25s ease-out;}
   .sound-fade::before{opacity:0;}
-  .sound-fill::before{background:linear-gradient(90deg, var(--accent) 45%, transparent 55%) no-repeat;background-size:220% 100%;animation:sound-wipe .45s ease-in-out forwards;}
-  :is(.loop-time, #btnPlaySequence, #vocabSpeak).sound-fill{transition:background-color 0s .45s, border-color 0s .45s, color .15s ease .3s;}
+  :is(.loop-time, #btnPlaySequence, #vocabSpeak).sound-fill{transition:background-color 0s .25s, border-color 0s .25s, color .15s ease .15s;}
   @keyframes sound-shimmer{from{background-position:150% 0;}to{background-position:-50% 0;}}
-  @keyframes sound-wipe{from{background-position:100% 0;}to{background-position:0 0;}}
   .loop-time.disabled{opacity:.4;background:var(--surface-3);color:var(--text-2);}
 
   .single-card-progress{text-align:center;font-size:14px;color:var(--text);margin-bottom:16px;}
@@ -3094,8 +3094,12 @@ function soundProgressLoop() {
     });
     document.querySelectorAll(".exam-play").forEach(el => add(el, el.classList.contains("on") && Number(el.dataset.listen) === testAudio.n ? exam : null));
     const chosen = all.find(([ el, p ]) => p != null && el.offsetParent);
-    all.forEach(([ el, p ]) => {
-      if (chosen && chosen[0] === el) paintRing(el, p); else el.querySelector(":scope > .sound-ring")?.remove();
+    all.forEach(([ el, p, waiting ]) => {
+      const main = !!chosen && chosen[0] === el;
+      if (main) paintRing(el, p); else el.querySelector(":scope > .sound-ring")?.remove();
+      if (!waiting) return;
+      el.classList.toggle("sound-load", main);
+      if (main) el.style.setProperty("--fill", (.9 * (1 - Math.exp((el.waitSince - performance.now()) / 900))).toFixed(3));
     });
     soundFrame = video != null || speech != null || exam != null || chosen && chosen[2] ? requestAnimationFrame(tick) : 0;
   };
@@ -3143,14 +3147,20 @@ function markWait(el, waiting, lit) {
   const was = el.classList.contains("sound-wait");
   el.classList.toggle("sound-wait", waiting);
   if (waiting) {
-    el.classList.remove("sound-fill", "sound-fade");
+    if (!was) {
+      el.classList.remove("sound-fill", "sound-fade", "sound-load");
+      el.waitSince = performance.now();
+    }
     if (!soundFrame) soundFrame = requestAnimationFrame(soundProgressLoop);
   }
   if (!was || waiting) return;
-  const end = lit ? "sound-fill" : "sound-fade";
+  const end = lit && el.classList.contains("sound-load") ? "sound-fill" : "sound-fade";
   el.classList.add(end);
   clearTimeout(el.fadeTimer);
-  el.fadeTimer = setTimeout(() => el.classList.remove(end), 450);
+  el.fadeTimer = setTimeout(() => {
+    el.classList.remove(end, "sound-load");
+    el.style.removeProperty("--fill");
+  }, 400);
 }
 
 function syncRowBadges() {
