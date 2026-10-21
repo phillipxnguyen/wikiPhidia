@@ -1482,7 +1482,7 @@ window.onYouTubeIframeAPIReady = function(){
   .cloud-or{font-size:12px;color:var(--text-2);}
   .cloud-row{display:flex;gap:8px;}
   .cloud-row button{flex:1;}
-  .all-curtain{position:fixed;inset:0;z-index:30000;pointer-events:none;overflow:hidden;}
+  .all-curtain{position:fixed;z-index:30000;pointer-events:none;overflow:hidden;}
   .all-curtain i{position:absolute;top:0;bottom:0;width:50%;background-image:repeating-linear-gradient(90deg, rgba(255,255,255,.1) 0, rgba(0,0,0,.12) 24px, rgba(255,255,255,.1) 48px), var(--bar);background-size:auto, 200% 100%;background-repeat:repeat, no-repeat;}
   .all-curtain .curtain-l{left:0;background-position:0 0, 0 0;box-shadow:inset -12px 0 24px rgba(0,0,0,.25);}
   .all-curtain .curtain-r{right:0;background-position:0 0, 100% 0;box-shadow:inset 12px 0 24px rgba(0,0,0,.25);}
@@ -1865,6 +1865,8 @@ let ytReady = false;
 let ytHasVideo = false;
 
 let ytHasError = false;
+
+let ytCueing = false;
 
 let pendingVideoId = null;
 
@@ -2532,6 +2534,7 @@ function onPlayerReady() {
     pendingVideoId = null;
     ytHasVideo = true;
     setMediaState("shown");
+    ytCueing = true;
     ytPlayer.cueVideoById(id);
     if (ttsPlaying) pauseVideoProgrammatically();
   }
@@ -2614,6 +2617,7 @@ function createYtPlayer(videoId) {
   }
   ytHasVideo = true;
   setMediaState("shown");
+  ytCueing = true;
   ytPlayer.cueVideoById(videoId);
   if (ttsPlaying) pauseVideoProgrammatically();
   updateSequenceBtnUI();
@@ -2623,6 +2627,7 @@ whenYtApiReady(ensurePlayer);
 
 function onPlayerStateChange(event) {
   if (event.data === YT.PlayerState.CUED) {
+    ytCueing = false;
     vocabCueDone();
     mixCueDone();
     if (retryPlay) {
@@ -2675,6 +2680,7 @@ function retryVideo(play) {
 }
 
 function onPlayerError(e) {
+  ytCueing = false;
   const code = e && e.data;
   const id = extractYouTubeId(document.getElementById("mediaUrl").value.trim());
   if (id && !retriedVideos.has(id)) {
@@ -7229,8 +7235,7 @@ function mixCueDone() {
     mixAwaitCue = false;
     return;
   }
-  const unstarted = !!ytPlayer && ytReady && typeof ytPlayer.getPlayerState === "function" && ytPlayer.getPlayerState() === -1;
-  if (!ytHasError && (!ytPlayer || !ytReady || !ytHasVideo || unstarted && Date.now() - mixCueSince < 8e3)) {
+  if (!ytHasError && (!ytPlayer || !ytReady || !ytHasVideo || ytCueing && Date.now() - mixCueSince < 8e3)) {
     mixCueTimer = setTimeout(mixCueDone, 300);
     return;
   }
@@ -14207,6 +14212,21 @@ function allCurtain(item) {
     h.style.backgroundColor = cs.backgroundColor;
     h.style.setProperty("--bar", cs.backgroundImage);
   });
+  const main = document.querySelector(".main").getBoundingClientRect();
+  const over = el => {
+    const r = el && !el.hidden ? el.getBoundingClientRect() : null;
+    return r && r.width && r.left < main.right && r.right > main.left ? r : null;
+  };
+  const head = over(document.querySelector(".sidebar .brand")), foot = over(document.getElementById("touchBar"));
+  const top = Math.round(Math.max(0, main.top, head && head.bottom < innerHeight / 2 ? head.bottom : 0));
+  const bottom = Math.round(Math.min(innerHeight, main.bottom, foot && foot.top > innerHeight / 2 ? foot.top : innerHeight));
+  const left = Math.max(0, Math.round(main.left));
+  Object.assign(curtain.style, {
+    top: top + "px",
+    left: left + "px",
+    width: Math.min(innerWidth, Math.round(main.right)) - left + "px",
+    height: bottom - top + "px"
+  });
   document.body.appendChild(curtain);
   const slide = (from, to, duration, easing) => Promise.all(halves.map((h, i) => h.animate({
     transform: [ `translateX(${(i ? 1 : -1) * from}%)`, `translateX(${(i ? 1 : -1) * to}%)` ]
@@ -14216,9 +14236,9 @@ function allCurtain(item) {
     fill: "forwards"
   }).finished));
   const start = Date.now();
-  const ready = () => appMode === "vocab" ? !vocabAwaitCue && !pendingVideoId : !mixAwaitCue && !pendingVideoId && (!ytHasVideo || ytReady);
+  const ready = () => ytHasError || (appMode === "vocab" ? !vocabAwaitCue && !pendingVideoId : !mixAwaitCue && !pendingVideoId && !ytCueing && (!ytHasVideo || ytReady));
   slide(100, 0, 450, "cubic-bezier(.3,.7,.3,1)").then(function wait() {
-    if (Date.now() - start < 1100 || !ready() && Date.now() - start < 3e3) return setTimeout(wait, 100);
+    if (!ready() && Date.now() - start < 2e4) return setTimeout(wait, 100);
     slide(0, 100, 900, "cubic-bezier(.6,0,.2,1)").then(() => curtain.remove());
   });
 }
