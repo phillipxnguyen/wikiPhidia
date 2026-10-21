@@ -569,7 +569,10 @@ window.onYouTubeIframeAPIReady = function(){
   }
   .add-head{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:4px;}
   .add-target{display:flex;align-items:center;gap:8px;color:var(--text-2);font-size:14px;}
+  .add-target{margin-bottom:12px;}
   .add-target select{max-width:420px;font-weight:600;}
+  .add-target select.is-new{color:var(--on-accent);background-color:var(--accent);border-color:var(--accent);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23ffffff' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");}
+  .add-target select.is-new option{color:var(--text);background-color:var(--surface);}
   #importText{min-height:180px;}
   .add-single{display:block;width:100%;margin-bottom:10px;padding:8px;font-size:18px;font-weight:700;line-height:1;color:var(--accent);background:var(--accent-soft);border:0;border-radius:var(--radius-sm);}
   @media (hover:hover){.add-single:hover{background:color-mix(in srgb, var(--accent) 20%, transparent);}}
@@ -1645,12 +1648,12 @@ window.onYouTubeIframeAPIReady = function(){
 <section id="viewAdd" hidden>
   <div class="add-head">
     <h1 id="addTitle" class="stats-title">Add cards</h1>
-    <label class="add-target">to
-      <select id="addTarget" aria-label="Lesson to add cards to"></select>
-    </label>
   </div>
   <div id="addUnavailable" class="panel stats-empty" hidden></div>
   <div id="addForm" class="panel">
+    <label class="add-target">Add to
+      <select id="addTarget" aria-label="Lesson to add to"></select>
+    </label>
     <button id="btnSingleCard" class="add-single" aria-label="Add a single card">＋</button>
     <textarea id="importText" rows="8" placeholder="Paste here!"></textarea>
     <div id="importPreview" class="import-preview" hidden aria-live="polite"></div>
@@ -11006,6 +11009,7 @@ function placeAddForm(where) {
     if (form.parentNode !== slot) slot.appendChild(form);
     form.hidden = false;
     slot.hidden = false;
+    fillAddTarget();
     renderImportInfo();
   } else {
     if (form.parentNode !== home) home.appendChild(form);
@@ -11031,12 +11035,8 @@ function leaveEmptiedLesson(side, n) {
 
 function renderAddView() {
   placeAddForm("page");
-  const select = document.getElementById("addTarget");
   const blocked = !currentLessonId ? "Create or open a lesson first, then add cards to it." : isVirtualLesson() ? "A mixed session can't take new cards — choose a lesson in the box above." : "";
-  select.innerHTML = (isVirtualLesson() || !currentLessonId ? '<option value="">Choose a lesson…</option>' : "") + sortedLibrary().filter(l => l.id === currentLessonId || lessonShown(l)).map(l => {
-    const name = l.id === currentLessonId ? document.getElementById("lessonName").value.trim() || l.name : l.name;
-    return `<option value="${escapeAttr(l.id)}"${l.id === currentLessonId ? " selected" : ""}>${escapeHtml(name || "Untitled lesson")}</option>`;
-  }).join("");
+  fillAddTarget();
   const vocab = appMode === "vocab";
   document.getElementById("addTitle").textContent = vocab ? "Add vocabularies" : "Add cards";
   document.getElementById("addUnavailable").textContent = vocab && blocked ? blocked.replace("new cards", "new words").replace("add cards", "add words") : blocked;
@@ -11047,10 +11047,29 @@ function renderAddView() {
   if (!blocked) document.getElementById("importText").focus();
 }
 
+function fillAddTarget() {
+  const select = document.getElementById("addTarget");
+  const fresh = isEmptyDraft();
+  select.innerHTML = `<option value="${ADD_NEW}"${fresh ? " selected" : ""}>＋ New lesson</option>` + (isVirtualLesson() || !currentLessonId ? '<option value="" selected>Choose a lesson…</option>' : "") + sortedLibrary().filter(l => l.id === currentLessonId ? !fresh : lessonShown(l)).map(l => {
+    const name = l.id === currentLessonId ? document.getElementById("lessonName").value.trim() || l.name : l.name;
+    return `<option value="${escapeAttr(l.id)}"${l.id === currentLessonId ? " selected" : ""}>${escapeHtml(name || "Untitled lesson")}</option>`;
+  }).join("");
+  select.classList.toggle("is-new", fresh);
+}
+
+const ADD_NEW = "__new__";
+
 async function changeAddTarget(id) {
-  if (!id || id === currentLessonId) return;
+  if (!id || id === currentLessonId || id === ADD_NEW && isEmptyDraft()) return;
   const ta = document.getElementById("importText");
   const pasted = ta.value;
+  if (id === ADD_NEW) {
+    await createLesson();
+    ta.value = pasted;
+    renderImportPreview();
+    ta.focus();
+    return;
+  }
   commitActiveEdit();
   await discardIfEmptyDraft();
   await flushAutoSave();
