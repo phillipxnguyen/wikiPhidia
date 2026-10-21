@@ -2356,7 +2356,42 @@ function looksLikeExplicitTimestamp(str) {
   return /^\d+s$/i.test(str) || /^\d+:\d{1,2}(:\d{1,2})?$/.test(str);
 }
 
-const TS_SPACE_RE = /^\s*(\d+:\d{1,2}(?::\d{1,2})?|\d+s)[ \u00a0\u3000]+(\S.*)$/i;
+const TS_SPACE_RE = /^\s*[\[(]?(\d+:\d{1,2}(?::\d{1,2})?|\d+s)[\])]?[ \u00a0\u3000]+(\S.*)$/i;
+
+const TS_LINE_RE = /^\s*[\[(]?\d+:\d{2}(?::\d{2})?[\])]?\s*$/;
+
+const TS_LEAD_RE = /^\s*[\[(]?(\d{1,2}:\d{2}(?::\d{2})?)[\])]?[ \u00a0\u3000]+(?=\S)/;
+
+function joinTimeLines(text) {
+  const lines = (text || "").split(/\r?\n/);
+  const out = [];
+  for (let i = 0; i < lines.length; i++) {
+    const next = lines.slice(i + 1).findIndex(l => l.trim());
+    const j = next < 0 ? -1 : i + 1 + next;
+    if (TS_LINE_RE.test(lines[i]) && j > 0 && !TS_LINE_RE.test(lines[j])) {
+      out.push(lines[i].trim().replace(/^[\[(]|[\])]$/g, "") + " " + lines[j].trim());
+      i = j;
+    } else out.push(lines[i]);
+  }
+  return out.join("\n");
+}
+
+function liftTimestamps(cards) {
+  const hits = cards.filter(c => c.time == null && TS_LEAD_RE.test(c.q || ""));
+  if (hits.length < 3 || hits.length * 2 < cards.length) return cards;
+  hits.forEach(c => {
+    const m = c.q.match(TS_LEAD_RE);
+    c.time = parseTimeToSeconds(m[1]);
+    c.q = c.q.slice(m[0].length);
+    c.qHtml = textHtml(c.q);
+    const am = (c.a || "").match(TS_LEAD_RE);
+    if (am && am[1] === m[1]) {
+      c.a = c.a.slice(am[0].length);
+      c.aHtml = textHtml(c.a);
+    }
+  });
+  return cards.slice();
+}
 
 function matchSpacedTimestamp(line, delim) {
   const m = (line || "").match(TS_SPACE_RE);
@@ -2786,8 +2821,9 @@ let unmuteTimer = 0;
 
 function unmuteNow() {
   clearInterval(unmuteTimer);
+  const warmed = ytWarming;
   ytWarming = false;
-  if (ytPlayer && typeof ytPlayer.unMute === "function") ytPlayer.unMute();
+  if (ytPlayer && typeof ytPlayer.unMute === "function" && (warmed || typeof ytPlayer.isMuted !== "function" || ytPlayer.isMuted())) ytPlayer.unMute();
 }
 
 function unmuteAt(time) {
@@ -8263,7 +8299,7 @@ async function translateText(text, targetLang) {
 }
 
 function splitIntoSentences(text, delim) {
-  text = (text || "").trim();
+  text = joinTimeLines(text || "").trim();
   if (!text) return [];
   const result = [];
   text.split(/\r?\n/).forEach(rawLine => {
@@ -9021,7 +9057,7 @@ function planImport(entries, forPreview) {
 }
 
 function analyzeImportText(raw) {
-  const head = takeHeaderLines(raw);
+  const head = takeHeaderLines(joinTimeLines(raw));
   const delim = head.delim;
   const title = head.title;
   const lines = delim === "none" ? planWords(analyzeMixed(head.text)).map((it, i) => ({
@@ -9507,6 +9543,7 @@ function mergedCard(group) {
 }
 
 function mergeLessonCards(cards) {
+  cards = liftTimestamps(cards);
   const timed = cards.filter(c => c.time != null && !c.merged).sort((x, y) => x.time - y.time);
   if (!timed.length) return cards;
   const out = cards.slice();
@@ -14289,7 +14326,7 @@ function afterCurtain(fn, wait) {
 function warmFirstClip(done) {
   const item = appMode === "vocab" && vocabPendingKey !== null ? lessonVocabItems(vocabSource()).find(i => i.key === vocabPendingKey) : null;
   const row = appMode === "vocab" ? item && item.card : isAllLessons() && isListenMode() ? listenBatch()[0] : null;
-  if (!row || row.time == null || ytHasError || !ytPlayer || !ytReady || !ytHasVideo) return done();
+  if (isTouch() || !row || row.time == null || ytHasError || !ytPlayer || !ytReady || !ytHasVideo) return done();
   let over = false, poll = 0, guard = 0;
   const finish = () => {
     if (over) return;
