@@ -878,7 +878,7 @@ window.onYouTubeIframeAPIReady = function(){
   @media (hover:hover){.loop-time:not(.looping):hover{filter:brightness(1.1);}}
   .loop-time.looping{background:var(--accent);color:var(--on-accent);}
   .loop-time, .exam-play{position:relative;}
-  .sound-ring{position:absolute;left:-3px;top:-3px;overflow:visible;pointer-events:none;--ring:var(--accent);}
+  .sound-ring{position:absolute;overflow:visible;pointer-events:none;--ring:var(--accent);}
   .exam-sheet .sound-ring{--ring:var(--sheet-edge);}
   .sound-ring path{fill:none;stroke-width:2;}
   .sound-ring .ring-track{stroke:color-mix(in srgb, var(--ring) 30%, transparent);}
@@ -2834,23 +2834,24 @@ let soundSegment = {
 };
 
 function paintRing(el, p) {
-  const w = el.offsetWidth, h = el.offsetHeight;
+  const box = el.getBoundingClientRect();
+  const w = Math.round(box.width * 100) / 100, h = Math.round(box.height * 100) / 100;
   let svg = el.querySelector(":scope > .sound-ring");
   if (!svg || svg.dataset.size !== w + "x" + h) {
     if (svg) svg.remove();
-    const x = 1, y = 1, rw = w + 4, rh = h + 4, mid = x + Math.round(rw / 2);
+    const x = 1, y = 1, rw = w + 4, rh = h + 4, mid = x + rw / 2;
     const r = Math.min(Math.round(rh / 2), Math.round(parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0) + 2);
-    const left = `M${mid} ${y}H${x + r}A${r} ${r} 0 0 0 ${x} ${y + r}V${y + rh - r}A${r} ${r} 0 0 0 ${x + r} ${y + rh}H${mid}`;
-    const right = `M${mid} ${y}H${x + rw - r}A${r} ${r} 0 0 1 ${x + rw} ${y + r}V${y + rh - r}A${r} ${r} 0 0 1 ${x + rw - r} ${y + rh}H${mid}`;
-    el.insertAdjacentHTML("beforeend", `<svg class="sound-ring" width="${w + 6}" height="${h + 6}" data-size="${w}x${h}" aria-hidden="true">` + [ left, right ].map(d => `<path class="ring-track" d="${d}"/>`).join("") + [ left, right ].map(d => `<path class="ring-run" d="${d}" pathLength="100" stroke-dasharray="0 100"/>`).join("") + "</svg>");
+    const d = `M${mid} ${y}H${x + rw - r}A${r} ${r} 0 0 1 ${x + rw} ${y + r}V${y + rh - r}A${r} ${r} 0 0 1 ${x + rw - r} ${y + rh}H${x + r}A${r} ${r} 0 0 1 ${x} ${y + rh - r}V${y + r}A${r} ${r} 0 0 1 ${x + r} ${y}H${mid}`;
+    el.insertAdjacentHTML("beforeend", `<svg class="sound-ring" width="${w + 6}" height="${h + 6}" data-size="${w}x${h}" aria-hidden="true"><path class="ring-track" d="${d}"/><path class="ring-run" d="${d}" pathLength="100" stroke-dasharray="0 100"/></svg>`);
     svg = el.lastElementChild;
+    svg.style.left = -(3 + el.clientLeft) + "px";
+    svg.style.top = -(3 + el.clientTop) + "px";
   }
   const done = Math.max(0, Math.min(1, p)) * 100;
-  svg.querySelectorAll(".ring-run").forEach(path => {
-    path.setAttribute("stroke-dasharray", `${(100 - done).toFixed(2)} 100`);
-    path.setAttribute("stroke-dashoffset", (-done).toFixed(2));
-    path.style.visibility = done >= 100 ? "hidden" : "";
-  });
+  const run = svg.querySelector(".ring-run");
+  run.setAttribute("stroke-dasharray", `${(100 - done).toFixed(2)} 100`);
+  run.setAttribute("stroke-dashoffset", (-done).toFixed(2));
+  run.style.visibility = done >= 100 ? "hidden" : "";
 }
 
 function soundProgressLoop() {
