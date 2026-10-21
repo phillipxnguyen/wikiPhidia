@@ -5800,9 +5800,14 @@ function pinyinRow(el) {
   return holder && rows.find(r => r.id === Number(holder.dataset.id)) || activeEdit && activeEdit.row || null;
 }
 
-function showMarkPinyin(target, unit) {
+function markIn(target, unit) {
   const mark = target.closest("mark.vocab-hit, mark.vocab-own, .vocab-ctx mark");
-  if (!mark || mark === unit || !unit.contains(mark)) return false;
+  return mark && mark !== unit && unit.contains(mark) ? mark : null;
+}
+
+function showMarkPinyin(target, unit) {
+  const mark = markIn(target, unit);
+  if (!mark) return false;
   if (hoverTooltip && hoverTooltip.style.display === "block" && hoverTooltip.anchor === mark) return true;
   const text = mark.textContent.trim();
   return !!showReading(mark, text, pinyinRow(unit), "el:" + text);
@@ -5943,8 +5948,8 @@ function tapPinyin(e, container) {
   const tip = hoverTooltip;
   const open = !!tip && tip.style.display === "block";
   if (!unit || !container.contains(unit)) return hideTooltip();
-  const mark = e.target.closest("mark.vocab-hit, mark.vocab-own, .vocab-ctx mark");
-  if (mark && mark !== unit && unit.contains(mark)) {
+  const mark = markIn(e.target, unit);
+  if (mark) {
     if (open && tip.anchor === mark || !showMarkPinyin(e.target, unit)) hideTooltip();
     return;
   }
