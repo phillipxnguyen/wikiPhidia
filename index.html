@@ -1268,6 +1268,7 @@ window.onYouTubeIframeAPIReady = function(){
   .ielts-paper .paper-lines, .ielts-paper .paper-prompt, .ielts-paper .cell.shown.paper-lines:hover, .ielts-paper .cell.hidden.paper-prompt:hover{font-size:20px;line-height:var(--line);background-image:linear-gradient(to bottom, transparent calc(var(--line) - 1px), var(--paper-rule) calc(var(--line) - 1px));background-size:100% var(--line);}
   .ielts-paper .paper-prompt{min-height:calc(var(--line) * 5);color:var(--paper-ink-2);font-style:normal;}
   .ielts-paper .paper-lines{user-select:text;cursor:pointer;}
+  html:not(.touch) .cell.shown, html:not(.touch) .vocab-card.flipped .vocab-ctx, html:not(.touch) .vocab-list-row[data-key] > *{-webkit-user-select:text;user-select:text;}
   .paper-body{display:grid;grid-template-columns:minmax(0, 1fr);column-gap:24px;}
   .ielts-paper.with-notes .paper-body{grid-template-columns:minmax(0, 1fr) fit-content(44%);}
   .paper-notes{min-width:180px;padding-left:20px;border-left:2px solid var(--paper-margin);font-size:18px;line-height:25px;}
@@ -5959,6 +5960,8 @@ function handleCardAreaClick(e) {
   const id = Number(container.dataset.id);
   const row = rows.find(r => r.id === id);
   if (!row) return;
+  const picked = getSelection();
+  if (!picked.isCollapsed && container.contains(picked.anchorNode)) return;
   const isSingleCard = !!container.closest("#singleCardBody");
   const cardBody = isSingleCard ? document.getElementById("singleCardBody") : container;
   if (e.target.closest(".tl-swap")) {
@@ -13124,12 +13127,13 @@ function vocabKind(st, now) {
 function startVocabSession() {
   const now = Date.now();
   const items = lessonVocabItems(vocabSource());
-  const picked = items.filter(item => vocabStateOf(item).due <= now).map(item => ({
+  const picked = items.map((item, at) => ({
     item: item,
+    at: at,
     kind: vocabKind(vocabStateOf(item), now),
     shuffle: Math.random()
-  }));
-  picked.sort((a, b) => a.kind - b.kind || a.shuffle - b.shuffle);
+  })).filter(p => vocabStateOf(p.item).due <= now);
+  picked.sort((a, b) => a.kind - b.kind || (a.kind === 2 ? a.at - b.at : a.shuffle - b.shuffle));
   const allowed = limitVocab(picked.map(p => p.item));
   vocabSession = {
     lessonId: currentLessonId,
@@ -13276,10 +13280,20 @@ function vocabContext(item) {
   };
 }
 
+function lookupOthers(html, item) {
+  const tmp = document.createElement("div");
+  tmp.innerHTML = lookupHtml(html, item.card);
+  const own = foldVocab(item.term);
+  tmp.querySelectorAll("mark.vocab-hit").forEach(m => {
+    if (markTerms(m).includes(own) || m.parentElement.closest("mark")) m.replaceWith(...m.childNodes);
+  });
+  return tmp.innerHTML;
+}
+
 function vocabBackInner(item) {
   const {card: card, sentence: sentence} = vocabContext(item);
   const inSentence = sentence && !!findTermIn(sentence.normalize("NFC"), item.term);
-  const main = inSentence ? `<div class="vocab-ctx">${vocabSentenceHtml(sentence, item.term, card)}</div>` : `<div class="vocab-ctx"><mark>${vocabSentenceHtml(item.term, "", card)}</mark></div>` + (sentence ? `<div class="vocab-ctx small">${vocabSentenceHtml(sentence, "", card)}</div>` : "");
+  const main = inSentence ? `<div class="vocab-ctx">${lookupOthers(vocabSentenceHtml(sentence, item.term, card), item)}</div>` : `<div class="vocab-ctx"><mark>${vocabSentenceHtml(item.term, "", card)}</mark></div>` + (sentence ? `<div class="vocab-ctx small">${lookupOthers(vocabSentenceHtml(sentence, "", card), item)}</div>` : "");
   const notes = wordNotesOf(item);
   return main + `<div class="vocab-meaning">${escapeHtml(item.meaning)}</div>` + (notes ? `<div class="vocab-word-notes">${notes}</div>` : "");
 }
@@ -13300,6 +13314,19 @@ function buildVocabCard(item) {
     const item = current();
     if (!item || e.target.closest(".vocab-back-stroke")) return;
     if (!vocabSession.flipped) return flipVocab();
+    const hit = lookupMark(e.target);
+    if (hit && getSelection().isCollapsed) {
+      hideTooltip();
+      const matches = markMatches(hit, item.card.id);
+      if (matches.length) return showVocabPopup(matches, hit.getBoundingClientRect());
+    }
+    const own = e.target.closest(".vocab-ctx mark.vocab-own");
+    const ownItem = own && getSelection().isCollapsed && lessonVocabItems(vocabSource()).find(i => i.key === normalizeVocabText((own.dataset.own || own.textContent).split("\n")[0]));
+    if (ownItem && ownItem.key !== item.key) {
+      hideTooltip();
+      return showVocabAddPopup(ownItem.card, ownItem.term, own.getBoundingClientRect(), ownItem);
+    }
+    if (!getSelection().isCollapsed) return;
     if (!isTouch() || isDoubleTap("c" + item.key)) {
       hideTooltip();
       openVocabEditor(item.key);
@@ -14706,16 +14733,26 @@ window.addEventListener("scroll", () => {
   if (r.bottom < band.top || r.top > band.bottom) hideVocabAddPopup();
 });
 
-function selectionInPaper() {
+function selectionHit() {
   const sel = window.getSelection();
   if (!sel || !sel.rangeCount) return null;
-  const text = sel.getRangeAt(0).cloneContents().textContent.trim();
-  if (!text) return null;
   const range = sel.getRangeAt(0);
+  const text = range.cloneContents().textContent.replace(/\s+/g, " ").trim();
+  if (!text) return null;
   const node = range.commonAncestorContainer;
   const el = node.nodeType === 1 ? node : node.parentElement;
-  const source = el && el.closest(".ielts-paper .paper-lines");
-  const row = source && !source.isContentEditable && rows.find(r => r.id === Number(document.getElementById("singleCardBody").dataset.id));
+  if (!el || el.closest("[contenteditable=true], textarea, input")) return null;
+  let row = null;
+  const cell = el.closest("#viewStudy .cell, #viewStudy .paper-lines");
+  if (cell) {
+    const holder = cell.closest("[data-id]");
+    row = holder && rows.find(r => r.id === Number(holder.dataset.id));
+  }
+  const vocabEl = !row && el.closest("#viewVocab .vocab-card, #viewVocab .vocab-list-row[data-key]");
+  if (vocabEl) {
+    const item = lessonVocabItems(vocabSource()).find(i => i.key === vocabEl.dataset.key);
+    row = item && item.card;
+  }
   return row ? {
     row: row,
     text: text,
@@ -14726,7 +14763,7 @@ function selectionInPaper() {
 document.addEventListener("keydown", e => {
   if (e.key !== "Shift" || e.repeat || e.metaKey || e.ctrlKey) return;
   if (isVirtualLesson()) return;
-  const hit = selectionInPaper();
+  const hit = selectionHit();
   if (!hit) return;
   e.preventDefault();
   if (existingVocab(hit.text)) warnVocabExists(hit.text); else showVocabAddPopup(hit.row, hit.text, hit.rect);
