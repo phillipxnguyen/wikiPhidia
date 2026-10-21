@@ -897,11 +897,13 @@ window.onYouTubeIframeAPIReady = function(){
   .sound-ring .ring-track{stroke:color-mix(in srgb, var(--ring) 30%, transparent);}
   .sound-ring .ring-run{stroke:var(--ring);stroke-linecap:round;}
   .loop-time, #btnPlaySequence, #vocabSpeak{isolation:isolate;}
-  :is(.sound-wait, .sound-fill, .sound-fade)::before{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;pointer-events:none;background:var(--accent);opacity:.3;transition:opacity .4s ease;}
-  .sound-wait::before{animation:sound-breathe 1.2s ease-in-out infinite alternate;}
-  .sound-fill::before{opacity:1;}
+  :is(.sound-wait, .sound-fill, .sound-fade)::before{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;pointer-events:none;}
+  :is(.sound-wait, .sound-fade)::before{background:linear-gradient(100deg, transparent 25%, color-mix(in srgb, var(--accent) 45%, transparent) 50%, transparent 75%) no-repeat;background-size:200% 100%;animation:sound-shimmer 1s linear infinite;transition:opacity .4s ease;}
   .sound-fade::before{opacity:0;}
-  @keyframes sound-breathe{from{opacity:.12;}to{opacity:.45;}}
+  .sound-fill::before{background:linear-gradient(90deg, var(--accent) 45%, transparent 55%) no-repeat;background-size:220% 100%;animation:sound-wipe .45s ease-in-out forwards;}
+  :is(.loop-time, #btnPlaySequence, #vocabSpeak).sound-fill{transition:background-color 0s .45s, border-color 0s .45s, color .15s ease .3s;}
+  @keyframes sound-shimmer{from{background-position:150% 0;}to{background-position:-50% 0;}}
+  @keyframes sound-wipe{from{background-position:100% 0;}to{background-position:0 0;}}
   .loop-time.disabled{opacity:.4;background:var(--surface-3);color:var(--text-2);}
 
   .single-card-progress{text-align:center;font-size:14px;color:var(--text);margin-bottom:16px;}
@@ -3142,7 +3144,7 @@ function markWait(el, waiting, lit) {
   const end = lit ? "sound-fill" : "sound-fade";
   el.classList.add(end);
   clearTimeout(el.fadeTimer);
-  el.fadeTimer = setTimeout(() => el.classList.remove(end), 400);
+  el.fadeTimer = setTimeout(() => el.classList.remove(end), 450);
 }
 
 function syncRowBadges() {
