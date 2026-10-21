@@ -2529,6 +2529,7 @@ function isCardMode() {
 function onPlayerReady() {
   ytReady = true;
   ytHasError = false;
+  fullVolume();
   syncMediaTitle();
   syncListenCover();
   if (ytWatchdog) {
@@ -2740,13 +2741,48 @@ document.getElementById("btnClearMedia").onclick = () => {
   scheduleAutoSave();
 };
 
-function segmentReached(start, end) {
+let ytVolume = 100;
+
+let volumeTimer = 0;
+
+function fadeVolume(to, ms) {
+  if (!ytPlayer || typeof ytPlayer.setVolume !== "function") return;
+  clearInterval(volumeTimer);
+  const from = ytVolume, begin = performance.now();
+  const step = () => {
+    const k = Math.min(1, (performance.now() - begin) / ms);
+    ytVolume = Math.round(from + (to - from) * k);
+    ytPlayer.setVolume(ytVolume);
+    if (k >= 1) clearInterval(volumeTimer);
+  };
+  volumeTimer = setInterval(step, 16);
+  step();
+}
+
+function fullVolume() {
+  clearInterval(volumeTimer);
+  ytVolume = 100;
+  if (ytPlayer && typeof ytPlayer.setVolume === "function") ytPlayer.setVolume(100);
+}
+
+function playbackRateOnce() {
+  if (typeof ytPlayer.setPlaybackRate === "function" && (typeof ytPlayer.getPlaybackRate !== "function" || ytPlayer.getPlaybackRate() !== sequenceSpeed)) ytPlayer.setPlaybackRate(sequenceSpeed);
+}
+
+function seamTo(time) {
+  ytPlayer.seekTo(time, true);
+  if (ytPlayer.getPlayerState() !== YT.PlayerState.PLAYING) ytPlayer.playVideo();
+  fadeVolume(100, 180);
+}
+
+function segmentReached(start, end, jump) {
   const t = ytPlayer.getCurrentTime();
   if (typeof t !== "number" || isNaN(t)) return false;
   if (!segmentArmed) {
     if (t >= start - 1 && t < end) segmentArmed = true;
     return false;
   }
+  if (jump && t >= end - .12 * sequenceSpeed && ytVolume === 100) fadeVolume(0, 100);
   return t >= end || ytPlayer.getPlayerState() === YT.PlayerState.ENDED;
 }
 
@@ -2810,25 +2846,20 @@ function startLoop(row) {
   segmentArmed = false;
   setTimeout(() => {
     if (videoActionSeq !== mySeq || loopingRowId !== row.id) return;
-    if (ytPlayer && typeof ytPlayer.seekTo === "function") {
-      ytPlayer.seekTo(row.time, true);
-    }
-    if (ytPlayer && typeof ytPlayer.playVideo === "function") {
-      ytPlayer.playVideo();
-      if (typeof ytPlayer.setPlaybackRate === "function") ytPlayer.setPlaybackRate(sequenceSpeed);
-    }
+    if (!ytPlayer || typeof ytPlayer.seekTo !== "function") return;
+    playbackRateOnce();
+    seamTo(row.time);
   }, 100);
   loopInterval = setInterval(() => {
     if (!ytPlayer || !ytReady || typeof ytPlayer.getCurrentTime !== "function") return;
     if (loopingRowId !== row.id) return;
-    if (segmentReached(row.time, end)) {
-      if (endPass()) return;
+    if (segmentReached(row.time, end, true)) {
+      if (endPass()) return fullVolume();
       segmentArmed = false;
       soundSegment.armed = false;
-      ytPlayer.seekTo(row.time, true);
-      ytPlayer.playVideo();
+      seamTo(row.time);
     }
-  }, 250);
+  }, 40);
   markPlayingRow();
 }
 
@@ -2979,6 +3010,7 @@ function stopLoop() {
     loopInterval = null;
   }
   pauseVideoProgrammatically();
+  fullVolume();
   render();
   if (wasSequencePlaying) {
     isSequencePlaying = true;
@@ -3666,6 +3698,7 @@ function stopSequenceLoop() {
   }
   speechSynthesis.cancel();
   pauseVideoProgrammatically();
+  fullVolume();
   updateSequenceBtnUI();
   render();
 }
@@ -3751,19 +3784,24 @@ function playNextSequenceStep() {
     };
     soundProgressLoop();
     segmentArmed = false;
-    ytPlayer.seekTo(currentRow.time, true);
-    ytPlayer.playVideo();
+    const here = ytPlayer.getCurrentTime();
+    const flowing = ytPlayer.getPlayerState() === YT.PlayerState.PLAYING && typeof here === "number" && Math.abs(here - currentRow.time) < .3;
+    playbackRateOnce();
+    if (flowing) fadeVolume(100, 180); else seamTo(currentRow.time);
     videoActionSeq++;
-    if (typeof ytPlayer.setPlaybackRate === "function") ytPlayer.setPlaybackRate(sequenceSpeed);
+    const next = oneCard ? currentRow : visible[sequenceIndex + 1] || (listenAutoPlayOnce && isCardMode() ? null : visible[0]);
+    const jump = !next || next.time == null || Math.abs(next.time - end) > .3;
     if (loopInterval) clearInterval(loopInterval);
     loopInterval = setInterval(() => {
       if (!isSequencePlaying || ytHasError) return;
       if (!ytPlayer || !ytReady || typeof ytPlayer.getCurrentTime !== "function") return;
-      if (segmentReached(currentRow.time, end)) {
+      if (segmentReached(currentRow.time, end, jump)) {
         clearInterval(loopInterval);
         loopInterval = null;
-        pauseVideoProgrammatically();
-        if (endPass()) return;
+        if (endPass()) {
+          fullVolume();
+          return pauseVideoProgrammatically();
+        }
         if (oneCard) {
           if (listenAutoPlayOnce) {
             stopSequenceLoop();
@@ -3775,10 +3813,11 @@ function playNextSequenceStep() {
         sequenceIndex++;
         playNextSequenceStep();
       }
-    }, 200);
+    }, 40);
   } else {
     segmentArmed = true;
     pauseVideoProgrammatically();
+    fullVolume();
     const textToRead = cleanForSpeech(currentRow.q || "");
     if (!textToRead) {
       sequenceIndex++;
