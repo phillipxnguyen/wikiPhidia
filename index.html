@@ -899,10 +899,12 @@ window.onYouTubeIframeAPIReady = function(){
   .loop-time, #btnPlaySequence, #vocabSpeak{isolation:isolate;}
   :is(.sound-wait, .sound-fill, .sound-fade)::before{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;pointer-events:none;transition:opacity .4s ease;}
   :is(.sound-wait, .sound-fade):not(.sound-load)::before{background:linear-gradient(100deg, transparent 25%, color-mix(in srgb, var(--accent) 45%, transparent) 50%, transparent 75%) no-repeat;background-size:200% 100%;animation:sound-shimmer 1s linear infinite;}
-  :is(.sound-load, .sound-fill)::before{right:auto;width:calc(var(--fill, 0) * 100%);background-color:color-mix(in srgb, var(--accent) 35%, transparent);}
-  .sound-fill::before{width:100%;background-color:var(--accent);transition:width .25s ease-out, background-color .25s ease-out;}
+  :is(.sound-load, .sound-fill)::before{right:auto;width:calc(var(--fill, 0) * 100%);background:var(--accent);}
+  .sound-fill::before{width:100%;transition:width .25s ease-out;}
+  .loop-time:is(.sound-load, .sound-fill)::after{content:attr(data-t);position:absolute;inset:0;padding:inherit;text-align:center;color:var(--on-accent);pointer-events:none;clip-path:inset(0 calc(100% - var(--fill, 0) * 100%) 0 0);}
+  .loop-time.sound-fill::after{clip-path:inset(0);transition:clip-path .25s ease-out;}
   .sound-fade::before{opacity:0;}
-  :is(.loop-time, #btnPlaySequence, #vocabSpeak).sound-fill{transition:background-color 0s .25s, border-color 0s .25s, color .15s ease .15s;}
+  :is(.loop-time, #btnPlaySequence, #vocabSpeak).sound-fill{transition:background-color 0s .25s, border-color 0s .25s, color 0s .25s;}
   @keyframes sound-shimmer{from{background-position:150% 0;}to{background-position:-50% 0;}}
   .loop-time.disabled{opacity:.4;background:var(--surface-3);color:var(--text-2);}
 
@@ -1950,6 +1952,13 @@ let soundHeard = false;
 
 let ytWarm = false;
 
+let soundWaitSince = 0;
+
+function beginSound() {
+  soundHeard = ytWarm;
+  soundWaitSince = performance.now();
+}
+
 let sequenceIndex = 0;
 
 let sequenceSpeed = 1.25;
@@ -2974,7 +2983,7 @@ function startLoop(row) {
   seqToken++;
   updateSequenceBtnUI();
   loopingRowId = row.id;
-  soundHeard = ytWarm;
+  beginSound();
   const end = segmentEnd(row, 8);
   soundSegment = {
     id: row.id,
@@ -3099,7 +3108,7 @@ function soundProgressLoop() {
       if (main) paintRing(el, p); else el.querySelector(":scope > .sound-ring")?.remove();
       if (!waiting) return;
       el.classList.toggle("sound-load", main);
-      if (main) el.style.setProperty("--fill", (.9 * (1 - Math.exp((el.waitSince - performance.now()) / 900))).toFixed(3));
+      if (main) el.style.setProperty("--fill", (.9 * (1 - Math.exp((soundWaitSince - performance.now()) / 900))).toFixed(3));
     });
     soundFrame = video != null || speech != null || exam != null || chosen && chosen[2] ? requestAnimationFrame(tick) : 0;
   };
@@ -3147,10 +3156,7 @@ function markWait(el, waiting, lit) {
   const was = el.classList.contains("sound-wait");
   el.classList.toggle("sound-wait", waiting);
   if (waiting) {
-    if (!was) {
-      el.classList.remove("sound-fill", "sound-fade", "sound-load");
-      el.waitSince = performance.now();
-    }
+    if (!was) el.classList.remove("sound-fill", "sound-fade", "sound-load");
     if (!soundFrame) soundFrame = requestAnimationFrame(soundProgressLoop);
   }
   if (!was || waiting) return;
@@ -3206,7 +3212,7 @@ function stopPlaybackForRemovedRow(id) {
   pauseVideoProgrammatically();
   if (shouldContinueSequence) {
     isSequencePlaying = true;
-    soundHeard = ytWarm;
+    beginSound();
     updateSequenceBtnUI();
     setTimeout(() => playNextSequenceStep(), 200);
   } else {
@@ -3844,7 +3850,7 @@ function startSequenceLoop(auto) {
   listenAutoPlayOnce = !!auto;
   passThen = null;
   isSequencePlaying = true;
-  soundHeard = ytWarm;
+  beginSound();
   sequenceIndex = 0;
   updateSequenceBtnUI();
   playNextSequenceStep();
@@ -4650,9 +4656,9 @@ function drawStrokeOrder(panel, text, isJa) {
 function rowPlayBadge(r) {
   if (r.time != null) {
     let badgeClasses = "loop-time";
-    if (loopingRowId === r.id) badgeClasses += " looping";
+    if (loopingRowId === r.id) badgeClasses += soundHeard ? " looping" : " sound-wait";
     if (ytHasError) badgeClasses += " disabled";
-    return `<span class="${badgeClasses}" data-id="${r.id}">${formatTime(r.time)}</span>`;
+    return `<span class="${badgeClasses}" data-id="${r.id}" data-t="${formatTime(r.time)}">${formatTime(r.time)}</span>`;
   }
   return "";
 }
@@ -14216,7 +14222,7 @@ function playVocabSound(item) {
       stopVocabSound();
       return;
     }
-    soundHeard = ytWarm;
+    beginSound();
     vocabPendingKey = item.key;
     startPendingVocabVideo();
     syncVocabSound();
