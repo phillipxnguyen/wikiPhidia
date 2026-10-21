@@ -2900,13 +2900,13 @@ function watchStall(tries, waits = 0) {
     if (!ytPlayer || typeof ytPlayer.getPlayerState !== "function" || soundSegment !== segment || loopingRowId === null || loopingRowId !== segment.id || ttsPlaying) return;
     const state = ytPlayer.getPlayerState();
     if (state === YT.PlayerState.PLAYING) return;
-    if (state === YT.PlayerState.BUFFERING && waits < 4) return watchStall(tries, waits + 1);
+    if ((state === YT.PlayerState.BUFFERING || state === YT.PlayerState.UNSTARTED) && waits < 4) return watchStall(tries, waits + 1);
     if (!tries) {
       ytPlayer.playVideo();
       return watchStall(1);
     }
     if (!endPass()) haltPlaybackTrackingForExternalPause();
-  }, 1500);
+  }, 600);
 }
 
 function segmentReached(start, end, jump) {
