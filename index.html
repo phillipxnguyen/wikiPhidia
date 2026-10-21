@@ -7138,6 +7138,8 @@ let mixDone = 0;
 
 let mixCueTimer = 0;
 
+let mixCueSince = 0;
+
 function mixCueDone() {
   if (!mixAwaitCue) return;
   clearTimeout(mixCueTimer);
@@ -7145,12 +7147,14 @@ function mixCueDone() {
     mixAwaitCue = false;
     return;
   }
-  if (!ytHasError && (!ytPlayer || !ytReady || !ytHasVideo)) {
-    mixCueTimer = setTimeout(mixCueDone, 500);
+  const unstarted = !!ytPlayer && ytReady && typeof ytPlayer.getPlayerState === "function" && ytPlayer.getPlayerState() === -1;
+  if (!ytHasError && (!ytPlayer || !ytReady || !ytHasVideo || unstarted && Date.now() - mixCueSince < 8e3)) {
+    mixCueTimer = setTimeout(mixCueDone, 300);
     return;
   }
   mixAwaitCue = false;
-  if (!ytHasError && isAllLessons() && currentView === "study" && isListenMode()) startSequenceLoop(true);
+  if (ytHasError || !isAllLessons() || currentView !== "study" || !isListenMode()) return;
+  startSequenceLoop(true);
 }
 
 function mixCandidates() {
@@ -7171,12 +7175,13 @@ function mixShow(row, style) {
   mixStyle = style;
   const url = style === "ielts" ? "" : vocabVideoUrlFor(row);
   const input = document.getElementById("mediaUrl");
-  mixAwaitCue = false;
-  clearTimeout(mixCueTimer);
   if (input.value.trim() !== url) {
+    mixAwaitCue = false;
+    clearTimeout(mixCueTimer);
     input.value = url;
     if (url) {
       mixAwaitCue = true;
+      mixCueSince = Date.now();
       mixCueTimer = setTimeout(mixCueDone, 1500);
       applyMediaUrl(true);
     } else destroyYtPlayer();
