@@ -3194,11 +3194,12 @@ new MutationObserver(queueScrollCues).observe(document.body, {
 
 const BOUNCE_SEL = ".lesson-list, #singleCardBody.listen-batch, .vocab-back, .heat-day-list";
 
-function setPull(el, pull, ease) {
-  el.pull = pull;
+function setPull(el, raw, ease) {
+  el.pull = raw;
+  const size = el.clientHeight, off = Math.sign(raw) * (1 - 1 / (Math.abs(raw) * .55 / size + 1)) * size;
   [ ...el.children ].forEach(c => {
-    c.style.transition = ease ? "transform .45s cubic-bezier(.2, .9, .3, 1)" : "none";
-    c.style.transform = pull ? `translateY(${Math.round(pull)}px)` : "";
+    c.style.transition = ease ? "transform .5s cubic-bezier(.25, 1, .5, 1)" : "none";
+    c.style.transform = raw ? `translateY(${Math.round(off)}px)` : "";
   });
 }
 
@@ -3209,8 +3210,8 @@ document.addEventListener("wheel", e => {
   const pushing = e.deltaY < 0 ? el.scrollTop <= 0 : el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
   if (!pushing && !el.pull) return;
   e.preventDefault();
-  const pull = el.pull || 0;
-  setPull(el, Math.max(-64, Math.min(64, pull - e.deltaY * .35 * (1 - Math.abs(pull) / 80))), false);
+  const raw = Math.max(-el.clientHeight, Math.min(el.clientHeight, (el.pull || 0) - e.deltaY * .5));
+  setPull(el, el.pull && Math.sign(raw) !== Math.sign(el.pull) ? 0 : raw, false);
   clearTimeout(el.bounceTimer);
   el.bounceTimer = setTimeout(() => setPull(el, 0, true), 110);
 }, {
