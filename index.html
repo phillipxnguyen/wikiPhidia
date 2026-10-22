@@ -3086,10 +3086,11 @@ function soundProgressLoop() {
       add(el, el && el.classList.contains("active") ? video ?? speech : null);
     });
     document.querySelectorAll(".exam-play").forEach(el => add(el, el.classList.contains("on") && Number(el.dataset.listen) === testAudio.n ? exam : null));
+    const chosen = all.find(([ el, p ]) => p != null && el.offsetParent);
     all.forEach(([ el, p ]) => {
-      if (p != null && el.offsetParent) paintRing(el, p); else el.querySelector(":scope > .sound-ring")?.remove();
+      if (chosen && chosen[0] === el) paintRing(el, p); else el.querySelector(":scope > .sound-ring")?.remove();
     });
-    soundFrame = video != null || speech != null || exam != null || all.some(([ el, p, waiting ]) => waiting && el.offsetParent) ? requestAnimationFrame(tick) : 0;
+    soundFrame = video != null || speech != null || exam != null || chosen && chosen[2] ? requestAnimationFrame(tick) : 0;
   };
   tick();
 }
