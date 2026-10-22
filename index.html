@@ -6784,10 +6784,7 @@ function toggleVocabBullets(box) {
   if (!selectionAllInItems(box, range)) {
     document.execCommand("insertUnorderedList");
     range = sel.getRangeAt(0);
-    if (!selectionAllInItems(box, range)) {
-      document.execCommand("insertUnorderedList");
-      range = sel.getRangeAt(0);
-    }
+    if (!selectionAllInItems(box, range)) document.execCommand("insertUnorderedList");
   }
   unwrapInheritSpans(box);
   range = sel.getRangeAt(0);
@@ -10010,6 +10007,16 @@ function writeFileSaves(update) {
   } catch (e) {}
 }
 
+function forgetLesson(id) {
+  dbDelete("handles", "lesson:" + id);
+  writeFileSaves(saves => {
+    delete saves.lessons[id];
+  });
+  try {
+    localStorage.setItem(RECENT_KEY, JSON.stringify(recentLessonIds().filter(x => x !== id)));
+  } catch (e) {}
+}
+
 function whenText(ts) {
   const d = new Date(ts);
   const sameDay = d.toDateString() === (new Date).toDateString();
@@ -10221,7 +10228,7 @@ async function discardIfEmptyDraft() {
   library = library.filter(l => l.id !== id);
   currentLessonId = null;
   await dbDelete("lessons", id);
-  dbDelete("handles", "lesson:" + id);
+  forgetLesson(id);
 }
 
 async function switchToLesson(id) {
@@ -10838,10 +10845,7 @@ async function deleteCurrentLesson() {
   autoSaveDebounceTimer = null;
   library = library.filter(l => l.id !== lesson.id);
   await dbDelete("lessons", lesson.id);
-  dbDelete("handles", "lesson:" + lesson.id);
-  writeFileSaves(saves => {
-    delete saves.lessons[lesson.id];
-  });
+  forgetLesson(lesson.id);
   resetStudyState();
   currentLessonId = null;
   rows = [];
@@ -12235,6 +12239,15 @@ function splitForCloud(text) {
   return parts.length ? parts : [ "" ];
 }
 
+async function oldCloudParts(id, keep) {
+  const prev = await cloud.fs.getDoc(cloudRef("lessons", id));
+  const had = prev.exists() ? prev.data().parts || 0 : 0;
+  const from = keep > 1 ? keep : 0;
+  return had > 1 ? Array.from({
+    length: Math.max(0, had - from)
+  }, (_, i) => cloudRef("lessons", id, "parts", String(from + i))) : [];
+}
+
 async function cloudPushLesson(id) {
   const f = cloud.fs;
   const st = readCloudState();
@@ -12242,12 +12255,15 @@ async function cloudPushLesson(id) {
   if (!lesson) {
     if (!st.deleted[id]) return;
     const at = st.deleted[id];
-    await f.setDoc(cloudRef("lessons", id), {
+    const gone = f.writeBatch(cloud.db);
+    (await oldCloudParts(id, 0)).forEach(ref => gone.delete(ref));
+    gone.set(cloudRef("lessons", id), {
       updatedAt: at,
       deleted: true,
       parts: 0,
       data: null
     });
+    await gone.commit();
     writeCloudState(s => {
       s.synced[id] = at;
       delete s.deleted[id];
@@ -12261,6 +12277,7 @@ async function cloudPushLesson(id) {
   }));
   const parts = splitForCloud(data);
   const batch = f.writeBatch(cloud.db);
+  (await oldCloudParts(id, parts.length)).forEach(ref => batch.delete(ref));
   if (parts.length > 1) parts.forEach((part, i) => batch.set(cloudRef("lessons", id, "parts", String(i)), {
     data: part
   }));
@@ -12466,7 +12483,7 @@ function removeLessonFromCloud(id) {
   cloudApplying = true;
   dbDelete("lessons", id);
   cloudApplying = false;
-  dbDelete("handles", "lesson:" + id);
+  forgetLesson(id);
   if (id === currentLessonId) {
     clearTimeout(autoSaveDebounceTimer);
     autoSaveDebounceTimer = null;
@@ -13102,7 +13119,7 @@ async function initApp() {
   });
   leftovers.forEach(l => {
     dbDelete("lessons", l.id);
-    dbDelete("handles", "lesson:" + l.id);
+    forgetLesson(l.id);
   });
   reviewLog = (await dbGetAll("reviews")).filter(e => e && isFinite(e.ts)).sort((a, b) => a.ts - b.ts);
   renderStreakChip();
@@ -17253,7 +17270,7 @@ function examQuestionHtml(t, q, live) {
   const open = live && !q.submitted;
   const marked = q.score !== null && !q.selfMark;
   const words = q.keys.map(k => t.pool.find(i => i.key === k)).filter(Boolean);
-  let prompt = "";
+  let prompt;
   if (q.type === "listen") {
     prompt = `<div class="exam-audio">${playButton("data-listen", q.n, q.plays, open && q.plays, say("left", {
       n: q.plays
@@ -17733,7 +17750,7 @@ function routeHtml(world, route) {
     }), say("tries", {
       n: st.runs.length
     }));
-    let btns = "";
+    let btns;
     if (st.state === "open" || st.state === "passed") {
       btns = `<button class="ta-btn${st.state === "open" ? " ta-main" : ""}" data-act="stage" data-n="${st.n}">${st.live ? say("resume") : st.state === "passed" ? say("again2") : say("start")}</button>`;
       if (st.runs.length) btns += `<button class="ta-btn" data-act="open" data-id="${st.runs[st.runs.length - 1].id}">${say("reviewBtn")}</button>`;
