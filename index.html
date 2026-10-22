@@ -2754,6 +2754,10 @@ function onPlayerStateChange(event) {
     }
   }
   if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) {
+    if (event.data === YT.PlayerState.PAUSED && !expectingProgrammaticPause && Date.now() < rateChangeUntil && (isSequencePlaying || loopingRowId !== null)) {
+      ytPlayer.playVideo();
+      return;
+    }
     if (event.data === YT.PlayerState.PAUSED && expectingProgrammaticPause) {
       expectingProgrammaticPause = false;
     } else if (!segmentArmed && (isSequencePlaying || loopingRowId !== null)) {
@@ -2893,24 +2897,23 @@ function seamTo(time) {
   ytPlayer.seekTo(time, true);
   if (ytPlayer.getPlayerState() !== YT.PlayerState.PLAYING) ytPlayer.playVideo();
   fadeVolume(100, 180);
-  watchStall(0);
+  watchStall();
 }
 
 let stallTimer = null;
 
-function watchStall(tries, waits = 0) {
+function watchStall() {
   clearTimeout(stallTimer);
   const segment = soundSegment;
   stallTimer = setTimeout(() => {
     if (!ytPlayer || typeof ytPlayer.getPlayerState !== "function" || soundSegment !== segment || loopingRowId === null || loopingRowId !== segment.id || ttsPlaying) return;
     const state = ytPlayer.getPlayerState();
     if (state === YT.PlayerState.PLAYING) return;
-    if ((state === YT.PlayerState.BUFFERING || state === YT.PlayerState.UNSTARTED) && waits < 4) return watchStall(tries, waits + 1);
-    if (!tries) {
+    if (state !== YT.PlayerState.BUFFERING && state !== YT.PlayerState.UNSTARTED) {
+      if (endPass()) return;
       ytPlayer.playVideo();
-      return watchStall(1);
     }
-    if (!endPass()) haltPlaybackTrackingForExternalPause();
+    watchStall();
   }, 600);
 }
 
@@ -4189,10 +4192,12 @@ document.getElementById("playbackSpeed").onchange = e => {
     return;
   }
   sequenceSpeed = parseFloat(e.target.value) || 1.25;
-  if (ytPlayer && ytReady && typeof ytPlayer.setPlaybackRate === "function") {
-    ytPlayer.setPlaybackRate(sequenceSpeed);
-  }
+  if (!ytPlayer || !ytReady || typeof ytPlayer.setPlaybackRate !== "function" || !isSequencePlaying && loopingRowId === null) return;
+  rateChangeUntil = Date.now() + 1e3;
+  ytPlayer.setPlaybackRate(sequenceSpeed);
 };
+
+let rateChangeUntil = 0;
 
 function formatHistoryDate(iso) {
   const d = new Date(iso);
