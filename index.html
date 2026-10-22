@@ -4268,7 +4268,7 @@ function buildRowTr(r) {
   if (selectedRowId === r.id) tr.classList.add("row-selected");
   const q = `<div class="cell ${r.qHidden ? "hidden" : "shown"}" data-field="q">${qCellContent(r)}</div>`;
   const notes = !r.aHidden && !r.qHidden ? cardNotesHtml(r) : "";
-  const qNotes = groupState && groupFront === "a" ? notes : "";
+  const qNotes = groupState && groupViewStyle === "table" ? notes : "";
   const aNotes = qNotes ? "" : notes;
   const a = `<div class="cell ${r.aHidden ? "hidden" : "shown"}" data-field="a">${aCellContent(r)}</div>`;
   let cells = document.getElementById("cardTable").classList.contains("no-answer-col") ? `<td class="q-col" colspan="2">${q}${notes}</td>` : `<td class="q-col">${q}${qNotes}</td><td class="a-col">${a}${aNotes}</td>`;
@@ -4279,7 +4279,7 @@ function buildRowTr(r) {
     });
     const allNotes = cardNotesHtml(full);
     const side = (shown, reserve) => `<div class="tl-stack"><div>${shown}</div><div class="tl-reserve" aria-hidden="true">${reserve}</div></div>`;
-    cells = `<td class="q-col">${side(q + qNotes, `<div class="cell">${qCellContent(full)}</div>` + (groupFront === "a" ? allNotes : ""))}</td><td class="a-col">${side(a + aNotes, `<div class="cell">${aCellContent(full)}</div>` + (groupFront === "a" ? "" : allNotes))}</td>`;
+    cells = `<td class="q-col">${side(q + qNotes, `<div class="cell">${qCellContent(full)}</div>` + allNotes)}</td><td class="a-col">${side(a + aNotes, `<div class="cell">${aCellContent(full)}</div>`)}</td>`;
   }
   tr.innerHTML = (groupState && groupViewStyle === "table" ? translateHeadHtml(r) : "") + cells;
   dictPreloadObserver.observe(tr);
