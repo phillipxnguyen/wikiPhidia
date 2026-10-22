@@ -345,6 +345,12 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-card.settled .vocab-back{transform:none;}
   :is(#singleCardBody.listen-batch, .vocab-back){scrollbar-width:none;}
   :is(#singleCardBody.listen-batch, .vocab-back)::-webkit-scrollbar{display:none;}
+  @property --edge-t{syntax:"<number>";inherits:false;initial-value:0;}
+  @property --edge-b{syntax:"<number>";inherits:false;initial-value:0;}
+  .edges{--edge-len:20px;-webkit-mask-image:linear-gradient(to bottom, rgba(0, 0, 0, calc(1 - var(--edge-t))) 0, rgba(0, 0, 0, calc(1 - var(--edge-t) * .75)) calc(var(--edge-len) / 4), rgba(0, 0, 0, calc(1 - var(--edge-t) * .4)) calc(var(--edge-len) / 2), rgba(0, 0, 0, calc(1 - var(--edge-t) * .1)) calc(var(--edge-len) * 3 / 4), #000 var(--edge-len), #000 calc(100% - var(--edge-len)), rgba(0, 0, 0, calc(1 - var(--edge-b) * .1)) calc(100% - var(--edge-len) * 3 / 4), rgba(0, 0, 0, calc(1 - var(--edge-b) * .4)) calc(100% - var(--edge-len) / 2), rgba(0, 0, 0, calc(1 - var(--edge-b) * .75)) calc(100% - var(--edge-len) / 4), rgba(0, 0, 0, calc(1 - var(--edge-b))) 100%);mask-image:linear-gradient(to bottom, rgba(0, 0, 0, calc(1 - var(--edge-t))) 0, rgba(0, 0, 0, calc(1 - var(--edge-t) * .75)) calc(var(--edge-len) / 4), rgba(0, 0, 0, calc(1 - var(--edge-t) * .4)) calc(var(--edge-len) / 2), rgba(0, 0, 0, calc(1 - var(--edge-t) * .1)) calc(var(--edge-len) * 3 / 4), #000 var(--edge-len), #000 calc(100% - var(--edge-len)), rgba(0, 0, 0, calc(1 - var(--edge-b) * .1)) calc(100% - var(--edge-len) * 3 / 4), rgba(0, 0, 0, calc(1 - var(--edge-b) * .4)) calc(100% - var(--edge-len) / 2), rgba(0, 0, 0, calc(1 - var(--edge-b) * .75)) calc(100% - var(--edge-len) / 4), rgba(0, 0, 0, calc(1 - var(--edge-b))) 100%);transition:--edge-t .15s ease, --edge-b .15s ease;}
+  .edges.more-above{--edge-t:1;}
+  .edges.more-below{--edge-b:1;}
+  #singleCardBody.listen-batch.edges{--edge-len:36px;}
   #scrollRail{position:fixed;z-index:900;width:4px;border-radius:2px;background:color-mix(in srgb, var(--accent) 15%, transparent);pointer-events:none;}
   #scrollRail[hidden]{display:none;}
   #scrollRail i{position:absolute;left:0;right:0;border-radius:2px;background:var(--accent);}
@@ -3158,6 +3164,15 @@ scrollRail.innerHTML = "<i></i>";
 
 document.body.appendChild(scrollRail);
 
+const EDGE_SEL = "#singleCardBody.listen-batch, .lesson-list, .heat-day-list";
+
+function markEdges(el) {
+  const moved = el.scrollTop > 1;
+  el.classList.add("edges");
+  el.classList.toggle("more-above", moved);
+  el.classList.toggle("more-below", moved && el.scrollTop + el.clientHeight < el.scrollHeight - 1);
+}
+
 function placeScrollRail() {
   const el = [ ...document.querySelectorAll(RAIL_SEL) ].find(e => e.offsetParent && e.scrollHeight > e.clientHeight + 1);
   const hide = on => scrollRail.hidden !== on && (scrollRail.hidden = on);
@@ -3180,20 +3195,21 @@ function placeScrollRail() {
   hide(false);
 }
 
-let railFrame = 0;
+let cueFrame = 0;
 
-function queueScrollRail() {
-  if (!railFrame) railFrame = requestAnimationFrame(() => {
-    railFrame = 0;
+function queueScrollCues() {
+  if (!cueFrame) cueFrame = requestAnimationFrame(() => {
+    cueFrame = 0;
     placeScrollRail();
+    document.querySelectorAll(EDGE_SEL).forEach(markEdges);
   });
 }
 
-document.addEventListener("scroll", queueScrollRail, true);
+document.addEventListener("scroll", queueScrollCues, true);
 
-addEventListener("resize", queueScrollRail);
+addEventListener("resize", queueScrollCues);
 
-new MutationObserver(queueScrollRail).observe(document.body, {
+new MutationObserver(queueScrollCues).observe(document.body, {
   childList: true,
   subtree: true,
   attributes: true,
