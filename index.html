@@ -3192,6 +3192,31 @@ new MutationObserver(queueScrollCues).observe(document.body, {
   attributeFilter: [ "class", "hidden" ]
 });
 
+const BOUNCE_SEL = ".lesson-list, #singleCardBody.listen-batch, .vocab-back, .heat-day-list";
+
+function setPull(el, pull, ease) {
+  el.pull = pull;
+  [ ...el.children ].forEach(c => {
+    c.style.transition = ease ? "transform .45s cubic-bezier(.2, .9, .3, 1)" : "none";
+    c.style.transform = pull ? `translateY(${Math.round(pull)}px)` : "";
+  });
+}
+
+document.addEventListener("wheel", e => {
+  if (isTouch() || e.ctrlKey || !(e.target instanceof Element)) return;
+  const el = e.target.closest(BOUNCE_SEL);
+  if (!el || el.scrollHeight <= el.clientHeight + 1 || el.querySelector(".cell.hidden")) return;
+  const pushing = e.deltaY < 0 ? el.scrollTop <= 0 : el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
+  if (!pushing && !el.pull) return;
+  e.preventDefault();
+  const pull = el.pull || 0;
+  setPull(el, Math.max(-64, Math.min(64, pull - e.deltaY * .35 * (1 - Math.abs(pull) / 80))), false);
+  clearTimeout(el.bounceTimer);
+  el.bounceTimer = setTimeout(() => setPull(el, 0, true), 110);
+}, {
+  passive: false
+});
+
 function queueFitBadges() {
   if (!badgeFrame) badgeFrame = requestAnimationFrame(fitBadges);
 }
