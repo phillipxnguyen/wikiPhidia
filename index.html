@@ -3198,14 +3198,15 @@ document.addEventListener("wheel", e => {
   if (isTouch() || e.ctrlKey || !(e.target instanceof Element)) return;
   const el = e.target.closest(BOUNCE_SEL);
   if (!el || el.scrollHeight <= el.clientHeight + 1 || el.querySelector(".cell.hidden")) return;
-  const pushing = e.deltaY < 0 ? el.scrollTop <= 0 : el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
-  const now = performance.now(), fresh = now - (el.lastWheel || 0) > 250 || !el.pushing;
-  el.lastWheel = now;
-  el.pushing = pushing;
-  if (!pushing) return;
+  if (!e.deltaY) return;
+  const atTop = el.scrollTop <= 0, atEnd = el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
+  if (el.bounced === "top" && !atTop || el.bounced === "end" && !atEnd) el.bounced = null;
+  const edge = e.deltaY < 0 ? atTop && "top" : atEnd && "end";
+  if (!edge) return;
   e.preventDefault();
-  if (!fresh) return;
-  const dir = e.deltaY < 0 ? 1 : -1;
+  if (el.bounced === edge) return;
+  el.bounced = edge;
+  const dir = edge === "top" ? 1 : -1;
   [ ...el.children ].forEach(c => c.animate([ {
     transform: "translateY(0)"
   }, {
