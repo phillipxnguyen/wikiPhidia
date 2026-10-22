@@ -3207,15 +3207,17 @@ document.addEventListener("wheel", e => {
   if (el.bounced === edge) return;
   el.bounced = edge;
   const dir = edge === "top" ? 1 : -1;
-  const frames = Array.from({
-    length: 25
-  }, (_, i) => {
-    const t = i / 24;
-    return {
-      transform: `translateY(${Math.round(dir * 20 * Math.sin(Math.PI * t) * Math.exp(-1.5 * t) / .527)}px)`
-    };
-  });
-  [ ...el.children ].forEach(c => c.animate(frames, 450));
+  const frames = [ {
+    transform: "none",
+    easing: "linear"
+  }, {
+    offset: .25,
+    transform: `translateY(${dir * 20}px)`,
+    easing: "cubic-bezier(.3, .7, .4, 1)"
+  }, {
+    transform: "none"
+  } ];
+  [ ...el.children ].forEach(c => c.animate(frames, 280));
 }, {
   passive: false
 });
