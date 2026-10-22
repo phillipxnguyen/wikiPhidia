@@ -325,7 +325,11 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-card.flipped .vocab-card-inner{transform:rotateY(180deg);}
   .vocab-card.no-turn .vocab-card-inner{transition:none;}
   .vocab-face{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;gap:14px;padding:32px 24px;text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:auto;}
-  .vocab-back{transform:rotateY(180deg);background:var(--a-bg);justify-content:flex-start;gap:16px;padding:25px 16px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;}
+  .vocab-back{transform:rotateY(180deg);background:var(--a-bg);padding:0;overflow:hidden;}
+  .vocab-back-scroll{box-sizing:border-box;flex:1;min-height:0;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:16px;padding:25px 16px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;}
+  :is(#singleCardBody.listen-batch, .vocab-back-scroll):is(.fade-top, .fade-bottom){-webkit-mask-image:linear-gradient(to bottom, rgba(0, 0, 0, var(--fade-top, 1)), #000 32px, #000 calc(100% - 32px), rgba(0, 0, 0, var(--fade-bottom, 1)));mask-image:linear-gradient(to bottom, rgba(0, 0, 0, var(--fade-top, 1)), #000 32px, #000 calc(100% - 32px), rgba(0, 0, 0, var(--fade-bottom, 1)));}
+  .fade-top{--fade-top:.3;}
+  .fade-bottom{--fade-bottom:.3;}
   @media (max-width:600px){.vocab-front{padding:24px 16px;}}
   .vocab-back .vocab-ctx, .vocab-back .vocab-meaning{box-sizing:border-box;width:fit-content;max-width:100%;padding:0 16px;font-size:28px;line-height:35px;margin:0;text-align:left;}
   .vocab-back .vocab-ctx.small{font-size:20px;}
@@ -335,9 +339,9 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-back .vocab-ctx mark.vs{border-top-left-radius:4px;border-bottom-left-radius:4px;padding-left:1px;}
   .vocab-back .vocab-ctx mark.ve{border-top-right-radius:4px;border-bottom-right-radius:4px;padding-right:1px;}
   .vocab-back .vocab-ctx:first-child:has(.rd){line-height:2;margin:5px 0 -14px;}
-  .vocab-face.vocab-back > .vocab-back-main{margin:auto 0 0;display:flex;flex-direction:column;align-items:center;gap:16px;width:100%;flex:none;}
-  .vocab-face.vocab-back > .vocab-back-stroke{margin:0 0 auto;flex:none;}
-  .vocab-face.vocab-back:has(> .vocab-back-stroke:empty) > .vocab-back-main{margin-bottom:auto;}
+  .vocab-back-scroll > .vocab-back-main{margin:auto 0 0;display:flex;flex-direction:column;align-items:center;gap:16px;width:100%;flex:none;}
+  .vocab-back-scroll > .vocab-back-stroke{margin:0 0 auto;flex:none;}
+  .vocab-back-scroll:has(> .vocab-back-stroke:empty) > .vocab-back-main{margin-bottom:auto;}
   .vocab-deck{position:relative;z-index:0;}
   @media (min-width:821px){.main:has(#vocabCard){padding-bottom:24px;}}
   .vocab-card.pending{position:absolute;top:0;left:0;right:0;opacity:0;pointer-events:none;z-index:-1;}
@@ -3140,6 +3144,31 @@ function fitBadges() {
   els.forEach(el => el.style.width = "");
   els.map(el => [ el, el.getBoundingClientRect().width ]).forEach(([ el, w ]) => el.style.width = Math.ceil(w / 2) * 2 + "px");
 }
+
+const FADE_SEL = "#singleCardBody.listen-batch, .vocab-back-scroll";
+
+function fadeEdges(el) {
+  el.classList.toggle("fade-top", el.scrollTop > 1);
+  el.classList.toggle("fade-bottom", el.scrollTop + el.clientHeight < el.scrollHeight - 1);
+}
+
+let fadeFrame = 0;
+
+function queueFadeEdges() {
+  if (!fadeFrame) fadeFrame = requestAnimationFrame(() => {
+    fadeFrame = 0;
+    document.querySelectorAll(FADE_SEL).forEach(fadeEdges);
+  });
+}
+
+document.addEventListener("scroll", e => e.target.matches && e.target.matches(FADE_SEL) && fadeEdges(e.target), true);
+
+addEventListener("resize", queueFadeEdges);
+
+new MutationObserver(queueFadeEdges).observe(document.body, {
+  childList: true,
+  subtree: true
+});
 
 function queueFitBadges() {
   if (!badgeFrame) badgeFrame = requestAnimationFrame(fitBadges);
@@ -13511,7 +13540,7 @@ function buildVocabCard(item) {
   el.className = "vocab-card";
   el.dataset.key = item.key;
   el.dataset.term = item.term;
-  el.innerHTML = '<div class="vocab-card-inner"><div class="vocab-face vocab-front"><div class="vocab-term"></div></div><div class="vocab-face vocab-back"><div class="vocab-back-main"></div><div class="vocab-back-stroke"></div></div></div>';
+  el.innerHTML = '<div class="vocab-card-inner"><div class="vocab-face vocab-front"><div class="vocab-term"></div></div><div class="vocab-face vocab-back"><div class="vocab-back-scroll"><div class="vocab-back-main"></div><div class="vocab-back-stroke"></div></div></div></div>';
   drawStrokeOrder(el.querySelector(".vocab-back-stroke"), item.term, cjkScriptFor(item.term, item.card) === "ja");
   vocabFitObserver.observe(el.querySelector(".vocab-back-main"));
   const current = () => {
@@ -13565,7 +13594,8 @@ function vocabCardNeed(card) {
     const edges = [ "paddingTop", "paddingBottom", "borderTopWidth", "borderBottomWidth" ].reduce((sum, k) => sum + (parseFloat(style[k]) || 0), 0);
     return shown.reduce((sum, el) => sum + el.offsetHeight, 0) + (parseFloat(style.rowGap) || 0) * Math.max(0, shown.length - 1) + edges;
   };
-  return Math.ceil(Math.max(need(card.querySelector(".vocab-front")), need(card.querySelector(".vocab-back"))));
+  const back = getComputedStyle(card.querySelector(".vocab-back"));
+  return Math.ceil(Math.max(need(card.querySelector(".vocab-front")), need(card.querySelector(".vocab-back-scroll")) + parseFloat(back.borderTopWidth) + parseFloat(back.borderBottomWidth)));
 }
 
 function fitVocabCards() {
@@ -14389,7 +14419,7 @@ function flipVocab() {
       settleVocabCard(card, true);
     }, VOCAB_FLIP_MS) : null;
     clearTimeout(card.strokeTimer);
-    card.querySelector(".vocab-back").scrollTop = 0;
+    card.querySelector(".vocab-back-scroll").scrollTop = 0;
     if (vocabSession.flipped) card.strokeTimer = setTimeout(() => card.querySelectorAll(".vocab-back-stroke .stroke-target").forEach(t => t.dispatchEvent(new Event("click"))), VOCAB_FLIP_MS * .5);
   }
   if (!vocabSoundOn()) playVocabSound(item);
