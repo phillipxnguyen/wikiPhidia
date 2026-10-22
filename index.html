@@ -327,9 +327,12 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-face{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;gap:14px;padding:32px 24px;text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:auto;}
   .vocab-back{transform:rotateY(180deg);background:var(--a-bg);padding:0;overflow:hidden;}
   .vocab-back-scroll{box-sizing:border-box;flex:1;min-height:0;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:16px;padding:25px 16px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;}
-  :is(.more-above, .more-below){-webkit-mask-image:linear-gradient(to bottom, var(--edge-top, #000 0), var(--edge-bottom, #000 100%));mask-image:linear-gradient(to bottom, var(--edge-top, #000 0), var(--edge-bottom, #000 100%));}
-  .more-above{--edge-top:rgba(0, 0, 0, 0) 0, rgba(0, 0, 0, .25) 6px, rgba(0, 0, 0, .6) 12px, rgba(0, 0, 0, .9) 18px, #000 24px;}
-  .more-below{--edge-bottom:#000 calc(100% - 24px), rgba(0, 0, 0, .9) calc(100% - 18px), rgba(0, 0, 0, .6) calc(100% - 12px), rgba(0, 0, 0, .25) calc(100% - 6px), rgba(0, 0, 0, 0) 100%;}
+  @property --edge-t{syntax:"<number>";inherits:false;initial-value:0;}
+  @property --edge-b{syntax:"<number>";inherits:false;initial-value:0;}
+  .edges{--edge-len:20px;-webkit-mask-image:linear-gradient(to bottom, rgba(0, 0, 0, calc(1 - var(--edge-t))) 0, rgba(0, 0, 0, calc(1 - var(--edge-t) * .75)) calc(var(--edge-len) / 4), rgba(0, 0, 0, calc(1 - var(--edge-t) * .4)) calc(var(--edge-len) / 2), rgba(0, 0, 0, calc(1 - var(--edge-t) * .1)) calc(var(--edge-len) * 3 / 4), #000 var(--edge-len), #000 calc(100% - var(--edge-len)), rgba(0, 0, 0, calc(1 - var(--edge-b) * .1)) calc(100% - var(--edge-len) * 3 / 4), rgba(0, 0, 0, calc(1 - var(--edge-b) * .4)) calc(100% - var(--edge-len) / 2), rgba(0, 0, 0, calc(1 - var(--edge-b) * .75)) calc(100% - var(--edge-len) / 4), rgba(0, 0, 0, calc(1 - var(--edge-b))) 100%);mask-image:linear-gradient(to bottom, rgba(0, 0, 0, calc(1 - var(--edge-t))) 0, rgba(0, 0, 0, calc(1 - var(--edge-t) * .75)) calc(var(--edge-len) / 4), rgba(0, 0, 0, calc(1 - var(--edge-t) * .4)) calc(var(--edge-len) / 2), rgba(0, 0, 0, calc(1 - var(--edge-t) * .1)) calc(var(--edge-len) * 3 / 4), #000 var(--edge-len), #000 calc(100% - var(--edge-len)), rgba(0, 0, 0, calc(1 - var(--edge-b) * .1)) calc(100% - var(--edge-len) * 3 / 4), rgba(0, 0, 0, calc(1 - var(--edge-b) * .4)) calc(100% - var(--edge-len) / 2), rgba(0, 0, 0, calc(1 - var(--edge-b) * .75)) calc(100% - var(--edge-len) / 4), rgba(0, 0, 0, calc(1 - var(--edge-b))) 100%);transition:--edge-t .15s ease, --edge-b .15s ease;}
+  :is(#singleCardBody.listen-batch, .vocab-back-scroll).edges{--edge-len:36px;}
+  .edges.more-above{--edge-t:1;}
+  .edges.more-below{--edge-b:1;}
   @media (max-width:600px){.vocab-front{padding:24px 16px;}}
   .vocab-back .vocab-ctx, .vocab-back .vocab-meaning{box-sizing:border-box;width:fit-content;max-width:100%;padding:0 16px;font-size:28px;line-height:35px;margin:0;text-align:left;}
   .vocab-back .vocab-ctx.small{font-size:20px;}
@@ -3148,6 +3151,7 @@ function fitBadges() {
 const EDGE_SEL = "#singleCardBody.listen-batch, .vocab-back-scroll, .lesson-list, .heat-day-list";
 
 function markEdges(el) {
+  el.classList.add("edges");
   el.classList.toggle("more-above", el.scrollTop > 1);
   el.classList.toggle("more-below", el.scrollTop + el.clientHeight < el.scrollHeight - 1);
 }
