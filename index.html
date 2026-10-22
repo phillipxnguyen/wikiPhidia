@@ -325,10 +325,7 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-card.flipped .vocab-card-inner{transform:rotateY(180deg);}
   .vocab-card.no-turn .vocab-card-inner{transition:none;}
   .vocab-face{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;gap:14px;padding:32px 24px;text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:auto;}
-  .vocab-back{transform:rotateY(180deg);background:var(--a-bg);padding:0;overflow:hidden;}
-  .vocab-back-scroll{box-sizing:border-box;flex:1;min-height:0;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:16px;padding:25px 16px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;}
-  :is(#singleCardBody.listen-batch, .vocab-back-scroll, .lesson-list, .heat-day-list).scrolls{position:relative;isolation:isolate;}
-  :is(#singleCardBody.listen-batch, .vocab-back-scroll, .lesson-list, .heat-day-list).scrolls::before{content:"";position:absolute;top:0;left:0;right:0;height:var(--content-h, 100%);z-index:-1;pointer-events:none;background:color-mix(in srgb, var(--accent) 9%, transparent);-webkit-mask-image:linear-gradient(to bottom, transparent, #000 48px, #000 calc(100% - 48px), transparent), linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent);-webkit-mask-composite:source-in;mask-image:linear-gradient(to bottom, transparent, #000 48px, #000 calc(100% - 48px), transparent), linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent);mask-composite:intersect;}
+  .vocab-back{transform:rotateY(180deg);background:var(--a-bg);justify-content:flex-start;gap:16px;padding:25px 16px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;}
   @media (max-width:600px){.vocab-front{padding:24px 16px;}}
   .vocab-back .vocab-ctx, .vocab-back .vocab-meaning{box-sizing:border-box;width:fit-content;max-width:100%;padding:0 16px;font-size:28px;line-height:35px;margin:0;text-align:left;}
   .vocab-back .vocab-ctx.small{font-size:20px;}
@@ -338,14 +335,17 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-back .vocab-ctx mark.vs{border-top-left-radius:4px;border-bottom-left-radius:4px;padding-left:1px;}
   .vocab-back .vocab-ctx mark.ve{border-top-right-radius:4px;border-bottom-right-radius:4px;padding-right:1px;}
   .vocab-back .vocab-ctx:first-child:has(.rd){line-height:2;margin:5px 0 -14px;}
-  .vocab-back-scroll > .vocab-back-main{margin:auto 0 0;display:flex;flex-direction:column;align-items:center;gap:16px;width:100%;flex:none;}
-  .vocab-back-scroll > .vocab-back-stroke{margin:0 0 auto;flex:none;}
-  .vocab-back-scroll:has(> .vocab-back-stroke:empty) > .vocab-back-main{margin-bottom:auto;}
+  .vocab-face.vocab-back > .vocab-back-main{margin:auto 0 0;display:flex;flex-direction:column;align-items:center;gap:16px;width:100%;flex:none;}
+  .vocab-face.vocab-back > .vocab-back-stroke{margin:0 0 auto;flex:none;}
+  .vocab-face.vocab-back:has(> .vocab-back-stroke:empty) > .vocab-back-main{margin-bottom:auto;}
   .vocab-deck{position:relative;z-index:0;}
   @media (min-width:821px){.main:has(#vocabCard){padding-bottom:24px;}}
   .vocab-card.pending{position:absolute;top:0;left:0;right:0;opacity:0;pointer-events:none;z-index:-1;}
   .vocab-card.settled .vocab-card-inner{transform:none;transition:none;transform-style:flat;}
   .vocab-card.settled .vocab-back{transform:none;}
+  #moreBelow{position:fixed;z-index:900;display:flex;align-items:center;justify-content:center;width:32px;height:32px;min-height:0;padding:0;border:1px solid var(--border);border-radius:16px;background:var(--surface);color:var(--text-2);box-shadow:var(--shadow-sm);cursor:pointer;}
+  #moreBelow[hidden]{display:none;}
+  #moreBelow svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
   .vocab-card.settled .vocab-front{visibility:hidden;}
   .vocab-card.settled{perspective:none;}
   .vocab-card.settled .vocab-face{-webkit-backface-visibility:visible;backface-visibility:visible;}
@@ -3144,28 +3144,59 @@ function fitBadges() {
   els.map(el => [ el, el.getBoundingClientRect().width ]).forEach(([ el, w ]) => el.style.width = Math.ceil(w / 2) * 2 + "px");
 }
 
-const EDGE_SEL = "#singleCardBody.listen-batch, .vocab-back-scroll, .lesson-list, .heat-day-list";
+const MORE_SEL = "#viewStudy #singleCardBody.listen-batch, #vocabCard.flipped.settled .vocab-back";
 
-function markEdges(el) {
-  const scrolls = el.scrollHeight > el.clientHeight + 1;
-  el.classList.toggle("scrolls", scrolls);
-  if (scrolls) el.style.setProperty("--content-h", el.scrollHeight + "px");
+const moreBelow = document.createElement("button");
+
+moreBelow.id = "moreBelow";
+
+moreBelow.hidden = true;
+
+moreBelow.setAttribute("aria-label", "More below");
+
+moreBelow.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg>';
+
+document.body.appendChild(moreBelow);
+
+moreBelow.onclick = () => moreBelow.target && moreBelow.target.scrollBy({
+  top: Math.round(moreBelow.target.clientHeight * .7),
+  behavior: "smooth"
+});
+
+function placeMoreBelow() {
+  const el = [ ...document.querySelectorAll(MORE_SEL) ].find(e => e.offsetParent && e.scrollTop + e.clientHeight < e.scrollHeight - 1);
+  const hide = on => moreBelow.hidden !== on && (moreBelow.hidden = on);
+  moreBelow.target = el || null;
+  if (!el) return hide(true);
+  const box = el.getBoundingClientRect();
+  let bottom = Math.min(box.bottom, window.innerHeight);
+  [ document.querySelector("#selBar:not([hidden]) .segmented"), document.querySelector("#touchBar:not([hidden])") ].forEach(bar => {
+    const top = bar && bar.getBoundingClientRect().top;
+    if (top && top > box.top && top < bottom) bottom = top;
+  });
+  hide(bottom - box.top < 80);
+  moreBelow.style.left = Math.round(box.left + box.width / 2 - 16) + "px";
+  moreBelow.style.top = Math.round(bottom - 44) + "px";
 }
 
-let edgeFrame = 0;
+let moreFrame = 0;
 
-function queueEdges() {
-  if (!edgeFrame) edgeFrame = requestAnimationFrame(() => {
-    edgeFrame = 0;
-    document.querySelectorAll(EDGE_SEL).forEach(markEdges);
+function queueMoreBelow() {
+  if (!moreFrame) moreFrame = requestAnimationFrame(() => {
+    moreFrame = 0;
+    placeMoreBelow();
   });
 }
 
-addEventListener("resize", queueEdges);
+document.addEventListener("scroll", queueMoreBelow, true);
 
-new MutationObserver(queueEdges).observe(document.body, {
+addEventListener("resize", queueMoreBelow);
+
+new MutationObserver(queueMoreBelow).observe(document.body, {
   childList: true,
-  subtree: true
+  subtree: true,
+  attributes: true,
+  attributeFilter: [ "class", "hidden" ]
 });
 
 function queueFitBadges() {
@@ -13543,7 +13574,7 @@ function buildVocabCard(item) {
   el.className = "vocab-card";
   el.dataset.key = item.key;
   el.dataset.term = item.term;
-  el.innerHTML = '<div class="vocab-card-inner"><div class="vocab-face vocab-front"><div class="vocab-term"></div></div><div class="vocab-face vocab-back"><div class="vocab-back-scroll"><div class="vocab-back-main"></div><div class="vocab-back-stroke"></div></div></div></div>';
+  el.innerHTML = '<div class="vocab-card-inner"><div class="vocab-face vocab-front"><div class="vocab-term"></div></div><div class="vocab-face vocab-back"><div class="vocab-back-main"></div><div class="vocab-back-stroke"></div></div></div>';
   drawStrokeOrder(el.querySelector(".vocab-back-stroke"), item.term, cjkScriptFor(item.term, item.card) === "ja");
   vocabFitObserver.observe(el.querySelector(".vocab-back-main"));
   const current = () => {
@@ -13597,8 +13628,7 @@ function vocabCardNeed(card) {
     const edges = [ "paddingTop", "paddingBottom", "borderTopWidth", "borderBottomWidth" ].reduce((sum, k) => sum + (parseFloat(style[k]) || 0), 0);
     return shown.reduce((sum, el) => sum + el.offsetHeight, 0) + (parseFloat(style.rowGap) || 0) * Math.max(0, shown.length - 1) + edges;
   };
-  const back = getComputedStyle(card.querySelector(".vocab-back"));
-  return Math.ceil(Math.max(need(card.querySelector(".vocab-front")), need(card.querySelector(".vocab-back-scroll")) + parseFloat(back.borderTopWidth) + parseFloat(back.borderBottomWidth)));
+  return Math.ceil(Math.max(need(card.querySelector(".vocab-front")), need(card.querySelector(".vocab-back"))));
 }
 
 function fitVocabCards() {
@@ -14422,7 +14452,7 @@ function flipVocab() {
       settleVocabCard(card, true);
     }, VOCAB_FLIP_MS) : null;
     clearTimeout(card.strokeTimer);
-    card.querySelector(".vocab-back-scroll").scrollTop = 0;
+    card.querySelector(".vocab-back").scrollTop = 0;
     if (vocabSession.flipped) card.strokeTimer = setTimeout(() => card.querySelectorAll(".vocab-back-stroke .stroke-target").forEach(t => t.dispatchEvent(new Event("click"))), VOCAB_FLIP_MS * .5);
   }
   if (!vocabSoundOn()) playVocabSound(item);
