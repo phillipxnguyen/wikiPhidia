@@ -327,7 +327,8 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-face{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;gap:14px;padding:32px 24px;text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:auto;}
   .vocab-back{transform:rotateY(180deg);background:var(--a-bg);padding:0;overflow:hidden;}
   .vocab-back-scroll{box-sizing:border-box;flex:1;min-height:0;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:16px;padding:25px 16px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;}
-  :is(#studyCard.deck #singleCardBody.listen-batch, .vocab-back-scroll, .lesson-list, .heat-day-list).scrolls{--tint:color-mix(in srgb, var(--accent) 9%, transparent);background-image:linear-gradient(to bottom, transparent, var(--tint) 48px, var(--tint) calc(100% - 48px), transparent);background-attachment:local;background-repeat:no-repeat;background-size:100% 100%;}
+  :is(#singleCardBody.listen-batch, .vocab-back-scroll, .lesson-list, .heat-day-list).scrolls{position:relative;isolation:isolate;}
+  :is(#singleCardBody.listen-batch, .vocab-back-scroll, .lesson-list, .heat-day-list).scrolls::before{content:"";position:absolute;top:0;left:0;right:0;height:var(--content-h, 100%);z-index:-1;pointer-events:none;background:color-mix(in srgb, var(--accent) 9%, transparent);-webkit-mask-image:linear-gradient(to bottom, transparent, #000 48px, #000 calc(100% - 48px), transparent), linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent);-webkit-mask-composite:source-in;mask-image:linear-gradient(to bottom, transparent, #000 48px, #000 calc(100% - 48px), transparent), linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent);mask-composite:intersect;}
   @media (max-width:600px){.vocab-front{padding:24px 16px;}}
   .vocab-back .vocab-ctx, .vocab-back .vocab-meaning{box-sizing:border-box;width:fit-content;max-width:100%;padding:0 16px;font-size:28px;line-height:35px;margin:0;text-align:left;}
   .vocab-back .vocab-ctx.small{font-size:20px;}
@@ -3146,7 +3147,9 @@ function fitBadges() {
 const EDGE_SEL = "#singleCardBody.listen-batch, .vocab-back-scroll, .lesson-list, .heat-day-list";
 
 function markEdges(el) {
-  el.classList.toggle("scrolls", el.scrollHeight > el.clientHeight + 1);
+  const scrolls = el.scrollHeight > el.clientHeight + 1;
+  el.classList.toggle("scrolls", scrolls);
+  if (scrolls) el.style.setProperty("--content-h", el.scrollHeight + "px");
 }
 
 let edgeFrame = 0;
