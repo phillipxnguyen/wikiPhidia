@@ -327,13 +327,9 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-face{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;gap:14px;padding:32px 24px;text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:auto;}
   .vocab-back{transform:rotateY(180deg);background:var(--a-bg);padding:0;overflow:hidden;}
   .vocab-back-scroll{box-sizing:border-box;flex:1;min-height:0;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:16px;padding:25px 16px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;}
-  :is(#singleCardBody.listen-batch, .vocab-back-scroll):is(.fade-top, .fade-bottom){-webkit-mask-image:linear-gradient(to bottom, rgba(0, 0, 0, var(--fade-top, 1)), #000 24px, #000 calc(100% - 24px), rgba(0, 0, 0, var(--fade-bottom, 1)));mask-image:linear-gradient(to bottom, rgba(0, 0, 0, var(--fade-top, 1)), #000 24px, #000 calc(100% - 24px), rgba(0, 0, 0, var(--fade-bottom, 1)));}
-  .fade-top{--fade-top:.55;}
-  .fade-bottom{--fade-bottom:.55;}
-  #moreBelow{position:fixed;z-index:900;display:flex;align-items:center;justify-content:center;width:32px;height:32px;min-height:0;padding:0;border:1px solid var(--border);border-radius:16px;background:var(--surface);color:var(--accent);box-shadow:var(--shadow-sm);cursor:pointer;animation:more-bob 1.6s ease-in-out infinite;}
-  #moreBelow[hidden]{display:none;}
-  #moreBelow svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
-  @keyframes more-bob{50%{transform:translateY(4px);}}
+  :is(#studyCard.deck #singleCardBody.listen-batch, .vocab-back-scroll):is(.more-above, .more-below){background-image:linear-gradient(to bottom, var(--edge-top, transparent), transparent 48px), linear-gradient(to top, var(--edge-bottom, transparent), transparent 48px);}
+  .more-above{--edge-top:color-mix(in srgb, var(--accent) 32%, transparent);}
+  .more-below{--edge-bottom:color-mix(in srgb, var(--accent) 32%, transparent);}
   @media (max-width:600px){.vocab-front{padding:24px 16px;}}
   .vocab-back .vocab-ctx, .vocab-back .vocab-meaning{box-sizing:border-box;width:fit-content;max-width:100%;padding:0 16px;font-size:28px;line-height:35px;margin:0;text-align:left;}
   .vocab-back .vocab-ctx.small{font-size:20px;}
@@ -3149,70 +3145,29 @@ function fitBadges() {
   els.map(el => [ el, el.getBoundingClientRect().width ]).forEach(([ el, w ]) => el.style.width = Math.ceil(w / 2) * 2 + "px");
 }
 
-const FADE_SEL = "#singleCardBody.listen-batch, .vocab-back-scroll";
+const EDGE_SEL = "#singleCardBody.listen-batch, .vocab-back-scroll";
 
-const MORE_SEL = "#viewStudy #singleCardBody.listen-batch, #vocabCard.flipped.settled .vocab-back-scroll";
-
-const moreBelow = document.createElement("button");
-
-moreBelow.id = "moreBelow";
-
-moreBelow.hidden = true;
-
-moreBelow.setAttribute("aria-label", "More below");
-
-moreBelow.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg>';
-
-document.body.appendChild(moreBelow);
-
-moreBelow.onclick = () => {
-  const el = moreBelow.target;
-  if (el) el.scrollBy({
-    top: Math.round(el.clientHeight * .7),
-    behavior: "smooth"
-  });
-};
-
-function placeMoreBelow() {
-  const el = [ ...document.querySelectorAll(MORE_SEL) ].find(e => e.offsetParent && e.classList.contains("fade-bottom"));
-  moreBelow.target = el || null;
-  const hide = on => moreBelow.hidden !== on && (moreBelow.hidden = on);
-  if (!el) return hide(true);
-  const box = el.getBoundingClientRect();
-  let bottom = Math.min(box.bottom, window.innerHeight);
-  [ document.querySelector("#selBar:not([hidden]) .segmented"), document.querySelector("#touchBar:not([hidden])") ].forEach(bar => {
-    const top = bar && bar.getBoundingClientRect().top;
-    if (top && top > box.top && top < bottom) bottom = top;
-  });
-  hide(bottom - box.top < 80);
-  moreBelow.style.left = Math.round(box.left + box.width / 2 - 16) + "px";
-  moreBelow.style.top = Math.round(bottom - 44) + "px";
+function markEdges(el) {
+  el.classList.toggle("more-above", el.scrollTop > 1);
+  el.classList.toggle("more-below", el.scrollTop + el.clientHeight < el.scrollHeight - 1);
 }
 
-function fadeEdges(el) {
-  el.classList.toggle("fade-top", el.scrollTop > 1);
-  el.classList.toggle("fade-bottom", el.scrollTop + el.clientHeight < el.scrollHeight - 1);
-}
+let edgeFrame = 0;
 
-let fadeFrame = 0;
-
-function queueFadeEdges() {
-  if (!fadeFrame) fadeFrame = requestAnimationFrame(() => {
-    fadeFrame = 0;
-    document.querySelectorAll(FADE_SEL).forEach(fadeEdges);
-    placeMoreBelow();
+function queueEdges() {
+  if (!edgeFrame) edgeFrame = requestAnimationFrame(() => {
+    edgeFrame = 0;
+    document.querySelectorAll(EDGE_SEL).forEach(markEdges);
   });
 }
 
-document.addEventListener("scroll", queueFadeEdges, true);
+document.addEventListener("scroll", e => e.target.matches && e.target.matches(EDGE_SEL) && markEdges(e.target), true);
 
-addEventListener("resize", queueFadeEdges);
+addEventListener("resize", queueEdges);
 
-new MutationObserver(queueFadeEdges).observe(document.body, {
+new MutationObserver(queueEdges).observe(document.body, {
   childList: true,
-  subtree: true,
-  attributes: true,
-  attributeFilter: [ "class", "hidden" ]
+  subtree: true
 });
 
 function queueFitBadges() {
