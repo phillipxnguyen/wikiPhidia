@@ -904,11 +904,14 @@ window.onYouTubeIframeAPIReady = function(){
   .sound-ring .ring-track{stroke:color-mix(in srgb, var(--ring) 30%, transparent);}
   .sound-ring .ring-run{stroke:var(--ring);stroke-linecap:round;}
   .sound-wait{animation:zap-jolt .16s steps(1) infinite, zap-glow .52s steps(1) infinite;}
-  .sound-wait::after{content:"";position:absolute;inset:-8px -2px;pointer-events:none;background:var(--accent);-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 8'%3E%3Cpolyline points='0,4 5,1 10,6 15,2 20,7 25,1 30,5 35,2 40,4' fill='none' stroke='%23000' stroke-width='2' stroke-linejoin='bevel'/%3E%3C/svg%3E") repeat-x 0 0 / 40px 8px, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 8'%3E%3Cpolyline points='0,4 5,1 10,6 15,2 20,7 25,1 30,5 35,2 40,4' fill='none' stroke='%23000' stroke-width='2' stroke-linejoin='bevel'/%3E%3C/svg%3E") repeat-x 20px 100% / 40px 8px;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 8'%3E%3Cpolyline points='0,4 5,1 10,6 15,2 20,7 25,1 30,5 35,2 40,4' fill='none' stroke='%23000' stroke-width='2' stroke-linejoin='bevel'/%3E%3C/svg%3E") repeat-x 0 0 / 40px 8px, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 8'%3E%3Cpolyline points='0,4 5,1 10,6 15,2 20,7 25,1 30,5 35,2 40,4' fill='none' stroke='%23000' stroke-width='2' stroke-linejoin='bevel'/%3E%3C/svg%3E") repeat-x 20px 100% / 40px 8px;animation:zap-arc .24s steps(1) infinite;}
   @keyframes zap-jolt{0%{transform:translate(1px, -1px);}25%{transform:translate(-1px, 1px);}50%{transform:translate(1px, 1px);}75%{transform:translate(-1px, -1px);}}
   @keyframes zap-glow{0%{box-shadow:0 0 0 2px var(--accent), 0 0 14px 4px color-mix(in srgb, var(--accent) 70%, #fff);filter:brightness(1.25);}30%{box-shadow:none;filter:none;}45%{box-shadow:0 0 0 1px #fff, 0 0 20px 6px var(--accent);filter:brightness(1.4);}60%{box-shadow:none;filter:none;}80%{box-shadow:0 0 0 2px color-mix(in srgb, var(--accent) 50%, #fff), 0 0 10px 2px var(--accent);filter:brightness(1.15);}}
-  @keyframes zap-arc{0%{opacity:1;-webkit-mask-position:0 0, 20px 100%;mask-position:0 0, 20px 100%;}33%{opacity:0;}50%{opacity:1;-webkit-mask-position:14px 0, 6px 100%;mask-position:14px 0, 6px 100%;}83%{opacity:.6;-webkit-mask-position:28px 0, 32px 100%;mask-position:28px 0, 32px 100%;}}
-  @media (prefers-reduced-motion: reduce){.sound-wait{animation:none;box-shadow:0 0 0 2px var(--accent);}.sound-wait::after{animation:none;}}
+  .zap{position:absolute;overflow:visible;pointer-events:none;z-index:2;}
+  .zap path{fill:none;stroke-linecap:round;stroke-linejoin:miter;}
+  .zap .glow{stroke:var(--accent);stroke-width:6;opacity:.45;filter:url(#zapBlur);}
+  .zap .arc{stroke:color-mix(in srgb, var(--accent) 65%, #fff);stroke-width:2;}
+  .zap .core{stroke:#fff;stroke-width:1;}
+  @media (prefers-reduced-motion: reduce){.sound-wait{animation:none;box-shadow:0 0 0 2px var(--accent);}}
   .loop-time.disabled{opacity:.4;background:var(--surface-3);color:var(--text-2);}
 
   .single-card-progress{text-align:center;font-size:14px;color:var(--text);margin-bottom:16px;}
@@ -2653,9 +2656,7 @@ function onPlayerReady() {
 function safeDestroyPlayer() {
   ytWarm = false;
   clearInterval(volumeTimer);
-  clearInterval(unmuteTimer);
   ytVolume = 100;
-  ytWarming = false;
   ytCueing = false;
   if (ytPlayer && typeof ytPlayer.destroy === "function") {
     try {
@@ -2882,25 +2883,8 @@ function fullVolume() {
   unmuteNow();
 }
 
-let ytWarming = false;
-
-let unmuteTimer = 0;
-
 function unmuteNow() {
-  clearInterval(unmuteTimer);
-  const warmed = ytWarming;
-  ytWarming = false;
-  if (ytPlayer && typeof ytPlayer.unMute === "function" && (warmed || typeof ytPlayer.isMuted !== "function" || ytPlayer.isMuted())) ytPlayer.unMute();
-}
-
-function unmuteAt(time) {
-  if (!ytWarming) return;
-  const begin = performance.now();
-  clearInterval(unmuteTimer);
-  unmuteTimer = setInterval(() => {
-    const t = ytPlayer && typeof ytPlayer.getCurrentTime === "function" ? ytPlayer.getCurrentTime() : time;
-    if (Math.abs(t - time) < .25 || performance.now() - begin > 600) unmuteNow();
-  }, 20);
+  if (ytPlayer && typeof ytPlayer.unMute === "function" && (typeof ytPlayer.isMuted !== "function" || ytPlayer.isMuted())) ytPlayer.unMute();
 }
 
 function playbackRateOnce() {
@@ -2911,7 +2895,6 @@ function seamTo(time) {
   ytPlayer.seekTo(time, true);
   if (ytPlayer.getPlayerState() !== YT.PlayerState.PLAYING) ytPlayer.playVideo();
   fadeVolume(100, 180);
-  unmuteAt(time);
   watchStall(0);
 }
 
@@ -3221,12 +3204,82 @@ new MutationObserver(records => {
 
 addEventListener("resize", queueFitBadges);
 
+const SVG_NS = "http://www.w3.org/2000/svg";
+
+let zapTimer = 0;
+
+function syncZap() {
+  if (!zapTimer && document.querySelector(".sound-wait")) zapTimer = setInterval(drawZaps, 70);
+}
+
+function jagged(a, b, spread, depth) {
+  if (!depth) return [ a, b ];
+  const m = [ (a[0] + b[0]) / 2 + (Math.random() - .5) * spread, (a[1] + b[1]) / 2 + (Math.random() - .5) * spread ];
+  return jagged(a, m, spread / 2, depth - 1).concat(jagged(m, b, spread / 2, depth - 1).slice(1));
+}
+
+function zapBolts(w, h, pad) {
+  const around = 2 * (w + h);
+  const at = t => {
+    t = (t % around + around) % around;
+    if (t < w) return [ pad + t, pad ];
+    if (t < w + h) return [ pad + w, pad + t - w ];
+    if (t < 2 * w + h) return [ pad + 2 * w + h - t, pad + h ];
+    return [ pad, pad + around - t ];
+  };
+  const d = pts => "M" + pts.map(p => p[0].toFixed(1) + " " + p[1].toFixed(1)).join("L");
+  const out = [];
+  for (let n = 2 + Math.floor(Math.random() * 3); n > 0; n--) {
+    const t = Math.random() * around, len = around * (.15 + Math.random() * .3);
+    const steps = Math.max(3, Math.round(len / 12));
+    const main = [];
+    for (let k = 0; k < steps; k++) main.push(...jagged(at(t + len * k / steps), at(t + len * (k + 1) / steps), 7, 2).slice(k ? 1 : 0));
+    out.push(d(main));
+    for (let b = Math.floor(Math.random() * 3); b > 0; b--) {
+      const from = main[1 + Math.floor(Math.random() * (main.length - 2))];
+      const cx = pad + w / 2, cy = pad + h / 2, k = 8 + Math.random() * 10;
+      const dx = from[0] - cx, dy = from[1] - cy, r = Math.hypot(dx, dy) || 1;
+      out.push(d(jagged(from, [ from[0] + dx / r * k + (Math.random() - .5) * k, from[1] + dy / r * k + (Math.random() - .5) * k ], k / 2, 2)));
+    }
+  }
+  return out;
+}
+
+function drawZaps() {
+  document.querySelectorAll(".zap").forEach(z => z.parentElement && z.parentElement.classList.contains("sound-wait") || z.remove());
+  const els = [ ...document.querySelectorAll(".sound-wait") ].filter(e => e.offsetParent);
+  if (!els.length) {
+    clearInterval(zapTimer);
+    zapTimer = 0;
+    return;
+  }
+  if (reducedMotion()) return;
+  if (!document.getElementById("zapBlur")) document.body.insertAdjacentHTML("beforeend", '<svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="zapBlur" filterUnits="userSpaceOnUse" x="-100" y="-100" width="1000" height="1000"><feGaussianBlur stdDeviation="2"/></filter></svg>');
+  els.forEach(el => {
+    const pad = 16, w = el.offsetWidth, h = el.offsetHeight;
+    let svg = el.querySelector(":scope > .zap");
+    if (!svg) {
+      svg = document.createElementNS(SVG_NS, "svg");
+      svg.setAttribute("class", "zap");
+      svg.setAttribute("aria-hidden", "true");
+      el.appendChild(svg);
+    }
+    svg.setAttribute("width", w + pad * 2);
+    svg.setAttribute("height", h + pad * 2);
+    svg.style.left = -(pad + el.clientLeft) + "px";
+    svg.style.top = -(pad + el.clientTop) + "px";
+    svg.style.opacity = Math.random() < .2 ? "0" : String(Math.round(70 + Math.random() * 30) / 100);
+    svg.innerHTML = zapBolts(w, h, pad).map(p => `<path class="glow" d="${p}"/><path class="arc" d="${p}"/><path class="core" d="${p}"/>`).join("");
+  });
+}
+
 function syncRowBadges() {
   document.querySelectorAll(".loop-time[data-id]").forEach(el => {
     const id = Number(el.dataset.id);
     el.classList.toggle("looping", id === loopingRowId && soundHeard);
     el.classList.toggle("sound-wait", id === loopingRowId && !soundHeard);
   });
+  syncZap();
 }
 
 function stopLoop() {
@@ -4034,6 +4087,7 @@ function setSequenceBtnState(btn, on, enabled, waiting = false) {
   const before = btn.classList.contains("active") + ":" + btn.disabled;
   btn.classList.toggle("active", on);
   btn.classList.toggle("sound-wait", waiting);
+  syncZap();
   btn.disabled = !enabled;
   if (before !== btn.classList.contains("active") + ":" + btn.disabled) updateTouchBar();
 }
@@ -14274,6 +14328,7 @@ function syncVocabSound() {
   btn.innerHTML = playFace(vocabShownIsVideo ? on ? YT_PAUSE_ICON : YT_ICON : on ? "⏸" : "🔊");
   btn.classList.toggle("active", on);
   btn.classList.toggle("sound-wait", vocabSoundOn() && !soundHeard);
+  syncZap();
   if (currentView === "vocab") updateTouchBar();
 }
 
@@ -14320,7 +14375,7 @@ function vocabCueDone() {
 
 function startPendingVocabVideo() {
   if (vocabPendingKey === null || vocabAwaitCue || !ytPlayer || !ytReady || !ytHasVideo) return;
-  if (document.querySelector(".all-curtain:not(.open)")) return afterCurtain(startPendingVocabVideo, 0);
+  if (document.querySelector(".all-curtain")) return afterCurtain(startPendingVocabVideo, 0);
   const item = lessonVocabItems(vocabSource()).find(i => i.key === vocabPendingKey);
   vocabPendingKey = null;
   if (item && !ytHasError) startLoop(item.card);
@@ -14753,32 +14808,8 @@ async function openAllVocabulary() {
 
 function afterCurtain(fn, wait) {
   setTimeout(function check() {
-    if (document.querySelector(".all-curtain:not(.open)")) setTimeout(check, 50); else fn();
+    if (document.querySelector(".all-curtain")) setTimeout(check, 50); else fn();
   }, wait);
-}
-
-function warmFirstClip(done) {
-  const item = appMode === "vocab" && vocabPendingKey !== null ? lessonVocabItems(vocabSource()).find(i => i.key === vocabPendingKey) : null;
-  const row = appMode === "vocab" ? item && item.card : isAllLessons() && isListenMode() ? listenBatch()[0] : null;
-  if (!row || row.time == null || ytHasError || !ytPlayer || !ytReady || !ytHasVideo) return done();
-  let over = false, poll = 0, guard = 0;
-  const finish = () => {
-    if (over) return;
-    over = true;
-    clearInterval(poll);
-    clearTimeout(guard);
-    done();
-  };
-  ytWarming = true;
-  ytPlayer.mute();
-  if (typeof ytPlayer.setPlaybackRate === "function") ytPlayer.setPlaybackRate(sequenceSpeed);
-  ytPlayer.seekTo(row.time, true);
-  ytPlayer.playVideo();
-  poll = setInterval(() => {
-    if (!ytPlayer || typeof ytPlayer.getPlayerState !== "function" || !isVirtualLesson()) return finish();
-    if (ytHasError || ytPlayer.getPlayerState() === YT.PlayerState.PLAYING && ytPlayer.getCurrentTime() >= row.time + .3) finish();
-  }, 50);
-  guard = setTimeout(finish, 6e3);
 }
 
 function allCurtain(item) {
@@ -14817,15 +14848,7 @@ function allCurtain(item) {
   let sway = [];
   const start = Date.now();
   const ready = () => ytHasError || !isVirtualLesson() || (appMode === "vocab" ? !vocabAwaitCue && !pendingVideoId : !mixAwaitCue && !pendingVideoId && !ytCueing && (!ytHasVideo || ytReady));
-  const finish = () => {
-    curtain.remove();
-    setTimeout(() => {
-      if (ytWarming && !isSequencePlaying && loopingRowId === null) {
-        pauseVideoProgrammatically();
-        unmuteNow();
-      }
-    }, 500);
-  };
+
   const open = () => {
     sway.forEach(a => a.cancel());
     Promise.all(sides.map((el, i) => el.animate([ {
@@ -14843,8 +14866,7 @@ function allCurtain(item) {
       easing: "cubic-bezier(.5,0,.3,1)",
       fill: "forwards"
     }).finished)).then(() => {
-      curtain.classList.add("open");
-      finish();
+      curtain.remove();
     });
   };
   requestAnimationFrame(() => {
@@ -14866,7 +14888,7 @@ function allCurtain(item) {
     }));
     (function wait() {
       if (!ready() && Date.now() - start < 2e4) return setTimeout(wait, 100);
-      warmFirstClip(open);
+      open();
     })();
   });
 }
