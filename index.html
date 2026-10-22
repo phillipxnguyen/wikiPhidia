@@ -3208,12 +3208,26 @@ document.addEventListener("wheel", e => {
   const el = e.target.closest(BOUNCE_SEL);
   if (!el || el.scrollHeight <= el.clientHeight + 1 || el.querySelector(".cell.hidden")) return;
   const pushing = e.deltaY < 0 ? el.scrollTop <= 0 : el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
+  const mag = Math.abs(e.deltaY), now = performance.now();
+  const fresh = now - (el.lastWheel || 0) > 200;
+  el.decay = !fresh && mag < (el.lastMag || 0) ? (el.decay || 0) + 1 : 0;
+  el.lastMag = mag;
+  el.lastWheel = now;
+  if (el.coasting && !fresh && el.decay) {
+    if (pushing) e.preventDefault();
+    return;
+  }
+  el.coasting = false;
   if (!pushing && !el.pull) return;
   e.preventDefault();
+  clearTimeout(el.bounceTimer);
+  if (el.pull && el.decay >= 3) {
+    el.coasting = true;
+    return setPull(el, 0, true);
+  }
   const raw = Math.max(-el.clientHeight / 2, Math.min(el.clientHeight / 2, (el.pull || 0) - e.deltaY * .5));
   setPull(el, el.pull && Math.sign(raw) !== Math.sign(el.pull) ? 0 : raw, false);
-  clearTimeout(el.bounceTimer);
-  el.bounceTimer = setTimeout(() => setPull(el, 0, true), 110);
+  el.bounceTimer = setTimeout(() => setPull(el, 0, true), 80);
 }, {
   passive: false
 });
