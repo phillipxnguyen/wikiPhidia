@@ -343,6 +343,11 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-card.pending{position:absolute;top:0;left:0;right:0;opacity:0;pointer-events:none;z-index:-1;}
   .vocab-card.settled .vocab-card-inner{transform:none;transition:none;transform-style:flat;}
   .vocab-card.settled .vocab-back{transform:none;}
+  :is(#singleCardBody.listen-batch, .vocab-back){scrollbar-width:none;}
+  :is(#singleCardBody.listen-batch, .vocab-back)::-webkit-scrollbar{display:none;}
+  #scrollRail{position:fixed;z-index:900;width:4px;border-radius:2px;background:color-mix(in srgb, var(--accent) 15%, transparent);pointer-events:none;}
+  #scrollRail[hidden]{display:none;}
+  #scrollRail i{position:absolute;left:0;right:0;border-radius:2px;background:var(--accent);}
   .vocab-card.settled .vocab-front{visibility:hidden;}
   .vocab-card.settled{perspective:none;}
   .vocab-card.settled .vocab-face{-webkit-backface-visibility:visible;backface-visibility:visible;}
@@ -3140,6 +3145,60 @@ function fitBadges() {
   els.forEach(el => el.style.width = "");
   els.map(el => [ el, el.getBoundingClientRect().width ]).forEach(([ el, w ]) => el.style.width = Math.ceil(w / 2) * 2 + "px");
 }
+
+const RAIL_SEL = "#viewStudy #singleCardBody.listen-batch, #vocabCard.flipped.settled .vocab-back";
+
+const scrollRail = document.createElement("div");
+
+scrollRail.id = "scrollRail";
+
+scrollRail.hidden = true;
+
+scrollRail.innerHTML = "<i></i>";
+
+document.body.appendChild(scrollRail);
+
+function placeScrollRail() {
+  const el = [ ...document.querySelectorAll(RAIL_SEL) ].find(e => e.offsetParent && e.scrollHeight > e.clientHeight + 1);
+  const hide = on => scrollRail.hidden !== on && (scrollRail.hidden = on);
+  if (!el) return hide(true);
+  const box = el.getBoundingClientRect();
+  let bottom = Math.min(box.bottom, window.innerHeight);
+  [ document.querySelector("#selBar:not([hidden]) .segmented"), document.querySelector("#touchBar:not([hidden])") ].forEach(bar => {
+    const top = bar && bar.getBoundingClientRect().top;
+    if (top && top > box.top && top < bottom) bottom = top;
+  });
+  const height = Math.round(bottom - box.top - 16);
+  if (height < 48) return hide(true);
+  const thumb = Math.max(24, Math.round(height * el.clientHeight / el.scrollHeight));
+  const left = el.scrollHeight - el.clientHeight;
+  scrollRail.style.left = Math.round(box.right - 8) + "px";
+  scrollRail.style.top = Math.round(box.top + 8) + "px";
+  scrollRail.style.height = height + "px";
+  scrollRail.firstChild.style.height = thumb + "px";
+  scrollRail.firstChild.style.top = Math.round((height - thumb) * Math.min(1, el.scrollTop / left)) + "px";
+  hide(false);
+}
+
+let railFrame = 0;
+
+function queueScrollRail() {
+  if (!railFrame) railFrame = requestAnimationFrame(() => {
+    railFrame = 0;
+    placeScrollRail();
+  });
+}
+
+document.addEventListener("scroll", queueScrollRail, true);
+
+addEventListener("resize", queueScrollRail);
+
+new MutationObserver(queueScrollRail).observe(document.body, {
+  childList: true,
+  subtree: true,
+  attributes: true,
+  attributeFilter: [ "class", "hidden" ]
+});
 
 function queueFitBadges() {
   if (!badgeFrame) badgeFrame = requestAnimationFrame(fitBadges);
