@@ -3192,32 +3192,6 @@ new MutationObserver(queueScrollCues).observe(document.body, {
   attributeFilter: [ "class", "hidden" ]
 });
 
-const BOUNCE_SEL = ".lesson-list, #singleCardBody.listen-batch, .vocab-back, .heat-day-list";
-
-document.addEventListener("wheel", e => {
-  if (isTouch() || e.ctrlKey || !(e.target instanceof Element)) return;
-  const el = e.target.closest(BOUNCE_SEL);
-  if (!el || el.scrollHeight <= el.clientHeight + 1 || el.querySelector(".cell.hidden")) return;
-  if (!e.deltaY) return;
-  const atTop = el.scrollTop <= 0, atEnd = el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
-  if (el.bounced === "top" && !atTop || el.bounced === "end" && !atEnd) el.bounced = null;
-  const edge = e.deltaY < 0 ? atTop && "top" : atEnd && "end";
-  if (!edge) return;
-  e.preventDefault();
-  if (el.bounced === edge) return;
-  el.bounced = edge;
-  const dir = edge === "top" ? 1 : -1;
-  const frames = [ 0, 4, -3, 2, -1, 0 ].map(y => ({
-    transform: `translateY(${dir * y}px)`
-  }));
-  [ ...el.children ].forEach(c => c.animate(frames, {
-    duration: 360,
-    easing: "ease-out"
-  }));
-}, {
-  passive: false
-});
-
 function queueFitBadges() {
   if (!badgeFrame) badgeFrame = requestAnimationFrame(fitBadges);
 }
