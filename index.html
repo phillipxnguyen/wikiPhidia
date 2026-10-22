@@ -343,9 +343,6 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-card.pending{position:absolute;top:0;left:0;right:0;opacity:0;pointer-events:none;z-index:-1;}
   .vocab-card.settled .vocab-card-inner{transform:none;transition:none;transform-style:flat;}
   .vocab-card.settled .vocab-back{transform:none;}
-  #moreBelow{position:fixed;z-index:900;display:flex;align-items:center;justify-content:center;width:32px;height:32px;min-height:0;padding:0;border:1px solid var(--border);border-radius:16px;background:var(--surface);color:var(--text-2);box-shadow:var(--shadow-sm);cursor:pointer;}
-  #moreBelow[hidden]{display:none;}
-  #moreBelow svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
   .vocab-card.settled .vocab-front{visibility:hidden;}
   .vocab-card.settled{perspective:none;}
   .vocab-card.settled .vocab-face{-webkit-backface-visibility:visible;backface-visibility:visible;}
@@ -3143,61 +3140,6 @@ function fitBadges() {
   els.forEach(el => el.style.width = "");
   els.map(el => [ el, el.getBoundingClientRect().width ]).forEach(([ el, w ]) => el.style.width = Math.ceil(w / 2) * 2 + "px");
 }
-
-const MORE_SEL = "#viewStudy #singleCardBody.listen-batch, #vocabCard.flipped.settled .vocab-back";
-
-const moreBelow = document.createElement("button");
-
-moreBelow.id = "moreBelow";
-
-moreBelow.hidden = true;
-
-moreBelow.setAttribute("aria-label", "More below");
-
-moreBelow.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg>';
-
-document.body.appendChild(moreBelow);
-
-moreBelow.onclick = () => moreBelow.target && moreBelow.target.scrollBy({
-  top: Math.round(moreBelow.target.clientHeight * .7),
-  behavior: "smooth"
-});
-
-function placeMoreBelow() {
-  const el = [ ...document.querySelectorAll(MORE_SEL) ].find(e => e.offsetParent && e.scrollTop + e.clientHeight < e.scrollHeight - 1);
-  const hide = on => moreBelow.hidden !== on && (moreBelow.hidden = on);
-  moreBelow.target = el || null;
-  if (!el) return hide(true);
-  const box = el.getBoundingClientRect();
-  let bottom = Math.min(box.bottom, window.innerHeight);
-  [ document.querySelector("#selBar:not([hidden]) .segmented"), document.querySelector("#touchBar:not([hidden])") ].forEach(bar => {
-    const top = bar && bar.getBoundingClientRect().top;
-    if (top && top > box.top && top < bottom) bottom = top;
-  });
-  hide(bottom - box.top < 80);
-  moreBelow.style.left = Math.round(box.left + box.width / 2 - 16) + "px";
-  moreBelow.style.top = Math.round(bottom - 44) + "px";
-}
-
-let moreFrame = 0;
-
-function queueMoreBelow() {
-  if (!moreFrame) moreFrame = requestAnimationFrame(() => {
-    moreFrame = 0;
-    placeMoreBelow();
-  });
-}
-
-document.addEventListener("scroll", queueMoreBelow, true);
-
-addEventListener("resize", queueMoreBelow);
-
-new MutationObserver(queueMoreBelow).observe(document.body, {
-  childList: true,
-  subtree: true,
-  attributes: true,
-  attributeFilter: [ "class", "hidden" ]
-});
 
 function queueFitBadges() {
   if (!badgeFrame) badgeFrame = requestAnimationFrame(fitBadges);
