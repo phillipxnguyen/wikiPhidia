@@ -903,16 +903,12 @@ window.onYouTubeIframeAPIReady = function(){
   .sound-ring path{fill:none;stroke-width:2;}
   .sound-ring .ring-track{stroke:color-mix(in srgb, var(--ring) 30%, transparent);}
   .sound-ring .ring-run{stroke:var(--ring);stroke-linecap:round;}
-  .loop-time, #btnPlaySequence, #vocabSpeak{isolation:isolate;}
-  :is(.sound-wait, .sound-fill, .sound-fade)::before{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;pointer-events:none;transition:opacity .4s ease;}
-  :is(.sound-wait, .sound-fade):not(.sound-load)::before{background:linear-gradient(100deg, transparent 25%, color-mix(in srgb, var(--accent) 45%, transparent) 50%, transparent 75%) no-repeat;background-size:200% 100%;animation:sound-shimmer 1s linear infinite;}
-  :is(.sound-load, .sound-fill)::before{right:auto;width:calc(var(--fill, 0) * 100%);background:var(--accent);}
-  .sound-fill::before{width:100%;transition:width .25s ease-out;}
-  .loop-time:is(.sound-load, .sound-fill)::after{content:attr(data-t);position:absolute;inset:0;padding:inherit;text-align:center;color:var(--on-accent);pointer-events:none;clip-path:inset(0 calc(100% - var(--fill, 0) * 100%) 0 0);}
-  .loop-time.sound-fill::after{clip-path:inset(0);transition:clip-path .25s ease-out;}
-  .sound-fade::before{opacity:0;}
-  :is(.loop-time, #btnPlaySequence, #vocabSpeak).sound-fill{transition:background-color 0s .25s, border-color 0s .25s, color 0s .25s;}
-  @keyframes sound-shimmer{from{background-position:150% 0;}to{background-position:-50% 0;}}
+  .sound-wait{animation:zap-jolt .16s steps(1) infinite, zap-glow .52s steps(1) infinite;}
+  .sound-wait::after{content:"";position:absolute;inset:-8px -2px;pointer-events:none;background:var(--accent);-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 8'%3E%3Cpolyline points='0,4 5,1 10,6 15,2 20,7 25,1 30,5 35,2 40,4' fill='none' stroke='%23000' stroke-width='2' stroke-linejoin='bevel'/%3E%3C/svg%3E") repeat-x 0 0 / 40px 8px, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 8'%3E%3Cpolyline points='0,4 5,1 10,6 15,2 20,7 25,1 30,5 35,2 40,4' fill='none' stroke='%23000' stroke-width='2' stroke-linejoin='bevel'/%3E%3C/svg%3E") repeat-x 20px 100% / 40px 8px;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 8'%3E%3Cpolyline points='0,4 5,1 10,6 15,2 20,7 25,1 30,5 35,2 40,4' fill='none' stroke='%23000' stroke-width='2' stroke-linejoin='bevel'/%3E%3C/svg%3E") repeat-x 0 0 / 40px 8px, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 8'%3E%3Cpolyline points='0,4 5,1 10,6 15,2 20,7 25,1 30,5 35,2 40,4' fill='none' stroke='%23000' stroke-width='2' stroke-linejoin='bevel'/%3E%3C/svg%3E") repeat-x 20px 100% / 40px 8px;animation:zap-arc .24s steps(1) infinite;}
+  @keyframes zap-jolt{0%{transform:translate(1px, -1px);}25%{transform:translate(-1px, 1px);}50%{transform:translate(1px, 1px);}75%{transform:translate(-1px, -1px);}}
+  @keyframes zap-glow{0%{box-shadow:0 0 0 2px var(--accent), 0 0 14px 4px color-mix(in srgb, var(--accent) 70%, #fff);filter:brightness(1.25);}30%{box-shadow:none;filter:none;}45%{box-shadow:0 0 0 1px #fff, 0 0 20px 6px var(--accent);filter:brightness(1.4);}60%{box-shadow:none;filter:none;}80%{box-shadow:0 0 0 2px color-mix(in srgb, var(--accent) 50%, #fff), 0 0 10px 2px var(--accent);filter:brightness(1.15);}}
+  @keyframes zap-arc{0%{opacity:1;-webkit-mask-position:0 0, 20px 100%;mask-position:0 0, 20px 100%;}33%{opacity:0;}50%{opacity:1;-webkit-mask-position:14px 0, 6px 100%;mask-position:14px 0, 6px 100%;}83%{opacity:.6;-webkit-mask-position:28px 0, 32px 100%;mask-position:28px 0, 32px 100%;}}
+  @media (prefers-reduced-motion: reduce){.sound-wait{animation:none;box-shadow:0 0 0 2px var(--accent);}.sound-wait::after{animation:none;}}
   .loop-time.disabled{opacity:.4;background:var(--surface-3);color:var(--text-2);}
 
   .single-card-progress{text-align:center;font-size:14px;color:var(--text);margin-bottom:16px;}
@@ -1959,11 +1955,8 @@ let soundHeard = false;
 
 let ytWarm = false;
 
-let soundWaitSince = 0;
-
 function beginSound() {
   soundHeard = ytWarm;
-  soundWaitSince = performance.now();
 }
 
 let sequenceIndex = 0;
@@ -3104,7 +3097,7 @@ function soundProgressLoop() {
     }
     const exam = testAudioProgress();
     const all = [];
-    const add = (el, p) => el && all.push([ el, el.classList.contains("sound-wait") ? 0 : p, el.classList.contains("sound-wait") ]);
+    const add = (el, p) => el && all.push([ el, p ]);
     document.querySelectorAll(".loop-time[data-id]").forEach(el => add(el, el.classList.contains("looping") && Number(el.dataset.id) === loopingRowId ? video : null));
     [ "btnPlaySequence", "vocabSpeak" ].forEach(id => {
       const el = document.getElementById(id);
@@ -3112,14 +3105,10 @@ function soundProgressLoop() {
     });
     document.querySelectorAll(".exam-play").forEach(el => add(el, el.classList.contains("on") && Number(el.dataset.listen) === testAudio.n ? exam : null));
     const chosen = all.find(([ el, p ]) => p != null && el.offsetParent);
-    all.forEach(([ el, p, waiting ]) => {
-      const main = !!chosen && chosen[0] === el;
-      if (main) paintRing(el, p); else el.querySelector(":scope > .sound-ring")?.remove();
-      if (!waiting) return;
-      el.classList.toggle("sound-load", main);
-      if (main) el.style.setProperty("--fill", (.9 * (1 - Math.exp((soundWaitSince - performance.now()) / 900))).toFixed(3));
+    all.forEach(([ el, p ]) => {
+      if (chosen && chosen[0] === el) paintRing(el, p); else el.querySelector(":scope > .sound-ring")?.remove();
     });
-    soundFrame = video != null || speech != null || exam != null || chosen && chosen[2] ? requestAnimationFrame(tick) : 0;
+    soundFrame = video != null || speech != null || exam != null ? requestAnimationFrame(tick) : 0;
   };
   tick();
 }
@@ -3232,28 +3221,11 @@ new MutationObserver(records => {
 
 addEventListener("resize", queueFitBadges);
 
-function markWait(el, waiting, lit) {
-  const was = el.classList.contains("sound-wait");
-  el.classList.toggle("sound-wait", waiting);
-  if (waiting) {
-    if (!was) el.classList.remove("sound-fill", "sound-fade", "sound-load");
-    if (!soundFrame) soundFrame = requestAnimationFrame(soundProgressLoop);
-  }
-  if (!was || waiting) return;
-  const end = lit && el.classList.contains("sound-load") ? "sound-fill" : "sound-fade";
-  el.classList.add(end);
-  clearTimeout(el.fadeTimer);
-  el.fadeTimer = setTimeout(() => {
-    el.classList.remove(end, "sound-load");
-    el.style.removeProperty("--fill");
-  }, 400);
-}
-
 function syncRowBadges() {
   document.querySelectorAll(".loop-time[data-id]").forEach(el => {
     const id = Number(el.dataset.id);
     el.classList.toggle("looping", id === loopingRowId && soundHeard);
-    markWait(el, id === loopingRowId && !soundHeard, id === loopingRowId);
+    el.classList.toggle("sound-wait", id === loopingRowId && !soundHeard);
   });
 }
 
@@ -4061,7 +4033,7 @@ function updateSequenceBtnUI() {
 function setSequenceBtnState(btn, on, enabled, waiting = false) {
   const before = btn.classList.contains("active") + ":" + btn.disabled;
   btn.classList.toggle("active", on);
-  markWait(btn, waiting, on);
+  btn.classList.toggle("sound-wait", waiting);
   btn.disabled = !enabled;
   if (before !== btn.classList.contains("active") + ":" + btn.disabled) updateTouchBar();
 }
@@ -4805,7 +4777,7 @@ function rowPlayBadge(r) {
     let badgeClasses = "loop-time";
     if (loopingRowId === r.id) badgeClasses += soundHeard ? " looping" : " sound-wait";
     if (ytHasError) badgeClasses += " disabled";
-    return `<span class="${badgeClasses}" data-id="${r.id}" data-t="${formatTime(r.time)}">${formatTime(r.time)}</span>`;
+    return `<span class="${badgeClasses}" data-id="${r.id}">${formatTime(r.time)}</span>`;
   }
   return "";
 }
@@ -14301,7 +14273,7 @@ function syncVocabSound() {
   const on = vocabSoundOn() && soundHeard;
   btn.innerHTML = playFace(vocabShownIsVideo ? on ? YT_PAUSE_ICON : YT_ICON : on ? "⏸" : "🔊");
   btn.classList.toggle("active", on);
-  markWait(btn, vocabSoundOn() && !soundHeard, on);
+  btn.classList.toggle("sound-wait", vocabSoundOn() && !soundHeard);
   if (currentView === "vocab") updateTouchBar();
 }
 
