@@ -903,15 +903,14 @@ window.onYouTubeIframeAPIReady = function(){
   .sound-ring path{fill:none;stroke-width:2;}
   .sound-ring .ring-track{stroke:color-mix(in srgb, var(--ring) 30%, transparent);}
   .sound-ring .ring-run{stroke:var(--ring);stroke-linecap:round;}
-  .sound-wait{animation:zap-jolt .3s steps(1) infinite, zap-glow .52s steps(1) infinite;}
+  .sound-wait{animation:zap-jolt .3s steps(1) infinite;}
   @keyframes zap-jolt{0%{transform:translate(1px, 0);}20%{transform:none;}50%{transform:translate(-1px, 0);}70%{transform:none;}}
-  @keyframes zap-glow{0%{box-shadow:0 0 0 2px var(--accent), 0 0 14px 4px color-mix(in srgb, var(--accent) 70%, #fff);filter:brightness(1.25);}30%{box-shadow:none;filter:none;}45%{box-shadow:0 0 0 1px #fff, 0 0 20px 6px var(--accent);filter:brightness(1.4);}60%{box-shadow:none;filter:none;}80%{box-shadow:0 0 0 2px color-mix(in srgb, var(--accent) 50%, #fff), 0 0 10px 2px var(--accent);filter:brightness(1.15);}}
   .zap{position:absolute;overflow:visible;pointer-events:none;z-index:2;}
   .zap path{fill:none;stroke-linecap:round;stroke-linejoin:miter;}
   .zap .glow{stroke:var(--accent);stroke-width:6;opacity:.45;filter:url(#zapBlur);}
   .zap .arc{stroke:color-mix(in srgb, var(--accent) 65%, #fff);stroke-width:2;}
   .zap .core{stroke:#fff;stroke-width:1;}
-  @media (prefers-reduced-motion: reduce){.sound-wait{animation:none;box-shadow:0 0 0 2px var(--accent);}}
+  @media (prefers-reduced-motion: reduce){.sound-wait{animation:none;}}
   .loop-time.disabled{opacity:.4;background:var(--surface-3);color:var(--text-2);}
 
   .single-card-progress{text-align:center;font-size:14px;color:var(--text);margin-bottom:16px;}
@@ -3080,7 +3079,7 @@ function soundProgressLoop() {
     }
     const exam = testAudioProgress();
     const all = [];
-    const add = (el, p) => el && all.push([ el, p ]);
+    const add = (el, p) => el && all.push([ el, el.classList.contains("sound-wait") ? 1 : p, el.classList.contains("sound-wait") ]);
     document.querySelectorAll(".loop-time[data-id]").forEach(el => add(el, el.classList.contains("looping") && Number(el.dataset.id) === loopingRowId ? video : null));
     [ "btnPlaySequence", "vocabSpeak" ].forEach(id => {
       const el = document.getElementById(id);
@@ -3091,7 +3090,7 @@ function soundProgressLoop() {
     all.forEach(([ el, p ]) => {
       if (chosen && chosen[0] === el) paintRing(el, p); else el.querySelector(":scope > .sound-ring")?.remove();
     });
-    soundFrame = video != null || speech != null || exam != null ? requestAnimationFrame(tick) : 0;
+    soundFrame = video != null || speech != null || exam != null || chosen && chosen[2] ? requestAnimationFrame(tick) : 0;
   };
   tick();
 }
@@ -3207,7 +3206,9 @@ const SVG_NS = "http://www.w3.org/2000/svg";
 let zapTimer = 0;
 
 function syncZap() {
-  if (!zapTimer && document.querySelector(".sound-wait")) zapTimer = setInterval(drawZaps, 70);
+  if (!document.querySelector(".sound-wait")) return;
+  if (!zapTimer) zapTimer = setInterval(drawZaps, 70);
+  if (!soundFrame) soundFrame = requestAnimationFrame(soundProgressLoop);
 }
 
 function jagged(a, b, spread, depth) {
