@@ -4153,7 +4153,11 @@ function cardNotesHtml(row) {
 }
 
 function aCellContent(r) {
-  return r.aHidden ? '<span class="dots">···</span>' : lookupHtml(r.aHtml || textHtml(r.a), r);
+  return r.aHidden ? '<span class="dots">···</span>' : guessing(r) ? r.aHtml || textHtml(r.a) : lookupHtml(r.aHtml || textHtml(r.a), r);
+}
+
+function guessing(r) {
+  return !!groupState && groupViewStyle !== "ielts" && (r.qHidden || r.aHidden);
 }
 
 const TL_LANGS = {
@@ -4767,7 +4771,7 @@ function toggleRowPlay(row) {
 }
 
 function qCellContent(r) {
-  return rowPlayBadge(r) + (r.qHidden ? '<span class="dots">···</span>' : lookupHtml(r.qHtml || textHtml(r.q), r));
+  return rowPlayBadge(r) + (r.qHidden ? '<span class="dots">···</span>' : guessing(r) ? r.qHtml || textHtml(r.q) : lookupHtml(r.qHtml || textHtml(r.q), r));
 }
 
 function escapeHtml(s) {
@@ -5968,10 +5972,11 @@ function markIn(target, unit) {
 
 function showMarkPinyin(target, unit) {
   const mark = markIn(target, unit);
-  if (!mark) return false;
+  const row = pinyinRow(unit);
+  if (!mark || unit.matches(".cell") && row && guessing(row)) return false;
   if (hoverTooltip && hoverTooltip.style.display === "block" && hoverTooltip.anchor === mark) return true;
   const text = mark.textContent.trim();
-  return !!showReading(mark, text, pinyinRow(unit), "el:" + text);
+  return !!showReading(mark, text, row, "el:" + text);
 }
 
 function showElementPinyin(el) {
