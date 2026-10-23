@@ -10833,15 +10833,7 @@ async function deleteCurrentLesson() {
   resetStudyState();
   currentLessonId = null;
   rows = [];
-  const next = recentLessonIds().map(id => library.find(l => l.id === id)).find(l => l && lessonInMode(l)) || modeLibrary()[0];
-  if (next) {
-    noteRecentLesson(next.id);
-    openLesson(next);
-    showView("study");
-  } else {
-    setLessonTitle("");
-    showView("empty");
-  }
+  await openDefaultLesson();
   refreshSaveReminders();
   slideLessonList(before);
 }
@@ -11084,13 +11076,7 @@ async function importLessonFiles(files) {
     openLesson(library.find(l => l.id === currentLessonId));
     showView("study");
   } else if (!currentLessonId) {
-    const first = modeLibrary()[0];
-    if (first) {
-      openLesson(first);
-      showView("study");
-    } else {
-      showView("empty");
-    }
+    await openDefaultLesson();
   } else {
     renderLessonList();
   }
@@ -12473,14 +12459,7 @@ function removeLessonFromCloud(id) {
     resetStudyState();
     currentLessonId = null;
     rows = [];
-    const next = modeLibrary()[0];
-    if (next) {
-      openLesson(next);
-      if (currentView === "study" || currentView === "vocab") showView("study");
-    } else {
-      setLessonTitle("");
-      showView("empty");
-    }
+    if (currentView === "study" || currentView === "vocab") openDefaultLesson();
   }
   renderLessonList();
   if (currentView === "stats") renderStats();
@@ -12587,10 +12566,7 @@ function startCloudListeners() {
           if (!isEmptyLesson(l) && (!remoteIds.has(l.id) || (l.updatedAt || 0) > (st.synced[l.id] || 0))) cloudPendingLessons.add(l.id);
         });
         Object.keys(st.deleted).forEach(id => cloudPendingLessons.add(id));
-        if (currentView === "empty" && modeLibrary().length) {
-          openLesson(modeLibrary()[0]);
-          showView("study");
-        }
+        if (currentView === "empty" && modeLibrary().length) openDefaultLesson();
       }
       if (cloudPendingLessons.size) scheduleCloudFlush(wasFirst ? 0 : null); else if (wasFirst) setCloudStatus("synced");
     }).catch(cloudFailed);
@@ -13108,14 +13084,7 @@ async function initApp() {
   });
   reviewLog = (await dbGetAll("reviews")).filter(e => e && isFinite(e.ts)).sort((a, b) => a.ts - b.ts);
   renderStreakChip();
-  const first = library.find(l => l.id === lastId && lessonInMode(l)) || modeLibrary()[0];
-  if (first) {
-    if (!recentLessonIds().length) noteRecentLesson(first.id);
-    openLesson(first);
-    showView("study");
-  } else {
-    showView("empty");
-  }
+  await openDefaultLesson();
   if (!dbAvailable) showToast("Browser storage is unavailable here");
   initCloudUi();
   receiveYouTubeImport();
@@ -14676,20 +14645,6 @@ function replayAnimation(el, cls) {
   });
 }
 
-async function leaveToEmpty() {
-  commitActiveEdit();
-  await discardIfEmptyDraft();
-  await flushAutoSave();
-  haltAllPlayback();
-  resetStudyState();
-  currentLessonId = null;
-  rows = [];
-  vocabExtras = null;
-  setLessonTitle("");
-  showView("empty");
-  renderLessonList();
-}
-
 document.getElementById("btnAppMode").onclick = () => {
   stopAllSound();
   setAppMode(appMode === "vocab" ? "cards" : "vocab");
@@ -14710,18 +14665,13 @@ document.getElementById("btnAppMode").onclick = () => {
   replayAnimation(document.getElementById("lessonList"), "mode-fade");
   document.getElementById("lessonList").scrollTop = 0;
   document.querySelector(".shell").classList.remove("drawer-open");
-  let last = null;
-  try {
-    last = localStorage.getItem("flashcards.lastLesson");
-  } catch (e) {}
   const cur = library.find(l => l.id === currentLessonId);
   if (cur && lessonInMode(cur)) {
     showView("study");
     setTimeout(offerMoveAll, 400);
     return;
   }
-  const real = [ last ].concat(recentLessonIds()).map(id => library.find(l => l.id === id && lessonInMode(l))).find(Boolean) || modeLibrary()[0];
-  if (real) switchToLesson(real.id); else leaveToEmpty();
+  openDefaultLesson();
 };
 
 function allVocabCards() {
@@ -14765,6 +14715,24 @@ function allLessonsItemHtml() {
     Object.keys(c).forEach(k => c[k] += one[k]);
   });
   return allItemHtml("All lessons", c, isAllLessons() && currentView === "study");
+}
+
+async function openDefaultLesson() {
+  if (!modeLibrary().length) {
+    commitActiveEdit();
+    await discardIfEmptyDraft();
+    await flushAutoSave();
+    haltAllPlayback();
+    resetStudyState();
+    currentLessonId = null;
+    rows = [];
+    vocabExtras = null;
+    setLessonTitle("");
+    showView("empty");
+    renderLessonList();
+    return;
+  }
+  if (appMode === "vocab") await openAllVocabulary(); else await openAllLessons();
 }
 
 async function openAllLessons() {
