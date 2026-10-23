@@ -413,7 +413,6 @@ window.onYouTubeIframeAPIReady = function(){
   .quick-add, #addForm{--kind:var(--accent);}
   .quick-add[data-kind="listen"], #addForm[data-kind="listen"]{--kind:var(--yt-red);}
   .quick-add[data-kind="view"]{--kind:var(--due-color);}
-  .qa-kind{align-self:flex-start;padding:4px 10px;border-radius:14px;font-size:13px;line-height:20px;font-weight:600;background:var(--kind);color:#fff;}
   .qa-row{display:flex;gap:10px;align-items:flex-start;}
   .qa-row > textarea{flex:1;min-width:0;}
   .qa-time{flex:none;width:72px;text-align:center;font-size:16px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--kind);}
@@ -786,6 +785,7 @@ window.onYouTubeIframeAPIReady = function(){
   :is(.rich-editor, .cell, .vocab-ctx) mark.ve{border-top-right-radius:4px;border-bottom-right-radius:4px;padding-right:1px;}
   :is(.rich-editor, .cell, .vocab-ctx) mark.vocab-hover{background:var(--vocab-bg-hover);}
   .rich-editor ul, .vocab-popup ul{margin:2px 0;padding-left:20px;}
+  :is(#editNotes, #qaNotes, #vocabEditNotes) > :is(ul, ol){padding-left:16px;}
   .rich-editor li, .vocab-popup li{margin:2px 0;}
   .hover-tooltip{
     position:absolute;
@@ -962,6 +962,7 @@ window.onYouTubeIframeAPIReady = function(){
   .card-notes{font-size:14px;line-height:18px;color:var(--text);overflow-wrap:anywhere;}
   .card-notes ul, .card-notes ol{margin:0;padding-left:20px;}
   .card-notes > *{margin:0;}
+  :is(.card-notes, #editNotes, #qaNotes, #vocabEditNotes) > :is(ul, ol) + :not(ul):not(ol), :is(.card-notes, #editNotes, #qaNotes, #vocabEditNotes) > :not(ul):not(ol) + :is(ul, ol){margin-top:4px;}
   #cardTable .card-notes{padding:0 8px 16px;}
   #cardTable:not(.notebook) .card-notes{padding-left:20px;}
   #cardTable:not(.notebook) .card-notes :is(ul, ol){padding-left:16px;}
@@ -1358,6 +1359,8 @@ window.onYouTubeIframeAPIReady = function(){
   #studyCard.deck .listen-pair .card-notes{margin:8px 0 9px;font-size:15px;line-height:20px;}
   #studyCard.deck .listen-pair .card-notes :is(ul, ol){display:flex;flex-wrap:wrap;gap:8px;margin:0;padding:0;list-style:none;}
   #studyCard.deck .listen-pair .card-notes li{padding:6px 12px;border-radius:15px;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-sm);}
+  #studyCard.deck .listen-pair .card-notes > :not(ul):not(ol){padding:0 13px;}
+  #studyCard.deck .listen-pair .card-notes > :is(ul, ol) + :not(ul):not(ol), #studyCard.deck .listen-pair .card-notes > :not(ul):not(ol) + :is(ul, ol){margin-top:8px;}
   #viewStudy:not(.offscreen):has(#studyCard.deck){position:relative;}
   #viewStudy:not(.offscreen):has(#studyCard.deck) .study-head{position:static;}
   #viewStudy:not(.offscreen) .media-container.listen-slot{position:absolute;z-index:1;display:block;box-sizing:border-box;margin:0;padding:0;opacity:1;pointer-events:auto;background:none;border:0;box-shadow:none;}
@@ -1703,10 +1706,9 @@ window.onYouTubeIframeAPIReady = function(){
     </label>
     <button id="btnSingleCard" class="add-single" aria-label="Add a single card">＋</button>
     <div id="quickAdd" class="vocab-editor quick-add" hidden>
-      <div id="qaKind" class="qa-kind"></div>
       <div class="qa-row"><input id="qaTime" class="qa-time" type="text" inputmode="numeric" autocomplete="off" placeholder="0:00" aria-label="Video time" hidden><textarea id="qaQ" class="autofit" rows="1" autocomplete="off" aria-label="Question"></textarea></div>
       <textarea id="qaA" class="autofit" rows="1" autocomplete="off" aria-label="Answer"></textarea>
-      <div id="qaNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes" aria-label="Notes"></div>
+      <div id="qaNotes" class="rich-editor" contenteditable="true" aria-label="Notes"></div>
       <div class="vocab-editor-actions"><button id="qaSave" class="primary">Save</button></div>
     </div>
     <textarea id="importText" rows="8" placeholder="Paste here!"></textarea>
@@ -4237,13 +4239,6 @@ function renderImportInfo() {
   syncAddLook();
 }
 
-const QA_KINDS = {
-  listen: [ "🎧 Listening", "Sentence", "" ],
-  speak: [ "🗒️ Speaking", "Question", "Answer" ],
-  flash: [ "🗃️ Flashcard", "Word or sentence", "Meaning" ],
-  view: [ "📖 Card to read", "Word or sentence", "Meaning" ]
-};
-
 function lessonAddKind() {
   if (appMode === "vocab") return "flash";
   return isYouTubeLesson() ? "listen" : "speak";
@@ -4252,6 +4247,7 @@ function lessonAddKind() {
 function quickAddKind() {
   const q = document.getElementById("qaQ").value, a = document.getElementById("qaA").value;
   const kind = lessonAddKind();
+  if (!q.trim() && !a.trim() && !document.getElementById("qaNotes").textContent.trim()) return "";
   if (kind === "listen" || !q.trim()) return kind;
   if (appMode === "vocab") return a.trim() ? "flash" : "view";
   const probe = {
@@ -4266,14 +4262,10 @@ function quickAddKind() {
 function syncAddLook() {
   const box = document.getElementById("quickAdd");
   const kind = quickAddKind();
-  const [label, qHint, aHint] = QA_KINDS[kind];
   document.getElementById("addForm").dataset.kind = lessonAddKind();
-  box.dataset.kind = kind;
-  document.getElementById("qaKind").textContent = label;
+  if (kind) box.dataset.kind = kind; else delete box.dataset.kind;
   document.getElementById("qaTime").hidden = kind !== "listen";
   document.getElementById("qaA").hidden = kind === "listen";
-  document.getElementById("qaQ").placeholder = qHint;
-  document.getElementById("qaA").placeholder = aHint;
 }
 
 [ "qaQ", "qaA", "qaNotes" ].forEach(id => document.getElementById(id).addEventListener("input", syncAddLook));
@@ -7278,6 +7270,13 @@ function openEditPopup(row) {
   pop.hidden = false;
   wireEditBox(box, row);
   placeEditPopup();
+  editPopupFromTop();
+}
+
+function editPopupFromTop() {
+  const box = document.querySelector("#editPopup .le-box");
+  box.scrollTop = 0;
+  requestAnimationFrame(() => box.scrollTop = 0);
 }
 
 function openSingleCardEdit(row) {
@@ -11444,15 +11443,14 @@ function fitSelect(select) {
   const opt = select.options[select.selectedIndex];
   if (!opt) return;
   if (!select.offsetParent) return requestAnimationFrame(() => select.offsetParent && fitSelect(select));
-  const cs = getComputedStyle(select);
-  const probe = document.createElement("span");
-  probe.textContent = opt.textContent;
-  probe.style.cssText = `position:absolute;visibility:hidden;white-space:pre;font:${cs.font};letter-spacing:${cs.letterSpacing}`;
-  document.body.appendChild(probe);
-  const text = probe.getBoundingClientRect().width;
+  const probe = select.cloneNode(false);
+  probe.removeAttribute("id");
+  probe.appendChild(opt.cloneNode(true));
+  probe.style.cssText = "position:absolute;visibility:hidden;width:auto;max-width:none";
+  select.parentNode.appendChild(probe);
+  const w = probe.getBoundingClientRect().width;
   probe.remove();
-  const edges = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth);
-  select.style.width = Math.ceil(text + edges) + 16 + "px";
+  select.style.width = Math.ceil(w) + "px";
 }
 
 const ADD_NEW = "__new__";
@@ -13648,7 +13646,7 @@ function buildVocabCard(item) {
     const ownItem = own && getSelection().isCollapsed && lessonVocabItems(vocabSource()).find(i => i.key === normalizeVocabText((own.dataset.own || own.textContent).split("\n")[0]));
     if (ownItem && ownItem.key !== item.key) {
       hideTooltip();
-      return showVocabAddPopup(ownItem.card, ownItem.term, own.getBoundingClientRect(), ownItem);
+      return showWordView(ownItem.card, ownItem.term, ownItem.meaning, own.getBoundingClientRect());
     }
     if (!getSelection().isCollapsed) return;
     if (!isTouch() || isDoubleTap("c" + item.key)) {
@@ -13933,6 +13931,7 @@ function syncVocabEditPopup(items) {
   const url = dictUrlFor(text, card);
   if (url) showDictOverlay(dict, url);
   placeEditPopup();
+  editPopupFromTop();
   return true;
 }
 
@@ -15087,11 +15086,6 @@ function selectionHit() {
     const holder = cell.closest("[data-id]");
     row = holder && rows.find(r => r.id === Number(holder.dataset.id));
   }
-  const vocabEl = !row && el.closest("#viewVocab .vocab-card, #viewVocab .vocab-list-row[data-key]");
-  if (vocabEl) {
-    const item = lessonVocabItems(vocabSource()).find(i => i.key === vocabEl.dataset.key);
-    row = item && item.card;
-  }
   return row ? {
     row: row,
     text: text,
@@ -15110,17 +15104,14 @@ document.addEventListener("keydown", e => {
 
 document.addEventListener("keydown", e => {
   if (e.key !== "Shift" || e.repeat || e.metaKey || e.ctrlKey) return;
-  const field = e.target.closest && e.target.closest("#vocabEditTerm, #vocabEditMeaning, #qaQ, #qaA");
-  if (!field) return;
+  const field = e.target.closest && e.target.closest("#qaQ, #qaA");
+  if (!field || appMode === "vocab") return;
   const text = field.value.slice(field.selectionStart, field.selectionEnd).replace(/\s+/g, " ").trim();
   if (!text || text === field.value.trim()) return;
-  const item = field.id === "vocabEditTerm" || field.id === "vocabEditMeaning" ? lessonVocabItems(vocabSource()).find(i => i.key === vocabEditingKey) : null;
-  if (isVirtualLesson() && !item) return;
+  if (isVirtualLesson()) return;
   e.preventDefault();
-  if (existingVocab(text, lessonRowsOf(item && item.card))) return warnVocabExists(text);
+  if (existingVocab(text)) return warnVocabExists(text);
   const rect = field.getBoundingClientRect();
-  if (field.id === "vocabEditTerm" || field.id === "vocabEditMeaning") return showVocabAddPopup(item ? item.card : ensureVocabExtras(), text, rect);
-  if (appMode === "vocab") return showVocabAddPopup(ensureVocabExtras(), text, rect);
   showVocabAddPopup(null, text, rect, null, (term, meaning) => {
     const notes = document.getElementById("qaNotes");
     let list = notes.querySelector("ul");
