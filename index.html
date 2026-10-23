@@ -250,6 +250,9 @@ window.onYouTubeIframeAPIReady = function(){
   #limitsTitle{align-self:flex-start;padding:0;cursor:help;border:0;background:none;font-size:15px;font-weight:700;line-height:20px;color:var(--text);}
   @media (hover:hover){#limitsTitle:hover{background:none;color:var(--accent);}}
   .limits-pop input::placeholder{font-size:14px;}
+  .limits-pop .limits-check input{width:20px;height:20px;margin:0;accent-color:var(--accent);}
+  .one-thing #testNav, .one-thing :is(#groupBtn, #listenModeBtn, #ieltsModeBtn){display:none !important;}
+  .one-thing #btnAppMode{pointer-events:none;}
   .cloud-chip svg{display:block;}
   .cloud-chip.synced{color:var(--a-label);background:var(--a-bg);}
   .cloud-chip.syncing{color:var(--text-2);background:var(--surface-2);}
@@ -737,7 +740,7 @@ window.onYouTubeIframeAPIReady = function(){
     .shell #cardTable.chat tbody td.tl-head{padding:10px 20px;}
     .shell #cardTable.chat tbody td:is(.q-col, .a-col){grid-column:1;border-left:0;}
     .shell #cardTable.chat tbody td.a-col{grid-row:3;border-top:1px solid var(--border);}
-    .shell #cardTable.chat .tl-step:not(.on){display:none;}
+    .shell #cardTable.chat .tl-step:not(.on, .today-min){display:none;}
     .shell #cardTable.chat .cell{font-size:24px;line-height:35px;}
     .shell #cardTable.chat .card-notes{padding:0 0 5px;}
   }
@@ -1587,6 +1590,7 @@ window.onYouTubeIframeAPIReady = function(){
   <button id="limitsTitle" title="Click to remove both limits. Limits count for each lesson, in Lessons and in Vocabulary. Study modes and flashcards show only what fits; lists always show every card.">Daily limits</button>
   <label>New cards a day<input id="limitFresh" type="number" min="0" step="1" inputmode="numeric" placeholder="No limit"></label>
   <label>Reviews a day<input id="limitReview" type="number" min="0" step="1" inputmode="numeric" placeholder="No limit"></label>
+  <label class="limits-check">Old study modes<input id="oldModes" type="checkbox"></label>
 </div>
 
 <div id="addPopup" class="paused-overlay add-popup" hidden role="dialog" aria-modal="true" aria-labelledby="addPopTitle">
@@ -3913,6 +3917,7 @@ function recallReviewed(r) {
 
 function recallNextLabel(r) {
   const step = recallStep(r);
+  if (inToday()) return "Show";
   if (step === "listen") return recallReviewed(r) ? "Recall" : "Text";
   return step === "read" ? "Recall" : "Show";
 }
@@ -4283,6 +4288,7 @@ const RECALL_STEPS = [ [ "listen", "Listen" ], [ "read", "Read" ], [ "recall", "
 
 function translateHeadHtml(r) {
   const now = recallStep(r);
+  if (inToday()) return `<td class="tl-head">${tlLangHtml(r.q)}<span class="tl-steps"><span class="tl-step on">${now === "check" ? "Check" : "Listen"}</span><span class="tl-step today-min">${todayMinText()}</span></span>${tlLangHtml(r.a)}</td>`;
   const steps = RECALL_STEPS.filter(([k]) => k !== "read" || !recallReviewed(r)).map(([k, name]) => `<span class="tl-step${k === now ? " on" : ""}">${name}</span>`).join("");
   return `<td class="tl-head">${tlLangHtml(r.q)}<span class="tl-steps">${steps}</span>${tlLangHtml(r.a)}</td>`;
 }
@@ -4354,7 +4360,11 @@ function showSessionCompletePanel() {
   const due = modeScopeRows(modeKey()).filter(r => srsOf(r, "Table").due <= now);
   const more = heldMore(due, limitRows(due), r => srsOf(r, "Table"));
   const held = more.total;
-  const text = finishText(held, studiedToday(rows, false), next, "card", modeScopeRows(modeKey()).map(r => srsOf(r, "Table")));
+  const text = inToday() && todayDone() ? {
+    emoji: "✅",
+    title: "Done for today",
+    sub: "15 minutes studied · see you tomorrow"
+  } : finishText(held, studiedToday(rows, false), next, "card", modeScopeRows(modeKey()).map(r => srsOf(r, "Table")));
   panel.querySelector(".emoji").textContent = text.emoji;
   panel.querySelector(".session-complete-title").textContent = text.title;
   panel.querySelector(".session-complete-sub").textContent = text.sub;
@@ -4557,7 +4567,7 @@ function renderStudy() {
     }
     if (!groupState) return mixShow(focus, mixStyle);
   }
-  if (groupState && lessonCaughtUp()) {
+  if (groupState && (lessonCaughtUp() || oneThing && !isAllLessons())) {
     setReviewMode("full");
     return;
   }
@@ -4640,7 +4650,7 @@ function recallAutoPlay(r) {
   recallPlayedId = r.id;
   setTimeout(() => {
     if (currentView !== "study" || !inRecall() || recallStep(r) !== "listen" || soundOnRows([ r ])) return;
-    if (ytPlayer && ytReady && ytHasVideo && !ytHasError) startSequenceLoop(true); else startTts("q");
+    if (vocabVideoIdFor(r) || isYouTubeLesson()) startSequenceLoop(true); else startTts("q", r.id);
   }, 0);
 }
 
@@ -7696,6 +7706,53 @@ function isAllLessons() {
   return currentLessonId === LESSON_ALL_ID;
 }
 
+const OLD_MODES_KEY = "flashcards.oldModes";
+
+const TODAY_KEY = "flashcards.today";
+
+const TODAY_MS = 15 * 6e4;
+
+let oneThing = readLocal(OLD_MODES_KEY) !== true;
+
+let lastInputAt = 0;
+
+function inToday() {
+  return oneThing && isAllLessons();
+}
+
+function todayClock() {
+  const t = readLocal(TODAY_KEY);
+  return t && t.day === localDayKey(Date.now()) ? t.ms || 0 : 0;
+}
+
+function todayDone() {
+  return todayClock() >= TODAY_MS;
+}
+
+function todayMinText() {
+  return `${Math.min(15, Math.floor(todayClock() / 6e4))} / 15 min`;
+}
+
+[ "pointerdown", "keydown" ].forEach(t => addEventListener(t, () => lastInputAt = Date.now(), true));
+
+setInterval(() => {
+  if (!inToday() || currentView !== "study" || document.hidden || !mixFocusId || todayDone() || Date.now() - lastInputAt > 6e4) return;
+  try {
+    localStorage.setItem(TODAY_KEY, JSON.stringify({
+      day: localDayKey(Date.now()),
+      ms: todayClock() + 1e3
+    }));
+  } catch (e) {}
+  const el = document.querySelector(".today-min");
+  if (el) el.textContent = todayMinText();
+}, 1e3);
+
+function applyOneThing() {
+  document.documentElement.classList.toggle("one-thing", oneThing);
+  const box = document.getElementById("oldModes");
+  if (box) box.checked = !oneThing;
+}
+
 let mixFocusId = null;
 
 let mixStyle = "table";
@@ -7734,7 +7791,7 @@ function mixCueDone() {
   mixAwaitCue = false;
   const id = mixFocusId;
   afterCurtain(() => {
-    if (mixFocusId === id && !mixAwaitCue && !ytHasError && isAllLessons() && currentView === "study" && isListenMode() && !isSequencePlaying) startSequenceLoop(true);
+    if (mixFocusId === id && !mixAwaitCue && !ytHasError && isAllLessons() && currentView === "study" && (isListenMode() || inRecall() && recallStep(rows.find(r => r.id === id) || {}) === "listen") && !isSequencePlaying) startSequenceLoop(true);
   }, document.querySelector(".all-curtain") ? 0 : 300);
 }
 
@@ -7749,7 +7806,7 @@ function mixCandidates() {
     return video.get(r.srcLessonId);
   };
   const playable = r => !!vocabVideoIdFor(r) && !unplayableVideos.has(vocabVideoIdFor(r));
-  return limitRows(rows.filter(r => srsOf(r).due <= now && (hasAnswer(r) || isVideo(r) && playable(r)))).map(r => [ r, !isVideo(r) ? "ielts" : playable(r) && (!hasAnswer(r) || Math.random() < .5) ? "listen" : "table" ]);
+  return limitRows(rows.filter(r => srsOf(r).due <= now && (hasAnswer(r) || isVideo(r) && playable(r)))).map(r => [ r, oneThing ? "table" : !isVideo(r) ? "ielts" : playable(r) && (!hasAnswer(r) || Math.random() < .5) ? "listen" : "table" ]);
 }
 
 function mixShow(row, style) {
@@ -7794,7 +7851,7 @@ function mixPick(picks) {
 
 function mixNext() {
   if (!isAllLessons()) return;
-  const picks = mixCandidates();
+  const picks = inToday() && todayDone() ? [] : mixCandidates();
   const up = mixUpcoming;
   mixUpcoming = null;
   const kept = up && up[0].id !== mixFocusId && picks.some(([ r ]) => r === up[0]) && (up[1] !== "listen" || !unplayableVideos.has(vocabVideoIdFor(up[0])));
@@ -13157,7 +13214,10 @@ async function initApp() {
   reviewLog = (await dbGetAll("reviews")).filter(e => e && isFinite(e.ts)).sort((a, b) => a.ts - b.ts);
   renderStreakChip();
   const first = library.find(l => l.id === lastId && lessonInMode(l)) || modeLibrary()[0];
-  if (first) {
+  if (first && oneThing) {
+    if (!recentLessonIds().length) noteRecentLesson(first.id);
+    await openAllLessons();
+  } else if (first) {
     if (!recentLessonIds().length) noteRecentLesson(first.id);
     openLesson(first);
     showView("study");
@@ -13172,7 +13232,7 @@ async function initApp() {
 
 const APP_MODE_KEY = "flashcards.appMode";
 
-let appMode = readLocal(APP_MODE_KEY) === "vocab" ? "vocab" : "cards";
+let appMode = readLocal(APP_MODE_KEY) === "vocab" && readLocal("flashcards.oldModes") === true ? "vocab" : "cards";
 
 let vocabView = "list";
 
@@ -14702,6 +14762,24 @@ async function leaveToEmpty() {
   renderLessonList();
 }
 
+applyOneThing();
+
+document.getElementById("oldModes").onchange = e => {
+  oneThing = !e.target.checked;
+  try {
+    localStorage.setItem(OLD_MODES_KEY, JSON.stringify(!oneThing));
+  } catch (err) {}
+  applyOneThing();
+  if (oneThing && appMode === "vocab") document.getElementById("btnAppMode").click();
+  if (isAllLessons()) {
+    mixFocusId = null;
+    mixDone = 0;
+    mixNext();
+  }
+  render();
+  renderLessonList();
+};
+
 document.getElementById("btnAppMode").onclick = () => {
   stopAllSound();
   setAppMode(appMode === "vocab" ? "cards" : "vocab");
@@ -14776,7 +14854,7 @@ function allLessonsItemHtml() {
     }) : l);
     Object.keys(c).forEach(k => c[k] += one[k]);
   });
-  return allItemHtml("All lessons", c, isAllLessons() && currentView === "study");
+  return allItemHtml(oneThing ? "Today" : "All lessons", c, isAllLessons() && currentView === "study");
 }
 
 async function openAllLessons() {
@@ -18324,7 +18402,7 @@ function revealAction() {
   }
   const ids = groupState.groups[groupState.index];
   const groupRows = rows.filter(r => ids.includes(r.id));
-  const step = groupRows.length ? recallStep(groupRows[0]) : "check";
+  const step = groupRows.length && !inToday() ? recallStep(groupRows[0]) : "check";
   if (step === "listen" && !recallReviewed(groupRows[0])) {
     groupRows.forEach(r => r.qHidden = false);
     if (!soundOnRows(groupRows)) playRevealedGroup();
