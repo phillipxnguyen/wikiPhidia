@@ -339,11 +339,6 @@ window.onYouTubeIframeAPIReady = function(){
   @keyframes flagWave{0%, 100%{transform:perspective(80px) rotateY(0) skewY(0);}25%{transform:perspective(80px) rotateY(-12deg) skewY(2deg);}75%{transform:perspective(80px) rotateY(8deg) skewY(-2deg);}}
   @keyframes flagShade{to{background-position:-64px 0;}}
   @media (prefers-reduced-motion: reduce){.flag-cloth, .flag-cloth::after{animation:none;}}
-  #flagBg{position:fixed;top:0;bottom:0;left:268px;right:0;z-index:-1;display:none;pointer-events:none;}
-  html.flag-lobby #flagBg{display:flex;}
-  #flagBg i{flex:1;background:center / cover no-repeat;}
-  @media (max-width:820px){#flagBg{left:0;}}
-  body:has(.shell.bare) #flagBg{left:0;}
   html.touch .vocab-toolbar{gap:6px;}
   html.touch #vocabSpeed{padding:8px 22px 8px 8px;background-position:right 8px center;}
   html.touch .vocab-toolbar .segmented button{min-width:40px;padding:8px 10px;}
@@ -557,7 +552,7 @@ window.onYouTubeIframeAPIReady = function(){
     .shell .single-card-field .cell{font-size:18px;line-height:22px;padding:2px 6px;}
     .shell .vocab-back .vocab-word-notes{font-size:20px;line-height:25px;}
     .shell .single-card-body.listen-batch{padding:0;}
-    .shell #cardTable:not(.notebook) .card-notes{padding:0 4px 14px;}
+    .shell #cardTable:not(.notebook) .card-notes{padding:0 4px 14px 9px;}
   }
   html.touch input[type=text], html.touch input[type=search], html.touch input[type=email], html.touch input[type=password], html.touch textarea, html.touch select{font-size:16px;}
   html.touch .segmented button{min-width:46px;padding:8px 12px;}
@@ -968,6 +963,8 @@ window.onYouTubeIframeAPIReady = function(){
   .card-notes ul, .card-notes ol{margin:0;padding-left:20px;}
   .card-notes > *{margin:0;}
   #cardTable .card-notes{padding:0 8px 16px;}
+  #cardTable:not(.notebook) .card-notes{padding-left:20px;}
+  #cardTable:not(.notebook) .card-notes :is(ul, ol){padding-left:16px;}
   .vocab-list-meaning:has(.card-notes){flex-direction:column;align-items:flex-start;justify-content:center;}
   .vocab-list-meaning .card-notes{margin-top:4px;}
   #cardTable.notebook .card-notes{padding:6px 4px 0;font-size:18px;line-height:25px;}
@@ -1580,7 +1577,6 @@ window.onYouTubeIframeAPIReady = function(){
 </style>
 </head>
 <body>
-<div id="flagBg" aria-hidden="true"></div>
 <div class="shell">
 
 <aside class="sidebar">
@@ -3068,13 +3064,6 @@ function paintRing(el, p) {
   }
   const done = Math.max(0, Math.min(1, p)) * 100;
   const run = svg.querySelector(".ring-run");
-  const was = Number(run.dataset.done || 0);
-  if (done < was - 10) {
-    run.style.transition = "stroke-dasharray .3s ease-out, stroke-dashoffset .3s ease-out";
-    clearTimeout(run.refill);
-    run.refill = setTimeout(() => run.style.transition = "", 300);
-  }
-  run.dataset.done = done;
   run.style.strokeDasharray = `${(100 - done).toFixed(2)} 100`;
   run.style.strokeDashoffset = (-done).toFixed(2);
   run.style.visibility = done >= 100 ? "hidden" : "";
@@ -5077,7 +5066,6 @@ function showFlags(langs) {
     el.classList.toggle("many", ccs.length > 1);
     el.innerHTML = units;
   });
-  document.getElementById("flagBg").innerHTML = ccs.map(cc => `<i style='background-image:${flagUrl(cc)}'></i>`).join("");
 }
 
 function autoDetectLangs(texts) {
@@ -5090,13 +5078,7 @@ function autoDetectLangs(texts) {
   return Object.keys(counts).sort((x, y) => counts[y] - counts[x]);
 }
 
-function syncFlagBg() {
-  const lobby = currentView === "study" && !groupState && rows.length > 0 || currentView === "vocab" && vocabView === "list" && lessonVocabItems(vocabSource()).length > 0;
-  document.documentElement.classList.toggle("flag-lobby", lobby);
-}
-
 function updateLessonFlag() {
-  syncFlagBg();
   const row = groupState ? studyScope().find(r => r.q) : null;
   if (currentView !== "vocab") showFlags(row ? [ langCode(row.q) ] : studyLang === "auto" ? autoDetectLangs().slice(0, isAllLessons() ? 3 : 1) : [ studyLang ]);
 }
@@ -11351,7 +11333,6 @@ function showView(view) {
   const changed = currentView !== view;
   if (changed) stopAllSound();
   currentView = view;
-  syncFlagBg();
   if (changed && (view === "study" || view === "vocab")) showListModes();
   if (changed) {
     document.getElementById("sessionCompletePanel").style.display = "none";
@@ -11471,7 +11452,7 @@ function fitSelect(select) {
   const text = probe.getBoundingClientRect().width;
   probe.remove();
   const edges = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth);
-  select.style.width = Math.ceil(text + edges) + "px";
+  select.style.width = Math.ceil(text + edges) + 16 + "px";
 }
 
 const ADD_NEW = "__new__";
@@ -14161,7 +14142,6 @@ document.getElementById("vocabStage").addEventListener("mouseleave", () => {
 });
 
 function syncVocabLang(item) {
-  syncFlagBg();
   const sel = document.getElementById("vocabLang");
   const all = currentLessonId === VOCAB_ALL_ID;
   sel.disabled = all;
