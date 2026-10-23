@@ -2897,8 +2897,18 @@ function fullVolume() {
   unmuteNow();
 }
 
+function soundAllowed() {
+  return !navigator.userActivation || navigator.userActivation.hasBeenActive;
+}
+
 function unmuteNow() {
-  if (ytPlayer && typeof ytPlayer.unMute === "function" && (typeof ytPlayer.isMuted !== "function" || ytPlayer.isMuted())) ytPlayer.unMute();
+  if (!ytPlayer || typeof ytPlayer.unMute !== "function") return;
+  if (!soundAllowed()) {
+    ytPlayer.mute();
+    armSoundUnlock();
+    return;
+  }
+  if (typeof ytPlayer.isMuted !== "function" || ytPlayer.isMuted()) ytPlayer.unMute();
 }
 
 function playbackRateOnce() {
@@ -3999,17 +4009,23 @@ function sequencePlaybackRows() {
   return isCardMode() ? singleCardQueue() : getVisibleRows();
 }
 
-let firstTouchWait = false;
+let soundUnlockArmed = false;
 
-function afterFirstTouch(start) {
-  if (firstTouchWait) return;
-  firstTouchWait = true;
-  showToast("Tap anywhere or press a key to start the sound");
+let soundUnlockThen = null;
+
+function armSoundUnlock(then) {
+  if (then) soundUnlockThen = then;
+  if (soundUnlockArmed) return;
+  soundUnlockArmed = true;
   const go = e => {
     [ "pointerdown", "keydown" ].forEach(t => removeEventListener(t, go, true));
-    firstTouchWait = false;
-    if (e.code === "Space" || e.target.closest && e.target.closest("#btnPlaySequence, #vocabSpeak, #listenCover, .loop-time, .exam-play")) return;
-    setTimeout(start, 0);
+    soundUnlockArmed = false;
+    const run = soundUnlockThen;
+    soundUnlockThen = null;
+    setTimeout(() => {
+      unmuteNow();
+      if (run && !(e.code === "Space" || e.target.closest && e.target.closest("#btnPlaySequence, #vocabSpeak, #listenCover, .loop-time, .exam-play"))) run();
+    }, 0);
   };
   [ "pointerdown", "keydown" ].forEach(t => addEventListener(t, go, true));
 }
@@ -4017,9 +4033,9 @@ function afterFirstTouch(start) {
 function startSequenceLoop(auto) {
   if (auto && mixAwaitCue) return;
   if (ytHasError || !ytPlayer || !ytReady || !ytHasVideo) return;
-  if (auto && navigator.userActivation && !navigator.userActivation.hasBeenActive) {
-    afterFirstTouch(() => currentView === "study" && isListenMode() && !isSequencePlaying && startSequenceLoop(true));
-    return;
+  if (!soundAllowed() && typeof ytPlayer.mute === "function") {
+    ytPlayer.mute();
+    armSoundUnlock();
   }
   const visible = sequencePlaybackRows();
   if (visible.length === 0) {
@@ -14401,12 +14417,12 @@ function preloadVocabVideo(item) {
 function playVocabSound(item) {
   stopVocabSound();
   if (!item) return;
-  if (navigator.userActivation && !navigator.userActivation.hasBeenActive) {
-    afterFirstTouch(() => currentView === "vocab" && vocabShownRowId === item.card.id && playVocabSound(item));
-    return;
-  }
   const row = item.card;
   const videoId = vocabVideoIdFor(row);
+  if (!soundAllowed() && !videoId) {
+    armSoundUnlock(() => currentView === "vocab" && vocabShownRowId === row.id && playVocabSound(item));
+    return;
+  }
   if (videoId) {
     if (row.srcLessonId && (vocabVideoId !== videoId || !ytHasVideo)) {
       vocabVideoId = videoId;
