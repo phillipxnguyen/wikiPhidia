@@ -326,6 +326,11 @@ window.onYouTubeIframeAPIReady = function(){
   .title-flag select:disabled{cursor:default;}
   .flag-set{display:flex;gap:4px;--cw:32px;--ch:24px;}
   .flag-set.many{--cw:24px;--ch:18px;}
+  .toolbar-flag{margin-right:auto;align-items:center;gap:8px;}
+  .toolbar-flag[hidden]{display:none;}
+  .toolbar-flag .flag-unit{width:auto;height:auto;}
+  .toolbar-flag .flag-unit::before, .toolbar-flag .flag-unit::after, .toolbar-flag .flag-cloth::after{display:none;}
+  .toolbar-flag .flag-cloth{position:relative;left:0;top:0;display:block;animation:none;transform:none;}
   .flag-unit{position:relative;width:calc(var(--cw) + 4px);height:40px;}
   .flag-unit::before{content:"";position:absolute;left:0;top:0;width:6px;height:6px;border-radius:3px;background:#d4a017;}
   .flag-unit::after{content:"";position:absolute;left:2px;top:5px;width:2px;height:35px;border-radius:1px;background:var(--text-2);}
@@ -1786,6 +1791,7 @@ window.onYouTubeIframeAPIReady = function(){
       <button data-view="card" aria-label="Flashcards">🗃️</button>
       <button id="vocabFrontBtn" class="sep-before" aria-label="Switch which side shows first">⇄</button>
     </div>
+    <span class="flag-set toolbar-flag" aria-hidden="true" hidden></span>
     <div class="toolbar-right">
       <button id="vocabSpeak" aria-label="Play the sentence">🔊</button>
       <select id="vocabSpeed" aria-label="Playback speed" hidden></select>
@@ -1842,6 +1848,7 @@ window.onYouTubeIframeAPIReady = function(){
       <button id="listenModeBtn" style="display:none;" aria-label="Listening">🎧</button>
       <button id="ieltsModeBtn" style="display:none;" aria-label="Speaking">🗒️</button>
     </div>
+    <span class="flag-set toolbar-flag" aria-hidden="true" hidden></span>
     <div class="toolbar-right">
       <button id="btnPlaySequence" aria-label="Play"></button>
       <select id="playbackSpeed" style="visibility:hidden;">
@@ -4244,7 +4251,7 @@ function lessonAddKind() {
 function quickAddKind() {
   const q = document.getElementById("qaQ").value, a = document.getElementById("qaA").value;
   const kind = lessonAddKind();
-  if (!q.trim() && !a.trim() && !document.getElementById("qaNotes").textContent.trim()) return "";
+  if (!q.trim() && !a.trim() && !document.getElementById("qaNotes").textContent.trim()) return document.getElementById("addForm").classList.contains("in-popup") ? kind : "";
   if (kind === "listen" || !q.trim()) return kind;
   if (appMode === "vocab") return a.trim() ? "flash" : "view";
   const probe = {
@@ -4263,6 +4270,9 @@ function syncAddLook() {
   if (kind) box.dataset.kind = kind; else delete box.dataset.kind;
   document.getElementById("qaTime").hidden = kind !== "listen";
   document.getElementById("qaA").hidden = kind === "listen";
+  document.getElementById("qaQ").placeholder = kind === "listen" ? "Sentence" : kind ? "Question" : "";
+  document.getElementById("qaA").placeholder = kind ? "Answer" : "";
+  if (kind) document.getElementById("qaNotes").dataset.placeholder = "Notes"; else delete document.getElementById("qaNotes").dataset.placeholder;
 }
 
 [ "qaQ", "qaA", "qaNotes" ].forEach(id => document.getElementById(id).addEventListener("input", syncAddLook));
@@ -7582,6 +7592,7 @@ function syncModeButtonHighlights() {
   listenBtn.style.display = deckHasVideoCards() && !isVirtualLesson() && !caughtUp ? "" : "none";
   ieltsBtn.style.display = deckHasAnswers() && !video && !caughtUp ? "" : "none";
   fullBtn.closest(".segmented").hidden = isAllLessons();
+  document.querySelector("#viewStudy .toolbar-flag").hidden = !isAllLessons();
   fullBtn.classList.toggle("active", !groupState);
   listenBtn.classList.toggle("active", !!groupState && groupViewStyle === "listen");
   ieltsBtn.classList.toggle("active", !!groupState && groupViewStyle === "ielts");
@@ -11379,6 +11390,7 @@ function placeAddForm(where) {
     if (form.parentNode !== home) home.appendChild(form);
     slot.hidden = true;
   }
+  syncAddLook();
 }
 
 const lastLessonSize = {
@@ -13582,7 +13594,7 @@ function vocabBackInner(item) {
   const {card: card, sentence: sentence} = vocabContext(item);
   if (vocabViewOnly(item)) {
     const notes = wordNotesOf(item);
-    return `<div class="vocab-ctx">${lookupOthers(vocabSentenceHtml(item.term, "", card), item)}</div>` + (notes ? `<div class="vocab-word-notes">${notes}</div>` : "");
+    return `<div class="vocab-ctx">${lookupOthers(escapeHtml(item.term), item)}</div>` + (notes ? `<div class="vocab-word-notes">${notes}</div>` : "");
   }
   const inSentence = sentence && !!findTermIn(sentence.normalize("NFC"), item.term);
   const main = inSentence ? `<div class="vocab-ctx">${lookupOthers(vocabSentenceHtml(sentence, item.term, card), item)}</div>` : `<div class="vocab-ctx"><mark>${vocabSentenceHtml(item.term, "", card)}</mark></div>` + (sentence ? `<div class="vocab-ctx small">${lookupOthers(vocabSentenceHtml(sentence, "", card), item)}</div>` : "");
@@ -13846,6 +13858,7 @@ function renderVocab() {
   vocabStudying = studying.length > 0;
   document.getElementById("viewVocab").classList.toggle("focus-study", vocabStudying && vocabView !== "list");
   const anyDue = !!currentVocabItem() || items.some(i => vocabStateOf(i).due <= now);
+  document.querySelector("#vocabToolbar .toolbar-flag").hidden = currentLessonId !== VOCAB_ALL_ID;
   document.querySelectorAll("#vocabToolbar [data-view], #vocabFrontBtn").forEach(btn => btn.hidden = btn.dataset.view ? studyOnly || btn.dataset.view === "card" && !anyDue : !anyDue || btn.id === "vocabFrontBtn" && (vocabView === "list" || vocabViewOnly(currentVocabItem())));
   if (vocabView === "list") {
     badges.innerHTML = anyDue ? badgesHtml(c.fresh, c.due, c.done, { new: c.fresh > 0, due: c.due > 0, done: c.done > 0 }) : "";
@@ -14743,6 +14756,7 @@ async function openAllLessons() {
   commitActiveEdit();
   await discardIfEmptyDraft();
   await flushAutoSave();
+  raiseAllCurtain();
   const picks = [];
   modeLibrary("cards").forEach(l => l.cards.forEach(c => picks.push({
     card: c,
@@ -14775,6 +14789,7 @@ async function openAllVocabulary() {
   commitActiveEdit();
   await discardIfEmptyDraft();
   await flushAutoSave();
+  raiseAllCurtain();
   const picks = [];
   sortedLibrary().forEach(l => lessonCardsWithExtras(l).forEach(c => {
     if (vocabEntriesOf(c).length) picks.push({
@@ -14807,6 +14822,12 @@ function afterCurtain(fn, wait) {
   }, wait);
 }
 
+function raiseAllCurtain() {
+  if (!document.querySelector("#lessonList [data-all-vocab]")) renderLessonList();
+  const tile = document.querySelector("#lessonList [data-all-vocab]");
+  if (tile) allCurtain(tile);
+}
+
 function allCurtain(item) {
   if (reducedMotion() || document.querySelector(".all-curtain")) return;
   const cs = getComputedStyle(item);
@@ -14834,12 +14855,21 @@ function allCurtain(item) {
   document.body.appendChild(curtain);
   const sides = [ ...curtain.children ];
   const out = i => i ? 1 : -1;
-  curtain.animate({
-    opacity: [ 0, 1 ]
+  const shut = sides.map((el, i) => el.animate([ {
+    transform: `translateX(calc(${out(i) * 100}% + ${out(i) * 48}px)) skewX(0deg)`
   }, {
-    duration: 200,
-    easing: "ease-out"
-  });
+    transform: `translateX(${out(i) * 30}%) skewX(${out(i) * 4}deg)`,
+    offset: .45
+  }, {
+    transform: `translateX(${-out(i) * 1}%) skewX(${-out(i) * 2}deg)`,
+    offset: .8
+  }, {
+    transform: "translateX(0) skewX(0deg)"
+  } ], {
+    duration: 900,
+    easing: "cubic-bezier(.3,.6,.3,1)",
+    fill: "both"
+  }).finished);
   let sway = [];
   const start = Date.now();
   const ready = () => ytHasError || !isVirtualLesson() || (appMode === "vocab" ? !vocabAwaitCue && !pendingVideoId : !mixAwaitCue && !pendingVideoId && !ytCueing && (!ytHasVideo || ytReady));
@@ -14864,7 +14894,7 @@ function allCurtain(item) {
       curtain.remove();
     });
   };
-  requestAnimationFrame(() => {
+  Promise.all(shut).then(() => {
     sway = sides.map((el, i) => el.animate([ {
       transform: "skewX(0deg)"
     }, {
@@ -14891,7 +14921,6 @@ function allCurtain(item) {
 document.getElementById("lessonList").addEventListener("click", e => {
   const item = e.target.closest("[data-all-vocab]");
   if (!item) return;
-  if (!item.classList.contains("active")) allCurtain(item);
   document.querySelector(".shell").classList.remove("drawer-open");
   if (appMode === "vocab") openAllVocabulary(); else openAllLessons();
 });
