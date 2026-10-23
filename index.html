@@ -321,14 +321,25 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-toolbar{position:sticky;top:0;z-index:999;margin:-10px 0 16px;padding-top:10px;pointer-events:none;}
   .vocab-toolbar .segmented, .vocab-toolbar .toolbar-right > *{pointer-events:auto;}
   .vocab-toolbar .segmented{align-items:center;}
-  .lang-pick{position:relative;display:inline-flex;align-items:center;justify-content:center;min-width:38px;padding:5px 10px;border-radius:8px;font-size:16px;line-height:1.2;}
-  html.touch .lang-pick{min-width:46px;padding:8px 12px;}
-  @media (hover:hover){.lang-pick:not(.disabled):hover{background:var(--surface-2);}}
-  .lang-pick select{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;}
-  .lang-pick select:disabled{cursor:default;}
+  .title-flag{position:relative;flex:none;width:40px;height:40px;border-radius:8px;}
+  .title-flag select{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;}
+  .title-flag select:disabled{cursor:default;}
+  .flag-pole{position:absolute;left:5px;top:4px;width:2px;height:34px;border-radius:1px;background:var(--text-2);}
+  .flag-pole::before{content:"";position:absolute;left:-2px;top:-4px;width:6px;height:6px;border-radius:3px;background:#d4a017;}
+  .flag-cloth{position:absolute;left:7px;top:6px;display:flex;width:32px;height:24px;filter:drop-shadow(0 1px 1px rgba(0, 0, 0, .25));}
+  .flag-cloth i{width:4px;height:24px;background:var(--flag, none) calc(var(--i) * -4px) 0 / 32px 24px no-repeat;animation:flagWave 1.4s ease-in-out infinite;animation-delay:calc(var(--i) * -.14s);}
+  .flag-cloth i:first-child{animation:none;}
+  @keyframes flagWave{0%, 100%{transform:translateY(0);filter:none;}50%{transform:translateY(2px);filter:brightness(.85);}}
+  .flag-globe{position:absolute;left:10px;top:7px;font-size:20px;line-height:24px;display:none;}
+  .title-flag.no-flag .flag-cloth{display:none;}
+  .title-flag.no-flag .flag-globe{display:block;}
+  @media (prefers-reduced-motion: reduce){.flag-cloth i{animation:none;}}
+  #flagBg{position:fixed;inset:0;z-index:-1;background:var(--flag, none) center / cover no-repeat;opacity:.16;pointer-events:none;}
+  @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) #flagBg{opacity:.1;}}
+  :root[data-theme="dark"] #flagBg{opacity:.1;}
   html.touch .vocab-toolbar{gap:6px;}
   html.touch #vocabSpeed{padding:8px 22px 8px 8px;background-position:right 8px center;}
-  html.touch .vocab-toolbar .segmented button, html.touch .vocab-toolbar .lang-pick{min-width:40px;padding:8px 10px;}
+  html.touch .vocab-toolbar .segmented button{min-width:40px;padding:8px 10px;}
   #vocabFrontBtn.active{color:var(--accent);}
   .vocab-badges{margin:-8px 0 16px;}
   .vocab-toolbar:not([hidden]) + .vocab-badges{margin-top:0;}
@@ -512,7 +523,7 @@ window.onYouTubeIframeAPIReady = function(){
   }
   @media (max-width:600px){
     .shell .lesson-header{flex-wrap:wrap;}
-    .shell .lesson-name-input, .shell #vocabTitle.lesson-name-input{flex-basis:100%;font-size:20px !important;}
+    .shell .lesson-name-input, .shell #vocabTitle.lesson-name-input{flex-basis:calc(100% - 50px);font-size:20px !important;}
     .shell .lesson-header .lesson-name-input{line-height:25px;}
     .shell .lesson-header{margin-top:-13px;}
     .shell .header-actions{margin-left:auto;}
@@ -1538,7 +1549,7 @@ window.onYouTubeIframeAPIReady = function(){
   .ip-more{padding:8px 12px;font-size:12px;color:var(--text-2);}
   #mbCur, #mbDur, .heat-month-name, .streak-day span{line-height:15px;}
   #fileStatus, #importInfo, #heatTitle, .cloud-or, .progress-badge, .loop-time, .streak-best, .streak-hint, thead th{line-height:18px;}
-  .segmented button, .lang-pick, .empty-state p, .heat-numbers, #mediaBarTitle, #mediaLoading, #cloudError, #cloudDialog p, #editQ, #editA, .rich-editor, .add-target, .muted-label, .toast, .session-complete-sub, .streak-label, .stats-empty, .stats-table td, .stats-table .clamp, .vocab-list-row > span, #cardTable.chat .tl-lang{line-height:20px;}
+  .segmented button, .empty-state p, .heat-numbers, #mediaBarTitle, #mediaLoading, #cloudError, #cloudDialog p, #editQ, #editA, .rich-editor, .add-target, .muted-label, .toast, .session-complete-sub, .streak-label, .stats-empty, .stats-table td, .stats-table .clamp, .vocab-list-row > span{line-height:20px;}
   .brand-switch, .stats-table th.num{line-height:22px;}
   #cardTable .cell{line-height:25px;}
   .lesson-item.all-vocab .lesson-item-name{line-height:26px;}
@@ -1550,6 +1561,7 @@ window.onYouTubeIframeAPIReady = function(){
 </style>
 </head>
 <body>
+<div id="flagBg" aria-hidden="true"></div>
 <div class="shell">
 
 <aside class="sidebar">
@@ -1736,6 +1748,16 @@ window.onYouTubeIframeAPIReady = function(){
 
 <section id="viewVocab" hidden>
   <div class="lesson-header vocab-head">
+    <label id="vocabLangPick" class="title-flag" title="Language"><span class="flag-pole"></span><span class="flag-cloth"><i style="--i:0"></i><i style="--i:1"></i><i style="--i:2"></i><i style="--i:3"></i><i style="--i:4"></i><i style="--i:5"></i><i style="--i:6"></i><i style="--i:7"></i></span><span class="flag-globe">🌐</span><select id="vocabLang" aria-label="Language">
+        <option value="auto">Auto-detect</option>
+        <option value="zh-CN">🇨🇳 Simplified</option>
+        <option value="zh-TW">🇹🇼 Traditional</option>
+        <option value="ja">🇯🇵 Japanese</option>
+        <option value="ko">🇰🇷 Korean</option>
+        <option value="en">🇬🇧 English</option>
+        <option value="vi">🇻🇳 Vietnamese</option>
+        <option value="multi" hidden>🌐</option>
+      </select></label>
     <textarea id="vocabTitle" rows="1" autocomplete="off" class="stats-title lesson-name-input autofit oneline" placeholder="Lesson name" aria-label="Lesson name"></textarea>
     <div class="header-actions">
       <button id="vocabSaveBtn" class="ghost" title="Save this lesson as a .json file. Shift-click to pick a different file.">Save</button>
@@ -1745,17 +1767,7 @@ window.onYouTubeIframeAPIReady = function(){
   </div>
   <div id="vocabToolbar" class="toolbar vocab-toolbar">
     <div class="segmented" role="group" aria-label="Vocabulary options">
-      <label id="vocabLangPick" class="lang-pick"><span id="vocabLangFlag" aria-hidden="true">🌐</span><select id="vocabLang" aria-label="Language">
-        <option value="auto">🌐 Auto-detect</option>
-        <option value="zh-CN">🇨🇳 Simplified</option>
-        <option value="zh-TW">🇹🇼 Traditional</option>
-        <option value="ja">🇯🇵 Japanese</option>
-        <option value="ko">🇰🇷 Korean</option>
-        <option value="en">🇬🇧 English</option>
-        <option value="vi">🇻🇳 Vietnamese</option>
-        <option value="multi" hidden>🌐</option>
-      </select></label>
-      <button class="sep-before" data-view="list" aria-label="List">☰</button>
+      <button data-view="list" aria-label="List">☰</button>
       <button data-view="card" aria-label="Flashcards">🗃️</button>
       <button id="vocabFrontBtn" class="sep-before" aria-label="Switch which side shows first">⇄</button>
     </div>
@@ -1772,6 +1784,15 @@ window.onYouTubeIframeAPIReady = function(){
 
 <section id="viewStudy" hidden>
   <header class="lesson-header">
+    <label class="title-flag" title="Language"><span class="flag-pole"></span><span class="flag-cloth"><i style="--i:0"></i><i style="--i:1"></i><i style="--i:2"></i><i style="--i:3"></i><i style="--i:4"></i><i style="--i:5"></i><i style="--i:6"></i><i style="--i:7"></i></span><span class="flag-globe">🌐</span><select id="studyLang" aria-label="Language">
+        <option value="auto" selected>Auto-detect</option>
+        <option value="zh-CN">🇨🇳 Simplified</option>
+        <option value="zh-TW">🇹🇼 Traditional</option>
+        <option value="ja">🇯🇵 Japanese</option>
+        <option value="ko">🇰🇷 Korean</option>
+        <option value="en">🇬🇧 English</option>
+        <option value="vi">🇻🇳 Vietnamese</option>
+      </select></label>
     <textarea id="lessonName" name="lesson-name" rows="1" autocomplete="off" class="lesson-name-input autofit oneline" placeholder="Lesson name" aria-label="Lesson name"></textarea>
     <div class="header-actions">
       <button id="btnSaveFile" class="ghost" title="Save this lesson as a .json file. The first time you pick the file; after that it is overwritten in place. Shift-click to pick a different file.">Save</button>
@@ -1781,15 +1802,6 @@ window.onYouTubeIframeAPIReady = function(){
   </header>
   <div id="fileStatus" class="save-status" aria-live="polite"></div>
   <div class="lesson-meta">
-    <select id="studyLang">
-      <option value="auto" selected>Auto-detect</option>
-      <option value="zh-CN">🇨🇳 Simplified</option>
-      <option value="zh-TW">🇹🇼 Traditional</option>
-      <option value="ja">🇯🇵 Japanese</option>
-      <option value="ko">🇰🇷 Korean</option>
-      <option value="en">🇬🇧 English</option>
-      <option value="vi">🇻🇳 Vietnamese</option>
-    </select>
     <div class="link-bar">
       <input type="text" id="mediaUrl" name="media-url" autocomplete="off" placeholder="Paste a YouTube, TikTok, or Douyin link…" aria-label="Video link">
       <button id="btnEmbedMedia" class="primary">Open</button>
@@ -4458,7 +4470,7 @@ function renderStudy() {
   toolbar.style.display = "";
   syncModeButtonHighlights();
   applyColumnLayout();
-  updateGroupBtnFlag();
+  updateLessonFlag();
   const tbody = document.getElementById("tbody");
   const singleCard = isCardMode();
   if (isAllLessons()) {
@@ -4929,15 +4941,6 @@ function pastedHtml(e) {
 
 let studyLang = "auto";
 
-const STUDY_LANG_FLAGS = {
-  "zh-CN": "🇨🇳",
-  "zh-TW": "🇹🇼",
-  ja: "🇯🇵",
-  ko: "🇰🇷",
-  en: "🇬🇧",
-  vi: "🇻🇳"
-};
-
 function effectiveScriptMode() {
   if (studyLang === "zh-CN" || studyLang === "zh-TW") return "zh";
   if (studyLang === "ja") return "ja";
@@ -4957,7 +4960,35 @@ function langCode(text) {
   return code === "zh-CN" && (studyLang === "zh-TW" || studyLang === "ja") ? studyLang : code;
 }
 
-function autoDetectFlag(texts) {
+const LANG_COUNTRY = {
+  "zh-CN": "cn",
+  "zh-TW": "tw",
+  ja: "jp",
+  ko: "kr",
+  en: "gb",
+  vi: "vn"
+};
+
+const FLAG_SVGS = {
+  cn: '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 640 480"><defs><path id="cn-a" fill="#ff0" d="M-.6.8 0-1 .6.8-1-.3h2z"/></defs><path fill="#ee1c25" d="M0 0h640v480H0z"/><use xlink:href="#cn-a" width="30" height="20" transform="matrix(71.9991 0 0 72 120 120)"/><use xlink:href="#cn-a" width="30" height="20" transform="matrix(-12.33562 -20.5871 20.58684 -12.33577 240.3 48)"/><use xlink:href="#cn-a" width="30" height="20" transform="matrix(-3.38573 -23.75998 23.75968 -3.38578 288 95.8)"/><use xlink:href="#cn-a" width="30" height="20" transform="matrix(6.5991 -23.0749 23.0746 6.59919 288 168)"/><use xlink:href="#cn-a" width="30" height="20" transform="matrix(14.9991 -18.73557 18.73533 14.99929 240 216)"/></svg>',
+  tw: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480"><clipPath id="tw-a"><path d="M0 0h640v480H0z"/></clipPath><g clip-path="url(#tw-a)"><path fill="red" d="M0 0h720v480H0z"/><path fill="#000095" d="M0 0h360v240H0z"/><g fill="#fff"><path d="m154 126.9-2.5 9.6 9.4 2.6-1.8-7.1zm46.9 5.1-1.8 7.1 9.4-2.6-2.5-9.6zm-41.8-24-5.1 5.1 1.9 6.9z"/><path d="m155.9 120-1.9 6.9 5.1 5.1z"/><path d="m154 113.1-6.9 6.9 6.9 6.9 1.9-6.9zm14 27.8 5.1 5.1 6.9-1.9zm18.9 5.1 9.6 2.5 2.6-9.4-7.1 1.8z"/><path d="m192 140.9 7.1-1.8 1.8-7.1zm-31.1-1.8 2.6 9.4 9.6-2.5-5.1-5.1zm19.1 5 6.9 1.9 5.1-5.1z"/><path d="m173.1 146 6.9 6.9 6.9-6.9-6.9-1.9zm-12.2-45.1-9.4 2.6 2.5 9.6 5.1-5.1zm-1.8 31.1 1.8 7.1 7.1 1.8zm45-12 1.9-6.9-5.1-5.1z"/><path d="m168 99.1-7.1 1.8-1.8 7.1zm32.9 8.9-1.8-7.1-7.1-1.8zm5.1 18.9 6.9-6.9-6.9-6.9-1.9 6.9z"/><path d="m200.9 108-8.9-8.9-12-3.2-12 3.2-8.9 8.9-3.2 12 3.2 12 8.9 8.9 12 3.2 12-3.2 8.9-8.9 3.2-12z"/><path d="m200.9 132 5.1-5.1-1.9-6.9zm5.1-18.9 2.5-9.6-9.4-2.6 1.8 7.1zm-6.9-12.2-2.6-9.4-9.6 2.5 5.1 5.1zm-26-6.9-9.6-2.5-2.6 9.4 7.1-1.8zm6.9 1.9-6.9-1.9-5.1 5.1z"/><path d="m186.9 94-6.9-6.9-6.9 6.9 6.9 1.9z"/><path d="m192 99.1-5.1-5.1-6.9 1.9zM173.1 146l-9.6 2.5 4.5 16.6 12-12.2zm-5.1 19.1 12 44.9 12-44.9-12-12.2zm-7.1-26-9.4-2.6-4.4 16.4 16.4-4.4z"/><path d="m147.1 152.9-12 45.1 32.9-32.9-4.5-16.6zm-12-20.9L102 165.1l45.1-12.2 4.4-16.4z"/><path d="m154 126.9-6.9-6.9-12 12 16.4 4.5zm0-13.8-2.5-9.6-16.4 4.5 12 12z"/><path d="M135.1 108 90 120l45.1 12 12-12zm90 24-16.6 4.5 4.4 16.4 45.1 12.2z"/><path d="m199.1 139.1-2.6 9.4 16.4 4.4-4.4-16.4zm-12.2 6.9-6.9 6.9 12 12.2 4.5-16.6zm19.1-19.1 2.5 9.6 16.6-4.5-12.2-12z"/><path d="m192 165.1 33.1 32.9-12.2-45.1-16.4-4.4zm7.1-64.2 9.4 2.6 4.4-16.4-16.4 4.4z"/><path d="M225.1 108 258 75.1l-45.1 12-4.4 16.4zm-12.2-20.9L225.1 42 192 75.1l4.5 16.4zm12.2 44.9 44.9-12-44.9-12-12.2 12z"/><path d="m206 113.1 6.9 6.9 12.2-12-16.6-4.5zm-38-38L135.1 42l12 45.1 16.4 4.4z"/><path d="m160.9 100.9 2.6-9.4-16.4-4.4 4.4 16.4z"/><path d="m147.1 87.1-45.1-12 33.1 32.9 16.4-4.5zm39.8 6.9 9.6-2.5-4.5-16.4-12 12z"/><path d="M192 75.1 180 30l-12 45.1 12 12z"/><path d="m173.1 94 6.9-6.9-12-12-4.5 16.4z"/></g><circle cx="180" cy="120" r="51.1" fill="#000095"/><circle cx="180" cy="120" r="45.1" fill="#fff"/></g></svg>',
+  jp: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480"><defs><clipPath id="jp-a"><path fill-opacity=".7" d="M-88 32h640v480H-88z"/></clipPath></defs><g fill-rule="evenodd" stroke-width="1pt" clip-path="url(#jp-a)" transform="translate(88 -32)"><path fill="#fff" d="M-128 32h720v480h-720z"/><circle cx="523.1" cy="344.1" r="194.9" fill="#bc002d" transform="translate(-168.4 8.6)scale(.76554)"/></g></svg>',
+  kr: '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 640 480"><defs><clipPath id="kr-a"><path fill-opacity=".7" d="M-95.8-.4h682.7v512H-95.8z"/></clipPath></defs><g fill-rule="evenodd" clip-path="url(#kr-a)" transform="translate(89.8 .4)scale(.9375)"><path fill="#fff" d="M-95.8-.4H587v512H-95.8Z"/><g transform="rotate(-56.3 361.6 -101.3)scale(10.66667)"><g id="kr-c"><path id="kr-b" fill="#000001" d="M-6-26H6v2H-6Zm0 3H6v2H-6Zm0 3H6v2H-6Z"/><use xlink:href="#kr-b" width="100%" height="100%" y="44"/></g><path stroke="#fff" d="M0 17v10"/><path fill="#cd2e3a" d="M0-12a12 12 0 0 1 0 24Z"/><path fill="#0047a0" d="M0-12a12 12 0 0 0 0 24A6 6 0 0 0 0 0Z"/><circle cy="-6" r="6" fill="#cd2e3a"/></g><g transform="rotate(-123.7 191.2 62.2)scale(10.66667)"><use xlink:href="#kr-c" width="100%" height="100%"/><path stroke="#fff" d="M0-23.5v3M0 17v3.5m0 3v3"/></g></g></svg>',
+  gb: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480"><path fill="#012169" d="M0 0h640v480H0z"/><path fill="#FFF" d="m75 0 244 181L562 0h78v62L400 241l240 178v61h-80L320 301 81 480H0v-60l239-178L0 64V0z"/><path fill="#C8102E" d="m424 281 216 159v40L369 281zm-184 20 6 35L54 480H0zM640 0v3L391 191l2-44L590 0zM0 0l239 176h-60L0 42z"/><path fill="#FFF" d="M241 0v480h160V0zM0 160v160h640V160z"/><path fill="#C8102E" d="M0 193v96h640v-96zM273 0v480h96V0z"/></svg>',
+  vn: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480"><defs><clipPath id="vn-a"><path fill-opacity=".7" d="M-85.3 0h682.6v512H-85.3z"/></clipPath></defs><g fill-rule="evenodd" clip-path="url(#vn-a)" transform="translate(80)scale(.9375)"><path fill="#da251d" d="M-128 0h768v512h-768z"/><path fill="#ff0" d="M349.6 381 260 314.3l-89 67.3L204 272l-89-67.7 110.1-1 34.2-109.4L294 203l110.1.1-88.5 68.4 33.9 109.6z"/></g></svg>'
+};
+
+let shownFlag;
+
+function showFlag(lang) {
+  const cc = LANG_COUNTRY[lang] || null;
+  if (shownFlag === cc) return;
+  shownFlag = cc;
+  document.documentElement.style.setProperty("--flag", cc ? `url("data:image/svg+xml,${encodeURIComponent(FLAG_SVGS[cc])}")` : "none");
+  document.querySelectorAll(".title-flag").forEach(el => el.classList.toggle("no-flag", !cc));
+}
+
+function autoDetectLang(texts) {
   const counts = {};
   (texts || rows.map(r => r.q)).forEach(text => {
     if (!text) return;
@@ -4971,13 +5002,12 @@ function autoDetectFlag(texts) {
       bestCount = counts[lang];
     }
   }
-  return STUDY_LANG_FLAGS[best] || "🌐";
+  return best;
 }
 
-function updateGroupBtnFlag() {
+function updateLessonFlag() {
   const row = groupState ? studyScope().find(r => r.q) : null;
-  const flag = document.getElementById("groupBtnFlag");
-  if (flag) flag.textContent = row ? STUDY_LANG_FLAGS[langCode(row.q)] : studyLang === "auto" ? autoDetectFlag() : STUDY_LANG_FLAGS[studyLang] || "🌐";
+  if (currentView !== "vocab") showFlag(row ? langCode(row.q) : studyLang === "auto" ? autoDetectLang() : studyLang);
 }
 
 document.getElementById("studyLang").addEventListener("change", e => {
@@ -7488,7 +7518,7 @@ function updateGroupUI() {
   const table = document.getElementById("cardTable");
   const tableProgress = document.getElementById("tableProgress");
   syncModeButtonHighlights();
-  updateGroupBtnFlag();
+  updateLessonFlag();
   document.getElementById("viewStudy").classList.toggle("focus-study", !!groupState);
   if (groupState) {
     table.classList.add("group-mode");
@@ -14040,7 +14070,7 @@ function syncVocabLang(item) {
   sel.disabled = all;
   sel.value = all && vocabAllMultiLang ? "multi" : studyLang;
   document.getElementById("vocabLangPick").classList.toggle("disabled", all);
-  document.getElementById("vocabLangFlag").textContent = item ? STUDY_LANG_FLAGS[langCode(item.term)] : STUDY_LANG_FLAGS[sel.value] || autoDetectFlag(lessonVocabItems(vocabSource()).map(i => i.term));
+  showFlag(item ? langCode(item.term) : LANG_COUNTRY[sel.value] ? sel.value : autoDetectLang(lessonVocabItems(vocabSource()).map(i => i.term)));
 }
 
 document.getElementById("vocabLang").onchange = e => {
