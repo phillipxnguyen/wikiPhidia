@@ -67,7 +67,6 @@ window.onYouTubeIframeAPIReady = function(){
     --yt-red:#e62117;
     --view-bg:#fdf3dc;
     --view-edge:#ecd29a;
-    --view-rule:#e3c27c;
     --view-ink:#5b4216;
     --done-color:var(--text-2);
     --q-bg:#eef2f8;
@@ -120,7 +119,6 @@ window.onYouTubeIframeAPIReady = function(){
       --yt-red:#ff5a4f;
       --view-bg:#2e2616;
       --view-edge:#5a4824;
-      --view-rule:rgba(233,180,90,.35);
       --view-ink:#f1dcae;
       --q-bg:#1f2735;
       --a-bg:#1a2b25;
@@ -164,7 +162,6 @@ window.onYouTubeIframeAPIReady = function(){
     --yt-red:#ff5a4f;
     --view-bg:#2e2616;
     --view-edge:#5a4824;
-    --view-rule:rgba(233,180,90,.35);
     --view-ink:#f1dcae;
     --q-bg:#1f2735;
     --a-bg:#1a2b25;
@@ -386,8 +383,8 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-card.answer-first .vocab-front .vocab-term{color:var(--a-text);}
   .vocab-card.answer-first .vocab-back{background:var(--surface);}
   .vocab-card.view-only .vocab-front{background:var(--view-bg);border-color:var(--view-edge);}
-  .vocab-card.view-only .vocab-term{background:linear-gradient(transparent calc(100% - 1px), var(--view-rule) 0) 0 0 / 100% 35px;color:var(--view-ink);}
-  @media (max-width:600px){.vocab-card.view-only .vocab-term{background-size:100% 30px;}}
+  .vocab-card.view-only .vocab-back{background:var(--view-bg);border-color:var(--view-edge);}
+  .vocab-card.view-only .vocab-term{color:var(--view-ink);}
   @keyframes vocabSquash{0%{transform:none;}40%{transform:scale(1.02,.9);}75%{transform:scale(.99,1.02);}100%{transform:none;}}
   .vocab-card.vocab-swap{transform-origin:50% 100%;animation:vocabSquash .35s ease-out;}
   .vocab-term{font-size:28px;font-weight:400;line-height:35px;overflow-wrap:anywhere;}
@@ -1358,6 +1355,8 @@ window.onYouTubeIframeAPIReady = function(){
   #studyCard.deck .listen-pair .card-notes{margin:8px 0 9px;font-size:15px;line-height:20px;}
   #studyCard.deck .listen-pair .card-notes :is(ul, ol){display:flex;flex-wrap:wrap;gap:8px;margin:0;padding:0;list-style:none;}
   #studyCard.deck .listen-pair .card-notes li{padding:6px 12px;border-radius:15px;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-sm);}
+  #studyCard.deck .listen-pair .card-notes > :not(ul):not(ol){font-size:28px;line-height:40px;color:var(--a-text);}
+  @media (max-width:600px){#studyCard.deck .listen-pair .card-notes > :not(ul):not(ol){font-size:24px;line-height:35px;}}
   #studyCard.deck .listen-pair .card-notes > :is(ul, ol) + :not(ul):not(ol), #studyCard.deck .listen-pair .card-notes > :not(ul):not(ol) + :is(ul, ol){margin-top:8px;}
   #viewStudy:not(.offscreen):has(#studyCard.deck){position:relative;}
   #viewStudy:not(.offscreen):has(#studyCard.deck) .study-head{position:static;}
@@ -13612,6 +13611,10 @@ function lookupOthers(html, item) {
 
 function vocabBackInner(item) {
   const {card: card, sentence: sentence} = vocabContext(item);
+  if (vocabViewOnly(item)) {
+    const notes = wordNotesOf(item);
+    return `<div class="vocab-ctx">${lookupOthers(vocabSentenceHtml(item.term, "", card), item)}</div>` + (notes ? `<div class="vocab-word-notes">${notes}</div>` : "");
+  }
   const inSentence = sentence && !!findTermIn(sentence.normalize("NFC"), item.term);
   const main = inSentence ? `<div class="vocab-ctx">${lookupOthers(vocabSentenceHtml(sentence, item.term, card), item)}</div>` : `<div class="vocab-ctx"><mark>${vocabSentenceHtml(item.term, "", card)}</mark></div>` + (sentence ? `<div class="vocab-ctx small">${lookupOthers(vocabSentenceHtml(sentence, "", card), item)}</div>` : "");
   const notes = wordNotesOf(item);
@@ -13752,13 +13755,23 @@ function showVocabDeck(stage, item) {
   card.id = "vocabCard";
   fillVocabCard(card, item);
   if (next && !vocabVideoIdFor(item.card)) preloadVocabVideo(next);
+  if (vocabViewOnly(item) && !vocabSession.flipped) {
+    vocabSession.flipped = true;
+    card.classList.add("no-turn");
+  }
   if (!vocabSession.flipped) settleVocabCard(card, false);
   card.classList.toggle("flipped", !!vocabSession.flipped);
   if (vocabSession.flipped && !card.settleTimer) settleVocabCard(card, true);
+  void card.offsetWidth;
+  card.classList.remove("no-turn");
   if (pending) {
+    const open = vocabViewOnly(next);
     fillVocabCard(pending, next);
-    settleVocabCard(pending, false);
-    pending.classList.remove("flipped");
+    pending.classList.add("no-turn");
+    settleVocabCard(pending, open);
+    pending.classList.toggle("flipped", open);
+    void pending.offsetWidth;
+    pending.classList.remove("no-turn");
   }
   fitVocabCards();
   setTimeout(fitVocabCards, 0);
@@ -13864,7 +13877,7 @@ function renderVocab() {
   vocabStudying = studying.length > 0;
   document.getElementById("viewVocab").classList.toggle("focus-study", vocabStudying && vocabView !== "list");
   const anyDue = !!currentVocabItem() || items.some(i => vocabStateOf(i).due <= now);
-  document.querySelectorAll("#vocabToolbar [data-view], #vocabFrontBtn").forEach(btn => btn.hidden = btn.dataset.view ? studyOnly || btn.dataset.view === "card" && !anyDue : !anyDue || btn.id === "vocabFrontBtn" && vocabView === "list");
+  document.querySelectorAll("#vocabToolbar [data-view], #vocabFrontBtn").forEach(btn => btn.hidden = btn.dataset.view ? studyOnly || btn.dataset.view === "card" && !anyDue : !anyDue || btn.id === "vocabFrontBtn" && (vocabView === "list" || vocabViewOnly(currentVocabItem())));
   if (vocabView === "list") {
     badges.innerHTML = anyDue ? badgesHtml(c.fresh, c.due, c.done, { new: c.fresh > 0, due: c.due > 0, done: c.done > 0 }) : "";
     stage.innerHTML = "";
