@@ -1525,6 +1525,10 @@ window.onYouTubeIframeAPIReady = function(){
   .cloud-row{display:flex;gap:8px;}
   .cloud-row button{flex:1;}
   .all-curtain{position:fixed;z-index:30000;pointer-events:none;overflow:hidden;}
+  .all-curtain.waiting{pointer-events:auto;cursor:pointer;}
+  .curtain-cue{position:absolute;left:50%;top:50%;transform:translate(-50%, -50%);padding:10px 20px;border-radius:22px;background:rgba(0, 0, 0, .45);color:#f3d27a;font-size:18px;line-height:24px;font-weight:700;letter-spacing:.02em;white-space:nowrap;box-shadow:0 0 0 2px #e0b84f;animation:cuePulse 1.6s ease-in-out infinite;}
+  @keyframes cuePulse{50%{box-shadow:0 0 0 2px #e0b84f, 0 0 16px 2px rgba(224, 184, 79, .55);}}
+  @media (prefers-reduced-motion: reduce){.curtain-cue{animation:none;}}
   .curtain-side{position:absolute;top:0;bottom:0;width:50%;transform-origin:50% 0;background-color:var(--bar-base);background-image:repeating-linear-gradient(90deg, rgba(0,0,0,.34) 0, rgba(255,255,255,.16) 22px, rgba(255,255,255,.05) 36px, rgba(0,0,0,.3) 56px), linear-gradient(180deg, rgba(0,0,0,.3), transparent 22%, transparent 80%, rgba(0,0,0,.32)), var(--bar);background-size:auto, auto, 200% 100%;background-repeat:repeat, no-repeat, no-repeat;}
   .curtain-l{left:0;background-position:0 0, 0 0, 0 0;box-shadow:inset -4px 0 0 #e0b84f, inset -28px 0 32px -12px rgba(0,0,0,.45), inset 0 -8px 0 #e0b84f, 8px 0 24px rgba(0,0,0,.25);}
   .curtain-r{right:0;background-position:0 0, 0 0, 100% 0;box-shadow:inset 4px 0 0 #e0b84f, inset 28px 0 32px -12px rgba(0,0,0,.45), inset 0 -8px 0 #e0b84f, -8px 0 24px rgba(0,0,0,.25);}
@@ -2897,18 +2901,8 @@ function fullVolume() {
   unmuteNow();
 }
 
-function soundAllowed() {
-  return !navigator.userActivation || navigator.userActivation.hasBeenActive;
-}
-
 function unmuteNow() {
-  if (!ytPlayer || typeof ytPlayer.unMute !== "function") return;
-  if (!soundAllowed()) {
-    ytPlayer.mute();
-    armSoundUnlock();
-    return;
-  }
-  if (typeof ytPlayer.isMuted !== "function" || ytPlayer.isMuted()) ytPlayer.unMute();
+  if (ytPlayer && typeof ytPlayer.unMute === "function" && (typeof ytPlayer.isMuted !== "function" || ytPlayer.isMuted())) ytPlayer.unMute();
 }
 
 function playbackRateOnce() {
@@ -4009,23 +4003,17 @@ function sequencePlaybackRows() {
   return isCardMode() ? singleCardQueue() : getVisibleRows();
 }
 
-let soundUnlockArmed = false;
+let firstTouchWait = false;
 
-let soundUnlockThen = null;
-
-function armSoundUnlock(then) {
-  if (then) soundUnlockThen = then;
-  if (soundUnlockArmed) return;
-  soundUnlockArmed = true;
+function afterFirstTouch(start) {
+  if (firstTouchWait) return;
+  firstTouchWait = true;
+  if (!document.querySelector(".all-curtain")) showToast("Tap anywhere or press a key to start the sound");
   const go = e => {
     [ "pointerdown", "keydown" ].forEach(t => removeEventListener(t, go, true));
-    soundUnlockArmed = false;
-    const run = soundUnlockThen;
-    soundUnlockThen = null;
-    setTimeout(() => {
-      unmuteNow();
-      if (run && !(e.code === "Space" || e.target.closest && e.target.closest("#btnPlaySequence, #vocabSpeak, #listenCover, .loop-time, .exam-play"))) run();
-    }, 0);
+    firstTouchWait = false;
+    if (e.code === "Space" || e.target.closest && e.target.closest("#btnPlaySequence, #vocabSpeak, #listenCover, .loop-time, .exam-play")) return;
+    setTimeout(start, 0);
   };
   [ "pointerdown", "keydown" ].forEach(t => addEventListener(t, go, true));
 }
@@ -4033,9 +4021,9 @@ function armSoundUnlock(then) {
 function startSequenceLoop(auto) {
   if (auto && mixAwaitCue) return;
   if (ytHasError || !ytPlayer || !ytReady || !ytHasVideo) return;
-  if (!soundAllowed() && typeof ytPlayer.mute === "function") {
-    ytPlayer.mute();
-    armSoundUnlock();
+  if (auto && navigator.userActivation && !navigator.userActivation.hasBeenActive) {
+    afterFirstTouch(() => currentView === "study" && isListenMode() && !isSequencePlaying && startSequenceLoop(true));
+    return;
   }
   const visible = sequencePlaybackRows();
   if (visible.length === 0) {
@@ -14417,12 +14405,12 @@ function preloadVocabVideo(item) {
 function playVocabSound(item) {
   stopVocabSound();
   if (!item) return;
-  const row = item.card;
-  const videoId = vocabVideoIdFor(row);
-  if (!soundAllowed() && !videoId) {
-    armSoundUnlock(() => currentView === "vocab" && vocabShownRowId === row.id && playVocabSound(item));
+  if (navigator.userActivation && !navigator.userActivation.hasBeenActive) {
+    afterFirstTouch(() => currentView === "vocab" && vocabShownRowId === item.card.id && playVocabSound(item));
     return;
   }
+  const row = item.card;
+  const videoId = vocabVideoIdFor(row);
   if (videoId) {
     if (row.srcLessonId && (vocabVideoId !== videoId || !ytHasVideo)) {
       vocabVideoId = videoId;
@@ -14929,7 +14917,19 @@ function allCurtain(item) {
     }));
     (function wait() {
       if (!ready() && Date.now() - start < 2e4) return setTimeout(wait, 100);
-      open();
+      if (!navigator.userActivation || navigator.userActivation.hasBeenActive) return open();
+      curtain.classList.add("waiting");
+      curtain.insertAdjacentHTML("beforeend", `<span class="curtain-cue">${isTouch() ? "Tap" : "Click"} to open</span>`);
+      const go = e => {
+        if (e.type === "keydown" && [ "Shift", "Control", "Alt", "Meta" ].includes(e.key)) return;
+        e.preventDefault();
+        e.stopPropagation();
+        [ "pointerdown", "keydown" ].forEach(t => removeEventListener(t, go, true));
+        curtain.classList.remove("waiting");
+        curtain.querySelector(".curtain-cue").remove();
+        open();
+      };
+      [ "pointerdown", "keydown" ].forEach(t => addEventListener(t, go, true));
     })();
   });
 }
