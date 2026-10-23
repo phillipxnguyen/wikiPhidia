@@ -324,22 +324,25 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-toolbar{position:sticky;top:0;z-index:999;margin:-10px 0 16px;padding-top:10px;pointer-events:none;}
   .vocab-toolbar .segmented, .vocab-toolbar .toolbar-right > *{pointer-events:auto;}
   .vocab-toolbar .segmented{align-items:center;}
-  .title-flag{position:relative;flex:none;width:40px;height:40px;border-radius:8px;}
+  .title-flag{position:relative;flex:none;display:flex;height:40px;}
   .title-flag select{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;}
   .title-flag select:disabled{cursor:default;}
-  .flag-pole{position:absolute;left:5px;top:4px;width:2px;height:34px;border-radius:1px;background:var(--text-2);}
-  .flag-pole::before{content:"";position:absolute;left:-2px;top:-4px;width:6px;height:6px;border-radius:3px;background:#d4a017;}
-  .flag-cloth{position:absolute;left:7px;top:6px;display:flex;width:32px;height:24px;filter:drop-shadow(0 1px 1px rgba(0, 0, 0, .25));}
-  .flag-cloth i{width:4px;height:24px;background:var(--flag, none) calc(var(--i) * -4px) 0 / 32px 24px no-repeat;animation:flagWave 1.4s ease-in-out infinite;animation-delay:calc(var(--i) * -.14s);}
-  .flag-cloth i:first-child{animation:none;}
-  @keyframes flagWave{0%, 100%{transform:translateY(0);filter:none;}50%{transform:translateY(2px);filter:brightness(.85);}}
-  .flag-globe{position:absolute;left:10px;top:7px;font-size:20px;line-height:24px;display:none;}
-  .title-flag.no-flag .flag-cloth{display:none;}
-  .title-flag.no-flag .flag-globe{display:block;}
-  @media (prefers-reduced-motion: reduce){.flag-cloth i{animation:none;}}
-  #flagBg{position:fixed;inset:0;z-index:-1;background:var(--flag, none) center / cover no-repeat;opacity:.16;pointer-events:none;}
-  @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) #flagBg{opacity:.1;}}
-  :root[data-theme="dark"] #flagBg{opacity:.1;}
+  .flag-set{display:flex;gap:4px;--cw:32px;--ch:24px;}
+  .flag-set.many{--cw:24px;--ch:18px;}
+  .flag-unit{position:relative;width:calc(var(--cw) + 4px);height:40px;}
+  .flag-unit::before{content:"";position:absolute;left:0;top:0;width:6px;height:6px;border-radius:3px;background:#d4a017;}
+  .flag-unit::after{content:"";position:absolute;left:2px;top:5px;width:2px;height:35px;border-radius:1px;background:var(--text-2);}
+  .flag-cloth{position:absolute;left:4px;top:8px;width:var(--cw);height:var(--ch);overflow:hidden;border-radius:1px;background:var(--flag) center / 100% 100% no-repeat;box-shadow:0 1px 2px rgba(0, 0, 0, .25);transform-origin:0 50%;animation:flagWave 2.4s ease-in-out infinite;}
+  .flag-cloth::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, .35) 25%, rgba(0, 0, 0, .2) 50%, rgba(255, 255, 255, .3) 75%, rgba(255, 255, 255, 0)) 0 0 / 64px 100% repeat-x;animation:flagShade 2.4s linear infinite;}
+  .flag-unit + .flag-unit .flag-cloth{animation-delay:-.6s;}
+  .flag-unit + .flag-unit + .flag-unit .flag-cloth{animation-delay:-1.2s;}
+  @keyframes flagWave{0%, 100%{transform:perspective(80px) rotateY(0) skewY(0);}25%{transform:perspective(80px) rotateY(-12deg) skewY(2deg);}75%{transform:perspective(80px) rotateY(8deg) skewY(-2deg);}}
+  @keyframes flagShade{to{background-position:-64px 0;}}
+  @media (prefers-reduced-motion: reduce){.flag-cloth, .flag-cloth::after{animation:none;}}
+  #flagBg{position:fixed;top:0;bottom:0;left:268px;right:0;z-index:-1;display:flex;pointer-events:none;}
+  #flagBg i{flex:1;background:center / cover no-repeat;}
+  @media (max-width:820px){#flagBg{left:0;}}
+  .main-inner{background:var(--bg);border-radius:4px;box-shadow:0 -6px 0 20px var(--bg);}
   html.touch .vocab-toolbar{gap:6px;}
   html.touch #vocabSpeed{padding:8px 22px 8px 8px;background-position:right 8px center;}
   html.touch .vocab-toolbar .segmented button{min-width:40px;padding:8px 10px;}
@@ -1580,7 +1583,7 @@ window.onYouTubeIframeAPIReady = function(){
 <div class="shell">
 
 <aside class="sidebar">
-  <div class="brand"><button id="btnDrawer" class="ghost drawer-btn" aria-label="Menu">☰</button><button id="btnAppMode" class="brand-switch" title="Switch to Word"><span class="brand-mark">字</span><span id="brandName">Lessons</span></button><div class="brand-stack"><div class="brand-stack-in"><button id="testNav" class="test-chip" aria-label="Tests"><span class="test-chip-icon" aria-hidden="true">📝</span><span id="testNavCount"></span></button><button id="streakChip" class="streak-chip" aria-haspopup="dialog" aria-controls="limitsPop"><span class="streak-chip-flame">🔥</span><span id="streakChipCount">0</span></button><button id="btnCloud" class="cloud-chip" hidden></button></div></div></div>
+  <div class="brand"><button id="btnDrawer" class="ghost drawer-btn" aria-label="Menu">☰</button><button id="btnAppMode" class="brand-switch" title="Switch to Vocabulary"><span class="brand-mark">字</span><span id="brandName">Flashcard</span></button><div class="brand-stack"><div class="brand-stack-in"><button id="testNav" class="test-chip" aria-label="Tests"><span class="test-chip-icon" aria-hidden="true">📝</span><span id="testNavCount"></span></button><button id="streakChip" class="streak-chip" aria-haspopup="dialog" aria-controls="limitsPop"><span class="streak-chip-flame">🔥</span><span id="streakChipCount">0</span></button><button id="btnCloud" class="cloud-chip" hidden></button></div></div></div>
   <input type="search" id="lessonSearch" name="lesson-search" autocomplete="off" placeholder="Search lessons…" aria-label="Search lessons">
   <nav id="lessonList" class="lesson-list" aria-label="Lessons"></nav>
   <div class="sidebar-footer">
@@ -1764,7 +1767,7 @@ window.onYouTubeIframeAPIReady = function(){
 
 <section id="viewVocab" hidden>
   <div class="lesson-header vocab-head">
-    <label id="vocabLangPick" class="title-flag" title="Language"><span class="flag-pole"></span><span class="flag-cloth"><i style="--i:0"></i><i style="--i:1"></i><i style="--i:2"></i><i style="--i:3"></i><i style="--i:4"></i><i style="--i:5"></i><i style="--i:6"></i><i style="--i:7"></i></span><span class="flag-globe">🌐</span><select id="vocabLang" aria-label="Language">
+    <label id="vocabLangPick" class="title-flag" title="Language"><span class="flag-set"></span><select id="vocabLang" aria-label="Language">
         <option value="auto">Auto-detect</option>
         <option value="zh-CN">🇨🇳 Simplified</option>
         <option value="zh-TW">🇹🇼 Traditional</option>
@@ -1800,7 +1803,7 @@ window.onYouTubeIframeAPIReady = function(){
 
 <section id="viewStudy" hidden>
   <header class="lesson-header">
-    <label class="title-flag" title="Language"><span class="flag-pole"></span><span class="flag-cloth"><i style="--i:0"></i><i style="--i:1"></i><i style="--i:2"></i><i style="--i:3"></i><i style="--i:4"></i><i style="--i:5"></i><i style="--i:6"></i><i style="--i:7"></i></span><span class="flag-globe">🌐</span><select id="studyLang" aria-label="Language">
+    <label class="title-flag" title="Language"><span class="flag-set"></span><select id="studyLang" aria-label="Language">
         <option value="auto" selected>Auto-detect</option>
         <option value="zh-CN">🇨🇳 Simplified</option>
         <option value="zh-TW">🇹🇼 Traditional</option>
@@ -3037,7 +3040,7 @@ function testAudioProgress() {
   if (testAudio.state !== "play") return null;
   const q = openTestRecord() && openTestRecord().questions[testAudio.n - 1];
   if (q && q.clip && testAudio.player && typeof testAudio.player.getCurrentTime === "function") return Math.max(0, Math.min(1, (testAudio.player.getCurrentTime() - q.clip.start) / Math.max(.1, q.clip.end - q.clip.start)));
-  return speechProgress();
+  return null;
 }
 
 let soundFrame = 0;
@@ -3064,9 +3067,22 @@ function paintRing(el, p) {
   }
   const done = Math.max(0, Math.min(1, p)) * 100;
   const run = svg.querySelector(".ring-run");
-  run.setAttribute("stroke-dasharray", `${(100 - done).toFixed(2)} 100`);
-  run.setAttribute("stroke-dashoffset", (-done).toFixed(2));
+  const was = Number(run.dataset.done || 0);
+  if (done < was - 10) {
+    run.style.transition = "stroke-dasharray .3s ease-out, stroke-dashoffset .3s ease-out";
+    clearTimeout(run.refill);
+    run.refill = setTimeout(() => run.style.transition = "", 300);
+  }
+  run.dataset.done = done;
+  run.style.strokeDasharray = `${(100 - done).toFixed(2)} 100`;
+  run.style.strokeDashoffset = (-done).toFixed(2);
   run.style.visibility = done >= 100 ? "hidden" : "";
+}
+
+let ringHold = null;
+
+function soundStillOn() {
+  return isSequencePlaying || loopingRowId !== null || currentView === "vocab" && vocabSoundOn();
 }
 
 function soundProgressLoop() {
@@ -3091,14 +3107,19 @@ function soundProgressLoop() {
     document.querySelectorAll(".loop-time[data-id]").forEach(el => add(el, el.classList.contains("looping") && Number(el.dataset.id) === loopingRowId ? video : null));
     [ "btnPlaySequence", "vocabSpeak" ].forEach(id => {
       const el = document.getElementById(id);
-      add(el, el && el.classList.contains("active") ? video ?? speech : null);
+      add(el, el && el.classList.contains("active") ? video : null);
     });
     document.querySelectorAll(".exam-play").forEach(el => add(el, el.classList.contains("on") && Number(el.dataset.listen) === testAudio.n ? exam : null));
     const chosen = all.find(([ el, p ]) => p != null && el.offsetParent);
+    if (chosen) ringHold = {
+      el: chosen[0],
+      until: performance.now() + 600
+    };
+    const hold = !chosen && ringHold && ringHold.el.offsetParent && performance.now() < ringHold.until && soundStillOn() ? ringHold.el : null;
     all.forEach(([ el, p ]) => {
-      if (chosen && chosen[0] === el) paintRing(el, p); else el.querySelector(":scope > .sound-ring")?.remove();
+      if (chosen && chosen[0] === el) paintRing(el, p); else if (el === hold) paintRing(el, 1); else el.querySelector(":scope > .sound-ring")?.remove();
     });
-    soundFrame = video != null || speech != null || exam != null || chosen && chosen[2] ? requestAnimationFrame(tick) : 0;
+    soundFrame = video != null || speech != null || exam != null || chosen && chosen[2] || hold ? requestAnimationFrame(tick) : 0;
   };
   tick();
 }
@@ -5036,36 +5057,41 @@ const FLAG_SVGS = {
   vn: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480"><defs><clipPath id="vn-a"><path fill-opacity=".7" d="M-85.3 0h682.6v512H-85.3z"/></clipPath></defs><g fill-rule="evenodd" clip-path="url(#vn-a)" transform="translate(80)scale(.9375)"><path fill="#da251d" d="M-128 0h768v512h-768z"/><path fill="#ff0" d="M349.6 381 260 314.3l-89 67.3L204 272l-89-67.7 110.1-1 34.2-109.4L294 203l110.1.1-88.5 68.4 33.9 109.6z"/></g></svg>'
 };
 
-let shownFlag;
+const MANY_FLAGS = [ "en", "zh-CN", "vi" ];
 
-function showFlag(lang) {
-  const cc = LANG_COUNTRY[lang] || null;
-  if (shownFlag === cc) return;
-  shownFlag = cc;
-  document.documentElement.style.setProperty("--flag", cc ? `url("data:image/svg+xml,${encodeURIComponent(FLAG_SVGS[cc])}")` : "none");
-  document.querySelectorAll(".title-flag").forEach(el => el.classList.toggle("no-flag", !cc));
+let shownFlags = "";
+
+function flagUrl(cc) {
+  return `url("data:image/svg+xml,${encodeURIComponent(FLAG_SVGS[cc])}")`;
 }
 
-function autoDetectLang(texts) {
+function showFlags(langs) {
+  let ccs = [ ...new Set(langs.map(l => LANG_COUNTRY[l]).filter(Boolean)) ].slice(0, 3);
+  if (!ccs.length) ccs = MANY_FLAGS.map(l => LANG_COUNTRY[l]);
+  const key = ccs.join(",");
+  if (shownFlags === key) return;
+  shownFlags = key;
+  const units = ccs.map(cc => `<span class="flag-unit"><span class="flag-cloth" style='--flag:${flagUrl(cc)}'></span></span>`).join("");
+  document.querySelectorAll(".flag-set").forEach(el => {
+    el.classList.toggle("many", ccs.length > 1);
+    el.innerHTML = units;
+  });
+  document.getElementById("flagBg").innerHTML = ccs.map(cc => `<i style='background-image:${flagUrl(cc)}'></i>`).join("");
+}
+
+function autoDetectLangs(texts) {
   const counts = {};
   (texts || rows.map(r => r.q)).forEach(text => {
     if (!text) return;
     const lang = langCode(text);
     counts[lang] = (counts[lang] || 0) + 1;
   });
-  let best = null, bestCount = 0;
-  for (const lang in counts) {
-    if (counts[lang] > bestCount) {
-      best = lang;
-      bestCount = counts[lang];
-    }
-  }
-  return best;
+  return Object.keys(counts).sort((x, y) => counts[y] - counts[x]);
 }
 
 function updateLessonFlag() {
   const row = groupState ? studyScope().find(r => r.q) : null;
-  if (currentView !== "vocab") showFlag(row ? langCode(row.q) : studyLang === "auto" ? autoDetectLang() : studyLang);
+  if (currentView !== "vocab") showFlags(row ? [ langCode(row.q) ] : studyLang === "auto" ? autoDetectLangs().slice(0, isAllLessons() ? 3 : 1) : [ studyLang ]);
 }
 
 document.getElementById("studyLang").addEventListener("change", e => {
@@ -14132,7 +14158,7 @@ function syncVocabLang(item) {
   sel.disabled = all;
   sel.value = all && vocabAllMultiLang ? "multi" : studyLang;
   document.getElementById("vocabLangPick").classList.toggle("disabled", all);
-  showFlag(item ? langCode(item.term) : LANG_COUNTRY[sel.value] ? sel.value : autoDetectLang(lessonVocabItems(vocabSource()).map(i => i.term)));
+  showFlags(item ? [ langCode(item.term) ] : LANG_COUNTRY[sel.value] ? [ sel.value ] : autoDetectLangs(lessonVocabItems(vocabSource()).map(i => i.term)).slice(0, sel.value === "multi" ? 3 : 1));
 }
 
 document.getElementById("vocabLang").onchange = e => {
@@ -14636,8 +14662,7 @@ function setAppMode(mode) {
     localStorage.setItem(APP_MODE_KEY, JSON.stringify(mode));
   } catch (e) {}
   document.documentElement.classList.toggle("vocab-mode", mode === "vocab");
-  document.getElementById("brandName").textContent = mode === "vocab" ? "Word" : "Lesson";
-  document.getElementById("btnAppMode").title = mode === "vocab" ? "Switch to Lesson" : "Switch to Word";
+  document.getElementById("btnAppMode").title = mode === "vocab" ? "Switch to Lessons" : "Switch to Vocabulary";
 }
 
 setAppMode(appMode);
