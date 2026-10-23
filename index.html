@@ -408,6 +408,25 @@ window.onYouTubeIframeAPIReady = function(){
   #vocabEditMeaning, #qaA{border-left-color:var(--a-label);}
   #vocabEditNotes, #qaNotes{border-left-color:var(--border-strong);font-size:16px;}
   .quick-add{margin-bottom:12px;box-shadow:none;}
+  .qa-kind{align-self:flex-start;padding:4px 10px;border-radius:14px;font-size:13px;line-height:20px;font-weight:600;background:var(--surface-2);color:var(--text-2);}
+  .qa-row{display:flex;gap:10px;align-items:flex-start;}
+  .qa-row > textarea{flex:1;min-width:0;}
+  .qa-time{flex:none;width:72px;text-align:center;font-size:16px;font-variant-numeric:tabular-nums;}
+  .quick-add[data-kind="listen"]{background:#0f0f0f;border-color:#0f0f0f;}
+  .quick-add[data-kind="listen"] .qa-kind{background:#ff0033;color:#fff;}
+  .quick-add[data-kind="listen"] :is(#qaQ, #qaNotes, #qaTime){background:#212121;border-color:#3a3a3a;color:#fff;}
+  .quick-add[data-kind="listen"] #qaTime{color:#ff4e6a;font-weight:600;}
+  .quick-add[data-kind="speak"]{padding-left:56px;background:linear-gradient(to right, transparent 39px, var(--paper-margin) 39px 40px, transparent 40px), repeating-linear-gradient(transparent 0 35px, var(--paper-rule) 35px 36px), var(--paper);border-color:var(--paper-edge);}
+  .quick-add[data-kind="speak"] :is(#qaQ, #qaA, #qaNotes){background:transparent;}
+  .quick-add[data-kind="flash"]{box-shadow:var(--shadow-md);}
+  .quick-add[data-kind="flash"] :is(#qaQ, #qaA){text-align:center;}
+  .quick-add[data-kind="flash"] #qaA{background:var(--a-bg);}
+  .quick-add[data-kind="view"]{background:var(--view-bg);border-color:var(--view-edge);}
+  .quick-add[data-kind="view"] .qa-kind{background:var(--view-edge);color:var(--view-ink);}
+  .quick-add[data-kind="view"] :is(#qaQ, #qaA, #qaNotes){background:transparent;color:var(--view-ink);}
+  #addForm[data-kind="listen"] #importText{border-top:4px solid #ff0033;}
+  #addForm[data-kind="speak"] #importText{line-height:24px;background:linear-gradient(transparent 23px, var(--paper-rule) 23px) 0 8px / 100% 24px repeat-y local, var(--paper);}
+  #addForm[data-kind="flash"] #importText{box-shadow:var(--shadow-md);}
   .vocab-back .vocab-word-notes{box-sizing:border-box;width:fit-content;max-width:100%;padding:0 16px;font-size:24px;line-height:30px;text-align:left;color:var(--text);overflow-wrap:break-word;}
   .vocab-word-notes ul, .vocab-word-notes ol{margin:4px 0;padding-left:24px;}
   .vocab-word-notes > :first-child{margin-top:0;}
@@ -1688,7 +1707,8 @@ window.onYouTubeIframeAPIReady = function(){
     </label>
     <button id="btnSingleCard" class="add-single" aria-label="Add a single card">＋</button>
     <div id="quickAdd" class="vocab-editor quick-add" hidden>
-      <textarea id="qaQ" class="autofit" rows="1" autocomplete="off" aria-label="Question"></textarea>
+      <div id="qaKind" class="qa-kind"></div>
+      <div class="qa-row"><input id="qaTime" class="qa-time" type="text" inputmode="numeric" autocomplete="off" placeholder="0:00" aria-label="Video time" hidden><textarea id="qaQ" class="autofit" rows="1" autocomplete="off" aria-label="Question"></textarea></div>
       <textarea id="qaA" class="autofit" rows="1" autocomplete="off" aria-label="Answer"></textarea>
       <div id="qaNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes" aria-label="Notes"></div>
       <div class="vocab-editor-actions"><button id="qaSave" class="primary">Save</button></div>
@@ -4207,7 +4227,49 @@ function renderImportInfo() {
     lines.push("+" + countOf(h.added, "card") + " on " + formatHistoryDate(h.date));
   });
   el.innerHTML = lines.map(escapeHtml).join("<br>");
+  syncAddLook();
 }
+
+const QA_KINDS = {
+  listen: [ "🎧 Listening", "Sentence", "" ],
+  speak: [ "🗒️ Speaking", "Question", "Answer" ],
+  flash: [ "🗃️ Flashcard", "Word or sentence", "Meaning" ],
+  view: [ "📖 Card to read", "Word or sentence", "Meaning" ]
+};
+
+function lessonAddKind() {
+  if (appMode === "vocab") return "flash";
+  return isYouTubeLesson() ? "listen" : "speak";
+}
+
+function quickAddKind() {
+  const q = document.getElementById("qaQ").value, a = document.getElementById("qaA").value;
+  const kind = lessonAddKind();
+  if (kind === "listen" || !q.trim()) return kind;
+  if (appMode === "vocab") return a.trim() ? "flash" : "view";
+  const probe = {
+    time: null,
+    q: q,
+    a: a,
+    notes: document.getElementById("qaNotes").textContent
+  };
+  return belongsInVocab(probe) ? a.trim() ? "flash" : "view" : "speak";
+}
+
+function syncAddLook() {
+  const box = document.getElementById("quickAdd");
+  const kind = quickAddKind();
+  const [label, qHint, aHint] = QA_KINDS[kind];
+  document.getElementById("addForm").dataset.kind = lessonAddKind();
+  box.dataset.kind = kind;
+  document.getElementById("qaKind").textContent = label;
+  document.getElementById("qaTime").hidden = kind !== "listen";
+  document.getElementById("qaA").hidden = kind === "listen";
+  document.getElementById("qaQ").placeholder = qHint;
+  document.getElementById("qaA").placeholder = aHint;
+}
+
+[ "qaQ", "qaA", "qaNotes" ].forEach(id => document.getElementById(id).addEventListener("input", syncAddLook));
 
 function cardNotesHtml(row) {
   const html = notesEditorHtml(row);
@@ -6977,6 +7039,8 @@ document.getElementById("btnSingleCard").onclick = e => {
   if (!currentLessonId || isVirtualLesson()) return;
   document.getElementById("btnSingleCard").hidden = true;
   document.getElementById("quickAdd").hidden = false;
+  document.getElementById("qaTime").value = mediaPlayerReady() ? formatTime(Math.floor(ytPlayer.getCurrentTime() || 0)) : "";
+  syncAddLook();
   fitTextarea(document.getElementById("qaQ"));
   fitTextarea(document.getElementById("qaA"));
   document.getElementById("qaQ").focus();
@@ -7004,7 +7068,9 @@ function saveQuickAdd() {
       showToast("This card already exists");
       return q.focus();
     }
-    const row = newRow(q.value, a.value, null);
+    const listen = quickAddKind() === "listen";
+    const time = listen ? parseTimeToSeconds(document.getElementById("qaTime").value.trim()) : null;
+    const row = newRow(q.value, listen ? "" : a.value, time);
     const html = sanitizeHtml(notes.innerHTML || "");
     if (plainTextOf(html, "\n").trim()) {
       row.notesHtml = html;
