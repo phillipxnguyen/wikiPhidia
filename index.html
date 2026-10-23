@@ -787,6 +787,7 @@ window.onYouTubeIframeAPIReady = function(){
   :is(.rich-editor, .cell, .vocab-ctx) mark.ve{border-top-right-radius:4px;border-bottom-right-radius:4px;padding-right:1px;}
   :is(.rich-editor, .cell, .vocab-ctx) mark.vocab-hover{background:var(--vocab-bg-hover);}
   .rich-editor ul, .vocab-popup ul{margin:2px 0;padding-left:20px;}
+  .rich-editor :is(ul, ol){padding-left:34px;}
   .rich-editor li, .vocab-popup li{margin:2px 0;}
   .hover-tooltip{
     position:absolute;
@@ -1328,7 +1329,7 @@ window.onYouTubeIframeAPIReady = function(){
     #studyCard.deck{height:var(--deck-h, auto);}
     html:has(#viewStudy:not([hidden]):not(.offscreen) #studyCard.deck){overflow:hidden;}
   }
-  #studyCard.deck > #singleCardView{flex:1 1 0;min-height:0;display:grid;grid-template-columns:minmax(0, 1fr) 380px;grid-template-rows:minmax(0, 1fr);gap:0;align-items:start;overflow:visible;padding:0;background:none;border:0;border-radius:20px;box-shadow:none;}
+  #studyCard.deck > #singleCardView{flex:1 1 0;min-height:0;display:grid;grid-template-columns:minmax(0, 1fr) clamp(240px, 40%, 380px);grid-template-rows:minmax(0, 1fr);gap:0;align-items:start;overflow:visible;padding:0;background:none;border:0;border-radius:20px;box-shadow:none;}
   .listen-video{display:none;}
   #viewStudy{--video-radius:20px;}
   #studyCard.deck .listen-video{display:block;border-radius:var(--video-radius);background:#000;box-shadow:0 20px 40px -10px color-mix(in srgb, var(--accent) 45%, transparent);}
@@ -1580,6 +1581,8 @@ window.onYouTubeIframeAPIReady = function(){
   #mbCur, #mbDur, .heat-month-name, .streak-day span{line-height:15px;}
   #fileStatus, #importInfo, #heatTitle, .cloud-or, .progress-badge, .loop-time, .streak-best, .streak-hint, thead th{line-height:18px;}
   .segmented button, .empty-state p, .heat-numbers, #mediaBarTitle, #mediaLoading, #cloudError, #cloudDialog p, #editQ, #editA, .rich-editor, .add-target, .muted-label, .toast, .session-complete-sub, .streak-label, .stats-empty, .stats-table td, .stats-table .clamp, .vocab-list-row > span{line-height:20px;}
+  :is(.rich-editor, #editQ, #editA, #editNotes, .vocab-editor textarea, #vocabEditNotes, #qaNotes, #importText, .vocab-add-field, .qa-time){font-size:28px;line-height:36px;}
+  :is(.rich-editor, .vocab-add-field){min-height:54px;}
   .brand-switch, .stats-table th.num{line-height:22px;}
   #cardTable .cell{line-height:25px;}
   .lesson-item.all-vocab .lesson-item-name{line-height:26px;}
@@ -4458,7 +4461,6 @@ function fitDeck() {
     if (el.style.getPropertyValue(prop) !== value) el.style.setProperty(prop, value);
   };
   const slot = document.getElementById("listenVideo");
-  if (slot.offsetWidth) set(slot, "height", Math.round(slot.offsetWidth * 9 / 16) + "px");
   const bar = document.getElementById("touchBar");
   const sel = matchMedia("(max-width:820px)").matches && document.querySelector("#selBar:not([hidden]) .segmented");
   const selR = sel ? sel.getBoundingClientRect() : null;
@@ -4466,7 +4468,21 @@ function fitDeck() {
   const top = card.getBoundingClientRect().top + window.scrollY;
   set(card, "--deck-under", (selR ? Math.round(selR.height) + 16 : 0) + "px");
   set(document.documentElement, "--deck-below", below + "px");
-  set(card, "--deck-h", Math.max(0, Math.floor(window.innerHeight - top - below)) + "px");
+  const deckH = Math.max(0, Math.floor(window.innerHeight - top - below));
+  set(card, "--deck-h", deckH + "px");
+  if (!matchMedia("(max-width:820px)").matches) {
+    set(slot, "width", "");
+    set(slot, "justify-self", "");
+    if (slot.offsetWidth) set(slot, "height", Math.round(slot.offsetWidth * 9 / 16) + "px");
+    return;
+  }
+  const column = slot.parentElement ? slot.parentElement.clientWidth : 0;
+  if (!column) return;
+  const full = Math.round(column * 9 / 16);
+  const h = Math.min(full, Math.max(120, deckH - Math.max(180, Math.round(deckH * .4))));
+  set(slot, "height", h + "px");
+  set(slot, "width", h < full ? Math.round(h * 16 / 9) + "px" : "");
+  set(slot, "justify-self", h < full ? "center" : "");
 }
 
 window.addEventListener("resize", fitDeck);
