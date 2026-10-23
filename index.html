@@ -1526,9 +1526,14 @@ window.onYouTubeIframeAPIReady = function(){
   .cloud-row button{flex:1;}
   .all-curtain{position:fixed;z-index:30000;pointer-events:none;overflow:hidden;}
   .all-curtain.waiting{pointer-events:auto;cursor:pointer;}
-  .curtain-cue{position:absolute;left:50%;top:50%;transform:translate(-50%, -50%);padding:10px 20px;border-radius:22px;background:rgba(0, 0, 0, .45);color:#f3d27a;font-size:18px;line-height:24px;font-weight:700;letter-spacing:.02em;white-space:nowrap;box-shadow:0 0 0 2px #e0b84f;animation:cuePulse 1.6s ease-in-out infinite;}
-  @keyframes cuePulse{50%{box-shadow:0 0 0 2px #e0b84f, 0 0 16px 2px rgba(224, 184, 79, .55);}}
-  @media (prefers-reduced-motion: reduce){.curtain-cue{animation:none;}}
+  .curtain-wand{position:absolute;left:50%;top:50%;width:320px;height:320px;margin:-160px 0 0 -160px;filter:drop-shadow(0 8px 12px rgba(0, 0, 0, .4));}
+  .curtain-wand svg{display:block;width:100%;height:100%;overflow:visible;}
+  .wand-stick{transform-origin:40px 190px;animation:wandTap 1.8s ease-in-out infinite;}
+  .wand-spark{fill:#fff4c2;transform-origin:170px 60px;opacity:0;animation:wandSpark 1.8s ease-out infinite;}
+  @keyframes wandTap{0%, 100%{transform:rotate(-14deg);}14%{transform:rotate(6deg);}24%{transform:rotate(-4deg);}36%{transform:rotate(6deg);}52%{transform:rotate(-14deg);}}
+  @keyframes wandSpark{0%, 12%{opacity:0;transform:scale(.4);}16%{opacity:1;transform:scale(1);}26%{opacity:0;transform:scale(1.3);}34%{opacity:0;transform:scale(.4);}38%{opacity:1;transform:scale(1);}50%, 100%{opacity:0;transform:scale(1.3);}}
+  @media (max-width:600px){.curtain-wand{width:220px;height:220px;margin:-110px 0 0 -110px;}}
+  @media (prefers-reduced-motion: reduce){.wand-stick, .wand-spark{animation:none;}.wand-spark{opacity:1;}}
   .curtain-side{position:absolute;top:0;bottom:0;width:50%;transform-origin:50% 0;background-color:var(--bar-base);background-image:repeating-linear-gradient(90deg, rgba(0,0,0,.34) 0, rgba(255,255,255,.16) 22px, rgba(255,255,255,.05) 36px, rgba(0,0,0,.3) 56px), linear-gradient(180deg, rgba(0,0,0,.3), transparent 22%, transparent 80%, rgba(0,0,0,.32)), var(--bar);background-size:auto, auto, 200% 100%;background-repeat:repeat, no-repeat, no-repeat;}
   .curtain-l{left:0;background-position:0 0, 0 0, 0 0;box-shadow:inset -4px 0 0 #e0b84f, inset -28px 0 32px -12px rgba(0,0,0,.45), inset 0 -8px 0 #e0b84f, 8px 0 24px rgba(0,0,0,.25);}
   .curtain-r{right:0;background-position:0 0, 0 0, 100% 0;box-shadow:inset 4px 0 0 #e0b84f, inset 28px 0 32px -12px rgba(0,0,0,.45), inset 0 -8px 0 #e0b84f, -8px 0 24px rgba(0,0,0,.25);}
@@ -14919,14 +14924,14 @@ function allCurtain(item) {
       if (!ready() && Date.now() - start < 2e4) return setTimeout(wait, 100);
       if (!navigator.userActivation || navigator.userActivation.hasBeenActive) return open();
       curtain.classList.add("waiting");
-      curtain.insertAdjacentHTML("beforeend", `<span class="curtain-cue">${isTouch() ? "Tap" : "Click"} to open</span>`);
+      curtain.insertAdjacentHTML("beforeend", `<span class="curtain-wand" role="img" aria-label="${isTouch() ? "Tap" : "Click"} to open"><svg viewBox="0 0 220 220" width="220" height="220" aria-hidden="true"><g class="wand-spark"><path d="M168 20l4 10 10 4-10 4-4 10-4-10-10-4 10-4z"/><path d="M200 58l3 7 7 3-7 3-3 7-3-7-7-3 7-3z"/><path d="M132 14l2 5 5 2-5 2-2 5-2-5-5-2 5-2z"/></g><g class="wand-stick"><line x1="40" y1="190" x2="150" y2="80" stroke="#2b1d3a" stroke-width="14" stroke-linecap="round"/><line x1="40" y1="190" x2="70" y2="160" stroke="#f3f0ea" stroke-width="14" stroke-linecap="round"/><path d="M160 36l10 22 24 3-18 16 5 24-21-12-21 12 5-24-18-16 24-3z" fill="#f6c945" stroke="#b8861b" stroke-width="4" stroke-linejoin="round"/></g></svg></span>`);
       const go = e => {
         if (e.type === "keydown" && [ "Shift", "Control", "Alt", "Meta" ].includes(e.key)) return;
         e.preventDefault();
         e.stopPropagation();
         [ "pointerdown", "keydown" ].forEach(t => removeEventListener(t, go, true));
         curtain.classList.remove("waiting");
-        curtain.querySelector(".curtain-cue").remove();
+        curtain.querySelector(".curtain-wand").remove();
         open();
       };
       [ "pointerdown", "keydown" ].forEach(t => addEventListener(t, go, true));
