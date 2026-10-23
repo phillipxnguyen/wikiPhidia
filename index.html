@@ -339,21 +339,10 @@ window.onYouTubeIframeAPIReady = function(){
   @keyframes flagWave{0%, 100%{transform:perspective(80px) rotateY(0) skewY(0);}25%{transform:perspective(80px) rotateY(-12deg) skewY(2deg);}75%{transform:perspective(80px) rotateY(8deg) skewY(-2deg);}}
   @keyframes flagShade{to{background-position:-64px 0;}}
   @media (prefers-reduced-motion: reduce){.flag-cloth, .flag-cloth::after{animation:none;}}
-  #flagBg{position:fixed;top:0;bottom:0;left:268px;right:0;z-index:-1;display:flex;pointer-events:none;}
+  #flagBg{position:fixed;top:0;bottom:0;left:268px;right:0;z-index:-1;display:none;pointer-events:none;}
+  html.flag-lobby #flagBg{display:flex;}
   #flagBg i{flex:1;background:center / cover no-repeat;}
   @media (max-width:820px){#flagBg{left:0;}}
-  .main{overflow-x:clip;}
-  .lesson-header, .lesson-meta, #tableProgress, .shell.bare .brand, .vocab-badges, .study-head > .toolbar{position:relative;}
-  :is(.lesson-header, .lesson-meta, #tableProgress, .shell.bare .brand, .vocab-badges, .study-head > .toolbar, .vocab-toolbar, .media-container:not(.listen-slot):not(.listen-off):not(.warming))::before, :is(.lesson-header, .lesson-meta, .media-container:not(.listen-slot):not(.listen-off):not(.warming))::after{content:"";position:absolute;z-index:-1;background:var(--bg);pointer-events:none;-webkit-mask:var(--fog) center / 100% 100% no-repeat;mask:var(--fog) center / 100% 100% no-repeat;}
-  :root{--fog:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 300' preserveAspectRatio='none'%3E%3Cfilter id='f' x='-30%25' y='-30%25' width='160%25' height='160%25' color-interpolation-filters='sRGB'%3E%3CfeGaussianBlur in='SourceGraphic' stdDeviation='16' result='s'/%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.014' numOctaves='5' seed='7' result='n'/%3E%3CfeDisplacementMap in='s' in2='n' scale='90' xChannelSelector='R' yChannelSelector='G'/%3E%3CfeGaussianBlur stdDeviation='3'/%3E%3C/filter%3E%3Crect x='40' y='30' width='520' height='240' rx='40' fill='%23000' filter='url%28%23f%29'/%3E%3C/svg%3E");}
-  :root{--fog-side:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 300' preserveAspectRatio='none'%3E%3Cfilter id='f' x='-30%25' y='-30%25' width='160%25' height='160%25' color-interpolation-filters='sRGB'%3E%3CfeGaussianBlur in='SourceGraphic' stdDeviation='16' result='s'/%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.014' numOctaves='5' seed='11' result='n'/%3E%3CfeDisplacementMap in='s' in2='n' scale='90' xChannelSelector='R' yChannelSelector='G'/%3E%3CfeGaussianBlur stdDeviation='3'/%3E%3C/filter%3E%3Crect x='40' y='-200' width='520' height='700' fill='%23000' filter='url%28%23f%29'/%3E%3C/svg%3E");}
-  :is(.lesson-header, .lesson-meta, #tableProgress, .shell.bare .brand, .vocab-badges)::before{inset:-40px -80px;}
-  .vocab-toolbar::before{inset:0 -80px;}
-  .study-head > .toolbar::before{inset:-24px -80px 0;}
-  :is(.media-container:not(.listen-slot):not(.listen-off):not(.warming), .study-head > .toolbar, .vocab-toolbar)::before{-webkit-mask-image:var(--fog-side);mask-image:var(--fog-side);}
-  .media-container:not(.listen-slot):not(.listen-off):not(.warming)::before{inset:0 -90px -16px;}
-  :is(.lesson-header, .lesson-meta)::after{inset:-70px -140px;opacity:.55;}
-  .media-container:not(.listen-slot):not(.listen-off):not(.warming)::after{inset:0 -150px -16px;opacity:.55;-webkit-mask-image:var(--fog-side);mask-image:var(--fog-side);}
   body:has(.shell.bare) #flagBg{left:0;}
   html.touch .vocab-toolbar{gap:6px;}
   html.touch #vocabSpeed{padding:8px 22px 8px 8px;background-position:right 8px center;}
@@ -5101,7 +5090,13 @@ function autoDetectLangs(texts) {
   return Object.keys(counts).sort((x, y) => counts[y] - counts[x]);
 }
 
+function syncFlagBg() {
+  const lobby = currentView === "study" && !groupState && rows.length > 0 || currentView === "vocab" && vocabView === "list" && lessonVocabItems(vocabSource()).length > 0;
+  document.documentElement.classList.toggle("flag-lobby", lobby);
+}
+
 function updateLessonFlag() {
+  syncFlagBg();
   const row = groupState ? studyScope().find(r => r.q) : null;
   if (currentView !== "vocab") showFlags(row ? [ langCode(row.q) ] : studyLang === "auto" ? autoDetectLangs().slice(0, isAllLessons() ? 3 : 1) : [ studyLang ]);
 }
@@ -11356,6 +11351,7 @@ function showView(view) {
   const changed = currentView !== view;
   if (changed) stopAllSound();
   currentView = view;
+  syncFlagBg();
   if (changed && (view === "study" || view === "vocab")) showListModes();
   if (changed) {
     document.getElementById("sessionCompletePanel").style.display = "none";
@@ -14165,6 +14161,7 @@ document.getElementById("vocabStage").addEventListener("mouseleave", () => {
 });
 
 function syncVocabLang(item) {
+  syncFlagBg();
   const sel = document.getElementById("vocabLang");
   const all = currentLessonId === VOCAB_ALL_ID;
   sel.disabled = all;
