@@ -10,6 +10,8 @@ const DEFAULTS = {
   appUrl: "https://phillipxnguyen.github.io/wikiPhidia/"
 };
 
+const CLOUD = "M11 18h-4.343c-2.572 0 -4.657 -2.011 -4.657 -4.487c0 -2.475 2.085 -4.482 4.657 -4.482c.393 -1.762 1.794 -3.2 3.675 -3.773c1.88 -.572 3.956 -.193 5.444 1c1.488 1.19 2.162 3.007 1.77 4.769h.99c1.388 0 2.585 .82 3.138 2.007";
+const CLOUD_OFF = "M3 3l18 18|M18 18h-11c-2.598 0 -4.705 -2.015 -4.705 -4.5s2.107 -4.5 4.705 -4.5c.112 -.5 .305 -.973 .568 -1.408m2.094 -1.948c.329 -.174 .68 -.319 1.05 -.43c1.9 -.576 4 -.194 5.5 1c1.503 1.192 2.185 3.017 1.788 4.786h1a3.5 3.5 0 0 1 2.212 6.212";
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" })[c]);
 const reading = t => /[㐀-鿿]/.test(t) && !/[぀-ヿ]/.test(t) && window.pinyinPro ? pinyinPro.pinyin(t) : "";
@@ -27,7 +29,11 @@ function ago(ts) {
 
 function paintStatus() {
   const a = state.app;
-  $("brand").title = a.at ? `Connected · ${a.words.length} words in ${a.lessons.length} lessons · ${ago(a.at)}` : "Open wikiPhidia once to connect";
+  const paths = (a.at ? CLOUD + "|M15 19l2 2l4 -4" : CLOUD_OFF).split("|").map(d => `<path d="${d}"/>`).join("");
+  $("link").innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`;
+  $("link").classList.toggle("on", !!a.at);
+  $("brand").dataset.tip = a.at ? `${a.words.length} words in ${a.lessons.length} lessons` : "Open wikiPhidia once to connect";
+  $("brand").setAttribute("aria-label", a.at ? "Connected: " + $("brand").dataset.tip : "Not connected");
   $("pendingN").textContent = state.pending.length || "";
 }
 

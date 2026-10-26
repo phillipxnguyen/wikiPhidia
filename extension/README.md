@@ -46,7 +46,7 @@ On any YouTube video, click the green **字 Make a lesson** button in the bottom
 - **On / Off**, the small switch in the header, between the 字 ⚡ icons and Open app: Off turns the extension off on every page at once (no 字 button, no card, no Shift, no marked words, no YouTube button; the icon shows a grey *off*, and the popup's 字 logo turns grey), and On brings it all back. Words already waiting still go into wikiPhidia either way.
 Each word sits in its own box, and the hint under the list in a tinted box, so the words are easy to tell apart.
 
-- Pointing at the 字 logo or the name shows whether the app is connected (how many words and lessons it knows, and when it last synced).
+- The 字 logo shows the connection to the app, like the cloud button in wikiPhidia: a small cloud with a tick in its corner once the app has been opened and connected, a crossed-out grey cloud before that. Pointing at the logo or the name shows, after a fifth of a second, how many words and lessons it knows.
 - **To send**: the words waiting, with their meaning editable and ✕ to drop one.
 - **Recent**: the last words sent, marked *Added* or *Already there*.
 - **Settings**: the language of the meanings, the lesson new words go into (🆕 New lesson, named after each article, or one of yours), marking known words on pages, Shift, the YouTube button, and the app's address (change it if you run wikiPhidia somewhere else; local copies on `localhost`, `127.0.0.1` or a file whose path contains `wikiPhidia` connect too).
