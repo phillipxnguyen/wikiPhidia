@@ -321,13 +321,14 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-toolbar{position:sticky;top:0;z-index:999;margin:-10px 0 16px;padding-top:10px;pointer-events:none;}
   .vocab-toolbar .segmented, .vocab-toolbar .toolbar-right > *{pointer-events:auto;}
   .vocab-toolbar .segmented{align-items:center;}
-  .title-flag{position:relative;flex:none;display:flex;height:40px;margin-left:10px;}
+  .title-flag{position:relative;flex:none;display:flex;height:40px;margin:0 -4px 0 14px;}
   .title-flag select{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;}
   .title-flag select:disabled{cursor:default;}
   .flag-set{display:flex;gap:4px;--cw:32px;--ch:24px;}
   .flag-set.many{--cw:24px;--ch:18px;}
   .toolbar-flag{margin-right:auto;align-items:center;gap:8px;}
   .toolbar-flag[hidden]{display:none;}
+  .vocab-toolbar > .toolbar-flag{order:-1;margin-right:0;}
   .toolbar-flag .flag-unit{width:auto;height:auto;}
   .toolbar-flag .flag-unit::before, .toolbar-flag .flag-unit::after, .toolbar-flag .flag-cloth::after{display:none;}
   .toolbar-flag .flag-cloth{position:relative;left:0;top:0;display:block;animation:none;transform:none;}
@@ -652,6 +653,19 @@ window.onYouTubeIframeAPIReady = function(){
   @keyframes zhConvertPulse{0%,100%{box-shadow:0 0 0 0 rgba(139,92,246,.55);}50%{box-shadow:0 0 0 5px rgba(139,92,246,0);}}
   .toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
   .toolbar-right{display:flex;align-items:center;gap:6px;margin-left:auto;}
+  .toolbar{--tb-h:36px;}
+  html.touch .toolbar > .segmented{padding:2px;}
+  html.touch #playbackSpeed{padding:0 22px 0 8px;background-position:right 8px center;}
+  @media (max-width:600px){
+    html.touch .toolbar > .segmented button{min-width:36px;padding-left:8px;padding-right:8px;}
+    .toolbar :is(#btnPlaySequence, #vocabSpeak){width:40px;}
+    html.touch .toolbar :is(#playbackSpeed, #vocabSpeed){padding:0 18px 0 8px;background-position:right 6px center;}
+  }
+  .toolbar > .segmented{box-sizing:border-box;height:var(--tb-h);padding:3px;}
+  .toolbar > .segmented button{align-self:stretch;padding-top:0;padding-bottom:0;}
+  .toolbar :is(#btnPlaySequence, #vocabSpeak, #playbackSpeed, #vocabSpeed){box-sizing:border-box;height:var(--tb-h);padding-top:0;padding-bottom:0;}
+  .toolbar-counts .progress-badge{box-sizing:border-box;height:var(--tb-h);padding:0 12px;border-radius:18px;font-size:14px;}
+  .toolbar .toolbar-flag:not(.many){--ch:var(--tb-h);--cw:48px;}
   .segmented[hidden], .segmented button[hidden]{display:none;}
   .segmented{align-items:center;}
   .segmented .sep-before{position:relative;margin-left:8px;}
@@ -939,7 +953,7 @@ window.onYouTubeIframeAPIReady = function(){
   @media (max-width:600px){
     .toolbar{gap:6px;}
     .toolbar-counts .progress-badges{gap:4px;}
-    .toolbar-counts .progress-badge{min-width:24px;justify-content:center;padding:3px 6px;background:color-mix(in srgb, currentColor 12%, transparent);}
+    .toolbar-counts .progress-badge{min-width:var(--tb-h);justify-content:center;padding:0 6px;background:color-mix(in srgb, currentColor 12%, transparent);}
     .toolbar-counts .progress-badge i{display:none;}
   }
   .progress-badges{display:flex;justify-content:center;align-items:center;gap:8px;-webkit-user-select:none;user-select:none;}
@@ -2819,8 +2833,14 @@ function onPlayerStateChange(event) {
     const retried = retryPlay;
     retryPlay = null;
     if (retried && currentView === "study" && retried === extractYouTubeId(document.getElementById("mediaUrl").value.trim())) startSequenceLoop(isAllLessons() && isListenMode());
+    const shown = autoPlayFor;
+    autoPlayFor = null;
+    if (shown !== null) afterCurtain(() => {
+      if (shown === lastShownCardId && currentView === "study" && isListenMode() && !isSequencePlaying) startSequenceLoop(true);
+    }, 0);
   }
   if (event.data === YT.PlayerState.PLAYING) {
+    soundBlocked = false;
     if (speechSynthesis.speaking || speechSynthesis.pending || ttsPlaying) {
       stopTts();
     }
@@ -2859,6 +2879,8 @@ const unplayableVideos = new Set;
 const retriedVideos = new Set;
 
 let retryPlay = null;
+
+let autoPlayFor = null;
 
 function retryVideo(play) {
   const id = extractYouTubeId(document.getElementById("mediaUrl").value.trim());
@@ -2966,6 +2988,7 @@ function playbackRateOnce() {
 }
 
 function seamTo(time) {
+  stallSince = Date.now();
   ytPlayer.seekTo(time, true);
   if (ytPlayer.getPlayerState() !== YT.PlayerState.PLAYING) ytPlayer.playVideo();
   fadeVolume(100, 180);
@@ -2973,6 +2996,29 @@ function seamTo(time) {
 }
 
 let stallTimer = null;
+
+let stallSince = 0;
+
+let soundBlocked = false;
+
+let speechUnlocked = !(/iP(hone|ad|od)/.test(navigator.userAgent) || navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+function soundGesture(e) {
+  if (!speechUnlocked && !speechSynthesis.speaking && !speechSynthesis.pending) {
+    speechUnlocked = true;
+    const hush = new SpeechSynthesisUtterance(" ");
+    hush.volume = 0;
+    speechSynthesis.speak(hush);
+  }
+  if (!soundBlocked) return;
+  soundBlocked = false;
+  if (e.target.closest && e.target.closest("#btnPlaySequence, #vocabSpeak, .loop-time, .exam-play")) return;
+  if (!ytPlayer || !ytReady || ttsPlaying || !soundStillOn() || typeof ytPlayer.playVideo !== "function") return;
+  unmuteNow();
+  ytPlayer.playVideo();
+}
+
+[ "pointerup", "keydown" ].forEach(t => addEventListener(t, soundGesture, true));
 
 function watchStall() {
   clearTimeout(stallTimer);
@@ -2984,6 +3030,10 @@ function watchStall() {
     if (state !== YT.PlayerState.BUFFERING && state !== YT.PlayerState.UNSTARTED) {
       if (endPass()) return;
       ytPlayer.playVideo();
+    }
+    if (!soundBlocked && state !== YT.PlayerState.BUFFERING && Date.now() - stallSince > 2500) {
+      soundBlocked = true;
+      showToast((isTouch() ? "Tap" : "Click") + " anywhere to start the sound");
     }
     watchStall();
   }, 600);
@@ -4112,19 +4162,30 @@ let firstTouchWait = false;
 function afterFirstTouch(start) {
   if (firstTouchWait) return;
   firstTouchWait = true;
-  if (!document.querySelector(".all-curtain")) showToast("Tap anywhere or press a key to start the sound");
+  if (curtainHolds()) {
+    afterCurtain(() => {
+      firstTouchWait = false;
+      start();
+    }, 0);
+    return;
+  }
+  showToast("Tap anywhere or press a key to start the sound");
   const go = e => {
-    [ "pointerdown", "keydown" ].forEach(t => removeEventListener(t, go, true));
+    [ "pointerup", "keydown" ].forEach(t => removeEventListener(t, go, true));
     firstTouchWait = false;
     if (e.code === "Space" || e.target.closest && e.target.closest("#btnPlaySequence, #vocabSpeak, #listenCover, .loop-time, .exam-play")) return;
-    setTimeout(start, 0);
+    start();
   };
-  [ "pointerdown", "keydown" ].forEach(t => addEventListener(t, go, true));
+  [ "pointerup", "keydown" ].forEach(t => addEventListener(t, go, true));
 }
 
 function startSequenceLoop(auto) {
   if (auto && mixAwaitCue) return;
-  if (ytHasError || !ytPlayer || !ytReady || !ytHasVideo) return;
+  if (ytHasError || !ytPlayer || !ytReady || !ytHasVideo) {
+    if (auto && !ytHasError && (ytHasVideo || pendingVideoId)) autoPlayFor = lastShownCardId;
+    return;
+  }
+  if (auto) autoPlayFor = null;
   if (auto && navigator.userActivation && !navigator.userActivation.hasBeenActive) {
     afterFirstTouch(() => currentView === "study" && isListenMode() && !isSequencePlaying && startSequenceLoop(true));
     return;
@@ -10282,16 +10343,20 @@ function resetStudyState() {
     clearTimeout(ytWatchdog);
     ytWatchdog = null;
   }
-  safeDestroyPlayer();
-  mediaBox().querySelectorAll("iframe").forEach(f => f.remove());
-  if (!document.getElementById("mediaIframe")) {
+  const keep = ytPlayer && ytReady && !ytHasError ? ytPlayer.getIframe() : null;
+  if (keep) destroyYtPlayer(); else {
+    safeDestroyPlayer();
+    ytReady = false;
+  }
+  mediaBox().querySelectorAll("iframe").forEach(f => f !== keep && f.remove());
+  if (!keep && !document.getElementById("mediaIframe")) {
     document.getElementById("mediaVideo").insertAdjacentHTML("afterbegin", '<div id="mediaIframe"></div>');
   }
-  ytReady = false;
   ytHasVideo = false;
   ytHasError = false;
   pendingVideoId = null;
   ytRetried = false;
+  autoPlayFor = null;
   groupState = null;
   savedGroupState = null;
   nextOrderReady = false;
@@ -14093,7 +14158,7 @@ function showVocabDeck(stage, item) {
   });
   card.id = "vocabCard";
   fillVocabCard(card, item);
-  if (next && !vocabVideoIdFor(item.card)) preloadVocabVideo(next);
+  if (vocabVideoIdFor(item.card)) preloadVocabVideo(item); else if (next) preloadVocabVideo(next);
   if (vocabViewOnly(item) && !vocabSession.flipped) {
     vocabSession.flipped = true;
     card.classList.add("no-turn");
@@ -14748,7 +14813,7 @@ function vocabCueDone() {
 
 function startPendingVocabVideo() {
   if (vocabPendingKey === null || vocabAwaitCue || !ytPlayer || !ytReady || !ytHasVideo) return;
-  if (document.querySelector(".all-curtain")) return afterCurtain(startPendingVocabVideo, 0);
+  if (curtainHolds()) return afterCurtain(startPendingVocabVideo, 0);
   const item = lessonVocabItems(vocabSource()).find(i => i.key === vocabPendingKey);
   vocabPendingKey = null;
   if (item && !ytHasError) startLoop(item.card);
@@ -15179,10 +15244,25 @@ async function openAllVocabulary() {
   showView("study");
 }
 
+let curtainQueue = [];
+
+function curtainHolds() {
+  const curtain = document.querySelector(".all-curtain");
+  return !!curtain && !curtain.classList.contains("opening");
+}
+
 function afterCurtain(fn, wait) {
-  setTimeout(function check() {
-    if (document.querySelector(".all-curtain")) setTimeout(check, 50); else fn();
+  setTimeout(() => {
+    if (!curtainHolds()) fn(); else if (!curtainQueue.includes(fn)) curtainQueue.push(fn);
   }, wait);
+}
+
+function releaseCurtain(curtain) {
+  if (curtain.classList.contains("opening")) return;
+  curtain.classList.add("opening");
+  const queue = curtainQueue;
+  curtainQueue = [];
+  queue.forEach(fn => fn());
 }
 
 function raiseAllCurtain() {
@@ -15218,14 +15298,16 @@ function allCurtain(item) {
   addEventListener("resize", place);
   document.documentElement.classList.add("curtained");
   const BLOCKED = [ "pointerdown", "pointerup", "mousedown", "mouseup", "click", "dblclick", "auxclick", "contextmenu", "touchstart", "touchend", "keydown", "keyup", "keypress" ];
-  let knock = null;
+  let knock = null, tapped = false;
   const block = e => {
     if (!curtain.isConnected) return unblock();
     e.stopPropagation();
     e.stopImmediatePropagation();
     if (e.type.startsWith("key") && (e.metaKey || e.ctrlKey)) return;
     if (e.cancelable && !e.type.startsWith("touch") && !e.type.startsWith("pointer")) e.preventDefault();
-    if (knock && (e.type === "pointerdown" || e.type === "keydown" && ![ "Shift", "Control", "Alt", "Meta" ].includes(e.key))) knock();
+    const key = e.type === "keydown" && ![ "Shift", "Control", "Alt", "Meta" ].includes(e.key);
+    if (knock && (e.type === "pointerdown" || key)) knock();
+    if (tapped && (e.type === "pointerup" || e.type === "touchend" || key)) releaseCurtain(curtain);
   };
   BLOCKED.forEach(t => addEventListener(t, block, {
     capture: true
@@ -15259,6 +15341,7 @@ function allCurtain(item) {
   const ready = () => ytHasError || !isVirtualLesson() || (appMode === "vocab" ? !vocabAwaitCue && !pendingVideoId : !mixAwaitCue && !pendingVideoId && !ytCueing && (!ytHasVideo || ytReady));
 
   const open = () => {
+    releaseCurtain(curtain);
     document.documentElement.classList.remove("curtained");
     sway.forEach(a => a.cancel());
     Promise.all(sides.map((el, i) => el.animate([ {
@@ -15309,6 +15392,7 @@ function allCurtain(item) {
       curtain.insertAdjacentHTML("beforeend", `<span class="curtain-wand" role="img" aria-label="${isTouch() ? "Tap" : "Click"} to open"><svg viewBox="0 0 220 220" aria-hidden="true"><g class="wand-spark"><path d="M176 18l5 13 13 5-13 5-5 13-5-13-13-5 13-5z"/><path d="M206 62l3 8 8 3-8 3-3 8-3-8-8-3 8-3z"/><path d="M140 12l3 7 7 3-7 3-3 7-3-7-7-3 7-3z"/><path d="M196 104l2 6 6 2-6 2-2 6-2-6-6-2 6-2z"/></g><g class="wand-stick"><defs><linearGradient id="wandWood" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a0703f"/><stop offset=".45" stop-color="#6b4220"/><stop offset="1" stop-color="#3a2210"/></linearGradient></defs><g transform="rotate(-45 110 110)"><path d="M72 104 L196 108 Q202 110 196 112 L72 116 Z" fill="url(#wandWood)"/><rect x="24" y="101" width="50" height="18" rx="7" fill="url(#wandWood)"/><circle cx="20" cy="110" r="9" fill="url(#wandWood)"/><rect x="32" y="100" width="5" height="20" rx="2" fill="#3a2210"/><rect x="46" y="100" width="5" height="20" rx="2" fill="#3a2210"/><rect x="60" y="100" width="5" height="20" rx="2" fill="#3a2210"/><rect x="70" y="102" width="5" height="16" rx="2" fill="#3a2210"/><path d="M78 106 L190 108" stroke="rgba(255, 255, 255, .25)" stroke-width="2" stroke-linecap="round"/><path d="M14 106 Q20 101 26 106" stroke="rgba(255, 255, 255, .3)" stroke-width="2" fill="none" stroke-linecap="round"/></g></g></svg></span>`);
       knock = () => {
         knock = null;
+        tapped = true;
         const wand = curtain.querySelector(".curtain-wand");
         wand.classList.add("tapping");
         setTimeout(() => {
