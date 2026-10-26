@@ -5,6 +5,7 @@ const DEFAULTS = {
   highlight: true,
   button: true,
   shift: true,
+  youtube: true,
   appUrl: "https://phillipxnguyen.github.io/wikiPhidia/"
 };
 
@@ -55,6 +56,7 @@ function paintSettings() {
   $("highlight").checked = !!s.highlight;
   $("button").checked = !!s.button;
   $("shift").checked = !!s.shift;
+  $("youtube").checked = s.youtube !== false;
   $("appUrl").value = s.appUrl;
   const lessons = state.app.lessons.slice().sort((a, b) => (b.words ? 1 : 0) - (a.words ? 1 : 0) || a.name.localeCompare(b.name));
   const hasDefault = lessons.some(l => l.name.trim().toLowerCase() === (s.lessonName || "Reading").trim().toLowerCase());
@@ -109,7 +111,7 @@ $("pendingList").addEventListener("change", async e => {
   await chrome.storage.local.set({ pending: state.pending });
 });
 
-[ "highlight", "button", "shift" ].forEach(id => $(id).addEventListener("change", e => saveSettings({ [id]: e.target.checked })));
+[ "highlight", "button", "shift", "youtube" ].forEach(id => $(id).addEventListener("change", e => saveSettings({ [id]: e.target.checked })));
 $("lang").addEventListener("change", e => saveSettings({ lang: e.target.value }));
 $("appUrl").addEventListener("change", e => saveSettings({ appUrl: e.target.value.trim() || DEFAULTS.appUrl }));
 $("lesson").addEventListener("change", e => {
@@ -129,6 +131,19 @@ chrome.storage.onChanged.addListener((changes, area) => {
   if (changes.pending && !document.activeElement.classList.contains("meaning")) paintPending();
   if (changes.history) paintRecent();
   if (changes.app) paintSettings();
+});
+
+chrome.tabs.query({ active: true, currentWindow: true }).then(([ tab ]) => {
+  if (!tab || !tab.url) return;
+  let video = false;
+  try {
+    const u = new URL(tab.url);
+    video = /(^|\.)youtube\.com$/.test(u.hostname) && (!!u.searchParams.get("v") || /\/(shorts|live)\/[\w-]{11}/.test(u.pathname));
+  } catch (e) {}
+  if (!video) return;
+  $("ytTitle").textContent = (tab.title || "").replace(/ - YouTube$/, "");
+  $("ytLesson").hidden = false;
+  $("ytLesson").onclick = () => chrome.runtime.sendMessage({ type: "youtube", tabId: tab.id }, () => window.close());
 });
 
 load();

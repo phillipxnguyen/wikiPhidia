@@ -1454,6 +1454,7 @@ window.onYouTubeIframeAPIReady = function(){
   @media (prefers-reduced-motion: reduce){#ytDialog.loading :is(#ytTrack, .cloud-row button, .emoji){animation:none;}}
   .yt-grab-hint{font-size:12px;line-height:18px;}
   html.touch #ytGrabLink, html:not(.touch) #ytGrabCopy, .touch-hint:not(.shown){display:none;}
+  html:not(.has-reader) .reader-yt-hint, html.has-reader .yt-grab-row > :not(.reader-yt-hint){display:none;}
   .lesson-item.importing{pointer-events:none;animation:importBlink 1.2s ease-in-out infinite;}
   @keyframes importBlink{0%, 100%{opacity:1;filter:blur(0);}50%{opacity:.35;filter:blur(2px);}}
   @media (prefers-reduced-motion: reduce){.lesson-item.importing{animation:none;opacity:.6;}}
@@ -1776,6 +1777,7 @@ window.onYouTubeIframeAPIReady = function(){
       <a id="ytGrabLink" class="yt-grab" href="#" title="Drag to your bookmarks bar, then click it on a YouTube video">YouTube subtitles</a>
       <button id="ytGrabCopy" class="yt-grab">YouTube subtitles</button>
       <span class="muted-label yt-grab-hint touch-hint">Now bookmark any page and paste it as the bookmark's address.</span>
+      <span class="muted-label reader-yt-hint">YouTube lessons: on any video, click 字 Make a lesson (wikiPhidia Reader).</span>
     </div>
     <div id="importStatus" class="muted-label" style="margin-top:6px;"></div>
     <div id="importInfo" style="font-size:12px;color:var(--text-2);margin-top:8px;"></div>
@@ -13322,13 +13324,39 @@ function readerAdd(list) {
   };
 }
 
+function readerYouTube(d) {
+  if (!d || typeof d.id !== "string" || !/^[\w-]{11}$/.test(d.id) || ytImport && ytImport.id === d.id) return;
+  if (ytImport) finishYouTubeImport("Import cancelled");
+  ytImport = {
+    id: d.id,
+    title: String(d.title || "YouTube video"),
+    timer: null
+  };
+  renderLessonList();
+  const dialog = document.getElementById("ytDialog");
+  dialog.classList.add("loading");
+  dialog.hidden = false;
+  receiveYouTubeTracks(d);
+}
+
 function startReaderBridge() {
   window.addEventListener("message", e => {
     if (e.source !== window || !e.data || e.data.from !== "wikiphidia-reader" || tabPaused) return;
-    if (e.data.type === "hello") window.postMessage(readerState(), "*");
+    if (e.data.type === "hello") {
+      document.documentElement.classList.add("has-reader");
+      window.postMessage(readerState(), "*");
+    }
     if (e.data.type === "add") {
       window.postMessage(readerAdd(e.data.words), "*");
       window.postMessage(readerState(), "*");
+    }
+    if (e.data.type === "youtube" && e.data.data) {
+      readerYouTube(e.data.data);
+      window.postMessage({
+        from: "wikiphidia-app",
+        type: "ytTaken",
+        id: e.data.data.id
+      }, "*");
     }
   });
   window.postMessage({

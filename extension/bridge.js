@@ -3,6 +3,7 @@
   window.__wkpBridge = true;
   let ready = false;
   let sending = null;
+  let ytSent = "";
 
   const post = msg => window.postMessage(Object.assign({ from: "wikiphidia-reader" }, msg), "*");
 
@@ -29,6 +30,14 @@
     setTimeout(() => {
       sending = null;
     }, 8e3);
+  }
+
+  async function sendYouTube() {
+    if (!ready) return;
+    const { ytPending } = await chrome.storage.local.get("ytPending");
+    if (!ytPending || Date.now() - (ytPending.at || 0) > 36e5 || ytSent === ytPending.id + ":" + ytPending.at) return;
+    ytSent = ytPending.id + ":" + ytPending.at;
+    post({ type: "youtube", data: ytPending });
   }
 
   async function settle(result) {
@@ -59,13 +68,20 @@
           words: e.data.words || [],
           at: e.data.at || Date.now()
         }
-      }).then(send);
+      }).then(() => {
+        send();
+        sendYouTube();
+      });
     }
     if (e.data.type === "added") settle(e.data);
+    if (e.data.type === "ytTaken") chrome.storage.local.get("ytPending").then(({ ytPending }) => {
+      if (ytPending && ytPending.id === e.data.id) chrome.storage.local.remove("ytPending");
+    });
   });
 
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area === "local" && changes.pending) send();
+    if (area === "local" && changes.ytPending && changes.ytPending.newValue) sendYouTube();
   });
 
   chrome.runtime.onMessage.addListener(msg => {

@@ -1,6 +1,6 @@
 # wikiPhidia Reader
 
-A browser extension for reading on the web (news, articles, any page) that picks up new words and sends them straight into wikiPhidia's Vocabulary, with their meaning, the sentence they came from and the page's title.
+A browser extension for reading on the web (news, articles, any page) that picks up new words and sends them straight into wikiPhidia's Vocabulary, with their meaning, the sentence they came from and the page's title, and that turns any YouTube video into a lesson with one click.
 
 ## Install (Chrome, Edge, Brave, Arc)
 
@@ -31,11 +31,15 @@ Every page marks the words that are already in wikiPhidia, the way the app does:
 
 Words wait in the extension (the number on the icon) until wikiPhidia is open in a tab; then they go in by themselves, at once if the app is already open. **Open app** in the popup opens it or brings its tab forward. Each word becomes a Vocabulary card in its lesson: the word on the front, the meaning on the back, and the sentence and the page's title as the card's notes. Words already in the app are skipped.
 
+## Lessons from YouTube
+
+On any YouTube video, click the green **字 Make a lesson** button in the bottom-left corner (or **Make a lesson from this video** at the top of the popup, or right-click → **Make a wikiPhidia lesson from this video**). The extension reads the video's subtitles, opens wikiPhidia (or brings its tab forward), and the app shows its usual box: pick the subtitles, then **Subtitles only** or **With translation**. This replaces the *YouTube subtitles* bookmark; the bookmark still works where the extension is not installed. The button can be turned off in Settings.
+
 ## The popup
 
 - **To send**: the words waiting, with their meaning editable and ✕ to drop one.
 - **Recent**: the last words sent, marked *Added* or *Already there*.
-- **Settings**: the language of the meanings, the lesson new words go into, marking known words on pages, the 字 button, Shift, and the app's address (change it if you run wikiPhidia somewhere else; local copies on `localhost`, `127.0.0.1` or a file whose path contains `wikiPhidia` connect too).
+- **Settings**: the language of the meanings, the lesson new words go into, marking known words on pages, the 字 button, Shift, the YouTube button, and the app's address (change it if you run wikiPhidia somewhere else; local copies on `localhost`, `127.0.0.1` or a file whose path contains `wikiPhidia` connect too).
 
 ## Privacy
 

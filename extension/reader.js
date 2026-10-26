@@ -9,7 +9,8 @@
     lessonName: "Reading",
     highlight: true,
     button: true,
-    shift: true
+    shift: true,
+    youtube: true
   };
   const CJK = /[㐀-鿿豈-﫿]/;
   const KANA = /[぀-ヿ]/;
@@ -75,6 +76,10 @@ textarea.field{font-size:14px;line-height:20px;}
 .tip{position:fixed;max-width:280px;padding:6px 10px;border-radius:8px;background:#1d2330;color:#fff;font-size:13px;line-height:18px;box-shadow:0 6px 18px rgba(0,0,0,.25);pointer-events:none;}
 .tip b{font-weight:700;}
 .tip small{display:block;color:#aab3c2;font-size:12px;line-height:16px;}
+.yt{position:fixed;left:16px;bottom:16px;display:flex;align-items:center;gap:8px;height:40px;padding:0 16px 0 6px;border:0;border-radius:20px;background:var(--green);color:#fff;font:700 14px/20px Inter, system-ui, sans-serif;box-shadow:0 6px 18px rgba(0,0,0,.3);cursor:pointer;}
+.yt:hover{filter:brightness(1.08);}
+.yt span{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:14px;background:rgba(255,255,255,.2);font-size:16px;line-height:20px;}
+.yt[disabled]{opacity:.7;cursor:default;}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);padding:10px 16px;border-radius:10px;background:#1d2330;color:#fff;font-size:14px;line-height:20px;box-shadow:0 8px 24px rgba(0,0,0,.3);}
 </style><div class="wrap"></div>`;
   const wrap = root.querySelector(".wrap");
@@ -527,7 +532,39 @@ textarea.field{font-size:14px;line-height:20px;}
     if (tip) tip.remove(), tip = null;
   }, { passive: true, capture: true });
 
+  let ytBtn = null;
+  const ytVideo = () => /(^|\.)youtube\.com$/.test(location.hostname) && (new URL(location.href).searchParams.get("v") || /\/(shorts|live)\/[\w-]{11}/.test(location.pathname));
+  function syncYouTube() {
+    if (!alive()) return;
+    const show = ytVideo() && settings.youtube !== false;
+    if (!show) {
+      if (ytBtn) ytBtn.remove();
+      ytBtn = null;
+      return;
+    }
+    if (ytBtn && ytBtn.isConnected) return;
+    mount();
+    ytBtn = document.createElement("button");
+    ytBtn.className = "yt";
+    ytBtn.innerHTML = "<span>字</span>Make a lesson";
+    ytBtn.title = "Make a wikiPhidia lesson from this video's subtitles";
+    ytBtn.addEventListener("click", () => {
+      ytBtn.disabled = true;
+      setTimeout(() => ytBtn && (ytBtn.disabled = false), 4e3);
+      chrome.runtime.sendMessage({ type: "youtube" });
+    });
+    wrap.appendChild(ytBtn);
+  }
+  let lastHref = location.href;
+  setInterval(() => {
+    if (location.href === lastHref) return;
+    lastHref = location.href;
+    syncYouTube();
+  }, 800);
+  document.addEventListener("yt-navigate-finish", syncYouTube);
+
   chrome.runtime.onMessage.addListener(msg => {
+    if (msg && msg.type === "toast") toast(msg.text);
     if (msg && msg.type === "open") {
       const found = selectedText();
       openCard(found ? found.text : msg.text, found ? found.range : null);
@@ -540,6 +577,7 @@ textarea.field{font-size:14px;line-height:20px;}
     if (changes.app) app = Object.assign({ lessons: [], words: [] }, changes.app.newValue || {});
     if (changes.pending) pending = changes.pending.newValue || [];
     if (changes.settings || changes.app || changes.pending) rescan();
+    if (changes.settings) syncYouTube();
   });
 
   chrome.storage.local.get([ "settings", "app", "pending" ]).then(data => {
@@ -547,5 +585,6 @@ textarea.field{font-size:14px;line-height:20px;}
     app = Object.assign({ lessons: [], words: [] }, data.app || {});
     pending = data.pending || [];
     rescan();
+    syncYouTube();
   });
 })();
