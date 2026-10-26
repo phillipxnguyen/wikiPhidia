@@ -241,6 +241,10 @@ Words are found by the kind of writing at their edges, with no language setting 
 - Korean verbs and adjectives written with -다 match their usual conjugations: 먹다 highlights 먹어요 and 먹었어요, 가다 highlights 가요, 갔어요 and 갑니다, 보다 highlights 봐요, and 공부하다 highlights 공부해요 and 공부했어요. The common irregular verbs match too: 덥다 → 더워요, 돕다 → 도와요, 듣다 → 들어요, 낫다 → 나아요, 모르다 → 몰라요, 그렇다 → 그래요, 바쁘다 → 바빠요. A form can belong to more than one word (가요 is also a noun, 들어요 also comes from 들다); it is highlighted for each, and you decide which fits.
 - Full-width and half-width forms count as the same (ｶﾀｶﾅ and カタカナ, ＡＢＣ and ABC), katakana and hiragana count as the same (ネコ and ねこ), Vietnamese tone marks may sit on either vowel (hòa and hoà, khỏe and khoẻ, thúy and thuý), case does not matter, and line breaks count as spaces.
 
+## Reading on the web
+
+The **wikiPhidia Reader** browser extension (in the [`extension`](extension) folder, with its own [instructions](extension/README.md)) lets you read any page and pick up new words as you go: select a word and press Shift (or click the green 字 next to it), check the meaning it translates for you, the pinyin and the sentence it found, and press Enter. The words go into Vocabulary by themselves as soon as wikiPhidia is open in a tab, each as a card in the lesson you chose (*Reading* by default, made for you the first time): the word on the front, the meaning on the back, and the sentence and the page's title in its notes. A word already in any lesson is not added twice, and a toast says how many came in. The extension also marks on every page the words you already have (green) and those still waiting to be sent (grey), with their meaning on pointing.
+
 ## Language help
 
 - Pinyin on hover for Chinese

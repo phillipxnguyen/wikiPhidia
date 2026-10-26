@@ -13173,6 +13173,170 @@ function receiveYouTubeImport() {
   }, "*");
 }
 
+const READER_DEFAULT_LESSON = "Reading";
+
+function readerCards(l) {
+  return l.id === currentLessonId ? vocabSource() : lessonCardsWithExtras(l);
+}
+
+function readerState() {
+  const lessons = library.filter(l => !isVirtualId(l.id)).map(l => ({
+    id: l.id,
+    name: l.name || "Untitled lesson",
+    words: isVocabOnlyLesson(l)
+  }));
+  const words = [];
+  library.filter(l => !isVirtualId(l.id)).forEach(l => lessonVocabItems(readerCards(l)).forEach(i => words.push({
+    term: i.term,
+    meaning: i.meaning,
+    lesson: l.name || "Untitled lesson"
+  })));
+  return {
+    from: "wikiphidia-app",
+    type: "state",
+    lessons: lessons,
+    words: words,
+    at: Date.now()
+  };
+}
+
+function readerNotesHtml(w) {
+  const lines = [];
+  if (w.sentence) lines.push("<div>" + escapeHtml(cleanText(w.sentence).replace(/\n/g, " ")) + "</div>");
+  if (w.title || w.url) lines.push("<div><i>" + escapeHtml(cleanText(w.title || w.url).replace(/\n/g, " ")) + "</i></div>");
+  return lines.join("");
+}
+
+function readerTarget(w, made) {
+  const byId = w.lessonId && library.find(l => l.id === w.lessonId && !isVirtualId(l.id));
+  if (byId) return byId;
+  const name = cleanText(w.lessonName || READER_DEFAULT_LESSON).replace(/\n/g, " ") || READER_DEFAULT_LESSON;
+  const found = library.find(l => !isVirtualId(l.id) && (l.name || "").trim().toLowerCase() === name.toLowerCase());
+  if (found) return found;
+  const now = Date.now();
+  const lesson = {
+    format: "flashcard-lesson",
+    version: 2,
+    id: makeUid(),
+    name: name,
+    mediaUrl: "",
+    studyLang: "auto",
+    importHistory: [],
+    createdAt: now,
+    updatedAt: now,
+    cards: [],
+    extraWords: null,
+    vocabOnly: true
+  };
+  upsertLibrary(lesson);
+  made.add(lesson.id);
+  return lesson;
+}
+
+function readerAdd(list) {
+  const known = new Map;
+  library.filter(l => !isVirtualId(l.id)).forEach(l => lessonVocabItems(readerCards(l)).forEach(i => known.set(i.key, l.name || "Untitled lesson")));
+  const added = [], skipped = [], made = new Set, groups = new Map;
+  (Array.isArray(list) ? list : []).forEach(w => {
+    if (!w || typeof w !== "object") return;
+    const term = cleanText(String(w.term || "")).replace(/\n/g, " ").trim();
+    const meaning = cleanText(String(w.meaning || "")).replace(/\n/g, " ").trim();
+    const key = normalizeVocabText(term);
+    if (!key) return skipped.push({
+      id: w.id,
+      reason: "empty"
+    });
+    if (known.has(key)) return skipped.push({
+      id: w.id,
+      reason: "exists",
+      lesson: known.get(key)
+    });
+    const lesson = readerTarget(w, made);
+    known.set(key, lesson.name);
+    if (!groups.has(lesson.id)) groups.set(lesson.id, []);
+    groups.get(lesson.id).push({
+      id: w.id,
+      term: term,
+      meaning: meaning,
+      key: key,
+      notes: readerNotesHtml(w)
+    });
+  });
+  if (groups.size) {
+    if (activeEdit) commitActiveEdit();
+    if (vocabEditingKey) commitVocabEdit();
+  }
+  groups.forEach((words, id) => {
+    const lesson = library.find(l => l.id === id);
+    if (id === currentLessonId) {
+      pushUndo("Added " + countOf(words.length, "card") + " from reading");
+      const row = ensureVocabExtras();
+      words.forEach(w => {
+        putVocabHtml(row, vocabLineHtml(row, w.term, w.meaning));
+        if (w.notes) setWordNotes(row, w.key, w.notes);
+        if (vocabSession) vocabSession.queue.push(w.key);
+        added.push(w.id);
+      });
+      scheduleAutoSave();
+      return;
+    }
+    const row = lesson.extraWords ? normalizeExtras(lesson.extraWords) : {
+      uid: EXTRA_UID,
+      q: "",
+      a: "",
+      notes: "",
+      notesHtml: "",
+      time: null,
+      vocab: {}
+    };
+    words.forEach(w => {
+      putVocabHtml(row, vocabLineHtml(row, w.term, w.meaning));
+      if (w.notes) setWordNotes(row, w.key, w.notes);
+      added.push(w.id);
+    });
+    const saved = Object.assign({}, lesson, {
+      extraWords: normalizeExtras(serializeExtras(row)),
+      updatedAt: Date.now()
+    });
+    upsertLibrary(saved);
+    if (id in virtualExtras) virtualExtras[id] = normalizeExtras(saved.extraWords);
+    const shown = isVirtualLesson() && rows.find(r => r.srcLessonId === id && r.uid === EXTRA_UID);
+    if (shown) Object.assign(shown, {
+      notes: row.notes,
+      notesHtml: row.notesHtml,
+      vocab: row.vocab
+    });
+    dbPut("lessons", saved).catch(() => {});
+  });
+  if (groups.size) {
+    refreshSaveReminders();
+    renderLessonList();
+    if (currentView === "vocab") renderVocab(); else render();
+    showToast(added.length === 1 ? `“${groups.values().next().value[0].term}” added from your reading` : `${added.length} words added from your reading`);
+  }
+  return {
+    from: "wikiphidia-app",
+    type: "added",
+    added: added,
+    skipped: skipped
+  };
+}
+
+function startReaderBridge() {
+  window.addEventListener("message", e => {
+    if (e.source !== window || !e.data || e.data.from !== "wikiphidia-reader" || tabPaused) return;
+    if (e.data.type === "hello") window.postMessage(readerState(), "*");
+    if (e.data.type === "add") {
+      window.postMessage(readerAdd(e.data.words), "*");
+      window.postMessage(readerState(), "*");
+    }
+  });
+  window.postMessage({
+    from: "wikiphidia-app",
+    type: "ready"
+  }, "*");
+}
+
 async function initApp() {
   updateThemeButton();
   await claimActiveTab();
@@ -13212,6 +13376,7 @@ async function initApp() {
   reviewLog = (await dbGetAll("reviews")).filter(e => e && isFinite(e.ts)).sort((a, b) => a.ts - b.ts);
   renderStreakChip();
   await openDefaultLesson();
+  startReaderBridge();
   if (!dbAvailable) showToast("Browser storage is unavailable here");
   initCloudUi();
   receiveYouTubeImport();
@@ -15081,6 +15246,21 @@ function sentenceOrderAnchor(list, term, text) {
 }
 
 function addVocabToRow(row, term, meaning) {
+  const html = vocabLineHtml(row, term, meaning);
+  pushUndo("Added card — " + cleanText(term).replace(/\n/g, " "));
+  putVocabHtml(row, html);
+  scheduleAutoSave();
+  render();
+}
+
+function putVocabHtml(row, html) {
+  const before = vocabKeysOf(row);
+  row.notesHtml = html;
+  row.notes = plainTextOf(html, "\n");
+  stampNewVocab(row, before);
+}
+
+function vocabLineHtml(row, term, meaning) {
   term = cleanText(term).replace(/\n/g, " ");
   meaning = cleanText(meaning).replace(/\n/g, " ");
   const box = document.createElement("div");
@@ -15104,14 +15284,7 @@ function addVocabToRow(row, term, meaning) {
     li.innerHTML = itemHtml;
     list.insertBefore(li, sentenceOrderAnchor(list, term, (row.q || "") + "\n" + (row.a || "")));
   }
-  pushUndo("Added card — " + term);
-  const before = vocabKeysOf(row);
-  row.notesHtml = box.innerHTML;
-  row.notes = plainTextOf(box.innerHTML, "\n");
-  stampNewVocab(row, before);
-  scheduleAutoSave();
-  render();
-  showToast("Added 1 card");
+  return box.innerHTML;
 }
 
 let enterShift = false;
