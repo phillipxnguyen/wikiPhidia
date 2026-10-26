@@ -64,6 +64,7 @@ window.onYouTubeIframeAPIReady = function(){
     --new-color:#1e9466;
     --mode-blue:#2f6fd6;
     --due-color:#c9801a;
+    --wait-color:#b89400;
     --yt-red:#e62117;
     --view-bg:#fdf3dc;
     --view-edge:#ecd29a;
@@ -116,6 +117,7 @@ window.onYouTubeIframeAPIReady = function(){
       --new-color:#3cc48d;
       --mode-blue:#5d8ff0;
       --due-color:#e9a443;
+      --wait-color:#e6c739;
       --yt-red:#ff5a4f;
       --view-bg:#2e2616;
       --view-edge:#5a4824;
@@ -159,6 +161,7 @@ window.onYouTubeIframeAPIReady = function(){
     --new-color:#3cc48d;
     --mode-blue:#5d8ff0;
     --due-color:#e9a443;
+    --wait-color:#e6c739;
     --yt-red:#ff5a4f;
     --view-bg:#2e2616;
     --view-edge:#5a4824;
@@ -345,8 +348,6 @@ window.onYouTubeIframeAPIReady = function(){
   html.touch #vocabSpeed{padding:8px 22px 8px 8px;background-position:right 8px center;}
   html.touch .vocab-toolbar .segmented button{min-width:40px;padding:8px 10px;}
   #vocabFrontBtn.active{color:var(--accent);}
-  .vocab-badges{margin:-8px 0 16px;}
-  .vocab-toolbar:not([hidden]) + .vocab-badges{margin-top:0;}
   .vocab-card{--front-h:320px;position:relative;margin-bottom:16px;height:var(--fit-h, var(--front-h));perspective:1400px;touch-action:pan-y;cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;}
   .vocab-card-inner{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .45s cubic-bezier(.3,.7,.3,1);}
   .vocab-card.flipped .vocab-card-inner{transform:rotateY(180deg);}
@@ -468,7 +469,7 @@ window.onYouTubeIframeAPIReady = function(){
   .lesson-group{display:flex;flex-direction:column;gap:2px;padding:6px;border-radius:var(--radius);background:var(--surface-2);}
   .lesson-group + .lesson-group{margin-top:10px;}
   .lesson-group.vocab{padding:0;background:none;}
-  .lesson-list .lesson-item.all-vocab{--bar-new:var(--accent);--bar-due:var(--due-color);--bar-later:color-mix(in srgb, var(--border-strong) 55%, var(--text-2));--bar-done:var(--done-color);padding:14px 16px;border:0;border-radius:var(--radius);background-color:var(--bar-later);background-repeat:no-repeat;background-size:100% 100%;}
+  .lesson-list .lesson-item.all-vocab{--bar-new:var(--accent);--bar-due:var(--due-color);--bar-wait:var(--wait-color);--bar-later:color-mix(in srgb, var(--border-strong) 55%, var(--text-2));--bar-done:var(--done-color);padding:14px 16px;border:0;border-radius:var(--radius);background-color:var(--bar-later);background-repeat:no-repeat;background-size:100% 100%;}
   .lesson-list .lesson-item.all-vocab .lesson-item-name{color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.25);}
   @media (hover:hover){.lesson-list .lesson-item.all-vocab:hover{background-color:var(--bar-later);filter:brightness(1.06);}}
   .lesson-list .lesson-item.all-vocab.active{outline:2px solid var(--accent);outline-offset:2px;box-shadow:none;}
@@ -493,6 +494,7 @@ window.onYouTubeIframeAPIReady = function(){
   .lesson-tile-bar > span{flex-basis:0;min-width:2px;}
   .lesson-tile-bar .new{background:var(--accent);}
   .lesson-tile-bar .due{background:var(--due-color);}
+  .lesson-tile-bar .wait{background:var(--wait-color);}
   .lesson-tile-bar .later{background:var(--border-strong);}
   .lesson-tile-bar .done{background:var(--done-color);}
   .sidebar-footer{display:flex;justify-content:space-between;align-items:center;gap:2px;padding:6px;border-radius:var(--radius);background:var(--accent-soft);}
@@ -924,7 +926,19 @@ window.onYouTubeIframeAPIReady = function(){
   @media (prefers-reduced-motion: reduce){.sound-wait{animation:none;}}
   .loop-time.disabled{opacity:.4;background:var(--surface-3);color:var(--text-2);}
 
-  .single-card-progress{text-align:center;font-size:14px;color:var(--text);margin-bottom:16px;}
+  .toolbar-counts{flex:none;margin-left:auto;font-size:14px;color:var(--text);pointer-events:auto;}
+  .toolbar-counts[hidden]{display:none;}
+  .toolbar-counts:empty{display:none;}
+  .toolbar:has(> .toolbar-counts:not(:empty):not([hidden]):not([style*="none"])) > .toolbar-right{order:1;margin-left:0;}
+  .progress-badge i{font-style:normal;}
+  .progress-badge b{font-weight:inherit;}
+  @media (max-width:600px){
+    .toolbar{gap:6px;}
+    .toolbar-counts .progress-badges{gap:4px;}
+    .toolbar-counts .progress-badge{min-width:24px;justify-content:center;padding:3px 6px;background:color-mix(in srgb, currentColor 12%, transparent);}
+    .toolbar-counts .progress-badge i{display:none;}
+    .toolbar-right.idle{display:none;}
+  }
   .progress-badges{display:flex;justify-content:center;align-items:center;gap:8px;-webkit-user-select:none;user-select:none;}
   .add-fab{position:sticky;bottom:30px;z-index:5;display:flex;align-items:center;justify-content:center;width:50px;height:50px;margin:16px 0 0 auto;padding:0;border:0;border-radius:25px;background:var(--accent);color:#fff;box-shadow:var(--shadow-md);cursor:pointer;}
   .add-fab svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;}
@@ -937,6 +951,7 @@ window.onYouTubeIframeAPIReady = function(){
   .progress-badge.new{color:var(--new-color);}
   .progress-badge.due{color:var(--due-color);}
   .progress-badge.done{color:var(--done-color);}
+  .progress-badge.wait{color:var(--wait-color);background:color-mix(in srgb, var(--wait-color) 15%, transparent);}
   .progress-badge.active.new{background:color-mix(in srgb, var(--new-color) 15%, transparent);box-shadow:0 0 0 1px color-mix(in srgb, var(--new-color) 50%, transparent) inset;}
   .progress-badge.active.due{background:color-mix(in srgb, var(--due-color) 15%, transparent);box-shadow:0 0 0 1px color-mix(in srgb, var(--due-color) 50%, transparent) inset;}
   .progress-badge.active.done{background:color-mix(in srgb, var(--done-color) 15%, transparent);box-shadow:0 0 0 1px color-mix(in srgb, var(--done-color) 50%, transparent) inset;}
@@ -1821,8 +1836,8 @@ window.onYouTubeIframeAPIReady = function(){
       <button id="vocabSpeak" aria-label="Play the sentence">🔊</button>
       <select id="vocabSpeed" aria-label="Playback speed" hidden></select>
     </div>
+    <div id="vocabBadges" class="vocab-badges toolbar-counts"></div>
   </div>
-  <div id="vocabBadges" class="vocab-badges"></div>
   <div id="vocabStage"></div>
   <div id="vocabList" class="panel vocab-list" hidden></div>
   <button id="vocabAddWord" class="add-fab" data-add-card title="Add a card" aria-label="Add a card" hidden><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14"/></svg></button>
@@ -1884,17 +1899,17 @@ window.onYouTubeIframeAPIReady = function(){
         <option value="2">2x</option>
       </select>
     </div>
+    <div id="tableProgress" class="single-card-progress toolbar-counts" style="display:none;"></div>
+    <div id="singleCardProgress" class="single-card-progress toolbar-counts" hidden></div>
   </div>
   </div>
 
-  <div id="tableProgress" class="single-card-progress" style="display:none;"></div>
   <div id="sessionCompletePanel" class="session-complete">
     <div class="emoji">🎉</div>
     <div class="session-complete-title">All caught up!</div>
     <div class="session-complete-sub"></div>
     <button class="primary more-today" hidden></button>
   </div>
-  <div id="singleCardProgress" class="single-card-progress" hidden></div>
   <div id="studyCard">
   <table id="cardTable">
     <colgroup>
@@ -2244,13 +2259,15 @@ function currentCounts() {
     return {
       new: c.fresh,
       due: c.due,
-      done: c.done
+      done: c.done,
+      wait: 0
     };
   }
   return {
     new: newCardCount("Table"),
     due: dueCardCount("Table"),
-    done: doneCardCount("Table")
+    done: doneCardCount("Table"),
+    wait: waitCardCount("Table")
   };
 }
 
@@ -3719,7 +3736,7 @@ function deckHasAnswers() {
 function lessonCaughtUp() {
   if (isAllLessons()) return !mixFocusId;
   const now = Date.now();
-  return deckHasAnswers() && !rows.some(r => hasAnswer(r) && srsOf(r, "Table").due <= now);
+  return deckHasAnswers() && !rows.some(r => hasAnswer(r) && cardReady(r, "Table", now));
 }
 
 function countMode(cards) {
@@ -3738,7 +3755,40 @@ function srsBucket(st, now) {
   return st.due <= now ? "due" : null;
 }
 
+let doneWordCache = null;
+
+function doneWordKeys() {
+  if (doneWordCache) return doneWordCache;
+  const keys = new Set;
+  const add = c => c && c.vocab && Object.keys(c.vocab).forEach(k => {
+    if (c.vocab[k] && isDoneState(c.vocab[k])) keys.add(k);
+  });
+  library.forEach(l => {
+    if (l.id === currentLessonId) return;
+    (l.cards || []).forEach(add);
+    add(l.extraWords);
+  });
+  rows.forEach(add);
+  add(vocabExtras);
+  doneWordCache = keys;
+  queueMicrotask(() => doneWordCache = null);
+  return keys;
+}
+
+function cardWaiting(r) {
+  if (!r || r.uid === EXTRA_UID || !srsOf(r).reps) return false;
+  const words = vocabEntriesOf(r);
+  if (!words.length) return false;
+  const done = doneWordKeys();
+  return words.some(e => !done.has(e.key));
+}
+
+function cardReady(r, mode, now = Date.now()) {
+  return srsOf(r, mode).due <= now && !cardWaiting(r);
+}
+
 function cardBucket(r, mode, now = Date.now()) {
+  if (cardWaiting(r)) return "wait";
   return srsBucket(srsOf(r, mode), now);
 }
 
@@ -3748,6 +3798,10 @@ function newCardCount(mode) {
 
 function dueCardCount(mode) {
   return modeScopeRows(mode).filter(r => cardBucket(r, mode) === "due").length;
+}
+
+function waitCardCount(mode) {
+  return modeScopeRows(mode).filter(cardWaiting).length;
 }
 
 function doneCardCount(mode) {
@@ -3760,6 +3814,7 @@ function progressBadgesHtml(mode, currentIds) {
   const newN = allowed.filter(r => cardBucket(r, mode, now) === "new").length;
   const dueN = allowed.filter(r => cardBucket(r, mode, now) === "due").length;
   const doneN = isAllLessons() ? rows.filter(r => (hasAnswer(r) || vocabVideoIdFor(r)) && cardBucket(r, mode, now) === "done").length : doneCardCount(mode);
+  const waitN = isAllLessons() ? rows.filter(r => (hasAnswer(r) || vocabVideoIdFor(r)) && cardWaiting(r)).length : waitCardCount(mode);
   let active = {
     new: false,
     due: false,
@@ -3771,19 +3826,20 @@ function progressBadgesHtml(mode, currentIds) {
     const bucket = cardBucket(r, mode);
     if (bucket) active[bucket] = true;
   });
-  return badgesHtml(newN, dueN, doneN, active);
+  return badgesHtml(newN, dueN, doneN, active, waitN);
 }
 
-function badgesHtml(newN, dueN, doneN, active) {
+function badgesHtml(newN, dueN, doneN, active, waitN = 0) {
   if (countsShown && countsShown.id === currentLessonId && countsShown.mode === appMode && !(groupState && appMode !== "vocab")) {
     [ newN, dueN, doneN ] = [ countsShown.n.new, countsShown.n.due, countsShown.n.done ];
+    waitN = Math.max(waitN, countsShown.n.wait || 0);
     active = {
       new: newN > 0,
       due: dueN > 0,
       done: doneN > 0
     };
   }
-  return '<div class="progress-badges">' + '<span class="progress-badge new' + (active.new ? " active" : "") + '" title="New — never studied yet">🆕 ' + newN + "</span>" + '<span class="progress-badge due' + (active.due ? " active" : "") + '" title="Due — ready to review now">⏳ ' + dueN + "</span>" + '<span class="progress-badge done' + (active.done ? " active" : "") + '" title="Done — ' + DONE_STREAK + ' Good in a row">✅ ' + doneN + "</span>" + "</div>";
+  return '<div class="progress-badges">' + '<span class="progress-badge new' + (active.new ? " active" : "") + '" title="New — never studied yet"><i>🆕</i><b>' + newN + "</b></span>" + '<span class="progress-badge due' + (active.due ? " active" : "") + '" title="Due — ready to review now"><i>⏳</i><b>' + dueN + "</b></span>" + (waitN ? '<span class="progress-badge wait" title="Waiting — its words are still being learned in Vocabulary; it comes back once they are all Done"><i>🔒</i><b>' + waitN + "</b></span>" : "") + '<span class="progress-badge done' + (active.done ? " active" : "") + '" title="Done — ' + DONE_STREAK + ' Good in a row"><i>✅</i><b>' + doneN + "</b></span>" + "</div>";
 }
 
 function modeKey() {
@@ -3860,7 +3916,7 @@ function limitVocab(items) {
 
 function dueRows(mode) {
   const now = Date.now();
-  return limitRows(modeScopeRows(mode).filter(r => srsOf(r, mode).due <= now).sort(dueScoreCompare(mode)));
+  return limitRows(modeScopeRows(mode).filter(r => cardReady(r, mode, now)).sort(dueScoreCompare(mode)));
 }
 
 function singleCardQueue() {
@@ -4101,7 +4157,10 @@ function soundIsTts() {
 function updateSequenceBtnUI() {
   const btn = document.getElementById("btnPlaySequence");
   const speedSel = document.getElementById("playbackSpeed");
-  const show = on => [ btn, speedSel ].forEach(el => el.style.visibility = on ? "visible" : "hidden");
+  const show = on => {
+    [ btn, speedSel ].forEach(el => el.style.visibility = on ? "visible" : "hidden");
+    btn.parentElement.classList.toggle("idle", !on);
+  };
   const waiting = isAllLessons() || ytHasVideo || !!pendingVideoId;
   if (groupState && groupViewStyle === "ielts") {
     show(isAllLessons());
@@ -4371,11 +4430,13 @@ function finishText(held, done, next, word, states) {
 function showSessionCompletePanel() {
   const panel = document.getElementById("sessionCompletePanel");
   const now = Date.now();
-  const next = rows.filter(hasAnswer).map(r => srsOf(r, "Table")).filter(st => st.reps && !isDoneState(st) && st.due > now).map(st => st.due).sort((a, b) => a - b)[0];
-  const due = modeScopeRows(modeKey()).filter(r => srsOf(r, "Table").due <= now);
+  const next = rows.filter(r => hasAnswer(r) && !cardWaiting(r)).map(r => srsOf(r, "Table")).filter(st => st.reps && !isDoneState(st) && st.due > now).map(st => st.due).sort((a, b) => a - b)[0];
+  const due = modeScopeRows(modeKey()).filter(r => cardReady(r, "Table", now));
   const more = heldMore(due, limitRows(due), r => srsOf(r, "Table"));
   const held = more.total;
-  const text = finishText(held, studiedToday(rows, false), next, "card", modeScopeRows(modeKey()).map(r => srsOf(r, "Table")));
+  const waiting = modeScopeRows(modeKey()).filter(cardWaiting).length;
+  const text = finishText(held, studiedToday(rows, false), next, "card", modeScopeRows(modeKey()).filter(r => !cardWaiting(r)).map(r => srsOf(r, "Table")));
+  if (waiting) text.sub += ` · ${waiting} wait${waiting === 1 ? "s" : ""} for ${waiting === 1 ? "its" : "their"} words in Vocabulary`;
   panel.querySelector(".emoji").textContent = text.emoji;
   panel.querySelector(".session-complete-title").textContent = text.title;
   panel.querySelector(".session-complete-sub").textContent = text.sub;
@@ -4609,7 +4670,7 @@ function renderStudy() {
     const mode = countMode(rows);
     const counts = !caughtUp && modeScopeRows(mode).length > 0;
     progress.style.display = counts ? "" : "none";
-    progress.innerHTML = counts ? (n => badgesHtml(n.new, n.due, n.done, { new: n.new > 0, due: n.due > 0, done: n.done > 0 }))({ new: newCardCount(mode), due: dueCardCount(mode), done: doneCardCount(mode) }) : "";
+    progress.innerHTML = counts ? (n => badgesHtml(n.new, n.due, n.done, { new: n.new > 0, due: n.due > 0, done: n.done > 0 }, n.wait))({ new: newCardCount(mode), due: dueCardCount(mode), done: doneCardCount(mode), wait: waitCardCount(mode) }) : "";
   }
   const visibleRows = getVisibleRows();
   const singleCardRows = singleCard ? singleCardQueue() : visibleRows;
@@ -7603,7 +7664,7 @@ function limitIds(ids) {
 
 function makeGroups() {
   const now = Date.now();
-  const eligibleIds = modeScopeRows("Table").filter(r => srsOf(r, "Table").due <= now).map(r => r.id);
+  const eligibleIds = modeScopeRows("Table").filter(r => cardReady(r, "Table", now)).map(r => r.id);
   const groups = splitIntoGroups(limitIds(sortIdsByDueScore(eligibleIds)));
   return groups.length ? groups : [ [] ];
 }
@@ -7789,7 +7850,7 @@ function mixCandidates() {
     return video.get(r.srcLessonId);
   };
   const playable = r => !!vocabVideoIdFor(r) && !unplayableVideos.has(vocabVideoIdFor(r));
-  return limitRows(rows.filter(r => srsOf(r).due <= now && (hasAnswer(r) || isVideo(r) && playable(r)))).map(r => [ r, !isVideo(r) ? "ielts" : "listen" ]);
+  return limitRows(rows.filter(r => cardReady(r, "Table", now) && (hasAnswer(r) || isVideo(r) && playable(r)))).map(r => [ r, !isVideo(r) ? "ielts" : "listen" ]);
 }
 
 function mixShow(row, style) {
@@ -10331,7 +10392,7 @@ function fairyTarget() {
 
 let countsShown = null;
 
-const COUNT_KINDS = [ "new", "due", "done" ];
+const COUNT_KINDS = [ "new", "due", "wait", "done" ];
 
 function countEls() {
   return groupState && appMode !== "vocab" ? [] : [ ...document.querySelectorAll(".main-inner .progress-badges > .progress-badge") ];
@@ -10340,8 +10401,9 @@ function countEls() {
 function paintCounts(n) {
   countEls().forEach(el => {
     const kind = COUNT_KINDS.find(k => el.classList.contains(k));
-    el.textContent = el.textContent.replace(/\d+/, n[kind]);
-    if (el.classList.contains("progress-badge")) el.classList.toggle("active", n[kind] > 0);
+    const num = el.querySelector("b");
+    if (num) num.textContent = n[kind] || 0;
+    if (el.classList.contains("progress-badge")) el.classList.toggle("active", kind !== "wait" && n[kind] > 0);
   });
 }
 
@@ -10837,11 +10899,7 @@ function resetLessonProgress() {
   commitActiveEdit();
   haltAllPlayback();
   pushUndo("Reset progress — " + name);
-  const before = {
-    new: newCardCount("Table"),
-    due: dueCardCount("Table"),
-    done: doneCardCount("Table")
-  };
+  const before = currentCounts();
   const at = Date.now();
   rows.forEach(r => {
     r.srs = {
@@ -10860,11 +10918,7 @@ function resetLessonProgress() {
   updateGroupUI();
   render();
   scheduleAutoSave();
-  fairyDust(before, {
-    new: newCardCount("Table"),
-    due: dueCardCount("Table"),
-    done: doneCardCount("Table")
-  });
+  fairyDust(before, currentCounts());
   showToast("All cards are New again");
 }
 
@@ -11186,18 +11240,19 @@ function sortedLibrary() {
 
 function lessonCounts(lesson) {
   const now = Date.now();
-  let due = 0, fresh = 0, done = 0;
+  let due = 0, fresh = 0, done = 0, wait = 0;
   const mode = countMode(lesson.cards);
   lesson.cards.forEach(c => {
     if (!cardInMode(c, mode)) return;
     const bucket = cardBucket(c, mode, now);
-    if (bucket === "due") due++; else if (bucket === "new") fresh++; else if (bucket === "done") done++;
+    if (bucket === "due") due++; else if (bucket === "new") fresh++; else if (bucket === "done") done++; else if (bucket === "wait") wait++;
   });
   return {
     total: lesson.cards.length,
     due: due,
     fresh: fresh,
-    done: done
+    done: done,
+    wait: wait
   };
 }
 
@@ -11215,13 +11270,13 @@ function lessonCountsFor(lesson) {
 }
 
 function lessonTileTip(name, c) {
-  return name + "\n" + c.total + "  |  🆕 " + c.fresh + "   ⏳ " + c.due + "   ✅ " + c.done;
+  return name + "\n" + c.total + "  |  🆕 " + c.fresh + "   ⏳ " + c.due + (c.wait ? "   🔒 " + c.wait : "") + "   ✅ " + c.done;
 }
 
 function lessonTileBar(c) {
-  const later = Math.max(0, c.total - c.fresh - c.due - c.done);
+  const later = Math.max(0, c.total - c.fresh - c.due - (c.wait || 0) - c.done);
   const part = (cls, n) => n ? `<span class="${cls}" style="flex-grow:${n}"></span>` : "";
-  return `<span class="lesson-tile-bar">${part("new", c.fresh)}${part("due", c.due)}${part("later", later)}${part("done", c.done)}</span>`;
+  return `<span class="lesson-tile-bar">${part("new", c.fresh)}${part("due", c.due)}${part("wait", c.wait)}${part("later", later)}${part("done", c.done)}</span>`;
 }
 
 function updateLessonListItem(lesson) {
@@ -14741,10 +14796,10 @@ function allVocabCards() {
 
 function allItemHtml(name, c, active) {
   const tip = lessonTileTip(name, c);
-  const later = Math.max(0, c.total - c.fresh - c.due - c.done);
-  const sum = c.fresh + c.due + later + c.done;
+  const later = Math.max(0, c.total - c.fresh - c.due - (c.wait || 0) - c.done);
+  const sum = c.fresh + c.due + (c.wait || 0) + later + c.done;
   let at = 0;
-  const stops = sum ? [ [ "new", c.fresh ], [ "due", c.due ], [ "later", later ], [ "done", c.done ] ].filter(([ , n ]) => n).map(([ k, n ], i, all) => {
+  const stops = sum ? [ [ "new", c.fresh ], [ "due", c.due ], [ "wait", c.wait || 0 ], [ "later", later ], [ "done", c.done ] ].filter(([ , n ]) => n).map(([ k, n ], i, all) => {
     const from = at;
     at = i === all.length - 1 ? 100 : Math.round(at + n / sum * 100);
     return `var(--bar-${k}) ${from}% ${at}%`;
@@ -14761,7 +14816,8 @@ function allLessonsItemHtml() {
     total: 0,
     fresh: 0,
     due: 0,
-    done: 0
+    done: 0,
+    wait: 0
   };
   modeLibrary("cards").forEach(l => {
     const one = lessonCounts(l.id === currentLessonId ? Object.assign({}, l, {
