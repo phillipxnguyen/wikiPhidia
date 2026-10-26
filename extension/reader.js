@@ -10,7 +10,8 @@
     highlight: true,
     shift: true,
     youtube: true,
-    pick: "button"
+    pick: "button",
+    enabled: true
   };
   const CJK = /[㐀-鿿豈-﫿]/;
   const KANA = /[぀-ヿ]/;
@@ -25,6 +26,8 @@
 
   const norm = s => (s || "").replace(/\s+/g, " ").trim().toLowerCase();
   const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" })[c]);
+  const on = () => settings.enabled !== false;
+  const marking = () => on() && settings.highlight;
   const langOf = s => KANA.test(s) ? "ja" : CJK.test(s) ? "zh" : HANGUL.test(s) ? "ko" : "";
   const alive = () => {
     try {
@@ -141,7 +144,7 @@ textarea[hidden], .sent-view[hidden]{display:none;}
   }
 
   function highlightIn(scope, re = matcher, now = false) {
-    if (!re || !settings.highlight || !scope) return;
+    if (!re || !marking() || !scope) return;
     const walker = document.createTreeWalker(scope, NodeFilter.SHOW_TEXT, {
       acceptNode: n => n.nodeValue.trim().length && n.parentElement && !skipNode(n.parentElement) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT
     });
@@ -187,11 +190,11 @@ textarea[hidden], .sent-view[hidden]{display:none;}
   function refresh() {
     observer.disconnect();
     rebuildKnown();
-    if (!settings.highlight) unwrapAll(); else document.querySelectorAll("wkp-hl").forEach(el => {
+    if (!marking()) unwrapAll(); else document.querySelectorAll("wkp-hl").forEach(el => {
       const k = known.get(norm(el.textContent));
       if (!k) el.replaceWith(document.createTextNode(el.textContent)); else if (el.dataset.state !== k.state) el.dataset.state = k.state;
     });
-    if (settings.highlight && matcher) {
+    if (marking() && matcher) {
       if (!hlStyle.isConnected) (document.head || document.documentElement).appendChild(hlStyle);
       if (!markedKeys) highlightIn(document.body); else {
         const fresh = [ ...known.entries() ].filter(([ key ]) => !markedKeys.has(key)).map(([ , k ]) => k.term);
@@ -223,7 +226,7 @@ textarea[hidden], .sent-view[hidden]{display:none;}
     }, 700);
   });
   const watch = () => {
-    if (document.body && settings.highlight) observer.observe(document.body, { childList: true, subtree: true });
+    if (document.body && marking()) observer.observe(document.body, { childList: true, subtree: true });
   };
 
   let tip = null;
@@ -571,7 +574,7 @@ textarea[hidden], .sent-view[hidden]{display:none;}
   }, true);
   document.addEventListener("keyup", e => {
     if (gone()) return;
-    if (e.key !== "Shift" || !shiftAlone || !settings.shift) return;
+    if (e.key !== "Shift" || !shiftAlone || !settings.shift || !on()) return;
     shiftAlone = false;
     if (card) {
       if (cardTranslate) cardTranslate();
@@ -585,7 +588,7 @@ textarea[hidden], .sent-view[hidden]{display:none;}
     if (gone() || e.composedPath().includes(host)) return;
     setTimeout(() => {
       const found = selectedText();
-      if (!found) hidePick(); else if (settings.pick === "open") openCard(found.text, found.range); else showPick(found);
+      if (!found || !on()) hidePick(); else if (settings.pick === "open") openCard(found.text, found.range); else showPick(found);
     }, 10);
   }, true);
 
@@ -605,7 +608,7 @@ textarea[hidden], .sent-view[hidden]{display:none;}
   const ytVideo = () => /(^|\.)youtube\.com$/.test(location.hostname) && (new URL(location.href).searchParams.get("v") || /\/(shorts|live)\/[\w-]{11}/.test(location.pathname));
   function syncYouTube() {
     if (gone()) return;
-    const show = ytVideo() && settings.youtube !== false;
+    const show = ytVideo() && settings.youtube !== false && on();
     if (!show) {
       if (ytBtn) ytBtn.remove();
       ytBtn = null;
@@ -634,7 +637,7 @@ textarea[hidden], .sent-view[hidden]{display:none;}
 
   chrome.runtime.onMessage.addListener(msg => {
     if (msg && msg.type === "toast") toast(msg.text);
-    if (msg && msg.type === "open") {
+    if (msg && msg.type === "open" && on()) {
       const found = selectedText();
       openCard(found ? found.text : msg.text, found ? found.range : null);
     }
@@ -647,6 +650,10 @@ textarea[hidden], .sent-view[hidden]{display:none;}
     if (changes.pending) pending = changes.pending.newValue || [];
     if (changes.settings || changes.app || changes.pending) rescan();
     if (changes.settings) syncYouTube();
+    if (changes.settings && !on()) {
+      hidePick();
+      if (card) closeCard();
+    }
   });
 
   chrome.storage.local.get([ "settings", "app", "pending" ]).then(data => {

@@ -6,6 +6,7 @@ const DEFAULTS = {
   shift: true,
   youtube: true,
   pick: "button",
+  enabled: true,
   appUrl: "https://phillipxnguyen.github.io/wikiPhidia/"
 };
 
@@ -54,6 +55,8 @@ function paintSettings() {
   const s = state.settings;
   $("lang").value = s.lang;
   $("highlight").checked = !!s.highlight;
+  $("enabled").checked = s.enabled !== false;
+  document.body.classList.toggle("off", s.enabled === false);
   document.querySelectorAll(".pick-mode").forEach(b => {
     b.classList.toggle("on", b.dataset.pick === s.pick);
     b.setAttribute("aria-checked", b.dataset.pick === s.pick);
@@ -112,6 +115,7 @@ $("pendingList").addEventListener("change", async e => {
   await chrome.storage.local.set({ pending: state.pending });
 });
 
+$("enabled").addEventListener("change", e => saveSettings({ enabled: e.target.checked }).then(paintSettings));
 [ "highlight", "shift", "youtube" ].forEach(id => $(id).addEventListener("change", e => saveSettings({ [id]: e.target.checked })));
 document.querySelectorAll(".pick-mode").forEach(b => b.addEventListener("click", () => saveSettings({ pick: b.dataset.pick }).then(paintSettings)));
 $("lang").addEventListener("change", e => saveSettings({ lang: e.target.value }));

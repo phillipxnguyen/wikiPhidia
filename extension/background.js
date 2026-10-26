@@ -6,6 +6,7 @@ const DEFAULTS = {
   shift: true,
   youtube: true,
   pick: "button",
+  enabled: true,
   appUrl: "https://phillipxnguyen.github.io/wikiPhidia/"
 };
 
@@ -203,9 +204,10 @@ async function checkUpdate() {
 
 async function paintBadge() {
   const { pending, update } = await chrome.storage.local.get([ "pending", "update" ]);
+  const off = (await settings()).enabled === false;
   const n = (pending || []).length;
-  await chrome.action.setBadgeBackgroundColor({ color: n || !update ? "#1e9466" : "#2f6fd6" });
-  await chrome.action.setBadgeText({ text: n ? String(n) : update ? "↑" : "" });
+  await chrome.action.setBadgeBackgroundColor({ color: off ? "#8792a2" : n || !update ? "#1e9466" : "#2f6fd6" });
+  await chrome.action.setBadgeText({ text: off ? "off" : n ? String(n) : update ? "↑" : "" });
 }
 
 async function injectOpenTabs() {
@@ -242,7 +244,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 });
 
 chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === "local" && (changes.pending || changes.update)) paintBadge();
+  if (area === "local" && (changes.pending || changes.update || changes.settings)) paintBadge();
 });
 
 chrome.runtime.onMessage.addListener((msg, sender, reply) => {

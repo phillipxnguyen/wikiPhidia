@@ -20,7 +20,7 @@ A browser only updates an extension fully by itself when it comes from the Chrom
 
 ## Reading
 
-- **Select a word or phrase** on any page. At the top of **Settings** you choose what happens then, with two big buttons: **Show the 字 button** (the default: a round green 字 appears next to the selection; click it, or press **Shift**, the same key that adds a word inside wikiPhidia) or **Open the card at once** (the card opens as soon as you let go of the mouse, nothing else to click). Right-click → **Add “…” to wikiPhidia** works too.
+- **Select a word or phrase** on any page. Right under the popup's header you choose what happens then, with two small icons side by side: **字** (the default: a round green 字 appears next to the selection; click it, or press **Shift**, the same key that adds a word inside wikiPhidia) or **⚡** (the card opens as soon as you let go of the mouse, nothing else to click). Right-click → **Add “…” to wikiPhidia** works too.
 - A card opens next to the word:
   - the word (you can edit it), its **pinyin** for Chinese, and beside it 🔊 to hear it, the translate button to translate the sentence (again to hide it; **Shift** while the card is open does the same), and ✕;
   - the meaning, translated already into your language (Vietnamese by default), with other meanings as chips to pick from; type over it freely;
@@ -43,11 +43,12 @@ On any YouTube video, click the green **字 Make a lesson** button in the bottom
 
 ## The popup
 
+- **On / Off**, the switch right under the header, beside the 字 and ⚡ icons: Off turns the extension off on every page at once (no 字 button, no card, no Shift, no marked words, no YouTube button; the icon shows a grey *off*), and On brings it all back. Words already waiting still go into wikiPhidia either way.
 Each word sits in its own box, and the hint under the list in a tinted box, so the words are easy to tell apart.
 
 - **To send**: the words waiting, with their meaning editable and ✕ to drop one.
 - **Recent**: the last words sent, marked *Added* or *Already there*.
-- **Settings**: what selecting a word does (the 字 button or the card at once), the language of the meanings, the lesson new words go into (🆕 New lesson, named after each article, or one of yours), marking known words on pages, Shift, the YouTube button, and the app's address (change it if you run wikiPhidia somewhere else; local copies on `localhost`, `127.0.0.1` or a file whose path contains `wikiPhidia` connect too).
+- **Settings**: the language of the meanings, the lesson new words go into (🆕 New lesson, named after each article, or one of yours), marking known words on pages, Shift, the YouTube button, and the app's address (change it if you run wikiPhidia somewhere else; local copies on `localhost`, `127.0.0.1` or a file whose path contains `wikiPhidia` connect too).
 
 ## Privacy
 
