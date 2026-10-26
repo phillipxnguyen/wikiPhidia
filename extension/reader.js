@@ -52,7 +52,7 @@
 .icon:hover{background:var(--bg-2);color:var(--ink);}
 .reading{margin-top:2px;font-size:14px;line-height:20px;color:var(--green);}
 .reading:empty{display:none;}
-label{display:block;margin:12px 0 4px;font-size:12px;line-height:16px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);}
+label{display:block;margin:12px 0 4px;font-size:10px;line-height:14px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);}
 .field{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit;font-size:16px;line-height:22px;outline:none;resize:none;}
 .field:focus{border-color:var(--green);box-shadow:0 0 0 3px var(--green-soft);}
 textarea.field{font-size:14px;line-height:20px;}
@@ -63,7 +63,6 @@ textarea.field{font-size:14px;line-height:20px;}
 .sent-view{padding:8px 10px;border-radius:8px;background:var(--bg-2);font-size:16px;line-height:24px;color:var(--ink);cursor:text;}
 .sent-view mark{padding:0 2px;border-radius:4px;background:var(--green-soft);box-shadow:inset 0 -2px 0 var(--green);color:inherit;font-weight:700;}
 textarea[hidden], .sent-view[hidden]{display:none;}
-label .link{margin-left:6px;font-size:11px;line-height:16px;letter-spacing:0;text-transform:none;font-weight:600;}
 .sub{margin-top:4px;font-size:13px;line-height:18px;color:var(--ink-2);}
 .sub:empty{display:none;}
 .link{padding:0;border:0;background:none;color:var(--green);font:inherit;font-size:13px;line-height:18px;cursor:pointer;}
@@ -76,7 +75,6 @@ label .link{margin-left:6px;font-size:11px;line-height:16px;letter-spacing:0;tex
 .btn[disabled]{opacity:.5;cursor:default;filter:none;}
 .ghost{background:none;color:var(--ink-2);font-weight:600;}
 .ghost:hover{background:var(--bg-2);color:var(--ink);filter:none;}
-.keys{margin-top:8px;font-size:12px;line-height:16px;color:var(--ink-2);}
 .tip{position:fixed;max-width:280px;padding:6px 10px;border-radius:8px;background:#1d2330;color:#fff;font-size:13px;line-height:18px;box-shadow:0 6px 18px rgba(0,0,0,.25);pointer-events:none;}
 .tip b{font-weight:700;}
 .tip small{display:block;color:#aab3c2;font-size:12px;line-height:16px;}
@@ -366,10 +364,9 @@ label .link{margin-left:6px;font-size:11px;line-height:16px;letter-spacing:0;tex
     card.innerHTML = `<div class="head"><input class="term" spellcheck="false" aria-label="Word"><button class="icon say" title="Listen" aria-label="Listen">🔊</button><button class="icon close" title="Close (Esc)" aria-label="Close">✕</button></div>
 <div class="reading"></div>
 <label>Meaning</label><input class="field meaning" placeholder="Translating…" aria-label="Meaning"><div class="alts"></div>
-<label>Sentence <button class="link edit-sent">Edit</button></label><div class="sent-view"></div><textarea class="field sentence" rows="3" aria-label="Sentence" hidden></textarea><div class="sub sent-tr"></div><button class="link tr-btn">Translate the sentence</button>
+<label>Sentence</label><div class="sent-view"></div><textarea class="field sentence" rows="3" aria-label="Sentence" hidden></textarea><div class="sub sent-tr"></div><button class="link tr-btn">Translate the sentence</button>
 <div class="note"></div>
-<div class="foot"><select class="lesson" aria-label="Lesson">${lessonOptions()}</select><button class="btn ghost cancel">Cancel</button><button class="btn add">Add</button></div>
-<div class="keys">Enter adds · Esc closes · words go into Vocabulary next time wikiPhidia is open</div>`;
+<div class="foot"><select class="lesson" aria-label="Lesson">${lessonOptions()}</select><button class="btn add">Add</button></div>`;
     wrap.appendChild(card);
     const $ = s => card.querySelector(s);
     const termEl = $(".term"), meaningEl = $(".meaning"), sentEl = $(".sentence"), readingEl = $(".reading"), note = $(".note");
@@ -385,17 +382,14 @@ label .link{margin-left:6px;font-size:11px;line-height:16px;letter-spacing:0;tex
     const editSentence = () => {
       sentView.hidden = true;
       sentEl.hidden = false;
-      $(".edit-sent").hidden = true;
       sentEl.focus();
     };
     paintSentence();
     sentView.addEventListener("click", editSentence);
-    $(".edit-sent").addEventListener("click", editSentence);
     sentEl.addEventListener("blur", () => {
       paintSentence();
       sentEl.hidden = true;
       sentView.hidden = false;
-      $(".edit-sent").hidden = false;
     });
     cardWord = { term, url: location.href, title: articleTitle() };
     const showReading = () => {
@@ -460,7 +454,6 @@ label .link{margin-left:6px;font-size:11px;line-height:16px;letter-spacing:0;tex
     });
     $(".say").addEventListener("click", () => speak(termEl.value.trim()));
     $(".close").addEventListener("click", closeCard);
-    $(".cancel").addEventListener("click", closeCard);
     $(".tr-btn").addEventListener("click", () => {
       const btn = $(".tr-btn");
       btn.textContent = "Translating…";
@@ -516,7 +509,7 @@ label .link{margin-left:6px;font-size:11px;line-height:16px;letter-spacing:0;tex
       list.push(word);
       await chrome.storage.local.set({ pending: list });
       closeCard();
-      toast(`“${t}” saved · it goes into ${word.lessonName} when wikiPhidia is open`);
+      toast(word.meaning ? `${t}: ${word.meaning}` : t);
     }
   }
 

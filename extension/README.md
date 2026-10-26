@@ -22,9 +22,9 @@ A browser only updates an extension fully by itself when it comes from the Chrom
 - A card opens next to the word:
   - the word (you can edit it), its **pinyin** for Chinese, and 🔊 to hear it;
   - **Meaning**, translated already into your language (Vietnamese by default), with other meanings as chips to pick from; type over it freely;
-  - **Sentence**, the sentence around the word taken from the page, with the word marked in it; click it (or **Edit**) to change it, and **Translate the sentence** if you need it;
+  - **Sentence**, the sentence around the word taken from the page, with the word marked in it; click it to change it, and **Translate the sentence** if you need it;
   - the **lesson** the word goes into: by default a lesson named after the article you are reading (made for you in Vocabulary the first time, then reused for every word from that article), or any of your lessons, or **New lesson…**. In Settings, **Words go into** can instead send every word to one lesson of your choice.
-  - **Enter** adds the word, **Esc** closes.
+  - **Enter** or **Add** saves the word, and a short note says `word: meaning`; anything else (Esc, ✕, a click outside the card) closes it without saving.
 - A word you already have says so on the card (which lesson, what it means) instead of adding it twice.
 
 ## Words you already have
