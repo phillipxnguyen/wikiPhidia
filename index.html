@@ -482,7 +482,7 @@ window.onYouTubeIframeAPIReady = function(){
   .lesson-list .lesson-group{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
   .lesson-list .lesson-item.all-vocab{grid-column:1 / -1;}
   .lesson-item.tile{position:relative;gap:4px;min-width:0;padding:5px;border-color:var(--border);background:var(--surface);}
-  .tile-new{position:absolute;top:-8px;right:-8px;z-index:2;box-sizing:border-box;min-width:24px;height:24px;padding:0 6px;border:2px solid var(--surface-2);border-radius:12px;background:var(--badge);color:#fff;font-size:12px;line-height:20px;font-weight:700;text-align:center;font-variant-numeric:tabular-nums;box-shadow:0 2px 6px color-mix(in srgb, var(--badge) 35%, transparent);pointer-events:none;animation:tileNewIn .35s cubic-bezier(.3,1.6,.5,1);}
+  .tile-new{position:absolute;top:-8px;right:-8px;z-index:2;box-sizing:border-box;min-width:24px;height:24px;padding:0 2px;border:2px solid var(--surface-2);border-radius:12px;background:var(--badge);color:#fff;font-size:12px;line-height:20px;font-weight:700;text-align:center;font-variant-numeric:tabular-nums;box-shadow:0 2px 6px color-mix(in srgb, var(--badge) 35%, transparent);pointer-events:none;animation:tileNewIn .35s cubic-bezier(.3,1.6,.5,1);}
   @keyframes tileNewIn{from{transform:scale(0);}to{transform:scale(1);}}
   @media (prefers-reduced-motion: reduce){.tile-new{animation:none;}}
   @media (hover:hover){.lesson-item.tile:hover{background:color-mix(in srgb, var(--accent) 6%, var(--surface));border-color:var(--border);}}
@@ -538,7 +538,7 @@ window.onYouTubeIframeAPIReady = function(){
     .brand-stack-in > button[hidden]{display:none;}
     .brand-stack-in > button:hover, .brand-stack-in > button:focus-visible{z-index:4;transform:scale(1.25);box-shadow:0 0 0 2px var(--surface), 0 4px 12px rgba(20,30,50,.18);}
     #streakChipCount{display:none;}
-    #testNavCount{position:absolute;top:-10px;left:-10px;box-sizing:border-box;min-width:24px;height:24px;padding:0 6px;border:2px solid var(--surface);border-radius:12px;font-size:12px;line-height:20px;font-weight:700;text-align:center;font-variant-numeric:tabular-nums;color:#fff;background:var(--badge);box-shadow:0 2px 6px color-mix(in srgb, var(--badge) 35%, transparent);}
+    #testNavCount{position:absolute;top:-10px;left:-10px;box-sizing:border-box;min-width:24px;height:24px;padding:0 2px;border:2px solid var(--surface);border-radius:12px;font-size:12px;line-height:20px;font-weight:700;text-align:center;font-variant-numeric:tabular-nums;color:#fff;background:var(--badge);box-shadow:0 2px 6px color-mix(in srgb, var(--badge) 35%, transparent);}
   }
   @media (max-width:600px){
     .shell .lesson-header{flex-wrap:wrap;}
@@ -11293,6 +11293,10 @@ function lessonCounts(lesson) {
   };
 }
 
+function badgeCount(n) {
+  return n > 99 ? "99+" : String(n);
+}
+
 function countOf(n, word) {
   return n + " " + word + (n === 1 ? "" : "s");
 }
@@ -11404,7 +11408,7 @@ function buildLessonList() {
     const name = l.name || "Untitled lesson";
     const c = lessonCountsFor(l);
     const tip = lessonTileTip(name, c);
-    return `<button class="lesson-item tile${active ? " active" : ""}" data-lesson-id="${escapeAttr(l.id)}" data-tip="${escapeAttr(tip)}" aria-label="${escapeAttr(tip.replace("\n", ", "))}"${active ? ' aria-current="page"' : ""}>` + lessonThumbHtml(l) + (l.unseen && !active ? `<span class="tile-new" aria-label="${countOf(Number(l.unseen) || 1, "new word")}">+${Math.min(99, Number(l.unseen) || 1)}</span>` : "") + `<span class="lesson-item-name">${escapeHtml(name)}</span>` + lessonTileBar(c) + "</button>";
+    return `<button class="lesson-item tile${active ? " active" : ""}" data-lesson-id="${escapeAttr(l.id)}" data-tip="${escapeAttr(tip)}" aria-label="${escapeAttr(tip.replace("\n", ", "))}"${active ? ' aria-current="page"' : ""}>` + lessonThumbHtml(l) + (l.unseen && !active ? `<span class="tile-new" aria-label="${countOf(Number(l.unseen) || 1, "new word")}">${badgeCount(Number(l.unseen) || 1)}</span>` : "") + `<span class="lesson-item-name">${escapeHtml(name)}</span>` + lessonTileBar(c) + "</button>";
   };
   if (q) {
     list.innerHTML = `<div class="lesson-group lessons">${items.map(itemHtml).join("")}</div>`;
@@ -17840,7 +17844,7 @@ function syncTestNav() {
   const bank = testBank();
   const going = bank.filter(t => t.status === "active").length;
   const due = bank.filter(testDue).length;
-  document.getElementById("testNavCount").textContent = going + due ? "+" + Math.min(99, going + due) : "";
+  document.getElementById("testNavCount").textContent = going + due ? badgeCount(going + due) : "";
   chip.classList.toggle("active", currentView === "test");
   chip.classList.toggle("due", due > 0);
   chip.title = `Tests — ${going} in progress, ${due} due`;
