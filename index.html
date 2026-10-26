@@ -2118,7 +2118,10 @@ function haltAllPlayback() {
   pauseVideoProgrammatically();
 }
 
+let externalPauseAt = 0;
+
 function haltPlaybackTrackingForExternalPause() {
+  externalPauseAt = Date.now();
   passThen = null;
   isSequencePlaying = false;
   sequenceIndex = 0;
@@ -14956,7 +14959,27 @@ function releaseCurtain(curtain) {
   curtain.classList.add("opening");
   const queue = curtainQueue;
   curtainQueue = [];
+  curtain.started = queue;
+  curtain.startedAt = Date.now();
   queue.forEach(fn => fn());
+}
+
+function soundRunning() {
+  if (ttsPlaying || vocabTtsOn && speechSynthesis.speaking) return true;
+  const state = ytPlayer && ytReady && typeof ytPlayer.getPlayerState === "function" ? ytPlayer.getPlayerState() : null;
+  return state === YT.PlayerState.PLAYING || state === YT.PlayerState.BUFFERING;
+}
+
+function confirmCurtainSound(curtain) {
+  const started = curtain.started;
+  if (!started || !started.length || soundRunning()) return;
+  if ((isSequencePlaying || loopingRowId !== null) && ytPlayer && ytReady) {
+    unmuteNow();
+    ytPlayer.playVideo();
+  } else if (externalPauseAt >= curtain.startedAt || !soundHeard) started.forEach(fn => fn());
+  setTimeout(() => {
+    if (!soundRunning() && (isSequencePlaying || loopingRowId !== null)) soundBlocked = true;
+  }, 1500);
 }
 
 function raiseAllCurtain() {
@@ -15061,6 +15084,7 @@ function allCurtain(item) {
     removeEventListener("resize", place);
     unblock();
     curtain.remove();
+    setTimeout(() => confirmCurtainSound(curtain), 300);
   };
   Promise.all(shut).then(() => {
     sway = sides.map((el, i) => el.animate([ {
