@@ -75,9 +75,10 @@ textarea[hidden], .sent-view[hidden]{display:none;}
 .btn[disabled]{opacity:.5;cursor:default;filter:none;}
 .ghost{background:none;color:var(--ink-2);font-weight:600;}
 .ghost:hover{background:var(--bg-2);color:var(--ink);filter:none;}
-.tip{position:fixed;max-width:280px;padding:6px 10px;border-radius:8px;background:#1d2330;color:#fff;font-size:13px;line-height:18px;box-shadow:0 6px 18px rgba(0,0,0,.25);pointer-events:none;}
+.tip{position:fixed;max-width:280px;padding:8px 12px;border-radius:8px;background:#1d2330;color:#fff;font-size:13px;line-height:18px;box-shadow:0 6px 18px rgba(0,0,0,.25);pointer-events:none;}
 .tip b{font-weight:700;}
-.tip small{display:block;color:#aab3c2;font-size:12px;line-height:16px;}
+.tip .tip-m{margin-top:4px;}
+.tip small{display:block;margin-top:6px;color:#aab3c2;font-size:12px;line-height:16px;}
 .yt{position:fixed;left:16px;bottom:16px;display:flex;align-items:center;gap:8px;height:40px;padding:0 16px 0 6px;border:0;border-radius:20px;background:var(--green);color:#fff;font:700 14px/20px Inter, system-ui, sans-serif;box-shadow:0 6px 18px rgba(0,0,0,.3);cursor:pointer;}
 .yt:hover{filter:brightness(1.08);}
 .yt span{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:14px;background:rgba(255,255,255,.2);font-size:16px;line-height:20px;}
@@ -222,7 +223,7 @@ textarea[hidden], .sent-view[hidden]{display:none;}
       wrap.appendChild(tip);
     }
     const reading = langOf(k.term) === "zh" && window.pinyinPro ? pinyinPro.pinyin(k.term) : "";
-    tip.innerHTML = `<b>${esc(k.term)}</b>${reading ? " · " + esc(reading) : ""}<br>${esc(k.meaning || "—")}<small>${k.state === "pending" ? "Waiting to be sent to wikiPhidia" : "In wikiPhidia · " + esc(k.lesson)}</small>`;
+    tip.innerHTML = `<b>${esc(k.term)}</b>${reading ? " · " + esc(reading) : ""}<div class="tip-m">${esc(k.meaning || "—")}</div>${k.lesson ? `<small>${esc(k.lesson)}</small>` : ""}`;
     const r = mark.getBoundingClientRect();
     const w = Math.min(280, tip.offsetWidth);
     tip.style.left = Math.round(Math.max(8, Math.min(innerWidth - w - 8, r.left))) + "px";

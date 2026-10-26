@@ -29,7 +29,7 @@ A browser only updates an extension fully by itself when it comes from the Chrom
 
 ## Words you already have
 
-Every page marks the words that are already in wikiPhidia, the way the app does: green for words in the app, grey for words waiting to be sent. Point at one to see its pinyin, meaning and lesson. Turn this off in Settings if you prefer a clean page.
+Every page marks the words that are already in wikiPhidia, the way the app does: green for words in the app, grey for words waiting to be sent. Point at one to see its pinyin, meaning and, under them, the lesson it is in. Turn this off in Settings if you prefer a clean page.
 
 ## Getting the words into wikiPhidia
 
