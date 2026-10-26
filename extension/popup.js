@@ -135,7 +135,7 @@ chrome.tabs.query({ active: true, currentWindow: true }).then(([ tab ]) => {
   try {
     const u = new URL(tab.url);
     video = /(^|\.)youtube\.com$/.test(u.hostname) && (!!u.searchParams.get("v") || /\/(shorts|live)\/[\w-]{11}/.test(u.pathname));
-  } catch (e) {}
+  } catch {}
   if (!video) return;
   $("ytTitle").textContent = (tab.title || "").replace(/ - YouTube$/, "");
   $("ytLesson").hidden = false;

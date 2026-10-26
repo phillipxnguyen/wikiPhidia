@@ -29,7 +29,7 @@
   const alive = () => {
     try {
       return !!chrome.runtime.id;
-    } catch (e) {
+    } catch {
       return false;
     }
   };
@@ -109,7 +109,7 @@ textarea[hidden], .sent-view[hidden]{display:none;}
     };
     try {
       matcher = new RegExp(terms.map(part).join("|"), "giu");
-    } catch (e) {
+    } catch {
       matcher = null;
     }
   }
@@ -173,8 +173,11 @@ textarea[hidden], .sent-view[hidden]{display:none;}
     clearTimeout(rescanTimer);
     rescanTimer = setTimeout(() => {
       observer.disconnect();
-      unwrapAll();
       rebuildKnown();
+      if (!settings.highlight) unwrapAll(); else document.querySelectorAll("wkp-hl").forEach(el => {
+        const k = known.get(norm(el.textContent));
+        if (!k) el.replaceWith(document.createTextNode(el.textContent)); else if (el.dataset.state !== k.state) el.dataset.state = k.state;
+      });
       if (settings.highlight && matcher) {
         if (!hlStyle.isConnected) (document.head || document.documentElement).appendChild(hlStyle);
         highlightIn(document.body);
@@ -248,7 +251,7 @@ textarea[hidden], .sent-view[hidden]{display:none;}
       pre.setStart(block, 0);
       pre.setEnd(range.startContainer, range.startOffset);
       start = pre.toString().replace(/\s+/g, " ").length;
-    } catch (e) {
+    } catch {
       start = all.indexOf(text);
     }
     const near = all.indexOf(text, Math.max(0, start - 40));

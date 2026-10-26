@@ -51,7 +51,7 @@ function sameApp(tabUrl, appUrl) {
   try {
     const a = new URL(appUrl), t = new URL(tabUrl);
     return a.origin === t.origin && t.pathname.toLowerCase().startsWith(a.pathname.toLowerCase().replace(/index\.html$/, ""));
-  } catch (e) {
+  } catch {
     return false;
   }
 }
@@ -78,7 +78,7 @@ async function grabTracks() {
     try {
       const m = (await (await fetch("/watch?v=" + id)).text()).match(/ytInitialPlayerResponse\s*=\s*(\{.+?\});\s*(?:var|<\/script)/s);
       resp = m ? JSON.parse(m[1]) : null;
-    } catch (e) {
+    } catch {
       resp = null;
     }
   }
@@ -100,7 +100,7 @@ async function grabTracks() {
         t: e.tStartMs / 1e3,
         s: e.segs.map(x => x.utf8).join("").replace(/\s+/g, " ").trim()
       })).filter(e => e.s);
-    } catch (e) {
+    } catch {
       return [];
     }
   };
@@ -122,14 +122,14 @@ async function grabTracks() {
       try {
         player.loadModule("captions");
         player.setOption("captions", "track", { languageCode: (guess || tracks[0]).languageCode });
-      } catch (e) {}
+      } catch {}
       for (let n = 0; n < 30 && !url; n++) {
         await new Promise(r => setTimeout(r, 200));
         url = signed();
       }
       try {
         player.setOption("captions", "track", was && was.languageCode ? was : {});
-      } catch (e) {}
+      } catch {}
     }
     if (url) {
       const q = new URL(url, location.href).searchParams;
@@ -197,7 +197,7 @@ async function checkUpdate() {
     const latest = (await res.json()).version;
     const mine = chrome.runtime.getManifest().version;
     await chrome.storage.local.set({ update: newer(latest, mine) ? { version: latest, at: Date.now() } : null });
-  } catch (e) {}
+  } catch {}
   paintBadge();
 }
 
