@@ -1475,6 +1475,7 @@ window.onYouTubeIframeAPIReady = function(){
   .lesson-totals{display:flex;gap:16px;-webkit-user-select:none;user-select:none;font-size:14px;color:var(--text-2);font-variant-numeric:tabular-nums;}
   .lesson-totals b{color:var(--text);font-size:15px;margin-left:4px;}
   .stats-table th .lesson-totals{text-transform:none;letter-spacing:0;font-weight:400;}
+  @media (max-width:600px){.stats-table th .lesson-totals{flex-wrap:wrap;gap:4px 12px;}}
   #statLessons{overflow-x:auto;}
   @media (max-width:600px){.stats-table td:first-child{min-width:180px;}.heat-day .heat-card{grid-template-columns:minmax(0, 1fr) auto;gap:0 10px;}.heat-day .heat-card .heat-card-a{grid-row:2;}.heat-day .heat-card > span:last-child{grid-row:1 / span 2;grid-column:2;}}
   .chart-tooltip{
@@ -1604,7 +1605,8 @@ window.onYouTubeIframeAPIReady = function(){
   .segmented button, .empty-state p, .heat-numbers, #mediaBarTitle, #mediaLoading, #cloudError, #cloudDialog p, #editQ, #editA, .rich-editor, .add-target, .muted-label, .toast, .session-complete-sub, .streak-label, .stats-empty, .stats-table td, .stats-table .clamp, .vocab-list-row > span{line-height:20px;}
   :is(.rich-editor, #editQ, #editA, #editNotes, .vocab-editor textarea, #vocabEditNotes, #qaNotes, .vocab-add-field){font-size:20px;line-height:28px;}
   :is(#editNotes, #vocabEditNotes, #qaNotes){font-size:18px;line-height:25px;}
-  #importText{font-size:16px;line-height:24px;}
+  #importText{line-height:20px;}
+  html.touch #importText{line-height:24px;}
   :is(.rich-editor, .vocab-add-field){min-height:46px;}
   #cardTable.full-list:not(.notebook) .cell{font-size:20px;line-height:28px;}
   #cardTable.full-list:not(.notebook) .card-notes, .vocab-list-meaning .card-notes{font-size:18px;line-height:25px;}
@@ -4437,9 +4439,7 @@ function showSessionCompletePanel() {
   const due = modeScopeRows(modeKey()).filter(r => cardReady(r, "Table", now));
   const more = heldMore(due, limitRows(due), r => srsOf(r, "Table"));
   const held = more.total;
-  const waiting = modeScopeRows(modeKey()).filter(cardWaiting).length;
   const text = finishText(held, studiedToday(rows, false), next, "card", modeScopeRows(modeKey()).filter(r => !cardWaiting(r)).map(r => srsOf(r, "Table")));
-  if (waiting) text.sub += ` · ${waiting} wait${waiting === 1 ? "s" : ""} for ${waiting === 1 ? "its" : "their"} words in Vocabulary`;
   panel.querySelector(".emoji").textContent = text.emoji;
   panel.querySelector(".session-complete-title").textContent = text.title;
   panel.querySelector(".session-complete-sub").textContent = text.sub;
@@ -8075,7 +8075,9 @@ function applyGrade(r, isAgain, mode, now) {
   const fresh = !st.reps;
   scheduleReview(st, grade, now);
   logReview(r, mode, grade, now, fresh);
-  if (isAgain && mode === "Table") {
+  const waits = cardWaiting(r);
+  if (waits) st.due = now;
+  if (isAgain && mode === "Table" && !waits) {
     if (!groupState.pendingAgain) groupState.pendingAgain = [];
     groupState.pendingAgain.push({
       id: r.id,
@@ -11990,31 +11992,33 @@ function renderStats() {
   const today = new Date;
   today.setHours(0, 0, 0, 0);
   const since30 = today.getTime() - 29 * DAY_MS;
-  let newCards = 0, dueCards = 0, doneCards = 0;
+  let newCards = 0, dueCards = 0, waitCards = 0, doneCards = 0;
   const lessonRows = lessons.map(l => {
-    let fresh = 0, due = 0, done = 0;
+    let fresh = 0, due = 0, wait = 0, done = 0;
     const mode = countMode(l.cards);
     l.cards.forEach(c => {
       const modes = MODES.filter(m => cardInMode(c, m, l.studyLang));
       const buckets = modes.map(m => cardBucket(c, m, now));
       if (!MODES.some(m => srsOf(c, m).reps)) newCards++;
       if (buckets.includes("due")) dueCards++;
+      if (buckets.includes("wait")) waitCards++;
       if (buckets.includes("done")) doneCards++;
       if (!cardInMode(c, mode, l.studyLang)) return;
       const b = cardBucket(c, mode, now);
-      if (b === "new") fresh++; else if (b === "due") due++; else if (b === "done") done++;
+      if (b === "new") fresh++; else if (b === "due") due++; else if (b === "wait") wait++; else if (b === "done") done++;
     });
     const reviews30 = reviewLog.filter(e => e.lessonId === l.id && e.ts >= since30).length;
     return {
       l: l,
       fresh: fresh,
       due: due,
+      wait: wait,
       done: done,
       reviews30: reviews30
     };
   });
   renderStreakCard();
-  const totalsHtml = `<div class="lesson-totals"><span>New<b>${newCards}</b></span><span>Due<b>${dueCards}</b></span><span>Done<b>${doneCards}</b></span></div>`;
+  const totalsHtml = `<div class="lesson-totals"><span>New<b>${newCards}</b></span><span>Due<b>${dueCards}</b></span><span>Waiting<b>${waitCards}</b></span><span>Done<b>${doneCards}</b></span></div>`;
 
   renderHeatmap();
 
@@ -12022,9 +12026,9 @@ function renderStats() {
   if (!lessonRows.length) {
     lessonsEl.innerHTML = '<div class="stats-empty">No lessons yet.</div>';
   } else {
-    lessonsEl.innerHTML = '<table class="stats-table"><thead><tr><th>' + totalsHtml + "</th>" + '<th class="num" title="Total cards" aria-label="Total cards">Σ</th><th class="num" title="New — never studied yet" aria-label="New">🆕</th><th class="num" title="Due — ready to review now" aria-label="Due">⏳</th><th class="num" title="Done — ' + DONE_STREAK + ' Good in a row" aria-label="Done">✅</th><th class="num" title="Reviews in the last 30 days" aria-label="Reviews in the last 30 days">🔁</th></tr></thead><tbody>' + lessonRows.sort((a, b) => (a.l.name || "").localeCompare(b.l.name || "", undefined, {
+    lessonsEl.innerHTML = '<table class="stats-table"><thead><tr><th>' + totalsHtml + "</th>" + '<th class="num" title="Total cards" aria-label="Total cards">Σ</th><th class="num" title="New — never studied yet" aria-label="New">🆕</th><th class="num" title="Due — ready to review now" aria-label="Due">⏳</th><th class="num" title="Waiting — its words are still being learned in Vocabulary" aria-label="Waiting">🔒</th><th class="num" title="Done — ' + DONE_STREAK + ' Good in a row" aria-label="Done">✅</th><th class="num" title="Reviews in the last 30 days" aria-label="Reviews in the last 30 days">🔁</th></tr></thead><tbody>' + lessonRows.sort((a, b) => (a.l.name || "").localeCompare(b.l.name || "", undefined, {
       numeric: true
-    })).map(x => `<tr><td title="${escapeAttr(x.l.name || "Untitled lesson")}"><span class="clamp">${escapeHtml(x.l.name || "Untitled lesson")}</span></td><td class="num">${x.l.cards.length}</td><td class="num">${x.fresh}</td><td class="num">${x.due}</td><td class="num">${x.done}</td><td class="num">${x.reviews30}</td></tr>`).join("") + "</tbody></table>";
+    })).map(x => `<tr><td title="${escapeAttr(x.l.name || "Untitled lesson")}"><span class="clamp">${escapeHtml(x.l.name || "Untitled lesson")}</span></td><td class="num">${x.l.cards.length}</td><td class="num">${x.fresh}</td><td class="num">${x.due}</td><td class="num">${x.wait}</td><td class="num">${x.done}</td><td class="num">${x.reviews30}</td></tr>`).join("") + "</tbody></table>";
   }
 
 }
