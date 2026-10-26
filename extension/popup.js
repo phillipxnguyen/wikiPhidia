@@ -27,7 +27,7 @@ function ago(ts) {
 
 function paintStatus() {
   const a = state.app;
-  $("status").textContent = a.at ? `Connected · ${a.words.length} words in ${a.lessons.length} lessons · ${ago(a.at)}` : "";
+  $("brand").title = a.at ? `Connected · ${a.words.length} words in ${a.lessons.length} lessons · ${ago(a.at)}` : "Open wikiPhidia once to connect";
   $("pendingN").textContent = state.pending.length || "";
 }
 

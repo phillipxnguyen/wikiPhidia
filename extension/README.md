@@ -25,7 +25,7 @@ A browser only updates an extension fully by itself when it comes from the Chrom
   - the word (you can edit it), its **pinyin** for Chinese, and beside it 🔊 to hear it, the translate button to translate the sentence (again to hide it; **Shift** while the card is open does the same), and ✕;
   - the meaning, translated already into your language (Vietnamese by default), with other meanings as chips to pick from; type over it freely;
   - the sentence around the word taken from the page, with the word shown as if selected; click it to change it in place (the box keeps the same size and type, grows with the text, and starts with the word selected, so it looks the same);
-  - the **lesson** the word goes into: by default a lesson named after the article you are reading (made for you in Vocabulary the first time, then reused for every word from that article), or any of your lessons, or **New lesson…**. In Settings, **Words go into** can instead send every word to one lesson of your choice.
+  - the **lesson** the word goes into: by default a lesson named after the article you are reading (with 🆕 in front of its name while it does not exist yet; made for you in Vocabulary the first time, then reused for every word from that article), or any of your lessons, or **New lesson…**. In Settings, **Words go into** can instead send every word to one lesson of your choice.
   - **Enter** or **Add** saves the word, and a short note says `word: meaning`; anything else (Esc, ✕, a click outside the card) closes it without saving.
 - A word you already have says so on the card (which lesson, what it means) instead of adding it twice.
 
@@ -46,6 +46,7 @@ On any YouTube video, click the green **字 Make a lesson** button in the bottom
 - **On / Off**, the small switch in the header, between the 字 ⚡ icons and Open app: Off turns the extension off on every page at once (no 字 button, no card, no Shift, no marked words, no YouTube button; the icon shows a grey *off*, and the popup's 字 logo turns grey), and On brings it all back. Words already waiting still go into wikiPhidia either way.
 Each word sits in its own box, and the hint under the list in a tinted box, so the words are easy to tell apart.
 
+- Pointing at the 字 logo or the name shows whether the app is connected (how many words and lessons it knows, and when it last synced).
 - **To send**: the words waiting, with their meaning editable and ✕ to drop one.
 - **Recent**: the last words sent, marked *Added* or *Already there*.
 - **Settings**: the language of the meanings, the lesson new words go into (🆕 New lesson, named after each article, or one of yours), marking known words on pages, Shift, the YouTube button, and the app's address (change it if you run wikiPhidia somewhere else; local copies on `localhost`, `127.0.0.1` or a file whose path contains `wikiPhidia` connect too).

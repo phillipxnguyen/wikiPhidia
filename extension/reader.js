@@ -363,7 +363,7 @@ textarea[hidden], .sent-view[hidden]{display:none;}
     const fixed = settings.lessonId && list.find(l => l.id === settings.lessonId) || settings.lessonName && list.find(l => same(l.name, settings.lessonName));
     const wanted = fixed ? fixed.name : settings.lessonName || articleTitle();
     const there = list.find(l => same(l.name, wanted));
-    let html = there ? "" : `<option value="name:${esc(wanted)}" selected>${esc(wanted)} (new)</option>`;
+    let html = there ? "" : `<option value="name:${esc(wanted)}" selected>🆕 ${esc(wanted)}</option>`;
     html += list.map(l => `<option value="id:${esc(l.id)}"${l === there ? " selected" : ""}>${esc(l.name)}</option>`).join("");
     html += `<option value="new">New lesson…</option>`;
     return html;
@@ -512,7 +512,7 @@ textarea[hidden], .sent-view[hidden]{display:none;}
       }
       const opt = document.createElement("option");
       opt.value = "name:" + name;
-      opt.textContent = name + " (new)";
+      opt.textContent = "🆕 " + name;
       e.target.insertBefore(opt, e.target.lastElementChild);
       e.target.value = opt.value;
     });
