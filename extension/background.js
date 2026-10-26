@@ -208,6 +208,15 @@ async function paintBadge() {
   await chrome.action.setBadgeText({ text: n ? String(n) : update ? "↑" : "" });
 }
 
+async function injectOpenTabs() {
+  const tabs = await chrome.tabs.query({});
+  const inject = (tabId, files) => chrome.scripting.executeScript({ target: { tabId: tabId }, files: files }).catch(() => {});
+  tabs.filter(t => t.id != null && /^(https?|file):/.test(t.url || "")).forEach(t => {
+    if (!/^https:\/\/phillipxnguyen\.github\.io\//.test(t.url)) inject(t.id, [ "vendor/pinyin-pro.js", "reader.js" ]);
+    if (/^(https:\/\/phillipxnguyen\.github\.io\/|file:).*wikiphidia|^http:\/\/(localhost|127\.0\.0\.1)[:/]/i.test(t.url)) inject(t.id, [ "bridge.js" ]);
+  });
+}
+
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
     id: "wkp-add",
@@ -221,6 +230,7 @@ chrome.runtime.onInstalled.addListener(() => {
     documentUrlPatterns: [ "https://www.youtube.com/*", "https://m.youtube.com/*" ]
   });
   checkUpdate();
+  injectOpenTabs();
 });
 
 chrome.runtime.onStartup.addListener(checkUpdate);

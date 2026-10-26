@@ -14,6 +14,8 @@ A browser extension for reading on the web (news, articles, any page) that picks
 
 The extension checks GitHub for a newer version every time you open its popup (and when the browser starts). When there is one, the icon shows a blue **↑** and the popup a banner: **Download** gets the new files, unzip them over your `extension` folder, then press **Reload** right there (no need to open `chrome://extensions`). **Settings** shows the version you have and has a **Reload extension** button too.
 
+After an update or a reload, pages that are already open pick up the new version by themselves (no need to reload them): saving words and marking them keep working at once.
+
 A browser only updates an extension fully by itself when it comes from the Chrome Web Store; loaded unpacked, as here, the files have to be replaced by hand.
 
 ## Reading
@@ -40,6 +42,8 @@ Words wait in the extension (the number on the icon) until wikiPhidia is open in
 On any YouTube video, click the green **字 Make a lesson** button in the bottom-left corner (or **Make a lesson from this video** at the top of the popup, or right-click → **Make a wikiPhidia lesson from this video**). The extension reads the video's subtitles, opens wikiPhidia (or brings its tab forward), and the app shows its usual box: pick the subtitles, then **Subtitles only** or **With translation**. This replaces the *YouTube subtitles* bookmark; the bookmark still works where the extension is not installed. The button can be turned off in Settings.
 
 ## The popup
+
+Each word sits in its own box, and the hint under the list in a tinted box, so the words are easy to tell apart.
 
 - **To send**: the words waiting, with their meaning editable and ✕ to drop one.
 - **Recent**: the last words sent, marked *Added* or *Already there*.

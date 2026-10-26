@@ -1,7 +1,7 @@
 (() => {
-  if (window.__wkpReader || window.top !== window) return;
+  if (window.top !== window) return;
   if (document.getElementById("vocabStage") && document.getElementById("cardTable")) return;
-  window.__wkpReader = true;
+  if (!document.dispatchEvent(new CustomEvent("wkp-reader", { cancelable: true }))) return;
 
   const DEFAULTS = {
     lang: "vi",
@@ -33,6 +33,18 @@
       return false;
     }
   };
+  let dead = false;
+  const gone = () => {
+    if (dead || alive()) return dead;
+    dead = true;
+    clearInterval(hrefTimer);
+    observer.disconnect();
+    host.remove();
+    return true;
+  };
+  document.addEventListener("wkp-reader", e => {
+    if (!gone()) e.preventDefault();
+  });
 
   const host = document.createElement("wkp-reader");
   host.style.cssText = "all:initial;position:fixed;left:0;top:0;width:0;height:0;z-index:2147483647;";
@@ -216,6 +228,7 @@ textarea[hidden], .sent-view[hidden]{display:none;}
 
   let tip = null;
   document.addEventListener("mouseover", e => {
+    if (gone()) return;
     const mark = e.target.closest && e.target.closest("wkp-hl");
     if (!mark) {
       if (tip) tip.remove(), tip = null;
@@ -557,6 +570,7 @@ textarea[hidden], .sent-view[hidden]{display:none;}
     shiftAlone = e.key === "Shift" && !e.ctrlKey && !e.metaKey && !e.altKey;
   }, true);
   document.addEventListener("keyup", e => {
+    if (gone()) return;
     if (e.key !== "Shift" || !shiftAlone || !settings.shift) return;
     shiftAlone = false;
     if (card) {
@@ -568,7 +582,7 @@ textarea[hidden], .sent-view[hidden]{display:none;}
   }, true);
 
   document.addEventListener("mouseup", e => {
-    if (e.composedPath().includes(host)) return;
+    if (gone() || e.composedPath().includes(host)) return;
     setTimeout(() => {
       const found = selectedText();
       if (!found) hidePick(); else if (settings.pick === "open") openCard(found.text, found.range); else showPick(found);
@@ -576,12 +590,13 @@ textarea[hidden], .sent-view[hidden]{display:none;}
   }, true);
 
   document.addEventListener("mousedown", e => {
-    if (e.composedPath().includes(host)) return;
+    if (gone() || e.composedPath().includes(host)) return;
     hidePick();
     if (card) closeCard();
   }, true);
 
   addEventListener("scroll", () => {
+    if (gone()) return;
     hidePick();
     if (tip) tip.remove(), tip = null;
   }, { passive: true, capture: true });
@@ -589,7 +604,7 @@ textarea[hidden], .sent-view[hidden]{display:none;}
   let ytBtn = null;
   const ytVideo = () => /(^|\.)youtube\.com$/.test(location.hostname) && (new URL(location.href).searchParams.get("v") || /\/(shorts|live)\/[\w-]{11}/.test(location.pathname));
   function syncYouTube() {
-    if (!alive()) return;
+    if (gone()) return;
     const show = ytVideo() && settings.youtube !== false;
     if (!show) {
       if (ytBtn) ytBtn.remove();
@@ -610,8 +625,8 @@ textarea[hidden], .sent-view[hidden]{display:none;}
     wrap.appendChild(ytBtn);
   }
   let lastHref = location.href;
-  setInterval(() => {
-    if (location.href === lastHref) return;
+  const hrefTimer = setInterval(() => {
+    if (gone() || location.href === lastHref) return;
     lastHref = location.href;
     syncYouTube();
   }, 800);
@@ -626,7 +641,7 @@ textarea[hidden], .sent-view[hidden]{display:none;}
   });
 
   chrome.storage.onChanged.addListener((changes, area) => {
-    if (area !== "local" || !alive()) return;
+    if (area !== "local" || gone()) return;
     if (changes.settings) settings = Object.assign({}, DEFAULTS, changes.settings.newValue || {});
     if (changes.app) app = Object.assign({ lessons: [], words: [] }, changes.app.newValue || {});
     if (changes.pending) pending = changes.pending.newValue || [];

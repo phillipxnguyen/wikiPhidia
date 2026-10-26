@@ -1,6 +1,15 @@
 (() => {
-  if (window.__wkpBridge) return;
-  window.__wkpBridge = true;
+  if (!document.dispatchEvent(new CustomEvent("wkp-bridge", { cancelable: true }))) return;
+  const alive = () => {
+    try {
+      return !!chrome.runtime.id;
+    } catch {
+      return false;
+    }
+  };
+  document.addEventListener("wkp-bridge", e => {
+    if (alive()) e.preventDefault();
+  });
   let ready = false;
   let sending = null;
   let ytSent = "";
@@ -58,7 +67,7 @@
   }
 
   window.addEventListener("message", e => {
-    if (e.source !== window || !e.data || e.data.from !== "wikiphidia-app") return;
+    if (e.source !== window || !alive() || !e.data || e.data.from !== "wikiphidia-app") return;
     if (e.data.type === "ready") post({ type: "hello" });
     if (e.data.type === "state") {
       ready = true;
