@@ -931,9 +931,9 @@ window.onYouTubeIframeAPIReady = function(){
   .toolbar-counts{flex:none;margin:0 auto;font-size:14px;color:var(--text);pointer-events:auto;}
   .toolbar-counts[hidden]{display:none;}
   .toolbar-counts:empty{display:none;}
-  .toolbar:not(.vocab-toolbar){position:relative;}
-  .toolbar > .toolbar-counts:not(.flow){position:absolute;left:0;right:0;width:max-content;}
-  .toolbar:has(> .toolbar-counts.flow:not(:empty):not([hidden]):not([style*="none"])) > .toolbar-right{order:1;margin-left:0;}
+  .toolbar:has(> .toolbar-counts:not(:empty):not([hidden]):not([style*="none"])) > .toolbar-right{order:1;margin-left:0;}
+  .toolbar:has(> .toolbar-counts:not(:empty):not([hidden]):not([style*="none"])) > .toolbar-flag{margin-right:0;}
+  .toolbar-right.idle > *{display:none;}
   .progress-badge i{font-style:normal;}
   .progress-badge b{font-weight:inherit;}
   @media (max-width:600px){
@@ -941,7 +941,6 @@ window.onYouTubeIframeAPIReady = function(){
     .toolbar-counts .progress-badges{gap:4px;}
     .toolbar-counts .progress-badge{min-width:24px;justify-content:center;padding:3px 6px;background:color-mix(in srgb, currentColor 12%, transparent);}
     .toolbar-counts .progress-badge i{display:none;}
-    .toolbar-right.idle{display:none;}
   }
   .progress-badges{display:flex;justify-content:center;align-items:center;gap:8px;-webkit-user-select:none;user-select:none;}
   .add-fab{position:sticky;bottom:30px;z-index:5;display:flex;align-items:center;justify-content:center;width:50px;height:50px;margin:16px 0 0 auto;padding:0;border:0;border-radius:25px;background:var(--accent);color:#fff;box-shadow:var(--shadow-md);cursor:pointer;}
@@ -10423,38 +10422,6 @@ function fairyTarget() {
 let countsShown = null;
 
 const COUNT_KINDS = [ "new", "due", "wait", "done" ];
-
-function fitCounts() {
-  document.querySelectorAll(".toolbar > .toolbar-counts").forEach(el => {
-    const w = el.offsetWidth;
-    if (!w) return;
-    const bar = el.parentElement.getBoundingClientRect();
-    const left = bar.left + (bar.width - w) / 2, right = left + w;
-    const near = [ ...el.parentElement.children ].filter(n => !n.classList.contains("toolbar-counts")).flatMap(n => n.classList.contains("toolbar-right") ? [ ...n.children ] : [ n ]).filter(n => getComputedStyle(n).visibility !== "hidden").map(n => n.getBoundingClientRect()).filter(r => r.width);
-    el.classList.toggle("flow", near.some(r => r.left < right + 6 && r.right > left - 6));
-  });
-}
-
-let countsFrame = 0;
-
-const countsWatch = new MutationObserver(() => {
-  if (!countsFrame) countsFrame = requestAnimationFrame(() => {
-    countsFrame = 0;
-    fitCounts();
-  });
-});
-
-document.querySelectorAll(".toolbar").forEach(bar => {
-  [ bar, ...bar.children, ...bar.querySelectorAll(".toolbar-right > *") ].forEach(el => countsWatch.observe(el, {
-    attributes: true,
-    attributeFilter: [ "hidden", "style" ]
-  }));
-  bar.querySelectorAll(".toolbar-counts").forEach(el => countsWatch.observe(el, {
-    childList: true
-  }));
-});
-
-addEventListener("resize", fitCounts);
 
 function countEls() {
   return groupState && appMode !== "vocab" ? [] : [ ...document.querySelectorAll(".main-inner .progress-badges > .progress-badge") ];
