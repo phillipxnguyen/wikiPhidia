@@ -14946,24 +14946,28 @@ function raiseAllCurtain() {
 function allCurtain(item) {
   if (reducedMotion() || document.querySelector(".all-curtain")) return;
   const cs = getComputedStyle(item);
-  const main = document.querySelector(".main").getBoundingClientRect();
-  const over = el => {
-    const r = el && !el.hidden ? el.getBoundingClientRect() : null;
-    return r && r.width && r.left < main.right && r.right > main.left ? r : null;
-  };
-  const head = over(document.querySelector(".sidebar")), foot = over(document.getElementById("touchBar"));
-  const top = Math.round(Math.max(0, main.top, head && head.bottom < innerHeight / 2 ? head.bottom : 0));
-  const bottom = Math.round(Math.min(innerHeight, main.bottom, foot && foot.top > innerHeight / 2 ? foot.top : innerHeight));
-  const left = Math.max(0, Math.round(main.left));
-  const width = Math.min(innerWidth, Math.round(main.right)) - left;
   const curtain = document.createElement("div");
   curtain.className = "all-curtain";
-  Object.assign(curtain.style, {
-    top: top + "px",
-    left: left + "px",
-    width: width + "px",
-    height: bottom - top + "px"
-  });
+  const place = () => {
+    const main = document.querySelector(".main").getBoundingClientRect();
+    const over = el => {
+      const r = el && !el.hidden ? el.getBoundingClientRect() : null;
+      return r && r.width && r.left < main.right && r.right > main.left ? r : null;
+    };
+    const head = over(document.querySelector(".sidebar")), foot = over(document.getElementById("touchBar"));
+    const top = Math.round(Math.max(0, main.top, head && head.bottom < innerHeight / 2 ? head.bottom : 0));
+    const bottom = Math.round(Math.min(innerHeight, main.bottom, foot && foot.top > innerHeight / 2 ? foot.top : innerHeight));
+    const left = Math.max(0, Math.round(main.left));
+    const width = Math.min(innerWidth, Math.round(main.right)) - left;
+    Object.assign(curtain.style, {
+      top: top + "px",
+      left: left + "px",
+      width: width + "px",
+      height: bottom - top + "px"
+    });
+  };
+  place();
+  addEventListener("resize", place);
   curtain.style.setProperty("--bar", cs.backgroundImage);
   curtain.style.setProperty("--bar-base", cs.backgroundColor);
   curtain.innerHTML = '<i class="curtain-side curtain-l"><b></b></i><i class="curtain-side curtain-r"><b></b></i>';
@@ -15006,6 +15010,7 @@ function allCurtain(item) {
       easing: "cubic-bezier(.5,0,.3,1)",
       fill: "forwards"
     }).finished)).then(() => {
+      removeEventListener("resize", place);
       curtain.remove();
     });
   };
