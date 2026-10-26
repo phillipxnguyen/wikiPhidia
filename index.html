@@ -482,7 +482,8 @@ window.onYouTubeIframeAPIReady = function(){
   .lesson-list-empty{padding:10px;color:var(--text-2);font-size:14px;}
   .lesson-list .lesson-group{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
   .lesson-list .lesson-item.all-vocab{grid-column:1 / -1;}
-  .lesson-item.tile{gap:4px;min-width:0;padding:5px;border-color:var(--border);background:var(--surface);}
+  .lesson-item.tile{position:relative;gap:4px;min-width:0;padding:5px;border-color:var(--border);background:var(--surface);}
+  .tile-new{position:absolute;top:8px;right:8px;z-index:1;padding:0 6px;border-radius:8px;background:var(--accent);color:#fff;font-size:11px;line-height:16px;font-weight:700;letter-spacing:.02em;box-shadow:0 1px 3px rgba(0,0,0,.2);pointer-events:none;}
   @media (hover:hover){.lesson-item.tile:hover{background:color-mix(in srgb, var(--accent) 6%, var(--surface));border-color:var(--border);}}
   .lesson-list .lesson-item.tile.active{background:var(--accent-soft);border-color:color-mix(in srgb, var(--accent) 35%, transparent);box-shadow:none;}
   .lesson-item.tile .lesson-item-name{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;min-height:32px;margin-top:2px;padding:0 2px;font-size:12px;line-height:16px;white-space:normal;overflow-wrap:anywhere;}
@@ -9992,7 +9993,10 @@ function normalizeLesson(data, fileName) {
     updatedAt: Number(data.updatedAt) || now,
     cards: data.cards.filter(c => c && typeof c === "object").map(normalizeCard),
     extraWords: normalizeExtras(data.extraWords),
-    vocabOnly: !!data.vocabOnly
+    vocabOnly: !!data.vocabOnly,
+    ...(data.unseen ? {
+      unseen: true
+    } : {})
   };
 }
 
@@ -10291,6 +10295,10 @@ function resetStudyState() {
 }
 
 function openLesson(lesson) {
+  if (lesson.unseen) {
+    delete lesson.unseen;
+    dbPut("lessons", lesson).catch(() => {});
+  }
   stopAllSound();
   [ "qaQ", "qaA" ].forEach(id => document.getElementById(id).value = "");
   document.getElementById("qaNotes").innerHTML = "";
@@ -10427,14 +10435,24 @@ function fitCounts() {
   });
 }
 
-const countsWatch = new MutationObserver(fitCounts);
+let countsFrame = 0;
 
-document.querySelectorAll(".toolbar").forEach(bar => countsWatch.observe(bar, {
-  childList: true,
-  subtree: true,
-  attributes: true,
-  attributeFilter: [ "hidden", "style" ]
-}));
+const countsWatch = new MutationObserver(() => {
+  if (!countsFrame) countsFrame = requestAnimationFrame(() => {
+    countsFrame = 0;
+    fitCounts();
+  });
+});
+
+document.querySelectorAll(".toolbar").forEach(bar => {
+  [ bar, ...bar.children, ...bar.querySelectorAll(".toolbar-right > *") ].forEach(el => countsWatch.observe(el, {
+    attributes: true,
+    attributeFilter: [ "hidden", "style" ]
+  }));
+  bar.querySelectorAll(".toolbar-counts").forEach(el => countsWatch.observe(el, {
+    childList: true
+  }));
+});
 
 addEventListener("resize", fitCounts);
 
@@ -11411,15 +11429,17 @@ function buildLessonList() {
     const name = l.name || "Untitled lesson";
     const c = lessonCountsFor(l);
     const tip = lessonTileTip(name, c);
-    return `<button class="lesson-item tile${active ? " active" : ""}" data-lesson-id="${escapeAttr(l.id)}" data-tip="${escapeAttr(tip)}" aria-label="${escapeAttr(tip.replace("\n", ", "))}"${active ? ' aria-current="page"' : ""}>` + lessonThumbHtml(l) + `<span class="lesson-item-name">${escapeHtml(name)}</span>` + lessonTileBar(c) + "</button>";
+    return `<button class="lesson-item tile${active ? " active" : ""}" data-lesson-id="${escapeAttr(l.id)}" data-tip="${escapeAttr(tip)}" aria-label="${escapeAttr(tip.replace("\n", ", "))}"${active ? ' aria-current="page"' : ""}>` + lessonThumbHtml(l) + (l.unseen && !active ? '<span class="tile-new">New</span>' : "") + `<span class="lesson-item-name">${escapeHtml(name)}</span>` + lessonTileBar(c) + "</button>";
   };
   if (q) {
     list.innerHTML = `<div class="lesson-group lessons">${items.map(itemHtml).join("")}</div>`;
     watchThumbWords(list);
     return;
   }
-  const recent = recentLessonIds().map(id => items.find(l => l.id === id)).filter(Boolean).slice(0, RECENT_MAX);
-  list.innerHTML = `<div class="lesson-group vocab">${appMode === "vocab" ? allVocabItemHtml() : allLessonsItemHtml()}</div><div class="lesson-group lessons">${recent.concat(items.filter(l => !recent.includes(l))).map(itemHtml).join("")}</div>`;
+  const fresh = items.filter(l => l.unseen && l.id !== currentLessonId).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  const recent = recentLessonIds().map(id => items.find(l => l.id === id)).filter(l => l && !fresh.includes(l)).slice(0, RECENT_MAX);
+  const first = fresh.concat(recent);
+  list.innerHTML = `<div class="lesson-group vocab">${appMode === "vocab" ? allVocabItemHtml() : allLessonsItemHtml()}</div><div class="lesson-group lessons">${first.concat(items.filter(l => !first.includes(l))).map(itemHtml).join("")}</div>`;
   watchThumbWords(list);
 }
 
@@ -13254,7 +13274,8 @@ function readerTarget(w, made) {
     updatedAt: now,
     cards: [],
     extraWords: null,
-    vocabOnly: true
+    vocabOnly: true,
+    unseen: true
   };
   upsertLibrary(lesson);
   made.add(lesson.id);
@@ -13324,7 +13345,8 @@ function readerAdd(list) {
     });
     const saved = Object.assign({}, lesson, {
       extraWords: normalizeExtras(serializeExtras(row)),
-      updatedAt: Date.now()
+      updatedAt: Date.now(),
+      unseen: true
     });
     upsertLibrary(saved);
     if (id in virtualExtras) virtualExtras[id] = normalizeExtras(saved.extraWords);
@@ -15222,15 +15244,15 @@ function allCurtain(item) {
   const BLOCKED = [ "pointerdown", "pointerup", "mousedown", "mouseup", "click", "dblclick", "auxclick", "contextmenu", "touchstart", "touchend", "keydown", "keyup", "keypress" ];
   let knock = null;
   const block = e => {
+    if (!curtain.isConnected) return unblock();
     e.stopPropagation();
     e.stopImmediatePropagation();
     if (e.type.startsWith("key") && (e.metaKey || e.ctrlKey)) return;
-    if (e.cancelable) e.preventDefault();
+    if (e.cancelable && !e.type.startsWith("touch") && !e.type.startsWith("pointer")) e.preventDefault();
     if (knock && (e.type === "pointerdown" || e.type === "keydown" && ![ "Shift", "Control", "Alt", "Meta" ].includes(e.key))) knock();
   };
   BLOCKED.forEach(t => addEventListener(t, block, {
-    capture: true,
-    passive: false
+    capture: true
   }));
   const unblock = () => BLOCKED.forEach(t => removeEventListener(t, block, {
     capture: true
@@ -15276,11 +15298,14 @@ function allCurtain(item) {
       duration: 1100,
       easing: "cubic-bezier(.5,0,.3,1)",
       fill: "forwards"
-    }).finished)).then(() => {
-      removeEventListener("resize", place);
-      unblock();
-      curtain.remove();
-    });
+    }).finished.catch(() => {}))).then(done);
+    setTimeout(done, 1600);
+  };
+  const done = () => {
+    if (!curtain.isConnected) return;
+    removeEventListener("resize", place);
+    unblock();
+    curtain.remove();
   };
   Promise.all(shut).then(() => {
     sway = sides.map((el, i) => el.animate([ {
