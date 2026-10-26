@@ -1,4 +1,4 @@
-# wikiPhidia Reader
+# wikiPhidia (browser extension)
 
 A browser extension for reading on the web (news, articles, any page) that picks up new words and sends them straight into wikiPhidia's Vocabulary, with their meaning, the sentence they came from and the page's title, and that turns any YouTube video into a lesson with one click.
 
@@ -20,16 +20,16 @@ A browser only updates an extension fully by itself when it comes from the Chrom
 
 - **Select a word or phrase** on any page, then press **Shift** (the same key that adds a word inside wikiPhidia) or click the round green **字** button that appears next to the selection. Right-click → **Add “…” to wikiPhidia** works too.
 - A card opens next to the word:
-  - the word (you can edit it), its **pinyin** for Chinese, and 🔊 to hear it;
+  - the word (you can edit it), its **pinyin** for Chinese, and beside it 🔊 to hear it, the translate button to translate the sentence (again to hide it), and ✕;
   - the meaning, translated already into your language (Vietnamese by default), with other meanings as chips to pick from; type over it freely;
-  - the sentence around the word taken from the page, with the word marked in it; click it to change it in place (the box keeps the same size and type, and grows with the text), and **Translate the sentence** if you need it;
+  - the sentence around the word taken from the page, with the word shown as if selected; click it to change it in place (the box keeps the same size and type, grows with the text, and starts with the word selected, so it looks the same);
   - the **lesson** the word goes into: by default a lesson named after the article you are reading (made for you in Vocabulary the first time, then reused for every word from that article), or any of your lessons, or **New lesson…**. In Settings, **Words go into** can instead send every word to one lesson of your choice.
   - **Enter** or **Add** saves the word, and a short note says `word: meaning`; anything else (Esc, ✕, a click outside the card) closes it without saving.
 - A word you already have says so on the card (which lesson, what it means) instead of adding it twice.
 
 ## Words you already have
 
-Every page marks the words that are already in wikiPhidia, the way the app does: green for words in the app, grey for words waiting to be sent. Point at one to see its pinyin, meaning and, under them, the lesson it is in. Turn this off in Settings if you prefer a clean page.
+Every page marks the words that are already in wikiPhidia, the way the app does: a plain green background for words in the app, grey for words waiting to be sent. Point at one to see its pinyin, meaning and, under them, the lesson it is in. Turn this off in Settings if you prefer a clean page.
 
 ## Getting the words into wikiPhidia
 

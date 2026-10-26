@@ -40,8 +40,8 @@
   root.innerHTML = `<style>
 :host{all:initial;}
 *{box-sizing:border-box;}
-.wrap{--green:#1e9466;--green-soft:rgba(30,148,102,.12);--ink:#1d2330;--ink-2:#5e6878;--line:#dfe4ec;--bg:#fff;--bg-2:#f4f6fa;font:14px/20px Inter, system-ui, -apple-system, "Segoe UI", sans-serif;color:var(--ink);}
-@media (prefers-color-scheme: dark){.wrap{--green:#3cc48d;--green-soft:rgba(60,196,141,.16);--ink:#e8ecf3;--ink-2:#9aa4b4;--line:#323a48;--bg:#1b2029;--bg-2:#242a35;}}
+.wrap{--sel:#b9d4fb;--green:#1e9466;--green-soft:rgba(30,148,102,.12);--ink:#1d2330;--ink-2:#5e6878;--line:#dfe4ec;--bg:#fff;--bg-2:#f4f6fa;font:14px/20px Inter, system-ui, -apple-system, "Segoe UI", sans-serif;color:var(--ink);}
+@media (prefers-color-scheme: dark){.wrap{--sel:#2a4f80;--green:#3cc48d;--green-soft:rgba(60,196,141,.16);--ink:#e8ecf3;--ink-2:#9aa4b4;--line:#323a48;--bg:#1b2029;--bg-2:#242a35;}}
 .pick{position:fixed;display:flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border:0;border-radius:16px;background:var(--green);color:#fff;font:700 16px/20px system-ui, sans-serif;box-shadow:0 4px 12px rgba(0,0,0,.25);cursor:pointer;}
 .pick:hover{filter:brightness(1.08);}
 .card{position:fixed;width:360px;max-width:calc(100vw - 24px);padding:18px 18px 20px;border:1px solid var(--line);border-radius:12px;background:var(--bg);box-shadow:0 16px 40px rgba(10,20,40,.22);}
@@ -61,7 +61,7 @@ textarea.field{display:block;padding:9px 11px;border-color:var(--green);backgrou
 .alt{padding:2px 10px;border:1px solid var(--line);border-radius:12px;background:var(--bg-2);color:var(--ink);font:inherit;font-size:13px;line-height:20px;cursor:pointer;}
 .alt:hover{border-color:var(--green);color:var(--green);}
 .sent-view{padding:10px 12px;border-radius:8px;background:var(--bg-2);font-size:16px;line-height:24px;color:var(--ink);cursor:text;}
-.sent-view mark{padding:0 2px;border-radius:4px;background:var(--green-soft);box-shadow:inset 0 -2px 0 var(--green);color:inherit;font-weight:700;}
+.sent-view mark, textarea.sentence::selection{padding:0;border-radius:0;background:var(--sel);color:inherit;}
 textarea[hidden], .sent-view[hidden]{display:none;}
 .sub{font-size:13px;line-height:18px;color:var(--ink-2);}
 .sub:empty{display:none;}
@@ -91,7 +91,7 @@ textarea[hidden], .sent-view[hidden]{display:none;}
   };
 
   const hlStyle = document.createElement("style");
-  hlStyle.textContent = "wkp-hl{all:unset;display:inline;border-radius:3px;cursor:help;background:rgba(30,148,102,.16);box-shadow:inset 0 -2px 0 rgba(30,148,102,.7);}wkp-hl[data-state=pending]{background:rgba(120,130,150,.18);box-shadow:inset 0 -2px 0 rgba(120,130,150,.7);}";
+  hlStyle.textContent = "wkp-hl{all:unset;display:inline;border-radius:3px;cursor:help;background:rgba(30,148,102,.18);}wkp-hl[data-state=pending]{background:rgba(120,130,150,.2);}";
 
   function rebuildKnown() {
     known = new Map();
@@ -365,10 +365,10 @@ textarea[hidden], .sent-view[hidden]{display:none;}
     const k = known.get(norm(term));
     card = document.createElement("div");
     card.className = "card";
-    card.innerHTML = `<div class="head"><input class="term" spellcheck="false" aria-label="Word"><button class="icon say" title="Listen" aria-label="Listen">🔊</button><button class="icon close" title="Close (Esc)" aria-label="Close">✕</button></div>
+    card.innerHTML = `<div class="head"><input class="term" spellcheck="false" aria-label="Word"><button class="icon say" title="Listen" aria-label="Listen">🔊</button><button class="icon tr-btn" title="Translate the sentence" aria-label="Translate the sentence"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M3 5h8M7 3v2M5 5c0 3 2 5 5 6M9 5c0 3-2 5-5 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 17l3-7 3 7M12 15h4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="icon close" title="Close (Esc)" aria-label="Close">✕</button></div>
 <div class="reading"></div>
 <div class="body"><input class="field meaning" placeholder="Translating…" aria-label="Meaning"><div class="alts"></div>
-<div class="sent-view"></div><textarea class="field sentence" rows="1" aria-label="Sentence" hidden></textarea><div class="sub sent-tr"></div><button class="link tr-btn">Translate the sentence</button>
+<div class="sent-view"></div><textarea class="field sentence" rows="1" aria-label="Sentence" hidden></textarea><div class="sub sent-tr"></div>
 <div class="note"></div>
 <div class="foot"><select class="lesson" aria-label="Lesson">${lessonOptions()}</select><button class="btn add">Add</button></div></div>`;
     wrap.appendChild(card);
@@ -392,6 +392,9 @@ textarea[hidden], .sent-view[hidden]{display:none;}
       sentEl.hidden = false;
       fitSentence();
       sentEl.focus();
+      const t = termEl.value.trim();
+      const at = t ? sentEl.value.toLowerCase().indexOf(t.toLowerCase()) : -1;
+      if (at !== -1) sentEl.setSelectionRange(at, at + t.length);
     };
     sentEl.addEventListener("input", fitSentence);
     paintSentence();
@@ -465,12 +468,12 @@ textarea[hidden], .sent-view[hidden]{display:none;}
     $(".say").addEventListener("click", () => speak(termEl.value.trim()));
     $(".close").addEventListener("click", closeCard);
     $(".tr-btn").addEventListener("click", () => {
-      const btn = $(".tr-btn");
-      btn.textContent = "Translating…";
+      const out = $(".sent-tr");
+      if (out.textContent) return out.textContent = "";
+      out.textContent = "Translating…";
       chrome.runtime.sendMessage({ type: "translate", text: sentEl.value.trim(), to: settings.lang }, res => {
         if (!card) return;
-        btn.remove();
-        $(".sent-tr").textContent = !chrome.runtime.lastError && res && res.ok ? res.text : "Couldn't translate it now";
+        out.textContent = !chrome.runtime.lastError && res && res.ok ? res.text : "Couldn't translate it now";
       });
     });
     $(".lesson").addEventListener("change", e => {
