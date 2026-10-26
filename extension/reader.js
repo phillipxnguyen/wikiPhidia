@@ -52,23 +52,23 @@
 .icon:hover{background:var(--bg-2);color:var(--ink);}
 .reading{margin-top:2px;font-size:14px;line-height:20px;color:var(--green);}
 .reading:empty{display:none;}
-label{display:block;margin:20px 0 8px;font-size:10px;line-height:14px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);}
+.body{display:flex;flex-direction:column;gap:12px;margin-top:16px;}
 .field{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit;font-size:16px;line-height:22px;outline:none;resize:none;}
 .field:focus{border-color:var(--green);box-shadow:0 0 0 3px var(--green-soft);}
-textarea.field{font-size:14px;line-height:20px;}
-.alts{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+textarea.field{display:block;padding:9px 11px;border-color:var(--green);background:var(--bg-2);font-size:16px;line-height:24px;overflow:hidden;}
+.alts{display:flex;flex-wrap:wrap;gap:6px;}
 .alts:empty{display:none;}
 .alt{padding:2px 10px;border:1px solid var(--line);border-radius:12px;background:var(--bg-2);color:var(--ink);font:inherit;font-size:13px;line-height:20px;cursor:pointer;}
 .alt:hover{border-color:var(--green);color:var(--green);}
 .sent-view{padding:10px 12px;border-radius:8px;background:var(--bg-2);font-size:16px;line-height:24px;color:var(--ink);cursor:text;}
 .sent-view mark{padding:0 2px;border-radius:4px;background:var(--green-soft);box-shadow:inset 0 -2px 0 var(--green);color:inherit;font-weight:700;}
 textarea[hidden], .sent-view[hidden]{display:none;}
-.sub{margin-top:8px;font-size:13px;line-height:18px;color:var(--ink-2);}
+.sub{font-size:13px;line-height:18px;color:var(--ink-2);}
 .sub:empty{display:none;}
-.link{margin-top:8px;padding:0;border:0;background:none;color:var(--green);font:inherit;font-size:13px;line-height:18px;cursor:pointer;}
-.note{margin-top:16px;padding:8px 10px;border-radius:8px;background:var(--green-soft);color:var(--ink);font-size:13px;line-height:18px;}
+.link{align-self:flex-start;padding:0;border:0;background:none;color:var(--green);font:inherit;font-size:13px;line-height:18px;cursor:pointer;}
+.note{padding:8px 10px;border-radius:8px;background:var(--green-soft);color:var(--ink);font-size:13px;line-height:18px;}
 .note:empty{display:none;}
-.foot{display:flex;align-items:center;gap:10px;margin-top:22px;}
+.foot{display:flex;align-items:center;gap:10px;}
 .foot select{flex:1;min-width:0;padding:7px 28px 7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%235e6878' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 10px center;color:var(--ink);font:inherit;font-size:14px;line-height:20px;-webkit-appearance:none;appearance:none;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:pointer;}
 .btn{flex:none;padding:8px 16px;border:0;border-radius:8px;background:var(--green);color:#fff;font:inherit;font-weight:700;cursor:pointer;}
 .btn:hover{filter:brightness(1.08);}
@@ -367,10 +367,10 @@ textarea[hidden], .sent-view[hidden]{display:none;}
     card.className = "card";
     card.innerHTML = `<div class="head"><input class="term" spellcheck="false" aria-label="Word"><button class="icon say" title="Listen" aria-label="Listen">🔊</button><button class="icon close" title="Close (Esc)" aria-label="Close">✕</button></div>
 <div class="reading"></div>
-<label>Meaning</label><input class="field meaning" placeholder="Translating…" aria-label="Meaning"><div class="alts"></div>
-<label>Sentence</label><div class="sent-view"></div><textarea class="field sentence" rows="3" aria-label="Sentence" hidden></textarea><div class="sub sent-tr"></div><button class="link tr-btn">Translate the sentence</button>
+<div class="body"><input class="field meaning" placeholder="Translating…" aria-label="Meaning"><div class="alts"></div>
+<div class="sent-view"></div><textarea class="field sentence" rows="1" aria-label="Sentence" hidden></textarea><div class="sub sent-tr"></div><button class="link tr-btn">Translate the sentence</button>
 <div class="note"></div>
-<div class="foot"><select class="lesson" aria-label="Lesson">${lessonOptions()}</select><button class="btn add">Add</button></div>`;
+<div class="foot"><select class="lesson" aria-label="Lesson">${lessonOptions()}</select><button class="btn add">Add</button></div></div>`;
     wrap.appendChild(card);
     const $ = s => card.querySelector(s);
     const termEl = $(".term"), meaningEl = $(".meaning"), sentEl = $(".sentence"), readingEl = $(".reading"), note = $(".note");
@@ -383,11 +383,17 @@ textarea[hidden], .sent-view[hidden]{display:none;}
       const at = t ? text.toLowerCase().indexOf(t.toLowerCase()) : -1;
       sentView.innerHTML = at === -1 ? esc(text) : esc(text.slice(0, at)) + "<mark>" + esc(text.slice(at, at + t.length)) + "</mark>" + esc(text.slice(at + t.length));
     };
+    const fitSentence = () => {
+      sentEl.style.height = "auto";
+      sentEl.style.height = sentEl.scrollHeight + 2 + "px";
+    };
     const editSentence = () => {
       sentView.hidden = true;
       sentEl.hidden = false;
+      fitSentence();
       sentEl.focus();
     };
+    sentEl.addEventListener("input", fitSentence);
     paintSentence();
     sentView.addEventListener("click", editSentence);
     sentEl.addEventListener("blur", () => {
