@@ -64,6 +64,9 @@ window.onYouTubeIframeAPIReady = function(){
     --new-color:#1e9466;
     --mode-blue:#2f6fd6;
     --due-color:#c9801a;
+    --wait-ink:#8a6d00;
+    --wait-line:#e3c13a;
+    --wait-bg:#fff7cf;
     --yt-red:#e62117;
     --view-bg:#fdf3dc;
     --view-edge:#ecd29a;
@@ -116,6 +119,9 @@ window.onYouTubeIframeAPIReady = function(){
       --new-color:#3cc48d;
       --mode-blue:#5d8ff0;
       --due-color:#e9a443;
+      --wait-ink:#f2d25c;
+      --wait-line:#b8961f;
+      --wait-bg:#3a3214;
       --yt-red:#ff5a4f;
       --view-bg:#2e2616;
       --view-edge:#5a4824;
@@ -159,6 +165,9 @@ window.onYouTubeIframeAPIReady = function(){
     --new-color:#3cc48d;
     --mode-blue:#5d8ff0;
     --due-color:#e9a443;
+    --wait-ink:#f2d25c;
+    --wait-line:#b8961f;
+    --wait-bg:#3a3214;
     --yt-red:#ff5a4f;
     --view-bg:#2e2616;
     --view-edge:#5a4824;
@@ -1413,6 +1422,7 @@ window.onYouTubeIframeAPIReady = function(){
   .swipe-ghost.row{align-items:center;border-radius:var(--radius);font-size:20px;}
   .swipe-ghost.good{color:var(--a-label);border-color:currentColor;}
   .swipe-ghost.again{color:var(--danger);border-color:currentColor;}
+  .swipe-ghost.waiting{color:var(--wait-ink);border-color:var(--wait-line);background:var(--wait-bg);}
   .swipe-ghost.again.mark, .swipe-ghost.delete, .touch-bar .tb-again.tb-mark{-webkit-text-stroke:.04em currentColor;}
   .swipe-ghost.delete{color:var(--text);border-color:currentColor;}
   .swipe-ghost.to-vocab{color:#1e9466;border-color:currentColor;}
@@ -3794,6 +3804,20 @@ function cardWaiting(r) {
   if (!words.length) return false;
   const done = doneWordKeys();
   return words.some(e => !done.has(e.key));
+}
+
+function gradeWaits(r) {
+  if (!r || r.uid === EXTRA_UID) return false;
+  const words = vocabEntriesOf(r);
+  if (!words.length) return false;
+  const done = doneWordKeys();
+  return words.some(e => !done.has(e.key));
+}
+
+function studyPickRow() {
+  if (!groupState) return null;
+  const {scope: scope, picked: picked} = studyPick();
+  return picked || scope[0] || null;
 }
 
 function cardReady(r, mode, now = Date.now()) {
@@ -8115,7 +8139,7 @@ function gradeCard(row, isAgain) {
       return mixNext();
     }
     render();
-  }, next);
+  }, next, cardWaiting(row) ? "Waiting" : undefined);
 }
 
 let heldPage = null;
@@ -8313,9 +8337,9 @@ function swipe(parts, dir, update, next, label = dir > 0 ? "Good" : "Again") {
   dragGhost = null;
   if (dictUnderSwipe(parts)) hideDictOverlay();
   if (ghost) {
-    ghost.classList.remove("good", "again");
-    ghost.classList.add(label === "Delete" ? "delete" : label === "Vocab" ? "to-vocab" : dir > 0 ? "good" : "again");
-    ghost.textContent = label === "Delete" ? "✕" : label === "Vocab" ? "字" : gradeMark(dir < 0);
+    ghost.classList.remove("good", "again", "waiting");
+    ghost.classList.add(label === "Delete" ? "delete" : label === "Vocab" ? "to-vocab" : label === "Waiting" ? "waiting" : dir > 0 ? "good" : "again");
+    ghost.textContent = label === "Delete" ? "✕" : label === "Vocab" ? "字" : label === "Waiting" ? "⏳ Waiting" : gradeMark(dir < 0);
     ghost.animate([ {
       transform: from
     }, {
@@ -8416,9 +8440,11 @@ window.addEventListener("pointermove", e => {
   }
   drag.dx = dx;
   const again = dx < 0;
-  drag.ghost.classList.toggle("again", again);
-  drag.ghost.classList.toggle("good", !again);
-  drag.ghost.textContent = gradeMark(again);
+  if (drag.waits === undefined) drag.waits = !drag.vocab && gradeWaits(studyPickRow());
+  drag.ghost.classList.toggle("waiting", drag.waits);
+  drag.ghost.classList.toggle("again", again && !drag.waits);
+  drag.ghost.classList.toggle("good", !again && !drag.waits);
+  drag.ghost.textContent = drag.waits ? "⏳ Waiting" : gradeMark(again);
   drag.ghost.style.transform = `translate(${dx}px, ${dy / 4}px) rotate(${dx / 20}deg)`;
 });
 
