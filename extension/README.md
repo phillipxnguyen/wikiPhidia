@@ -10,7 +10,11 @@ A browser extension for reading on the web (news, articles, any page) that picks
 4. Pin the green 字 icon to the toolbar.
 5. Open wikiPhidia once (https://phillipxnguyen.github.io/wikiPhidia/) so the extension connects and learns your lessons and words.
 
-After pulling a newer version, click the ↻ on the extension's card in `chrome://extensions`.
+## Updating
+
+The extension checks GitHub for a newer version every time you open its popup (and when the browser starts). When there is one, the icon shows a blue **↑** and the popup a banner: **Download** gets the new files, unzip them over your `extension` folder, then press **Reload** right there (no need to open `chrome://extensions`). **Settings** shows the version you have and has a **Reload extension** button too.
+
+A browser only updates an extension fully by itself when it comes from the Chrome Web Store; loaded unpacked, as here, the files have to be replaced by hand.
 
 ## Reading
 

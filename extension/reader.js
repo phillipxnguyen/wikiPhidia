@@ -70,7 +70,7 @@ label .link{margin-left:6px;font-size:11px;line-height:16px;letter-spacing:0;tex
 .note{margin-top:12px;padding:8px 10px;border-radius:8px;background:var(--green-soft);color:var(--ink);font-size:13px;line-height:18px;}
 .note:empty{display:none;}
 .foot{display:flex;align-items:center;gap:8px;margin-top:14px;}
-.foot select{flex:1;min-width:0;padding:7px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit;font-size:14px;line-height:20px;}
+.foot select{flex:1;min-width:0;padding:7px 28px 7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%235e6878' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 10px center;color:var(--ink);font:inherit;font-size:14px;line-height:20px;-webkit-appearance:none;appearance:none;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:pointer;}
 .btn{flex:none;padding:8px 16px;border:0;border-radius:8px;background:var(--green);color:#fff;font:inherit;font-weight:700;cursor:pointer;}
 .btn:hover{filter:brightness(1.08);}
 .btn[disabled]{opacity:.5;cursor:default;filter:none;}

@@ -142,4 +142,15 @@ chrome.tabs.query({ active: true, currentWindow: true }).then(([ tab ]) => {
   $("ytLesson").onclick = () => chrome.runtime.sendMessage({ type: "youtube", tabId: tab.id }, () => window.close());
 });
 
+async function paintUpdate() {
+  const { update } = await chrome.storage.local.get("update");
+  $("update").hidden = !update;
+  if (update) $("updateVersion").textContent = update.version;
+}
+
+$("versionNow").textContent = "Version " + chrome.runtime.getManifest().version;
+[ "updateReload", "reloadExt" ].forEach(id => $(id).addEventListener("click", () => chrome.runtime.reload()));
+chrome.runtime.sendMessage({ type: "checkUpdate" }, paintUpdate);
+paintUpdate();
+
 load();

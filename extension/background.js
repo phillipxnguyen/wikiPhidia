@@ -182,11 +182,30 @@ async function importYouTube(tabId) {
   await openApp();
 }
 
+const MANIFEST_URL = "https://raw.githubusercontent.com/phillipxnguyen/wikiPhidia/main/extension/manifest.json";
+
+const newer = (a, b) => {
+  const x = String(a).split(".").map(Number), y = String(b).split(".").map(Number);
+  for (let i = 0; i < Math.max(x.length, y.length); i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0);
+  return false;
+};
+
+async function checkUpdate() {
+  try {
+    const res = await fetch(MANIFEST_URL + "?t=" + Date.now(), { cache: "no-store" });
+    if (!res.ok) return;
+    const latest = (await res.json()).version;
+    const mine = chrome.runtime.getManifest().version;
+    await chrome.storage.local.set({ update: newer(latest, mine) ? { version: latest, at: Date.now() } : null });
+  } catch (e) {}
+  paintBadge();
+}
+
 async function paintBadge() {
-  const { pending } = await chrome.storage.local.get("pending");
+  const { pending, update } = await chrome.storage.local.get([ "pending", "update" ]);
   const n = (pending || []).length;
-  await chrome.action.setBadgeBackgroundColor({ color: "#1e9466" });
-  await chrome.action.setBadgeText({ text: n ? String(n) : "" });
+  await chrome.action.setBadgeBackgroundColor({ color: n || !update ? "#1e9466" : "#2f6fd6" });
+  await chrome.action.setBadgeText({ text: n ? String(n) : update ? "↑" : "" });
 }
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -201,10 +220,11 @@ chrome.runtime.onInstalled.addListener(() => {
     contexts: [ "page", "video" ],
     documentUrlPatterns: [ "https://www.youtube.com/*", "https://m.youtube.com/*" ]
   });
-  paintBadge();
+  checkUpdate();
 });
 
-chrome.runtime.onStartup.addListener(paintBadge);
+chrome.runtime.onStartup.addListener(checkUpdate);
+
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === "wkp-yt" && tab && tab.id != null) importYouTube(tab.id);
@@ -212,7 +232,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 });
 
 chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === "local" && changes.pending) paintBadge();
+  if (area === "local" && (changes.pending || changes.update)) paintBadge();
 });
 
 chrome.runtime.onMessage.addListener((msg, sender, reply) => {
@@ -225,6 +245,10 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     if (tabId != null) importYouTube(tabId);
     reply({ ok: tabId != null });
     return false;
+  }
+  if (msg && msg.type === "checkUpdate") {
+    checkUpdate().then(() => reply({ ok: true }));
+    return true;
   }
   if (msg && msg.type === "openApp") {
     openApp().then(() => reply({ ok: true }), e => reply({ ok: false, error: String(e) }));
