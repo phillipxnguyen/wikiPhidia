@@ -3,9 +3,9 @@ const DEFAULTS = {
   lessonId: "",
   lessonName: "",
   highlight: true,
-  button: true,
   shift: true,
   youtube: true,
+  pick: "button",
   appUrl: "https://phillipxnguyen.github.io/wikiPhidia/"
 };
 

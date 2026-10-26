@@ -8,9 +8,9 @@
     lessonId: "",
     lessonName: "",
     highlight: true,
-    button: true,
     shift: true,
-    youtube: true
+    youtube: true,
+    pick: "button"
   };
   const CJK = /[㐀-鿿豈-﫿]/;
   const KANA = /[぀-ヿ]/;
@@ -99,19 +99,20 @@ textarea[hidden], .sent-view[hidden]{display:none;}
     pending.forEach(w => {
       if (!known.has(norm(w.term))) known.set(norm(w.term), { term: w.term, meaning: w.meaning, lesson: w.lessonName || "", state: "pending" });
     });
-    const terms = [ ...known.values() ].map(k => k.term).filter(t => t && t.trim().length > 0).sort((a, b) => b.length - a.length).slice(0, 6000);
-    if (!terms.length) {
-      matcher = null;
-      return;
-    }
+    matcher = matcherFor([ ...known.values() ].map(k => k.term));
+  }
+
+  function matcherFor(list) {
+    const terms = list.filter(t => t && t.trim().length > 0).sort((a, b) => b.length - a.length).slice(0, 6000);
+    if (!terms.length) return null;
     const part = t => {
       const e = t.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s+");
       return CJK.test(t) || KANA.test(t) ? e : "(?<![\\p{L}\\p{N}])" + e + "(?![\\p{L}\\p{N}])";
     };
     try {
-      matcher = new RegExp(terms.map(part).join("|"), "giu");
+      return new RegExp(terms.map(part).join("|"), "giu");
     } catch {
-      matcher = null;
+      return null;
     }
   }
 
@@ -127,8 +128,8 @@ textarea[hidden], .sent-view[hidden]{display:none;}
     return false;
   }
 
-  function highlightIn(scope) {
-    if (!matcher || !settings.highlight || !scope) return;
+  function highlightIn(scope, re = matcher, now = false) {
+    if (!re || !settings.highlight || !scope) return;
     const walker = document.createTreeWalker(scope, NodeFilter.SHOW_TEXT, {
       acceptNode: n => n.nodeValue.trim().length && n.parentElement && !skipNode(n.parentElement) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT
     });
@@ -136,17 +137,17 @@ textarea[hidden], .sent-view[hidden]{display:none;}
     while (walker.nextNode()) nodes.push(walker.currentNode);
     let i = 0;
     const step = deadline => {
-      while (i < nodes.length && (!deadline || deadline.timeRemaining() > 2)) {
+      while (i < nodes.length && (now || !deadline || deadline.timeRemaining() > 2)) {
         const node = nodes[i++];
         const text = node.nodeValue;
-        matcher.lastIndex = 0;
-        if (!matcher.test(text)) continue;
-        matcher.lastIndex = 0;
+        re.lastIndex = 0;
+        if (!re.test(text)) continue;
+        re.lastIndex = 0;
         const frag = document.createDocumentFragment();
         let at = 0, m;
-        while ((m = matcher.exec(text))) {
+        while ((m = re.exec(text))) {
           if (!m[0]) {
-            matcher.lastIndex++;
+            re.lastIndex++;
             continue;
           }
           const k = known.get(norm(m[0]));
@@ -164,27 +165,33 @@ textarea[hidden], .sent-view[hidden]{display:none;}
       }
       if (i < nodes.length) schedule(step);
     };
-    schedule(step);
+    if (now) step(null); else schedule(step);
   }
 
   const schedule = fn => window.requestIdleCallback ? requestIdleCallback(fn, { timeout: 600 }) : setTimeout(() => fn(null), 30);
 
   let rescanTimer = 0;
+  let markedKeys = null;
+  function refresh() {
+    observer.disconnect();
+    rebuildKnown();
+    if (!settings.highlight) unwrapAll(); else document.querySelectorAll("wkp-hl").forEach(el => {
+      const k = known.get(norm(el.textContent));
+      if (!k) el.replaceWith(document.createTextNode(el.textContent)); else if (el.dataset.state !== k.state) el.dataset.state = k.state;
+    });
+    if (settings.highlight && matcher) {
+      if (!hlStyle.isConnected) (document.head || document.documentElement).appendChild(hlStyle);
+      if (!markedKeys) highlightIn(document.body); else {
+        const fresh = [ ...known.entries() ].filter(([ key ]) => !markedKeys.has(key)).map(([ , k ]) => k.term);
+        if (fresh.length) highlightIn(document.body, matcherFor(fresh), true);
+      }
+      markedKeys = new Set(known.keys());
+    } else markedKeys = null;
+    watch();
+  }
   function rescan() {
     clearTimeout(rescanTimer);
-    rescanTimer = setTimeout(() => {
-      observer.disconnect();
-      rebuildKnown();
-      if (!settings.highlight) unwrapAll(); else document.querySelectorAll("wkp-hl").forEach(el => {
-        const k = known.get(norm(el.textContent));
-        if (!k) el.replaceWith(document.createTextNode(el.textContent)); else if (el.dataset.state !== k.state) el.dataset.state = k.state;
-      });
-      if (settings.highlight && matcher) {
-        if (!hlStyle.isConnected) (document.head || document.documentElement).appendChild(hlStyle);
-        highlightIn(document.body);
-      }
-      watch();
-    }, 120);
+    rescanTimer = setTimeout(refresh, 0);
   }
 
   let added = [];
@@ -199,7 +206,7 @@ textarea[hidden], .sent-view[hidden]{display:none;}
       const scopes = added.filter(n => n.isConnected);
       added = [];
       observer.disconnect();
-      scopes.forEach(highlightIn);
+      scopes.forEach(n => highlightIn(n));
       watch();
     }, 700);
   });
@@ -280,7 +287,7 @@ textarea[hidden], .sent-view[hidden]{display:none;}
     pickFor = null;
   }
   function showPick(found) {
-    if (!settings.button || card) return;
+    if (card) return;
     mount();
     hidePick();
     const rects = found.range.getClientRects();
@@ -306,9 +313,12 @@ textarea[hidden], .sent-view[hidden]{display:none;}
   let cardWord = null;
   let translateToken = 0;
 
+  let cardTranslate = null;
+
   function closeCard() {
     if (card) card.remove();
     card = null;
+    cardTranslate = null;
     cardWord = null;
   }
 
@@ -467,7 +477,7 @@ textarea[hidden], .sent-view[hidden]{display:none;}
     });
     $(".say").addEventListener("click", () => speak(termEl.value.trim()));
     $(".close").addEventListener("click", closeCard);
-    $(".tr-btn").addEventListener("click", () => {
+    cardTranslate = () => {
       const out = $(".sent-tr");
       if (out.textContent) return out.textContent = "";
       out.textContent = "Translating…";
@@ -475,7 +485,8 @@ textarea[hidden], .sent-view[hidden]{display:none;}
         if (!card) return;
         out.textContent = !chrome.runtime.lastError && res && res.ok ? res.text : "Couldn't translate it now";
       });
-    });
+    };
+    $(".tr-btn").addEventListener("click", cardTranslate);
     $(".lesson").addEventListener("change", e => {
       if (e.target.value !== "new") return;
       const name = (prompt("Name of the new lesson", "") || "").trim();
@@ -520,6 +531,8 @@ textarea[hidden], .sent-view[hidden]{display:none;}
       const list = now || [];
       if (list.some(w => norm(w.term) === norm(t))) return closeCard();
       list.push(word);
+      pending = list;
+      refresh();
       await chrome.storage.local.set({ pending: list });
       closeCard();
       toast(word.meaning ? `${t}: ${word.meaning}` : t);
@@ -544,8 +557,12 @@ textarea[hidden], .sent-view[hidden]{display:none;}
     shiftAlone = e.key === "Shift" && !e.ctrlKey && !e.metaKey && !e.altKey;
   }, true);
   document.addEventListener("keyup", e => {
-    if (e.key !== "Shift" || !shiftAlone || !settings.shift || card) return;
+    if (e.key !== "Shift" || !shiftAlone || !settings.shift) return;
     shiftAlone = false;
+    if (card) {
+      if (cardTranslate) cardTranslate();
+      return;
+    }
     const found = selectedText();
     if (found) openCard(found.text, found.range);
   }, true);
@@ -554,7 +571,7 @@ textarea[hidden], .sent-view[hidden]{display:none;}
     if (e.composedPath().includes(host)) return;
     setTimeout(() => {
       const found = selectedText();
-      if (found) showPick(found); else hidePick();
+      if (!found) hidePick(); else if (settings.pick === "open") openCard(found.text, found.range); else showPick(found);
     }, 10);
   }, true);
 

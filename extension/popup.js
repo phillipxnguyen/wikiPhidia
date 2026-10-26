@@ -3,9 +3,9 @@ const DEFAULTS = {
   lessonId: "",
   lessonName: "",
   highlight: true,
-  button: true,
   shift: true,
   youtube: true,
+  pick: "button",
   appUrl: "https://phillipxnguyen.github.io/wikiPhidia/"
 };
 
@@ -54,12 +54,15 @@ function paintSettings() {
   const s = state.settings;
   $("lang").value = s.lang;
   $("highlight").checked = !!s.highlight;
-  $("button").checked = !!s.button;
+  document.querySelectorAll(".pick-mode").forEach(b => {
+    b.classList.toggle("on", b.dataset.pick === s.pick);
+    b.setAttribute("aria-checked", b.dataset.pick === s.pick);
+  });
   $("shift").checked = !!s.shift;
   $("youtube").checked = s.youtube !== false;
   $("appUrl").value = s.appUrl;
   const lessons = state.app.lessons.slice().sort((a, b) => (b.words ? 1 : 0) - (a.words ? 1 : 0) || a.name.localeCompare(b.name));
-  $("lesson").innerHTML = `<option value="article">Each article's own lesson</option>` + lessons.map(l => `<option value="id:${esc(l.id)}">${esc(l.name)}</option>`).join("");
+  $("lesson").innerHTML = `<option value="article">🆕 New lesson for each article</option>` + lessons.map(l => `<option value="id:${esc(l.id)}">${esc(l.name)}</option>`).join("");
   $("lesson").value = s.lessonId && lessons.some(l => l.id === s.lessonId) ? "id:" + s.lessonId : "article";
 }
 
@@ -109,7 +112,8 @@ $("pendingList").addEventListener("change", async e => {
   await chrome.storage.local.set({ pending: state.pending });
 });
 
-[ "highlight", "button", "shift", "youtube" ].forEach(id => $(id).addEventListener("change", e => saveSettings({ [id]: e.target.checked })));
+[ "highlight", "shift", "youtube" ].forEach(id => $(id).addEventListener("change", e => saveSettings({ [id]: e.target.checked })));
+document.querySelectorAll(".pick-mode").forEach(b => b.addEventListener("click", () => saveSettings({ pick: b.dataset.pick }).then(paintSettings)));
 $("lang").addEventListener("change", e => saveSettings({ lang: e.target.value }));
 $("appUrl").addEventListener("change", e => saveSettings({ appUrl: e.target.value.trim() || DEFAULTS.appUrl }));
 $("lesson").addEventListener("change", e => {
