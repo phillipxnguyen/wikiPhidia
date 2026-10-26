@@ -2748,7 +2748,6 @@ function onPlayerReady() {
     ytHasVideo = true;
     setMediaState("shown");
     ytCueing = true;
-    ytCueId = id;
     ytPlayer.cueVideoById(id);
     if (ttsPlaying) pauseVideoProgrammatically();
   }
@@ -2839,7 +2838,6 @@ function createYtPlayer(videoId) {
   ytHasVideo = true;
   setMediaState("shown");
   ytCueing = true;
-  ytCueId = videoId;
   ytPlayer.cueVideoById(videoId);
   if (ttsPlaying) pauseVideoProgrammatically();
   updateSequenceBtnUI();
@@ -2849,8 +2847,6 @@ whenYtApiReady(ensurePlayer);
 
 function onPlayerStateChange(event) {
   if (event.data === YT.PlayerState.CUED) {
-    const data = typeof ytPlayer.getVideoData === "function" ? ytPlayer.getVideoData() : null;
-    if (ytCueId && data && data.video_id && data.video_id !== ytCueId) return;
     ytCueing = false;
     vocabCueDone();
     mixCueDone();
@@ -2905,8 +2901,6 @@ const retriedVideos = new Set;
 let retryPlay = null;
 
 let autoPlayFor = null;
-
-let ytCueId = "";
 
 function retryVideo(play) {
   const id = extractYouTubeId(document.getElementById("mediaUrl").value.trim());
@@ -10038,7 +10032,12 @@ function resetStudyState() {
     ytWatchdog = null;
   }
   const keep = ytPlayer && ytReady && !ytHasError ? ytPlayer.getIframe() : null;
-  if (keep) destroyYtPlayer(); else {
+  if (keep) {
+    pauseVideoProgrammatically();
+    ytWarm = false;
+    ytCueing = false;
+    setMediaState("hidden");
+  } else {
     safeDestroyPlayer();
     ytReady = false;
   }
