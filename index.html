@@ -355,6 +355,7 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-back .vocab-ctx, .vocab-back .vocab-meaning{box-sizing:border-box;width:fit-content;max-width:100%;padding:0 16px;font-size:28px;line-height:35px;margin:0;text-align:left;}
   .vocab-back .vocab-ctx.small{font-size:20px;}
   .vocab-back .vocab-meaning{font-weight:400;}
+  .vocab-list-meaning .card-notes mark{padding:0 1px;border-radius:4px;background:var(--term-bg);color:inherit;}
   .vocab-back .vocab-ctx mark, .vocab-back .vocab-ctx mark:has(.rd){display:inline;padding:0 1px;margin:0;border-radius:4px;line-height:inherit;}
   .vocab-back .vocab-ctx mark:is(.vocab-hit, .vocab-own){padding:0;border-radius:0;}
   .vocab-back .vocab-ctx mark.vs{border-top-left-radius:4px;border-bottom-left-radius:4px;padding-left:1px;}
@@ -543,15 +544,15 @@ window.onYouTubeIframeAPIReady = function(){
     .shell .lesson-header{row-gap:0;}
     .shell #fileStatus{margin-top:-1px;}
     .shell .link-bar{min-width:0;flex-basis:100%;}
-    .shell #cardTable .cell{margin:6px 5px;padding:4px;}
-    .shell .vocab-list-row[data-key] > *{padding:13px 10px 13px 0;}
-    .shell .vocab-list-row[data-key] > :first-child{padding-left:10px;}
+    .shell #cardTable .cell{margin:6px 12px;padding:4px;}
+    .shell .vocab-list-row[data-key] > *{padding:13px 16px 13px 0;}
+    .shell .vocab-list-row[data-key] > :first-child{padding-left:16px;}
     .shell .single-card-body{padding:24px 16px;}
     .shell .single-card-field{padding:14px 10px;}
     .shell .single-card-field .cell{font-size:18px;line-height:22px;padding:2px 6px;}
     .shell .vocab-back .vocab-word-notes{font-size:20px;line-height:25px;}
     .shell .single-card-body.listen-batch{padding:0;}
-    .shell #cardTable:not(.notebook) .card-notes{padding:0 4px 14px 9px;}
+    .shell #cardTable:not(.notebook) .card-notes{padding:0 16px 14px 16px;}
   }
   html.touch input[type=text], html.touch input[type=search], html.touch input[type=email], html.touch input[type=password], html.touch textarea, html.touch select{font-size:16px;}
   html.touch .segmented button{min-width:46px;padding:8px 12px;}
@@ -1543,7 +1544,7 @@ window.onYouTubeIframeAPIReady = function(){
   .cloud-or{font-size:12px;color:var(--text-2);}
   .cloud-row{display:flex;gap:8px;}
   .cloud-row button{flex:1;}
-  .all-curtain{position:fixed;z-index:30000;pointer-events:none;overflow:hidden;}
+  .all-curtain{position:fixed;z-index:30000;pointer-events:auto;overflow:hidden;}
   .all-curtain.waiting{pointer-events:auto;cursor:pointer;}
   .curtain-wand{position:absolute;left:50%;top:50%;width:320px;height:320px;margin:-160px 0 0 -160px;filter:drop-shadow(0 8px 12px rgba(0, 0, 0, .4));}
   .curtain-wand svg{display:block;width:100%;height:100%;overflow:visible;}
@@ -1777,7 +1778,7 @@ window.onYouTubeIframeAPIReady = function(){
       <a id="ytGrabLink" class="yt-grab" href="#" title="Drag to your bookmarks bar, then click it on a YouTube video">YouTube subtitles</a>
       <button id="ytGrabCopy" class="yt-grab">YouTube subtitles</button>
       <span class="muted-label yt-grab-hint touch-hint">Now bookmark any page and paste it as the bookmark's address.</span>
-      <span class="muted-label reader-yt-hint">YouTube lessons: on any video, click 字 Make a lesson (wikiPhidia Reader).</span>
+      <span class="muted-label reader-yt-hint">YouTube lessons: on any video, click 字 to make a lesson</span>
     </div>
     <div id="importStatus" class="muted-label" style="margin-top:6px;"></div>
     <div id="importInfo" style="font-size:12px;color:var(--text-2);margin-top:8px;"></div>
@@ -13205,7 +13206,7 @@ function readerState() {
 function readerNotesHtml(w) {
   const lines = [];
   if (w.sentence) lines.push("<div>" + escapeHtml(cleanText(w.sentence).replace(/\n/g, " ")) + "</div>");
-  if (w.title || w.url) lines.push("<div><i>" + escapeHtml(cleanText(w.title || w.url).replace(/\n/g, " ")) + "</i></div>");
+  if ((w.title || w.url) && cleanText(w.title || "").trim().toLowerCase() !== cleanText(w.lessonName || "").trim().toLowerCase()) lines.push("<div><i>" + escapeHtml(cleanText(w.title || w.url).replace(/\n/g, " ")) + "</i></div>");
   return lines.join("");
 }
 
@@ -13873,9 +13874,35 @@ function vocabSentenceHtml(sentence, term, row) {
   return html;
 }
 
+function noteSentence(item) {
+  const html = wordNotesOf(item);
+  if (!html) return null;
+  const box = document.createElement("div");
+  box.innerHTML = html;
+  const line = [ ...box.children ].find(el => findTermIn(el.textContent.trim().normalize("NFC"), item.term));
+  if (!line) return null;
+  const sentence = line.textContent.trim();
+  line.remove();
+  return {
+    sentence: sentence,
+    rest: box.innerHTML
+  };
+}
+
 function vocabContext(item) {
   const sentenceIn = card => [ card.q || "" ].concat(card.a ? splitIntoSentences(card.a).map(s => s.text) : []).map(t => t.trim()).find(t => t && findTermIn(t.normalize("NFC"), item.term));
-  for (const card of [ item.card ].concat(rows)) {
+  const own = sentenceIn(item.card);
+  if (own) return {
+    card: item.card,
+    sentence: own
+  };
+  const noted = noteSentence(item);
+  if (noted) return {
+    card: item.card,
+    sentence: noted.sentence,
+    notes: noted.rest
+  };
+  for (const card of rows) {
     const sentence = sentenceIn(card);
     if (sentence) return {
       card: card,
@@ -13899,14 +13926,14 @@ function lookupOthers(html, item) {
 }
 
 function vocabBackInner(item) {
-  const {card: card, sentence: sentence} = vocabContext(item);
+  const {card: card, sentence: sentence, notes: rest} = vocabContext(item);
   if (vocabViewOnly(item)) {
     const notes = wordNotesOf(item);
     return `<div class="vocab-ctx">${lookupOthers(escapeHtml(item.term), item)}</div>` + (notes ? `<div class="vocab-word-notes">${notes}</div>` : "");
   }
   const inSentence = sentence && !!findTermIn(sentence.normalize("NFC"), item.term);
   const main = inSentence ? `<div class="vocab-ctx">${lookupOthers(vocabSentenceHtml(sentence, item.term, card), item)}</div>` : `<div class="vocab-ctx"><mark>${vocabSentenceHtml(item.term, "", card)}</mark></div>` + (sentence ? `<div class="vocab-ctx small">${lookupOthers(vocabSentenceHtml(sentence, "", card), item)}</div>` : "");
-  const notes = wordNotesOf(item);
+  const notes = rest ?? wordNotesOf(item);
   return main + `<div class="vocab-meaning">${escapeHtml(item.meaning)}</div>` + (notes ? `<div class="vocab-word-notes">${notes}</div>` : "");
 }
 
@@ -14066,6 +14093,11 @@ function showVocabDeck(stage, item) {
   setTimeout(fitVocabCards, 0);
 }
 
+function wordNotesView(item) {
+  const noted = noteSentence(item);
+  return noted ? `<div>${vocabSentenceHtml(noted.sentence, item.term, item.card)}</div>` + noted.rest : wordNotesOf(item);
+}
+
 function wordNotesOf(item) {
   const st = item && item.card && item.card.vocab && item.card.vocab[item.key];
   return st && st.notes || "";
@@ -14143,7 +14175,7 @@ function renderVocab() {
   })}</div>` : "";
   const open = !studyOnly && (vocabView === "list" || caughtUp) || !!vocabEditingKey && (vocabEditingInList || vocabEditingKey === NEW_WORD_KEY);
   list.hidden = items.length ? !open : vocabEditingKey !== NEW_WORD_KEY;
-  list.innerHTML = adder + (list.hidden ? "" : shown.map(item => `<div class="vocab-list-row" data-key="${escapeAttr(item.key)}"><span class="vocab-list-term">${escapeHtml(item.term)}</span><span class="vocab-list-meaning">${wordNotesOf(item) ? `<span>${escapeHtml(item.meaning)}</span><div class="card-notes">${wordNotesOf(item)}</div>` : escapeHtml(item.meaning)}</span><span class="vocab-list-status">${vocabStatusIcon(vocabStateOf(item))}</span></div>`).join("") + (more ? `<button id="vocabMore" class="vocab-more ghost">Show ${more} more</button>` : ""));
+  list.innerHTML = adder + (list.hidden ? "" : shown.map(item => `<div class="vocab-list-row" data-key="${escapeAttr(item.key)}"><span class="vocab-list-term">${escapeHtml(item.term)}</span><span class="vocab-list-meaning">${wordNotesOf(item) ? `<span>${escapeHtml(item.meaning)}</span><div class="card-notes">${wordNotesView(item)}</div>` : escapeHtml(item.meaning)}</span><span class="vocab-list-status">${vocabStatusIcon(vocabStateOf(item))}</span></div>`).join("") + (more ? `<button id="vocabMore" class="vocab-more ghost">Show ${more} more</button>` : ""));
   watchVocabMore();
   if (emptyLesson) {
     vocabSession = null;
@@ -15161,6 +15193,22 @@ function allCurtain(item) {
   };
   place();
   addEventListener("resize", place);
+  const BLOCKED = [ "pointerdown", "pointerup", "mousedown", "mouseup", "click", "dblclick", "auxclick", "contextmenu", "touchstart", "touchend", "keydown", "keyup", "keypress" ];
+  let knock = null;
+  const block = e => {
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    if (e.type.startsWith("key") && (e.metaKey || e.ctrlKey)) return;
+    if (e.cancelable) e.preventDefault();
+    if (knock && (e.type === "pointerdown" || e.type === "keydown" && ![ "Shift", "Control", "Alt", "Meta" ].includes(e.key))) knock();
+  };
+  BLOCKED.forEach(t => addEventListener(t, block, {
+    capture: true,
+    passive: false
+  }));
+  const unblock = () => BLOCKED.forEach(t => removeEventListener(t, block, {
+    capture: true
+  }));
   curtain.style.setProperty("--bar", cs.backgroundImage);
   curtain.style.setProperty("--bar-base", cs.backgroundColor);
   curtain.innerHTML = '<i class="curtain-side curtain-l"><b></b></i><i class="curtain-side curtain-r"><b></b></i>';
@@ -15204,6 +15252,7 @@ function allCurtain(item) {
       fill: "forwards"
     }).finished)).then(() => {
       removeEventListener("resize", place);
+      unblock();
       curtain.remove();
     });
   };
@@ -15229,16 +15278,8 @@ function allCurtain(item) {
       if (!navigator.userActivation || navigator.userActivation.hasBeenActive) return open();
       curtain.classList.add("waiting");
       curtain.insertAdjacentHTML("beforeend", `<span class="curtain-wand" role="img" aria-label="${isTouch() ? "Tap" : "Click"} to open"><svg viewBox="0 0 220 220" aria-hidden="true"><g class="wand-spark"><path d="M176 18l5 13 13 5-13 5-5 13-5-13-13-5 13-5z"/><path d="M206 62l3 8 8 3-8 3-3 8-3-8-8-3 8-3z"/><path d="M140 12l3 7 7 3-7 3-3 7-3-7-7-3 7-3z"/><path d="M196 104l2 6 6 2-6 2-2 6-2-6-6-2 6-2z"/></g><g class="wand-stick"><defs><linearGradient id="wandWood" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a0703f"/><stop offset=".45" stop-color="#6b4220"/><stop offset="1" stop-color="#3a2210"/></linearGradient></defs><g transform="rotate(-45 110 110)"><path d="M72 104 L196 108 Q202 110 196 112 L72 116 Z" fill="url(#wandWood)"/><rect x="24" y="101" width="50" height="18" rx="7" fill="url(#wandWood)"/><circle cx="20" cy="110" r="9" fill="url(#wandWood)"/><rect x="32" y="100" width="5" height="20" rx="2" fill="#3a2210"/><rect x="46" y="100" width="5" height="20" rx="2" fill="#3a2210"/><rect x="60" y="100" width="5" height="20" rx="2" fill="#3a2210"/><rect x="70" y="102" width="5" height="16" rx="2" fill="#3a2210"/><path d="M78 106 L190 108" stroke="rgba(255, 255, 255, .25)" stroke-width="2" stroke-linecap="round"/><path d="M14 106 Q20 101 26 106" stroke="rgba(255, 255, 255, .3)" stroke-width="2" fill="none" stroke-linecap="round"/></g></g></svg></span>`);
-      const swallow = e => {
-        e.preventDefault();
-        e.stopPropagation();
-      };
-      const go = e => {
-        if (e.type === "keydown" && [ "Shift", "Control", "Alt", "Meta" ].includes(e.key)) return;
-        swallow(e);
-        [ "pointerdown", "keydown" ].forEach(t => removeEventListener(t, go, true));
-        addEventListener("click", swallow, true);
-        setTimeout(() => removeEventListener("click", swallow, true), 700);
+      knock = () => {
+        knock = null;
         const wand = curtain.querySelector(".curtain-wand");
         wand.classList.add("tapping");
         setTimeout(() => {
@@ -15247,7 +15288,6 @@ function allCurtain(item) {
           open();
         }, reducedMotion() ? 0 : 520);
       };
-      [ "pointerdown", "keydown" ].forEach(t => addEventListener(t, go, true));
     })();
   });
 }

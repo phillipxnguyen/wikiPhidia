@@ -1,7 +1,7 @@
 const DEFAULTS = {
   lang: "vi",
   lessonId: "",
-  lessonName: "Reading",
+  lessonName: "",
   highlight: true,
   button: true,
   shift: true,
@@ -37,7 +37,7 @@ function paintPending() {
 <div class="term">${esc(w.term)}<span class="reading">${esc(reading(w.term))}</span></div>
 <input class="edit meaning" value="${esc(w.meaning)}" placeholder="Meaning" aria-label="Meaning">
 ${w.sentence ? `<div class="sentence">${esc(w.sentence)}</div>` : ""}
-<div class="meta">${esc(w.lessonName || state.settings.lessonName)} · ${esc(w.title || "")}</div>
+<div class="meta">${esc(w.lessonName || "")}${w.title && w.title !== w.lessonName ? " · " + esc(w.title) : ""}</div>
 <button class="del" title="Remove" aria-label="Remove">✕</button></div>`).join("");
 }
 
@@ -59,10 +59,8 @@ function paintSettings() {
   $("youtube").checked = s.youtube !== false;
   $("appUrl").value = s.appUrl;
   const lessons = state.app.lessons.slice().sort((a, b) => (b.words ? 1 : 0) - (a.words ? 1 : 0) || a.name.localeCompare(b.name));
-  const hasDefault = lessons.some(l => l.name.trim().toLowerCase() === (s.lessonName || "Reading").trim().toLowerCase());
-  $("lesson").innerHTML = (hasDefault ? "" : `<option value="name:${esc(s.lessonName || "Reading")}">${esc(s.lessonName || "Reading")} (new)</option>`) + lessons.map(l => `<option value="id:${esc(l.id)}">${esc(l.name)}</option>`).join("");
-  const byName = lessons.find(l => l.name.trim().toLowerCase() === (s.lessonName || "").trim().toLowerCase());
-  $("lesson").value = s.lessonId && lessons.some(l => l.id === s.lessonId) ? "id:" + s.lessonId : byName ? "id:" + byName.id : "name:" + (s.lessonName || "Reading");
+  $("lesson").innerHTML = `<option value="article">Each article's own lesson</option>` + lessons.map(l => `<option value="id:${esc(l.id)}">${esc(l.name)}</option>`).join("");
+  $("lesson").value = s.lessonId && lessons.some(l => l.id === s.lessonId) ? "id:" + s.lessonId : "article";
 }
 
 function paint() {
@@ -116,10 +114,8 @@ $("lang").addEventListener("change", e => saveSettings({ lang: e.target.value })
 $("appUrl").addEventListener("change", e => saveSettings({ appUrl: e.target.value.trim() || DEFAULTS.appUrl }));
 $("lesson").addEventListener("change", e => {
   const v = e.target.value;
-  if (v.startsWith("id:")) {
-    const l = state.app.lessons.find(x => x.id === v.slice(3));
-    saveSettings({ lessonId: v.slice(3), lessonName: l ? l.name : state.settings.lessonName });
-  } else saveSettings({ lessonId: "", lessonName: v.slice(5) });
+  const l = v.startsWith("id:") && state.app.lessons.find(x => x.id === v.slice(3));
+  saveSettings(l ? { lessonId: l.id, lessonName: l.name } : { lessonId: "", lessonName: "" });
 });
 
 chrome.storage.onChanged.addListener((changes, area) => {

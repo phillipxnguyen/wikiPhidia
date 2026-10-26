@@ -6,7 +6,7 @@
   const DEFAULTS = {
     lang: "vi",
     lessonId: "",
-    lessonName: "Reading",
+    lessonName: "",
     highlight: true,
     button: true,
     shift: true,
@@ -60,6 +60,10 @@ textarea.field{font-size:14px;line-height:20px;}
 .alts:empty{display:none;}
 .alt{padding:2px 10px;border:1px solid var(--line);border-radius:12px;background:var(--bg-2);color:var(--ink);font:inherit;font-size:13px;line-height:20px;cursor:pointer;}
 .alt:hover{border-color:var(--green);color:var(--green);}
+.sent-view{padding:8px 10px;border-radius:8px;background:var(--bg-2);font-size:16px;line-height:24px;color:var(--ink);cursor:text;}
+.sent-view mark{padding:0 2px;border-radius:4px;background:var(--green-soft);box-shadow:inset 0 -2px 0 var(--green);color:inherit;font-weight:700;}
+textarea[hidden], .sent-view[hidden]{display:none;}
+label .link{margin-left:6px;font-size:11px;line-height:16px;letter-spacing:0;text-transform:none;font-weight:600;}
 .sub{margin-top:4px;font-size:13px;line-height:18px;color:var(--ink-2);}
 .sub:empty{display:none;}
 .link{padding:0;border:0;background:none;color:var(--green);font:inherit;font-size:13px;line-height:18px;cursor:pointer;}
@@ -94,7 +98,7 @@ textarea.field{font-size:14px;line-height:20px;}
     known = new Map();
     app.words.forEach(w => known.set(norm(w.term), { term: w.term, meaning: w.meaning, lesson: w.lesson, state: "app" }));
     pending.forEach(w => {
-      if (!known.has(norm(w.term))) known.set(norm(w.term), { term: w.term, meaning: w.meaning, lesson: w.lessonName || settings.lessonName, state: "pending" });
+      if (!known.has(norm(w.term))) known.set(norm(w.term), { term: w.term, meaning: w.meaning, lesson: w.lessonName || "", state: "pending" });
     });
     const terms = [ ...known.values() ].map(k => k.term).filter(t => t && t.trim().length > 0).sort((a, b) => b.length - a.length).slice(0, 6000);
     if (!terms.length) {
@@ -316,20 +320,25 @@ textarea.field{font-size:14px;line-height:20px;}
     speechSynthesis.speak(u);
   }
 
-  function lessonOptions(selected) {
-    const list = app.lessons.slice().sort((a, b) => (b.words ? 1 : 0) - (a.words ? 1 : 0) || a.name.localeCompare(b.name));
-    const hasDefault = list.some(l => l.name.trim().toLowerCase() === (settings.lessonName || "Reading").trim().toLowerCase());
-    let html = "";
-    if (!hasDefault) html += `<option value="name:${esc(settings.lessonName || "Reading")}">${esc(settings.lessonName || "Reading")} (new)</option>`;
-    html += list.map(l => `<option value="id:${esc(l.id)}"${l.id === selected ? " selected" : ""}>${esc(l.name)}</option>`).join("");
-    html += `<option value="new">New lesson…</option>`;
-    return html;
+  function articleTitle() {
+    const meta = document.querySelector("meta[property='og:title'], meta[name='twitter:title']");
+    const raw = (meta && meta.content || document.title || location.hostname).replace(/\s+/g, " ").trim();
+    const parts = raw.split(/\s+[|\-–—·]\s+/).filter(Boolean);
+    const best = parts.sort((a, b) => b.length - a.length)[0] || raw;
+    return best.length > 120 ? best.slice(0, 117).trim() + "…" : best;
   }
 
-  function defaultLesson() {
-    if (settings.lessonId && app.lessons.some(l => l.id === settings.lessonId)) return settings.lessonId;
-    const byName = app.lessons.find(l => l.name.trim().toLowerCase() === (settings.lessonName || "Reading").trim().toLowerCase());
-    return byName ? byName.id : "";
+  const same = (a, b) => (a || "").trim().toLowerCase() === (b || "").trim().toLowerCase();
+
+  function lessonOptions() {
+    const list = app.lessons.slice().sort((a, b) => (b.words ? 1 : 0) - (a.words ? 1 : 0) || a.name.localeCompare(b.name));
+    const fixed = settings.lessonId && list.find(l => l.id === settings.lessonId) || settings.lessonName && list.find(l => same(l.name, settings.lessonName));
+    const wanted = fixed ? fixed.name : settings.lessonName || articleTitle();
+    const there = list.find(l => same(l.name, wanted));
+    let html = there ? "" : `<option value="name:${esc(wanted)}" selected>${esc(wanted)} (new)</option>`;
+    html += list.map(l => `<option value="id:${esc(l.id)}"${l === there ? " selected" : ""}>${esc(l.name)}</option>`).join("");
+    html += `<option value="new">New lesson…</option>`;
+    return html;
   }
 
   function place(el, range) {
@@ -357,16 +366,38 @@ textarea.field{font-size:14px;line-height:20px;}
     card.innerHTML = `<div class="head"><input class="term" spellcheck="false" aria-label="Word"><button class="icon say" title="Listen" aria-label="Listen">🔊</button><button class="icon close" title="Close (Esc)" aria-label="Close">✕</button></div>
 <div class="reading"></div>
 <label>Meaning</label><input class="field meaning" placeholder="Translating…" aria-label="Meaning"><div class="alts"></div>
-<label>Sentence</label><textarea class="field sentence" rows="3" aria-label="Sentence"></textarea><div class="sub sent-tr"></div><button class="link tr-btn">Translate the sentence</button>
+<label>Sentence <button class="link edit-sent">Edit</button></label><div class="sent-view"></div><textarea class="field sentence" rows="3" aria-label="Sentence" hidden></textarea><div class="sub sent-tr"></div><button class="link tr-btn">Translate the sentence</button>
 <div class="note"></div>
-<div class="foot"><select class="lesson" aria-label="Lesson">${lessonOptions(defaultLesson())}</select><button class="btn ghost cancel">Cancel</button><button class="btn add">Add</button></div>
+<div class="foot"><select class="lesson" aria-label="Lesson">${lessonOptions()}</select><button class="btn ghost cancel">Cancel</button><button class="btn add">Add</button></div>
 <div class="keys">Enter adds · Esc closes · words go into Vocabulary next time wikiPhidia is open</div>`;
     wrap.appendChild(card);
     const $ = s => card.querySelector(s);
     const termEl = $(".term"), meaningEl = $(".meaning"), sentEl = $(".sentence"), readingEl = $(".reading"), note = $(".note");
     termEl.value = term;
     sentEl.value = sentence;
-    cardWord = { term, url: location.href, title: document.title };
+    const sentView = $(".sent-view");
+    const paintSentence = () => {
+      const text = sentEl.value.replace(/\s+/g, " ").trim();
+      const t = termEl.value.trim();
+      const at = t ? text.toLowerCase().indexOf(t.toLowerCase()) : -1;
+      sentView.innerHTML = at === -1 ? esc(text) : esc(text.slice(0, at)) + "<mark>" + esc(text.slice(at, at + t.length)) + "</mark>" + esc(text.slice(at + t.length));
+    };
+    const editSentence = () => {
+      sentView.hidden = true;
+      sentEl.hidden = false;
+      $(".edit-sent").hidden = true;
+      sentEl.focus();
+    };
+    paintSentence();
+    sentView.addEventListener("click", editSentence);
+    $(".edit-sent").addEventListener("click", editSentence);
+    sentEl.addEventListener("blur", () => {
+      paintSentence();
+      sentEl.hidden = true;
+      sentView.hidden = false;
+      $(".edit-sent").hidden = false;
+    });
+    cardWord = { term, url: location.href, title: articleTitle() };
     const showReading = () => {
       const t = termEl.value.trim();
       readingEl.textContent = langOf(t) === "zh" && window.pinyinPro ? pinyinPro.pinyin(t) : "";
@@ -412,6 +443,7 @@ textarea.field{font-size:14px;line-height:20px;}
     let retype = 0;
     termEl.addEventListener("input", () => {
       showReading();
+      paintSentence();
       showKnown();
       clearTimeout(retype);
       retype = setTimeout(lookUp, 400);
@@ -475,7 +507,7 @@ textarea.field{font-size:14px;line-height:20px;}
         url: cardWord.url,
         title: cardWord.title,
         lessonId: pick.startsWith("id:") ? pick.slice(3) : "",
-        lessonName: pick.startsWith("name:") ? pick.slice(5) : (app.lessons.find(l => "id:" + l.id === pick) || {}).name || settings.lessonName,
+        lessonName: pick.startsWith("name:") ? pick.slice(5) : (app.lessons.find(l => "id:" + l.id === pick) || {}).name || articleTitle(),
         at: Date.now()
       };
       const { pending: now } = await chrome.storage.local.get("pending");
@@ -483,7 +515,6 @@ textarea.field{font-size:14px;line-height:20px;}
       if (list.some(w => norm(w.term) === norm(t))) return closeCard();
       list.push(word);
       await chrome.storage.local.set({ pending: list });
-      if (word.lessonId) await chrome.storage.local.set({ settings: Object.assign({}, settings, { lessonId: word.lessonId }) });
       closeCard();
       toast(`“${t}” saved · it goes into ${word.lessonName} when wikiPhidia is open`);
     }

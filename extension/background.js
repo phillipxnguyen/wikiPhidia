@@ -1,7 +1,7 @@
 const DEFAULTS = {
   lang: "vi",
   lessonId: "",
-  lessonName: "Reading",
+  lessonName: "",
   highlight: true,
   button: true,
   shift: true,

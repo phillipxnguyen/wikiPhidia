@@ -18,8 +18,8 @@ After pulling a newer version, click the ↻ on the extension's card in `chrome:
 - A card opens next to the word:
   - the word (you can edit it), its **pinyin** for Chinese, and 🔊 to hear it;
   - **Meaning**, translated already into your language (Vietnamese by default), with other meanings as chips to pick from; type over it freely;
-  - **Sentence**, the sentence around the word taken from the page, ready to edit, with **Translate the sentence** if you need it;
-  - the **lesson** the word goes into: *Reading* by default (made for you in Vocabulary the first time), any of your lessons, or **New lesson…**.
+  - **Sentence**, the sentence around the word taken from the page, with the word marked in it; click it (or **Edit**) to change it, and **Translate the sentence** if you need it;
+  - the **lesson** the word goes into: by default a lesson named after the article you are reading (made for you in Vocabulary the first time, then reused for every word from that article), or any of your lessons, or **New lesson…**. In Settings, **Words go into** can instead send every word to one lesson of your choice.
   - **Enter** adds the word, **Esc** closes.
 - A word you already have says so on the card (which lesson, what it means) instead of adding it twice.
 
@@ -29,7 +29,7 @@ Every page marks the words that are already in wikiPhidia, the way the app does:
 
 ## Getting the words into wikiPhidia
 
-Words wait in the extension (the number on the icon) until wikiPhidia is open in a tab; then they go in by themselves, at once if the app is already open. **Open app** in the popup opens it or brings its tab forward. Each word becomes a Vocabulary card in its lesson: the word on the front, the meaning on the back, and the sentence and the page's title as the card's notes. Words already in the app are skipped.
+Words wait in the extension (the number on the icon) until wikiPhidia is open in a tab; then they go in by themselves, at once if the app is already open. **Open app** in the popup opens it or brings its tab forward. Each word becomes a Vocabulary card in its lesson: the word on the front; on the back the sentence it came from with the word marked in it (as on every other card), the meaning, and the article's title when the lesson has another name. Words already in the app are skipped.
 
 ## Lessons from YouTube
 
