@@ -43,7 +43,7 @@ On any YouTube video, click the green **字 Make a lesson** button in the bottom
 
 - **To send**: the words waiting, with their meaning editable and ✕ to drop one.
 - **Recent**: the last words sent, marked *Added* or *Already there*.
-- **Settings**: what selecting a word does (the 字 button or the card at once), the language of the meanings, the lesson new words go into (🆕 a new lesson for each article, or one of yours), marking known words on pages, Shift, the YouTube button, and the app's address (change it if you run wikiPhidia somewhere else; local copies on `localhost`, `127.0.0.1` or a file whose path contains `wikiPhidia` connect too).
+- **Settings**: what selecting a word does (the 字 button or the card at once), the language of the meanings, the lesson new words go into (🆕 New lesson, named after each article, or one of yours), marking known words on pages, Shift, the YouTube button, and the app's address (change it if you run wikiPhidia somewhere else; local copies on `localhost`, `127.0.0.1` or a file whose path contains `wikiPhidia` connect too).
 
 ## Privacy
 

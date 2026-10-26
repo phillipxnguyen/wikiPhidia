@@ -62,7 +62,7 @@ function paintSettings() {
   $("youtube").checked = s.youtube !== false;
   $("appUrl").value = s.appUrl;
   const lessons = state.app.lessons.slice().sort((a, b) => (b.words ? 1 : 0) - (a.words ? 1 : 0) || a.name.localeCompare(b.name));
-  $("lesson").innerHTML = `<option value="article">🆕 New lesson for each article</option>` + lessons.map(l => `<option value="id:${esc(l.id)}">${esc(l.name)}</option>`).join("");
+  $("lesson").innerHTML = `<option value="article">🆕 New lesson</option>` + lessons.map(l => `<option value="id:${esc(l.id)}">${esc(l.name)}</option>`).join("");
   $("lesson").value = s.lessonId && lessons.some(l => l.id === s.lessonId) ? "id:" + s.lessonId : "article";
 }
 
