@@ -319,7 +319,7 @@ window.onYouTubeIframeAPIReady = function(){
   .title-flag{position:relative;flex:none;display:flex;height:40px;margin:0 -4px 0 14px;}
   .title-flag select{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;}
   .title-flag select:disabled{cursor:default;}
-  .flag-set{display:flex;--cw:36px;--ch:24px;}
+  .flag-set{display:flex;--cw:32px;--ch:24px;}
   .toolbar-flag{margin-right:auto;align-items:center;gap:8px;}
   .toolbar-flag[hidden]{display:none;}
   .vocab-toolbar > .toolbar-flag{order:-1;margin-right:0;}
@@ -5886,7 +5886,9 @@ function vocabLookup() {
   vocabLookupChecked = true;
   Promise.resolve().then(() => vocabLookupChecked = false);
   const sig = vocabLookupSig();
-  if (!vocabLookupCache || vocabLookupCache.sig !== sig) {
+  // Undo puts back copies of the same cards, so the cache must also hold these very card objects.
+  const source = vocabSource();
+  if (!vocabLookupCache || vocabLookupCache.sig !== sig || vocabLookupCache.source.length !== source.length || vocabLookupCache.source.some((r, i) => r !== source[i])) {
     const cards = vocabCardEntries();
     const terms = new Map;
     cards.forEach(entry => vocabEntriesOf(entry.card).forEach(e => {
@@ -5899,6 +5901,7 @@ function vocabLookup() {
     }));
     vocabLookupCache = {
       sig: sig,
+      source: source,
       terms: terms
     };
   }
@@ -6001,10 +6004,10 @@ const lookupCache = new Map;
 
 function lookupHtml(html, row) {
   if (!html) return html;
-  const sig = vocabLookup().sig;
-  if (lookupCache.sig !== sig) {
+  const lookup = vocabLookup();
+  if (lookupCache.owner !== lookup) {
     lookupCache.clear();
-    lookupCache.sig = sig;
+    lookupCache.owner = lookup;
   }
   const key = row.id + "\u0001" + html;
   if (!lookupCache.has(key)) lookupCache.set(key, highlightVocabInHtml(html, row.id));
@@ -8757,7 +8760,7 @@ function dictUrlFor(text, row) {
   const script = cjkScriptFor(text, row);
   if (script === "zh") return "https://chinesedictionary.mobi/?handler=QueryWorddict&mwdqb=" + encodeURIComponent(text);
   const from = script === "ja" ? "ja" : /[\uAC00-\uD7A3]/.test(text) ? "ko" : detectLang(text) === "vi-VN" ? "vi" : "en";
-  return "https://www.bing.com/translator?ref=TThis&from=" + from + "&to=" + (from === "en" ? "vi" : "en") + "&text=" + encodeURIComponent(text.replace(/\?/g, "？").replace(/'/g, "’").replace(/[&#%]/g, " "));
+  return "https://www.bing.com/translator?ref=TThis&from=" + from + "&to=" + (from === "en" ? "vi" : "en") + "&text=" + encodeURIComponent(text.replace(/'/g, "’").replace(/[&#%]/g, " "));
 }
 
 function splitCols(line, delim, maxParts) {
