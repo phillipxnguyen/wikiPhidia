@@ -15,6 +15,10 @@ async function settings() {
   return Object.assign({}, DEFAULTS, saved || {});
 }
 
+const JUNK_PUNCT_RE = /["“”„‟«»‹›<>「」『』【】〔〕〈〉《》〖〗\[\]{}`´˝*^|\\♪♫♬♩•●▪■□◆◇★☆※＊＾｜＂＜＞［］｛｝]+/g;
+
+const cleanPunct = text => String(text || "").replace(/[‘’‛′]/g, "'").replace(JUNK_PUNCT_RE, "").replace(/\s{2,}/g, " ").replace(/ +([,.!?;:])/g, "$1").trim();
+
 async function translate(text, to) {
   const url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&dt=t&dt=bd&dj=1&tl=" + encodeURIComponent(to) + "&q=" + encodeURIComponent(text);
   const res = await fetch(url);
@@ -249,7 +253,8 @@ chrome.storage.onChanged.addListener((changes, area) => {
 
 chrome.runtime.onMessage.addListener((msg, sender, reply) => {
   if (msg && msg.type === "translate") {
-    translate(msg.text, msg.to).catch(() => translateBackup(msg.text, msg.to)).then(r => reply({ ok: true, ...r }), e => reply({ ok: false, error: String(e && e.message || e) }));
+    const text = cleanPunct(msg.text) || msg.text;
+    translate(text, msg.to).catch(() => translateBackup(text, msg.to)).then(r => reply({ ok: true, ...r }), e => reply({ ok: false, error: String(e && e.message || e) }));
     return true;
   }
   if (msg && msg.type === "youtube") {

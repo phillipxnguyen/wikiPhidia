@@ -51,6 +51,8 @@ Each word sits in its own box, and the hint under the list in a tinted box, so t
 - **Recent**: the last words sent, marked *Added* or *Already there*.
 - **Settings**: the language of the meanings, the lesson new words go into (🆕 New lesson, named after each article, or one of yours), marking known words on pages, Shift, the YouTube button, and the app's address (change it if you run wikiPhidia somewhere else; local copies on `localhost`, `127.0.0.1` or a file whose path contains `wikiPhidia` connect too).
 
+Before a word or sentence is translated, stray marks (quotation marks of every kind, brackets, asterisks, bullets, music notes) are taken out, so the translation is not thrown off by them.
+
 ## Privacy
 
 Words, settings and the list of your vocabulary stay in the browser's extension storage. The only things sent anywhere are the word or sentence being translated, to Google Translate (with MyMemory as a fallback).

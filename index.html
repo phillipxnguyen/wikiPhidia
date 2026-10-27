@@ -2487,8 +2487,8 @@ function makeUid() {
 }
 
 function newRow(q, a, time) {
-  q = cleanText(q);
-  a = cleanText(a);
+  q = cleanPunct(cleanText(q));
+  a = cleanPunct(cleanText(a));
   return {
     id: nextId++,
     uid: makeUid(),
@@ -5179,6 +5179,28 @@ function tidySpaces(text) {
   return text.replace(SPACE_RUN, " ").replace(CJK_GAP, "$1");
 }
 
+const JUNK_PUNCT_RE = /["“”„‟«»‹›<>「」『』【】〔〕〈〉《》〖〗\[\]{}`´˝*^|\\♪♫♬♩•●▪■□◆◇★☆※＊＾｜＂＜＞［］｛｝]+/g;
+
+function stripJunk(text) {
+  return text.replace(/[‘’‛′]/g, "'").replace(JUNK_PUNCT_RE, "").replace(/[ \t]{2,}/g, " ").replace(/ +([,.!?;:])/g, "$1");
+}
+
+function cleanPunct(text) {
+  return String(text ?? "").split("\n").map(line => stripJunk(line).trim()).join("\n").trim();
+}
+
+function cleanPunctHtml(html) {
+  if (!html) return html;
+  const box = document.createElement("div");
+  box.innerHTML = html;
+  const walker = document.createTreeWalker(box, NodeFilter.SHOW_TEXT);
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+    const v = stripJunk(n.nodeValue);
+    if (v !== n.nodeValue) n.nodeValue = v;
+  }
+  return box.innerHTML.replace(/^(\s|&nbsp;)+|(\s|&nbsp;)+$/g, "");
+}
+
 function cleanText(text) {
   return String(text ?? "").split(/\r?\n|\r/).map(line => tidySpaces(line).trim()).join("\n").trim();
 }
@@ -6923,10 +6945,10 @@ function notesEditorHtml(row) {
 
 function commitActiveEdit() {
   if (!activeEdit) return;
-  let newQHtml = sanitizeHtml(stripVocabHighlights(activeEdit.editQ.innerHTML || ""), "br");
-  let newQ = plainTextOf(newQHtml, "\n");
-  let newA = plainTextOf(activeEdit.editA.innerHTML, "\n");
-  let newAHtml = sanitizeHtml(stripVocabHighlights(activeEdit.editA.innerHTML || ""), "br");
+  let newQHtml = cleanPunctHtml(sanitizeHtml(stripVocabHighlights(activeEdit.editQ.innerHTML || ""), "br"));
+  let newQ = cleanPunct(plainTextOf(newQHtml, "\n"));
+  let newAHtml = cleanPunctHtml(sanitizeHtml(stripVocabHighlights(activeEdit.editA.innerHTML || ""), "br"));
+  let newA = cleanPunct(plainTextOf(newAHtml, "\n"));
   const takenKeys = new Set;
   activeEdit.editNotes.querySelectorAll("li").forEach(li => {
     if (isVocabItem(li)) takenKeys.add(normalizeVocabText(noteItemTerm(li))); else if (NOTE_VOCAB_ITEM_RE.test(ownLiTextNodes(li).map(n => n.nodeValue).join("")) && !noteItemIsDuplicate(li, takenKeys)) boldVocabItem(li);
@@ -8638,7 +8660,7 @@ function oneLine(text) {
 }
 
 function dictUrlFor(text, row) {
-  text = oneLine(text);
+  text = cleanPunct(oneLine(text));
   if (!text) return null;
   const script = cjkScriptFor(text, row);
   if (script === "zh") return "https://chinesedictionary.mobi/?handler=QueryWorddict&mwdqb=" + encodeURIComponent(text);
@@ -8668,7 +8690,7 @@ function setImportStatus(msg) {
 }
 
 async function translateText(text, targetLang) {
-  text = (text || "").trim();
+  text = cleanPunct(text || "");
   if (!text) return {
     translated: ""
   };
@@ -9309,8 +9331,8 @@ function planImport(entries, forPreview) {
   const fill = (r, field, value) => {
     if (isNew.has(r)) {
       if (field === "a") {
-        r.a = value;
-        r.aHtml = textHtml(value);
+        r.a = cleanPunct(value);
+        r.aHtml = textHtml(r.a);
       } else {
         r.notes = value;
         r.notesHtml = escapeHtml(value);
@@ -9436,7 +9458,7 @@ function commitImport(plan, label, keepText) {
   pushUndo(label);
   fills.forEach((f, r) => {
     if (f.a != null) {
-      r.a = cleanText(f.a);
+      r.a = cleanPunct(cleanText(f.a));
       r.aHtml = textHtml(r.a);
       transliterationCache.delete(cacheKey(r.id, "a"));
     }
@@ -9794,15 +9816,15 @@ function normalizeSrs(srs) {
 
 function normalizeCard(c) {
   const time = c.time != null && isFinite(Number(c.time)) ? Number(c.time) : null;
-  const qHtml = c.qHtml ? sanitizeHtml(String(c.qHtml), "br") : "";
-  const aHtml = c.aHtml ? sanitizeHtml(String(c.aHtml), "br") : "";
+  const qHtml = c.qHtml ? cleanPunctHtml(sanitizeHtml(String(c.qHtml), "br")) : "";
+  const aHtml = c.aHtml ? cleanPunctHtml(sanitizeHtml(String(c.aHtml), "br")) : "";
   const notesHtml = c.notesHtml ? sanitizeHtml(String(c.notesHtml)) : "";
   return {
     uid: typeof c.uid === "string" && c.uid ? c.uid : makeUid(),
-    q: qHtml ? plainTextOf(qHtml, "\n") : cleanText(c.q),
-    a: aHtml ? plainTextOf(aHtml, "\n") : cleanText(c.a),
-    qHtml: qHtml || textHtml(cleanText(c.q)),
-    aHtml: aHtml || textHtml(cleanText(c.a)),
+    q: qHtml ? cleanPunct(plainTextOf(qHtml, "\n")) : cleanPunct(cleanText(c.q)),
+    a: aHtml ? cleanPunct(plainTextOf(aHtml, "\n")) : cleanPunct(cleanText(c.a)),
+    qHtml: qHtml || textHtml(cleanPunct(cleanText(c.q))),
+    aHtml: aHtml || textHtml(cleanPunct(cleanText(c.a))),
     notes: notesHtml ? plainTextOf(notesHtml, "\n") : cleanText(c.notes),
     notesHtml: notesHtml,
     time: time,
@@ -13306,6 +13328,13 @@ async function initApp() {
         c.srs = mergeModeSrs(normalizeSrs(c.srs));
         converted = true;
       }
+      [ "q", "a" ].forEach(f => {
+        const text = cleanPunct(c[f] || "");
+        if (text === (c[f] || "")) return;
+        c[f] = text;
+        c[f + "Html"] = c[f + "Html"] ? cleanPunctHtml(c[f + "Html"]) : textHtml(text);
+        converted = true;
+      });
     });
     const joined = mergeLessonCards(l.cards);
     if (joined !== l.cards) {
