@@ -859,9 +859,9 @@ window.onYouTubeIframeAPIReady = function(){
   #editA{border-left-color:var(--a-label);}
   :is(#editNotes, #vocabEditNotes, #qaNotes){position:relative;padding-left:16px;padding-right:14px;border:0;border-radius:var(--radius-sm);background:color-mix(in srgb, var(--accent) 7%, var(--surface));box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent);}
   :is(#editNotes, #vocabEditNotes, #qaNotes):focus{box-shadow:inset 0 0 0 1px var(--accent), 0 0 0 4px var(--accent-soft);}
-  :is(#editNotes, #vocabEditNotes, #qaNotes):not(:empty):not(:has(> :is(ul, ol):first-child))::before{content:"";float:left;width:26px;height:1lh;}
+  :is(#editNotes, #vocabEditNotes, #qaNotes):not(:empty):not(.clip-list)::before{content:"";float:left;width:26px;height:1lh;}
   :is(#editNotes, #vocabEditNotes, #qaNotes) :is(ul, ol):not(:is(ul, ol) *){padding-left:17px;}
-  :is(#editNotes, #vocabEditNotes, #qaNotes) > :is(ul, ol):first-child > li:first-child{margin-left:26px;}
+  :is(#editNotes, #vocabEditNotes, #qaNotes) li.clip-li{margin-left:26px;}
   :is(#editNotes, #vocabEditNotes, #qaNotes):empty{padding-left:42px;}
   :is(#editNotes, #vocabEditNotes, #qaNotes)::after{content:"";position:absolute;top:-6px;left:13px;width:16px;height:38px;background:var(--accent);-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 48' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M7 14v22a3 3 0 0 0 6 0V8a5 5 0 0 0-10 0v31a7 7 0 0 0 14 0V14'/%3E%3C/svg%3E") center / contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 48' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M7 14v22a3 3 0 0 0 6 0V8a5 5 0 0 0-10 0v31a7 7 0 0 0 14 0V14'/%3E%3C/svg%3E") center / contain no-repeat;transform:rotate(-14deg);pointer-events:none;}
   .edit-qa{display:flex;flex-direction:column;}
@@ -8037,6 +8037,31 @@ new ResizeObserver(() => {
 
 window.addEventListener("resize", () => {
   if (!document.getElementById("editPopup").hidden) placeEditPopup();
+});
+
+// The paper clip sits over the first line of a notes box, so that line moves over to make room for it: a bullet
+// (whatever wraps its list, a <div> or an empty tag before it) by its list item, text by a float.
+const NOTES_CLIP_IDS = [ "editNotes", "vocabEditNotes", "qaNotes" ];
+
+function markNotesClip(box) {
+  const walker = document.createTreeWalker(box, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT, {
+    acceptNode: n => (n.nodeType === Node.TEXT_NODE ? n.nodeValue.trim() : /^(BR|IMG|LI)$/.test(n.nodeName)) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP
+  });
+  const first = walker.nextNode();
+  let li = first && (first.nodeName === "LI" ? first : first.parentElement.closest("li"));
+  while (li && li.parentElement.closest("li") && box.contains(li.parentElement.closest("li"))) li = li.parentElement.closest("li");
+  box.querySelectorAll("li.clip-li").forEach(el => el !== li && el.classList.remove("clip-li"));
+  if (li) li.classList.add("clip-li");
+  box.classList.toggle("clip-list", !!li);
+}
+
+new MutationObserver(() => NOTES_CLIP_IDS.forEach(id => {
+  const box = document.getElementById(id);
+  if (box) markNotesClip(box);
+})).observe(document.body, {
+  childList: true,
+  subtree: true,
+  characterData: true
 });
 
 function closeEditPopup() {
