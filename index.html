@@ -1381,13 +1381,18 @@ window.onYouTubeIframeAPIReady = function(){
   .le-box #editDict{display:none;}
   .le-dict{position:relative;height:0;overflow:hidden;}
   .le-dict.on{margin-top:10px;height:var(--dict-h, 360px);}
-  .le-dict iframe{position:absolute;top:0;left:0;box-sizing:border-box;width:100%;height:var(--dict-h, 360px);border:1px solid var(--border);border-radius:10px;visibility:hidden;}
-  .le-dict iframe.on{visibility:visible;}
+  .le-dict > .dict-frame{position:absolute;top:0;left:0;box-sizing:border-box;width:100%;height:var(--dict-h, 360px);border:1px solid var(--border);border-radius:10px;visibility:hidden;}
+  .le-dict > .dict-frame.on{visibility:visible;}
+  .dict-frame{overflow:hidden;container-type:size;}
+  .dict-frame > iframe{display:block;width:100%;height:100%;border:0;}
+  @container (max-width:699px){
+    .dict-frame > iframe.dict-zoom{width:160%;height:160%;transform:scale(.625);transform-origin:0 0;}
+  }
   @media (min-width:1000px){
     html:not(.touch) .le-box:has(> .le-dict.on){flex-direction:row;width:min(900px, calc(100vw - 32px));height:min(640px, calc(100dvh - 32px));max-height:none;overflow:hidden;padding:0;}
     html:not(.touch) .le-box:has(> .le-dict.on) > .le-content{flex:1 1 0;min-width:0;overflow-y:auto;overscroll-behavior:contain;padding:10px 12px;}
     html:not(.touch) .le-box > .le-dict.on{order:-1;flex:1 1 0;min-width:0;height:auto;margin:0;border-right:1px solid var(--border);border-radius:var(--radius) 0 0 var(--radius);}
-    html:not(.touch) .le-box > .le-dict.on iframe{height:100%;border:0;border-radius:0;}
+    html:not(.touch) .le-box > .le-dict.on > .dict-frame{height:100%;border:0;border-radius:0;}
   }
   .listen-pair{box-sizing:border-box;flex:none;display:flex;flex-direction:column;min-height:100%;padding:25px;}
   .lp-a{margin-top:0;}
@@ -6613,12 +6618,22 @@ const dictIframeCache = new Map;
 
 let activeDictOverlay = null;
 
+// Bing squeezes long text out of sight in a narrow frame, so there it gets a bigger page drawn smaller.
+function dictFrame(url) {
+  const frame = document.createElement("div");
+  frame.className = "dict-frame";
+  const iframe = document.createElement("iframe");
+  if (url.startsWith("https://www.bing.com/")) iframe.className = "dict-zoom";
+  iframe.src = url;
+  frame.appendChild(iframe);
+  return frame;
+}
+
 function getDictIframe(url) {
   let iframe = dictIframeCache.get(url);
   if (!iframe) {
-    iframe = document.createElement("iframe");
-    iframe.style.cssText = `position:fixed;top:0;left:0;width:${wholePx(Math.min(720, document.querySelector(".main-inner").clientWidth || 720))}px;height:360px;opacity:0;border:1px solid var(--border);border-radius:10px;pointer-events:none;`;
-    iframe.src = url;
+    iframe = dictFrame(url);
+    iframe.style.cssText = `position:fixed;top:0;left:0;box-sizing:border-box;width:${wholePx(Math.min(720, document.querySelector(".main-inner").clientWidth || 720))}px;height:360px;opacity:0;border:1px solid var(--border);border-radius:10px;pointer-events:none;`;
     dictOverlayLayer.appendChild(iframe);
     dictIframeCache.set(url, iframe);
   }
@@ -6630,8 +6645,7 @@ const popupDictCache = new Map;
 function getPopupDictIframe(url) {
   let iframe = popupDictCache.get(url);
   if (!iframe) {
-    iframe = document.createElement("iframe");
-    iframe.src = url;
+    iframe = dictFrame(url);
     document.querySelector("#editPopup .le-dict").appendChild(iframe);
     popupDictCache.set(url, iframe);
   }
@@ -7077,7 +7091,7 @@ document.addEventListener("click", e => {
 function reclaimKeyboardFocus() {
   setTimeout(() => {
     const active = document.activeElement;
-    const stillFocusedOwnDictIframe = activeDictOverlay && active === activeDictOverlay.iframe;
+    const stillFocusedOwnDictIframe = activeDictOverlay && activeDictOverlay.iframe.contains(active);
     if (active && active.tagName === "IFRAME" && !stillFocusedOwnDictIframe) {
       document.body.tabIndex = -1;
       document.body.focus();
@@ -7088,7 +7102,7 @@ function reclaimKeyboardFocus() {
 
 window.addEventListener("blur", () => {
   const active = document.activeElement;
-  const focusedOwnDictIframe = !!(activeEdit && activeDictOverlay && active === activeDictOverlay.iframe);
+  const focusedOwnDictIframe = !!(activeEdit && activeDictOverlay && activeDictOverlay.iframe.contains(active));
   if (focusedOwnDictIframe) loopWorkRow(activeEdit.row);
   if (activeEdit && !focusedOwnDictIframe) {
     commitActiveEdit();
