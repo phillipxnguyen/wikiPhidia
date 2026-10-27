@@ -72,7 +72,8 @@
 .field:focus{border-color:var(--green);box-shadow:0 0 0 3px var(--green-soft);}
 .field.meaning{padding:4px 0 4px 12px;border:0;border-left:4px solid color-mix(in srgb, var(--green) 45%, transparent);border-radius:0;background:none;color:var(--answer);font-size:18px;line-height:26px;}
 .field.meaning:focus{border-left-color:var(--green);box-shadow:none;}
-.field.meaning::placeholder{color:var(--ink-2);}
+.field.meaning{overflow-wrap:anywhere;cursor:text;}
+.field.meaning:empty::before{content:attr(data-placeholder);color:var(--ink-2);}
 textarea.field{display:block;padding:9px 11px;border-color:var(--green);background:var(--green-soft);font-size:16px;line-height:24px;overflow:hidden;}
 .alts{display:flex;flex-wrap:wrap;gap:6px;}
 .alts:empty{display:none;}
@@ -396,18 +397,21 @@ textarea[hidden], .sent-view[hidden]{display:none;}
     card.className = "card";
     card.innerHTML = `<div class="head"><span class="icons"><button class="icon say" title="Listen" aria-label="Listen">🔊</button><button class="icon tr-btn" title="Translate the sentence" aria-label="Translate the sentence"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M3 5h8M7 3v2M5 5c0 3 2 5 5 6M9 5c0 3-2 5-5 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 17l3-7 3 7M12 15h4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="icon close" title="Close (Esc)" aria-label="Close">✕</button></span><div class="term" contenteditable="plaintext-only" spellcheck="false" role="textbox" aria-label="Word"></div></div>
 <div class="reading"></div>
-<div class="body"><input class="field meaning" placeholder="Translating…" aria-label="Meaning"><div class="alts"></div>
+<div class="body"><div class="field meaning" contenteditable="plaintext-only" role="textbox" data-placeholder="Translating…" aria-label="Meaning"></div><div class="alts"></div>
 <div class="sent-view"></div><textarea class="field sentence" rows="1" aria-label="Sentence" hidden></textarea><div class="sub sent-tr"></div>
 <div class="note"></div>
 <div class="foot"><select class="lesson" aria-label="Lesson">${lessonOptions()}</select><button class="btn add">Add</button></div></div>`;
     wrap.appendChild(card);
     const $ = s => card.querySelector(s);
     const termEl = $(".term"), meaningEl = $(".meaning"), sentEl = $(".sentence"), readingEl = $(".reading"), note = $(".note");
-    // The word wraps round the buttons instead of being cut off; it is still read and set as a value.
-    Object.defineProperty(termEl, "value", { get() { return this.textContent; }, set(v) { this.textContent = v; } });
-    termEl.addEventListener("keydown", e => {
-      if (e.key === "Enter") e.preventDefault();
+    // The word and the meaning wrap instead of being cut off; they are still read and set as values.
+    [termEl, meaningEl].forEach(el => {
+      Object.defineProperty(el, "value", { get() { return this.textContent; }, set(v) { this.textContent = v; } });
+      el.addEventListener("keydown", e => {
+        if (e.key === "Enter") e.preventDefault();
+      });
     });
+    Object.defineProperty(meaningEl, "placeholder", { get() { return this.dataset.placeholder; }, set(v) { this.dataset.placeholder = v; } });
     termEl.value = term;
     sentEl.value = sentence;
     const sentView = $(".sent-view");
