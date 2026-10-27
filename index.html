@@ -3360,13 +3360,18 @@ async function drawPdfPage(el) {
   } catch (e) {}
 }
 
-// Words already in a lesson are highlighted in the PDF as in the cards.
+// Words already in a lesson are highlighted in the PDF as in the cards. Only the words found somewhere on the page
+// are looked for in each of its many text pieces.
 function markPdfWords(layer) {
-  layer.querySelectorAll("span:not(.markedContent)").forEach(span => {
-    if (span.querySelector("span")) return;
-    const text = span.dataset.text != null ? span.dataset.text : span.textContent;
-    span.dataset.text = text;
-    const html = highlightVocabInHtml(escapeHtml(text), null);
+  const spans = [ ...layer.querySelectorAll("span:not(.markedContent)") ].filter(span => !span.querySelector("span"));
+  spans.forEach(span => {
+    if (span.dataset.text == null) span.dataset.text = span.textContent;
+  });
+  const page = foldWithMap(spans.map(span => span.dataset.text).join(" ")).folded;
+  const keys = new Set([ ...vocabTerms().keys() ].filter(key => page.includes(key)));
+  spans.forEach(span => {
+    const text = span.dataset.text;
+    const html = keys.size ? highlightVocabInHtml(escapeHtml(text), null, null, keys) : "";
     span.innerHTML = html.includes("<mark") ? html : escapeHtml(text);
   });
 }
@@ -3508,7 +3513,7 @@ async function translateWithAlts(text, to) {
       };
     }
   } catch (e) {}
-  const {translated: translated} = await translateText(text, to);
+  const translated = await translateText(text, to).then(r => r.translated, () => "");
   return {
     text: translated || "",
     alts: []
@@ -3627,7 +3632,7 @@ function openReadCard(found) {
     const out = $(".rc-sub");
     if (out.textContent) return out.textContent = "";
     out.textContent = "Translating…";
-    const {translated: translated} = await translateText(sentEl.value.trim(), to());
+    const translated = await translateText(sentEl.value.trim(), to()).then(r => r.translated, () => "");
     if (readCard === card) out.textContent = translated || "Couldn't translate it now";
   });
   const save = () => {
@@ -3686,9 +3691,17 @@ document.addEventListener("pointerdown", e => {
   if (readCard && !readCard.contains(e.target)) closeReadCard(); else if (readPick && e.target !== readPick) hideReadPick();
 }, true);
 
-document.getElementById("pdfView").querySelector(".pdf-pages").addEventListener("scroll", () => {
+const closeReadOnScroll = () => {
   if (readCard) closeReadCard(); else hideReadPick();
-}, { passive: true });
+};
+
+document.getElementById("pdfView").querySelector(".pdf-pages").addEventListener("scroll", closeReadOnScroll, {
+  passive: true
+});
+
+window.addEventListener("scroll", closeReadOnScroll, {
+  passive: true
+});
 
 let ytVolume = 100;
 
@@ -6652,7 +6665,7 @@ function highlightMatch(sentence, needle) {
 
 const CJK_CHAR_RE = /[぀-ヿ一-鿿]/;
 
-function highlightVocabInHtml(html, excludeId, extraTerms) {
+function highlightVocabInHtml(html, excludeId, extraTerms, onlyKeys) {
   if (!html) return html;
   const exclude = rows.find(r => r.id === excludeId);
   let terms = vocabTerms();
@@ -6680,7 +6693,7 @@ function highlightVocabInHtml(html, excludeId, extraTerms) {
     const fold = foldWithMap(text);
     const words = [];
     terms.forEach((entries, key) => {
-      if (seen.has(key)) return;
+      if (seen.has(key) || onlyKeys && !onlyKeys.has(key)) return;
       const span = termSpans(fold.folded, key)[0];
       if (!span) return;
       const a = fold.map[span[0]], b = fold.map[span[1]];
@@ -7435,8 +7448,8 @@ function dictFrameSize(iframe) {
   return iframe.clientWidth + "x" + iframe.clientHeight;
 }
 
-// Bing sizes its boxes once, when its page loads, so a Bing page loaded hidden or at another size (preloaded) hides
-// the end of a long sentence; shown at a new size, it is loaded once more at the size it is seen at. Other
+// Bing sizes its boxes once, when its page loads. Pages are loaded at the size they show at, but one loaded before
+// the window changed size shows at a new size, and is then loaded once more at the size it is seen at. Other
 // dictionaries fit themselves and are never reloaded.
 function fitDictFrame(frame) {
   requestAnimationFrame(() => {
