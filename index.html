@@ -283,14 +283,17 @@ window.onYouTubeIframeAPIReady = function(){
   .streak-best{text-align:right;font-size:12px;color:var(--text-2);}
   .streak-best b{display:block;font-size:20px;color:var(--text);font-variant-numeric:tabular-nums;}
   @media (max-width:700px){.streak-card{grid-template-columns:auto 1fr auto;}.streak-week{grid-column:1 / -1;grid-row:2;}}
-  .streak-celebration{position:fixed;inset:0;z-index:30000;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+  .streak-celebration{position:fixed;inset:0;z-index:30000;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb, var(--bg) 35%, transparent);cursor:pointer;animation:fadeIn .2s ease;}
   .streak-pop{text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:26px 38px 22px;box-shadow:var(--shadow-md);animation:popIn .45s cubic-bezier(.34,1.56,.64,1);}
   .streak-pop-flame{font-size:64px;line-height:1;display:inline-block;transform-origin:50% 90%;animation:flameJump .9s ease-out .15s both, flameFlicker 2.4s ease-in-out 1.05s infinite;}
   .streak-pop-count{font-size:28px;font-weight:800;color:var(--due-color);margin-top:10px;letter-spacing:-.01em;}
   .streak-pop-sub{font-size:14px;color:var(--text-2);margin-top:4px;}
+  .streak-celebration.leaving{animation:fadeOut .3s ease forwards;}
   @keyframes flameFlicker{0%,100%{transform:scale(1) rotate(-2deg);}25%{transform:scale(1.05,.97) rotate(2deg);}50%{transform:scale(.98,1.04) rotate(-1deg);}75%{transform:scale(1.04,.98) rotate(1.5deg);}}
   @keyframes flameJump{0%{transform:scale(.3) translateY(20px);opacity:0;}55%{transform:scale(1.25) translateY(-8px);opacity:1;}100%{transform:scale(1) translateY(0);}}
   @keyframes popIn{0%{transform:scale(.7);opacity:0;}100%{transform:scale(1);opacity:1;}}
+  @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+  @keyframes fadeOut{to{opacity:0;}}
   @media (prefers-reduced-motion: reduce){.streak-flame, .streak-pop, .streak-pop-flame, .streak-celebration{animation:none !important;}}
   .brand-mark{flex-shrink:0;width:30px;height:30px;border-radius:8px;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center;font-size:18px;}
   .brand-switch{display:flex;align-items:center;gap:8px;flex:none;padding:0;border:0;background:none;font:inherit;color:inherit;cursor:pointer;}
@@ -1551,8 +1554,8 @@ window.onYouTubeIframeAPIReady = function(){
   @keyframes confetti-fall{0%{transform:translate(0, 0) rotate(0deg);opacity:1;}80%{opacity:1;}100%{transform:translate(var(--drift, 0px), var(--fall, 320px)) rotate(var(--spin, 360deg));opacity:0;}}
   .session-complete .emoji{font-size:52px;display:inline-block;animation:bounce-in .6s cubic-bezier(.34,1.56,.64,1);}
   @keyframes bounce-in{0%{transform:scale(0);opacity:0;}60%{transform:scale(1.15);opacity:1;}100%{transform:scale(1);}}
-  .session-complete-title{font-size:22px;font-weight:700;margin-top:14px;animation:fade-up .5s ease .1s both;}
-  .session-complete-sub{font-size:14px;color:var(--text);margin-top:6px;animation:fade-up .5s ease .2s both;}
+  .session-complete-title{font-size:22px;font-weight:700;margin-top:14px;}
+  .session-complete-sub{font-size:14px;color:var(--text);margin-top:6px;}
   .yt-grab-row{margin-top:8px;}
   .yt-grab{display:inline-flex;align-items:center;height:34px;padding:0 10px;border:1px dashed var(--accent);border-radius:8px;background:none;color:var(--accent);font-size:14px;font-weight:600;line-height:20px;text-decoration:none;cursor:help;}
   #ytGrabCopy{cursor:pointer;}
@@ -1570,8 +1573,7 @@ window.onYouTubeIframeAPIReady = function(){
   .lesson-item.importing{pointer-events:none;animation:importBlink 1.2s ease-in-out infinite;}
   @keyframes importBlink{0%, 100%{opacity:1;filter:blur(0);}50%{opacity:.35;filter:blur(2px);}}
   @media (prefers-reduced-motion: reduce){.lesson-item.importing{animation:none;opacity:.6;}}
-  .more-today{margin-top:16px;line-height:20px;animation:fade-up .5s ease .3s both;}
-  @keyframes fade-up{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+  .more-today{margin-top:16px;line-height:20px;}
   .more-today[hidden]{display:none;}
   .file-input-hidden{display:none;}
 
@@ -5690,7 +5692,10 @@ function renderStudy() {
     return;
   }
   const caughtUp = !groupState && lessonCaughtUp();
-  if (caughtUp) showSessionCompletePanel(); else hideSessionCompletePanel();
+  if (caughtUp) showSessionCompletePanel(); else {
+    if (panel.style.display === "block") blinkOut(panel);
+    hideSessionCompletePanel();
+  }
   if (!groupState) {
     const progress = document.getElementById("tableProgress");
     const mode = countMode(rows);
@@ -12808,10 +12813,15 @@ function celebrateStreak() {
   const box = document.getElementById("streakCelebration");
   document.getElementById("streakPopCount").textContent = info.current + " day streak!";
   document.getElementById("streakPopSub").textContent = info.current === 1 ? "Great start — come back tomorrow" : info.current >= info.longest ? "Your longest streak yet" : "Keep it going";
+  box.classList.remove("leaving");
   box.hidden = false;
   clearTimeout(celebrationTimer);
   const close = () => {
-    box.hidden = true;
+    box.classList.add("leaving");
+    celebrationTimer = setTimeout(() => {
+      box.hidden = true;
+      box.classList.remove("leaving");
+    }, 300);
   };
   celebrationTimer = setTimeout(close, 2600);
   box.onclick = () => {
@@ -15268,7 +15278,11 @@ function renderVocab() {
   }
   vocabShownRowId = item.card.id;
   vocabShownIsVideo = !!vocabVideoIdFor(item.card);
-  if (stage.querySelector(".session-complete")) stage.innerHTML = "";
+  const doneScreen = stage.querySelector(".session-complete");
+  if (doneScreen) {
+    blinkOut(doneScreen);
+    stage.innerHTML = "";
+  }
   showVocabDeck(stage, item);
   wireVocabEditor(items);
   syncVocabSound();
