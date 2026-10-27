@@ -319,21 +319,20 @@ window.onYouTubeIframeAPIReady = function(){
   .title-flag{position:relative;flex:none;display:flex;height:40px;margin:0 -4px 0 14px;}
   .title-flag select{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;}
   .title-flag select:disabled{cursor:default;}
-  .flag-set{display:flex;gap:4px;--cw:32px;--ch:24px;}
-  .flag-set.many{--cw:24px;--ch:18px;}
+  .flag-set{display:flex;--cw:36px;--ch:24px;}
   .toolbar-flag{margin-right:auto;align-items:center;gap:8px;}
   .toolbar-flag[hidden]{display:none;}
   .vocab-toolbar > .toolbar-flag{order:-1;margin-right:0;}
-  .toolbar-flag .flag-unit{width:auto;height:auto;}
+  .toolbar-flag .flag-unit{width:calc(var(--cw) + (var(--n) - 1) * 8px);height:calc(var(--ch) + (var(--n) - 1) * 4px);}
   .toolbar-flag .flag-unit::before, .toolbar-flag .flag-unit::after, .toolbar-flag .flag-cloth::after{display:none;}
-  .toolbar-flag .flag-cloth{position:relative;left:0;top:0;display:block;animation:none;transform:none;}
-  .flag-unit{position:relative;width:calc(var(--cw) + 4px);height:40px;}
+  .toolbar-flag .flag-cloth{left:calc(var(--k) * 8px);top:calc((var(--n) - 1 - var(--k)) * 4px);animation:none;transform:none;}
+  .flag-unit{position:relative;width:calc(var(--cw) + 4px + (var(--n) - 1) * 8px);height:40px;}
   .flag-unit::before{content:"";position:absolute;left:0;top:0;width:6px;height:6px;border-radius:3px;background:#d4a017;}
   .flag-unit::after{content:"";position:absolute;left:2px;top:5px;width:2px;height:35px;border-radius:1px;background:var(--text-2);}
-  .flag-cloth{position:absolute;left:4px;top:8px;width:var(--cw);height:var(--ch);overflow:hidden;border-radius:1px;background:var(--flag) center / 100% 100% no-repeat;box-shadow:0 1px 2px rgba(0, 0, 0, .25);transform-origin:0 50%;animation:flagWave 2.4s ease-in-out infinite;}
+  .flag-cloth{position:absolute;left:calc(4px + var(--k) * 8px);top:calc(8px - var(--k) * 4px);width:var(--cw);height:var(--ch);overflow:hidden;border-radius:1px;background:var(--flag) center / 100% 100% no-repeat;box-shadow:0 1px 2px rgba(0, 0, 0, .25);transform-origin:0 50%;animation:flagWave 2.4s ease-in-out infinite;}
   .flag-cloth::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, .35) 25%, rgba(0, 0, 0, .2) 50%, rgba(255, 255, 255, .3) 75%, rgba(255, 255, 255, 0)) 0 0 / 64px 100% repeat-x;animation:flagShade 2.4s linear infinite;}
-  .flag-unit + .flag-unit .flag-cloth{animation-delay:-.6s;}
-  .flag-unit + .flag-unit + .flag-unit .flag-cloth{animation-delay:-1.2s;}
+  .flag-cloth:nth-last-child(2){animation-delay:-.6s;}
+  .flag-cloth:nth-last-child(3){animation-delay:-1.2s;}
   @keyframes flagWave{0%, 100%{transform:perspective(80px) rotateY(0) skewY(0);}25%{transform:perspective(80px) rotateY(-12deg) skewY(2deg);}75%{transform:perspective(80px) rotateY(8deg) skewY(-2deg);}}
   @keyframes flagShade{to{background-position:-64px 0;}}
   @media (prefers-reduced-motion: reduce){.flag-cloth, .flag-cloth::after{animation:none;}}
@@ -659,7 +658,6 @@ window.onYouTubeIframeAPIReady = function(){
   .toolbar > .segmented button{align-self:stretch;padding-top:0;padding-bottom:0;}
   .toolbar :is(#btnPlaySequence, #vocabSpeak, #playbackSpeed, #vocabSpeed){box-sizing:border-box;height:var(--tb-h);padding-top:0;padding-bottom:0;}
   .toolbar-counts .progress-badge{box-sizing:border-box;height:var(--tb-h);padding:0 12px;border-radius:18px;font-size:14px;}
-  .toolbar .toolbar-flag:not(.many){--ch:var(--tb-h);--cw:48px;}
   .segmented[hidden], .segmented button[hidden]{display:none;}
   .segmented{align-items:center;}
   .segmented .sep-before{position:relative;margin-left:8px;}
@@ -1376,18 +1374,13 @@ window.onYouTubeIframeAPIReady = function(){
   .le-box #editDict{display:none;}
   .le-dict{position:relative;height:0;overflow:hidden;}
   .le-dict.on{margin-top:10px;height:var(--dict-h, 360px);}
-  .le-dict > .dict-frame{position:absolute;top:0;left:0;box-sizing:border-box;width:100%;height:var(--dict-h, 360px);border:1px solid var(--border);border-radius:10px;visibility:hidden;}
-  .le-dict > .dict-frame.on{visibility:visible;}
-  .dict-frame{overflow:hidden;container-type:size;}
-  .dict-frame > iframe{display:block;width:100%;height:100%;border:0;}
-  @container (max-width:699px){
-    .dict-frame > iframe.dict-zoom{width:160%;height:160%;transform:scale(.625);transform-origin:0 0;}
-  }
+  .le-dict iframe{position:absolute;top:0;left:0;box-sizing:border-box;width:100%;height:var(--dict-h, 360px);border:1px solid var(--border);border-radius:10px;visibility:hidden;}
+  .le-dict iframe.on{visibility:visible;}
   @media (min-width:1000px){
     html:not(.touch) .le-box:has(> .le-dict.on){flex-direction:row;width:min(900px, calc(100vw - 32px));height:min(640px, calc(100dvh - 32px));max-height:none;overflow:hidden;padding:0;}
     html:not(.touch) .le-box:has(> .le-dict.on) > .le-content{flex:1 1 0;min-width:0;overflow-y:auto;overscroll-behavior:contain;padding:10px 12px;}
     html:not(.touch) .le-box > .le-dict.on{order:-1;flex:1 1 0;min-width:0;height:auto;margin:0;border-right:1px solid var(--border);border-radius:var(--radius) 0 0 var(--radius);}
-    html:not(.touch) .le-box > .le-dict.on > .dict-frame{height:100%;border:0;border-radius:0;}
+    html:not(.touch) .le-box > .le-dict.on iframe{height:100%;border:0;border-radius:0;}
   }
   .listen-pair{box-sizing:border-box;flex:none;display:flex;flex-direction:column;min-height:100%;padding:25px;}
   .lp-a{margin-top:0;}
@@ -1579,6 +1572,7 @@ window.onYouTubeIframeAPIReady = function(){
   .all-curtain{position:fixed;z-index:30000;pointer-events:auto;overflow:hidden;}
   html.curtained :is(#viewStudy .toolbar, #vocabToolbar, #selBar){visibility:hidden;}
   .all-curtain.waiting{pointer-events:auto;cursor:pointer;}
+  html:has(.shell.drawer-open) .all-curtain{visibility:hidden;}
   .curtain-wand{position:absolute;left:50%;top:50%;width:320px;height:320px;margin:-160px 0 0 -160px;filter:drop-shadow(0 8px 12px rgba(0, 0, 0, .4));}
   .curtain-wand svg{display:block;width:100%;height:100%;overflow:visible;}
   .wand-stick{transform-origin:46px 174px;animation:wandWave 1.4s ease-in-out infinite alternate;}
@@ -2166,6 +2160,7 @@ function takeSnapshot(label, expiresAt) {
     ielts: [ ieltsAnswered, ieltsHintId ],
     vocabSnapshot: JSON.stringify(vocabSession),
     limits: JSON.stringify(studyLimits),
+    limitsExtra: JSON.stringify(limitsExtra),
     mix: isAllLessons() ? [ mixFocusId, mixStyle, mixDone ] : null,
     label: label,
     expiresAt: expiresAt
@@ -2294,6 +2289,7 @@ function restoreFrom(fromStack, toStack, verb) {
   if (entry.ielts) [ ieltsAnswered, ieltsHintId ] = entry.ielts;
   if (entry.limits) {
     studyLimits = JSON.parse(entry.limits);
+    if (entry.limitsExtra) limitsExtra = JSON.parse(entry.limitsExtra);
     saveStudyLimits();
   }
   const mixRow = isAllLessons() && entry.mix && rows.find(r => r.id === entry.mix[0]);
@@ -4000,20 +3996,88 @@ function studiedToday(cards, vocab) {
   return todayLog(vocab, new Set(cards.map(c => c.srcLessonId || currentLessonId))).seen.size;
 }
 
+// Study N more today: extra room for today only, for the lesson (or All view) it was asked in.
+const LIMITS_EXTRA_KEY = "flashcards.limitsExtra";
+
+let limitsExtra = {
+  day: "",
+  by: {}
+};
+
+try {
+  const saved = JSON.parse(localStorage.getItem(LIMITS_EXTRA_KEY) || "null");
+  if (saved && saved.by) limitsExtra = saved;
+} catch (e) {}
+
+function extraToday(vocab, lessonId) {
+  const e = limitsExtra.day === localDayKey(Date.now()) && limitsExtra.by[(vocab ? "v:" : "c:") + lessonId];
+  return {
+    fresh: e && e.fresh || 0,
+    review: e && e.review || 0
+  };
+}
+
+function isAllView() {
+  return currentLessonId === LESSON_ALL_ID || currentLessonId === VOCAB_ALL_ID;
+}
+
+// Each lesson gets the limits for itself; in an All view, extra room is shared by its lessons.
+function limitRoom(vocab, lessons) {
+  const {seen: seen, fresh: fresh} = todayLog(vocab, lessons);
+  const used = new Map;
+  seen.forEach(k => {
+    const l = k.split(":")[0];
+    const u = used.get(l) || {
+      fresh: 0,
+      review: 0
+    };
+    u[fresh.has(k) ? "fresh" : "review"]++;
+    used.set(l, u);
+  });
+  const all = isAllView();
+  const pool = all ? extraToday(vocab, currentLessonId) : {
+    fresh: 0,
+    review: 0
+  };
+  const left = new Map;
+  lessons.forEach(l => {
+    const u = used.get(l) || {
+      fresh: 0,
+      review: 0
+    };
+    const own = extraToday(vocab, l);
+    const room = {};
+    [ "fresh", "review" ].forEach(k => {
+      if (!studyLimits[k]) return room[k] = Infinity;
+      room[k] = Math.max(0, studyLimits[k] + (all ? 0 : own[k]) - u[k]);
+      if (all) pool[k] -= Math.max(0, u[k] - studyLimits[k] - own[k]);
+    });
+    left.set(l, room);
+  });
+  return {
+    seen: seen,
+    left: left,
+    pool: pool
+  };
+}
+
 function reviewsLeftToday(lessonIds, vocab) {
   if (!studyLimits.review) return Infinity;
-  const {seen: seen, fresh: fresh} = todayLog(vocab, new Set(lessonIds));
-  return Math.max(0, studyLimits.review - (seen.size - fresh.size));
+  const {left: left, pool: pool} = limitRoom(vocab, new Set(lessonIds));
+  return [ ...left.values() ].reduce((n, room) => n + room.review, Math.max(0, pool.review));
 }
 
 function limitStudy(list, vocab, keyOf, stateOf) {
   if (!studyLimits.fresh && !studyLimits.review) return list;
-  const {seen: seen, fresh: fresh} = todayLog(vocab, new Set(list.map(x => keyOf(x).split(":")[0])));
-  let freshLeft = studyLimits.fresh ? studyLimits.fresh - fresh.size : Infinity;
-  let reviewLeft = studyLimits.review ? studyLimits.review - (seen.size - fresh.size) : Infinity;
+  const lessonOf = x => keyOf(x).split(":")[0];
+  const {seen: seen, left: left, pool: pool} = limitRoom(vocab, new Set(list.map(lessonOf)));
   return list.filter(x => {
     if (seen.has(keyOf(x))) return true;
-    return stateOf(x).reps ? reviewLeft-- > 0 : freshLeft-- > 0;
+    const k = stateOf(x).reps ? "review" : "fresh";
+    const room = left.get(lessonOf(x));
+    if (room[k] > 0) return room[k]--, true;
+    if (pool[k] > 0) return pool[k]--, true;
+    return false;
   });
 }
 
@@ -4594,8 +4658,8 @@ function showSessionCompletePanel() {
   const panel = document.getElementById("sessionCompletePanel");
   const now = Date.now();
   const next = rows.filter(r => hasAnswer(r) && !cardWaiting(r)).map(r => srsOf(r, "Table")).filter(st => st.reps && !isDoneState(st) && st.due > now).map(st => st.due).sort((a, b) => a - b)[0];
-  const due = modeScopeRows(modeKey()).filter(r => cardReady(r, "Table", now));
-  const more = heldMore(due, limitRows(due), r => srsOf(r, "Table"));
+  const due = isAllLessons() ? mixCandidates(true).map(([ r ]) => r) : modeScopeRows(modeKey()).filter(r => cardReady(r, "Table", now));
+  const more = heldMore(due, isAllLessons() ? mixCandidates().map(([ r ]) => r) : limitRows(due), r => srsOf(r, "Table"));
   const held = more.total;
   const waiting = modeScopeRows(modeKey()).filter(cardWaiting).length;
   const text = finishText(held, studiedToday(rows, false), next, "card", modeScopeRows(modeKey()).filter(r => !cardWaiting(r)).map(r => srsOf(r, "Table")), waiting);
@@ -5352,11 +5416,9 @@ function showFlags(langs) {
   const key = ccs.join(",");
   if (shownFlags === key) return;
   shownFlags = key;
-  const units = ccs.map(cc => `<span class="flag-unit"><span class="flag-cloth" style='--flag:${flagUrl(cc)}'></span></span>`).join("");
-  document.querySelectorAll(".flag-set").forEach(el => {
-    el.classList.toggle("many", ccs.length > 1);
-    el.innerHTML = units;
-  });
+  // Several languages lie on top of each other like a stack of papers, the first on top.
+  const units = `<span class="flag-unit" style="--n:${ccs.length}">` + ccs.map((cc, k) => `<span class="flag-cloth" style='--k:${k};--flag:${flagUrl(cc)}'></span>`).reverse().join("") + "</span>";
+  document.querySelectorAll(".flag-set").forEach(el => el.innerHTML = units);
 }
 
 function autoDetectLangs(texts) {
@@ -6610,22 +6672,12 @@ const dictIframeCache = new Map;
 
 let activeDictOverlay = null;
 
-// Bing squeezes long text out of sight in a narrow frame, so there it gets a bigger page drawn smaller.
-function dictFrame(url) {
-  const frame = document.createElement("div");
-  frame.className = "dict-frame";
-  const iframe = document.createElement("iframe");
-  if (url.startsWith("https://www.bing.com/")) iframe.className = "dict-zoom";
-  iframe.src = url;
-  frame.appendChild(iframe);
-  return frame;
-}
-
 function getDictIframe(url) {
   let iframe = dictIframeCache.get(url);
   if (!iframe) {
-    iframe = dictFrame(url);
-    iframe.style.cssText = `position:fixed;top:0;left:0;box-sizing:border-box;width:${wholePx(Math.min(720, document.querySelector(".main-inner").clientWidth || 720))}px;height:360px;opacity:0;border:1px solid var(--border);border-radius:10px;pointer-events:none;`;
+    iframe = document.createElement("iframe");
+    iframe.style.cssText = `position:fixed;top:0;left:0;width:${wholePx(Math.min(720, document.querySelector(".main-inner").clientWidth || 720))}px;height:360px;opacity:0;border:1px solid var(--border);border-radius:10px;pointer-events:none;`;
+    iframe.src = url;
     dictOverlayLayer.appendChild(iframe);
     dictIframeCache.set(url, iframe);
   }
@@ -6637,7 +6689,8 @@ const popupDictCache = new Map;
 function getPopupDictIframe(url) {
   let iframe = popupDictCache.get(url);
   if (!iframe) {
-    iframe = dictFrame(url);
+    iframe = document.createElement("iframe");
+    iframe.src = url;
     document.querySelector("#editPopup .le-dict").appendChild(iframe);
     popupDictCache.set(url, iframe);
   }
@@ -7083,7 +7136,7 @@ document.addEventListener("click", e => {
 function reclaimKeyboardFocus() {
   setTimeout(() => {
     const active = document.activeElement;
-    const stillFocusedOwnDictIframe = activeDictOverlay && activeDictOverlay.iframe.contains(active);
+    const stillFocusedOwnDictIframe = activeDictOverlay && active === activeDictOverlay.iframe;
     if (active && active.tagName === "IFRAME" && !stillFocusedOwnDictIframe) {
       document.body.tabIndex = -1;
       document.body.focus();
@@ -7094,7 +7147,7 @@ function reclaimKeyboardFocus() {
 
 window.addEventListener("blur", () => {
   const active = document.activeElement;
-  const focusedOwnDictIframe = !!(activeEdit && activeDictOverlay && activeDictOverlay.iframe.contains(active));
+  const focusedOwnDictIframe = !!(activeEdit && activeDictOverlay && active === activeDictOverlay.iframe);
   if (focusedOwnDictIframe) loopWorkRow(activeEdit.row);
   if (activeEdit && !focusedOwnDictIframe) {
     commitActiveEdit();
@@ -7816,7 +7869,7 @@ function mixCueDone() {
   }, document.querySelector(".all-curtain") ? 0 : 300);
 }
 
-function mixCandidates() {
+function mixCandidates(unlimited) {
   const now = Date.now();
   const video = new Map;
   const isVideo = r => {
@@ -7827,7 +7880,8 @@ function mixCandidates() {
     return video.get(r.srcLessonId);
   };
   const playable = r => !!vocabVideoIdFor(r) && !unplayableVideos.has(vocabVideoIdFor(r));
-  return limitRows(rows.filter(r => cardReady(r, "Table", now) && (hasAnswer(r) || isVideo(r) && playable(r)))).map(r => [ r, !isVideo(r) ? "ielts" : "listen" ]);
+  const ready = rows.filter(r => cardReady(r, "Table", now) && (hasAnswer(r) || isVideo(r) && playable(r)));
+  return (unlimited ? ready : limitRows(ready)).map(r => [ r, !isVideo(r) ? "ielts" : "listen" ]);
 }
 
 function mixShow(row, style) {
@@ -8674,7 +8728,7 @@ function dictUrlFor(text, row) {
   const script = cjkScriptFor(text, row);
   if (script === "zh") return "https://chinesedictionary.mobi/?handler=QueryWorddict&mwdqb=" + encodeURIComponent(text);
   const from = script === "ja" ? "ja" : /[\uAC00-\uD7A3]/.test(text) ? "ko" : detectLang(text) === "vi-VN" ? "vi" : "en";
-  return "https://www.bing.com/translator?ref=TThis&from=" + from + "&to=" + (from === "en" ? "vi" : "en") + "&text=" + encodeURIComponent(text.replace(/\?/g, "？").replace(/[&#%]/g, " "));
+  return "https://www.bing.com/translator?ref=TThis&from=" + from + "&to=" + (from === "en" ? "vi" : "en") + "&text=" + encodeURIComponent(text.replace(/\?/g, "？").replace(/'/g, "’").replace(/[&#%]/g, " "));
 }
 
 function splitCols(line, delim, maxParts) {
@@ -10228,6 +10282,7 @@ function resetStudyState() {
 }
 
 function openLesson(lesson) {
+  if (!isVirtualId(lesson.id)) dropAllCurtain();
   if (lesson.unseen) {
     delete lesson.unseen;
     dbPut("lessons", lesson).catch(() => {});
@@ -11378,6 +11433,7 @@ function showListModes() {
 }
 
 function showView(view) {
+  if (view !== "study" && view !== "vocab") dropAllCurtain();
   if (view !== currentView) ytWarm = false;
   if (view === "study" && !currentLessonId) view = "empty";
   if (view === "vocab" && lessonIsBlank()) view = "study";
@@ -11653,6 +11709,7 @@ function applyStudyLimits() {
 function saveStudyLimits() {
   try {
     localStorage.setItem(LIMITS_KEY, JSON.stringify(studyLimits));
+    localStorage.setItem(LIMITS_EXTRA_KEY, JSON.stringify(limitsExtra));
   } catch (e) {}
 }
 
@@ -11666,9 +11723,17 @@ function refreshAfterLimits() {
 
 function studyMoreToday(fresh, review) {
   pushUndo("Study " + (fresh + review) + " more today");
-  studyLimits = {
-    fresh: studyLimits.fresh && studyLimits.fresh + fresh,
-    review: studyLimits.review && studyLimits.review + review
+  const vocab = currentView === "vocab";
+  const had = extraToday(vocab, currentLessonId);
+  const day = localDayKey(Date.now());
+  limitsExtra = {
+    day: day,
+    by: Object.assign(limitsExtra.day === day ? limitsExtra.by : {}, {
+      [(vocab ? "v:" : "c:") + currentLessonId]: {
+        fresh: had.fresh + (studyLimits.fresh ? fresh : 0),
+        review: had.review + (studyLimits.review ? review : 0)
+      }
+    })
   };
   saveStudyLimits();
   refreshAfterLimits();
@@ -15154,6 +15219,14 @@ function confirmCurtainSound(curtain) {
   }, 1500);
 }
 
+// Leaving All for another lesson or view takes the curtain down with nothing started behind it.
+function dropAllCurtain() {
+  const curtain = document.querySelector(".all-curtain");
+  if (!curtain || !curtain.drop) return;
+  curtainQueue = [];
+  curtain.drop();
+}
+
 function raiseAllCurtain() {
   if (!document.querySelector("#lessonList [data-all-vocab]")) renderLessonList();
   const tile = document.querySelector("#lessonList [data-all-vocab]");
@@ -15190,6 +15263,7 @@ function allCurtain(item) {
   let knock = null, tapped = false;
   const block = e => {
     if (!curtain.isConnected) return unblock();
+    if (e.target.closest && e.target.closest(".sidebar") && !e.target.closest("[data-all-vocab]")) return;
     e.stopPropagation();
     e.stopImmediatePropagation();
     if (e.type.startsWith("key") && (e.metaKey || e.ctrlKey)) return;
@@ -15204,6 +15278,12 @@ function allCurtain(item) {
   const unblock = () => BLOCKED.forEach(t => removeEventListener(t, block, {
     capture: true
   }));
+  curtain.drop = () => {
+    document.documentElement.classList.remove("curtained");
+    removeEventListener("resize", place);
+    unblock();
+    curtain.remove();
+  };
   curtain.style.setProperty("--bar", cs.backgroundImage);
   curtain.style.setProperty("--bar-base", cs.backgroundColor);
   curtain.innerHTML = '<i class="curtain-side curtain-l"><b></b></i><i class="curtain-side curtain-r"><b></b></i>';
