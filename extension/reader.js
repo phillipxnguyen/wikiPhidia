@@ -61,8 +61,7 @@
 .pick:hover{filter:brightness(1.08);}
 .card{position:fixed;width:360px;max-width:calc(100vw - 24px);padding:20px;border:1px solid var(--line);border-radius:12px;background:var(--bg);box-shadow:0 16px 40px rgba(10,20,40,.22);}
 .head{display:flex;align-items:flex-start;gap:8px;}
-.term{flex:1;min-width:0;padding:0 0 2px;margin:0;border:0;border-bottom:2px solid transparent;border-radius:0;font-size:22px;line-height:30px;font-weight:700;color:var(--ink);background:none;outline:none;}
-.term:focus{border-bottom-color:var(--green);}
+.term{flex:1;min-width:0;padding:0;margin:0;border:0;border-radius:0;font-size:22px;line-height:30px;font-weight:700;color:var(--ink);background:none;outline:none;cursor:text;}
 .icon{flex:none;display:flex;align-items:center;justify-content:center;width:30px;height:30px;padding:0;border:0;border-radius:8px;background:none;color:var(--ink-2);font-size:16px;line-height:20px;cursor:pointer;}
 .icon:hover{background:var(--bg-2);color:var(--ink);}
 .reading{margin-top:4px;font-size:14px;line-height:20px;color:var(--green);}
