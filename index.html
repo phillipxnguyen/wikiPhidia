@@ -5344,17 +5344,21 @@ function blockNotesHtml(html) {
   box.innerHTML = html;
   const BLOCK = /^(UL|OL|DIV|P|LI|H[1-6]|BLOCKQUOTE|TABLE)$/;
   const made = [];
+  // Each line of the notes is a block of its own, as typing makes them, also when they are bare text split by line
+  // breaks (what a browser leaves after a list is taken off): only blocks get the look of a plain line of notes.
   const wrap = parent => {
     const kids = [ ...parent.childNodes ];
-    if (kids.some(n => n.nodeType === 1 && BLOCK.test(n.tagName)) && parent.tagName !== "LI") {
+    const top = parent === box;
+    if ((top || kids.some(n => n.nodeType === 1 && BLOCK.test(n.tagName))) && parent.tagName !== "LI") {
       let run = null;
       kids.forEach(n => {
         if (n.nodeType === 1 && BLOCK.test(n.tagName)) {
           run = null;
           return;
         }
-        if (n.nodeType === 1 && n.tagName === "BR" && !run) {
+        if (n.nodeType === 1 && n.tagName === "BR" && (!run || top)) {
           n.remove();
+          run = null;
           return;
         }
         if (!run) {
