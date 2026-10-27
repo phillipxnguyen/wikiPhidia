@@ -1554,8 +1554,8 @@ window.onYouTubeIframeAPIReady = function(){
   @keyframes confetti-fall{0%{transform:translate(0, 0) rotate(0deg);opacity:1;}80%{opacity:1;}100%{transform:translate(var(--drift, 0px), var(--fall, 320px)) rotate(var(--spin, 360deg));opacity:0;}}
   .session-complete .emoji{font-size:52px;display:inline-block;animation:bounce-in .6s cubic-bezier(.34,1.56,.64,1);}
   @keyframes bounce-in{0%{transform:scale(0);opacity:0;}60%{transform:scale(1.15);opacity:1;}100%{transform:scale(1);}}
-  .session-complete-title{font-size:22px;font-weight:700;margin-top:14px;}
-  .session-complete-sub{font-size:14px;color:var(--text);margin-top:6px;}
+  .session-complete-title{font-size:22px;font-weight:700;margin-top:14px;animation:fade-up .5s ease .1s both;}
+  .session-complete-sub{font-size:14px;color:var(--text);margin-top:6px;animation:fade-up .5s ease .2s both;}
   .yt-grab-row{margin-top:8px;}
   .yt-grab{display:inline-flex;align-items:center;height:34px;padding:0 10px;border:1px dashed var(--accent);border-radius:8px;background:none;color:var(--accent);font-size:14px;font-weight:600;line-height:20px;text-decoration:none;cursor:help;}
   #ytGrabCopy{cursor:pointer;}
@@ -1573,7 +1573,8 @@ window.onYouTubeIframeAPIReady = function(){
   .lesson-item.importing{pointer-events:none;animation:importBlink 1.2s ease-in-out infinite;}
   @keyframes importBlink{0%, 100%{opacity:1;filter:blur(0);}50%{opacity:.35;filter:blur(2px);}}
   @media (prefers-reduced-motion: reduce){.lesson-item.importing{animation:none;opacity:.6;}}
-  .more-today{margin-top:16px;line-height:20px;}
+  .more-today{margin-top:16px;line-height:20px;animation:fade-up .5s ease .3s both;}
+  @keyframes fade-up{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
   .more-today[hidden]{display:none;}
   .file-input-hidden{display:none;}
 
@@ -4603,6 +4604,13 @@ function deckHasAnswers() {
   return rows.some(hasAnswer);
 }
 
+// The end screen shows when the lesson is caught up, and also when a study mode has nothing left for today (the
+// daily limit): the 5 s check and renderStudy ask this same question, so the end screen is never hidden and shown
+// again on its own, which would blur it out and start its words over.
+function endScreenDue() {
+  return !groupState && lessonCaughtUp() || isCardMode() && !isAllLessons() && !singleCardQueue().length;
+}
+
 function lessonCaughtUp() {
   if (isAllLessons()) return !mixFocusId;
   const now = Date.now();
@@ -5692,7 +5700,7 @@ function renderStudy() {
     return;
   }
   const caughtUp = !groupState && lessonCaughtUp();
-  if (caughtUp) showSessionCompletePanel(); else {
+  if (caughtUp) showSessionCompletePanel(); else if (!endScreenDue()) {
     if (panel.style.display === "block") blinkOut(panel);
     hideSessionCompletePanel();
   }
@@ -7878,7 +7886,7 @@ function warnVocabDuplicates(terms) {
   showToast("Already in this note");
 }
 
-function toggleVocabBullets(box) {
+function toggleVocabBullets(box, cards) {
   const sel = window.getSelection();
   if (!sel.rangeCount) return;
   let range = sel.getRangeAt(0);
@@ -7902,6 +7910,10 @@ function toggleVocabBullets(box) {
     if (!selectionAllInItems(box, range)) document.execCommand("insertUnorderedList");
   }
   unwrapInheritSpans(box);
+  if (!cards) {
+    box.querySelectorAll("ul:not([class])").forEach(ul => ul.className = "notes-list");
+    return;
+  }
   range = sel.getRangeAt(0);
   const found = selectedNoteItems(box, range);
   const taken = noteVocabKeys(box, found);
@@ -8048,9 +8060,10 @@ window.addEventListener("resize", () => {
   if (!document.getElementById("editPopup").hidden) placeEditPopup();
 });
 
-// Bullets in every editor of Lessons and Vocabulary: ⌘⇧8 (Ctrl+Shift+8) turns the selected lines into bullets or,
-// when they already are, back into plain lines; Backspace at the very start of a bullet turns that line back too.
-// Lesson notes go through toggleVocabBullets, which also makes or unmakes their word entries.
+// Bullets in every editor of Lessons and Vocabulary: ⌘⇧7 (Ctrl+Shift+7) turns the selected lines into plain bullets,
+// ⌘⇧8 into bullets that are also words (in a lesson's notes: **word**: meaning, the ": " added when missing);
+// on lines that already are bullets either one turns them back into plain lines, and so does Backspace at the very
+// start of a bullet. Lesson notes go through toggleVocabBullets, which also makes or unmakes their word entries.
 const BULLET_EDITORS = "#editQ, #editA, #editNotes, #vocabEditNotes, #qaNotes";
 
 function caretAtItemStart(box) {
@@ -8068,11 +8081,11 @@ function caretAtItemStart(box) {
 document.addEventListener("keydown", e => {
   const box = e.target.closest && e.target.closest(BULLET_EDITORS);
   if (!box || e.isComposing || e.altKey) return;
-  const toggle = (e.metaKey || e.ctrlKey) && e.shiftKey && e.code === "Digit8";
+  const toggle = (e.metaKey || e.ctrlKey) && e.shiftKey && (e.code === "Digit7" || e.code === "Digit8");
   if (!toggle && !(e.key === "Backspace" && !e.metaKey && !e.ctrlKey && !e.shiftKey && caretAtItemStart(box))) return;
   e.preventDefault();
   e.stopImmediatePropagation();
-  if (box.matches("#editNotes, #qaNotes")) return toggleVocabBullets(box);
+  if (box.matches("#editNotes, #qaNotes")) return toggleVocabBullets(box, e.code === "Digit8");
   document.execCommand("insertUnorderedList");
   unwrapInheritSpans(box);
 }, true);
@@ -9091,10 +9104,10 @@ setInterval(() => {
     return;
   }
   if (!groupState) {
-    if (rows.length && lessonCaughtUp() !== (document.getElementById("sessionCompletePanel").style.display === "block")) render();
+    if (rows.length && endScreenDue() !== (document.getElementById("sessionCompletePanel").style.display === "block")) render();
     return;
   }
-  if (document.getElementById("singleCardView").style.display === "none") render(); else refreshBadges();
+  if (document.getElementById("singleCardView").style.display === "none" && !endScreenDue()) render(); else refreshBadges();
 }, 5 * 1e3);
 
 function gradeLabel(isAgain) {
