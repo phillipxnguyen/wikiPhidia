@@ -342,7 +342,8 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-card.flipped .vocab-card-inner{transform:rotateY(180deg);}
   .vocab-card.no-turn .vocab-card-inner{transition:none;}
   .vocab-face{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;gap:14px;padding:32px 24px;text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:auto;}
-  .vocab-back{transform:rotateY(180deg);background:var(--a-bg);justify-content:flex-start;gap:16px;padding:25px 16px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;}
+  .vocab-back{transform:rotateY(180deg);background:var(--a-bg);justify-content:flex-start;padding:25px 16px;overflow:hidden;}
+  .vocab-back-scroll{flex:0 1 auto;min-height:0;width:100%;display:flex;flex-direction:column;align-items:center;gap:16px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;}
   @media (max-width:600px){.vocab-front{padding:24px 16px;}}
   .vocab-back .vocab-ctx, .vocab-back .vocab-meaning{box-sizing:border-box;width:fit-content;max-width:100%;padding:0 16px;font-size:28px;line-height:35px;margin:0;text-align:left;}
   .vocab-back .vocab-ctx.small{font-size:26px;line-height:32px;}
@@ -353,16 +354,16 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-back .vocab-ctx mark.vs{border-top-left-radius:4px;border-bottom-left-radius:4px;padding-left:1px;}
   .vocab-back .vocab-ctx mark.ve{border-top-right-radius:4px;border-bottom-right-radius:4px;padding-right:1px;}
   .vocab-back .vocab-ctx:first-child:has(.rd){line-height:2;margin:5px 0 -14px;}
-  .vocab-face.vocab-back > .vocab-back-main{margin:auto 0 0;display:flex;flex-direction:column;align-items:center;gap:16px;width:100%;flex:none;}
-  .vocab-face.vocab-back > .vocab-back-stroke{margin:0 0 auto;flex:none;}
-  .vocab-face.vocab-back:has(> .vocab-back-stroke:empty) > .vocab-back-main{margin-bottom:auto;}
+  .vocab-back-scroll > .vocab-back-main{margin:auto 0 0;display:flex;flex-direction:column;align-items:center;gap:16px;width:100%;flex:none;}
+  .vocab-back-scroll > .vocab-back-stroke{margin:0 0 auto;flex:none;}
+  .vocab-back-scroll:has(> .vocab-back-stroke:empty) > .vocab-back-main{margin-bottom:auto;}
   .vocab-deck{position:relative;z-index:0;}
   @media (min-width:821px){.main:has(#vocabCard){padding-bottom:24px;}}
   .vocab-card.pending{position:absolute;top:0;left:0;right:0;opacity:0;pointer-events:none;z-index:-1;}
   .vocab-card.settled .vocab-card-inner{transform:none;transition:none;transform-style:flat;}
   .vocab-card.settled .vocab-back{transform:none;}
-  :is(#singleCardBody.listen-batch, .vocab-back){scrollbar-width:none;}
-  :is(#singleCardBody.listen-batch, .vocab-back)::-webkit-scrollbar{display:none;}
+  :is(#singleCardBody.listen-batch, .vocab-back-scroll){scrollbar-width:none;}
+  :is(#singleCardBody.listen-batch, .vocab-back-scroll)::-webkit-scrollbar{display:none;}
   @property --edge-t{syntax:"<length>";inherits:false;initial-value:0px;}
   @property --edge-b{syntax:"<length>";inherits:false;initial-value:0px;}
   .edges{--edge-len:14px;--edge-mask:linear-gradient(to bottom, rgba(0, 0, 0, 0) 0, rgba(0, 0, 0, .009) calc(var(--edge-t) * .1), rgba(0, 0, 0, .058) calc(var(--edge-t) * .2), rgba(0, 0, 0, .163) calc(var(--edge-t) * .3), rgba(0, 0, 0, .317) calc(var(--edge-t) * .4), rgba(0, 0, 0, .5) calc(var(--edge-t) * .5), rgba(0, 0, 0, .683) calc(var(--edge-t) * .6), rgba(0, 0, 0, .837) calc(var(--edge-t) * .7), rgba(0, 0, 0, .942) calc(var(--edge-t) * .8), rgba(0, 0, 0, .991) calc(var(--edge-t) * .9), #000 var(--edge-t), #000 calc(100% - var(--edge-b)), rgba(0, 0, 0, .991) calc(100% - var(--edge-b) * .9), rgba(0, 0, 0, .942) calc(100% - var(--edge-b) * .8), rgba(0, 0, 0, .837) calc(100% - var(--edge-b) * .7), rgba(0, 0, 0, .683) calc(100% - var(--edge-b) * .6), rgba(0, 0, 0, .5) calc(100% - var(--edge-b) * .5), rgba(0, 0, 0, .317) calc(100% - var(--edge-b) * .4), rgba(0, 0, 0, .163) calc(100% - var(--edge-b) * .3), rgba(0, 0, 0, .058) calc(100% - var(--edge-b) * .2), rgba(0, 0, 0, .009) calc(100% - var(--edge-b) * .1), rgba(0, 0, 0, 0) 100%);-webkit-mask-image:var(--edge-mask);mask-image:var(--edge-mask);}
@@ -1444,13 +1445,14 @@ window.onYouTubeIframeAPIReady = function(){
   @media (max-width:820px){#studyCard.deck > #singleCardView{grid-template-columns:minmax(0, 1fr);grid-template-rows:auto minmax(0, 1fr);}}
   @media (min-width:821px){#studyCard.deck > #singleCardView{flex:none;grid-template-rows:auto;}#studyCard.deck #singleCardBody.listen-batch{align-self:stretch;height:auto;margin:25px 0;contain:size;}}
   .edit-popup{position:fixed;inset:0;z-index:1500;}
-  .edit-popup[hidden]{display:block;visibility:hidden;pointer-events:none;}
+  .edit-popup[hidden]{display:block!important;visibility:hidden;pointer-events:none;}
   .le-box{position:fixed;display:flex;flex-direction:column;box-sizing:border-box;width:min(440px, calc(100vw - 32px));max-height:min(760px, 80dvh);overflow-y:auto;overscroll-behavior:contain;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);}
   .le-box > *{flex-shrink:0;}
   .le-box .edit-stroke{margin-top:10px;}
   #editPopup .vocab-editor{margin:0;padding:0;border:0;box-shadow:none;background:none;}
   .le-box #editDict{display:none;}
   .le-dict{position:relative;height:0;overflow:hidden;}
+  .le-dict > .dict-frame{position:absolute;top:0;left:0;box-sizing:border-box;}
   .le-dict.on{margin-top:10px;height:var(--dict-h, 360px);}
   .dict-frame{overflow:hidden;container-type:size;}
   .dict-frame > iframe{display:block;width:100%;height:100%;border:0;}
@@ -4048,7 +4050,7 @@ function fitBadges() {
   els.map(el => [ el, el.getBoundingClientRect().width ]).forEach(([ el, w ]) => el.style.width = Math.ceil(w / 2) * 2 + "px");
 }
 
-const RAIL_SEL = "#viewStudy #singleCardBody.listen-batch, #vocabCard.flipped.settled .vocab-back";
+const RAIL_SEL = "#viewStudy #singleCardBody.listen-batch, #vocabCard.flipped.settled .vocab-back-scroll";
 
 const scrollRail = document.createElement("div");
 
@@ -4060,7 +4062,7 @@ scrollRail.innerHTML = "<i></i>";
 
 document.body.appendChild(scrollRail);
 
-const EDGE_SEL = "#singleCardBody.listen-batch, .lesson-list, .heat-day-list";
+const EDGE_SEL = "#singleCardBody.listen-batch, .vocab-back-scroll, .lesson-list, .heat-day-list";
 
 function markEdges(el) {
   if (!el.edgeLen) {
@@ -4078,7 +4080,7 @@ function placeScrollRail() {
   const el = [ ...document.querySelectorAll(RAIL_SEL) ].find(e => e.offsetParent && !e.querySelector(".cell.hidden") && e.scrollHeight > e.clientHeight + 1);
   const hide = on => scrollRail.hidden !== on && (scrollRail.hidden = on);
   if (!el) return hide(true);
-  const box = el.getBoundingClientRect();
+  const box = (el.closest(".vocab-face") || el).getBoundingClientRect();
   let bottom = Math.min(box.bottom, window.innerHeight);
   [ document.querySelector("#selBar:not([hidden]) .segmented"), document.querySelector("#touchBar:not([hidden])") ].forEach(bar => {
     const top = bar && bar.getBoundingClientRect().top;
@@ -7574,41 +7576,23 @@ function getDictIframe(url) {
   return iframe;
 }
 
-// The edit box's dictionary pages live in a layer of their own above the edit box, never inside it: the edit box
-// is display:none while closed, which would squeeze every page in it to nothing, and Bing fits its boxes to the
-// size its page has and never grows them back. So each page keeps, shown or not, the size of the edit box's
-// dictionary slot, and is laid over that slot while it shows.
-const dictPopupLayer = document.createElement("div");
-
-dictPopupLayer.style.cssText = "position:fixed;top:0;left:0;width:0;height:0;overflow:visible;z-index:1501;pointer-events:none;";
-
-document.body.appendChild(dictPopupLayer);
-
-// The slot as it is (or would be) with the dictionary open: a closed edit box is opened unseen for a moment.
+// The edit box's dictionary pages live in its dictionary slot, each laid at the slot's top left, so they scroll
+// with the edit box itself. The edit box is never display:none (closed, it is only invisible), since that would
+// squeeze every page in it to nothing, and Bing fits its boxes to the size its page has and never grows them back.
+// So each page keeps, shown or not, the size the slot has with the dictionary open.
+// The slot as it is (or would be) with the dictionary open.
 function popupDictSlot() {
   const pop = document.getElementById("editPopup");
   const dict = pop.querySelector(".le-dict"), box = pop.querySelector(".le-box");
-  const closed = pop.hidden, on = dict.classList.contains("on");
-  if (closed) {
-    pop.style.visibility = "hidden";
-    pop.hidden = false;
-  }
+  const on = dict.classList.contains("on");
   if (!on) dict.classList.add("on");
-  const r = dict.getBoundingClientRect(), b = box.getBoundingClientRect();
   const slot = {
-    left: Math.round(r.left + dict.clientLeft),
-    top: Math.round(r.top + dict.clientTop),
     width: dict.clientWidth,
     height: dict.clientHeight,
-    box: b,
     side: getComputedStyle(box).flexDirection === "row",
     radius: getComputedStyle(dict).borderTopLeftRadius
   };
   if (!on) dict.classList.remove("on");
-  if (closed) {
-    pop.hidden = true;
-    pop.style.visibility = "";
-  }
   return slot;
 }
 
@@ -7627,9 +7611,9 @@ function getPopupDictIframe(url) {
   let frame = popupDictCache.get(url);
   if (!frame) {
     frame = dictFrame(url);
-    frame.style.cssText = "position:fixed;top:0;left:0;box-sizing:border-box;opacity:0;pointer-events:none;";
+    frame.style.cssText = "opacity:0;pointer-events:none;";
     fitPopupDictFrame(frame, popupDictSlot());
-    dictPopupLayer.appendChild(frame);
+    document.querySelector("#editPopup .le-dict").appendChild(frame);
     startDictFrame(frame);
     popupDictCache.set(url, frame);
   }
@@ -7639,14 +7623,7 @@ function getPopupDictIframe(url) {
 function followPopupDict() {
   const shown = activeDictOverlay;
   if (!shown || !shown.inline) return;
-  const slot = popupDictSlot(), frame = shown.iframe;
-  fitPopupDictFrame(frame, slot);
-  const b = slot.box;
-  Object.assign(frame.style, {
-    left: slot.left + "px",
-    top: slot.top + "px",
-    clipPath: `inset(${Math.max(0, Math.round(b.top - slot.top))}px ${Math.max(0, Math.round(slot.left + slot.width - b.right))}px ${Math.max(0, Math.round(slot.top + slot.height - b.bottom))}px ${Math.max(0, Math.round(b.left - slot.left))}px)`
-  });
+  fitPopupDictFrame(shown.iframe, popupDictSlot());
   shown.rafId = requestAnimationFrame(followPopupDict);
 }
 
@@ -7700,8 +7677,6 @@ function hideDictOverlay() {
     cancelAnimationFrame(activeDictOverlay.rafId);
     document.querySelector("#editPopup .le-dict").classList.remove("on");
     Object.assign(activeDictOverlay.iframe.style, {
-      top: "0",
-      left: "0",
       opacity: "0",
       pointerEvents: "none"
     });
@@ -14938,7 +14913,7 @@ function buildVocabCard(item) {
   el.className = "vocab-card";
   el.dataset.key = item.key;
   el.dataset.term = item.term;
-  el.innerHTML = '<div class="vocab-card-inner"><div class="vocab-face vocab-front"><div class="vocab-term"></div></div><div class="vocab-face vocab-back"><div class="vocab-back-main"></div><div class="vocab-back-stroke"></div></div></div>';
+  el.innerHTML = '<div class="vocab-card-inner"><div class="vocab-face vocab-front"><div class="vocab-term"></div></div><div class="vocab-face vocab-back"><div class="vocab-back-scroll"><div class="vocab-back-main"></div><div class="vocab-back-stroke"></div></div></div></div>';
   drawStrokeOrder(el.querySelector(".vocab-back-stroke"), item.term, cjkScriptFor(item.term, item.card) === "ja");
   vocabFitObserver.observe(el.querySelector(".vocab-back-main"));
   const current = () => {
@@ -14993,10 +14968,10 @@ const VOCAB_CARD_MIN = 200;
 
 function vocabCardNeed(card) {
   const need = face => {
-    const style = getComputedStyle(face);
-    const shown = Array.from(face.children).filter(el => getComputedStyle(el).display !== "none");
+    const style = getComputedStyle(face), box = face.querySelector(".vocab-back-scroll") || face;
+    const shown = Array.from(box.children).filter(el => getComputedStyle(el).display !== "none");
     const edges = [ "paddingTop", "paddingBottom", "borderTopWidth", "borderBottomWidth" ].reduce((sum, k) => sum + (parseFloat(style[k]) || 0), 0);
-    return shown.reduce((sum, el) => sum + el.offsetHeight, 0) + (parseFloat(style.rowGap) || 0) * Math.max(0, shown.length - 1) + edges;
+    return shown.reduce((sum, el) => sum + el.offsetHeight, 0) + (parseFloat(getComputedStyle(box).rowGap) || 0) * Math.max(0, shown.length - 1) + edges;
   };
   return Math.ceil(Math.max(need(card.querySelector(".vocab-front")), need(card.querySelector(".vocab-back"))));
 }
@@ -15853,7 +15828,7 @@ function flipVocab() {
       settleVocabCard(card, true);
     }, VOCAB_FLIP_MS) : null;
     clearTimeout(card.strokeTimer);
-    card.querySelector(".vocab-back").scrollTop = 0;
+    card.querySelector(".vocab-back-scroll").scrollTop = 0;
     if (vocabSession.flipped) card.strokeTimer = setTimeout(() => card.querySelectorAll(".vocab-back-stroke .stroke-target").forEach(t => t.dispatchEvent(new Event("click"))), VOCAB_FLIP_MS * .5);
   }
   if (!vocabSoundOn()) playVocabSound(item);
