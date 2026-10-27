@@ -995,7 +995,7 @@ window.onYouTubeIframeAPIReady = function(){
   .card-notes{font-size:14px;line-height:18px;color:var(--text);overflow-wrap:anywhere;}
   .card-notes ul, .card-notes ol{margin:0;padding-left:20px;}
   .card-notes > *{margin:0;}
-  .card-notes > :is(ul, ol) + :not(ul):not(ol), .card-notes > :not(ul):not(ol) + :is(ul, ol){margin-top:4px;}
+  .card-notes :is(ul, ol) + :not(ul):not(ol), .card-notes :not(ul):not(ol):not(li) + :is(ul, ol){margin-top:4px;}
   #cardTable .card-notes{padding:0 8px 16px;}
   #cardTable:not(.notebook) .card-notes{padding-left:20px;padding-right:20px;}
   #cardTable:not(.notebook) .card-notes :is(ul, ol){padding-left:16px;}
@@ -1403,7 +1403,7 @@ window.onYouTubeIframeAPIReady = function(){
   #studyCard.deck .listen-pair .card-notes li{padding:6px 12px;border-radius:15px;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-sm);}
   #studyCard.deck .listen-pair .card-notes > :not(ul):not(ol){font-size:24px;line-height:34px;color:var(--a-text);}
   @media (max-width:600px){#studyCard.deck .listen-pair .card-notes > :not(ul):not(ol){font-size:20px;line-height:30px;}}
-  #studyCard.deck .listen-pair .card-notes > * + *{margin-top:8px;}
+  #studyCard.deck .listen-pair .card-notes :is(:is(ul, ol) + *, :not(li) + :is(ul, ol)){margin-top:8px;}
   #viewStudy:not(.offscreen):has(#studyCard.deck){position:relative;}
   #viewStudy:not(.offscreen):has(#studyCard.deck) .study-head{position:static;}
   #viewStudy:not(.offscreen) .media-container.listen-slot{position:absolute;z-index:1;display:flex;flex-direction:column;align-items:stretch;gap:0;box-sizing:border-box;margin:0;padding:0;opacity:1;pointer-events:auto;background:none;border:0;box-shadow:none;}
@@ -4471,7 +4471,41 @@ function syncAddLook() {
 
 function cardNotesHtml(row) {
   const html = notesEditorHtml(row);
-  return html && plainTextOf(html, "\n").trim() ? `<div class="card-notes">${html}</div>` : "";
+  return html && plainTextOf(html, "\n").trim() ? `<div class="card-notes">${blockNotesHtml(html)}</div>` : "";
+}
+
+function blockNotesHtml(html) {
+  const box = document.createElement("div");
+  box.innerHTML = html;
+  const BLOCK = /^(UL|OL|DIV|P|LI|H[1-6]|BLOCKQUOTE|TABLE)$/;
+  const wrap = parent => {
+    const kids = [ ...parent.childNodes ];
+    if (kids.some(n => n.nodeType === 1 && BLOCK.test(n.tagName)) && parent.tagName !== "LI") {
+      let run = null;
+      kids.forEach(n => {
+        if (n.nodeType === 1 && BLOCK.test(n.tagName)) {
+          run = null;
+          return;
+        }
+        if (n.nodeType === 1 && n.tagName === "BR" && !run) {
+          n.remove();
+          return;
+        }
+        if (!run) {
+          if (n.nodeType === 3 && !n.nodeValue.trim()) return;
+          run = document.createElement("div");
+          parent.insertBefore(run, n);
+        }
+        run.appendChild(n);
+      });
+      parent.querySelectorAll(":scope > div").forEach(d => {
+        if (d.lastChild && d.lastChild.nodeName === "BR") d.lastChild.remove();
+      });
+    }
+    [ ...parent.children ].forEach(el => el.tagName !== "LI" && wrap(el));
+  };
+  wrap(box);
+  return box.innerHTML;
 }
 
 function aCellContent(r) {
