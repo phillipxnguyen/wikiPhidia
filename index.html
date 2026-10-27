@@ -9285,7 +9285,16 @@ function planImport(entries, forPreview) {
       return;
     }
     const na = normalizeImportText(e.a);
-    const matches = (byQuestion.get(normalizeImportText(e.q)) || []).filter(r => (e.time == null || r.time == null || r.time === e.time) && (!na || !answerOf(r).trim() || normalizeImportText(answerOf(r)) === na));
+    const nq = normalizeImportText(e.q);
+    const covered = e.time != null && nq && rows.some(r => r.time != null && r.time <= e.time + .5 && e.time - r.time < 30 && normalizeImportText(r.q).includes(nq));
+    if (covered && !(byQuestion.get(nq) || []).length) {
+      skipped++;
+      outcomes.push({
+        kind: "duplicate"
+      });
+      return;
+    }
+    const matches = (byQuestion.get(nq) || []).filter(r => (e.time == null || r.time == null || r.time === e.time) && (!na || !answerOf(r).trim() || normalizeImportText(answerOf(r)) === na));
     if (!matches.length) {
       const r = forPreview ? {
         q: e.q,
@@ -9813,8 +9822,10 @@ function mergedCard(group) {
   group.forEach(c => Object.entries(c.vocab || {}).forEach(([ k, st ]) => {
     if (!vocab[k] || (st.reps || 0) > (vocab[k].reps || 0)) vocab[k] = st;
   }));
+  let hash = 0;
+  group.map(c => c.uid || c.q || "").join("\u0001").split("").forEach(ch => hash = hash * 31 + ch.charCodeAt(0) | 0);
   return {
-    uid: makeUid(),
+    uid: "m" + (hash >>> 0).toString(36) + Math.round((group[0].time || 0) * 10).toString(36),
     q: joinSentences(group.map(c => c.q)),
     a: joinSentences(group.map(c => c.a)),
     qHtml: joinSentences(group.map(c => c.qHtml || textHtml(c.q)), true),
@@ -9847,7 +9858,10 @@ function mergeLessonCards(cards) {
     c.aHtml = "";
   });
   const timed = cards.filter(c => c.time != null && !c.merged).sort((x, y) => x.time - y.time);
-  if (!timed.length) return cards;
+  if (!timed.length) {
+    const clean = dedupeCards(cards);
+    return clean.length === cards.length ? cards : clean;
+  }
   const out = cards.slice();
   for (let i = 0; i < timed.length; i += 3) {
     const group = timed.slice(i, i + 3);
@@ -9858,7 +9872,46 @@ function mergeLessonCards(cards) {
     out[out.indexOf(group[0])] = mergedCard(group);
     group.slice(1).forEach(c => out.splice(out.indexOf(c), 1));
   }
+  return dedupeCards(out);
+}
+
+function cardWorth(c) {
+  const reps = Object.values(c.srs || {}).reduce((n, st) => n + (st && st.reps || 0), 0);
+  return reps * 1e4 + vocabEntriesOf(c).length * 100 + (c.notes || "").length;
+}
+
+function dedupeCards(cards) {
+  const kept = new Map;
+  const out = [];
+  cards.forEach(c => {
+    const q = normalizeImportText(c.q);
+    if (!q) return out.push(c);
+    const key = q + "\u0001" + (c.time == null ? "a" + normalizeImportText(c.a) : Math.round(c.time * 10));
+    const prev = kept.get(key);
+    if (!prev) {
+      kept.set(key, c);
+      return out.push(c);
+    }
+    const [keep, drop] = cardWorth(c) > cardWorth(prev) ? [ c, prev ] : [ prev, c ];
+    absorbCardNotes(keep, drop);
+    if (keep !== prev) {
+      out[out.indexOf(prev)] = keep;
+      kept.set(key, keep);
+    }
+  });
   return out;
+}
+
+function absorbCardNotes(keep, drop) {
+  keep.vocab = Object.assign({}, drop.vocab || {}, keep.vocab || {});
+  if (!plainTextOf(keep.notesHtml || "", "\n").trim() && !(keep.notes || "").trim()) {
+    keep.notesHtml = drop.notesHtml || "";
+    keep.notes = drop.notes || "";
+    return;
+  }
+  const have = new Set(vocabEntriesOf(keep).map(e => e.key));
+  const add = vocabEntriesOf(drop).filter(e => e.term && !have.has(e.key));
+  if (add.length) appendWordItems(keep, add.map(e => [ e.term, e.meaning || "" ]));
 }
 
 function serializeCard(r) {
@@ -12308,7 +12361,7 @@ function mergeLessons(a, b) {
     known.add(c.uid);
   });
   return Object.assign({}, base, {
-    cards: cards,
+    cards: dedupeCards(cards),
     updatedAt: Date.now()
   });
 }
