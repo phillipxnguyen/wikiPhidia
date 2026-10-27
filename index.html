@@ -1452,7 +1452,7 @@ window.onYouTubeIframeAPIReady = function(){
   }
   .session-complete .confetti-piece{
     position:absolute;z-index:0;top:-12px;width:8px;height:8px;border-radius:2px;pointer-events:none;
-    animation-name:confetti-fall;animation-timing-function:ease-in;animation-fill-mode:forwards;
+    animation-name:confetti-fall;animation-timing-function:ease-in;animation-iteration-count:infinite;
   }
   .session-complete > :not(.confetti-piece){position:relative;z-index:1;}
   .session-complete > :is(.session-complete-title, .session-complete-sub){width:fit-content;max-width:100%;margin-left:auto;margin-right:auto;padding:0 8px;border-radius:8px;background:var(--bg);}
@@ -4673,11 +4673,25 @@ function showSessionCompletePanel() {
     review: more.review
   });
   moreBtn.textContent = `Study ${more.fresh + more.review} more today`;
-  if (panel.style.display === "block") return;
+  const showing = panel.dataset.shown === String(currentLessonId);
+  panel.style.display = "block";
+  if (showing) {
+    if (text.emoji === "🎉" && !panel.querySelector(".confetti-piece")) addConfetti(panel);
+    return;
+  }
+  panel.dataset.shown = currentLessonId;
   panel.querySelectorAll(".confetti-piece").forEach(el => el.remove());
   if (text.emoji === "🎉") addConfetti(panel);
-  panel.style.display = "block";
   stopAllSound();
+}
+
+// A render that hides and shows the end screen again in one go keeps its confetti falling.
+function hideSessionCompletePanel() {
+  const panel = document.getElementById("sessionCompletePanel");
+  panel.style.display = "none";
+  setTimeout(() => {
+    if (panel.style.display !== "block") delete panel.dataset.shown;
+  }, 0);
 }
 
 function addConfetti(panel) {
@@ -4693,8 +4707,9 @@ function addConfetti(panel) {
     piece.style.setProperty("--fall", fall + "px");
     piece.style.setProperty("--drift", Math.round((Math.random() - .5) * 120) + "px");
     piece.style.setProperty("--spin", Math.round(360 + Math.random() * 540) * (i % 2 ? 1 : -1) + "deg");
-    piece.style.animationDelay = (Math.random() * 1.2).toFixed(2) + "s";
-    piece.style.animationDuration = (2 + Math.random() * 1.6).toFixed(2) + "s";
+    const duration = 2 + Math.random() * 1.6;
+    piece.style.animationDelay = (Math.random() * duration).toFixed(2) + "s";
+    piece.style.animationDuration = duration.toFixed(2) + "s";
     panel.appendChild(piece);
   }
 }
@@ -4864,7 +4879,7 @@ function renderStudy() {
     table.style.display = "none";
     document.getElementById("tableProgress").style.display = "none";
     showSingleCard(false);
-    panel.style.display = "none";
+    hideSessionCompletePanel();
     if (currentView !== "add") placeAddForm("lesson");
     return;
   }
@@ -4897,7 +4912,7 @@ function renderStudy() {
     return;
   }
   const caughtUp = !groupState && lessonCaughtUp();
-  if (caughtUp) showSessionCompletePanel(); else panel.style.display = "none";
+  if (caughtUp) showSessionCompletePanel(); else hideSessionCompletePanel();
   if (!groupState) {
     const progress = document.getElementById("tableProgress");
     const mode = countMode(rows);
@@ -7775,7 +7790,7 @@ function rebuildGroupsFromQueue() {
 }
 
 function setReviewMode(style) {
-  document.getElementById("sessionCompletePanel").style.display = "none";
+  hideSessionCompletePanel();
   commitActiveEdit();
   stopAllSound();
   lastShownCardId = null;
@@ -10305,7 +10320,7 @@ function openLesson(lesson) {
   studyLang = VALID_STUDY_LANGS.includes(lesson.studyLang) ? lesson.studyLang : "auto";
   document.getElementById("studyLang").value = studyLang;
   showAllCardsInFullMode();
-  document.getElementById("sessionCompletePanel").style.display = "none";
+  hideSessionCompletePanel();
   updateGroupUI();
   setLessonTitle(lesson.name || "");
   if (lesson.mediaUrl) {
@@ -11449,7 +11464,7 @@ function showView(view) {
   currentView = view;
   if (changed && (view === "study" || view === "vocab")) showListModes();
   if (changed) {
-    document.getElementById("sessionCompletePanel").style.display = "none";
+    hideSessionCompletePanel();
     document.getElementById("vocabStage").innerHTML = "";
   }
   releaseHeldPage();
@@ -14238,8 +14253,20 @@ function renderVocab() {
     const celebrate = !stage.querySelector(".session-complete") || stage.dataset.lessonId !== String(currentLessonId);
     if (celebrate) stopAllSound();
     stage.dataset.lessonId = currentLessonId;
-    stage.innerHTML = `<div class="session-complete" style="display:block;"><div class="emoji">${text.emoji}</div><div class="session-complete-title">${text.title}</div><div class="session-complete-sub">${text.sub}</div>${held ? moreButtonHtml(more) : ""}</div>`;
-    if (celebrate && text.emoji === "🎉") addConfetti(stage.querySelector(".session-complete"));
+    const shown = !celebrate && stage.querySelector(".session-complete");
+    if (shown) {
+      // Already on screen: only its words change, so the confetti keeps falling.
+      shown.querySelector(".emoji").textContent = text.emoji;
+      shown.querySelector(".session-complete-title").textContent = text.title;
+      shown.querySelector(".session-complete-sub").textContent = text.sub;
+      const btn = shown.querySelector(".more-today");
+      if (btn) btn.remove();
+      if (held) shown.insertAdjacentHTML("beforeend", moreButtonHtml(more));
+      if (text.emoji === "🎉" && !shown.querySelector(".confetti-piece")) addConfetti(shown);
+    } else {
+      stage.innerHTML = `<div class="session-complete" style="display:block;"><div class="emoji">${text.emoji}</div><div class="session-complete-title">${text.title}</div><div class="session-complete-sub">${text.sub}</div>${held ? moreButtonHtml(more) : ""}</div>`;
+      if (celebrate && text.emoji === "🎉") addConfetti(stage.querySelector(".session-complete"));
+    }
     wireVocabEditor(items);
     syncVocabSound();
     return;
