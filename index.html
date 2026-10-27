@@ -6702,8 +6702,24 @@ function dictFrame(url) {
   const iframe = document.createElement("iframe");
   if (url.startsWith("https://www.bing.com/")) iframe.className = "dict-zoom";
   iframe.src = url;
+  iframe.addEventListener("load", () => iframe.dataset.size = dictFrameSize(iframe));
   frame.appendChild(iframe);
   return frame;
+}
+
+function dictFrameSize(iframe) {
+  return iframe.clientWidth + "x" + iframe.clientHeight;
+}
+
+// Bing sizes its boxes once, when its page loads, so a page loaded hidden or at another size (preloaded) hides the
+// end of a long sentence; shown at a new size, it is loaded once more at the size it is seen at.
+function fitDictFrame(frame) {
+  requestAnimationFrame(() => {
+    const iframe = frame.querySelector("iframe");
+    if (!iframe || !iframe.dataset.size || !iframe.clientHeight || iframe.dataset.size === dictFrameSize(iframe)) return;
+    delete iframe.dataset.size;
+    iframe.src = iframe.src;
+  });
 }
 
 function getDictIframe(url) {
@@ -6798,6 +6814,7 @@ function showDictOverlay(placeholder, url) {
       url: url,
       inline: true
     };
+    fitDictFrame(inline);
     return;
   }
   const iframe = getDictIframe(url);
@@ -6812,6 +6829,7 @@ function showDictOverlay(placeholder, url) {
     rafId: null
   };
   positionDictOverlay();
+  fitDictFrame(iframe);
 }
 
 function findDuplicateCard(q, a, time, except) {
