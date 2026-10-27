@@ -1450,7 +1450,8 @@ window.onYouTubeIframeAPIReady = function(){
   @media (max-width:820px){#studyCard.deck > #singleCardView{grid-template-columns:minmax(0, 1fr);grid-template-rows:auto minmax(0, 1fr);}}
   @media (min-width:821px){#studyCard.deck > #singleCardView{flex:none;grid-template-rows:auto;}#studyCard.deck #singleCardBody.listen-batch{align-self:stretch;height:auto;margin:25px 0;contain:size;}}
   .edit-popup{position:fixed;inset:0;z-index:1500;}
-  .edit-popup[hidden]{display:block!important;visibility:hidden;pointer-events:none;}
+  .edit-popup[hidden]{display:block!important;opacity:0;pointer-events:none;}
+  .edit-popup[hidden] :is(.le-box, .le-dict){overflow:visible;}
   .le-box{position:fixed;display:flex;flex-direction:column;box-sizing:border-box;width:min(440px, calc(100vw - 32px));max-height:min(760px, 80dvh);overflow-y:auto;overscroll-behavior:contain;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);}
   .le-box > *{flex-shrink:0;}
   .le-box .edit-stroke{margin-top:10px;}
@@ -7598,9 +7599,11 @@ function getDictIframe(url) {
 }
 
 // The edit box's dictionary pages live in its dictionary slot, each laid at the slot's top left, so they scroll
-// with the edit box itself. The edit box is never display:none (closed, it is only invisible), since that would
-// squeeze every page in it to nothing, and Bing fits its boxes to the size its page has and never grows them back.
-// So each page keeps, shown or not, the size the slot has with the dictionary open.
+// with the edit box itself. The edit box is never display:none (closed, it is only fully transparent, and nothing
+// in it is clipped), since that would squeeze every page in it to nothing, and Bing fits its boxes to the size its
+// page has and never grows them back; and a page the browser cannot see is not drawn ahead (phones above all), so
+// the pages waiting in it stay on screen, unseen. So each page keeps, shown or not, the size the slot has with the
+// dictionary open.
 // The slot as it is (or would be) with the dictionary open.
 function popupDictSlot() {
   const pop = document.getElementById("editPopup");
