@@ -1393,8 +1393,6 @@ window.onYouTubeIframeAPIReady = function(){
   .le-box #editDict{display:none;}
   .le-dict{position:relative;height:0;overflow:hidden;}
   .le-dict.on{margin-top:10px;height:var(--dict-h, 360px);}
-  .le-dict > .dict-frame{position:absolute;top:0;left:0;box-sizing:border-box;width:100%;height:var(--dict-h, 360px);border:1px solid var(--border);border-radius:10px;visibility:hidden;}
-  .le-dict > .dict-frame.on{visibility:visible;}
   .dict-frame{overflow:hidden;container-type:size;}
   .dict-frame > iframe{display:block;width:100%;height:100%;border:0;}
   @container (max-width:699px){
@@ -1404,7 +1402,6 @@ window.onYouTubeIframeAPIReady = function(){
     html:not(.touch) .le-box:has(> .le-dict.on){flex-direction:row;width:min(900px, calc(100vw - 32px));height:min(640px, calc(100dvh - 32px));max-height:none;overflow:hidden;padding:0;}
     html:not(.touch) .le-box:has(> .le-dict.on) > .le-content{flex:1 1 0;min-width:0;overflow-y:auto;overscroll-behavior:contain;padding:10px 12px;}
     html:not(.touch) .le-box > .le-dict.on{order:-1;flex:1 1 0;min-width:0;height:auto;margin:0;border-right:1px solid var(--border);border-radius:var(--radius) 0 0 var(--radius);}
-    html:not(.touch) .le-box > .le-dict.on > .dict-frame{height:100%;border:0;border-radius:0;}
   }
   .listen-pair{box-sizing:border-box;flex:none;display:flex;flex-direction:column;min-height:100%;padding:25px;}
   .lp-a{margin-top:0;}
@@ -7023,10 +7020,17 @@ function dictFrame(url) {
   frame.className = "dict-frame";
   const iframe = document.createElement("iframe");
   if (url.startsWith("https://www.bing.com/")) iframe.className = "dict-zoom";
-  iframe.src = url;
+  iframe.dataset.src = url;
   if (iframe.className === "dict-zoom") iframe.addEventListener("load", () => iframe.dataset.size = dictFrameSize(iframe));
   frame.appendChild(iframe);
   return frame;
+}
+
+// A page starts loading only once its frame is in place at its size, so it never first sees another size.
+function startDictFrame(frame) {
+  const iframe = frame.querySelector("iframe");
+  void iframe.offsetWidth;
+  iframe.src = iframe.dataset.src;
 }
 
 function dictFrameSize(iframe) {
@@ -7045,35 +7049,110 @@ function fitDictFrame(frame) {
   });
 }
 
+// Pages are loaded ahead at the size the last dictionary showed at, which the next one shows at too.
+let overlayDictSize = null;
+
 function getDictIframe(url) {
   let iframe = dictIframeCache.get(url);
   if (!iframe) {
     iframe = dictFrame(url);
-    iframe.style.cssText = `position:fixed;top:0;left:0;box-sizing:border-box;width:${wholePx(Math.min(720, document.querySelector(".main-inner").clientWidth || 720))}px;height:360px;opacity:0;border:1px solid var(--border);border-radius:10px;pointer-events:none;`;
+    const size = overlayDictSize || {
+      width: wholePx(Math.min(720, document.querySelector(".main-inner").clientWidth || 720)),
+      height: 360
+    };
+    iframe.style.cssText = `position:fixed;top:0;left:0;box-sizing:border-box;width:${size.width}px;height:${size.height}px;opacity:0;border:1px solid var(--border);border-radius:10px;pointer-events:none;`;
     dictOverlayLayer.appendChild(iframe);
+    startDictFrame(iframe);
     dictIframeCache.set(url, iframe);
   }
   return iframe;
 }
 
+// The edit box's dictionary pages live in a layer of their own above the edit box, never inside it: the edit box
+// is display:none while closed, which would squeeze every page in it to nothing, and Bing fits its boxes to the
+// size its page has and never grows them back. So each page keeps, shown or not, the size of the edit box's
+// dictionary slot, and is laid over that slot while it shows.
+const dictPopupLayer = document.createElement("div");
+
+dictPopupLayer.style.cssText = "position:fixed;top:0;left:0;width:0;height:0;overflow:visible;z-index:1501;pointer-events:none;";
+
+document.body.appendChild(dictPopupLayer);
+
+// The slot as it is (or would be) with the dictionary open: a closed edit box is opened unseen for a moment.
+function popupDictSlot() {
+  const pop = document.getElementById("editPopup");
+  const dict = pop.querySelector(".le-dict"), box = pop.querySelector(".le-box");
+  const closed = pop.hidden, on = dict.classList.contains("on");
+  if (closed) {
+    pop.style.visibility = "hidden";
+    pop.hidden = false;
+  }
+  if (!on) dict.classList.add("on");
+  const r = dict.getBoundingClientRect(), b = box.getBoundingClientRect();
+  const slot = {
+    left: Math.round(r.left + dict.clientLeft),
+    top: Math.round(r.top + dict.clientTop),
+    width: dict.clientWidth,
+    height: dict.clientHeight,
+    box: b,
+    side: getComputedStyle(box).flexDirection === "row",
+    radius: getComputedStyle(dict).borderTopLeftRadius
+  };
+  if (!on) dict.classList.remove("on");
+  if (closed) {
+    pop.hidden = true;
+    pop.style.visibility = "";
+  }
+  return slot;
+}
+
+function fitPopupDictFrame(frame, slot) {
+  Object.assign(frame.style, {
+    width: slot.width + "px",
+    height: slot.height + "px",
+    border: slot.side ? "0" : "1px solid var(--border)",
+    borderRadius: slot.side ? `${slot.radius} 0 0 ${slot.radius}` : "10px"
+  });
+}
+
 const popupDictCache = new Map;
 
 function getPopupDictIframe(url) {
-  let iframe = popupDictCache.get(url);
-  if (!iframe) {
-    iframe = dictFrame(url);
-    document.querySelector("#editPopup .le-dict").appendChild(iframe);
-    popupDictCache.set(url, iframe);
+  let frame = popupDictCache.get(url);
+  if (!frame) {
+    frame = dictFrame(url);
+    frame.style.cssText = "position:fixed;top:0;left:0;box-sizing:border-box;opacity:0;pointer-events:none;";
+    fitPopupDictFrame(frame, popupDictSlot());
+    dictPopupLayer.appendChild(frame);
+    startDictFrame(frame);
+    popupDictCache.set(url, frame);
   }
-  return iframe;
+  return frame;
+}
+
+function followPopupDict() {
+  const shown = activeDictOverlay;
+  if (!shown || !shown.inline) return;
+  const slot = popupDictSlot(), frame = shown.iframe;
+  fitPopupDictFrame(frame, slot);
+  const b = slot.box;
+  Object.assign(frame.style, {
+    left: slot.left + "px",
+    top: slot.top + "px",
+    clipPath: `inset(${Math.max(0, Math.round(b.top - slot.top))}px ${Math.max(0, Math.round(slot.left + slot.width - b.right))}px ${Math.max(0, Math.round(slot.top + slot.height - b.bottom))}px ${Math.max(0, Math.round(b.left - slot.left))}px)`
+  });
+  shown.rafId = requestAnimationFrame(followPopupDict);
 }
 
 function editsInPopup() {
   return isListenMode();
 }
 
+// The same text the edit box will hold, so the page loaded ahead is the one the edit box asks for.
 function cardDictUrl(row) {
-  return dictUrlFor((isVideoLesson() ? row.q : row.a) || "", row);
+  const video = isVideoLesson();
+  const text = video ? row.q : row.a;
+  return dictUrlFor(text ? plainTextOf((video ? row.qHtml : row.aHtml) || textHtml(text), "\n") : "", row);
 }
 
 function preloadCardDict(row) {
@@ -7102,14 +7181,24 @@ function positionDictOverlay() {
   iframe.style.left = Math.round(rect.left + window.scrollX) + "px";
   iframe.style.width = Math.round(rect.width) + "px";
   iframe.style.height = Math.round(rect.height) + "px";
+  if (rect.width && rect.height) overlayDictSize = {
+    width: Math.round(rect.width),
+    height: Math.round(rect.height)
+  };
   activeDictOverlay.rafId = requestAnimationFrame(positionDictOverlay);
 }
 
 function hideDictOverlay() {
   if (!activeDictOverlay) return;
   if (activeDictOverlay.inline) {
-    activeDictOverlay.iframe.classList.remove("on");
-    activeDictOverlay.iframe.parentElement.classList.remove("on");
+    cancelAnimationFrame(activeDictOverlay.rafId);
+    document.querySelector("#editPopup .le-dict").classList.remove("on");
+    Object.assign(activeDictOverlay.iframe.style, {
+      top: "0",
+      left: "0",
+      opacity: "0",
+      pointerEvents: "none"
+    });
     activeDictOverlay = null;
     return;
   }
@@ -7129,14 +7218,19 @@ function showDictOverlay(placeholder, url) {
   hideDictOverlay();
   if (placeholder.closest(".le-box")) {
     const inline = getPopupDictIframe(url);
-    inline.classList.add("on");
-    inline.parentElement.classList.add("on");
+    document.querySelector("#editPopup .le-dict").classList.add("on");
+    Object.assign(inline.style, {
+      opacity: "1",
+      pointerEvents: "auto"
+    });
     activeDictOverlay = {
       iframe: inline,
       placeholder: placeholder,
       url: url,
-      inline: true
+      inline: true,
+      rafId: null
     };
+    followPopupDict();
     fitDictFrame(inline);
     return;
   }
