@@ -4490,6 +4490,7 @@ function blockNotesHtml(html) {
   const box = document.createElement("div");
   box.innerHTML = html;
   const BLOCK = /^(UL|OL|DIV|P|LI|H[1-6]|BLOCKQUOTE|TABLE)$/;
+  const made = [];
   const wrap = parent => {
     const kids = [ ...parent.childNodes ];
     if (kids.some(n => n.nodeType === 1 && BLOCK.test(n.tagName)) && parent.tagName !== "LI") {
@@ -4507,16 +4508,17 @@ function blockNotesHtml(html) {
           if (n.nodeType === 3 && !n.nodeValue.trim()) return;
           run = document.createElement("div");
           parent.insertBefore(run, n);
+          made.push(run);
         }
         run.appendChild(n);
-      });
-      parent.querySelectorAll(":scope > div").forEach(d => {
-        if (d.lastChild && d.lastChild.nodeName === "BR") d.lastChild.remove();
       });
     }
     [ ...parent.children ].forEach(el => el.tagName !== "LI" && wrap(el));
   };
   wrap(box);
+  made.forEach(d => {
+    if (d.lastChild && d.lastChild.nodeName === "BR") d.lastChild.remove();
+  });
   return box.innerHTML;
 }
 
