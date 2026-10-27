@@ -410,9 +410,9 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-editor{display:flex;flex-direction:column;gap:10px;padding:16px;margin-bottom:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);}
   .vocab-list .vocab-editor{margin:4px 0;box-shadow:none;}
   .vocab-editor textarea{width:100%;font-size:16px;}
-  #vocabEditTerm, #vocabEditMeaning, #vocabEditNotes, #qaQ, #qaA, #qaNotes{border-left:4px solid var(--lesson-accent);}
+  #vocabEditTerm, #vocabEditMeaning, #qaQ, #qaA{border-left:4px solid var(--lesson-accent);}
   #vocabEditMeaning, #qaA{border-left-color:var(--a-label);}
-  #vocabEditNotes, #qaNotes{border-left-color:var(--border-strong);font-size:16px;}
+  #vocabEditNotes, #qaNotes{font-size:16px;}
   .quick-add{margin-bottom:12px;box-shadow:none;}
   .quick-add, #addForm{--kind:var(--accent);}
   .quick-add[data-kind="listen"], #addForm[data-kind="listen"]{--kind:var(--yt-red);}
@@ -788,11 +788,11 @@ window.onYouTubeIframeAPIReady = function(){
     white-space:pre-wrap;
   }
   .rich-editor:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft);}
-  #editQ, #editA, #editNotes{border-left:4px solid var(--accent);}
+  #editQ, #editA{border-left:4px solid var(--accent);}
   #editA{border-left-color:var(--a-label);}
-  #editNotes{border-left-color:var(--border-strong);}
-  :is(#editNotes, #vocabEditNotes, #qaNotes){border-width:0 0 0 4px;border-style:solid;border-color:var(--border-strong);border-radius:0;background:none;box-shadow:none;}
-  :is(#editNotes, #vocabEditNotes, #qaNotes):focus{border-color:var(--accent);box-shadow:none;}
+  :is(#editNotes, #vocabEditNotes, #qaNotes){position:relative;padding-left:14px;padding-right:48px;border:0;border-radius:var(--radius-sm);background:color-mix(in srgb, var(--accent) 7%, var(--surface));box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent);}
+  :is(#editNotes, #vocabEditNotes, #qaNotes):focus{box-shadow:inset 0 0 0 1px var(--accent), 0 0 0 4px var(--accent-soft);}
+  :is(#editNotes, #vocabEditNotes, #qaNotes)::after{content:"";position:absolute;top:-10px;right:14px;width:22px;height:52px;background:var(--accent);-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 48' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M7 14v22a3 3 0 0 0 6 0V8a5 5 0 0 0-10 0v31a7 7 0 0 0 14 0V14'/%3E%3C/svg%3E") center / contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 48' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M7 14v22a3 3 0 0 0 6 0V8a5 5 0 0 0-10 0v31a7 7 0 0 0 14 0V14'/%3E%3C/svg%3E") center / contain no-repeat;transform:rotate(8deg);pointer-events:none;}
   .edit-qa{display:flex;flex-direction:column;}
   .edit-qa > div{min-width:0;}
   .edit-row .rich-editor{margin-bottom:10px;display:block;}
@@ -1455,9 +1455,11 @@ window.onYouTubeIframeAPIReady = function(){
     margin-bottom:16px;
   }
   .session-complete .confetti-piece{
-    position:absolute;top:-10px;width:8px;height:8px;border-radius:2px;opacity:.9;
+    position:absolute;z-index:0;top:-12px;width:8px;height:8px;border-radius:2px;pointer-events:none;
     animation-name:confetti-fall;animation-timing-function:ease-in;animation-fill-mode:forwards;
   }
+  .session-complete > :not(.confetti-piece){position:relative;z-index:1;}
+  .session-complete > :is(.session-complete-title, .session-complete-sub){width:fit-content;max-width:100%;margin-left:auto;margin-right:auto;padding:0 8px;border-radius:8px;background:var(--bg);}
   .fairy-touched{animation:fairy-touched 1.5s ease-out;}
   @keyframes fairy-touched{0%, 100%{filter:none;}30%{filter:drop-shadow(0 0 6px rgba(245,185,30,.9)) brightness(1.15);}}
   .fairy-dust{position:fixed;inset:0;z-index:1500;pointer-events:none;}
@@ -1466,11 +1468,10 @@ window.onYouTubeIframeAPIReady = function(){
   ::view-transition-old(fairy-magic){display:none;}
   ::view-transition-new(fairy-magic){animation:none;}
   @media (prefers-reduced-motion: reduce){.fairy-dust{display:none;}}
-  @keyframes confetti-fall{0%{transform:translateY(0) rotate(0deg);opacity:1;}100%{transform:translateY(240px) rotate(360deg);opacity:0;}}
-  .session-complete .emoji{font-size:52px;display:inline-block;animation:bounce-in .6s cubic-bezier(.34,1.56,.64,1);}
-  @keyframes bounce-in{0%{transform:scale(0);opacity:0;}60%{transform:scale(1.15);opacity:1;}100%{transform:scale(1);}}
-  .session-complete-title{font-size:22px;font-weight:700;margin-top:14px;animation:fade-up .5s ease .1s both;}
-  .session-complete-sub{font-size:14px;color:var(--text);margin-top:6px;animation:fade-up .5s ease .2s both;}
+  @keyframes confetti-fall{0%{transform:translate(0, 0) rotate(0deg);opacity:1;}80%{opacity:1;}100%{transform:translate(var(--drift, 0px), var(--fall, 320px)) rotate(var(--spin, 360deg));opacity:0;}}
+  .session-complete .emoji{font-size:52px;display:inline-block;}
+  .session-complete-title{font-size:22px;font-weight:700;margin-top:14px;}
+  .session-complete-sub{font-size:14px;color:var(--text);margin-top:6px;}
   .yt-grab-row{margin-top:8px;}
   .yt-grab{display:inline-flex;align-items:center;height:34px;padding:0 10px;border:1px dashed var(--accent);border-radius:8px;background:none;color:var(--accent);font-size:14px;font-weight:600;line-height:20px;text-decoration:none;cursor:help;}
   #ytGrabCopy{cursor:pointer;}
@@ -1488,9 +1489,8 @@ window.onYouTubeIframeAPIReady = function(){
   .lesson-item.importing{pointer-events:none;animation:importBlink 1.2s ease-in-out infinite;}
   @keyframes importBlink{0%, 100%{opacity:1;filter:blur(0);}50%{opacity:.35;filter:blur(2px);}}
   @media (prefers-reduced-motion: reduce){.lesson-item.importing{animation:none;opacity:.6;}}
-  .more-today{margin-top:16px;line-height:20px;animation:fade-up .5s ease .3s both;}
+  .more-today{margin-top:16px;line-height:20px;}
   .more-today[hidden]{display:none;}
-  @keyframes fade-up{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
   .file-input-hidden{display:none;}
 
   .empty-state{text-align:center;padding:90px 20px;}
@@ -4612,13 +4612,20 @@ function showSessionCompletePanel() {
 }
 
 function addConfetti(panel) {
-  for (let i = 0; i < 28; i++) {
+  const fall = Math.max(320, Math.round(panel.offsetHeight + 24));
+  for (let i = 0; i < 90; i++) {
     const piece = document.createElement("span");
+    const size = 6 + Math.floor(Math.random() * 5);
     piece.className = "confetti-piece";
     piece.style.left = Math.random() * 100 + "%";
+    piece.style.width = size + "px";
+    piece.style.height = (i % 3 ? size : Math.round(size * 1.6)) + "px";
     piece.style.background = CONFETTI_COLORS[i % CONFETTI_COLORS.length];
-    piece.style.animationDelay = Math.random() * .5 + "s";
-    piece.style.animationDuration = 1.8 + Math.random() * 1.2 + "s";
+    piece.style.setProperty("--fall", fall + "px");
+    piece.style.setProperty("--drift", Math.round((Math.random() - .5) * 120) + "px");
+    piece.style.setProperty("--spin", Math.round(360 + Math.random() * 540) * (i % 2 ? 1 : -1) + "deg");
+    piece.style.animationDelay = (Math.random() * 1.2).toFixed(2) + "s";
+    piece.style.animationDuration = (2 + Math.random() * 1.6).toFixed(2) + "s";
     panel.appendChild(piece);
   }
 }
