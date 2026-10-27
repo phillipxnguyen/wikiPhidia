@@ -577,7 +577,8 @@ window.onYouTubeIframeAPIReady = function(){
   .sel-bar .segmented .sep-before::before{left:-6px;}
   .copy-icon{display:block;width:22px;height:22px;margin:0 auto;fill:none;stroke:currentColor;stroke-width:1;stroke-linecap:round;stroke-linejoin:round;}
   html.sel-on .main{padding-bottom:calc(138px + env(safe-area-inset-bottom));}
-  .touch-bar button{flex:1;min-height:48px;font-size:15px;line-height:20px;font-weight:600;border-radius:10px;}
+  .touch-bar button{flex:1;display:flex;align-items:center;justify-content:center;min-height:48px;font-size:15px;line-height:20px;font-weight:600;border-radius:10px;}
+  .touch-bar button svg{display:block;}
   .touch-bar .tb-icon{flex:0 0 48px;display:flex;align-items:center;justify-content:center;padding:0;}
   .touch-bar .tb-again{background:var(--danger-soft);color:var(--danger);border-color:transparent;}
   .touch-bar .tb-good{background:var(--a-bg);color:var(--a-label);border-color:transparent;}
@@ -717,6 +718,17 @@ window.onYouTubeIframeAPIReady = function(){
     .toolbar :is(#btnPlaySequence, #vocabSpeak){width:40px;}
     html.touch .toolbar :is(#playbackSpeed, #vocabSpeed){padding:0 18px 0 8px;background-position:right 6px center;}
   }
+  /* Narrow phones: the toolbar stays on one line, every part still 36 px tall. */
+  @media (max-width:400px){
+    .toolbar{gap:4px;}
+    .toolbar-counts .progress-badges{gap:2px;}
+    html.touch .toolbar > .segmented button{min-width:34px;padding-left:6px;padding-right:6px;}
+    .toolbar .segmented .sep-before{margin-left:6px;}
+    .toolbar .segmented .sep-before::before{left:-4px;}
+    .toolbar :is(#btnPlaySequence, #vocabSpeak){width:var(--tb-h);}
+    html.touch .toolbar :is(#playbackSpeed, #vocabSpeed){padding:0 16px 0 6px;background-position:right 5px center;}
+  }
+  @media (max-width:370px){.toolbar{--tb-h:32px;}}
   .toolbar > .segmented{box-sizing:border-box;height:var(--tb-h);padding:3px;}
   .toolbar > .segmented button{align-self:stretch;padding-top:0;padding-bottom:0;}
   .toolbar :is(#btnPlaySequence, #vocabSpeak, #playbackSpeed, #vocabSpeed){box-sizing:border-box;height:var(--tb-h);padding-top:0;padding-bottom:0;}
@@ -1825,8 +1837,8 @@ window.onYouTubeIframeAPIReady = function(){
 </div>
 
 <div id="touchBar" class="touch-bar" hidden>
-  <button id="tbUndo" class="tb-icon" aria-label="Undo"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 15a7 7 0 0 0 -14 0"/><path d="M2 12l3 3.5l3 -3.5"/></svg></button>
-  <button id="tbRedo" class="tb-icon" aria-label="Redo"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 15a7 7 0 0 1 14 0"/><path d="M16 12l3 3.5l3 -3.5"/></svg></button>
+  <button id="tbUndo" class="tb-icon" aria-label="Undo"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 15a7 7 0 0 0 -14 0"/><path d="M3.5 12l3 3.5l3 -3.5"/></svg></button>
+  <button id="tbRedo" class="tb-icon" aria-label="Redo"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 15a7 7 0 0 1 14 0"/><path d="M14.5 12l3 3.5l3 -3.5"/></svg></button>
   <button id="tbShow">Show</button>
   <button id="tbAgain" class="tb-again">Again</button>
   <button id="tbGood" class="tb-good">Good</button>
@@ -1941,7 +1953,7 @@ window.onYouTubeIframeAPIReady = function(){
     <div class="segmented" role="group" aria-label="Vocabulary options">
       <button data-view="list" aria-label="List"><svg class="menu-icon" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12"/></svg></button>
       <button data-view="card" aria-label="Flashcards">🗃️</button>
-      <button id="vocabFrontBtn" class="sep-before" aria-label="Switch which side shows first">⇄</button>
+      <button id="vocabFrontBtn" class="sep-before" aria-label="Switch which side shows first"><svg class="menu-icon" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 5h11M10 2l3 3-3 3M14 11H3M6 8l-3 3 3 3"/></svg></button>
     </div>
     <span class="flag-set toolbar-flag" aria-hidden="true" hidden></span>
     <div class="toolbar-right">
@@ -7347,6 +7359,21 @@ document.addEventListener("click", e => {
   clearRowSelection();
 }, true);
 
+// The touch bar's marks are drawn, never typed: a phone's fonts set ✕, ✓, ▶ and ⏸ off the middle of a button.
+const TB_ICONS = {
+  again: '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  good: '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5"/></svg>',
+  play: '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5 .9l10.4 -6.5a1 1 0 0 0 0 -1.8L9.5 4.6A1 1 0 0 0 8 5.5z"/></svg>',
+  pause: '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>'
+};
+
+function setTbContent(btn, icon, text) {
+  const key = icon || "text:" + text;
+  if (btn.dataset.shows === key) return;
+  btn.dataset.shows = key;
+  if (icon) btn.innerHTML = icon === "flip" ? FLIP_ICON : TB_ICONS[icon]; else btn.textContent = text;
+}
+
 const FLIP_ICON = '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/></svg>';
 
 function updateTouchBar() {
@@ -7365,7 +7392,7 @@ function updateTouchBar() {
   const showBtn = document.getElementById("tbShow");
   [ [ "tbAgain", "Again" ], [ "tbGood", "Good" ] ].forEach(([id, word]) => {
     const btn = document.getElementById(id);
-    btn.textContent = gradeMark(word === "Again");
+    setTbContent(btn, vocab ? word === "Again" ? "again" : "good" : "", word);
     btn.classList.toggle("tb-mark", vocab);
     if (vocab) btn.setAttribute("aria-label", word); else btn.removeAttribute("aria-label");
   });
@@ -7374,27 +7401,27 @@ function updateTouchBar() {
     const back = !!vocabSession && (vocabSession.flipped || vocabViewOnly(currentVocabItem())) && !!document.getElementById("vocabCard");
     if (back) {
       const on = vocabSoundOn() && soundHeard;
-      showBtn.textContent = on ? "⏸" : "▶";
+      setTbContent(showBtn, on ? "pause" : "play");
       showBtn.setAttribute("aria-label", on ? "Pause" : "Play");
     } else {
-      if (!showBtn.querySelector("svg")) showBtn.innerHTML = FLIP_ICON;
+      setTbContent(showBtn, "flip");
       showBtn.setAttribute("aria-label", "Flip");
     }
     return;
   }
   showBtn.removeAttribute("aria-label");
   const seqBtn = document.getElementById("btnPlaySequence");
-  let showLabel = "Show";
+  let showLabel = "Show", showIcon = "";
   if (groupState && groupViewStyle !== "ielts" && !studyCardsHidden() && !seqBtn.disabled) {
     const playing = seqBtn.classList.contains("active");
-    showLabel = playing ? "⏸" : "▶";
+    showIcon = playing ? "pause" : "play";
     showBtn.setAttribute("aria-label", playing ? "Pause" : "Play");
   } else if (groupState && groupViewStyle === "ielts") {
     const current = getCurrentSingleCardRow();
     if (ieltsHintNext(current)) showLabel = "Hint";
     showBtn.disabled = !!current && !current.aHidden;
   }
-  showBtn.textContent = showLabel;
+  setTbContent(showBtn, showIcon, showLabel);
 }
 
 document.getElementById("tbUndo").onclick = () => undo();
