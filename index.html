@@ -600,8 +600,26 @@ window.onYouTubeIframeAPIReady = function(){
   .save-status:empty{display:none;}
   .save-status{font-size:12px;color:var(--text-2);min-height:18px;margin:-8px 0 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .lesson-meta{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px;}
-  .link-bar{display:flex;gap:6px;flex:1;min-width:260px;}
-  .link-bar input{flex:1;min-width:0;}
+  .link-bar{display:flex;gap:8px;flex:1;min-width:260px;}
+  .link-field{position:relative;display:flex;flex:1;min-width:0;}
+  .link-field input{flex:1;min-width:0;padding-left:40px;}
+  .link-file{position:absolute;left:1px;top:1px;bottom:1px;z-index:1;display:flex;align-items:center;justify-content:center;width:36px;padding:0;border:0;border-radius:var(--radius-sm) 0 0 var(--radius-sm);background:transparent;color:var(--text-2);}
+  @media (hover:hover){.link-file:hover{background:var(--surface-2);color:var(--accent);}}
+  .pdf-view{flex-basis:100%;min-width:0;box-sizing:border-box;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface-2);overflow:hidden;}
+  .pdf-view[hidden]{display:none;}
+  .pdf-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 12px;border-bottom:1px solid var(--border);background:var(--surface);font-size:14px;line-height:20px;color:var(--text-2);}
+  .pdf-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;color:var(--text);}
+  .pdf-count{flex:none;font-variant-numeric:tabular-nums;}
+  .pdf-pages{box-sizing:border-box;height:640px;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:12px;padding:12px;}
+  .pdf-page{position:relative;flex:none;width:100%;background:#fff;box-shadow:0 1px 4px rgba(0, 0, 0, .16);}
+  .pdf-page canvas{position:absolute;inset:0;display:block;width:100%;height:100%;}
+  .pdf-note{margin:auto;max-width:420px;text-align:center;font-size:14px;line-height:20px;color:var(--text-2);}
+  .textLayer{position:absolute;inset:0;z-index:1;overflow:hidden;line-height:1;text-align:initial;text-size-adjust:none;forced-color-adjust:none;transform-origin:0 0;}
+  .textLayer :is(span, br){position:absolute;color:transparent;white-space:pre;cursor:text;transform-origin:0 0;}
+  .textLayer span.markedContent{top:0;height:0;}
+  .textLayer ::selection{background:color-mix(in srgb, var(--accent) 30%, transparent);}
+  .textLayer .endOfContent{position:absolute;inset:100% 0 0;z-index:-1;display:block;cursor:default;user-select:none;}
+  @media (max-width:820px){.pdf-pages{height:480px;padding:8px;gap:8px;}}
 
   .panel{
     background:var(--surface);
@@ -1912,10 +1930,15 @@ window.onYouTubeIframeAPIReady = function(){
   <div id="fileStatus" class="save-status" aria-live="polite"></div>
   <div class="lesson-meta">
     <div class="link-bar">
-      <input type="text" id="mediaUrl" name="media-url" autocomplete="off" placeholder="Paste a YouTube, TikTok, or Douyin link…" aria-label="Video link">
+      <div class="link-field">
+        <button id="btnPdfFile" class="link-file" type="button" aria-label="Open a PDF file" title="Open a PDF file to read"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 18v-6"/><path d="M9 15l3-3 3 3"/></svg></button>
+        <input type="text" id="mediaUrl" name="media-url" autocomplete="off" placeholder="Paste a YouTube, TikTok, Douyin or PDF link…" aria-label="Video or PDF link">
+      </div>
       <button id="btnEmbedMedia" class="primary">Open</button>
-      <button id="btnClearMedia" class="ghost">Clear</button>
+      <button id="btnClearMedia">Clear</button>
+      <input type="file" id="pdfFileInput" accept="application/pdf,.pdf" hidden>
     </div>
+    <div id="pdfView" class="pdf-view" hidden><div class="pdf-head"><span class="pdf-name"></span><span class="pdf-count"></span></div><div class="pdf-pages"></div></div>
   </div>
 
   <div class="study-head">
@@ -2962,11 +2985,17 @@ function applyMediaUrl(auto) {
   const urlInput = document.getElementById("mediaUrl").value.trim();
   const videoId = urlInput ? extractYouTubeId(urlInput) : null;
   if (videoId) {
+    hidePdf();
     stopSequenceLoop();
     createYtPlayer(videoId);
     return;
   }
   clearMedia();
+  if (isPdfLink(urlInput) || isPdfFileName(urlInput)) {
+    openPdf(urlInput);
+    return;
+  }
+  hidePdf();
   if (urlInput && !auto) {
     window.open(urlInput, "_blank", "noopener");
   }
@@ -2981,8 +3010,300 @@ document.getElementById("btnEmbedMedia").onclick = () => {
 document.getElementById("btnClearMedia").onclick = () => {
   document.getElementById("mediaUrl").value = "";
   clearMedia();
+  hidePdf();
+  if (currentLessonId && !isVirtualId(currentLessonId)) dbDelete("pdfs", currentLessonId);
   scheduleAutoSave();
 };
+
+// PDF reading: a PDF link or a PDF file opens below the link box; its text can be selected to add words.
+// The file itself stays in this browser (IndexedDB); the lesson keeps only its link or file name.
+const PDFJS_BASE = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/";
+
+let pdfjsPromise = null;
+
+function loadPdfJs() {
+  if (!pdfjsPromise) pdfjsPromise = new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = PDFJS_BASE + "pdf.min.js";
+    script.onload = () => {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_BASE + "pdf.worker.min.js";
+      resolve(pdfjsLib);
+    };
+    script.onerror = () => {
+      pdfjsPromise = null;
+      script.remove();
+      reject(new Error("pdf.js did not load"));
+    };
+    document.head.appendChild(script);
+  });
+  return pdfjsPromise;
+}
+
+function isPdfLink(text) {
+  return /^https?:\/\//i.test(text) && (/\.pdf(?:$|[?#])/i.test(text) || /\/pdf\//i.test(text));
+}
+
+function isPdfFileName(text) {
+  return !/^[a-z][a-z0-9+.-]*:/i.test(text) && /\.pdf$/i.test(text);
+}
+
+function pdfNameOf(text) {
+  if (!isPdfLink(text)) return text;
+  try {
+    return decodeURIComponent(new URL(text).pathname.split("/").filter(Boolean).pop() || text);
+  } catch (e) {
+    return text;
+  }
+}
+
+let pdfShown = null;
+
+let pdfOpenToken = 0;
+
+function hidePdf() {
+  pdfOpenToken++;
+  if (pdfShown) {
+    pdfShown.observer.disconnect();
+    pdfShown.resize.disconnect();
+    pdfShown.doc.destroy();
+  }
+  pdfShown = null;
+  const view = document.getElementById("pdfView");
+  view.hidden = true;
+  view.querySelector(".pdf-pages").innerHTML = "";
+}
+
+function pdfNote(text) {
+  const box = document.querySelector("#pdfView .pdf-pages");
+  box.innerHTML = "";
+  const note = document.createElement("p");
+  note.className = "pdf-note";
+  note.textContent = text;
+  box.appendChild(note);
+}
+
+async function openPdf(value) {
+  hidePdf();
+  const token = pdfOpenToken, lessonId = currentLessonId;
+  const view = document.getElementById("pdfView");
+  view.hidden = false;
+  view.querySelector(".pdf-name").textContent = pdfNameOf(value);
+  view.querySelector(".pdf-count").textContent = "";
+  pdfNote("Opening the PDF…");
+  const live = () => token === pdfOpenToken && lessonId === currentLessonId;
+  const saved = lessonId && !isVirtualId(lessonId) ? await dbGetKey("pdfs", lessonId) : null;
+  let blob = saved && (saved.url ? saved.url === value : saved.name === value) ? saved.blob : null;
+  if (!blob && isPdfLink(value)) {
+    try {
+      const res = await fetch(value);
+      if (!res.ok) throw new Error(res.status);
+      blob = await res.blob();
+      if (live()) dbPutKey("pdfs", {
+        name: pdfNameOf(value),
+        url: value,
+        blob: blob
+      }, lessonId);
+    } catch (e) {
+      if (live()) pdfNote("This site does not let other apps read its PDF. Download it, then open the file with the button at the start of the link box.");
+      return;
+    }
+  }
+  if (!live()) return;
+  if (!blob) return pdfNote(`“${value}” is not on this device. Open it again with the button at the start of the link box.`);
+  let lib, doc;
+  try {
+    lib = await loadPdfJs();
+    doc = await lib.getDocument({
+      data: new Uint8Array(await blob.arrayBuffer())
+    }).promise;
+  } catch (e) {
+    if (live()) pdfNote(lib ? "This file could not be read as a PDF." : "The PDF reader could not load. Check the connection and press Open again.");
+    return;
+  }
+  if (!live()) return doc.destroy();
+  showPdfPages(lib, doc, value);
+}
+
+async function showPdfPages(lib, doc, value) {
+  const view = document.getElementById("pdfView");
+  const box = view.querySelector(".pdf-pages");
+  box.innerHTML = "";
+  view.querySelector(".pdf-count").textContent = doc.numPages === 1 ? "1 page" : doc.numPages + " pages";
+  const first = (await doc.getPage(1)).getViewport({
+    scale: 1
+  });
+  const pages = [];
+  for (let n = 1; n <= doc.numPages; n++) {
+    const el = document.createElement("div");
+    el.className = "pdf-page";
+    el.dataset.n = n;
+    el.ratio = first.height / first.width;
+    box.appendChild(el);
+    pages.push(el);
+  }
+  const size = () => pages.forEach(el => el.style.height = Math.round(el.clientWidth * el.ratio) + "px");
+  size();
+  const observer = new IntersectionObserver(entries => entries.forEach(entry => {
+    if (entry.isIntersecting) drawPdfPage(lib, doc, entry.target);
+  }), {
+    root: box,
+    rootMargin: "800px 0px"
+  });
+  pages.forEach(el => observer.observe(el));
+  let width = box.clientWidth;
+  const resize = new ResizeObserver(() => {
+    if (Math.abs(box.clientWidth - width) < 2) return;
+    width = box.clientWidth;
+    size();
+    pages.forEach(el => {
+      if (!el.drawn) return;
+      el.drawn = false;
+      el.innerHTML = "";
+      observer.unobserve(el);
+      observer.observe(el);
+    });
+  });
+  resize.observe(box);
+  pdfShown = {
+    doc: doc,
+    value: value,
+    observer: observer,
+    resize: resize
+  };
+}
+
+async function drawPdfPage(lib, doc, el) {
+  if (el.drawn) return;
+  el.drawn = true;
+  const page = await doc.getPage(Number(el.dataset.n));
+  const base = page.getViewport({
+    scale: 1
+  });
+  el.ratio = base.height / base.width;
+  const scale = el.clientWidth / base.width;
+  const viewport = page.getViewport({
+    scale: scale
+  });
+  el.style.height = Math.round(viewport.height) + "px";
+  const dpr = window.devicePixelRatio || 1;
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(viewport.width * dpr);
+  canvas.height = Math.round(viewport.height * dpr);
+  const layer = document.createElement("div");
+  layer.className = "textLayer";
+  layer.style.setProperty("--scale-factor", scale);
+  el.replaceChildren(canvas, layer);
+  try {
+    await page.render({
+      canvasContext: canvas.getContext("2d"),
+      viewport: viewport,
+      transform: dpr === 1 ? null : [ dpr, 0, 0, dpr, 0, 0 ]
+    }).promise;
+    await lib.renderTextLayer({
+      textContentSource: await page.getTextContent(),
+      container: layer,
+      viewport: viewport,
+      textDivs: []
+    }).promise;
+  } catch (e) {}
+}
+
+document.getElementById("btnPdfFile").onclick = () => {
+  if (!currentLessonId || isVirtualLesson()) return;
+  document.getElementById("pdfFileInput").click();
+};
+
+document.getElementById("pdfFileInput").addEventListener("change", async e => {
+  const file = e.target.files && e.target.files[0];
+  e.target.value = "";
+  if (!file || !currentLessonId || isVirtualLesson()) return;
+  if (file.type !== "application/pdf" && !/\.pdf$/i.test(file.name)) return showToast("Pick a PDF file");
+  const name = /\.pdf$/i.test(file.name) ? file.name : file.name + ".pdf";
+  await dbPutKey("pdfs", {
+    name: name,
+    url: "",
+    blob: file
+  }, currentLessonId);
+  document.getElementById("mediaUrl").value = name;
+  destroyYtPlayer();
+  openPdf(name);
+  scheduleAutoSave();
+});
+
+// The sentence around a selection in a PDF page, from the page's own text.
+function pdfSentenceAround(range, layer) {
+  const spans = [ ...layer.querySelectorAll("span:not(.markedContent)") ].filter(sp => !sp.querySelector("span"));
+  let text = "", at = -1;
+  spans.forEach(sp => {
+    if (text && !/\s$/.test(text)) text += " ";
+    if (at < 0 && sp.contains(range.startContainer)) at = text.length + (range.startContainer.nodeType === 3 ? range.startOffset : 0);
+    text += sp.textContent;
+  });
+  if (at < 0) return "";
+  const before = text.slice(0, at), after = text.slice(at);
+  const start = Math.max(before.search(/[^.!?。！？]*$/), at - 300);
+  const end = after.search(/[.!?。！？]/);
+  return text.slice(start, end < 0 ? Math.min(text.length, at + 300) : at + end + 1).replace(/\s+/g, " ").trim();
+}
+
+function pdfSelectionWord() {
+  const sel = getSelection();
+  if (!sel || sel.isCollapsed || !sel.rangeCount) return null;
+  const range = sel.getRangeAt(0);
+  const layer = range.startContainer.parentElement && range.startContainer.parentElement.closest("#pdfView .textLayer");
+  if (!layer) return null;
+  const term = cleanPunct(sel.toString().replace(/\s+/g, " ").trim()).replace(/^[\s,.;:!?，。；：！？、]+|[\s,.;:!?，。；：！？、]+$/g, "");
+  if (!term || term.length > NOTE_TERM_MAX) return null;
+  return {
+    term: term,
+    sentence: pdfSentenceAround(range, layer),
+    rect: range.getBoundingClientRect()
+  };
+}
+
+let pdfPickTimer = 0;
+
+function pickPdfWord() {
+  clearTimeout(pdfPickTimer);
+  pdfPickTimer = setTimeout(async () => {
+    const hit = pdfSelectionWord();
+    if (!hit || vocabAddPopup && vocabAddPopup.dataset.term === hit.term) return;
+    const lessonId = currentLessonId, name = pdfShown ? pdfNameOf(pdfShown.value) : "";
+    showVocabAddPopup(null, hit.term, hit.rect, null, (term, meaning) => {
+      if (currentLessonId !== lessonId) return;
+      const result = readerAdd([ {
+        id: 1,
+        term: term,
+        meaning: meaning,
+        sentence: hit.sentence,
+        title: name,
+        lessonId: lessonId
+      } ]);
+      const skip = result && result.skipped && result.skipped[0];
+      if (skip && skip.reason === "exists") showToast(`“${term}” is already in ${skip.lesson}`);
+    });
+    const popup = vocabAddPopup;
+    popup.dataset.term = hit.term;
+    const field = popup.querySelector(".vocab-add-field");
+    const asked = field.textContent;
+    const {translated: translated} = await translateText(hit.term, detectLang(hit.term) === "vi-VN" ? "en" : "vi");
+    if (vocabAddPopup !== popup || field.textContent !== asked || !translated) return;
+    field.lastChild.textContent = ": " + cleanPunct(translated);
+    const caret = document.createRange();
+    caret.selectNodeContents(field);
+    caret.collapse(false);
+    getSelection().removeAllRanges();
+    getSelection().addRange(caret);
+  }, isTouch() ? 600 : 0);
+}
+
+document.getElementById("pdfView").addEventListener("mouseup", () => {
+  if (!isTouch()) pickPdfWord();
+});
+
+document.addEventListener("selectionchange", () => {
+  if (isTouch() && pdfShown) pickPdfWord();
+});
 
 let ytVolume = 100;
 
@@ -9812,7 +10133,7 @@ document.getElementById("colDelim").addEventListener("change", renderImportPrevi
 
 const DB_NAME = "flashcards";
 
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 let dbPromise = null;
 
@@ -9839,6 +10160,7 @@ function openDb() {
         keyPath: "key"
       });
       if (!db.objectStoreNames.contains("handles")) db.createObjectStore("handles");
+      if (!db.objectStoreNames.contains("pdfs")) db.createObjectStore("pdfs");
     };
     req.onblocked = () => showBlockedNotice("waiting");
     req.onsuccess = () => {
@@ -10366,6 +10688,7 @@ function openLesson(lesson) {
   } else {
     document.getElementById("mediaUrl").value = "";
     destroyYtPlayer();
+    hidePdf();
   }
   setFileNote("");
   const virtual = isVirtualId(lesson.id);
@@ -11006,6 +11329,7 @@ async function deleteCurrentLesson() {
   autoSaveDebounceTimer = null;
   library = library.filter(l => l.id !== lesson.id);
   await dbDelete("lessons", lesson.id);
+  dbDelete("pdfs", lesson.id);
   forgetLesson(lesson.id);
   resetStudyState();
   currentLessonId = null;
