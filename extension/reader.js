@@ -95,7 +95,7 @@ textarea[hidden], .sent-view[hidden]{display:none;}
 .tip{position:fixed;max-width:280px;padding:8px 12px;border-radius:8px;background:#1d2330;color:#fff;font-size:13px;line-height:18px;box-shadow:0 6px 18px rgba(0,0,0,.25);pointer-events:none;}
 .tip b{font-weight:700;}
 .tip .tip-m{margin-top:4px;}
-.tip small{display:block;margin-top:6px;color:#aab3c2;font-size:12px;line-height:16px;}
+.tip small{display:block;margin-top:6px;color:#aab3c2;font-size:12px;line-height:16px;font-style:italic;}
 .yt{position:fixed;left:16px;bottom:16px;display:flex;align-items:center;gap:8px;height:40px;padding:0 16px 0 6px;border:0;border-radius:20px;background:var(--green);color:#fff;font:700 14px/20px Inter, system-ui, sans-serif;box-shadow:0 6px 18px rgba(0,0,0,.3);cursor:pointer;}
 .yt:hover{filter:brightness(1.08);}
 .yt span{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:14px;background:rgba(255,255,255,.2);font-size:16px;line-height:20px;}
@@ -441,7 +441,7 @@ textarea[hidden], .sent-view[hidden]{display:none;}
       const kk = known.get(norm(termEl.value));
       const add = $(".add");
       if (kk && kk.state === "app") {
-        note.innerHTML = `Already in wikiPhidia · <b>${esc(kk.lesson)}</b><br>${esc(kk.meaning || "")}`;
+        note.innerHTML = `Already in wikiPhidia · <i>${esc(kk.lesson)}</i><br>${esc(kk.meaning || "")}`;
         add.disabled = true;
         add.textContent = "Saved";
       } else if (kk && kk.state === "pending") {

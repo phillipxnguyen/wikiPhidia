@@ -880,6 +880,9 @@ window.onYouTubeIframeAPIReady = function(){
     white-space:pre-line;
     display:none;
   }
+  .hover-tooltip.lookup-tip{max-width:280px;padding:8px 12px;font-size:13px;line-height:18px;white-space:normal;}
+  .hover-tooltip.lookup-tip .tip-m{margin-top:4px;}
+  .hover-tooltip.lookup-tip small{display:block;margin-top:6px;font-size:12px;line-height:16px;font-style:italic;color:var(--popup-muted);}
   .hover-tooltip.on-popup{z-index:10001;background:var(--popup-text);color:var(--popup-bg);}
   .vocab-popup .vocab-sentence, .vocab-popup .vocab-note li, .vocab-popup .vocab-note > div{cursor:default;}
   .vocab-popup{
@@ -922,6 +925,7 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-popup .vocab-note{font-style:italic;}
   .vocab-popup .vocab-note:empty{display:none;}
   .vocab-popup .vocab-counter{margin-top:6px;font-size:10px;line-height:1;color:var(--popup-muted);text-align:center;white-space:pre-line;}
+  .vocab-popup .vocab-from{font-size:12px;line-height:16px;font-style:italic;}
 
   .toast-container{position:fixed;left:16px;bottom:16px;display:flex;flex-direction:column;gap:6px;z-index:2000;pointer-events:none;}
   .toast{
@@ -3375,7 +3379,7 @@ document.getElementById("pdfView").addEventListener("mouseover", e => {
   const mark = e.target.closest && e.target.closest(".textLayer mark.vocab-hit");
   if (!mark) return;
   const k = knownWord(mark.textContent);
-  if (k) showTooltip(mark, mark.textContent + (k.meaning ? ": " + k.meaning : "") + " · " + k.lesson);
+  if (k) showLookupTip(mark, mark.textContent, k.meaning, k.lesson);
 });
 
 document.getElementById("pdfView").addEventListener("mouseout", e => {
@@ -3569,7 +3573,7 @@ function openReadCard(found) {
   };
   const showKnown = () => {
     const k = knownWord(termEl.value);
-    $(".rc-note").innerHTML = k ? `Already in <b>${escapeHtml(k.lesson)}</b>${k.meaning ? "<br>" + escapeHtml(k.meaning) : ""}` : "";
+    $(".rc-note").innerHTML = k ? `Already in <i>${escapeHtml(k.lesson)}</i>${k.meaning ? "<br>" + escapeHtml(k.meaning) : ""}` : "";
     add.disabled = !!k;
     add.textContent = k ? "Saved" : "Add";
   };
@@ -6460,6 +6464,7 @@ function showTooltip(cellEl, text) {
   if (!text) return;
   const tip = getTooltipEl();
   delete tip.dataset.part;
+  tip.classList.remove("lookup-tip");
   tip.textContent = text;
   tip.anchor = cellEl;
   tip.classList.toggle("on-popup", !!(vocabPopupEl && vocabPopupEl.contains(cellEl)));
@@ -6468,6 +6473,15 @@ function showTooltip(cellEl, text) {
   const below = vocabAddPopup && vocabAddPopup.contains(cellEl) ? vocabAddPopup.getBoundingClientRect().bottom : rect.bottom;
   tip.style.top = Math.round(below + window.scrollY) + 4 + "px";
   tip.style.display = "block";
+}
+
+// A word's lookup, as the browser extension shows it: the word, its meaning, and the lesson it is in, small and
+// in italics so the source never stands out.
+function showLookupTip(anchor, term, meaning, lesson) {
+  const tip = getTooltipEl();
+  showTooltip(anchor, term);
+  tip.classList.add("lookup-tip");
+  tip.innerHTML = `<b>${escapeHtml(term)}</b><div class="tip-m">${escapeHtml(meaning || "—")}</div>${lesson ? `<small>${escapeHtml(lesson)}</small>` : ""}`;
 }
 
 function hideTooltip() {
@@ -6827,7 +6841,7 @@ function renderVocabPopup() {
   popup.querySelector(".vocab-note").innerHTML = highlightTermInNotesHtml(notesHtml, m.term);
   const multi = vocabMatches.length > 1;
   const away = m.lesson && m.lesson.id !== currentLessonId && !rows.includes(m.row) ? m.lesson.name : "";
-  popup.querySelector(".vocab-counter").textContent = [ away, multi ? vocabIndex + 1 + " / " + vocabMatches.length : "" ].filter(Boolean).join("\n");
+  popup.querySelector(".vocab-counter").innerHTML = [ away ? `<i class="vocab-from">${escapeHtml(away)}</i>` : "", multi ? vocabIndex + 1 + " / " + vocabMatches.length : "" ].filter(Boolean).join("\n");
   popup.classList.toggle("has-nav", multi);
   popup.querySelector(".prev").style.display = multi && vocabIndex > 0 ? "block" : "none";
   popup.querySelector(".next").style.display = multi && vocabIndex < vocabMatches.length - 1 ? "block" : "none";
