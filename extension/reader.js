@@ -60,9 +60,10 @@
 .pick{position:fixed;display:flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border:0;border-radius:16px;background:var(--green);color:#fff;font:700 16px/20px system-ui, sans-serif;box-shadow:0 4px 12px rgba(0,0,0,.25);cursor:pointer;}
 .pick:hover{filter:brightness(1.08);}
 .card{position:fixed;width:360px;max-width:calc(100vw - 24px);padding:20px;border:1px solid var(--line);border-radius:12px;background:var(--bg);box-shadow:0 16px 40px rgba(10,20,40,.22);}
-.head{display:flex;align-items:flex-start;gap:8px;}
-.term{flex:1;min-width:0;padding:0;margin:0;border:0;border-radius:0;font-size:22px;line-height:30px;font-weight:700;color:var(--ink);background:none;outline:none;cursor:text;}
-.icon{flex:none;display:flex;align-items:center;justify-content:center;width:30px;height:30px;padding:0;border:0;border-radius:8px;background:none;color:var(--ink-2);font-size:16px;line-height:20px;cursor:pointer;}
+.head{display:flow-root;}
+.icons{float:right;display:flex;margin-left:8px;}
+.term{display:block;min-height:30px;padding:0;margin:0;border:0;border-radius:0;font-size:22px;line-height:30px;font-weight:700;color:var(--ink);background:none;outline:none;cursor:text;overflow-wrap:anywhere;}
+.icon{flex:none;display:flex;align-items:center;justify-content:center;height:30px;padding:0 6px;border:0;border-radius:8px;background:none;color:var(--ink-2);font-size:16px;line-height:20px;cursor:pointer;}
 .icon:hover{background:var(--bg-2);color:var(--ink);}
 .reading{margin-top:4px;font-size:14px;line-height:20px;color:var(--green);}
 .reading:empty{display:none;}
@@ -393,7 +394,7 @@ textarea[hidden], .sent-view[hidden]{display:none;}
     const k = known.get(norm(term));
     card = document.createElement("div");
     card.className = "card";
-    card.innerHTML = `<div class="head"><input class="term" spellcheck="false" aria-label="Word"><button class="icon say" title="Listen" aria-label="Listen">🔊</button><button class="icon tr-btn" title="Translate the sentence" aria-label="Translate the sentence"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M3 5h8M7 3v2M5 5c0 3 2 5 5 6M9 5c0 3-2 5-5 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 17l3-7 3 7M12 15h4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="icon close" title="Close (Esc)" aria-label="Close">✕</button></div>
+    card.innerHTML = `<div class="head"><span class="icons"><button class="icon say" title="Listen" aria-label="Listen">🔊</button><button class="icon tr-btn" title="Translate the sentence" aria-label="Translate the sentence"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M3 5h8M7 3v2M5 5c0 3 2 5 5 6M9 5c0 3-2 5-5 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 17l3-7 3 7M12 15h4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="icon close" title="Close (Esc)" aria-label="Close">✕</button></span><div class="term" contenteditable="plaintext-only" spellcheck="false" role="textbox" aria-label="Word"></div></div>
 <div class="reading"></div>
 <div class="body"><input class="field meaning" placeholder="Translating…" aria-label="Meaning"><div class="alts"></div>
 <div class="sent-view"></div><textarea class="field sentence" rows="1" aria-label="Sentence" hidden></textarea><div class="sub sent-tr"></div>
@@ -402,6 +403,11 @@ textarea[hidden], .sent-view[hidden]{display:none;}
     wrap.appendChild(card);
     const $ = s => card.querySelector(s);
     const termEl = $(".term"), meaningEl = $(".meaning"), sentEl = $(".sentence"), readingEl = $(".reading"), note = $(".note");
+    // The word wraps round the buttons instead of being cut off; it is still read and set as a value.
+    Object.defineProperty(termEl, "value", { get() { return this.textContent; }, set(v) { this.textContent = v; } });
+    termEl.addEventListener("keydown", e => {
+      if (e.key === "Enter") e.preventDefault();
+    });
     termEl.value = term;
     sentEl.value = sentence;
     const sentView = $(".sent-view");

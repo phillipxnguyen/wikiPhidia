@@ -640,9 +640,10 @@ window.onYouTubeIframeAPIReady = function(){
   @media (hover:hover){.read-pick:hover{background:var(--new-color);filter:brightness(1.08);}}
   .read-card{--rc-green:var(--new-color);--rc-soft:color-mix(in srgb, var(--new-color) 12%, transparent);position:fixed;z-index:2100;box-sizing:border-box;width:360px;max-width:calc(100vw - 24px);padding:20px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);box-shadow:0 16px 40px rgba(10,20,40,.22);font-size:14px;line-height:20px;color:var(--text);}
   .read-card *{box-sizing:border-box;}
-  .rc-head{display:flex;align-items:flex-start;gap:8px;}
-  .read-card .rc-term{flex:1;min-width:0;padding:0;margin:0;border:0;border-radius:0;background:none;font:inherit;font-size:22px;line-height:30px;font-weight:700;color:var(--text);outline:none;box-shadow:none;}
-  .rc-icon{flex:none;display:flex;align-items:center;justify-content:center;width:30px;height:30px;padding:0;border:0;border-radius:8px;background:none;color:var(--text-2);font-size:16px;line-height:20px;}
+  .rc-head{display:flow-root;}
+  .rc-icons{float:right;display:flex;margin-left:8px;}
+  .read-card .rc-term{display:block;min-height:30px;padding:0;margin:0;border:0;border-radius:0;background:none;font:inherit;font-size:22px;line-height:30px;font-weight:700;color:var(--text);outline:none;box-shadow:none;overflow-wrap:anywhere;cursor:text;}
+  .rc-icon{flex:none;display:flex;align-items:center;justify-content:center;height:30px;padding:0 6px;border:0;border-radius:8px;background:none;color:var(--text-2);font-size:16px;line-height:20px;}
   @media (hover:hover){.rc-icon:hover{background:var(--surface-2);border-color:transparent;color:var(--text);}}
   .rc-reading{margin-top:4px;color:var(--rc-green);}
   .rc-reading:empty, .rc-alts:empty, .rc-sub:empty, .rc-note:empty{display:none;}
@@ -3550,7 +3551,7 @@ function openReadCard(found) {
   const sentence = pdfSentenceAround(found.range, found.layer) || found.text;
   const card = readCard = document.createElement("div");
   card.className = "read-card";
-  card.innerHTML = `<div class="rc-head"><input class="rc-term" spellcheck="false" aria-label="Word"><button class="rc-icon rc-say" title="Listen" aria-label="Listen">🔊</button><button class="rc-icon rc-tr" title="Translate the sentence" aria-label="Translate the sentence"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M3 5h8M7 3v2M5 5c0 3 2 5 5 6M9 5c0 3-2 5-5 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 17l3-7 3 7M12 15h4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="rc-icon rc-close" title="Close (Esc)" aria-label="Close">✕</button></div>
+  card.innerHTML = `<div class="rc-head"><span class="rc-icons"><button class="rc-icon rc-say" title="Listen" aria-label="Listen">🔊</button><button class="rc-icon rc-tr" title="Translate the sentence" aria-label="Translate the sentence"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M3 5h8M7 3v2M5 5c0 3 2 5 5 6M9 5c0 3-2 5-5 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 17l3-7 3 7M12 15h4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="rc-icon rc-close" title="Close (Esc)" aria-label="Close">✕</button></span><div class="rc-term" contenteditable="plaintext-only" spellcheck="false" role="textbox" aria-label="Word"></div></div>
 <div class="rc-reading"></div>
 <div class="rc-body"><input class="rc-meaning" placeholder="Translating…" aria-label="Meaning"><div class="rc-alts"></div>
 <div class="rc-sent"></div><textarea class="rc-sent-edit" rows="1" aria-label="Sentence" hidden></textarea><div class="rc-sub"></div>
@@ -3559,6 +3560,18 @@ function openReadCard(found) {
   document.body.appendChild(card);
   const $ = s => card.querySelector(s);
   const termEl = $(".rc-term"), meaningEl = $(".rc-meaning"), sentEl = $(".rc-sent-edit"), sentView = $(".rc-sent"), add = $(".rc-add");
+  // The word wraps round the buttons instead of being cut off; it is still read and set as a value.
+  Object.defineProperty(termEl, "value", {
+    get() {
+      return this.textContent;
+    },
+    set(v) {
+      this.textContent = v;
+    }
+  });
+  termEl.addEventListener("keydown", e => {
+    if (e.key === "Enter") e.preventDefault();
+  });
   termEl.value = found.text;
   sentEl.value = sentence;
   $(".rc-into").textContent = "Into " + (lesson && lesson.name || "this lesson");
