@@ -7875,8 +7875,8 @@ function toggleVocabBullets(box) {
   let range = sel.getRangeAt(0);
   const collapsed = range.collapsed;
   const before = selectedNoteItems(box, range);
-  if (selectionAllInItems(box, range) && before.length && before.every(isVocabItem)) {
-    before.forEach(li => {
+  if (selectionAllInItems(box, range) && before.length) {
+    before.filter(isVocabItem).forEach(li => {
       const b = li.firstChild;
       const rest = b.nextSibling;
       if (/^\s*[:：]\s*$/.test(rest.nodeValue) && !rest.nextSibling) rest.remove();
@@ -8038,6 +8038,35 @@ new ResizeObserver(() => {
 window.addEventListener("resize", () => {
   if (!document.getElementById("editPopup").hidden) placeEditPopup();
 });
+
+// Bullets in every editor of Lessons and Vocabulary: ⌘⇧8 (Ctrl+Shift+8) turns the selected lines into bullets or,
+// when they already are, back into plain lines; Backspace at the very start of a bullet turns that line back too.
+// Lesson notes go through toggleVocabBullets, which also makes or unmakes their word entries.
+const BULLET_EDITORS = "#editQ, #editA, #editNotes, #vocabEditNotes, #qaNotes";
+
+function caretAtItemStart(box) {
+  const sel = window.getSelection();
+  if (!sel.rangeCount || !sel.isCollapsed) return null;
+  const node = sel.anchorNode, host = node && (node.nodeType === 1 ? node : node.parentElement);
+  const li = host && host.closest("li");
+  if (!li || !box.contains(li)) return null;
+  const before = document.createRange();
+  before.setStart(li, 0);
+  before.setEnd(sel.anchorNode, sel.anchorOffset);
+  return before.toString() || before.cloneContents().querySelector("br, img") ? null : li;
+}
+
+document.addEventListener("keydown", e => {
+  const box = e.target.closest && e.target.closest(BULLET_EDITORS);
+  if (!box || e.isComposing || e.altKey) return;
+  const toggle = (e.metaKey || e.ctrlKey) && e.shiftKey && e.code === "Digit8";
+  if (!toggle && !(e.key === "Backspace" && !e.metaKey && !e.ctrlKey && !e.shiftKey && caretAtItemStart(box))) return;
+  e.preventDefault();
+  e.stopImmediatePropagation();
+  if (box.matches("#editNotes, #qaNotes")) return toggleVocabBullets(box);
+  document.execCommand("insertUnorderedList");
+  unwrapInheritSpans(box);
+}, true);
 
 // The paper clip sits over the first line of a notes box, so that line moves over to make room for it: a bullet
 // (whatever wraps its list, a <div> or an empty tag before it) by its list item, text by a float.
@@ -8474,10 +8503,6 @@ function wireEditBox(host, row) {
         autoResizeDiv(el);
         return;
       }
-      if (!(e.metaKey || e.ctrlKey) || !e.shiftKey || e.code !== "Digit8") return;
-      e.preventDefault();
-      if (el === editNotes) toggleVocabBullets(el); else document.execCommand("insertUnorderedList");
-      autoResizeDiv(el);
     });
     el.addEventListener("paste", e => {
       if (el !== editNotes) {
