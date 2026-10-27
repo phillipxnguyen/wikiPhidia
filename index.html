@@ -3574,6 +3574,14 @@ function openReadCard(found) {
   const termEl = $(".rc-term"), meaningEl = $(".rc-meaning"), sentEl = $(".rc-sent-edit"), sentView = $(".rc-sent"), add = $(".rc-add");
   // The word and the meaning wrap instead of being cut off; they are still read and set as values.
   [ termEl, meaningEl ].forEach(el => {
+    if (el.contentEditable !== "plaintext-only") {
+      // Browsers without plain-text editing: ordinary editing, pasting plain text only.
+      el.contentEditable = "true";
+      el.addEventListener("paste", e => {
+        e.preventDefault();
+        document.execCommand("insertText", false, e.clipboardData.getData("text/plain").replace(/\s+/g, " "));
+      });
+    }
     Object.defineProperty(el, "value", {
       get() {
         return this.textContent;
@@ -3584,6 +3592,9 @@ function openReadCard(found) {
     });
     el.addEventListener("keydown", e => {
       if (e.key === "Enter") e.preventDefault();
+    });
+    el.addEventListener("input", () => {
+      if (!el.textContent && el.innerHTML) el.innerHTML = "";
     });
   });
   Object.defineProperty(meaningEl, "placeholder", {
@@ -7377,7 +7388,7 @@ function centreGlyph(btn) {
   if (!size) return;
   glyphCanvas.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
   const m = glyphCanvas.measureText(text);
-  if (!m.actualBoundingBoxAscent && !m.actualBoundingBoxDescent) return;
+  if (!m.actualBoundingBoxAscent && !m.actualBoundingBoxDescent || !Number.isFinite(m.fontBoundingBoxAscent)) return;
   const baseline = (size - (m.fontBoundingBoxAscent + m.fontBoundingBoxDescent)) / 2 + m.fontBoundingBoxAscent;
   const dy = Math.round(size / 2 - (baseline - (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2));
   const dx = Math.round(m.width / 2 - (m.actualBoundingBoxRight - m.actualBoundingBoxLeft) / 2);
@@ -7391,6 +7402,8 @@ function centreGlyphs() {
 }
 
 if (document.fonts) document.fonts.ready.then(centreGlyphs);
+
+addEventListener("resize", () => requestAnimationFrame(centreGlyphs));
 
 // The touch bar's buttons show a mark or a word; a mark is centred by centreGlyph.
 function setTbContent(btn, icon, text) {

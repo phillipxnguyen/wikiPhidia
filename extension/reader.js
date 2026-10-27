@@ -410,6 +410,9 @@ textarea[hidden], .sent-view[hidden]{display:none;}
       el.addEventListener("keydown", e => {
         if (e.key === "Enter") e.preventDefault();
       });
+      el.addEventListener("input", () => {
+        if (!el.textContent && el.innerHTML) el.innerHTML = "";
+      });
     });
     Object.defineProperty(meaningEl, "placeholder", { get() { return this.dataset.placeholder; }, set(v) { this.dataset.placeholder = v; } });
     termEl.value = term;
