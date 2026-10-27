@@ -3911,8 +3911,10 @@ function progressBadgesHtml(mode, currentIds) {
   const now = Date.now();
   const allowed = isAllLessons() ? mixCandidates().map(([ r ]) => r) : dueRows(mode);
   const newN = allowed.filter(r => cardBucket(r, mode, now) === "new").length;
-  const held = (isAllLessons() ? rows.filter(r => hasAnswer(r) || vocabVideoIdFor(r)) : modeScopeRows(mode)).filter(cardWaiting).length;
-  const dueN = allowed.filter(r => cardBucket(r, mode, now) === "due").length + held;
+  const waiting = (isAllLessons() ? rows.filter(r => hasAnswer(r) || vocabVideoIdFor(r)) : modeScopeRows(mode)).filter(cardWaiting);
+  const readyDue = allowed.filter(r => cardBucket(r, mode, now) === "due").length;
+  const room = reviewsLeftToday(rows.map(r => r.srcLessonId || currentLessonId), false) - allowed.filter(r => srsOf(r, mode).reps && cardBucket(r, mode, now) === "due").length;
+  const dueN = readyDue + Math.min(waiting.length, Math.max(0, room));
   const doneN = isAllLessons() ? rows.filter(r => (hasAnswer(r) || vocabVideoIdFor(r)) && cardBucket(r, mode, now) === "done").length : doneCardCount(mode);
   let active = {
     new: false,
@@ -3991,6 +3993,12 @@ function todayLog(vocab, lessons) {
 
 function studiedToday(cards, vocab) {
   return todayLog(vocab, new Set(cards.map(c => c.srcLessonId || currentLessonId))).seen.size;
+}
+
+function reviewsLeftToday(lessonIds, vocab) {
+  if (!studyLimits.review) return Infinity;
+  const {seen: seen, fresh: fresh} = todayLog(vocab, new Set(lessonIds));
+  return Math.max(0, studyLimits.review - (seen.size - fresh.size));
 }
 
 function limitStudy(list, vocab, keyOf, stateOf) {
@@ -4548,8 +4556,9 @@ function isSessionFinished() {
 
 const CONFETTI_COLORS = [ "#2f6fa8", "#e8b923", "#c0392b", "#3aa76d", "#8e6fce" ];
 
-function finishText(held, done, next, word, states) {
+function finishText(held, done, next, word, states, waiting = 0) {
   const plural = n => n + " " + word + (n === 1 ? "" : "s");
+  const wait = waiting ? ` · ${plural(waiting)} ${waiting === 1 ? "waits" : "wait"} for ${waiting === 1 ? "its" : "their"} words in Vocabulary` : "";
   const now = Date.now();
   const soon = states.filter(st => st.reps && st.lastGrade === GRADE_AGAIN && st.due > now);
   if (soon.length) return {
@@ -4560,7 +4569,12 @@ function finishText(held, done, next, word, states) {
   if (held) return {
     emoji: "🎉",
     title: "Daily limit reached",
-    sub: `${plural(done)} studied today · ${held} more ${word}${held === 1 ? " waits" : "s wait"} for tomorrow`
+    sub: `${plural(done)} studied today · ${held} more ${word}${held === 1 ? " waits" : "s wait"} for tomorrow` + wait
+  };
+  if (waiting) return {
+    emoji: "⏳",
+    title: "Waiting for words",
+    sub: (done ? `${plural(done)} studied today · ` : "") + `${plural(waiting)} ${waiting === 1 ? "comes" : "come"} back once ${waiting === 1 ? "its" : "their"} words are Done in Vocabulary`
   };
   return {
     emoji: "🎉",
@@ -4576,7 +4590,8 @@ function showSessionCompletePanel() {
   const due = modeScopeRows(modeKey()).filter(r => cardReady(r, "Table", now));
   const more = heldMore(due, limitRows(due), r => srsOf(r, "Table"));
   const held = more.total;
-  const text = finishText(held, studiedToday(rows, false), next, "card", modeScopeRows(modeKey()).filter(r => !cardWaiting(r)).map(r => srsOf(r, "Table")));
+  const waiting = modeScopeRows(modeKey()).filter(cardWaiting).length;
+  const text = finishText(held, studiedToday(rows, false), next, "card", modeScopeRows(modeKey()).filter(r => !cardWaiting(r)).map(r => srsOf(r, "Table")), waiting);
   panel.querySelector(".emoji").textContent = text.emoji;
   panel.querySelector(".session-complete-title").textContent = text.title;
   panel.querySelector(".session-complete-sub").textContent = text.sub;
@@ -4789,6 +4804,7 @@ function renderStudy() {
       table.style.display = "none";
       document.getElementById("tableProgress").style.display = "none";
       showSingleCard(false);
+      refreshBadges();
       showSessionCompletePanel();
       return;
     }
@@ -4824,6 +4840,7 @@ function renderStudy() {
     if (singleCardRows.length === 0) {
       showSingleCard(false);
       lastShownCardId = null;
+      refreshBadges();
       showSessionCompletePanel();
       return;
     }
@@ -6334,10 +6351,22 @@ function handleCardAreaClick(e) {
     return;
   }
   if (e.target.closest(".paper-lines") && !getSelection().isCollapsed) return;
-  const cellEl = e.target.closest(".cell, .card-notes") || (!groupState && container.matches("tr[data-id]") || container.classList.contains("tr-current") ? container : null);
-  if (cellEl && container.contains(cellEl) && getSelection().isCollapsed) {
+  if (getSelection().isCollapsed && clickOnContent(e, container)) {
     if (isSingleCard) openSingleCardEdit(row); else openEdit(container, row);
   }
+}
+
+function clickOnContent(e, scope) {
+  if (e.target.closest(".listen-pair .card-notes li, img")) return true;
+  const x = e.clientX, y = e.clientY;
+  const range = document.createRange();
+  const walker = document.createTreeWalker(scope, NodeFilter.SHOW_TEXT);
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+    if (!n.nodeValue.trim() || n.parentElement.closest(".loop-time, .lp-reserve, .cell.hidden, rt")) continue;
+    range.selectNodeContents(n);
+    for (const r of range.getClientRects()) if (x >= r.left - 2 && x <= r.right + 2 && y >= r.top - 4 && y <= r.bottom + 4) return true;
+  }
+  return false;
 }
 
 window.addEventListener("resize", () => requestAnimationFrame(refreshTouchSelection));
@@ -13839,10 +13868,10 @@ function buildVocabCard(item) {
       return showWordView(ownItem.card, ownItem.term, ownItem.meaning, own.getBoundingClientRect());
     }
     if (!getSelection().isCollapsed) return;
-    if (!isTouch() || isDoubleTap("c" + item.key)) {
+    if (!isTouch() ? clickOnContent(e, el) : isDoubleTap("c" + item.key)) {
       hideTooltip();
       openVocabEditor(item.key);
-    } else toggleVocabSound(item);
+    } else if (isTouch()) toggleVocabSound(item);
   });
   return el;
 }
@@ -14315,7 +14344,9 @@ document.getElementById("vocabList").addEventListener("click", e => {
   if (!row) return;
   const item = lessonVocabItems(vocabSource()).find(i => i.key === row.dataset.key);
   if (!item) return;
-  if (!isTouch()) openVocabEditor(item.key, true); else if (isTouch() && isDoubleTap("v" + item.key)) {
+  if (!isTouch()) {
+    if (clickOnContent(e, row)) openVocabEditor(item.key, true);
+  } else if (isDoubleTap("v" + item.key)) {
     row.classList.remove("row-selected");
     updateSelBar();
     hideTooltip();

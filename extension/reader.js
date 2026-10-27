@@ -59,15 +59,15 @@
 @media (prefers-color-scheme: dark){.wrap{--sel:#2a4f80;--green:#3cc48d;--green-soft:rgba(60,196,141,.16);--ink:#e8ecf3;--ink-2:#9aa4b4;--line:#323a48;--bg:#1b2029;--bg-2:#242a35;}}
 .pick{position:fixed;display:flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border:0;border-radius:16px;background:var(--green);color:#fff;font:700 16px/20px system-ui, sans-serif;box-shadow:0 4px 12px rgba(0,0,0,.25);cursor:pointer;}
 .pick:hover{filter:brightness(1.08);}
-.card{position:fixed;width:360px;max-width:calc(100vw - 24px);padding:18px 18px 20px;border:1px solid var(--line);border-radius:12px;background:var(--bg);box-shadow:0 16px 40px rgba(10,20,40,.22);}
+.card{position:fixed;width:360px;max-width:calc(100vw - 24px);padding:20px;border:1px solid var(--line);border-radius:12px;background:var(--bg);box-shadow:0 16px 40px rgba(10,20,40,.22);}
 .head{display:flex;align-items:flex-start;gap:8px;}
 .term{flex:1;min-width:0;padding:2px 6px;margin:-2px -6px;border:1px solid transparent;border-radius:6px;font-size:22px;line-height:30px;font-weight:700;color:var(--ink);background:none;outline:none;}
 .term:focus{border-color:var(--green);background:var(--bg-2);}
 .icon{flex:none;display:flex;align-items:center;justify-content:center;width:30px;height:30px;padding:0;border:0;border-radius:8px;background:none;color:var(--ink-2);font-size:16px;line-height:20px;cursor:pointer;}
 .icon:hover{background:var(--bg-2);color:var(--ink);}
-.reading{margin-top:2px;font-size:14px;line-height:20px;color:var(--green);}
+.reading{margin-top:4px;font-size:14px;line-height:20px;color:var(--green);}
 .reading:empty{display:none;}
-.body{display:flex;flex-direction:column;gap:12px;margin-top:16px;}
+.body{display:flex;flex-direction:column;gap:16px;margin-top:16px;}
 .field{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit;font-size:16px;line-height:22px;outline:none;resize:none;}
 .field:focus{border-color:var(--green);box-shadow:0 0 0 3px var(--green-soft);}
 textarea.field{display:block;padding:9px 11px;border-color:var(--green);background:var(--bg-2);font-size:16px;line-height:24px;overflow:hidden;}

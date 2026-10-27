@@ -21,7 +21,7 @@ A browser only updates an extension fully by itself when it comes from the Chrom
 ## Reading
 
 - **Select a word or phrase** on any page. In the popup's header, beside the name, you choose what happens then with two small icons side by side: **字** (the default: a round green 字 appears next to the selection; click it, or press **Shift**, the same key that adds a word inside wikiPhidia) or **⚡** (the card opens as soon as you let go of the mouse, nothing else to click). Right-click → **Add “…” to wikiPhidia** works too.
-- A card opens next to the word:
+- A card opens next to the word, its parts evenly spaced (16 px apart, 20 px from the card's edges):
   - the word (you can edit it), its **pinyin** for Chinese, and beside it 🔊 to hear it, the translate button to translate the sentence (again to hide it; **Shift** while the card is open does the same), and ✕;
   - the meaning, translated already into your language (Vietnamese by default), with other meanings as chips to pick from; type over it freely;
   - the sentence around the word taken from the page, with the word shown as if selected; click it to change it in place (the box keeps the same size and type, grows with the text, and starts with the word selected, so it looks the same);
