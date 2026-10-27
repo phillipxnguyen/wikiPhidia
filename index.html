@@ -6702,7 +6702,7 @@ function dictFrame(url) {
   const iframe = document.createElement("iframe");
   if (url.startsWith("https://www.bing.com/")) iframe.className = "dict-zoom";
   iframe.src = url;
-  iframe.addEventListener("load", () => iframe.dataset.size = dictFrameSize(iframe));
+  if (iframe.className === "dict-zoom") iframe.addEventListener("load", () => iframe.dataset.size = dictFrameSize(iframe));
   frame.appendChild(iframe);
   return frame;
 }
@@ -6711,8 +6711,9 @@ function dictFrameSize(iframe) {
   return iframe.clientWidth + "x" + iframe.clientHeight;
 }
 
-// Bing sizes its boxes once, when its page loads, so a page loaded hidden or at another size (preloaded) hides the
-// end of a long sentence; shown at a new size, it is loaded once more at the size it is seen at.
+// Bing sizes its boxes once, when its page loads, so a Bing page loaded hidden or at another size (preloaded) hides
+// the end of a long sentence; shown at a new size, it is loaded once more at the size it is seen at. Other
+// dictionaries fit themselves and are never reloaded.
 function fitDictFrame(frame) {
   requestAnimationFrame(() => {
     const iframe = frame.querySelector("iframe");
