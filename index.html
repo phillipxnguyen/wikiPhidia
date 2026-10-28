@@ -322,7 +322,7 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-toolbar{position:sticky;top:0;z-index:999;margin:-10px 0 16px;padding-top:10px;pointer-events:none;}
   .vocab-toolbar .segmented, .vocab-toolbar .toolbar-right > *{pointer-events:auto;}
   .vocab-toolbar .segmented{align-items:center;}
-  .title-flag{position:relative;flex:none;display:flex;height:40px;margin:0 -4px 0 14px;}
+  .title-flag{position:relative;z-index:2;flex:none;display:flex;height:40px;margin:0 -4px 0 14px;}
   .title-flag select{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;}
   .title-flag select:disabled{cursor:default;}
   .flag-set{display:flex;--cw:32px;--ch:24px;}
@@ -341,7 +341,6 @@ window.onYouTubeIframeAPIReady = function(){
   .flag-cloth:nth-last-child(3){animation-delay:-1.2s;}
   @keyframes flagWave{0%, 100%{transform:perspective(80px) rotateY(0) skewY(0);}25%{transform:perspective(80px) rotateY(-12deg) skewY(2deg);}75%{transform:perspective(80px) rotateY(8deg) skewY(-2deg);}}
   @keyframes flagShade{to{background-position:-64px 0;}}
-  .flag-set:not(.toolbar-flag) .flag-unit.on-rope{width:var(--rope-w);}
   .flag-rope{position:absolute;left:3px;top:3px;height:1px;background:color-mix(in srgb, var(--text-2) 70%, transparent);transform:rotate(10deg);transform-origin:0 0;}
   .toolbar-flag .flag-rope{display:none;}
   .flag-set:not(.toolbar-flag) .flag-unit.on-rope .flag-cloth{left:var(--x);top:var(--y);width:22px;height:16px;transform-origin:0 var(--tie);animation:ropeSway 2.6s ease-in-out infinite;}
@@ -551,7 +550,7 @@ window.onYouTubeIframeAPIReady = function(){
   }
   @media (max-width:600px){
     .shell .lesson-header{flex-wrap:wrap;}
-    .shell .lesson-name-input, .shell #vocabTitle.lesson-name-input{flex-basis:calc(100% - var(--flag-room, 56px));font-size:20px !important;}
+    .shell .lesson-name-input, .shell #vocabTitle.lesson-name-input{flex-basis:calc(100% - 56px);font-size:20px !important;}
     .shell .lesson-header .lesson-name-input{line-height:25px;}
     .shell .lesson-header{margin-top:-13px;}
     .shell .header-actions{margin-left:auto;}
@@ -6250,7 +6249,8 @@ function showFlags(langs) {
   shownFlags = key;
   // Several languages hang from one pole on a rope that leaves its top, nearly level: each flag hangs upright, tied to
   // the rope at a point of its left edge picked at random, and sways about that point on its own, free to wave over
-  // what is around it. (The toolbar's small flags, without a pole, still lie on top of each other like papers.)
+  // what is around it: the flags keep the place the pole has always had, and the rope runs out over the name beside
+  // them rather than pushing it along. (The toolbar's small flags, without a pole, still lie on top of each other like papers.)
   const n = ccs.length, SLOPE = Math.tan(10 * Math.PI / 180), W = 22, H = 16, STEP = 30;
   const ropeY = x => 3 + (x - 3) * SLOPE;
   const at = k => {
@@ -6259,13 +6259,11 @@ function showFlags(langs) {
   };
   const end = 6 + (n - 1) * STEP + 2;
   const rope = n > 1 ? `<span class="flag-rope" style="width:${Math.round((end - 3) * Math.hypot(1, SLOPE))}px"></span>` : "";
-  const units = `<span class="flag-unit${n > 1 ? " on-rope" : ""}" style="--n:${n};--rope-w:${6 + (n - 1) * STEP + W + 4}px">` + rope + ccs.map((cc, k) => {
+  const units = `<span class="flag-unit${n > 1 ? " on-rope" : ""}" style="--n:${n}">` + rope + ccs.map((cc, k) => {
     const [x, y, tie] = at(k);
     return `<span class="flag-cloth" style='--k:${k};--x:${x}px;--y:${y}px;--tie:${tie}px;--flag:${flagUrl(cc)}'></span>`;
   }).reverse().join("") + "</span>";
   document.querySelectorAll(".flag-set").forEach(el => el.innerHTML = units);
-  // On a phone the name shares its line with the flags: it leaves them their room (the unit, its margins and the gap).
-  document.querySelectorAll(".lesson-header").forEach(h => n > 1 ? h.style.setProperty("--flag-room", 6 + (n - 1) * STEP + W + 4 + 20 + "px") : h.style.removeProperty("--flag-room"));
 }
 
 function autoDetectLangs(texts) {
