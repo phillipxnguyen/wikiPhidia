@@ -2746,6 +2746,12 @@ function mediaPlayerReady() {
 }
 
 function updateMediaBar() {
+  if (!ytHasVideo && !pendingVideoId) {
+    // No video of this lesson's own: the bar never shows the times of the one left in the player.
+    document.getElementById("mbCur").textContent = document.getElementById("mbDur").textContent = formatTime(0);
+    if (!mbSeeking) document.getElementById("mbSeek").value = 0;
+    return;
+  }
   if (!mediaPlayerReady() || mediaBox().style.display !== "flex") return;
   const cur = ytPlayer.getCurrentTime() || 0, dur = ytPlayer.getDuration() || 0;
   document.getElementById("mbCur").textContent = formatTime(cur);
@@ -5868,7 +5874,9 @@ let listenRevealTimer = null;
 function syncListenCover() {
   const row = isListenMode() && deckOn() ? listenBatch()[0] : null;
   const box = mediaBox();
-  const covered = !!row && (row.qHidden || !mediaPlayerReady() || ytHasError);
+  // The player is kept from lesson to lesson, so a lesson without a YouTube video of its own (a NotebookLM or other
+  // link, or none) keeps the cover: the video left in the player belongs to another lesson and is never shown.
+  const covered = !!row && (row.qHidden || !mediaPlayerReady() || !ytHasVideo || ytHasError);
   const now = row ? row.id + ":" + row.qHidden : null;
   if (listenCoverWas && row && listenCoverWas === row.id + ":true" && !row.qHidden && !covered && box.classList.contains("covered")) {
     box.classList.add("revealing");
