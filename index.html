@@ -1709,7 +1709,9 @@ window.onYouTubeIframeAPIReady = function(){
   .cloud-or{font-size:12px;color:var(--text-2);}
   .cloud-row{display:flex;gap:8px;}
   .cloud-row button{flex:1;}
-  .all-curtain{position:fixed;z-index:30000;pointer-events:auto;overflow:hidden;}
+  /* The curtain covers the page's study area only: above everything on the page (its sticky bars are 999), under every
+     popup, menu, tooltip and toast (1500 and up), which show whole over it and keep working. */
+  .all-curtain{position:fixed;z-index:1001;pointer-events:auto;overflow:hidden;}
   html.curtained :is(#viewStudy .toolbar, #vocabToolbar, #selBar){visibility:hidden;}
   .all-curtain.waiting{pointer-events:auto;cursor:pointer;}
   html:has(.shell.drawer-open) .all-curtain{visibility:hidden;}
@@ -16753,7 +16755,8 @@ function allCurtain(item) {
   let knock = null, tapped = false;
   const block = e => {
     if (!curtain.isConnected) return unblock();
-    if (e.target.closest && e.target.closest(".sidebar") && !e.target.closest("[data-all-vocab]")) return;
+    const t = e.target;
+    if (t.closest && !t.closest(".all-curtain, .main, [data-all-vocab]") && t !== document.body && t !== document.documentElement) return;
     e.stopPropagation();
     e.stopImmediatePropagation();
     if (e.type.startsWith("key") && (e.metaKey || e.ctrlKey)) return;
