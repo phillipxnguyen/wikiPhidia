@@ -2,6 +2,8 @@
 
 Flashcards for learning Chinese and Japanese, with spaced repetition, YouTube clips, dictionaries and a vocabulary deck built from your notes.
 
+The app is called **Flashcard**, and its icon is a white 字 on a blue rounded square, the same as the mark in its top bar: it shows in the browser tab and on bookmarks, and becomes the app's name and icon on a phone's home screen (Share → Add to Home Screen on an iPhone, Install app on Android), where it opens on its own, without the browser's bars. The tab reads the lesson's name followed by · Flashcard.
+
 The whole app is one file, `index.html`. There is no build step and nothing to install: open it in a browser, or host it anywhere that serves static files. On a phone it can be added to the home screen and runs full screen.
 
 ## Lessons and cards
