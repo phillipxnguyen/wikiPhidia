@@ -12947,34 +12947,24 @@ function closeLimitsPop() {
   document.getElementById("limitsPop").hidden = true;
 }
 
-function applyStudyLimits() {
+// Return applies the limits and shows them every time, also when they stay the same; closing the box (Esc, a click
+// outside, leaving a box) applies what was typed and shows it only when that changed the limits.
+function applyStudyLimits(shown) {
   const read = id => Math.max(0, Math.floor(Number(document.getElementById(id).value) || 0));
   const next = {
     fresh: read("limitFresh"),
     review: read("limitReview")
   };
   const before = shownCounts();
-  if (next.fresh !== studyLimits.fresh || next.review !== studyLimits.review) {
+  const changed = next.fresh !== studyLimits.fresh || next.review !== studyLimits.review;
+  if (changed) {
     pushUndo("Daily limits");
     studyLimits = next;
     saveStudyLimits();
     refreshAfterLimits();
   }
-  // Every apply shows itself, also when the numbers stay the same; one action can apply twice (Return, then the blur
-  // as the popup closes), which shows once.
-  const key = next.fresh + "/" + next.review, now = Date.now();
-  if (lastLimitsShow.key === key && now - lastLimitsShow.at < 400) return;
-  lastLimitsShow = {
-    key: key,
-    at: now
-  };
-  bumpChangedCounts(before);
+  if (changed || shown) bumpChangedCounts(before);
 }
-
-let lastLimitsShow = {
-  key: "",
-  at: 0
-};
 
 // The New / Due / Done counts on screen, kind by kind, so a change of the daily limits can show where it took hold.
 function shownCounts() {
@@ -13142,10 +13132,10 @@ document.getElementById("streakChip").onclick = () => {
 
 [ "limitFresh", "limitReview" ].forEach(id => {
   const input = document.getElementById(id);
-  input.addEventListener("change", applyStudyLimits);
+  input.addEventListener("change", () => applyStudyLimits());
   input.addEventListener("keydown", e => {
     e.stopPropagation();
-    if (e.key === "Enter") applyStudyLimits();
+    if (e.key === "Enter") applyStudyLimits(true);
     if (e.key === "Escape") {
       applyStudyLimits();
       closeLimitsPop();
