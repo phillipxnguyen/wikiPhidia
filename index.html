@@ -997,6 +997,8 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-popup .vocab-note:empty{display:none;}
   .vocab-popup .vocab-counter{margin-top:6px;font-size:10px;line-height:1;color:var(--popup-muted);text-align:center;white-space:pre-line;}
   .vocab-popup .vocab-from{font-size:12px;line-height:16px;font-style:italic;}
+  .from-mark{display:inline-block;width:14px;height:14px;margin:0 4px 0 0;border-radius:4px;background:var(--mode-blue);color:#fff;font-size:10px;line-height:14px;font-style:normal;font-weight:700;text-align:center;vertical-align:-2px;}
+  .from-mark.vocab{background:var(--new-color);}
   .toast-container{position:fixed;left:16px;bottom:16px;display:flex;flex-direction:column;gap:6px;z-index:2000;pointer-events:none;}
   .toast{
     background:var(--popup-bg);
@@ -4570,6 +4572,7 @@ function moveCardsToVocab(list) {
   carryWordNotes(ok, carry, vocabExtras);
   if (activeEdit && moving.has(activeEdit.row)) discardActiveEdit();
   rows = rows.filter(r => !moving.has(r));
+  dedupeLibrary();
   ok.forEach(r => {
     pruneIdFromGroupState(groupState, r.id);
     pruneIdFromGroupState(savedGroupState, r.id);
@@ -4654,6 +4657,10 @@ function moveOneCardToVocab(row) {
   const parts = isCardMode() ? studyParts() : [ document.querySelector(`#tbody tr[data-id="${row.id}"]`) ].filter(Boolean);
   if (activeEdit && activeEdit.row.id === row.id) discardActiveEdit();
   rows = rows.filter(r => r !== row);
+  dedupeLibrary({
+    card: extrasFor(row),
+    key: normalizeVocabText(term)
+  });
   if (hoveredRowId === row.id) hoveredRowId = null;
   if (selectedRowId === row.id) selectedRowId = null;
   pruneIdFromGroupState(groupState, row.id);
@@ -5701,9 +5708,11 @@ function addConfetti(panel) {
   }
 }
 
+// Vocabulary does not show the study page, so a change made there (a word moved to Lessons, a word edited) does not
+// draw it: drawing a long lesson's page takes most of a second, and the page is drawn anyway when it is opened.
 function render() {
   queueFitBadges();
-  renderStudy();
+  if (currentView === "vocab") setTimeout(updateTouchBar, 0); else renderStudy();
   syncDeck();
   syncMediaLayout();
 }
@@ -6779,7 +6788,13 @@ function showLookupTip(anchor, term, meaning, lesson) {
   const reading = /[\p{Script=Han}]/u.test(term) && !/[\p{Script=Hiragana}\p{Script=Katakana}]/u.test(term) && typeof pinyinPro !== "undefined" ? pinyinPro.pinyin(term).replace(/\s+([，。？！、；：,.?!;:])/g, "$1") : "";
   // The same box as the browser extension's: the word, its pinyin on a line of its own, the meaning when it has one,
   // the lesson it is in.
-  tip.innerHTML = `<b>${escapeHtml(term)}</b>${reading ? `<div class="tip-r">${escapeHtml(reading)}</div>` : ""}${meaning ? `<div class="tip-m">${escapeHtml(meaning)}</div>` : ""}${lesson ? `<small>${escapeHtml(lesson)}</small>` : ""}`;
+  tip.innerHTML = `<b>${escapeHtml(term)}</b>${reading ? `<div class="tip-r">${escapeHtml(reading)}</div>` : ""}${meaning ? `<div class="tip-m">${escapeHtml(meaning)}</div>` : ""}${lesson ? `<small>${fromMark("vocab")}${escapeHtml(lesson)}</small>` : ""}`;
+}
+
+// Where a looked-up word or sentence comes from: the app's 字 mark in that side's colour (blue for a Lessons card,
+// green for a Vocabulary word), then its lesson's name.
+function fromMark(side) {
+  return `<span class="from-mark ${side}" aria-hidden="true">字</span>`;
 }
 
 function hideTooltip() {
@@ -7150,7 +7165,7 @@ function renderVocabPopup() {
   popup.querySelector(".vocab-note").innerHTML = highlightTermInNotesHtml(notesHtml, m.term);
   const multi = vocabMatches.length > 1;
   const away = m.lesson && m.lesson.id !== currentLessonId && !rows.includes(m.row) ? m.lesson.name : "";
-  popup.querySelector(".vocab-counter").innerHTML = [ away ? `<i class="vocab-from">${escapeHtml(away)}</i>` : "", multi ? vocabIndex + 1 + " / " + vocabMatches.length : "" ].filter(Boolean).join("\n");
+  popup.querySelector(".vocab-counter").innerHTML = [ away ? `<i class="vocab-from">${fromMark(m.row.uid === EXTRA_UID ? "vocab" : "cards")}${escapeHtml(away)}</i>` : "", multi ? vocabIndex + 1 + " / " + vocabMatches.length : "" ].filter(Boolean).join("\n");
   popup.classList.toggle("has-nav", multi);
   popup.querySelector(".prev").style.display = multi && vocabIndex > 0 ? "block" : "none";
   popup.querySelector(".next").style.display = multi && vocabIndex < vocabMatches.length - 1 ? "block" : "none";
@@ -7192,10 +7207,37 @@ function syncVocabScroll() {
   vocabPopupEl.classList.toggle("more-below", sc.scrollTop + sc.clientHeight < sc.scrollHeight - 1);
 }
 
+// Text that wraps leaves its box as wide as the widest it could be, so a long sentence that breaks early leaves a wide
+// empty strip on the right: the box is narrowed to its longest line, so the words sit evenly inside it.
+function fitPopupWidth(popup) {
+  popup.style.width = "";
+  const box = popup.querySelector(".vocab-scroll");
+  const range = document.createRange();
+  const rects = [];
+  const walker = document.createTreeWalker(box, NodeFilter.SHOW_TEXT);
+  while (walker.nextNode()) {
+    if (!walker.currentNode.nodeValue.trim()) continue;
+    range.selectNodeContents(walker.currentNode);
+    rects.push(...[ ...range.getClientRects() ].filter(r => r.width));
+  }
+  if (!rects.length) return;
+  box.querySelectorAll("mark").forEach(m => rects.push(...m.getClientRects()));
+  const inner = box.getBoundingClientRect();
+  // The line under the words (the lesson's name, 1 / 3) is centred, so only its length counts.
+  const counter = [ ...popup.querySelector(".vocab-counter").childNodes ].reduce((w, n) => {
+    range.selectNodeContents(n);
+    return Math.max(w, ...[ ...range.getClientRects() ].map(r => r.width));
+  }, 0);
+  const used = Math.max(counter, ...rects.map(r => r.right - inner.left));
+  const spare = Math.floor(inner.width - used);
+  if (spare > 0) popup.style.width = Math.ceil(popup.getBoundingClientRect().width - spare) + "px";
+}
+
 function placeVocabPopup(anchorRect) {
   const popup = getVocabPopupEl();
   vocabPopupAnchor = anchorRect;
   popup.style.maxHeight = "";
+  fitPopupWidth(popup);
   const popupRect = popup.getBoundingClientRect();
   const below = Math.floor(window.innerHeight - anchorRect.bottom - 16), above = Math.floor(anchorRect.top - 16);
   const down = popupRect.height <= below || below >= above;
@@ -9645,6 +9687,8 @@ function swipe(parts, dir, update, next, label = dir > 0 ? "Good" : "Again") {
     ghost.classList.remove("good", "again", "waiting");
     ghost.classList.add(label === "Delete" ? "delete" : label === "Vocab" ? "to-vocab" : label === "Lesson" ? "to-lesson" : label === "Waiting" ? "waiting" : dir > 0 ? "good" : "again");
     ghost.textContent = label === "Delete" ? "✕" : label === "Vocab" || label === "Lesson" ? "字" : label === "Waiting" ? "⏳ Waiting" : gradeMark(dir < 0);
+    // The ghost goes when its flight ends, not after a set time: a long page drawn right after the swipe holds the
+    // screen for a moment, and the flight then still plays in full instead of being cut off before it is seen.
     ghost.animate([ {
       transform: from
     }, {
@@ -9653,8 +9697,7 @@ function swipe(parts, dir, update, next, label = dir > 0 ? "Good" : "Again") {
       duration: 750,
       easing: "ease-in-out",
       fill: "forwards"
-    });
-    setTimeout(() => ghost.remove(), 750);
+    }).finished.then(() => ghost.remove(), () => ghost.remove());
   }
   if (next) holdPageTo(window.scrollY + window.innerHeight);
   const settle = next ? null : keepViewAnchor();
@@ -11515,11 +11558,136 @@ function scheduleAutoSave() {
   autoSaveDebounceTimer = setTimeout(saveCurrentLesson, STORE_DELAY_MS);
 }
 
+// One of each, everywhere: a question or word exists once in all the lessons, in Lessons and Vocabulary together. A
+// text card (a question without a video time), a word kept in a lesson's own word list and a word filed under a
+// card's notes are the same thing when they read the same, whatever lesson they are in; of each such set one is kept
+// and the rest are deleted. The one kept is the one just moved or being edited, else the one studied most, else the
+// one in its right place (a translation as a word, anything else as a card), else the one in the open lesson, else
+// the first. Words under a deleted card that are kept move to its lesson's own word list, with their progress.
+let dedupePrefer = null;
+
+function dedupeLibrary(prefer = dedupePrefer) {
+  dedupePrefer = null;
+  if (isVirtualLesson()) return false;
+  const live = !!currentLessonId && !isVirtualId(currentLessonId);
+  const homes = library.filter(l => !isVirtualId(l.id) && (!live || l.id !== currentLessonId)).map(l => ({
+    lesson: l,
+    cards: l.cards || [],
+    extras: l.extraWords || null
+  }));
+  if (live) homes.unshift({
+    lesson: null,
+    cards: rows,
+    extras: vocabExtras
+  });
+  const groups = new Map;
+  const add = (key, unit) => {
+    if (!key) return;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(unit);
+  };
+  const editing = activeEdit && activeEdit.row;
+  homes.forEach((home, hi) => {
+    home.cards.forEach(card => {
+      if (!card || card.uid === EXTRA_UID) return;
+      const own = card.time == null ? normalizeVocabText((card.q || "").replace(/\s+/g, " ").trim()) : "";
+      if (own) add(own, {
+        home: home,
+        hi: hi,
+        card: card,
+        key: null
+      });
+      vocabEntriesOf(card).forEach(e => e.key !== own && add(e.key, {
+        home: home,
+        hi: hi,
+        card: card,
+        key: e.key,
+        entry: e
+      }));
+    });
+    if (home.extras) vocabEntriesOf(home.extras).forEach(e => add(e.key, {
+      home: home,
+      hi: hi,
+      card: home.extras,
+      key: e.key,
+      entry: e,
+      extra: true
+    }));
+  });
+  const reps = u => u.key === null ? u.card.srs && u.card.srs.Table && u.card.srs.Table.reps || 0 : u.card.vocab && u.card.vocab[u.key] && u.card.vocab[u.key].reps || 0;
+  const fits = u => u.key === null ? !belongsInVocab(u.card) : isTranslationCard({
+    q: u.entry.term,
+    a: u.entry.meaning
+  });
+  const first = u => (prefer && u.card === prefer.card && u.key === (prefer.key || null) ? 8 : 0) + (u.card === editing && u.key === null || u.key && u.key === vocabEditingKey && !u.home.lesson ? 8 : 0);
+  const dropCards = new Set, dropEntries = [], keptEntries = [];
+  groups.forEach(list => {
+    if (list.length < 2) {
+      if (list[0].key !== null) keptEntries.push(list[0]);
+      return;
+    }
+    const keep = list.slice().sort((a, b) => first(b) - first(a) || reps(b) - reps(a) || fits(b) - fits(a) || a.hi - b.hi)[0];
+    list.forEach(u => {
+      if (u === keep) return;
+      if (u.key === null) dropCards.add(u.card); else dropEntries.push(u);
+    });
+    if (keep.key !== null) keptEntries.push(keep);
+  });
+  if (!dropCards.size && !dropEntries.length) return false;
+  const touched = new Set;
+  dropEntries.forEach(u => {
+    if (dropCards.has(u.card)) return;
+    const next = rewrittenVocabNotes(u.card, u.entry, null, null);
+    if (!next) return;
+    u.card.notes = next.notes;
+    u.card.notesHtml = next.notesHtml;
+    if (u.card.vocab) delete u.card.vocab[u.key];
+    touched.add(u.home);
+  });
+  keptEntries.forEach(u => {
+    if (!dropCards.has(u.card)) return;
+    const home = u.home;
+    if (!home.lesson) home.extras = ensureVocabExtras(); else if (!home.extras || !home.extras.uid) home.extras = normalizeExtras(home.extras) || {
+      uid: EXTRA_UID,
+      q: "",
+      a: "",
+      notes: "",
+      notesHtml: "",
+      time: null,
+      vocab: {}
+    };
+    appendWordItems(home.extras, [ [ u.entry.term, u.entry.meaning ] ]);
+    const st = u.card.vocab && u.card.vocab[u.key];
+    if (st) home.extras.vocab[u.key] = st;
+    touched.add(home);
+  });
+  homes.forEach(home => {
+    const left = home.cards.filter(c => !dropCards.has(c));
+    if (left.length !== home.cards.length) touched.add(home);
+    if (!touched.has(home)) return;
+    if (!home.lesson) {
+      home.cards.filter(c => dropCards.has(c)).forEach(c => {
+        pruneIdFromGroupState(groupState, c.id);
+        pruneIdFromGroupState(savedGroupState, c.id);
+      });
+      rows = left;
+      vocabExtras = home.extras;
+      return;
+    }
+    home.lesson.cards = left;
+    if (home.extras) home.lesson.extraWords = home.extras.uid ? serializeExtras(home.extras) : home.extras;
+    home.lesson.updatedAt = Date.now();
+    dbPut("lessons", home.lesson).catch(() => {});
+  });
+  return touched.has(homes[0]) && live;
+}
+
 function saveCurrentLesson() {
   clearTimeout(autoSaveDebounceTimer);
   autoSaveDebounceTimer = null;
   if (!currentLessonId || tabPaused) return Promise.resolve();
   if (isVirtualLesson()) return saveVirtualLesson();
+  if (dedupeLibrary()) afterDedupe();
   const data = serializeCurrentLesson();
   upsertLibrary(data);
   updateLessonListItem(data);
@@ -11527,6 +11695,14 @@ function saveCurrentLesson() {
   return dbPut("lessons", data).catch(() => {
     setFileNote(dbAvailable ? "⚠️ Couldn't save in the browser — click Save to keep a file copy" : "⚠️ Browser storage is off here — click Save to keep your work");
   });
+}
+
+// The open lesson lost cards or words to the one-of-each rule: what shows is drawn again.
+function afterDedupe() {
+  if (hoveredRowId !== null && !rows.some(r => r.id === hoveredRowId)) hoveredRowId = null;
+  if (selectedRowId !== null && !rows.some(r => r.id === selectedRowId)) selectedRowId = null;
+  if (currentView === "vocab") renderVocab(); else if (currentView === "study") render();
+  renderLessonList();
 }
 
 function flushAutoSave() {
@@ -14925,6 +15101,7 @@ async function initApp() {
     dbDelete("lessons", l.id);
     forgetLesson(l.id);
   });
+  dedupeLibrary();
   reviewLog = (await dbGetAll("reviews")).filter(e => e && isFinite(e.ts)).sort((a, b) => a.ts - b.ts);
   renderStreakChip();
   await openDefaultLesson();
@@ -16274,8 +16451,15 @@ function deleteVocabEntry(item, part) {
 // cards and words added in Vocabulary go) becomes a card of the lesson again, its question the word, its answer the
 // meaning and its notes the word's own notes, and leaves Vocabulary. It starts New in Lessons and stays there.
 // (sorted: a one-sided word given a same-language meaning, moved on its own and sorted like any other card.)
+// Any word can go to Lessons, one kept in the lesson's own word list or one filed under a card's notes (it then
+// leaves those notes): it becomes a card of its own lesson. In All vocabularies the word's lesson is not open, so
+// there it says to open the lesson first.
 function canMoveToLesson(item) {
-  return !!item && !!item.card && item.card.uid === EXTRA_UID && !isVirtualLesson() && currentLessonId !== VOCAB_ALL_ID;
+  return !!item && !!item.card && !isVirtualLesson() && currentLessonId !== VOCAB_ALL_ID;
+}
+
+function cantMoveToLesson(item) {
+  if (item && !canMoveToLesson(item) && currentLessonId === VOCAB_ALL_ID) showToast("Open the word's own lesson to move it to Lessons");
 }
 
 function moveVocabToLesson(item, sorted) {
@@ -16300,6 +16484,11 @@ function moveVocabToLesson(item, sorted) {
   extras.notes = next.notes;
   extras.notesHtml = next.notesHtml;
   if (extras.vocab) delete extras.vocab[item.key];
+  // The card it became is the one of its kind: the same question or word anywhere else goes.
+  dedupeLibrary({
+    card: row,
+    key: null
+  });
   if (vocabSession) {
     if (vocabSession.queue[0] === item.key) vocabSession.flipped = false;
     dropVocabSessionKey(item.key);
@@ -16308,7 +16497,7 @@ function moveVocabToLesson(item, sorted) {
   if (vocabHoveredKey === item.key) vocabHoveredKey = null;
   const part = vocabView === "list" ? document.querySelector(`#vocabList .vocab-list-row[data-key="${CSS.escape(item.key)}"]`) : null;
   scheduleAutoSave();
-  swipe(part ? [ part ] : [ document.getElementById("vocabCard") ].filter(Boolean), 1, () => {
+  swipe(part ? Array.from(part.children) : [ document.getElementById("vocabCard") ].filter(Boolean), 1, () => {
     render();
     renderVocab();
     renderLessonList();
@@ -16614,7 +16803,7 @@ function handleVocabKey(e) {
   if (e.code === "KeyW" && !e.shiftKey) {
     const pickedKey = vocabPickedKey();
     const item = pickedKey ? lessonVocabItems(vocabSource()).find(i => i.key === pickedKey) : vocabView === "card" ? currentVocabItem() : null;
-    if (!canMoveToLesson(item)) return;
+    if (!canMoveToLesson(item)) return cantMoveToLesson(item);
     e.preventDefault();
     moveVocabToLesson(item);
     return;
