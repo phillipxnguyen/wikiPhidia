@@ -96,6 +96,7 @@ textarea[hidden], .sent-view[hidden]{display:none;}
 .ghost:hover{background:var(--bg-2);color:var(--ink);filter:none;}
 .tip{position:fixed;max-width:280px;padding:8px 12px;border-radius:8px;background:#1d2330;color:#fff;font-size:13px;line-height:18px;box-shadow:0 6px 18px rgba(0,0,0,.25);pointer-events:none;}
 .tip b{font-weight:700;}
+.tip .tip-r{margin-top:2px;color:#cfd6e2;}
 .tip .tip-m{margin-top:4px;}
 .tip small{display:block;margin-top:6px;color:#aab3c2;font-size:12px;line-height:16px;font-style:italic;}
 .yt{position:fixed;left:16px;bottom:16px;display:flex;align-items:center;gap:8px;height:40px;padding:0 16px 0 6px;border:0;border-radius:20px;background:var(--green);color:#fff;font:700 14px/20px Inter, system-ui, sans-serif;box-shadow:0 6px 18px rgba(0,0,0,.3);cursor:pointer;}
@@ -249,8 +250,9 @@ textarea[hidden], .sent-view[hidden]{display:none;}
       tip.className = "tip";
       wrap.appendChild(tip);
     }
-    const reading = langOf(k.term) === "zh" && window.pinyinPro ? pinyinPro.pinyin(k.term) : "";
-    tip.innerHTML = `<b>${esc(k.term)}</b>${reading ? " · " + esc(reading) : ""}<div class="tip-m">${esc(k.meaning || "—")}</div>${k.lesson ? `<small>${esc(k.lesson)}</small>` : ""}`;
+    const reading = langOf(k.term) === "zh" && window.pinyinPro ? pinyinPro.pinyin(k.term).replace(/\s+([，。？！、；：,.?!;:])/g, "$1") : "";
+    // The same box as the app's: the word, its pinyin on a line of its own, the meaning when it has one, the lesson.
+    tip.innerHTML = `<b>${esc(k.term)}</b>${reading ? `<div class="tip-r">${esc(reading)}</div>` : ""}${k.meaning ? `<div class="tip-m">${esc(k.meaning)}</div>` : ""}${k.lesson ? `<small>${esc(k.lesson)}</small>` : ""}`;
     const r = mark.getBoundingClientRect();
     const w = Math.min(280, tip.offsetWidth);
     tip.style.left = Math.round(Math.max(8, Math.min(innerWidth - w - 8, r.left))) + "px";

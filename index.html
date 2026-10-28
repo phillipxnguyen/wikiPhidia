@@ -903,6 +903,7 @@ window.onYouTubeIframeAPIReady = function(){
     display:none;
   }
   .hover-tooltip.lookup-tip{max-width:280px;padding:8px 12px;font-size:13px;line-height:18px;white-space:normal;}
+  .hover-tooltip.lookup-tip .tip-r{margin-top:2px;color:#cfd6e2;}
   .hover-tooltip.lookup-tip .tip-m{margin-top:4px;}
   .hover-tooltip.lookup-tip small{display:block;margin-top:6px;font-size:12px;line-height:16px;font-style:italic;color:var(--popup-muted);}
   .hover-tooltip.on-popup{z-index:10001;background:var(--popup-text);color:var(--popup-bg);}
@@ -6578,7 +6579,10 @@ function showLookupTip(anchor, term, meaning, lesson) {
   const tip = getTooltipEl();
   showTooltip(anchor, term);
   tip.classList.add("lookup-tip");
-  tip.innerHTML = `<b>${escapeHtml(term)}</b><div class="tip-m">${escapeHtml(meaning || "—")}</div>${lesson ? `<small>${escapeHtml(lesson)}</small>` : ""}`;
+  const reading = /[\p{Script=Han}]/u.test(term) && !/[\p{Script=Hiragana}\p{Script=Katakana}]/u.test(term) && typeof pinyinPro !== "undefined" ? pinyinPro.pinyin(term).replace(/\s+([，。？！、；：,.?!;:])/g, "$1") : "";
+  // The same box as the browser extension's: the word, its pinyin on a line of its own, the meaning when it has one,
+  // the lesson it is in.
+  tip.innerHTML = `<b>${escapeHtml(term)}</b>${reading ? `<div class="tip-r">${escapeHtml(reading)}</div>` : ""}${meaning ? `<div class="tip-m">${escapeHtml(meaning)}</div>` : ""}${lesson ? `<small>${escapeHtml(lesson)}</small>` : ""}`;
 }
 
 function hideTooltip() {
