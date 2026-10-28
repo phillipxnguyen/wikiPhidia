@@ -844,6 +844,9 @@ window.onYouTubeIframeAPIReady = function(){
     overflow-wrap:break-word;
   }
   .cell.hidden{color:var(--text);font-style:italic;}
+  /* A card's notes are clicked like its question and answer (a click on them opens the editor), so they show the same
+     hand, in ☰ Full, the study modes and the Speaking paper alike. */
+  :is(#tbody, #singleCardBody) :is(.card-notes, .paper-notes){cursor:pointer;}
   @media (hover:hover){.cell.hidden:hover{color:var(--accent);}.ielts-paper .cell.hidden:hover{color:inherit;}}
   .cell.shown{color:var(--text);}
   #cardTable .cell{display:inline-block;max-width:calc(100% - 24px);margin:8px 12px;padding:4px 8px;border-radius:8px;vertical-align:middle;}
@@ -7511,7 +7514,7 @@ function clickOnContent(e, scope) {
   const range = document.createRange();
   const walker = document.createTreeWalker(scope, NodeFilter.SHOW_TEXT);
   for (let n = walker.nextNode(); n; n = walker.nextNode()) {
-    if (!n.nodeValue.trim() || n.parentElement.closest(".loop-time, .lp-reserve, .cell.hidden, rt")) continue;
+    if (!n.nodeValue.trim() || n.parentElement.closest(".loop-time, .lp-reserve, .cell.hidden, rt, .paper-head")) continue;
     range.selectNodeContents(n);
     for (const r of range.getClientRects()) if (x >= r.left - 2 && x <= r.right + 2 && y >= r.top - 4 && y <= r.bottom + 4) return true;
   }
@@ -13221,6 +13224,11 @@ document.getElementById("limitsTitle").onclick = () => {
   applyStudyLimits();
   closeLimitsPop();
 };
+
+// 🔥 opens the limits only where you study; elsewhere a click does nothing, so it shows no hand there either.
+document.getElementById("streakChip").addEventListener("pointerenter", e => {
+  e.currentTarget.style.cursor = limitsApply() ? "" : "default";
+});
 
 document.getElementById("streakChip").onclick = () => {
   const pop = document.getElementById("limitsPop");
