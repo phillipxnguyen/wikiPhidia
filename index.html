@@ -2052,6 +2052,7 @@ window.onYouTubeIframeAPIReady = function(){
       <button id="fullModeBtn" aria-label="Full">☰</button>
       <button id="listenModeBtn" style="display:none;" aria-label="Listening">🎧</button>
       <button id="ieltsModeBtn" style="display:none;" aria-label="Speaking">🗒️</button>
+      <button id="oneSideModeBtn" style="display:none;" aria-label="Speaking, one side" title="Speaking, one side: each card comes up already shown, you only grade it">📄</button>
     </div>
     <span class="flag-set toolbar-flag" aria-hidden="true" hidden></span>
     <div class="toolbar-right">
@@ -4845,8 +4846,30 @@ function badgesHtml(newN, dueN, doneN, active) {
   return '<div class="progress-badges">' + '<span class="progress-badge new' + (active.new ? " active" : "") + '" title="New — never studied yet"><i>🆕</i><b>' + newN + "</b></span>" + '<span class="progress-badge due' + (active.due ? " active" : "") + '" title="Due — ready to review now"><i>⏳</i><b>' + dueN + "</b></span>" + '<span class="progress-badge done' + (active.done ? " active" : "") + '" title="Done — ' + DONE_STREAK + ' Good in a row"><i>✅</i><b>' + doneN + "</b></span>" + "</div>";
 }
 
+// Speaking, one side: the Speaking paper with each card already shown, like a one-sided flashcard, graded as usual.
+// Cards of a video lesson (a sentence with nothing to show behind it) keep their Listening schedule there, so it is
+// another way to study the same cards; a text lesson's share Speaking's.
+let speakOneSide = (() => {
+  try {
+    return localStorage.getItem("flashcards.speakOneSide") === "1";
+  } catch (e) {
+    return false;
+  }
+})();
+
+function oneSideOn() {
+  return !!groupState && groupViewStyle === "ielts" && speakOneSide && !isAllLessons();
+}
+
+function setSpeakOneSide(on) {
+  speakOneSide = on;
+  try {
+    localStorage.setItem("flashcards.speakOneSide", on ? "1" : "0");
+  } catch (e) {}
+}
+
 function modeKey() {
-  return groupViewStyle === "listen" ? "Listen" : "Table";
+  return groupViewStyle === "listen" || groupViewStyle === "ielts" && speakOneSide && !isAllLessons() && deckHasVideoCards() && !deckHasAnswers() ? "Listen" : "Table";
 }
 
 const LIMITS_KEY = "flashcards.limits";
@@ -5079,6 +5102,10 @@ const ENTRY_HIDDEN = {
 };
 
 function entryHidden() {
+  if (groupViewStyle === "ielts" && speakOneSide && !isAllLessons()) return {
+    q: false,
+    a: false
+  };
   return ENTRY_HIDDEN[groupViewStyle === "ielts" ? "Ielts" : modeKey()];
 }
 
@@ -5821,7 +5848,7 @@ function renderStudy() {
     setReviewMode("full");
     return;
   }
-  if (groupState && !isAllLessons() && (groupViewStyle === "ielts") === isVideoLesson()) {
+  if (groupState && !isAllLessons() && (groupViewStyle === "ielts" ? isVideoLesson() && !speakOneSide : !isVideoLesson())) {
     setReviewMode(isVideoLesson() ? "listen" : "ielts");
     return;
   }
@@ -8913,6 +8940,7 @@ function syncModeButtonHighlights() {
   const fullBtn = document.getElementById("fullModeBtn");
   const listenBtn = document.getElementById("listenModeBtn");
   const ieltsBtn = document.getElementById("ieltsModeBtn");
+  const oneBtn = document.getElementById("oneSideModeBtn");
   if (!fullBtn || !listenBtn || !ieltsBtn) return;
   const caughtUp = lessonCaughtUp();
   const video = isVideoLesson();
@@ -8922,7 +8950,9 @@ function syncModeButtonHighlights() {
   document.querySelector("#viewStudy .toolbar-flag").hidden = !isAllLessons();
   fullBtn.classList.toggle("active", !groupState);
   listenBtn.classList.toggle("active", !!groupState && groupViewStyle === "listen");
-  ieltsBtn.classList.toggle("active", !!groupState && groupViewStyle === "ielts");
+  ieltsBtn.classList.toggle("active", !!groupState && groupViewStyle === "ielts" && !speakOneSide);
+  oneBtn.style.display = (deckHasVideoCards() || deckHasAnswers()) && !isVirtualLesson() && !caughtUp ? "" : "none";
+  oneBtn.classList.toggle("active", oneSideOn());
 }
 
 function updateGroupUI() {
@@ -9222,7 +9252,26 @@ document.getElementById("btnPlaySequence").addEventListener("click", () => setTi
 
 document.getElementById("listenModeBtn").onclick = () => goToReviewMode("listen");
 
-document.getElementById("ieltsModeBtn").onclick = () => goToReviewMode("ielts");
+document.getElementById("ieltsModeBtn").onclick = () => {
+  if (groupState && groupViewStyle === "ielts" && speakOneSide) {
+    setSpeakOneSide(false);
+    setReviewMode("ielts");
+    return pinStudyArea();
+  }
+  setSpeakOneSide(false);
+  goToReviewMode("ielts");
+};
+
+document.getElementById("oneSideModeBtn").onclick = () => {
+  if (oneSideOn()) return;
+  const switching = !!groupState && groupViewStyle === "ielts";
+  setSpeakOneSide(true);
+  if (switching) {
+    setReviewMode("ielts");
+    return pinStudyArea();
+  }
+  goToReviewMode("ielts");
+};
 
 function ensureGroupSlot(state, i) {
   while (state.groups.length <= i) state.groups.push([]);
@@ -17026,7 +17075,7 @@ function isTypingInField() {
 }
 
 function cycleMode() {
-  const buttons = currentView === "vocab" ? [ ...document.querySelectorAll("#vocabToolbar [data-view]") ].filter(b => !b.hidden) : [ "fullModeBtn", "listenModeBtn", "ieltsModeBtn" ].map(id => document.getElementById(id)).filter(b => b.style.display !== "none");
+  const buttons = currentView === "vocab" ? [ ...document.querySelectorAll("#vocabToolbar [data-view]") ].filter(b => !b.hidden) : [ "fullModeBtn", "listenModeBtn", "ieltsModeBtn", "oneSideModeBtn" ].map(id => document.getElementById(id)).filter(b => b.style.display !== "none");
   if (buttons.length < 2) return false;
   const at = buttons.findIndex(b => b.classList.contains("active"));
   buttons[(at + 1) % buttons.length].click();
