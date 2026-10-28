@@ -744,9 +744,10 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-toolbar.study-only .segmented .sep-before::before{display:none;}
   .segmented .sep-before::before{content:"";position:absolute;left:-5px;top:6px;bottom:6px;width:1px;background:color-mix(in srgb, var(--accent) 30%, transparent);}
   .segmented .sp-vocab{font-weight:700;color:#1e9466;}
+  .segmented .sp-vocab.to-lesson{color:var(--lesson-color);}
   .segmented{display:inline-flex;gap:2px;padding:4px;background:color-mix(in srgb, var(--accent) 12%, var(--bg));border-radius:10px;}
   .segmented button{border:none;background:transparent;min-width:38px;padding:5px 10px;border-radius:8px;color:var(--text-2);font-weight:600;font-size:16px;line-height:1.2;}
-  @media (hover:hover){.segmented button:hover{background:color-mix(in srgb, var(--accent) 10%, var(--surface));color:var(--text);}.segmented button.sp-vocab:hover{background:transparent;color:#1e9466;}}
+  @media (hover:hover){.segmented button:hover{background:color-mix(in srgb, var(--accent) 10%, var(--surface));color:var(--text);}.segmented button.sp-vocab:hover{background:transparent;color:#1e9466;}.segmented button.sp-vocab.to-lesson:hover{color:var(--lesson-color);}}
   .segmented button.active{background:var(--surface);color:var(--text);box-shadow:var(--shadow-sm);}
   #btnPlaySequence{visibility:hidden;width:48px;}
   #btnPlaySequence, #vocabSpeak{position:relative;transition:background-color .4s ease, border-color .4s ease, color .4s ease;}
@@ -1529,6 +1530,7 @@ window.onYouTubeIframeAPIReady = function(){
   .swipe-ghost.again.mark, .swipe-ghost.delete, .touch-bar .tb-again.tb-mark{-webkit-text-stroke:.04em currentColor;}
   .swipe-ghost.delete{color:var(--text);border-color:currentColor;}
   .swipe-ghost.to-vocab{color:#1e9466;border-color:currentColor;}
+  .swipe-ghost.to-lesson{color:var(--lesson-color);border-color:currentColor;}
 
   .session-complete{
     display:none;
@@ -4339,8 +4341,9 @@ function isLoneQuestion(row) {
   return row.time == null && !!(row.q || "").trim() && !(row.a || "").trim() && !(row.notes || "").trim();
 }
 
+// A card brought back from Vocabulary (kept) stays in Lessons: it is never offered to Vocabulary again.
 function belongsInVocab(row) {
-  return row.time == null && (isTranslationCard(row) || isLoneQuestion(row));
+  return row.time == null && !row.kept && (isTranslationCard(row) || isLoneQuestion(row));
 }
 
 function isTranslationDeck(cards) {
@@ -7365,7 +7368,11 @@ function updateSelBar() {
   document.documentElement.classList.toggle("sel-on", !!target);
   if (!target) return fitDeck();
   bar.style.setProperty("--tb-h", touchBar.offsetHeight + "px");
-  document.getElementById("selVocab").hidden = !target.row || target.rows.length !== 1 || cardInVideoLesson(target.row);
+  const back = !!target.item && canMoveToLesson(target.item);
+  const vocabBtn = document.getElementById("selVocab");
+  vocabBtn.hidden = back ? false : !target.row || target.rows.length !== 1 || cardInVideoLesson(target.row);
+  vocabBtn.classList.toggle("to-lesson", back);
+  vocabBtn.setAttribute("aria-label", back ? "Move back to Lessons" : "Move to Vocabulary");
   document.documentElement.style.setProperty("--sel-h", Math.round(window.innerHeight - bar.querySelector(".segmented").getBoundingClientRect().top) + "px");
   fitDeck();
 }
@@ -7385,6 +7392,7 @@ document.getElementById("selDelete").onclick = e => {
 document.getElementById("selVocab").onclick = e => {
   e.currentTarget.blur();
   const target = selectionTarget();
+  if (target && target.item) return moveVocabToLesson(target.item);
   if (!target || !target.row) return;
   clearRowSelection();
   moveCardToVocab(target.row);
@@ -9373,12 +9381,12 @@ function swipe(parts, dir, update, next, label = dir > 0 ? "Good" : "Again") {
   if (dictUnderSwipe(parts)) hideDictOverlay();
   if (ghost) {
     ghost.classList.remove("good", "again", "waiting");
-    ghost.classList.add(label === "Delete" ? "delete" : label === "Vocab" ? "to-vocab" : label === "Waiting" ? "waiting" : dir > 0 ? "good" : "again");
-    ghost.textContent = label === "Delete" ? "✕" : label === "Vocab" ? "字" : label === "Waiting" ? "⏳ Waiting" : gradeMark(dir < 0);
+    ghost.classList.add(label === "Delete" ? "delete" : label === "Vocab" ? "to-vocab" : label === "Lesson" ? "to-lesson" : label === "Waiting" ? "waiting" : dir > 0 ? "good" : "again");
+    ghost.textContent = label === "Delete" ? "✕" : label === "Vocab" || label === "Lesson" ? "字" : label === "Waiting" ? "⏳ Waiting" : gradeMark(dir < 0);
     ghost.animate([ {
       transform: from
     }, {
-      transform: `translate(${dir * 110}vw, ${label === "Delete" || label === "Vocab" || label === "Waiting" ? -25 : 25}vh) rotate(${dir * 24}deg)`
+      transform: `translate(${dir * 110}vw, ${label === "Delete" || label === "Vocab" || label === "Lesson" || label === "Waiting" ? -25 : 25}vh) rotate(${dir * 24}deg)`
     } ], {
       duration: 750,
       easing: "ease-in-out",
@@ -10929,7 +10937,8 @@ function normalizeCard(c) {
     time: time,
     srs: mergeModeSrs(c.srs ? normalizeSrs(c.srs) : migrateLegacySrs(c)),
     vocab: normalizeVocabSrs(c.vocab),
-    merged: !!c.merged
+    merged: !!c.merged,
+    kept: !!c.kept
   };
 }
 
@@ -11095,7 +11104,8 @@ function serializeCard(r) {
     time: r.time,
     srs: r.srs,
     vocab: vocabForSave(r),
-    merged: !!r.merged
+    merged: !!r.merged,
+    kept: !!r.kept
   };
 }
 
@@ -15769,6 +15779,51 @@ function deleteVocabEntry(item, part) {
   }, false, "Delete");
 }
 
+// The way back for a card moved to Vocabulary by mistake: a word kept in the lesson's own word list (where moved
+// cards and words added in Vocabulary go) becomes a card of the lesson again, its question the word, its answer the
+// meaning and its notes the word's own notes, and leaves Vocabulary. It starts New in Lessons and stays there.
+function canMoveToLesson(item) {
+  return !!item && !!item.card && item.card.uid === EXTRA_UID && !isVirtualLesson() && currentLessonId !== VOCAB_ALL_ID;
+}
+
+function moveVocabToLesson(item) {
+  if (!canMoveToLesson(item)) return;
+  commitVocabEdit();
+  const extras = item.card;
+  const next = rewrittenVocabNotes(extras, item, null, null);
+  if (!next) {
+    showToast("Couldn't find this card in the notes");
+    return;
+  }
+  stopVocabSound();
+  pushUndo("Moved to Lessons — " + item.term);
+  const row = newRow(item.term, item.meaning || "", null);
+  const notes = sanitizeHtml(wordNotesOf(item) || "");
+  if (plainTextOf(notes, "\n").trim()) {
+    row.notesHtml = notes;
+    row.notes = plainTextOf(notes, "\n");
+  }
+  row.kept = true;
+  rows.push(row);
+  extras.notes = next.notes;
+  extras.notesHtml = next.notesHtml;
+  if (extras.vocab) delete extras.vocab[item.key];
+  if (vocabSession) {
+    if (vocabSession.queue[0] === item.key) vocabSession.flipped = false;
+    dropVocabSessionKey(item.key);
+  }
+  if (vocabEditingKey === item.key) vocabEditingKey = null;
+  if (vocabHoveredKey === item.key) vocabHoveredKey = null;
+  const part = vocabView === "list" ? document.querySelector(`#vocabList .vocab-list-row[data-key="${CSS.escape(item.key)}"]`) : null;
+  scheduleAutoSave();
+  swipe(part ? [ part ] : [ document.getElementById("vocabCard") ].filter(Boolean), 1, () => {
+    render();
+    renderVocab();
+    renderLessonList();
+  }, false, "Lesson");
+  showToast("Moved back to Lessons");
+}
+
 function syncVocabSound() {
   const btn = document.getElementById("vocabSpeak");
   const speed = document.getElementById("vocabSpeed");
@@ -16062,6 +16117,14 @@ function handleVocabKey(e) {
   if (e.code === "Backspace" || e.code === "Delete") {
     e.preventDefault();
     deleteByKey(vocabDeleteAction);
+    return;
+  }
+  if (e.code === "KeyW" && !e.shiftKey) {
+    const pickedKey = vocabPickedKey();
+    const item = pickedKey ? lessonVocabItems(vocabSource()).find(i => i.key === pickedKey) : vocabView === "card" ? currentVocabItem() : null;
+    if (!canMoveToLesson(item)) return;
+    e.preventDefault();
+    moveVocabToLesson(item);
     return;
   }
   if (vocabView === "list") {
