@@ -5493,7 +5493,7 @@ function cardNotesHtml(row) {
 
 function blockNotesHtml(html) {
   const box = document.createElement("div");
-  box.innerHTML = html;
+  box.innerHTML = brLines(html);
   const BLOCK = /^(UL|OL|DIV|P|LI|H[1-6]|BLOCKQUOTE|TABLE)$/;
   const made = [];
   // Each line of the notes is a block of its own, as typing makes them, also when they are bare text split by line
@@ -5541,7 +5541,44 @@ function guessing(r) {
 }
 
 function cellHtml(html, r) {
+  html = brLines(html);
   return guessing(r) ? html : lookupHtml(html, r);
+}
+
+// The editors keep text as typed (white-space: pre-wrap), so a line break made with Shift+Return can be a plain
+// newline in the text rather than a <br>. Wherever such text is saved or shown, each of those newlines becomes a
+// <br>, so a card looks outside its editor exactly as it does inside: the newlines that only sit between blocks
+// (between list items, or between two lines) are layout, not breaks, and are left alone.
+const BLOCK_TAG_RE = /^(UL|OL|LI|DIV|P|H[1-6]|BLOCKQUOTE|TABLE|TBODY|THEAD|TR|TD|TH)$/;
+
+function brLines(html) {
+  if (!html || !html.includes("\n")) return html;
+  const box = document.createElement("div");
+  box.innerHTML = html;
+  const walker = document.createTreeWalker(box, NodeFilter.SHOW_TEXT);
+  const found = [];
+  while (walker.nextNode()) if (walker.currentNode.nodeValue.includes("\n")) found.push(walker.currentNode);
+  const isBlock = n => !n || n.nodeType === 1 && BLOCK_TAG_RE.test(n.tagName);
+  found.forEach(t => {
+    const parent = t.parentNode;
+    if (/^(UL|OL|TABLE|TBODY|THEAD|TR)$/.test(parent.nodeName)) return;
+    if (!t.nodeValue.trim() && isBlock(t.previousSibling) && isBlock(t.nextSibling)) return;
+    const parts = t.nodeValue.split("\n");
+    // A newline closing the text of a line (at the end of its block) only ends that line.
+    if (parts.length > 1 && parts[parts.length - 1] === "" && isBlock(t.nextSibling)) parts.pop();
+    const frag = document.createDocumentFragment();
+    parts.forEach((part, i) => {
+      if (i) frag.appendChild(document.createElement("br"));
+      if (part) frag.appendChild(document.createTextNode(part));
+    });
+    parent.replaceChild(frag, t);
+  });
+  return box.innerHTML;
+}
+
+// What an editor holds, with its typed line breaks made into <br>.
+function editorHtml(el) {
+  return brLines(el.innerHTML || "");
 }
 
 function buildRowTr(r) {
@@ -8186,17 +8223,18 @@ function notesEditorHtml(row) {
 // up in another tab): nothing in the boxes is touched, the card simply holds what they hold.
 function commitActiveEdit(keep) {
   if (!activeEdit) return;
-  let newQHtml = cleanPunctHtml(sanitizeHtml(stripVocabHighlights(activeEdit.editQ.innerHTML || ""), "br"));
+  let newQHtml = cleanPunctHtml(sanitizeHtml(stripVocabHighlights(editorHtml(activeEdit.editQ)), "br"));
   let newQ = cleanPunct(plainTextOf(newQHtml, "\n"));
-  let newAHtml = cleanPunctHtml(sanitizeHtml(stripVocabHighlights(activeEdit.editA.innerHTML || ""), "br"));
+  let newAHtml = cleanPunctHtml(sanitizeHtml(stripVocabHighlights(editorHtml(activeEdit.editA)), "br"));
   let newA = cleanPunct(plainTextOf(newAHtml, "\n"));
   const takenKeys = new Set;
   if (!keep) activeEdit.editNotes.querySelectorAll("li").forEach(li => {
     if (isVocabItem(li)) takenKeys.add(normalizeVocabText(noteItemTerm(li))); else if (NOTE_VOCAB_ITEM_RE.test(ownLiTextNodes(li).map(n => n.nodeValue).join("")) && !noteItemIsDuplicate(li, takenKeys)) boldVocabItem(li);
   });
   if (!keep && activeEdit.editNotes.textContent.trim() && !activeEdit.editNotes.querySelector("*")) activeEdit.editNotes.innerHTML = "<div>" + activeEdit.editNotes.innerHTML + "</div>";
-  const newNotes = plainTextOf(activeEdit.editNotes.innerHTML, "\n");
-  const newNotesHtml = plainTextOf(activeEdit.editNotes.innerHTML || "", "\n").trim() ? sanitizeHtml(activeEdit.editNotes.innerHTML || "") : "";
+  const notesNow = editorHtml(activeEdit.editNotes);
+  const newNotes = plainTextOf(notesNow, "\n");
+  const newNotesHtml = plainTextOf(notesNow, "\n").trim() ? sanitizeHtml(notesNow) : "";
   if ((newQ !== activeEdit.originalQ || newA !== activeEdit.originalA) && findDuplicateCard(newQ, newA, activeEdit.row.time, activeEdit.row)) {
     if (keep) return;
     showToast("Card already in this lesson");
@@ -8446,7 +8484,7 @@ function saveQuickAdd() {
   const q = document.getElementById("qaQ"), a = document.getElementById("qaA"), notes = document.getElementById("qaNotes");
   if (!q.value.trim() || !currentLessonId || isVirtualLesson()) return q.focus();
   if (appMode === "vocab") {
-    if (!saveVocabEditor(null, q.value, a.value, notes.innerHTML, true)) return q.focus();
+    if (!saveVocabEditor(null, q.value, a.value, editorHtml(notes), true)) return q.focus();
     recordImport(1, "word");
     renderVocab();
   } else {
@@ -8461,7 +8499,7 @@ function saveQuickAdd() {
       return document.getElementById("qaTime").focus();
     }
     const row = newRow(q.value, listen ? "" : a.value, time);
-    const html = sanitizeHtml(notes.innerHTML || "");
+    const html = sanitizeHtml(editorHtml(notes));
     if (plainTextOf(html, "\n").trim()) {
       row.notesHtml = html;
       row.notes = plainTextOf(html, "\n");
@@ -8866,11 +8904,11 @@ function wireEditBox(host, row) {
     updateEditDict: updateEditDict
   };
   activeEdit.originalQ = plainTextOf(editQ.innerHTML, "\n");
-  activeEdit.originalQHtml = sanitizeHtml(stripVocabHighlights(editQ.innerHTML || ""), "br");
+  activeEdit.originalQHtml = sanitizeHtml(stripVocabHighlights(editorHtml(editQ)), "br");
   activeEdit.originalA = plainTextOf(editA.innerHTML, "\n");
-  activeEdit.originalAHtml = sanitizeHtml(stripVocabHighlights(editA.innerHTML || ""), "br");
-  activeEdit.originalNotes = plainTextOf(editNotes.innerHTML, "\n");
-  activeEdit.originalNotesHtml = sanitizeHtml(editNotes.innerHTML || "");
+  activeEdit.originalAHtml = sanitizeHtml(stripVocabHighlights(editorHtml(editA)), "br");
+  activeEdit.originalNotes = plainTextOf(editorHtml(editNotes), "\n");
+  activeEdit.originalNotesHtml = sanitizeHtml(editorHtml(editNotes));
   loopWorkRow(row);
   host.querySelector("#editSave").onclick = () => {
     commitActiveEdit();
@@ -15390,12 +15428,12 @@ function vocabBackInner(item) {
   const {card: card, sentence: sentence, notes: rest} = vocabContext(item);
   if (vocabViewOnly(item)) {
     const notes = wordNotesOf(item);
-    return `<div class="vocab-ctx">${lookupOthers(escapeHtml(item.term), item)}</div>` + (notes ? `<div class="vocab-word-notes">${notes}</div>` : "");
+    return `<div class="vocab-ctx">${lookupOthers(escapeHtml(item.term), item)}</div>` + (notes ? `<div class="vocab-word-notes">${brLines(notes)}</div>` : "");
   }
   const inSentence = sentence && !!findTermIn(sentence.normalize("NFC"), item.term);
   const main = inSentence ? `<div class="vocab-ctx">${lookupOthers(vocabSentenceHtml(sentence, item.term, card), item)}</div>` : `<div class="vocab-ctx"><mark>${vocabSentenceHtml(item.term, "", card)}</mark></div>` + (sentence ? `<div class="vocab-ctx small">${lookupOthers(vocabSentenceHtml(sentence, "", card), item)}</div>` : "");
   const notes = rest ?? wordNotesOf(item);
-  return main + `<div class="vocab-meaning">${escapeHtml(item.meaning)}</div>` + (notes ? `<div class="vocab-word-notes">${notes}</div>` : "");
+  return main + `<div class="vocab-meaning">${escapeHtml(item.meaning)}</div>` + (notes ? `<div class="vocab-word-notes">${brLines(notes)}</div>` : "");
 }
 
 function buildVocabCard(item) {
@@ -15782,7 +15820,7 @@ function wireVocabEditor(items) {
     const key = vocabEditingKey;
     vocabEditingKey = null;
     const now = lessonVocabItems(vocabSource()).find(i => i.key === key) || item;
-    if (!saveVocabEditor(now, term.value, meaning.value, notes.innerHTML, true)) {
+    if (!saveVocabEditor(now, term.value, meaning.value, editorHtml(notes), true)) {
       vocabEditingKey = key;
       return;
     }
@@ -15890,7 +15928,7 @@ function commitVocabEdit() {
   const item = lessonVocabItems(vocabSource()).find(i => i.key === vocabEditingKey);
   const isNew = vocabEditingKey === NEW_WORD_KEY;
   vocabEditingKey = null;
-  if (term && meaning && (isNew || item)) saveVocabEditor(isNew ? null : item, term.value, meaning.value, notes ? notes.innerHTML : "", false);
+  if (term && meaning && (isNew || item)) saveVocabEditor(isNew ? null : item, term.value, meaning.value, notes ? editorHtml(notes) : "", false);
   return true;
 }
 
@@ -15960,7 +15998,7 @@ function keepVocabEdit() {
   const blank = !item.meaning || vocabKeptBlank === item.key;
   // Saving takes an undo step, which would close the editor first (as any undo step does): it is set aside meanwhile.
   vocabEditingKey = null;
-  const saved = saveVocabEditor(item, term.value, meaning.value, notes ? notes.innerHTML : "", false, true);
+  const saved = saveVocabEditor(item, term.value, meaning.value, notes ? editorHtml(notes) : "", false, true);
   vocabEditingKey = saved ? key : item.key;
   if (saved) {
     vocabKeptBlank = blank ? key : null;
