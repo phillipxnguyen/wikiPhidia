@@ -615,6 +615,16 @@ window.onYouTubeIframeAPIReady = function(){
   .save-status:empty{display:none;}
   .save-status{font-size:12px;color:var(--text-2);min-height:18px;margin:-8px 0 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .lesson-meta{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px;}
+  .link-list{flex-basis:100%;min-width:0;display:flex;flex-direction:column;gap:6px;}
+  .link-list[hidden]{display:none;}
+  .link-item{display:flex;align-items:center;gap:4px;min-width:0;height:36px;box-sizing:border-box;padding:0 4px 0 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);}
+  .link-item a{flex:1;min-width:0;display:flex;align-items:center;gap:8px;overflow:hidden;color:var(--text);text-decoration:none;font-size:14px;line-height:20px;white-space:nowrap;}
+  .link-item a svg{flex:none;width:16px;height:16px;fill:none;stroke:var(--accent);stroke-width:1.6;stroke-linecap:round;}
+  .link-item a b{flex:none;max-width:60%;overflow:hidden;text-overflow:ellipsis;font-weight:600;}
+  .link-item a span{min-width:0;overflow:hidden;text-overflow:ellipsis;color:var(--text-2);}
+  @media (hover:hover){.link-item a:hover span, .link-item a:hover b{color:var(--accent);}}
+  .link-x{flex:none;width:28px;height:28px;padding:0;border:0;border-radius:14px;background:none;color:var(--text-2);font-size:13px;line-height:20px;}
+  @media (hover:hover){.link-x:hover{background:var(--danger-soft);color:var(--danger);}}
   .link-bar{display:flex;gap:8px;flex:1;min-width:260px;}
   .link-field{position:relative;display:flex;flex:1;min-width:0;}
   .link-field input{flex:1;min-width:0;padding-left:44px;}
@@ -1535,7 +1545,7 @@ window.onYouTubeIframeAPIReady = function(){
   .stroke-target:not(.stroke-fallback){cursor:pointer;}
   .stroke-target{width:60px;height:60px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2);}
   .stroke-fallback{display:flex;align-items:center;justify-content:center;font-size:28px;color:var(--text);}
-  #viewStudy.focus-study > .lesson-header, #viewStudy.focus-study > .save-status, #viewStudy.focus-study > .lesson-meta, #viewVocab.focus-study > .vocab-head{display:none;}
+  #viewStudy.focus-study > .lesson-header, #viewStudy.focus-study > .save-status, #viewStudy.focus-study > .lesson-meta, #viewVocab.focus-study > .vocab-head, #viewVocab.focus-study > .lesson-meta{display:none;}
   .swipe-ghost{position:fixed;z-index:1000;box-sizing:border-box;display:flex;justify-content:center;border:4px solid var(--border);border-radius:28px;background:var(--surface);box-shadow:var(--shadow-md);font-size:34px;font-weight:700;pointer-events:none;}
   .swipe-ghost.row{align-items:center;border-radius:var(--radius);font-size:20px;}
   .swipe-ghost.good{color:var(--a-label);border-color:currentColor;}
@@ -1661,7 +1671,7 @@ window.onYouTubeIframeAPIReady = function(){
   .stats-empty{color:var(--text-2);font-size:14px;padding:6px 0;}
   #btnSaveFile.needs-save, #btnBackupAll.needs-save{color:var(--due-color);font-weight:700;background:color-mix(in srgb, var(--due-color) 14%, transparent);}
   .virtual-lesson #btnSaveFile, .virtual-lesson #btnResetLesson, .virtual-lesson #btnDeleteLesson,
-  .virtual-lesson .link-bar{display:none !important;}
+  .virtual-lesson :is(.link-bar, .link-list){display:none !important;}
   .virtual-lesson .lesson-name-input{pointer-events:none;}
 
   .paused-overlay{position:fixed;inset:0;z-index:20000;display:flex;align-items:center;justify-content:center;padding:16px;background:color-mix(in srgb, var(--bg) 82%, transparent);backdrop-filter:blur(4px);}
@@ -2015,12 +2025,13 @@ window.onYouTubeIframeAPIReady = function(){
     <div class="link-bar">
       <div class="link-field">
         <button id="btnPdfFile" class="link-file" type="button" aria-label="Add a PDF to read" title="Add a PDF to read beside this lesson"><svg class="pdf-icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path class="pdf-icon-sheet" d="M7 2h8l5 5v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><path class="pdf-icon-fold" d="M15 2v5h5"/><rect class="pdf-icon-band" x="2" y="11" width="15" height="7" rx="2"/><text x="9.5" y="16.5" text-anchor="middle">PDF</text></svg></button>
-        <input type="text" id="mediaUrl" name="media-url" autocomplete="off" placeholder="Paste a YouTube, TikTok, Douyin or PDF link…" aria-label="Video or PDF link">
+        <input type="text" id="mediaUrl" name="media-url" autocomplete="off" placeholder="Paste a YouTube, TikTok, Douyin, PDF or any link…" aria-label="Video or PDF link">
       </div>
       <button id="btnEmbedMedia" class="primary">Open</button>
       <button id="btnClearMedia">Clear</button>
       <input type="file" id="pdfFileInput" accept="application/pdf,.pdf" hidden>
     </div>
+    <div id="linkList" class="link-list" hidden></div>
     <div id="pdfView" class="pdf-view" hidden><div class="pdf-head"><span class="pdf-name"></span><span class="pdf-at"></span><span class="pdf-sep" aria-hidden="true"></span><span class="pdf-tools"><button id="pdfZoomOut" class="pdf-tool" aria-label="Zoom out" title="Zoom out"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M3 8h10"/></svg></button><span class="pdf-zoom-level"></span><button id="pdfZoomIn" class="pdf-tool" aria-label="Zoom in" title="Zoom in"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M3 8h10M8 3v10"/></svg></button></span><span class="pdf-sep" aria-hidden="true"></span><button id="pdfClose" class="pdf-tool pdf-close" aria-label="Remove the PDF" title="Remove the PDF"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div><div class="pdf-pages"></div></div>
   </div>
 
@@ -2273,6 +2284,7 @@ function takeSnapshot(label, expiresAt) {
     vocabSnapshot: JSON.stringify(vocabSession),
     limits: JSON.stringify(studyLimits),
     limitsExtra: JSON.stringify(limitsExtra),
+    links: JSON.stringify(lessonLinks),
     mix: isAllLessons() ? [ mixFocusId, mixStyle, mixDone ] : null,
     label: label,
     expiresAt: expiresAt
@@ -2367,6 +2379,10 @@ function restoreFrom(fromStack, toStack, verb) {
   if (entry.extrasSnapshot !== undefined) vocabExtras = JSON.parse(entry.extrasSnapshot);
   if (entry.virtualExtras && isAllLessons()) virtualExtras = JSON.parse(entry.virtualExtras);
   if (entry.importHistory != null) importHistory = JSON.parse(entry.importHistory);
+  if (entry.links != null) {
+    lessonLinks = JSON.parse(entry.links);
+    renderLinkList();
+  }
   const snapGroup = entry.groupSnapshot ? JSON.parse(entry.groupSnapshot) : null;
   const liveGroup = groupState || savedGroupState;
   const sessionRestored = !!snapGroup && (!liveGroup || liveGroup.sessionId === snapGroup.sessionId);
@@ -3097,6 +3113,18 @@ document.getElementById("btnEmbedMedia").onclick = () => {
     });
     return;
   }
+  const typed = input.value.trim();
+  if (typed && /^https?:\/\//i.test(typed) && !isBoxLink(typed)) {
+    // A page link goes to the list under the box and opens; the box goes back to the lesson's video link.
+    const lesson = library.find(l => l.id === currentLessonId);
+    input.value = lesson && isBoxLink(lesson.mediaUrl || "") ? lesson.mediaUrl : "";
+    pushUndo("Added link");
+    addLinkTo(lessonLinks, typed, "");
+    renderLinkList();
+    scheduleAutoSave();
+    window.open(typed, "_blank", "noopener");
+    return;
+  }
   applyMediaUrl(false);
   scheduleAutoSave();
   if (extractYouTubeId(input.value.trim())) setTimeout(() => fairyGlow(document.getElementById("mediaContainer"), "sweep"), 300);
@@ -3152,6 +3180,68 @@ function pdfNameOf(text) {
 
 // The lesson's PDF ({name, url}; url is empty for a file opened from this device).
 let lessonPdf = null;
+
+// The box holds the lesson's video (YouTube, TikTok, Douyin) and opens PDFs; every other link the lesson has (a page
+// you read, a NotebookLM notebook, the sites the browser extension took words from) is kept in a list under the box,
+// newest last: click one to open it, ✕ to remove it. The same box and list are on the lesson's Vocabulary page.
+let lessonLinks = [];
+
+function isBoxLink(url) {
+  return !!extractYouTubeId(url) || /(^|\.)(tiktok|douyin)\.com\//i.test(url.replace(/^https?:\/\//i, "")) || isPdfLink(url);
+}
+
+function normalizeLinks(list) {
+  const seen = new Set;
+  return (Array.isArray(list) ? list : []).map(l => typeof l === "string" ? {
+    url: l
+  } : l).filter(l => l && typeof l.url === "string" && /^https?:\/\//i.test(l.url.trim())).map(l => ({
+    url: l.url.trim(),
+    title: cleanText(String(l.title || "")).replace(/\s+/g, " ").slice(0, 200)
+  })).filter(l => !seen.has(linkKey(l.url)) && seen.add(linkKey(l.url)));
+}
+
+function linkKey(url) {
+  return url.trim().replace(/#.*$/, "").replace(/\/$/, "").toLowerCase();
+}
+
+// Adds a link to a list (the current lesson's, or another lesson's saved one); a link already there only gains a title.
+function addLinkTo(list, url, title) {
+  if (!url || !/^https?:\/\//i.test(url) || isBoxLink(url)) return false;
+  const have = list.find(l => linkKey(l.url) === linkKey(url));
+  if (have) {
+    if (!have.title && title) have.title = title;
+    return false;
+  }
+  list.push(normalizeLinks([ {
+    url: url,
+    title: title
+  } ])[0]);
+  return true;
+}
+
+function renderLinkList() {
+  const box = document.getElementById("linkList");
+  box.hidden = !lessonLinks.length;
+  box.innerHTML = lessonLinks.map((l, i) => {
+    let host = l.url;
+    try {
+      const u = new URL(l.url);
+      host = u.hostname.replace(/^www\./, "") + (u.pathname.length > 1 ? u.pathname : "");
+    } catch (e) {}
+    return `<div class="link-item"><a href="${escapeAttr(l.url)}" target="_blank" rel="noopener" title="${escapeAttr(l.url)}"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M8.5 11.5a3.5 3.5 0 0 0 5 0l2.5-2.5a3.5 3.5 0 0 0-5-5l-1 1"/><path d="M11.5 8.5a3.5 3.5 0 0 0-5 0L4 11a3.5 3.5 0 0 0 5 5l1-1"/></svg>${l.title ? `<b>${escapeHtml(l.title)}</b>` : ""}<span>${escapeHtml(host)}</span></a><button class="link-x" data-link="${i}" aria-label="Remove this link" title="Remove this link">✕</button></div>`;
+  }).join("");
+}
+
+document.getElementById("linkList").addEventListener("click", e => {
+  const x = e.target.closest(".link-x");
+  if (!x) return;
+  const link = lessonLinks[Number(x.dataset.link)];
+  if (!link) return;
+  pushUndo("Removed link — " + (link.title || link.url));
+  lessonLinks.splice(Number(x.dataset.link), 1);
+  renderLinkList();
+  scheduleAutoSave();
+});
 
 const PDF_ZOOMS = [ .5, .75, 1, 1.25, 1.5, 2 ];
 
@@ -11185,6 +11275,7 @@ function serializeCurrentLesson() {
     cards: rows.map(serializeCard),
     extraWords: serializeExtras(vocabExtras),
     pdf: lessonPdf ? Object.assign({}, lessonPdf) : null,
+    links: lessonLinks.map(l => Object.assign({}, l)),
     vocabOnly: !!(prev && prev.vocabOnly)
   };
 }
@@ -11420,6 +11511,14 @@ function openLesson(lesson) {
   hideSessionCompletePanel();
   updateGroupUI();
   setLessonTitle(lesson.name || "");
+  lessonLinks = normalizeLinks(lesson.links);
+  if (lesson.mediaUrl && !isBoxLink(lesson.mediaUrl)) {
+    // A page link kept in the box before links had their list moves to the list; the box is left for a video.
+    addLinkTo(lessonLinks, lesson.mediaUrl, "");
+    lessonLinks.unshift(lessonLinks.pop());
+    lesson.mediaUrl = "";
+  }
+  renderLinkList();
   if (lesson.mediaUrl) {
     document.getElementById("mediaUrl").value = lesson.mediaUrl;
     applyMediaUrl(true);
@@ -12572,6 +12671,9 @@ function showView(view) {
   document.getElementById("viewStudy").classList.toggle("offscreen", view === "vocab");
   document.getElementById("viewStudy").inert = view === "vocab";
   document.getElementById("viewVocab").hidden = view !== "vocab";
+  // One link box for the lesson, shown on whichever of its pages is open (in Vocabulary, in Vocabulary's colour).
+  const meta = document.querySelector(".lesson-meta");
+  if (view === "vocab" && meta.parentElement.id !== "viewVocab") document.querySelector("#viewVocab > .vocab-head").after(meta); else if (view === "study" && meta.parentElement.id !== "viewStudy") document.getElementById("fileStatus").after(meta);
   document.getElementById("viewStats").hidden = view !== "stats";
   document.getElementById("viewTest").hidden = view !== "test";
   document.getElementById("viewEmpty").hidden = view !== "empty";
@@ -14411,7 +14513,9 @@ function readerAdd(list) {
       term: term,
       meaning: meaning,
       key: key,
-      notes: readerNotesHtml(w)
+      notes: readerNotesHtml(w),
+      url: typeof w.url === "string" ? w.url : "",
+      title: typeof w.title === "string" ? w.title : ""
     });
   });
   if (groups.size) {
@@ -14427,8 +14531,10 @@ function readerAdd(list) {
         putVocabHtml(row, vocabLineHtml(row, w.term, w.meaning));
         if (w.notes) setWordNotes(row, w.key, w.notes);
         if (vocabSession) vocabSession.queue.push(w.key);
+        addLinkTo(lessonLinks, w.url, w.title);
         added.push(w.id);
       });
+      renderLinkList();
       scheduleAutoSave();
       return;
     }
@@ -14446,7 +14552,11 @@ function readerAdd(list) {
       if (w.notes) setWordNotes(row, w.key, w.notes);
       added.push(w.id);
     });
+    // Each page the words were read on joins the lesson's links, once.
+    const links = normalizeLinks(lesson.links);
+    words.forEach(w => addLinkTo(links, w.url, w.title));
     const saved = Object.assign({}, lesson, {
+      links: links,
       extraWords: normalizeExtras(serializeExtras(row)),
       updatedAt: Date.now(),
       unseen: (Number(lesson.unseen) || 0) + words.length

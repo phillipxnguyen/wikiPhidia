@@ -35,7 +35,7 @@ Every page marks the words that are already in wikiPhidia, the way the app does:
 
 ## Getting the words into wikiPhidia
 
-Words wait in the extension (the number on the icon) until wikiPhidia is open in a tab; then they go in by themselves, at once if the app is already open. **Open app** in the popup opens it or brings its tab forward. Each word becomes a Vocabulary card in its lesson: the word on the front; on the back the sentence it came from with the word marked in it (as on every other card), the meaning, and the article's title when the lesson has another name. Words already in the app are skipped.
+The page a word was read on goes along with it: the lesson keeps it in its list of links under the link box, once, with the page's title, so you can always open the article again from the lesson. Words wait in the extension (the number on the icon) until wikiPhidia is open in a tab; then they go in by themselves, at once if the app is already open. **Open app** in the popup opens it or brings its tab forward. Each word becomes a Vocabulary card in its lesson: the word on the front; on the back the sentence it came from with the word marked in it (as on every other card), the meaning, and the article's title when the lesson has another name. Words already in the app are skipped.
 
 ## Lessons from YouTube
 
