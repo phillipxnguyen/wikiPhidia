@@ -341,9 +341,12 @@ window.onYouTubeIframeAPIReady = function(){
   .flag-cloth:nth-last-child(3){animation-delay:-1.2s;}
   @keyframes flagWave{0%, 100%{transform:perspective(80px) rotateY(0) skewY(0);}25%{transform:perspective(80px) rotateY(-12deg) skewY(2deg);}75%{transform:perspective(80px) rotateY(8deg) skewY(-2deg);}}
   @keyframes flagShade{to{background-position:-64px 0;}}
+  .progress-badge.limit-bump{animation:limitBump .7s cubic-bezier(.34,1.56,.64,1);}
+  @keyframes limitBump{0%{transform:scale(1);box-shadow:0 0 0 0 color-mix(in srgb, currentColor 40%, transparent);}35%{transform:scale(1.18);box-shadow:0 0 0 6px color-mix(in srgb, currentColor 18%, transparent);}100%{transform:scale(1);box-shadow:0 0 0 10px transparent;}}
+  @media (prefers-reduced-motion: reduce){.progress-badge.limit-bump{animation:none;}}
   .flag-rope{position:absolute;left:3px;top:3px;height:1px;background:color-mix(in srgb, var(--text-2) 70%, transparent);transform:rotate(10deg);transform-origin:0 0;}
   .toolbar-flag .flag-rope{display:none;}
-  .flag-set:not(.toolbar-flag) .flag-unit.on-rope .flag-cloth{left:var(--x);top:var(--y);width:22px;height:16px;transform-origin:0 var(--tie);animation:ropeSway 2.6s ease-in-out infinite;}
+  .flag-set:not(.toolbar-flag) .flag-unit.on-rope .flag-cloth{left:var(--x);top:var(--y);transform-origin:0 var(--tie);animation:ropeSway 2.6s ease-in-out infinite;}
   .flag-set:not(.toolbar-flag) .flag-unit.on-rope .flag-cloth:nth-last-child(2){animation-delay:-.8s;}
   .flag-set:not(.toolbar-flag) .flag-unit.on-rope .flag-cloth:nth-last-child(3){animation-delay:-1.6s;}
   @keyframes ropeSway{0%, 100%{transform:rotate(0) perspective(80px) rotateY(0) skewY(0);}30%{transform:rotate(7deg) perspective(80px) rotateY(-14deg) skewY(2deg);}70%{transform:rotate(-5deg) perspective(80px) rotateY(10deg) skewY(-2deg);}}
@@ -604,7 +607,7 @@ window.onYouTubeIframeAPIReady = function(){
   }
   .lesson-header .lesson-name-input{line-height:32px;}
   @media (hover:hover){.lesson-name-input:hover{background:var(--surface) !important;border-color:var(--border) !important;}}
-  .lesson-name-input:focus{background:var(--surface) !important;border-color:var(--accent) !important;}
+  .lesson-name-input:focus{position:relative;z-index:3;background:var(--surface) !important;border-color:var(--accent) !important;}
   .fresh-lesson :is(#viewStudy, #viewAdd, #viewVocab) .primary{background:linear-gradient(90deg, var(--lesson-color), var(--new-color));border-color:transparent;}
   .fresh-lesson #btnSingleCard{background:linear-gradient(90deg, color-mix(in srgb, var(--lesson-color) 12%, transparent), color-mix(in srgb, var(--new-color) 12%, transparent));color:var(--lesson-color);}
   .lesson-name-input.fresh:not(:focus):not(:hover){background:linear-gradient(90deg, var(--lesson-color), var(--new-color)) 8px 0 / var(--fresh-w, 100%) 100% no-repeat !important;-webkit-background-clip:text !important;background-clip:text !important;color:transparent;}
@@ -920,6 +923,8 @@ window.onYouTubeIframeAPIReady = function(){
     width:max-content;
     max-width:min(320px, calc(100vw - 16px));
     box-sizing:border-box;
+    overflow-y:auto;
+    overscroll-behavior:contain;
     background:var(--popup-bg);
     color:var(--popup-text);
     border:1px solid #333c48;
@@ -6255,11 +6260,12 @@ function showFlags(langs) {
   const key = ccs.join(",");
   if (shownFlags === key) return;
   shownFlags = key;
-  // Several languages hang from one pole on a rope that leaves its top, nearly level: each flag hangs upright, tied to
+  // Several languages hang from one pole on a rope that leaves its top, nearly level: each flag, as big as a lone one
+  // and close to the next, hangs upright, tied to
   // the rope at a point of its left edge picked at random, and sways about that point on its own, free to wave over
   // what is around it: the flags keep the place the pole has always had, and the rope runs out over the name beside
   // them rather than pushing it along. (The toolbar's small flags, without a pole, still lie on top of each other like papers.)
-  const n = ccs.length, SLOPE = Math.tan(10 * Math.PI / 180), W = 22, H = 16, STEP = 30;
+  const n = ccs.length, SLOPE = Math.tan(10 * Math.PI / 180), W = 32, H = 24, STEP = 36;
   const ropeY = x => 3 + (x - 3) * SLOPE;
   const at = k => {
     const x = 6 + k * STEP, tie = 2 + Math.floor(Math.random() * (H - 3));
@@ -6999,15 +7005,22 @@ function showVocabPopup(matches, anchorRect) {
   placeVocabPopup(anchorRect);
 }
 
+// A long lookup never runs off the screen: it goes below the word or above it, wherever there is more room, and is
+// no taller than that room; what does not fit scrolls inside it (the page does not move, so it stays open).
 function placeVocabPopup(anchorRect) {
   const popup = getVocabPopupEl();
+  popup.style.maxHeight = "";
   const popupRect = popup.getBoundingClientRect();
+  const below = Math.floor(window.innerHeight - anchorRect.bottom - 16), above = Math.floor(anchorRect.top - 16);
+  const down = popupRect.height <= below || below >= above;
+  const height = Math.min(popupRect.height, down ? below : above);
+  popup.style.maxHeight = Math.max(80, height) + "px";
   let left = anchorRect.left;
-  let top = anchorRect.bottom + 8;
   if (left + popupRect.width > window.innerWidth - 8) left = window.innerWidth - popupRect.width - 8;
-  if (top + popupRect.height > window.innerHeight - 8) top = anchorRect.top - popupRect.height - 8;
+  const top = down ? anchorRect.bottom + 8 : anchorRect.top - 8 - height;
   popup.style.left = Math.round(Math.max(8, left)) + "px";
   popup.style.top = Math.round(Math.max(8, top)) + "px";
+  popup.scrollTop = 0;
 }
 
 function hideVocabPopup() {
@@ -7022,7 +7035,10 @@ document.addEventListener("mousedown", e => {
   hideVocabPopup();
 });
 
-window.addEventListener("scroll", hideVocabPopup, true);
+window.addEventListener("scroll", e => {
+  if (vocabPopupEl && e.target instanceof Node && vocabPopupEl.contains(e.target)) return;
+  hideVocabPopup();
+}, true);
 
 window.addEventListener("resize", hideVocabPopup);
 
@@ -12801,7 +12817,30 @@ function applyStudyLimits() {
   pushUndo("Daily limits");
   studyLimits = next;
   saveStudyLimits();
+  const before = shownCounts();
   refreshAfterLimits();
+  bumpChangedCounts(before);
+}
+
+// The New / Due / Done counts on screen, kind by kind, so a change of the daily limits can show where it took hold.
+function shownCounts() {
+  const counts = new Map;
+  document.querySelectorAll(".main-inner .progress-badge").forEach(el => {
+    if (!el.offsetParent) return;
+    const kind = [ "new", "due", "done" ].find(k => el.classList.contains(k));
+    if (kind) counts.set(kind, (el.querySelector("b") || el).textContent);
+  });
+  return counts;
+}
+
+// A count the new limits changed gives a short bounce, so you see the limit taking effect; where the counts stay as
+// they were (a lesson's full list, say) nothing moves.
+function bumpChangedCounts(before) {
+  requestAnimationFrame(() => document.querySelectorAll(".main-inner .progress-badge").forEach(el => {
+    const kind = [ "new", "due", "done" ].find(k => el.classList.contains(k));
+    const was = kind && before.get(kind);
+    if (el.offsetParent && was != null && was !== (el.querySelector("b") || el).textContent) replayAnimation(el, "limit-bump");
+  }));
 }
 
 function saveStudyLimits() {
