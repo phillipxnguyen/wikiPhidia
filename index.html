@@ -13063,12 +13063,14 @@ function limitsFloat() {
 }
 
 // Where you are, for the daily limits: they only matter where you study (a study mode, All lessons, Vocabulary's
-// flashcards); lists always show every card, so there 🔥 does not open the limits.
+// flashcards); lists always show every card, so there 🔥 does not open the limits. Nor while All's curtain is up: the
+// study behind it starts once it has opened, and so do its limits.
 function limitsPlace() {
   return [ currentView, currentLessonId, appMode, groupState ? groupViewStyle : "", vocabView ].join("|");
 }
 
 function limitsApply() {
+  if (document.querySelector(".all-curtain")) return false;
   return currentView === "study" ? !!groupState || isAllLessons() : currentView === "vocab" && vocabView !== "list";
 }
 
@@ -16717,6 +16719,7 @@ function raiseAllCurtain() {
 
 function allCurtain(item) {
   if (reducedMotion() || document.querySelector(".all-curtain")) return;
+  closeLimitsPop();
   const cs = getComputedStyle(item);
   const curtain = document.createElement("div");
   curtain.className = "all-curtain";
