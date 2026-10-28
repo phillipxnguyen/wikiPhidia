@@ -11200,6 +11200,29 @@ function joinNotesHtml(list) {
   return html.join("");
 }
 
+// A video card's translation sits in its notes as a plain line; when subtitle lines are joined into one card their
+// translations are joined the same way as the sentence itself, into one running line, not one line each.
+const PLAIN_LINE_RE = /^<div>([^<]*)<\/div>$/;
+
+function joinedTranslation(list) {
+  const html = list.map(x => (x || "").trim()).filter(Boolean);
+  if (html.length < 2 || !html.every(x => PLAIN_LINE_RE.test(x))) return null;
+  return "<div>" + joinSentences(html.map(x => x.match(PLAIN_LINE_RE)[1])) + "</div>";
+}
+
+// Lessons imported before translations were joined: a joined video card whose notes are only its sentences'
+// translations, one plain line each (in another language than the sentence), gets them as one running line.
+function joinOldTranslation(c) {
+  if (c.time == null || !c.merged) return false;
+  const lines = (c.notesHtml || "").match(/<div>[^<]*<\/div>/g);
+  if (!lines || lines.length < 2 || lines.join("") !== (c.notesHtml || "").trim()) return false;
+  const q = detectLang(c.q || "").split("-")[0];
+  if (lines.some(l => detectLang(plainTextOf(l, " ")).split("-")[0] === q)) return false;
+  c.notesHtml = joinedTranslation(lines);
+  c.notes = plainTextOf(c.notesHtml, "\n");
+  return true;
+}
+
 function mergedCard(group) {
   const vocab = {};
   group.forEach(c => Object.entries(c.vocab || {}).forEach(([ k, st ]) => {
@@ -11213,8 +11236,8 @@ function mergedCard(group) {
     a: joinSentences(group.map(c => c.a)),
     qHtml: joinSentences(group.map(c => c.qHtml || textHtml(c.q)), true),
     aHtml: joinSentences(group.map(c => c.aHtml || textHtml(c.a)), true),
-    notes: group.map(c => (c.notes || "").trim()).filter(Boolean).join("\n"),
-    notesHtml: joinNotesHtml(group.map(c => c.notesHtml || (c.notes ? escapeHtml(c.notes).replace(/\n/g, "<br>") : ""))),
+    notes: joinedTranslation(group.map(c => c.notesHtml)) ? joinSentences(group.map(c => c.notes)) : group.map(c => (c.notes || "").trim()).filter(Boolean).join("\n"),
+    notesHtml: joinedTranslation(group.map(c => c.notesHtml)) || joinNotesHtml(group.map(c => c.notesHtml || (c.notes ? escapeHtml(c.notes).replace(/\n/g, "<br>") : ""))),
     time: group[0].time,
     srs: newSrs(),
     vocab: vocab,
@@ -14811,6 +14834,7 @@ async function initApp() {
   library.forEach(l => {
     let converted = false;
     l.cards.forEach(c => {
+      if (joinOldTranslation(c)) converted = true;
       if (c.srs && MODES.some(m => c.srs[m] && typeof c.srs[m].streak !== "number")) {
         c.srs = normalizeSrs(c.srs);
         converted = true;
