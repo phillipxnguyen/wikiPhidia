@@ -60,6 +60,7 @@ window.onYouTubeIframeAPIReady = function(){
     --paper-ink:var(--text);
     --paper-ink-2:var(--paper-ink);
     --paper-rule:#d6e0ec;
+    --dot-paper:radial-gradient(circle, var(--paper-rule) 1px, transparent 1px);
     --paper-margin:#ebb3b3;
     --paper-mark:rgba(245,205,70,.45);
     --paper-shadow:rgba(20,30,50,.08);
@@ -69,9 +70,6 @@ window.onYouTubeIframeAPIReady = function(){
     --mode-blue:#2f6fd6;
     --due-color:#c9801a;
     --yt-red:#e62117;
-    --view-bg:#fdeeee;
-    --view-edge:#efbdbd;
-    --view-ink:#6e2626;
     --done-color:var(--text-2);
     --q-bg:#eef2f8;
     --a-bg:#e9f5ee;
@@ -121,9 +119,6 @@ window.onYouTubeIframeAPIReady = function(){
       --mode-blue:#5d8ff0;
       --due-color:#e9a443;
       --yt-red:#ff5a4f;
-      --view-bg:#33201f;
-      --view-edge:#603434;
-      --view-ink:#f2c6c6;
       --q-bg:#1f2735;
       --a-bg:#1a2b25;
       --a-text:#8fdcb2;
@@ -164,9 +159,6 @@ window.onYouTubeIframeAPIReady = function(){
     --mode-blue:#5d8ff0;
     --due-color:#e9a443;
     --yt-red:#ff5a4f;
-    --view-bg:#33201f;
-    --view-edge:#603434;
-    --view-ink:#f2c6c6;
     --q-bg:#1f2735;
     --a-bg:#1a2b25;
     --a-text:#8fdcb2;
@@ -400,9 +392,8 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-card.answer-first .vocab-front{background:var(--a-bg);}
   .vocab-card.answer-first .vocab-front .vocab-term{color:var(--a-text);font-size:26px;line-height:32px;}
   .vocab-card.answer-first .vocab-back{background:var(--surface);}
-  .vocab-card.view-only .vocab-front{background:var(--view-bg);border-color:var(--view-edge);}
-  .vocab-card.view-only .vocab-back{background:var(--view-bg);border-color:var(--view-edge);}
-  .vocab-card.view-only .vocab-term{color:var(--view-ink);}
+  /* A card to read (one side only) is a white sheet of dot paper, like the one-sided Speaking paper. */
+  .vocab-card.view-only :is(.vocab-front, .vocab-back){background-color:var(--surface);background-image:var(--dot-paper);background-size:24px 24px;background-position:12px 12px;}
   @keyframes vocabSquash{0%{transform:none;}40%{transform:scale(1.02,.9);}75%{transform:scale(.99,1.02);}100%{transform:none;}}
   .vocab-card.vocab-swap{transform-origin:50% 100%;animation:vocabSquash .35s ease-out;}
   .vocab-term{font-size:28px;font-weight:400;line-height:35px;overflow-wrap:anywhere;}
@@ -435,7 +426,7 @@ window.onYouTubeIframeAPIReady = function(){
   .qa-time{flex:none;box-sizing:border-box;width:72px;height:46px;text-align:center;font-size:16px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--kind);}
   .quick-add[data-kind]{background:color-mix(in srgb, var(--kind) 6%, var(--surface));border-color:color-mix(in srgb, var(--kind) 40%, var(--border));}
   .quick-add[data-kind="speak"]{padding-left:56px;background:linear-gradient(to right, transparent 39px, var(--paper-margin) 39px 40px, transparent 40px), repeating-linear-gradient(transparent 0 35px, var(--paper-rule) 35px 36px), var(--paper);}
-  .quick-add[data-kind="view"]{background:var(--view-bg);border-color:var(--view-edge);}
+  .quick-add[data-kind="view"]{background-color:var(--surface);background-image:var(--dot-paper);background-size:24px 24px;background-position:12px 12px;}
   #addForm[data-kind] #importText{background:color-mix(in srgb, var(--kind) 6%, var(--surface));border-color:color-mix(in srgb, var(--kind) 40%, var(--border));}
   #addForm[data-kind] #importText::placeholder{color:var(--kind);opacity:1;}
   .vocab-back .vocab-word-notes{box-sizing:border-box;width:fit-content;max-width:100%;padding:0 16px;font-size:26px;line-height:32px;text-align:left;color:var(--text);overflow-wrap:break-word;}
@@ -618,16 +609,26 @@ window.onYouTubeIframeAPIReady = function(){
   .save-status:empty{display:none;}
   .save-status{font-size:12px;color:var(--text-2);min-height:18px;margin:-8px 0 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .lesson-meta{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px;}
+  .lesson-meta{--cord:color-mix(in srgb, var(--accent) 40%, var(--border-strong));}
   .link-list{position:relative;flex-basis:100%;min-width:0;display:flex;flex-direction:column;gap:4px;margin-top:-4px;transform-origin:50% -6px;animation:linkSway 6s ease-in-out infinite;}
-  /* The links hang from the link box on two cords, as one cluster that sways gently. */
-  .link-list::before, .link-list::after{content:"";position:absolute;top:-8px;bottom:18px;width:2px;border-radius:1px;background:color-mix(in srgb, var(--accent) 40%, var(--border-strong));}
-  .link-list::before{left:24px;}
-  .link-list::after{right:24px;}
+  /* The links hang under the link box as one cluster, as wide as the box, and sway gently. Once there are links the box
+     has a hole punched near each end of its bottom edge and every link a hole near each end of its top edge; a cord runs
+     from each of the box's holes down in front, over the next link's top edge into its hole, through to the back, down
+     behind the link and across the gap to the next one, and ends tied in the last link's holes. */
+  .link-list::before, .link-list::after{content:"";position:absolute;top:-12px;bottom:27px;width:2px;border-radius:1px;background:var(--cord);}
+  .link-list::before{left:8px;}
+  .link-list::after{right:8px;}
   .link-list > .link-item{position:relative;z-index:1;}
+  .link-list > .link-item::before, .link-list > .link-item::after{content:"";position:absolute;top:-1px;width:8px;height:14px;pointer-events:none;background:linear-gradient(var(--cord), var(--cord)) 3px 0 / 2px 9px no-repeat, radial-gradient(circle at 4px 9px, var(--bg) 3px, var(--border-strong) 3px 4px, transparent 4px);}
+  .link-list > .link-item::before{left:4px;}
+  .link-list > .link-item::after{right:4px;}
+  .lesson-meta:has(> .link-list:not([hidden])) .link-field::before, .lesson-meta:has(> .link-list:not([hidden])) .link-field::after{content:"";position:absolute;bottom:2px;z-index:2;width:8px;height:8px;pointer-events:none;background:radial-gradient(circle at 4px 4px, var(--bg) 3px, var(--border-strong) 3px 4px, transparent 4px);}
+  .lesson-meta:has(> .link-list:not([hidden])) .link-field::before{left:5px;}
+  .lesson-meta:has(> .link-list:not([hidden])) .link-field::after{right:5px;}
   @keyframes linkSway{0%, 100%{transform:rotate(0);}25%{transform:rotate(.25deg);}75%{transform:rotate(-.25deg);}}
   @media (prefers-reduced-motion: reduce){.link-list{animation:none;}}
   .link-list[hidden]{display:none;}
-  .link-item{display:flex;align-items:center;gap:4px;min-width:0;height:36px;box-sizing:border-box;padding:0 4px 0 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);}
+  .link-item{display:flex;align-items:center;gap:4px;min-width:0;height:36px;box-sizing:border-box;padding:0 20px 0 24px;border:1px solid var(--border);border-radius:8px;background:var(--surface);}
   .link-item a{flex:1;min-width:0;display:flex;align-items:center;gap:8px;overflow:hidden;color:var(--text);text-decoration:none;font-size:14px;line-height:20px;white-space:nowrap;}
   .link-item a svg{flex:none;width:16px;height:16px;fill:none;stroke:var(--accent);stroke-width:1.6;stroke-linecap:round;}
   .link-item a b{flex:none;max-width:60%;overflow:hidden;text-overflow:ellipsis;font-weight:600;}
@@ -1437,6 +1438,8 @@ window.onYouTubeIframeAPIReady = function(){
   .paper-meta{text-align:right;font-size:14px;line-height:20px;color:var(--paper-ink-2);white-space:nowrap;}
   .paper-timer{margin-top:4px;font:600 22px/28px ui-monospace, "SF Mono", Menlo, Consolas, monospace;color:var(--paper-ink);}
   .paper-timer.stopped{color:var(--paper-ink-2);}
+  /* A one-sided card has no answer to write on lines: it is dot paper instead, the same white sheet. */
+  .ielts-paper.dot-paper{background-image:var(--dot-paper);background-size:var(--line) var(--line);background-position:calc(var(--line) / 2) calc(var(--line) / 2);}
   .ielts-paper .cell.hidden.paper-hint, .ielts-paper .cell.hidden.paper-hint:hover{font-style:normal;color:var(--paper-ink);}
   .ielts-paper .paper-prompt:not(.paper-hint):hover{color:var(--paper-ink-2);}
   .paper-hint ol, .paper-notes ol{margin:0;padding:0;list-style:none;counter-reset:paper-n;}
@@ -2062,7 +2065,6 @@ window.onYouTubeIframeAPIReady = function(){
       <button id="fullModeBtn" aria-label="Full">☰</button>
       <button id="listenModeBtn" style="display:none;" aria-label="Listening">🎧</button>
       <button id="ieltsModeBtn" style="display:none;" aria-label="Speaking">🗒️</button>
-      <button id="oneSideModeBtn" style="display:none;" aria-label="Speaking, one side" title="Speaking, one side: each card comes up already shown, you only grade it">📄</button>
     </div>
     <span class="flag-set toolbar-flag" aria-hidden="true" hidden></span>
     <div class="toolbar-right">
@@ -2414,12 +2416,11 @@ function restoreFrom(fromStack, toStack, verb) {
     showAllCardsInFullMode();
   } else if (!(sessionRestored && entry.inSession)) {
     const current = groupState.groups[groupState.index] || [];
-    const entryHiddenNow = entryHidden();
     rows.forEach(r => {
       const prev = prevHidden.get(r.id);
       const inGroup = current.includes(r.id);
-      r.qHidden = prev ? prev.q : inGroup ? entryHiddenNow.q : true;
-      r.aHidden = prev ? prev.a : inGroup ? entryHiddenNow.a : true;
+      r.qHidden = prev ? prev.q : inGroup ? entryHidden(r).q : true;
+      r.aHidden = prev ? prev.a : inGroup ? entryHidden(r).a : true;
     });
   }
   pinnedCardId = entry.pinned != null ? entry.pinned : null;
@@ -3230,6 +3231,12 @@ function addLinkTo(list, url, title) {
   return true;
 }
 
+// The links hang under the link box itself (not the Open and Clear buttons beside it), so the list is as wide as the box.
+new ResizeObserver(([e]) => {
+  const w = Math.round(e.target.offsetWidth);
+  if (w) document.getElementById("linkList").style.maxWidth = w + "px";
+}).observe(document.querySelector(".link-field"));
+
 function renderLinkList() {
   const box = document.getElementById("linkList");
   box.hidden = !lessonLinks.length;
@@ -3597,7 +3604,7 @@ function pdfSelection() {
   const layer = node && node.closest("#pdfView .textLayer");
   if (!layer) return null;
   const text = sel.toString().replace(/\s+/g, " ").trim().replace(/^[\s,.;:!?，。；：！？、"“”'()]+|[\s,.;:!?，。；：！？、"“”'()]+$/g, "");
-  if (!text || text.length > 80) return null;
+  if (!text) return null;
   return {
     text: text,
     range: range.cloneRange(),
@@ -4458,18 +4465,22 @@ function isTranslationCard(row) {
   return v;
 }
 
-function isLoneQuestion(row) {
-  return row.time == null && !!(row.q || "").trim() && !(row.a || "").trim() && !(row.notes || "").trim();
-}
-
-// A card brought back from Vocabulary (kept) stays in Lessons: it is never offered to Vocabulary again.
+// A card whose question and answer are in different languages is a word to learn and belongs in Vocabulary; a
+// one-sided card stays wherever it is until its answer is filled in. A card brought back from Vocabulary (kept)
+// stays in Lessons: it is never offered to Vocabulary again.
 function belongsInVocab(row) {
-  return row.time == null && !row.kept && (isTranslationCard(row) || isLoneQuestion(row));
+  return row.time == null && !row.kept && isTranslationCard(row);
 }
 
 function isTranslationDeck(cards) {
   const answered = cards.filter(c => (c.a || "").trim());
   return answered.length > 0 && answered.filter(isTranslationCard).length * 2 > answered.length;
+}
+
+// A one-sided card that has just been given its answer is sorted again: when the answer turns it into a
+// translation it moves to Vocabulary at once.
+function answeredIntoVocab(row) {
+  return appMode === "cards" && !isVirtualLesson() && rows.includes(row) && belongsInVocab(row);
 }
 
 function movableTranslations() {
@@ -4487,7 +4498,7 @@ function offerMoveAll() {
   const shown = groupState ? getCurrentSingleCardRow() : null;
   const one = shown && list.includes(shown) ? shown : null;
   document.getElementById("moveTitle").textContent = n === 1 ? "This card belongs in Vocabulary" : n + " cards belong in Vocabulary";
-  document.getElementById("moveText").textContent = (n === 1 ? `“${truncate(list[0].q.trim(), 60)}” is` : "They are") + " a translation or a question on its own. These are learnt in Vocabulary; Lessons keep Speaking and YouTube.";
+  document.getElementById("moveText").textContent = (n === 1 ? `“${truncate(list[0].q.trim(), 60)}” is` : "They are") + " a translation. These are learnt in Vocabulary; Lessons keep Speaking and YouTube.";
   document.getElementById("moveAll").textContent = n === 1 ? "Move to Vocabulary" : "Move all " + n;
   document.getElementById("moveOne").hidden = !one || n === 1;
   document.getElementById("moveOne").textContent = "Move this card";
@@ -4729,6 +4740,11 @@ function deckHasAnswers() {
   return rows.some(hasAnswer);
 }
 
+// Speaking studies every text card: one with an answer, and a one-sided one (a question only, no time).
+function speakable(r) {
+  return hasAnswer(r) || !!r && r.time == null && !!(r.q || "").trim();
+}
+
 // The end screen shows when the lesson is caught up, and also when a study mode has nothing left for today (the
 // daily limit): the 5 s check and renderStudy ask this same question, so the end screen is never hidden and shown
 // again on its own, which would blur it out and start its words over.
@@ -4739,17 +4755,17 @@ function endScreenDue() {
 function lessonCaughtUp() {
   if (isAllLessons()) return !mixFocusId;
   const now = Date.now();
-  return deckHasAnswers() && !rows.some(r => hasAnswer(r) && cardReady(r, "Table", now));
+  return rows.some(speakable) && !rows.some(r => speakable(r) && cardReady(r, "Table", now));
 }
 
 function countMode(cards) {
-  return cards.some(hasAnswer) ? "Table" : "Listen";
+  return cards.some(speakable) ? "Table" : "Listen";
 }
 
 function modeScopeRows(mode) {
   const pool = isAllLessons() ? rows.filter(r => r.id === mixFocusId) : rows;
   if (mode === "Listen") return pool.filter(r => r.time != null);
-  return pool.filter(hasAnswer);
+  return pool.filter(speakable);
 }
 
 function srsBucket(st, now) {
@@ -4825,11 +4841,11 @@ function progressBadgesHtml(mode, currentIds) {
   const now = Date.now();
   const allowed = isAllLessons() ? mixCandidates().map(([ r ]) => r) : dueRows(mode);
   const newN = allowed.filter(r => cardBucket(r, mode, now) === "new").length;
-  const waiting = (isAllLessons() ? rows.filter(r => hasAnswer(r) || vocabVideoIdFor(r)) : modeScopeRows(mode)).filter(cardWaiting);
+  const waiting = (isAllLessons() ? rows.filter(r => speakable(r) || vocabVideoIdFor(r)) : modeScopeRows(mode)).filter(cardWaiting);
   const readyDue = allowed.filter(r => cardBucket(r, mode, now) === "due").length;
   const room = reviewsLeftToday(rows.map(r => r.srcLessonId || currentLessonId), false) - allowed.filter(r => srsOf(r, mode).reps && cardBucket(r, mode, now) === "due").length;
   const dueN = readyDue + Math.min(waiting.length, Math.max(0, room));
-  const doneN = isAllLessons() ? rows.filter(r => (hasAnswer(r) || vocabVideoIdFor(r)) && cardBucket(r, mode, now) === "done").length : doneCardCount(mode);
+  const doneN = isAllLessons() ? rows.filter(r => (speakable(r) || vocabVideoIdFor(r)) && cardBucket(r, mode, now) === "done").length : doneCardCount(mode);
   let active = {
     new: false,
     due: false,
@@ -4856,30 +4872,8 @@ function badgesHtml(newN, dueN, doneN, active) {
   return '<div class="progress-badges">' + '<span class="progress-badge new' + (active.new ? " active" : "") + '" title="New — never studied yet"><i>🆕</i><b>' + newN + "</b></span>" + '<span class="progress-badge due' + (active.due ? " active" : "") + '" title="Due — ready to review now"><i>⏳</i><b>' + dueN + "</b></span>" + '<span class="progress-badge done' + (active.done ? " active" : "") + '" title="Done — ' + DONE_STREAK + ' Good in a row"><i>✅</i><b>' + doneN + "</b></span>" + "</div>";
 }
 
-// Speaking, one side: the Speaking paper with each card already shown, like a one-sided flashcard, graded as usual.
-// Cards of a video lesson (a sentence with nothing to show behind it) keep their Listening schedule there, so it is
-// another way to study the same cards; a text lesson's share Speaking's.
-let speakOneSide = (() => {
-  try {
-    return localStorage.getItem("flashcards.speakOneSide") === "1";
-  } catch (e) {
-    return false;
-  }
-})();
-
-function oneSideOn() {
-  return !!groupState && groupViewStyle === "ielts" && speakOneSide && !isAllLessons();
-}
-
-function setSpeakOneSide(on) {
-  speakOneSide = on;
-  try {
-    localStorage.setItem("flashcards.speakOneSide", on ? "1" : "0");
-  } catch (e) {}
-}
-
 function modeKey() {
-  return groupViewStyle === "listen" || groupViewStyle === "ielts" && speakOneSide && !isAllLessons() && deckHasVideoCards() && !deckHasAnswers() ? "Listen" : "Table";
+  return groupViewStyle === "listen" ? "Listen" : "Table";
 }
 
 const LIMITS_KEY = "flashcards.limits";
@@ -5111,11 +5105,9 @@ const ENTRY_HIDDEN = {
   Ielts: { q: false, a: true }
 };
 
-function entryHidden() {
-  if (groupViewStyle === "ielts" && speakOneSide && !isAllLessons()) return {
-    q: false,
-    a: false
-  };
+// A one-sided card (a question with no answer) has nothing to hide in Speaking, so it shows whole at once.
+function entryHidden(row) {
+  if (row && groupViewStyle === "ielts" && !hasAnswer(row)) return { q: false, a: false };
   return ENTRY_HIDDEN[groupViewStyle === "ielts" ? "Ielts" : modeKey()];
 }
 
@@ -5603,7 +5595,7 @@ function showSessionCompletePanel() {
   const panel = document.getElementById("sessionCompletePanel");
   document.querySelector("#viewStudy .toolbar").style.display = "none";
   const now = Date.now();
-  const next = rows.filter(r => hasAnswer(r) && !cardWaiting(r)).map(r => srsOf(r, "Table")).filter(st => st.reps && !isDoneState(st) && st.due > now).map(st => st.due).sort((a, b) => a - b)[0];
+  const next = rows.filter(r => speakable(r) && !cardWaiting(r)).map(r => srsOf(r, "Table")).filter(st => st.reps && !isDoneState(st) && st.due > now).map(st => st.due).sort((a, b) => a - b)[0];
   const due = isAllLessons() ? mixCandidates(true).map(([ r ]) => r) : modeScopeRows(modeKey()).filter(r => cardReady(r, "Table", now));
   const more = heldMore(due, isAllLessons() ? mixCandidates().map(([ r ]) => r) : limitRows(due), r => srsOf(r, "Table"));
   const held = more.total;
@@ -5858,7 +5850,7 @@ function renderStudy() {
     setReviewMode("full");
     return;
   }
-  if (groupState && !isAllLessons() && (groupViewStyle === "ielts" ? isVideoLesson() && !speakOneSide : !isVideoLesson())) {
+  if (groupState && !isAllLessons() && (groupViewStyle === "ielts") === isVideoLesson()) {
     setReviewMode(isVideoLesson() ? "listen" : "ielts");
     return;
   }
@@ -5974,7 +5966,7 @@ function ieltsPaperHtml(row, ahead = 0) {
   const answer = row.aHidden ? hints.length ? '<div class="cell hidden paper-prompt paper-hint" data-field="a"><ol>' + hints.map(m => `<li>${escapeHtml(m)}</li>`).join("") + "</ol></div>" : '<div class="cell hidden paper-prompt" data-field="a">···</div>' : `<div class="cell shown paper-lines" data-field="a">${aCellContent(row)}</div>`;
   const notes = words.length ? '<aside class="paper-notes"><div class="paper-label">Notes</div><ol>' + words.map(i => `<li><b>${escapeHtml(i.term)}</b>${i.meaning ? " — " + escapeHtml(i.meaning) : ""}</li>`).join("") + "</ol></aside>" : "";
   const extras = row.aHidden ? "" : '<div class="paper-extras"><div class="paper-stroke"></div><div class="paper-dict" hidden></div></div>';
-  return `<article class="ielts-paper${notes ? " with-notes" : ""}">` + `<header class="paper-head"><div>${topic ? `<div class="paper-topic">${escapeHtml(topic)}</div>` : ""}</div>` + `<div class="paper-meta"><div>Question <b>${n}</b> of ${total}</div><div${ahead ? "" : ' id="ieltsTimer"'} class="paper-timer${row.aHidden ? "" : " stopped"}">${ahead ? "0:00" : ieltsClockText()}</div></div></header>` + '<div class="paper-body"><div class="paper-main">' + `<div class="paper-question"><span class="paper-num">${n}.</span><div class="cell shown" data-field="q">${qCellContent(row)}</div></div>` + `<div class="paper-answer">${answer}</div></div>${notes}</div>` + extras + "</article>";
+  return `<article class="ielts-paper${notes ? " with-notes" : ""}${hasAnswer(row) ? "" : " dot-paper"}">` + `<header class="paper-head"><div>${topic ? `<div class="paper-topic">${escapeHtml(topic)}</div>` : ""}</div>` + `<div class="paper-meta"><div>Question <b>${n}</b> of ${total}</div><div${ahead ? "" : ' id="ieltsTimer"'} class="paper-timer${row.aHidden ? "" : " stopped"}">${ahead ? "0:00" : ieltsClockText()}</div></div></header>` + '<div class="paper-body"><div class="paper-main">' + `<div class="paper-question"><span class="paper-num">${n}.</span><div class="cell shown" data-field="q">${qCellContent(row)}</div></div>` + (hasAnswer(row) ? `<div class="paper-answer">${answer}</div>` : "") + `</div>${notes}</div>` + extras + "</article>";
 }
 
 let listenSlotRaf = 0;
@@ -6065,8 +6057,8 @@ function renderSingleCard(visibleRows) {
   if (firstShow) {
     lastShownCardId = showKey;
     batch.forEach(r => {
-      r.qHidden = entryHidden().q;
-      r.aHidden = entryHidden().a;
+      r.qHidden = entryHidden(r).q;
+      r.aHidden = entryHidden(r).a;
     });
   }
   if (groupViewStyle === "ielts") {
@@ -7965,8 +7957,6 @@ function findDuplicateCard(q, a, time, except) {
   return rows.find(r => r !== except && (!except || r.srcLessonId === except.srcLessonId) && normalizeImportText(r.q || "") === nq && (time == null || r.time == null || r.time === time) && (!na || !(r.a || "").trim() || normalizeImportText(r.a) === na)) || null;
 }
 
-const NOTE_TERM_MAX = 100;
-
 const NOTE_VOCAB_ITEM_RE = new RegExp(`^(\\s*([^:：=＝\\n]+?)\\s*(?:[:：]|={1,2}|＝)\\s*)(\\S[\\s\\S]*?)\\s*$`);
 
 function ownLiTextNodes(li) {
@@ -8024,7 +8014,7 @@ function isVocabItem(li) {
 function boldPlainItem(li) {
   const nodes = ownLiTextNodes(li);
   const text = nodes.map(n => n.nodeValue).join("").replace(/\u00a0/g, " ").trim().replace(/\s*[:：=＝]$/, "");
-  if (!text || text.length > 40 || /[:：=＝]/.test(text)) return false;
+  if (!text || /[:：=＝]/.test(text)) return false;
   Array.from(li.childNodes).forEach(c => {
     if (!(c.nodeType === 1 && /^(UL|OL)$/.test(c.nodeName))) c.remove();
   });
@@ -8070,7 +8060,7 @@ function noteItemTerm(li) {
   const m = text.match(NOTE_VOCAB_ITEM_RE);
   if (m) return m[2].trim();
   const plain = text.trim().replace(/\s*[:：=＝]$/, "");
-  return plain && plain.length <= 40 && !/[:：=＝]/.test(plain) ? plain : "";
+  return plain && !/[:：=＝]/.test(plain) ? plain : "";
 }
 
 function noteItemIsDuplicate(li, taken) {
@@ -8218,9 +8208,11 @@ function commitActiveEdit() {
     stampNewVocab(activeEdit.row, before);
     scheduleAutoSave();
   }
+  const row = activeEdit.row, answered = !activeEdit.originalA.trim() && !!newA.trim();
   hideDictOverlay();
   activeEdit = null;
   closeEditPopup();
+  if (answered && answeredIntoVocab(row)) moveOneCardToVocab(row);
 }
 
 function editSourceRect() {
@@ -8938,11 +8930,10 @@ function showAllCardsInFullMode() {
 }
 
 function applyGroupEntryHiddenState(ids) {
-  const entry = entryHidden();
   rows.forEach(r => {
     const inGroup = ids.includes(r.id);
-    r.qHidden = inGroup ? entry.q : true;
-    r.aHidden = inGroup ? entry.a : true;
+    r.qHidden = inGroup ? entryHidden(r).q : true;
+    r.aHidden = inGroup ? entryHidden(r).a : true;
   });
 }
 
@@ -8950,19 +8941,16 @@ function syncModeButtonHighlights() {
   const fullBtn = document.getElementById("fullModeBtn");
   const listenBtn = document.getElementById("listenModeBtn");
   const ieltsBtn = document.getElementById("ieltsModeBtn");
-  const oneBtn = document.getElementById("oneSideModeBtn");
   if (!fullBtn || !listenBtn || !ieltsBtn) return;
   const caughtUp = lessonCaughtUp();
   const video = isVideoLesson();
   listenBtn.style.display = deckHasVideoCards() && !isVirtualLesson() && !caughtUp ? "" : "none";
-  ieltsBtn.style.display = deckHasAnswers() && !video && !caughtUp ? "" : "none";
+  ieltsBtn.style.display = rows.some(speakable) && !video && !caughtUp ? "" : "none";
   fullBtn.closest(".segmented").hidden = isAllLessons();
   document.querySelector("#viewStudy .toolbar-flag").hidden = !isAllLessons();
   fullBtn.classList.toggle("active", !groupState);
   listenBtn.classList.toggle("active", !!groupState && groupViewStyle === "listen");
-  ieltsBtn.classList.toggle("active", !!groupState && groupViewStyle === "ielts" && !speakOneSide);
-  oneBtn.style.display = (deckHasVideoCards() || deckHasAnswers()) && !isVirtualLesson() && !caughtUp ? "" : "none";
-  oneBtn.classList.toggle("active", oneSideOn());
+  ieltsBtn.classList.toggle("active", !!groupState && groupViewStyle === "ielts");
 }
 
 function updateGroupUI() {
@@ -9114,7 +9102,7 @@ function mixCandidates(unlimited) {
     return video.get(r.srcLessonId);
   };
   const playable = r => !!vocabVideoIdFor(r) && !unplayableVideos.has(vocabVideoIdFor(r));
-  const ready = rows.filter(r => cardReady(r, "Table", now) && (hasAnswer(r) || isVideo(r) && playable(r)));
+  const ready = rows.filter(r => cardReady(r, "Table", now) && (speakable(r) || isVideo(r) && playable(r)));
   return (unlimited ? ready : limitRows(ready)).map(r => [ r, !isVideo(r) ? "ielts" : "listen" ]);
 }
 
@@ -9262,26 +9250,7 @@ document.getElementById("btnPlaySequence").addEventListener("click", () => setTi
 
 document.getElementById("listenModeBtn").onclick = () => goToReviewMode("listen");
 
-document.getElementById("ieltsModeBtn").onclick = () => {
-  if (groupState && groupViewStyle === "ielts" && speakOneSide) {
-    setSpeakOneSide(false);
-    setReviewMode("ielts");
-    return pinStudyArea();
-  }
-  setSpeakOneSide(false);
-  goToReviewMode("ielts");
-};
-
-document.getElementById("oneSideModeBtn").onclick = () => {
-  if (oneSideOn()) return;
-  const switching = !!groupState && groupViewStyle === "ielts";
-  setSpeakOneSide(true);
-  if (switching) {
-    setReviewMode("ielts");
-    return pinStudyArea();
-  }
-  goToReviewMode("ielts");
-};
+document.getElementById("ieltsModeBtn").onclick = () => goToReviewMode("ielts");
 
 function ensureGroupSlot(state, i) {
   while (state.groups.length <= i) state.groups.push([]);
@@ -9745,10 +9714,9 @@ function showNextUnderSwipe() {
     hidden.forEach(([el, v]) => el.style.visibility = v);
     undo.forEach(fn => fn());
   };
-  const entry = entryHidden();
   const entryCopy = r => Object.assign({}, r, {
-    qHidden: entry.q,
-    aHidden: entry.a
+    qHidden: entryHidden(r).q,
+    aHidden: entryHidden(r).a
   });
   {
     const nextBatch = (isListenMode() ? nextListenBatch() : singleCardQueue().slice(1, 2)).map(entryCopy);
@@ -10246,7 +10214,7 @@ const Q_LABEL_RE = /^(?:q|question)\s*[:：]\s*/i;
 
 const A_LABEL_RE = /^(?:a|answer)\s*[:：]\s*/i;
 
-const WORD_PAIR_RE = new RegExp(`^([^=＝:：]{1,${NOTE_TERM_MAX}}?)\\s*(={1,2}|＝|[:：])\\s*(.*?)\\s*$`);
+const WORD_PAIR_RE = /^([^=＝:：]+?)\s*(={1,2}|＝|[:：])\s*(.*?)\s*$/;
 
 function wordPairOf(line, bulleted) {
   if (matchSpacedTimestamp(line)) return null;
@@ -10292,7 +10260,7 @@ function analyzeMixed(text) {
       notes: ""
     }
   }));
-  const isShort = l => !/[.!?。！？]$/.test(l.s) && l.s.length <= NOTE_TERM_MAX;
+  const isShort = l => !/[.!?。！？]$/.test(l.s);
   const isAnswerLine = l => !!l && !l.pair && !l.bulleted && !Q_LABEL_RE.test(l.s) && !/[?？]$/.test(l.s) && (A_LABEL_RE.test(l.s) || SENTENCE_END_RE.test(l.s));
   let skipTo = -1;
   info.forEach((l, i) => {
@@ -10772,7 +10740,9 @@ function commitImport(plan, label, keepText) {
   const {newRows: newRows, fills: fills} = plan;
   if (!newRows.length && !fills.size) return;
   pushUndo(label);
+  const answered = [];
   fills.forEach((f, r) => {
+    if (f.a != null && !(r.a || "").trim()) answered.push(r);
     if (f.a != null) {
       r.a = cleanPunct(cleanText(f.a));
       r.aHtml = textHtml(r.a);
@@ -10808,6 +10778,8 @@ function commitImport(plan, label, keepText) {
   renderImportPreview();
   if (currentView === "add") renderAddView();
   scheduleAutoSave();
+  const moving = answered.filter(answeredIntoVocab);
+  if (moving.length) moveCardsToVocab(moving);
 }
 
 function importResultMessage(plan) {
@@ -13143,7 +13115,7 @@ function celebrateStreak() {
 function cardInMode(c, mode, lang) {
   if (mode === "Listen") return c.time != null;
   if (mode === "Write") return hasAnswer(c) && ([ "zh-CN", "zh-TW", "ja" ].includes(lang) || CJK_CHAR_RE.test((c.q || "") + (c.a || "")));
-  return hasAnswer(c);
+  return speakable(c);
 }
 
 const HEATMAP_MONTHS = 6;
@@ -15805,6 +15777,15 @@ function saveVocabEditor(item, termRaw, meaningRaw, notesHtml, explicit) {
   } else if (!updateVocabEntry(item, termRaw, meaningRaw)) return false;
   if (notesChanged) setWordNotes(item.card, key, notesHtml);
   scheduleAutoSave();
+  // A one-sided word given a meaning in its own language is no longer a word to learn: it is a Speaking card, so it
+  // goes to Lessons once the editor has closed.
+  if (!item.meaning && meaning && !isTranslationCard({
+    q: term,
+    a: meaning
+  })) setTimeout(() => {
+    const now = lessonVocabItems(vocabSource()).find(i => i.key === key);
+    if (canMoveToLesson(now)) moveVocabToLesson(now, true);
+  });
   return true;
 }
 
@@ -16062,11 +16043,12 @@ function deleteVocabEntry(item, part) {
 // The way back for a card moved to Vocabulary by mistake: a word kept in the lesson's own word list (where moved
 // cards and words added in Vocabulary go) becomes a card of the lesson again, its question the word, its answer the
 // meaning and its notes the word's own notes, and leaves Vocabulary. It starts New in Lessons and stays there.
+// (sorted: a one-sided word given a same-language meaning, moved on its own and sorted like any other card.)
 function canMoveToLesson(item) {
   return !!item && !!item.card && item.card.uid === EXTRA_UID && !isVirtualLesson() && currentLessonId !== VOCAB_ALL_ID;
 }
 
-function moveVocabToLesson(item) {
+function moveVocabToLesson(item, sorted) {
   if (!canMoveToLesson(item)) return;
   commitVocabEdit();
   const extras = item.card;
@@ -16083,7 +16065,7 @@ function moveVocabToLesson(item) {
     row.notesHtml = notes;
     row.notes = plainTextOf(notes, "\n");
   }
-  row.kept = true;
+  if (!sorted) row.kept = true;
   rows.push(row);
   extras.notes = next.notes;
   extras.notesHtml = next.notesHtml;
@@ -16101,7 +16083,7 @@ function moveVocabToLesson(item) {
     renderVocab();
     renderLessonList();
   }, false, "Lesson");
-  showToast("Moved back to Lessons");
+  showToast(sorted ? "Moved to Lessons — Speaking" : "Moved back to Lessons");
 }
 
 function syncVocabSound() {
@@ -17112,7 +17094,7 @@ function isTypingInField() {
 }
 
 function cycleMode() {
-  const buttons = currentView === "vocab" ? [ ...document.querySelectorAll("#vocabToolbar [data-view]") ].filter(b => !b.hidden) : [ "fullModeBtn", "listenModeBtn", "ieltsModeBtn", "oneSideModeBtn" ].map(id => document.getElementById(id)).filter(b => b.style.display !== "none");
+  const buttons = currentView === "vocab" ? [ ...document.querySelectorAll("#vocabToolbar [data-view]") ].filter(b => !b.hidden) : [ "fullModeBtn", "listenModeBtn", "ieltsModeBtn" ].map(id => document.getElementById(id)).filter(b => b.style.display !== "none");
   if (buttons.length < 2) return false;
   const at = buttons.findIndex(b => b.classList.contains("active"));
   buttons[(at + 1) % buttons.length].click();
