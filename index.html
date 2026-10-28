@@ -952,8 +952,8 @@ window.onYouTubeIframeAPIReady = function(){
     width:max-content;
     max-width:min(320px, calc(100vw - 16px));
     box-sizing:border-box;
-    overflow-y:auto;
-    overscroll-behavior:contain;
+    flex-direction:column;
+    overflow:hidden;
     background:var(--popup-bg);
     color:var(--popup-text);
     border:1px solid #333c48;
@@ -965,6 +965,14 @@ window.onYouTubeIframeAPIReady = function(){
     display:none;
   }
   html.touch :is(.vocab-popup, .vocab-add-field){font-size:16px;line-height:22px;}
+  .vocab-popup .vocab-scroll{flex:0 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;}
+  .vocab-popup .vocab-fade{display:none;position:sticky;z-index:1;height:24px;pointer-events:none;}
+  .vocab-popup .vocab-fade.up{top:0;margin-bottom:-24px;background:linear-gradient(var(--popup-bg), transparent);}
+  .vocab-popup .vocab-fade.down{bottom:0;height:32px;margin-top:-32px;background:linear-gradient(transparent, var(--popup-bg) 60%);}
+  .vocab-popup.more-above .vocab-fade.up, .vocab-popup.more-below .vocab-fade.down{display:block;}
+  .vocab-popup .vocab-more{position:absolute;left:50%;bottom:0;display:flex;align-items:center;justify-content:center;width:32px;height:20px;margin-left:-16px;min-height:0;padding:0;border:0;border-radius:10px;background:rgba(255,255,255,.1);color:#cfd6e2;pointer-events:auto;cursor:pointer;}
+  .vocab-popup .vocab-more svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+  @media (hover:hover){.vocab-popup .vocab-more:hover{color:#fff;background:rgba(255,255,255,.18);}}
   .vocab-popup .vocab-nav{
     position:absolute;top:0;bottom:0;width:34px;
     display:flex;align-items:center;justify-content:center;
@@ -7054,13 +7062,23 @@ function getVocabPopupEl() {
   if (!vocabPopupEl) {
     vocabPopupEl = document.createElement("div");
     vocabPopupEl.className = "vocab-popup";
-    vocabPopupEl.innerHTML = `\n      <button class="vocab-nav prev" aria-label="Previous match">&#8249;</button>\n      <div class="vocab-sentence"></div>\n      <div class="vocab-note"></div>\n      <div class="vocab-counter"></div>\n      <button class="vocab-nav next" aria-label="Next match">&#8250;</button>\n    `;
+    vocabPopupEl.innerHTML = `\n      <button class="vocab-nav prev" aria-label="Previous match">&#8249;</button>\n      <div class="vocab-scroll">\n        <div class="vocab-fade up"></div>\n        <div class="vocab-sentence"></div>\n        <div class="vocab-note"></div>\n        <div class="vocab-fade down"><button class="vocab-more" aria-label="More below"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg></button></div>\n      </div>\n      <div class="vocab-counter"></div>\n      <button class="vocab-nav next" aria-label="Next match">&#8250;</button>\n    `;
     document.body.appendChild(vocabPopupEl);
+    const scroller = vocabPopupEl.querySelector(".vocab-scroll");
+    scroller.addEventListener("scroll", syncVocabScroll);
+    vocabPopupEl.querySelector(".vocab-more").addEventListener("click", e => {
+      e.stopPropagation();
+      scroller.scrollBy({
+        top: Math.round(scroller.clientHeight * .8),
+        behavior: reducedMotion() ? "instant" : "smooth"
+      });
+    });
     vocabPopupEl.querySelector(".prev").addEventListener("click", e => {
       e.stopPropagation();
       if (vocabIndex > 0) {
         vocabIndex--;
         renderVocabPopup();
+        placeVocabPopup(vocabPopupAnchor);
       }
     });
     vocabPopupEl.querySelector(".next").addEventListener("click", e => {
@@ -7068,6 +7086,7 @@ function getVocabPopupEl() {
       if (vocabIndex < vocabMatches.length - 1) {
         vocabIndex++;
         renderVocabPopup();
+        placeVocabPopup(vocabPopupAnchor);
       }
     });
     vocabPopupEl.addEventListener("mouseover", e => {
@@ -7145,7 +7164,7 @@ function showWordView(row, term, meaning, anchorRect) {
   } ];
   vocabIndex = 0;
   const popup = getVocabPopupEl();
-  popup.style.display = "block";
+  popup.style.display = "flex";
   renderVocabPopup();
   popup.querySelector(".vocab-note").innerHTML = `<div><b>${escapeHtml(term)}</b>${meaning ? ": " + escapeHtml(meaning) : ""}</div>`;
   placeVocabPopup(anchorRect);
@@ -7155,15 +7174,27 @@ function showVocabPopup(matches, anchorRect) {
   vocabMatches = matches;
   vocabIndex = 0;
   const popup = getVocabPopupEl();
-  popup.style.display = "block";
+  popup.style.display = "flex";
   renderVocabPopup();
   placeVocabPopup(anchorRect);
 }
 
 // A long lookup never runs off the screen: it goes below the word or above it, wherever there is more room, and is
-// no taller than that room; what does not fit scrolls inside it (the page does not move, so it stays open).
+// no taller than that room; what does not fit scrolls inside it (the page does not move, so it stays open). Only the
+// words scroll: ‹ › and the counter stay where they are, and a fade with ⌄ at the bottom (a fade at the top once
+// scrolled) shows there is more. Going to another match with ‹ › fits the popup to that match and starts it at its top.
+let vocabPopupAnchor = null;
+
+function syncVocabScroll() {
+  const sc = vocabPopupEl && vocabPopupEl.querySelector(".vocab-scroll");
+  if (!sc) return;
+  vocabPopupEl.classList.toggle("more-above", sc.scrollTop > 0);
+  vocabPopupEl.classList.toggle("more-below", sc.scrollTop + sc.clientHeight < sc.scrollHeight - 1);
+}
+
 function placeVocabPopup(anchorRect) {
   const popup = getVocabPopupEl();
+  vocabPopupAnchor = anchorRect;
   popup.style.maxHeight = "";
   const popupRect = popup.getBoundingClientRect();
   const below = Math.floor(window.innerHeight - anchorRect.bottom - 16), above = Math.floor(anchorRect.top - 16);
@@ -7175,7 +7206,8 @@ function placeVocabPopup(anchorRect) {
   const top = down ? anchorRect.bottom + 8 : anchorRect.top - 8 - height;
   popup.style.left = Math.round(Math.max(8, left)) + "px";
   popup.style.top = Math.round(Math.max(8, top)) + "px";
-  popup.scrollTop = 0;
+  popup.querySelector(".vocab-scroll").scrollTop = 0;
+  syncVocabScroll();
 }
 
 function hideVocabPopup() {
