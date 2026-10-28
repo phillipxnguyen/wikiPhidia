@@ -338,10 +338,7 @@ window.onYouTubeIframeAPIReady = function(){
   .progress-badge.limit-bump::after{animation-delay:calc(var(--bump-delay, 0ms) + 300ms);}
   @keyframes limitBump{0%{transform:scale(1);}18%{transform:scale(1.6) rotate(-5deg);}36%{transform:scale(.9) rotate(3deg);}54%{transform:scale(1.18) rotate(-1deg);}72%{transform:scale(.98);}100%{transform:scale(1);}}
   @keyframes limitRing{0%{opacity:.8;transform:scale(1);}100%{opacity:0;transform:scale(2.4);}}
-  .limit-x{position:fixed;z-index:1600;width:96px;height:96px;margin:-48px 0 0 -48px;font-size:96px;font-weight:900;line-height:96px;text-align:center;color:var(--danger);text-shadow:0 0 4px var(--surface), 0 0 8px var(--surface);pointer-events:none;animation:limitX 1.9s cubic-bezier(.34,1.56,.64,1) 120ms both;}
-  .limit-float .limit-x{position:absolute;}
-  @keyframes limitX{0%{opacity:0;transform:scale(0) rotate(-180deg);}22%{opacity:.95;transform:scale(1.25) rotate(10deg);}34%{transform:scale(.92) rotate(-4deg);}44%{transform:scale(1) rotate(0);}52%{transform:scale(1.08);}60%{transform:scale(1);}82%{opacity:.95;transform:scale(1);}100%{opacity:0;transform:scale(1.3);}}
-  .limit-float{position:fixed;z-index:1500;display:flex;flex-direction:column;align-items:center;gap:16px;padding:16px 24px;border:1px solid var(--border);border-radius:16px;background:var(--surface);box-shadow:var(--shadow-md);pointer-events:none;transform:translateX(-50%);animation:limitFloatIn .35s cubic-bezier(.34,1.56,.64,1) both;}
+  .limit-float{position:fixed;z-index:1500;display:flex;flex-direction:column;align-items:center;gap:16px;pointer-events:none;transform:translateX(-50%);animation:limitFloatIn .35s cubic-bezier(.34,1.56,.64,1) both;}
   .limit-float.leaving{animation:limitFloatOut .4s ease-in both;}
   .limit-float .progress-badges{gap:16px;}
   .limit-float .progress-badge.limit-bump{animation-name:limitBumpFloat;}
@@ -12941,7 +12938,7 @@ function renderStreakChip() {
   const chip = document.getElementById("streakChip");
   chip.classList.toggle("cold", !info.studiedToday);
   document.getElementById("streakChipCount").textContent = info.current;
-  chip.title = (!info.current ? "Study today to start a streak" : info.studiedToday ? info.current + "-day streak — you studied today" : "Study today to keep your " + info.current + "-day streak") + ". Click for daily limits.";
+  chip.title = (!info.current ? "Study today to start a streak" : info.studiedToday ? info.current + "-day streak — you studied today" : "Study today to keep your " + info.current + "-day streak") + ". In a study mode, click for daily limits.";
 }
 
 function closeLimitsPop() {
@@ -12995,15 +12992,19 @@ function bumpChangedCounts(before) {
   if (reducedMotion()) return;
   const KINDS = [ "new", "due", "done" ], t0 = performance.now(), SPAN = 1700, roll = {};
   const float = limitsFloat();
-  // Lists always show every card, so there the limits change no number: one big red ✕ over the counts says they don't
-  // apply here.
-  if (currentView === "vocab" ? vocabView === "list" : !groupState) limitsCross(float);
+  // The show belongs to the page it started on: going to another lesson, mode or view ends it and takes it away.
+  const where = limitsPlace();
   const badges = () => [ ...document.querySelectorAll(".main-inner .progress-badge, .limit-float .progress-badge") ].filter(el => el.offsetParent);
   const kindOf = el => KINDS.find(k => el.classList.contains(k));
   // The counts may be drawn again while this plays (the next card coming up), so each frame picks up the badges on
   // screen as they are: a new one joins the animation where it has got to, and the rolling numbers carry on.
   const frame = t => {
     const elapsed = t - t0;
+    if (limitsPlace() !== where) {
+      document.querySelectorAll(".limit-float").forEach(el => el.remove());
+      document.querySelectorAll(".limit-bump").forEach(el => el.classList.remove("limit-bump"));
+      return;
+    }
     badges().forEach(el => {
       const kind = kindOf(el), num = el.querySelector("b") || el;
       if (!(kind in roll)) {
@@ -13031,7 +13032,7 @@ function bumpChangedCounts(before) {
         if (same && !r) el.querySelector("b").textContent = (same.querySelector("b") || same).textContent;
       });
     }
-    if (elapsed < SPAN) requestAnimationFrame(frame);
+    if (elapsed < SPAN || float && float.isConnected) requestAnimationFrame(frame);
   };
   requestAnimationFrame(frame);
 }
@@ -13069,26 +13070,14 @@ function limitsFloat() {
   return float;
 }
 
-function limitsCross(float) {
-  document.querySelectorAll(".limit-x").forEach(x => x.remove());
-  const row = float ? float.querySelector(".progress-badges") : [ ...document.querySelectorAll(".main-inner .progress-badges") ].find(el => el.offsetParent);
-  if (!row) return;
-  const x = document.createElement("div");
-  x.className = "limit-x";
-  x.setAttribute("aria-hidden", "true");
-  x.textContent = "✕";
-  // In the copy that drops in, the ✕ rides with it (the copy is still settling as it starts).
-  if (float) {
-    float.appendChild(x);
-    x.style.left = Math.round(row.offsetLeft + row.offsetWidth / 2) + "px";
-    x.style.top = Math.round(row.offsetTop + row.offsetHeight / 2) + "px";
-  } else {
-    const r = row.getBoundingClientRect();
-    document.body.appendChild(x);
-    x.style.left = Math.round(r.left + r.width / 2) + "px";
-    x.style.top = Math.round(r.top + r.height / 2) + "px";
-  }
-  x.addEventListener("animationend", () => x.remove());
+// Where you are, for the daily limits: they only matter where you study (a study mode, All lessons, Vocabulary's
+// flashcards); lists always show every card, so there 🔥 does not open the limits.
+function limitsPlace() {
+  return [ currentView, currentLessonId, appMode, groupState ? groupViewStyle : "", vocabView ].join("|");
+}
+
+function limitsApply() {
+  return currentView === "study" ? !!groupState || isAllLessons() : currentView === "vocab" && vocabView !== "list";
 }
 
 function saveStudyLimits() {
@@ -13139,6 +13128,7 @@ document.getElementById("limitsTitle").onclick = () => {
 document.getElementById("streakChip").onclick = () => {
   const pop = document.getElementById("limitsPop");
   if (!pop.hidden) return closeLimitsPop();
+  if (!limitsApply()) return;
   document.getElementById("limitFresh").value = studyLimits.fresh || "";
   document.getElementById("limitReview").value = studyLimits.review || "";
   pop.hidden = false;
