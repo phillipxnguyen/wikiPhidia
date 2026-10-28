@@ -443,6 +443,8 @@ textarea[hidden], .sent-view[hidden]{display:none;}
     paintSentence();
     sentView.addEventListener("click", editSentence);
     sentEl.addEventListener("blur", () => {
+      // Leaving the window (to look something up in another tab) keeps the sentence box open as it is.
+      if (!document.hasFocus()) return;
       paintSentence();
       sentEl.hidden = true;
       sentView.hidden = false;

@@ -3800,6 +3800,8 @@ function openReadCard(found) {
   });
   sentEl.addEventListener("input", fitSentence);
   sentEl.addEventListener("blur", () => {
+    // Leaving the window (to look something up in another tab) keeps the sentence box open as it is.
+    if (!document.hasFocus()) return;
     paintSentence();
     sentEl.hidden = true;
     sentView.hidden = false;
@@ -8180,20 +8182,23 @@ function notesEditorHtml(row) {
   return html;
 }
 
-function commitActiveEdit() {
+// keep: save what is typed and leave the editor open as it is (used when the window loses focus, say to look a word
+// up in another tab): nothing in the boxes is touched, the card simply holds what they hold.
+function commitActiveEdit(keep) {
   if (!activeEdit) return;
   let newQHtml = cleanPunctHtml(sanitizeHtml(stripVocabHighlights(activeEdit.editQ.innerHTML || ""), "br"));
   let newQ = cleanPunct(plainTextOf(newQHtml, "\n"));
   let newAHtml = cleanPunctHtml(sanitizeHtml(stripVocabHighlights(activeEdit.editA.innerHTML || ""), "br"));
   let newA = cleanPunct(plainTextOf(newAHtml, "\n"));
   const takenKeys = new Set;
-  activeEdit.editNotes.querySelectorAll("li").forEach(li => {
+  if (!keep) activeEdit.editNotes.querySelectorAll("li").forEach(li => {
     if (isVocabItem(li)) takenKeys.add(normalizeVocabText(noteItemTerm(li))); else if (NOTE_VOCAB_ITEM_RE.test(ownLiTextNodes(li).map(n => n.nodeValue).join("")) && !noteItemIsDuplicate(li, takenKeys)) boldVocabItem(li);
   });
-  if (activeEdit.editNotes.textContent.trim() && !activeEdit.editNotes.querySelector("*")) activeEdit.editNotes.innerHTML = "<div>" + activeEdit.editNotes.innerHTML + "</div>";
+  if (!keep && activeEdit.editNotes.textContent.trim() && !activeEdit.editNotes.querySelector("*")) activeEdit.editNotes.innerHTML = "<div>" + activeEdit.editNotes.innerHTML + "</div>";
   const newNotes = plainTextOf(activeEdit.editNotes.innerHTML, "\n");
   const newNotesHtml = plainTextOf(activeEdit.editNotes.innerHTML || "", "\n").trim() ? sanitizeHtml(activeEdit.editNotes.innerHTML || "") : "";
   if ((newQ !== activeEdit.originalQ || newA !== activeEdit.originalA) && findDuplicateCard(newQ, newA, activeEdit.row.time, activeEdit.row)) {
+    if (keep) return;
     showToast("Card already in this lesson");
     newQ = activeEdit.originalQ;
     newQHtml = activeEdit.originalQHtml;
@@ -8214,8 +8219,21 @@ function commitActiveEdit() {
     activeEdit.row.notesHtml = newNotesHtml;
     stampNewVocab(activeEdit.row, before);
     scheduleAutoSave();
+    flushAutoSave();
   }
-  const row = activeEdit.row, answered = !activeEdit.originalA.trim() && !!newA.trim();
+  if (keep) {
+    if (activeEdit.openedA == null) activeEdit.openedA = activeEdit.originalA;
+    Object.assign(activeEdit, {
+      originalQ: newQ,
+      originalQHtml: newQHtml,
+      originalA: newA,
+      originalAHtml: newAHtml,
+      originalNotes: newNotes,
+      originalNotesHtml: newNotesHtml
+    });
+    return;
+  }
+  const row = activeEdit.row, answered = !(activeEdit.openedA != null ? activeEdit.openedA : activeEdit.originalA).trim() && !!newA.trim();
   hideDictOverlay();
   activeEdit = null;
   closeEditPopup();
@@ -8383,10 +8401,8 @@ window.addEventListener("blur", () => {
   const active = document.activeElement;
   const focusedOwnDictIframe = !!(activeEdit && activeDictOverlay && activeDictOverlay.iframe.contains(active));
   if (focusedOwnDictIframe) loopWorkRow(activeEdit.row);
-  if (activeEdit && !focusedOwnDictIframe) {
-    commitActiveEdit();
-    render();
-  }
+  // Leaving the window (another tab, another app) saves the card being edited and keeps its editor open.
+  if (activeEdit && !focusedOwnDictIframe) commitActiveEdit(true);
   clearRowSelection();
   hideTooltip();
   reclaimKeyboardFocus();
@@ -15741,7 +15757,8 @@ function wireVocabEditor(items) {
   const save = () => {
     const key = vocabEditingKey;
     vocabEditingKey = null;
-    if (!saveVocabEditor(item, term.value, meaning.value, notes.innerHTML, true)) {
+    const now = lessonVocabItems(vocabSource()).find(i => i.key === key) || item;
+    if (!saveVocabEditor(now, term.value, meaning.value, notes.innerHTML, true)) {
       vocabEditingKey = key;
       return;
     }
@@ -15853,7 +15870,7 @@ function commitVocabEdit() {
   return true;
 }
 
-function saveVocabEditor(item, termRaw, meaningRaw, notesHtml, explicit) {
+function saveVocabEditor(item, termRaw, meaningRaw, notesHtml, explicit, keep) {
   termRaw = cleanPunct(termRaw);
   meaningRaw = cleanPunct(meaningRaw);
   const term = (termRaw || "").replace(/\s+/g, " ").trim();
@@ -15866,22 +15883,30 @@ function saveVocabEditor(item, termRaw, meaningRaw, notesHtml, explicit) {
   }
   const meaning = (meaningRaw || "").replace(/\s+/g, " ").trim();
   const notesChanged = sanitizeHtml(notesHtml || "") !== wordNotesOf(item);
+  // A one-sided word given a meaning in its own language is no longer a word to learn: it is a Speaking card, so it
+  // goes to Lessons once the editor has closed (also when that meaning was saved earlier, on leaving the window).
+  const wasBlank = !item.meaning || vocabKeptBlank === item.key;
+  if (!keep) vocabKeptBlank = null;
+  const sortLater = () => {
+    if (!keep && wasBlank && meaning && !isTranslationCard({
+      q: term,
+      a: meaning
+    })) setTimeout(() => {
+      const now = lessonVocabItems(vocabSource()).find(i => i.key === key);
+      if (canMoveToLesson(now)) moveVocabToLesson(now, true);
+    });
+  };
   if (term === item.term && meaning === item.meaning) {
-    if (!notesChanged) return true;
+    if (!notesChanged) {
+      sortLater();
+      return true;
+    }
     if (!vocabEntryOk(term)) return false;
     pushUndo("Edited card — " + term);
   } else if (!updateVocabEntry(item, termRaw, meaningRaw)) return false;
   if (notesChanged) setWordNotes(item.card, key, notesHtml);
   scheduleAutoSave();
-  // A one-sided word given a meaning in its own language is no longer a word to learn: it is a Speaking card, so it
-  // goes to Lessons once the editor has closed.
-  if (!item.meaning && meaning && !isTranslationCard({
-    q: term,
-    a: meaning
-  })) setTimeout(() => {
-    const now = lessonVocabItems(vocabSource()).find(i => i.key === key);
-    if (canMoveToLesson(now)) moveVocabToLesson(now, true);
-  });
+  sortLater();
   return true;
 }
 
@@ -15892,9 +15917,32 @@ document.addEventListener("click", e => {
   if (commitVocabEdit()) renderVocab();
 }, true);
 
-window.addEventListener("blur", () => {
-  if (commitVocabEdit()) renderVocab();
-});
+window.addEventListener("blur", keepVocabEdit);
+
+// A word whose meaning was blank when its editing began, saved on the way out of the window: once the editor is
+// closed it is sorted like a word given its meaning there and then.
+let vocabKeptBlank = null;
+
+// Leaving the window saves the word being edited and keeps its editor open, as in Lessons. A new word is not made
+// until you save it; what is typed stays in its box.
+function keepVocabEdit() {
+  if (!vocabEditingKey || vocabEditingKey === NEW_WORD_KEY) return;
+  const term = document.getElementById("vocabEditTerm"), meaning = document.getElementById("vocabEditMeaning"), notes = document.getElementById("vocabEditNotes");
+  const item = lessonVocabItems(vocabSource()).find(i => i.key === vocabEditingKey);
+  const text = term && cleanPunct(term.value).replace(/\s+/g, " ").trim();
+  if (!item || !text) return;
+  const key = normalizeVocabText(text);
+  if (key !== item.key && lessonVocabItems(vocabSource()).some(i => i.key === key)) return;
+  const blank = !item.meaning || vocabKeptBlank === item.key;
+  // Saving takes an undo step, which would close the editor first (as any undo step does): it is set aside meanwhile.
+  vocabEditingKey = null;
+  const saved = saveVocabEditor(item, term.value, meaning.value, notes ? notes.innerHTML : "", false, true);
+  vocabEditingKey = saved ? key : item.key;
+  if (saved) {
+    vocabKeptBlank = blank ? key : null;
+    flushAutoSave();
+  }
+}
 
 function openVocabEditor(key, inList) {
   commitVocabEdit();
