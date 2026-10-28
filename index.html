@@ -383,6 +383,11 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-card.pending{position:absolute;top:0;left:0;right:0;opacity:0;pointer-events:none;z-index:-1;}
   .vocab-card.settled .vocab-card-inner{transform:none;transition:none;transform-style:flat;}
   .vocab-card.settled .vocab-back{transform:none;}
+  /* Default scroll bars are one thin bar that takes its own room beside what it scrolls (never laid over the text) and
+     stays the same when pointed at; the app's own scroll rails are drawn separately. */
+  ::-webkit-scrollbar{width:8px;height:8px;}
+  ::-webkit-scrollbar-track, ::-webkit-scrollbar-corner{background:transparent;}
+  ::-webkit-scrollbar-thumb{border:2px solid transparent;border-radius:4px;background:color-mix(in srgb, currentColor 30%, transparent) padding-box;}
   :is(#singleCardBody.listen-batch, .vocab-back){scrollbar-width:none;}
   :is(#singleCardBody.listen-batch, .vocab-back)::-webkit-scrollbar{display:none;}
   @property --edge-t{syntax:"<length>";inherits:false;initial-value:0px;}
@@ -965,15 +970,8 @@ window.onYouTubeIframeAPIReady = function(){
   }
   html.touch :is(.vocab-popup, .vocab-add-field){font-size:16px;line-height:22px;}
   .vocab-popup .vocab-scroll{flex:0 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;}
-  .vocab-popup .vocab-fade{display:none;position:sticky;z-index:1;height:24px;pointer-events:none;}
-  .vocab-popup .vocab-fade.up{top:0;margin-bottom:-24px;background:linear-gradient(var(--popup-bg), transparent);}
-  .vocab-popup .vocab-fade.down{bottom:0;height:32px;margin-top:-32px;background:linear-gradient(transparent, var(--popup-bg) 60%);}
-  .vocab-popup.more-above .vocab-fade.up, .vocab-popup.more-below .vocab-fade.down{display:block;}
-  .vocab-popup .vocab-more{position:absolute;left:50%;bottom:0;display:flex;align-items:center;justify-content:center;width:32px;height:20px;margin-left:-16px;min-height:0;padding:0;border:0;border-radius:10px;background:rgba(255,255,255,.1);color:#cfd6e2;pointer-events:auto;cursor:pointer;}
-  .vocab-popup .vocab-more svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
-  @media (hover:hover){.vocab-popup .vocab-more:hover{color:#fff;background:rgba(255,255,255,.18);}}
   .vocab-popup .vocab-nav{
-    position:absolute;top:0;bottom:0;width:34px;
+    position:absolute;top:0;bottom:0;width:24px;
     display:flex;align-items:center;justify-content:center;
     background:none;border:none;color:var(--popup-muted);font-size:22px;line-height:1;cursor:pointer;
   }
@@ -981,7 +979,7 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-popup .vocab-nav:active{background:rgba(255,255,255,.12);}
   .vocab-popup .vocab-nav.prev{left:0;border-radius:var(--radius) 0 0 var(--radius);}
   .vocab-popup .vocab-nav.next{right:0;border-radius:0 var(--radius) var(--radius) 0;}
-  .vocab-popup.has-nav{padding-left:36px;padding-right:36px;}
+  .vocab-popup.has-nav{padding-left:28px;padding-right:28px;}
   .vocab-popup .vocab-sentence{white-space:pre-line;}
   .vocab-popup .vocab-note{margin-top:6px;}
   .vocab-popup .vocab-sentence:empty{display:none;}
@@ -994,9 +992,9 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-popup .vocab-sentence mark, .vocab-popup .vocab-note mark{background:var(--mark-bg);color:#20242b;border-radius:4px;padding:0 2px;font-style:normal;}
   .vocab-popup .vocab-note{font-style:italic;}
   .vocab-popup .vocab-note:empty{display:none;}
-  .vocab-popup .vocab-counter{margin-top:6px;font-size:10px;line-height:1;color:var(--popup-muted);text-align:center;white-space:pre-line;}
+  .vocab-popup .vocab-counter{display:flex;flex-direction:column;align-items:center;gap:4px;margin-top:10px;font-size:12px;line-height:16px;color:var(--popup-muted);text-align:center;}
   .vocab-popup .vocab-from{font-size:12px;line-height:16px;font-style:italic;}
-  .from-mark{color:var(--mode-blue);}
+  .from-mark{color:var(--mode-blue);font-weight:700;}
   .from-mark.vocab{color:var(--new-color);}
   .toast-container{position:fixed;left:16px;bottom:16px;display:flex;flex-direction:column;gap:6px;z-index:2000;pointer-events:none;}
   .toast{
@@ -4209,7 +4207,7 @@ scrollRail.innerHTML = "<i></i>";
 
 document.body.appendChild(scrollRail);
 
-const EDGE_SEL = "#singleCardBody.listen-batch, .lesson-list, .heat-day-list";
+const EDGE_SEL = "#singleCardBody.listen-batch, .lesson-list, .heat-day-list, .vocab-popup .vocab-scroll";
 
 function markEdges(el) {
   if (!el.edgeLen) {
@@ -6955,13 +6953,6 @@ function termMatches(key, exclude) {
   })));
 }
 
-function highlightMatch(sentence, needle) {
-  const text = (sentence || "").normalize("NFC");
-  const span = findTermIn(text, needle);
-  if (!span) return escapeHtml(text);
-  return escapeHtml(text.slice(0, span[0])) + "<mark>" + escapeHtml(text.slice(span[0], span[1])) + "</mark>" + escapeHtml(text.slice(span[1]));
-}
-
 const CJK_CHAR_RE = /[぀-ヿ一-鿿]/;
 
 function highlightVocabInHtml(html, excludeId, extraTerms, onlyKeys) {
@@ -7076,17 +7067,8 @@ function getVocabPopupEl() {
   if (!vocabPopupEl) {
     vocabPopupEl = document.createElement("div");
     vocabPopupEl.className = "vocab-popup";
-    vocabPopupEl.innerHTML = `\n      <button class="vocab-nav prev" aria-label="Previous match">&#8249;</button>\n      <div class="vocab-scroll">\n        <div class="vocab-fade up"></div>\n        <div class="vocab-sentence"></div>\n        <div class="vocab-note"></div>\n        <div class="vocab-fade down"><button class="vocab-more" aria-label="More below"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg></button></div>\n      </div>\n      <div class="vocab-counter"></div>\n      <button class="vocab-nav next" aria-label="Next match">&#8250;</button>\n    `;
+    vocabPopupEl.innerHTML = `\n      <button class="vocab-nav prev" aria-label="Previous match">&#8249;</button>\n      <div class="vocab-scroll">\n        <div class="vocab-sentence"></div>\n        <div class="vocab-note"></div>\n      </div>\n      <div class="vocab-counter"></div>\n      <button class="vocab-nav next" aria-label="Next match">&#8250;</button>\n    `;
     document.body.appendChild(vocabPopupEl);
-    const scroller = vocabPopupEl.querySelector(".vocab-scroll");
-    scroller.addEventListener("scroll", syncVocabScroll);
-    vocabPopupEl.querySelector(".vocab-more").addEventListener("click", e => {
-      e.stopPropagation();
-      scroller.scrollBy({
-        top: Math.round(scroller.clientHeight * .8),
-        behavior: reducedMotion() ? "instant" : "smooth"
-      });
-    });
     vocabPopupEl.querySelector(".prev").addEventListener("click", e => {
       e.stopPropagation();
       if (vocabIndex > 0) {
@@ -7129,6 +7111,7 @@ function highlightTermInNotesHtml(html, term) {
   let node;
   while (node = walker.nextNode()) textNodes.push(node);
   textNodes.forEach(textNode => {
+    if (textNode.parentElement && textNode.parentElement.closest("mark")) return;
     const text = textNode.nodeValue;
     const span = text && findTermIn(text, term);
     if (!span) return;
@@ -7159,12 +7142,14 @@ function renderVocabPopup() {
   const popup = getVocabPopupEl();
   if (hoverTooltip && hoverTooltip.classList.contains("on-popup")) hideTooltip();
   const m = vocabMatches[vocabIndex];
-  popup.querySelector(".vocab-sentence").innerHTML = highlightMatch(m.sentence, m.term);
+  const terms = (m.terms || [ m.term ]).slice().sort((a, b) => b.length - a.length);
+  const markAll = html => terms.reduce((h, t) => highlightTermInNotesHtml(h, t), html);
+  popup.querySelector(".vocab-sentence").innerHTML = markAll(escapeHtml((m.sentence || "").normalize("NFC")));
   const notesHtml = m.row.notesHtml || escapeHtml(m.row.notes || "");
-  popup.querySelector(".vocab-note").innerHTML = highlightTermInNotesHtml(notesHtml, m.term);
+  popup.querySelector(".vocab-note").innerHTML = markAll(notesHtml);
   const multi = vocabMatches.length > 1;
   const away = m.lesson && m.lesson.id !== currentLessonId && !rows.includes(m.row) ? m.lesson.name : "";
-  popup.querySelector(".vocab-counter").innerHTML = [ away ? `<i class="vocab-from">${fromMark(m.row.uid === EXTRA_UID ? "vocab" : "cards")}${escapeHtml(away)}</i>` : "", multi ? vocabIndex + 1 + " / " + vocabMatches.length : "" ].filter(Boolean).join("\n");
+  popup.querySelector(".vocab-counter").innerHTML = (away ? `<i class="vocab-from">${fromMark(m.row.uid === EXTRA_UID ? "vocab" : "cards")}${escapeHtml(away)}</i>` : "") + (multi ? `<span>${vocabIndex + 1} / ${vocabMatches.length}</span>` : "");
   popup.classList.toggle("has-nav", multi);
   popup.querySelector(".prev").style.display = multi && vocabIndex > 0 ? "block" : "none";
   popup.querySelector(".next").style.display = multi && vocabIndex < vocabMatches.length - 1 ? "block" : "none";
@@ -7184,8 +7169,22 @@ function showWordView(row, term, meaning, anchorRect) {
   placeVocabPopup(anchorRect);
 }
 
+// A card that holds several of the words looked up (开车送货 and 送货 in one sentence) shows once, with every one of
+// them marked, not once for each word.
+function mergeCardMatches(matches) {
+  const out = [];
+  matches.forEach(m => {
+    const same = out.find(o => o.row === m.row && o.sentence === m.sentence);
+    if (!same) return out.push(Object.assign({}, m, {
+      terms: [ m.term ]
+    }));
+    if (!same.terms.includes(m.term)) same.terms.push(m.term);
+  });
+  return out;
+}
+
 function showVocabPopup(matches, anchorRect) {
-  vocabMatches = matches;
+  vocabMatches = mergeCardMatches(matches);
   vocabIndex = 0;
   const popup = getVocabPopupEl();
   popup.style.display = "flex";
@@ -7195,16 +7194,10 @@ function showVocabPopup(matches, anchorRect) {
 
 // A long lookup never runs off the screen: it goes below the word or above it, wherever there is more room, and is
 // no taller than that room; what does not fit scrolls inside it (the page does not move, so it stays open). Only the
-// words scroll: ‹ › and the counter stay where they are, and a fade with ⌄ at the bottom (a fade at the top once
-// scrolled) shows there is more. Going to another match with ‹ › fits the popup to that match and starts it at its top.
+// words scroll: ‹ › and the counter stay where they are; the scroll bar beside the words shows there is more, and the
+// edges fade softly as the words pass them, as in the sidebar. Going to another match with ‹ › fits the popup to that
+// match and starts it at its top.
 let vocabPopupAnchor = null;
-
-function syncVocabScroll() {
-  const sc = vocabPopupEl && vocabPopupEl.querySelector(".vocab-scroll");
-  if (!sc) return;
-  vocabPopupEl.classList.toggle("more-above", sc.scrollTop > 0);
-  vocabPopupEl.classList.toggle("more-below", sc.scrollTop + sc.clientHeight < sc.scrollHeight - 1);
-}
 
 // Text that wraps leaves its box as wide as the widest it could be, so a long sentence that breaks early leaves a wide
 // empty strip on the right: the box is narrowed to its longest line, so the words sit evenly inside it.
@@ -7222,13 +7215,13 @@ function fitPopupWidth(popup) {
   if (!rects.length) return;
   box.querySelectorAll("mark").forEach(m => rects.push(...m.getClientRects()));
   const inner = box.getBoundingClientRect();
-  // The line under the words (the lesson's name, 1 / 3) is centred, so only its length counts.
-  const counter = [ ...popup.querySelector(".vocab-counter").childNodes ].reduce((w, n) => {
-    range.selectNodeContents(n);
+  // The lines under the words (the lesson's name, 1 / 3) are centred, so only their length counts.
+  const counter = [ ...popup.querySelectorAll(".vocab-counter > *") ].reduce((w, el) => {
+    range.selectNodeContents(el);
     return Math.max(w, ...[ ...range.getClientRects() ].map(r => r.width));
   }, 0);
   const used = Math.max(counter, ...rects.map(r => r.right - inner.left));
-  const spare = Math.floor(inner.width - used);
+  const spare = Math.floor(box.clientWidth - used);
   if (spare > 0) popup.style.width = Math.ceil(popup.getBoundingClientRect().width - spare) + "px";
 }
 
@@ -7247,8 +7240,9 @@ function placeVocabPopup(anchorRect) {
   const top = down ? anchorRect.bottom + 8 : anchorRect.top - 8 - height;
   popup.style.left = Math.round(Math.max(8, left)) + "px";
   popup.style.top = Math.round(Math.max(8, top)) + "px";
-  popup.querySelector(".vocab-scroll").scrollTop = 0;
-  syncVocabScroll();
+  const sc = popup.querySelector(".vocab-scroll");
+  sc.scrollTop = 0;
+  markEdges(sc);
 }
 
 function hideVocabPopup() {
