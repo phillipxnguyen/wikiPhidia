@@ -1611,6 +1611,10 @@ window.onYouTubeIframeAPIReady = function(){
   .yt-grab{display:inline-flex;align-items:center;height:34px;padding:0 10px;border:1px dashed var(--accent);border-radius:8px;background:none;color:var(--accent);font-size:14px;font-weight:600;line-height:20px;text-decoration:none;cursor:help;}
   #ytGrabCopy{cursor:pointer;}
   #ytDialog .cloud-row button{white-space:nowrap;}
+  /* Cancel: when no choice fits, the ✕ in the corner makes no lesson (as Esc does), also while the subtitles load. */
+  #ytDialog .paused-card{position:relative;}
+  .dialog-x{position:absolute;top:8px;right:8px;width:32px;height:32px;min-height:0;padding:0;border-radius:16px;font-size:16px;line-height:32px;}
+  @media (hover:hover){.dialog-x:hover{background:var(--danger-soft);color:var(--danger);}}
   #ytTrack{display:block;width:100%;margin-bottom:10px;}
   #ytDialog.loading :is(#ytTrack, .cloud-row button){background-image:linear-gradient(90deg, transparent 25%, color-mix(in srgb, var(--accent) 22%, transparent) 50%, transparent 75%);background-size:200% 100%;animation:ytShimmer 1.2s linear infinite;cursor:progress;}
   #ytDialog.loading .cloud-row button.primary{background-image:linear-gradient(90deg, transparent 25%, rgba(255,255,255,.4) 50%, transparent 75%);}
@@ -1866,6 +1870,7 @@ window.onYouTubeIframeAPIReady = function(){
 
 <div id="ytDialog" class="paused-overlay loading" hidden role="dialog" aria-modal="true" aria-labelledby="ytDialogTitle">
   <div class="paused-card">
+    <button id="ytDialogClose" class="ghost dialog-x" type="button" aria-label="Cancel" title="Cancel (Esc)">✕</button>
     <div class="emoji">🎬</div>
     <h2 id="ytDialogTitle">YouTube subtitles</h2>
     <p id="ytDialogText">Getting the subtitles…</p>
@@ -14563,6 +14568,8 @@ function receiveYouTubeTracks(d) {
 }
 
 document.getElementById("ytOnlySubs").onclick = () => chooseYouTubeImport(false);
+
+document.getElementById("ytDialogClose").onclick = () => chooseYouTubeImport(null);
 
 document.getElementById("ytWithTranslation").onclick = () => chooseYouTubeImport(true);
 
