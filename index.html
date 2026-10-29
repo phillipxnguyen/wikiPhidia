@@ -67,6 +67,7 @@ window.onYouTubeIframeAPIReady = function(){
     --danger:#cc3d3d;
     --danger-soft:rgba(204,61,61,.1);
     --new-color:#1e9466;
+    --word-green:color-mix(in srgb, var(--new-color) 75%, var(--a-text));
     --mode-blue:#2f6fd6;
     --due-color:#c9801a;
     --yt-red:#e62117;
@@ -252,7 +253,7 @@ window.onYouTubeIframeAPIReady = function(){
   #limitReviewMore{background:var(--due-color);}
   .limit-more:empty{display:none;}
   .limits-pop label{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:14px;line-height:20px;white-space:nowrap;}
-  .limits-pop input{width:88px;height:30px;padding:0 8px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);color:var(--text);font:inherit;font-size:16px;text-align:center;}
+  .limits-pop input{width:72px;height:30px;padding:0 4px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);color:var(--text);font:inherit;font-size:16px;text-align:center;}
   .limits-pop input{-moz-appearance:textfield;appearance:textfield;}
   .limits-pop input::-webkit-inner-spin-button, .limits-pop input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
   #limitsTitle{align-self:flex-start;padding:0;cursor:help;border:0;background:none;font-size:15px;font-weight:700;line-height:20px;color:var(--text);}
@@ -373,7 +374,7 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-back .vocab-ctx, .vocab-back .vocab-meaning{box-sizing:border-box;width:fit-content;max-width:100%;padding:0 16px;font-size:28px;line-height:35px;margin:0;text-align:left;}
   .vocab-back .vocab-ctx.small{font-size:26px;line-height:32px;}
   .vocab-back .vocab-meaning{font-size:26px;line-height:32px;font-weight:400;}
-  .vocab-list-meaning .card-notes mark{background:none;color:var(--new-color);font-weight:700;text-decoration:underline 2px var(--new-color);text-underline-offset:4px;}
+  .vocab-list-meaning .card-notes mark{background:none;color:var(--word-green);font-weight:700;text-decoration:underline 2px var(--word-green);text-underline-offset:4px;}
   .vocab-back .vocab-ctx mark, .vocab-back .vocab-ctx mark:has(.rd){display:inline;padding:0 1px;margin:0;border-radius:4px;line-height:inherit;}
   .vocab-back .vocab-ctx mark:is(.vocab-hit, .vocab-own){padding:0;border-radius:0;}
   .vocab-back .vocab-ctx mark.vs{border-top-left-radius:4px;border-bottom-left-radius:4px;padding-left:1px;}
@@ -425,9 +426,13 @@ window.onYouTubeIframeAPIReady = function(){
      looks darker), bold like the meaning under it, on a thick underline of that same green, so it stands
      apart at a glance and goes with its meaning. A card that is a whole sentence with its translation is not marked:
      the sentence in the usual ink, its translation plain in green. */
-  .vocab-ctx mark:not(.vocab-hit, .vocab-own){background:none;color:var(--new-color);font-weight:700;text-decoration:underline 3px var(--new-color);text-underline-offset:6px;}
-  .vocab-meaning.word{color:var(--new-color);}
-  .vocab-meaning.word, .vocab-front .vocab-term.word{font-weight:700;}
+  .vocab-ctx mark:not(.vocab-hit, .vocab-own){background:none;color:var(--word-green);font-weight:700;text-decoration:underline 3px var(--word-green);text-underline-offset:6px;}
+  /* One rule for every flashcard, a single word or a phrase alike: the underline only picks the word out of an example
+     sentence. A word with no sentence that holds it stands alone, bold in the same green, never underlined. The front
+     shows the word (or, answer first, its meaning) exactly as the back does: a word and its meaning bold in that green,
+     a whole sentence and its translation plain. */
+  .vocab-ctx .vocab-word{font-weight:700;color:var(--word-green);}
+  .vocab-meaning.word, .vocab-front .vocab-term.word, .vocab-card.answer-first .vocab-front .vocab-term.word{font-weight:700;color:var(--word-green);}
   .vocab-ctx mark:has(.rd){padding-top:.7em;padding-top:round(.7em, 1px);}
   .vocab-meaning{font-size:28px;font-weight:400;line-height:35px;color:var(--a-text);overflow-wrap:anywhere;}
   #vocabSpeak{width:48px;}
@@ -1467,7 +1472,9 @@ window.onYouTubeIframeAPIReady = function(){
   .paper-timer{margin-top:4px;font:600 22px/28px ui-monospace, "SF Mono", Menlo, Consolas, monospace;color:var(--paper-ink);}
   .paper-timer.stopped{color:var(--paper-ink-2);}
   /* A one-sided card has no answer to write on lines: it is dot paper instead, the same white sheet. */
-  .ielts-paper.dot-paper{background-image:var(--dot-paper);background-size:var(--line) var(--line);background-position:calc(var(--line) / 2) calc(var(--line) / 2);}
+  .ielts-paper.dot-paper{display:flex;flex-direction:column;justify-content:center;max-width:480px;aspect-ratio:1 / 1;background-image:var(--dot-paper);background-size:var(--line) var(--line);background-position:calc(var(--line) / 2) calc(var(--line) / 2);}
+  .ielts-paper .cell.paper-text{font-size:24px;line-height:var(--line);text-align:center;overflow-wrap:anywhere;white-space:pre-line;color:var(--paper-ink);}
+  .ielts-paper.dot-paper .paper-extras:empty{display:none;}
   .ielts-paper .cell.hidden.paper-hint, .ielts-paper .cell.hidden.paper-hint:hover{font-style:normal;color:var(--paper-ink);}
   .ielts-paper .paper-prompt:not(.paper-hint):hover{color:var(--paper-ink-2);}
   .paper-hint ol, .paper-notes ol{margin:0;padding:0;list-style:none;counter-reset:paper-n;}
@@ -1531,6 +1538,10 @@ window.onYouTubeIframeAPIReady = function(){
   @container (max-width:699px){
     .dict-frame > iframe.dict-zoom{width:160%;height:160%;transform:scale(.625);transform-origin:0 0;}
   }
+  /* On a phone the edit box with a dictionary open is two scrolls side by side in height, like the computer's side by
+     side: the fields scroll above, the dictionary keeps its own height below, and neither sits inside the other. */
+  html.touch .le-box:has(> .le-dict.on){overflow:hidden;}
+  html.touch .le-box:has(> .le-dict.on) > .le-content{flex:0 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;}
   @media (min-width:1000px){
     html:not(.touch) .le-box:has(> .le-dict.on){flex-direction:row;width:min(900px, calc(100vw - 32px));height:min(640px, calc(100dvh - 32px));max-height:none;overflow:hidden;padding:0;}
     html:not(.touch) .le-box:has(> .le-dict.on) > .le-content{flex:1 1 0;min-width:0;overflow-y:auto;overscroll-behavior:contain;padding:10px 12px;}
@@ -1809,6 +1820,7 @@ window.onYouTubeIframeAPIReady = function(){
     :is(.rich-editor, #editQ, #editA, .vocab-editor textarea), #cardTable.full-list:not(.notebook) .cell, .vocab-list-row[data-key] > *, #cardTable.notebook .cell[data-field="q"], .paper-question{font-size:18px;line-height:25px;}
     :is(#editNotes, #vocabEditNotes, #qaNotes), #cardTable.full-list .card-notes, #cardTable.notebook .card-notes, .vocab-list-meaning .card-notes, .paper-notes{font-size:16px;line-height:22px;}
     #cardTable.notebook, .ielts-paper{--line:32px;}
+    .ielts-paper .cell.paper-text{font-size:20px;}
     #cardTable.notebook .cell[data-field="a"], .ielts-paper .paper-lines, .ielts-paper .paper-prompt, .ielts-paper .cell.shown.paper-lines:hover, .ielts-paper .cell.hidden.paper-prompt:hover{font-size:18px;}
   }
   .brand-switch, .stats-table th.num{line-height:22px;}
@@ -1840,8 +1852,8 @@ window.onYouTubeIframeAPIReady = function(){
 
 <div id="limitsPop" class="limits-pop" hidden role="dialog" aria-labelledby="limitsTitle">
   <button id="limitsTitle" title="Click to remove both limits. Limits count for each lesson, in Lessons and in Vocabulary. Study modes and flashcards show only what fits; lists always show every card.">Daily limits</button>
-  <label>New cards a day<span class="limit-field"><input id="limitFresh" type="number" min="0" max="9999" step="1" inputmode="numeric" placeholder="No limit"><b id="limitFreshMore" class="limit-more"></b></span></label>
-  <label>Reviews a day<span class="limit-field"><input id="limitReview" type="number" min="0" max="9999" step="1" inputmode="numeric" placeholder="No limit"><b id="limitReviewMore" class="limit-more"></b></span></label>
+  <label>New cards a day<span class="limit-field"><input id="limitFresh" type="text" maxlength="4" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="No limit"><b id="limitFreshMore" class="limit-more"></b></span></label>
+  <label>Reviews a day<span class="limit-field"><input id="limitReview" type="text" maxlength="4" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="No limit"><b id="limitReviewMore" class="limit-more"></b></span></label>
 </div>
 
 <div id="addPopup" class="paused-overlay add-popup" hidden role="dialog" aria-modal="true" aria-labelledby="addPopTitle">
@@ -2020,7 +2032,7 @@ window.onYouTubeIframeAPIReady = function(){
         <option value="vi">🇻🇳 Vietnamese</option>
         <option value="multi" hidden>🌐</option>
       </select></label>
-    <textarea id="vocabTitle" rows="1" autocomplete="off" class="stats-title lesson-name-input autofit oneline" placeholder="Lesson name" aria-label="Lesson name"></textarea>
+    <textarea id="vocabTitle" rows="1" autocomplete="off" class="stats-title lesson-name-input autofit oneline" placeholder="Untitled lesson" aria-label="Lesson name"></textarea>
     <div class="header-actions">
       <button id="vocabSaveBtn" class="ghost" title="Save this lesson as a .json file. Shift-click to pick a different file.">Save</button>
       <button id="vocabResetBtn" class="ghost" title="Make every card in this lesson New again. Cards and statistics stay.">Reset</button>
@@ -2056,7 +2068,7 @@ window.onYouTubeIframeAPIReady = function(){
         <option value="en">🇬🇧 English</option>
         <option value="vi">🇻🇳 Vietnamese</option>
       </select></label>
-    <textarea id="lessonName" name="lesson-name" rows="1" autocomplete="off" class="lesson-name-input autofit oneline" placeholder="Lesson name" aria-label="Lesson name"></textarea>
+    <textarea id="lessonName" name="lesson-name" rows="1" autocomplete="off" class="lesson-name-input autofit oneline" placeholder="Untitled lesson" aria-label="Lesson name"></textarea>
     <div class="header-actions">
       <button id="btnSaveFile" class="ghost" title="Save this lesson as a .json file. The first time you pick the file; after that it is overwritten in place. Shift-click to pick a different file.">Save</button>
       <button id="btnResetLesson" class="ghost" title="Make every card in this lesson New again in all modes, to study it from the start. Cards, notes and statistics stay.">Reset</button>
@@ -3167,6 +3179,7 @@ document.getElementById("btnEmbedMedia").onclick = () => {
     window.open(typed, "_blank", "noopener");
     return;
   }
+  shelveBoxVideo(typed);
   applyMediaUrl(false);
   scheduleAutoSave();
   if (extractYouTubeId(input.value.trim())) setTimeout(() => fairyGlow(document.getElementById("mediaContainer"), "sweep"), 300);
@@ -3225,7 +3238,10 @@ let lessonPdf = null;
 
 // The box holds the lesson's video (YouTube, TikTok, Douyin) and opens PDFs; every other link the lesson has (a page
 // you read, a NotebookLM notebook, the sites the browser extension took words from) is kept in a list under the box,
-// newest last: click one to open it, ✕ to remove it. The same box and list are on the lesson's Vocabulary page.
+// newest last: click one to open it, ✕ to remove it. A video or PDF that a new one takes the place of is not lost: it
+// waits in the same list ({pdf: true} for a PDF, with no url for a file from this device), and clicking it brings it
+// back to the box or the reader, the one there taking its place in the list. The same box and list are on the
+// lesson's Vocabulary page.
 let lessonLinks = [];
 
 function isBoxLink(url) {
@@ -3236,14 +3252,84 @@ function normalizeLinks(list) {
   const seen = new Set;
   return (Array.isArray(list) ? list : []).map(l => typeof l === "string" ? {
     url: l
-  } : l).filter(l => l && typeof l.url === "string" && /^https?:\/\//i.test(l.url.trim())).map(l => ({
+  } : l).filter(l => l && typeof l.url === "string" && (/^https?:\/\//i.test(l.url.trim()) || l.pdf && !l.url.trim() && l.title)).map(l => Object.assign({
     url: l.url.trim(),
     title: cleanText(String(l.title || "")).replace(/\s+/g, " ").slice(0, 200)
-  })).filter(l => !seen.has(linkKey(l.url)) && seen.add(linkKey(l.url)));
+  }, l.pdf ? {
+    pdf: true
+  } : {})).filter(l => !seen.has(entryKey(l)) && seen.add(entryKey(l)));
 }
 
 function linkKey(url) {
   return url.trim().replace(/#.*$/, "").replace(/\/$/, "").toLowerCase();
+}
+
+function entryKey(l) {
+  return l.url ? linkKey(l.url) : "pdf:" + l.title;
+}
+
+// Puts a video or PDF that is leaving the box or the reader at the end of the list (once).
+function shelveEntry(entry) {
+  const [ e ] = normalizeLinks([ entry ]);
+  if (!e) return;
+  const at = lessonLinks.findIndex(l => entryKey(l) === entryKey(e));
+  if (at >= 0) lessonLinks.splice(at, 1);
+  lessonLinks.push(e);
+  renderLinkList();
+}
+
+// A new video in the box: the lesson's video before it waits in the list.
+function shelveBoxVideo(next) {
+  const lesson = library.find(l => l.id === currentLessonId);
+  const old = lesson && !isVirtualLesson() ? (lesson.mediaUrl || "").trim() : "";
+  if (!old || !isBoxLink(old) || isPdfLink(old) || next && linkKey(next) === linkKey(old)) return;
+  shelveEntry({
+    url: old,
+    title: ""
+  });
+}
+
+// The PDF in the reader moves to the list, its file kept in this browser under a key of its own.
+async function shelvePdf(old) {
+  const lessonId = currentLessonId;
+  const saved = await dbGetKey("pdfs", lessonId);
+  if (saved && saved.name === old.name && (saved.url || "") === (old.url || "")) await dbPutKey("pdfs", saved, shelfPdfKey(lessonId, old.name));
+  if (lessonId !== currentLessonId) return;
+  shelveEntry({
+    url: old.url || "",
+    title: old.name,
+    pdf: true
+  });
+}
+
+function shelfPdfKey(lessonId, name) {
+  return lessonId + "\u0001" + name;
+}
+
+// A video or PDF clicked in the list comes back: the video to the box, the PDF to the reader.
+async function takeFromShelf(i) {
+  const entry = lessonLinks[i];
+  if (!entry) return;
+  pushUndo("Opened " + (entry.title || entry.url));
+  lessonLinks.splice(i, 1);
+  if (entry.pdf || isPdfLink(entry.url)) {
+    const name = entry.title || pdfNameOf(entry.url);
+    const key = shelfPdfKey(currentLessonId, name);
+    const kept = await dbGetKey("pdfs", key);
+    renderLinkList();
+    await attachPdf({
+      name: name,
+      url: entry.url || ""
+    }, kept && kept.blob);
+    if (kept) dbDelete("pdfs", key);
+    return;
+  }
+  const input = document.getElementById("mediaUrl");
+  shelveBoxVideo(entry.url);
+  input.value = entry.url;
+  renderLinkList();
+  applyMediaUrl(false);
+  scheduleAutoSave();
 }
 
 // Adds a link to a list (the current lesson's, or another lesson's saved one); a link already there only gains a title.
@@ -3268,19 +3354,27 @@ function renderLinkList() {
     let host = l.url;
     try {
       const u = new URL(l.url);
-      host = u.hostname.replace(/^www\./, "") + (u.pathname.length > 1 ? u.pathname : "");
+      host = u.hostname.replace(/^www\./, "") + (u.pathname.length > 1 ? u.pathname : "") + (isBoxLink(l.url) ? u.search : "");
     } catch (e) {}
-    return `<div class="link-item"><a href="${escapeAttr(l.url)}" target="_blank" rel="noopener" title="${escapeAttr(l.url)}"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M8.5 11.5a3.5 3.5 0 0 0 5 0l2.5-2.5a3.5 3.5 0 0 0-5-5l-1 1"/><path d="M11.5 8.5a3.5 3.5 0 0 0-5 0L4 11a3.5 3.5 0 0 0 5 5l1-1"/></svg>${l.title ? `<b>${escapeHtml(l.title)}</b>` : ""}<span>${escapeHtml(host)}</span></a><button class="link-x" data-link="${i}" aria-label="Remove this link" title="Remove this link">✕</button></div>`;
+    const box = l.pdf || isBoxLink(l.url);
+    if (!l.url) host = "PDF on this device";
+    return `<div class="link-item"><a href="${escapeAttr(l.url || "#")}"${box ? ` data-shelf="${i}"` : ' target="_blank" rel="noopener"'} title="${escapeAttr(l.url || l.title)}"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M8.5 11.5a3.5 3.5 0 0 0 5 0l2.5-2.5a3.5 3.5 0 0 0-5-5l-1 1"/><path d="M11.5 8.5a3.5 3.5 0 0 0-5 0L4 11a3.5 3.5 0 0 0 5 5l1-1"/></svg>${l.title ? `<b>${escapeHtml(l.title)}</b>` : ""}<span>${escapeHtml(host)}</span></a><button class="link-x" data-link="${i}" aria-label="Remove this link" title="Remove this link">✕</button></div>`;
   }).join("");
 }
 
 document.getElementById("linkList").addEventListener("click", e => {
+  const shelf = e.target.closest("a[data-shelf]");
+  if (shelf) {
+    e.preventDefault();
+    return takeFromShelf(Number(shelf.dataset.shelf));
+  }
   const x = e.target.closest(".link-x");
   if (!x) return;
   const link = lessonLinks[Number(x.dataset.link)];
   if (!link) return;
   pushUndo("Removed link — " + (link.title || link.url));
   lessonLinks.splice(Number(x.dataset.link), 1);
+  if (link.pdf && !link.url) dbDelete("pdfs", shelfPdfKey(currentLessonId, link.title));
   renderLinkList();
   scheduleAutoSave();
 });
@@ -3291,8 +3385,10 @@ let pdfShown = null;
 
 let pdfOpenToken = 0;
 
-function attachPdf(pdf, blob) {
+async function attachPdf(pdf, blob) {
   if (!currentLessonId || isVirtualLesson()) return;
+  const old = lessonPdf;
+  if (old && !(old.name === pdf.name && (old.url || "") === (pdf.url || ""))) await shelvePdf(old);
   lessonPdf = pdf;
   if (blob) dbPutKey("pdfs", {
     name: pdf.name,
@@ -5838,18 +5934,9 @@ function fitDeck() {
 
 window.addEventListener("resize", fitDeck);
 
-// A dictionary page's height can't be read from another site, so on a phone each dictionary gets the length its
-// pages run to: Bing's translator is short, a list of MDBG results long.
-const PHONE_DICT_H = {
-  bing: 1000,
-  other: 1600
-};
-
-// On a touch phone a dictionary on the page (the Speaking paper, the editor in a list) is as long as a page of Bing's
-// translator, so the page alone scrolls, never the dictionary inside it.
 function fitDictHeight() {
   const phone = matchMedia("(max-width:600px)").matches;
-  const h = phone ? matchMedia("(pointer:coarse)").matches ? PHONE_DICT_H.bing : Math.max(240, Math.min(480, Math.round(window.innerHeight * .45 / 2) * 2)) : 360;
+  const h = phone ? Math.max(240, Math.min(480, Math.round(window.innerHeight * .45 / 2) * 2)) : 360;
   document.documentElement.style.setProperty("--dict-h", h + "px");
 }
 
@@ -6059,7 +6146,9 @@ function ieltsPaperHtml(row, ahead = 0) {
   const answer = row.aHidden ? hints.length ? '<div class="cell hidden paper-prompt paper-hint" data-field="a"><ol>' + hints.map(m => `<li>${escapeHtml(m)}</li>`).join("") + "</ol></div>" : '<div class="cell hidden paper-prompt" data-field="a">···</div>' : `<div class="cell shown paper-lines" data-field="a">${aCellContent(row)}</div>`;
   const notes = words.length ? '<aside class="paper-notes"><div class="paper-label">Notes</div><ol>' + words.map(i => `<li><b>${escapeHtml(i.term)}</b>${i.meaning ? " — " + escapeHtml(i.meaning) : ""}</li>`).join("") + "</ol></aside>" : "";
   const extras = row.aHidden ? "" : '<div class="paper-extras"><div class="paper-stroke"></div><div class="paper-dict" hidden></div></div>';
-  return `<article class="ielts-paper${notes ? " with-notes" : ""}${hasAnswer(row) ? "" : " dot-paper"}">` + `<header class="paper-head"><div>${topic ? `<div class="paper-topic">${escapeHtml(topic)}</div>` : ""}</div>` + `<div class="paper-meta"><div>Question <b>${n}</b> of ${total}</div><div${ahead ? "" : ' id="ieltsTimer"'} class="paper-timer${row.aHidden ? "" : " stopped"}">${ahead ? "0:00" : ieltsClockText()}</div></div></header>` + '<div class="paper-body"><div class="paper-main">' + `<div class="paper-question"><span class="paper-num">${n}.</span><div class="cell shown" data-field="q">${qCellContent(row)}</div></div>` + (hasAnswer(row) ? `<div class="paper-answer">${answer}</div>` : "") + `</div>${notes}</div>` + extras + "</article>";
+  // A one-sided card is a square sheet of dot paper with only its text: no lesson name, count, timer or number.
+  if (!hasAnswer(row)) return '<article class="ielts-paper dot-paper"><div class="paper-text cell shown" data-field="q">' + qCellContent(row) + "</div>" + extras + "</article>";
+  return `<article class="ielts-paper${notes ? " with-notes" : ""}">` + `<header class="paper-head"><div>${topic ? `<div class="paper-topic">${escapeHtml(topic)}</div>` : ""}</div>` + `<div class="paper-meta"><div>Question <b>${n}</b> of ${total}</div><div${ahead ? "" : ' id="ieltsTimer"'} class="paper-timer${row.aHidden ? "" : " stopped"}">${ahead ? "0:00" : ieltsClockText()}</div></div></header>` + '<div class="paper-body"><div class="paper-main">' + `<div class="paper-question"><span class="paper-num">${n}.</span><div class="cell shown" data-field="q">${qCellContent(row)}</div></div>` + (hasAnswer(row) ? `<div class="paper-answer">${answer}</div>` : "") + `</div>${notes}</div>` + extras + "</article>";
 }
 
 let listenSlotRaf = 0;
@@ -7265,7 +7354,7 @@ function renderVocabPopup() {
   const notesHtml = m.row.notesHtml || escapeHtml(m.row.notes || "");
   popup.querySelector(".vocab-note").innerHTML = markAll(notesHtml);
   const multi = vocabMatches.length > 1;
-  const away = m.lesson && m.lesson.id !== currentLessonId && !rows.includes(m.row) ? m.lesson.name : "";
+  const away = m.lesson && m.lesson.id !== currentLessonId && !rows.includes(m.row) ? m.lesson.name || "Untitled lesson" : "";
   popup.querySelector(".vocab-counter").innerHTML = (away ? `<i class="vocab-from">${fromMark(m.row.uid === EXTRA_UID ? "vocab" : "cards")}${escapeHtml(away)}</i>` : "") + (multi ? `<span>${vocabIndex + 1} / ${vocabMatches.length}</span>` : "");
   popup.classList.toggle("has-nav", multi);
   popup.querySelector(".prev").style.display = multi && vocabIndex > 0 ? "" : "none";
@@ -8037,19 +8126,10 @@ function popupDictSlot() {
   return slot;
 }
 
-// On a phone the dictionary page in the edit box is as long as a page of it is (PHONE_DICT_H), so only the edit box
-// scrolls: a page scrolling inside a box that scrolls catches the finger in the wrong one.
-function phoneDictHeight(frame, slot) {
-  if (slot.side || !isTouch()) return 0;
-  return PHONE_DICT_H[frame.querySelector("iframe.dict-zoom") ? "bing" : "other"];
-}
-
 function fitPopupDictFrame(frame, slot) {
-  const tall = phoneDictHeight(frame, slot);
-  if (tall && activeDictOverlay && activeDictOverlay.iframe === frame) document.querySelector("#editPopup .le-dict").style.height = tall + "px";
   Object.assign(frame.style, {
     width: slot.width + "px",
-    height: (tall || slot.height) + "px",
+    height: slot.height + "px",
     border: slot.side ? "0" : "1px solid var(--border)",
     borderRadius: slot.side ? `${slot.radius} 0 0 ${slot.radius}` : "10px"
   });
@@ -8128,7 +8208,6 @@ function hideDictOverlay() {
   if (activeDictOverlay.inline) {
     cancelAnimationFrame(activeDictOverlay.rafId);
     document.querySelector("#editPopup .le-dict").classList.remove("on");
-    document.querySelector("#editPopup .le-dict").style.height = "";
     Object.assign(activeDictOverlay.iframe.style, {
       opacity: "0",
       pointerEvents: "none"
@@ -8152,10 +8231,7 @@ function showDictOverlay(placeholder, url) {
   hideDictOverlay();
   if (placeholder.closest(".le-box")) {
     const inline = getPopupDictIframe(url);
-    const slotEl = document.querySelector("#editPopup .le-dict");
-    slotEl.classList.add("on");
-    const tall = phoneDictHeight(inline, popupDictSlot());
-    slotEl.style.height = tall ? tall + "px" : "";
+    document.querySelector("#editPopup .le-dict").classList.add("on");
     Object.assign(inline.style, {
       opacity: "1",
       pointerEvents: "auto"
@@ -11572,7 +11648,7 @@ function serializeCurrentLesson() {
     format: "flashcard-lesson",
     version: 2,
     id: currentLessonId,
-    name: cleanText(document.getElementById("lessonName").value) || "Untitled lesson",
+    name: cleanText(document.getElementById("lessonName").value),
     mediaUrl: document.getElementById("mediaUrl").value.trim(),
     studyLang: studyLang,
     importHistory: importHistory,
@@ -11686,10 +11762,10 @@ function scheduleAutoSave() {
 
 // Every card is where it is studied, always, however long it has been there or studied: a text card whose question
 // and answer are in different languages is a word and its meaning, learnt in Vocabulary; a word whose meaning is in
-// its own language is a question answered in its own language, studied with Speaking in Lessons. Each moves on its
-// own, with its progress (a card's Speaking progress becomes the word's, and the other way round) and its notes. A
-// one-sided card or word (no answer, no meaning) and the sentences of a video stay where they are. The card or word
-// being edited waits until its editor closes.
+// its own language is a question answered in its own language, studied with Speaking in Lessons, and so is a
+// one-sided word (no meaning): Vocabulary has no one-sided flashcards. Each moves on its own, with its progress (a
+// card's Speaking progress becomes the word's, and the other way round) and its notes. A one-sided card (no answer)
+// and the sentences of a video stay where they are. The card or word being edited waits until its editor closes.
 function autoSortLibrary() {
   if (isVirtualLesson()) return false;
   const live = !!currentLessonId && !isVirtualId(currentLessonId);
@@ -11714,7 +11790,10 @@ function autoSortLibrary() {
     const holders = home.cards.filter(c => c && c !== editing).concat(home.extras ? [ home.extras ] : []);
     const toCards = [];
     holders.forEach(card => vocabEntriesOf(card).forEach(e => {
-      if (!e.meaning || !e.meaning.trim() || isTranslationCard({
+      // A one-sided word (no meaning) of the lesson's own word list is a one-sided card, read in Speaking: it goes to
+      // Lessons too. One filed under a card's notes stays in those notes.
+      const blank = !e.meaning || !e.meaning.trim();
+      if (blank && card.uid !== EXTRA_UID || !blank && isTranslationCard({
         q: e.term,
         a: e.meaning
       }) || !home.lesson && e.key === vocabEditingKey) return;
@@ -11966,7 +12045,10 @@ async function renameHandleIfNeeded(handle, filename, handleKey) {
   } catch (err) {}
 }
 
+// A lesson not named yet shows "Untitled lesson" as the box's placeholder, never as text to delete first (also one
+// that was saved with that name before).
 function setLessonTitle(name) {
+  if (name === "Untitled lesson") name = "";
   document.getElementById("lessonName").value = name;
   fitTextarea(document.getElementById("lessonName"));
   document.title = name ? name + " · Flashcard" : "Flashcard";
@@ -12078,12 +12160,15 @@ function openLesson(lesson) {
   setTimeout(offerMoveAll, 400);
 }
 
+// A new lesson left with nothing in it goes away by itself; one given a name, a video, a link or a PDF stays, cards
+// or not, to be filled later.
 function isEmptyDraft() {
-  return !!currentLessonId && !isVirtualLesson() && !rows.length && !vocabExtras;
+  return !!currentLessonId && !isVirtualLesson() && !rows.length && !vocabExtras && !cleanText(document.getElementById("lessonName").value) && !document.getElementById("mediaUrl").value.trim() && !lessonLinks.length && !lessonPdf;
 }
 
 function isEmptyLesson(lesson) {
-  return !lesson.cards.length && !lesson.extraWords;
+  const named = (lesson.name || "").trim() && lesson.name !== "Untitled lesson";
+  return !lesson.cards.length && !lesson.extraWords && !named && !(lesson.mediaUrl || "").trim() && !(lesson.links && lesson.links.length) && !lesson.pdf;
 }
 
 async function discardIfEmptyDraft() {
@@ -12132,7 +12217,7 @@ async function createLesson() {
     format: "flashcard-lesson",
     version: 2,
     id: makeUid(),
-    name: "Untitled lesson",
+    name: "",
     mediaUrl: "",
     studyLang: "auto",
     importHistory: [],
@@ -12991,9 +13076,17 @@ function lessonInMode(l, mode) {
 }
 
 function lessonShown(l, mode) {
+  if (lessonWaiting(l)) return true;
   if ((mode || appMode) === "vocab") return lessonHasWords(l);
   if (isVocabOnlyLesson(l)) return false;
   return l.id === currentLessonId ? rows.length > 0 : l.cards.length > 0;
+}
+
+// A lesson kept with no cards or words yet (named, or holding only a video, links or a PDF) is a folder waiting to be
+// filled: it is listed in Lessons and in Vocabulary alike.
+function lessonWaiting(l) {
+  if (l.id === currentLessonId) return !isVirtualLesson() && !rows.length && !lessonHasWords(l) && !isEmptyDraft();
+  return !l.cards.length && !lessonHasWords(l) && !isEmptyLesson(l);
 }
 
 function modeLibrary(mode) {
@@ -13664,6 +13757,11 @@ document.getElementById("streakChip").onclick = () => {
 
 [ "limitFresh", "limitReview" ].forEach(id => {
   const input = document.getElementById(id);
+  // Digits only, four at most: a fifth one is never typed in (or pasted).
+  input.addEventListener("input", () => {
+    const digits = input.value.replace(/\D/g, "").slice(0, 4);
+    if (digits !== input.value) input.value = digits;
+  });
   input.addEventListener("change", () => applyStudyLimits());
   input.addEventListener("keydown", e => {
     e.stopPropagation();
@@ -15168,7 +15266,7 @@ function readerAdd(list) {
       lesson: known.get(key)
     });
     const lesson = readerTarget(w, made);
-    known.set(key, lesson.name);
+    known.set(key, lesson.name || "Untitled lesson");
     if (!groups.has(lesson.id)) groups.set(lesson.id, []);
     groups.get(lesson.id).push({
       id: w.id,
@@ -15644,6 +15742,7 @@ function vocabForSave(r) {
 }
 
 function vocabCounts(items) {
+  items = items.filter(i => !vocabViewOnly(i));
   const now = Date.now();
   const c = {
     total: items.length,
@@ -15667,7 +15766,7 @@ function vocabKind(st, now) {
 
 function startVocabSession() {
   const now = Date.now();
-  const items = lessonVocabItems(vocabSource());
+  const items = lessonVocabItems(vocabSource()).filter(i => !vocabViewOnly(i));
   const picked = items.map((item, at) => ({
     item: item,
     at: at,
@@ -15874,7 +15973,7 @@ function vocabBackInner(item) {
   }
   const whole = wholeSentenceCard(item, sentence);
   const inSentence = !whole && sentence && !!findWordForm(sentence.normalize("NFC"), item.term);
-  const main = whole ? `<div class="vocab-ctx">${lookupOthers(vocabSentenceHtml(item.term, "", card), item)}</div>` : inSentence ? `<div class="vocab-ctx">${lookupOthers(vocabSentenceHtml(sentence, item.term, card), item)}</div>` : `<div class="vocab-ctx"><mark>${vocabSentenceHtml(item.term, "", card)}</mark></div>` + (sentence ? `<div class="vocab-ctx small">${lookupOthers(vocabSentenceHtml(sentence, "", card), item)}</div>` : "");
+  const main = whole ? `<div class="vocab-ctx">${lookupOthers(vocabSentenceHtml(item.term, "", card), item)}</div>` : inSentence ? `<div class="vocab-ctx">${lookupOthers(vocabSentenceHtml(sentence, item.term, card), item)}</div>` : `<div class="vocab-ctx"><b class="vocab-word">${vocabSentenceHtml(item.term, "", card)}</b></div>` + (sentence ? `<div class="vocab-ctx small">${lookupOthers(vocabSentenceHtml(sentence, "", card), item)}</div>` : "");
   const notes = rest ?? wordNotesOf(item);
   return main + `<div class="vocab-meaning${whole ? "" : " word"}">${escapeHtml(item.meaning)}</div>` + (notes ? `<div class="vocab-word-notes">${brLines(notes)}</div>` : "");
 }
@@ -16717,7 +16816,7 @@ function cantMoveToLesson(item) {
 }
 
 function canMoveToVocab(row) {
-  return !!row && !cardInVideoLesson(row) && (!(row.a || "").trim() || belongsInVocab(row));
+  return !!row && !cardInVideoLesson(row) && belongsInVocab(row);
 }
 
 function moveVocabToLesson(item, sorted) {
@@ -20347,7 +20446,7 @@ function buildHtml(world) {
   const length = TEST_LENGTHS[prefs.length] ? prefs.length : "standard";
   const row = (label, body) => `<div class="ta-row"><span class="ta-row-label">${label}</span><div class="ta-row-body">${body}</div></div>`;
   const nameOf = f => f === "mixed" ? say("vocabName") : TEST_FORMATS[f].name;
-  return `<section class="ta-build w-${world}${testBuildIn ? " ta-build-in" : ""}" id="testBuilder" lang="${ui}"><h3 class="ta-h">${say("buildTitle")}</h3>` + row(say("fExam"), formats.map(f => `<button class="ta-pick${f === format ? " on" : ""}" data-act="b-format" data-format="${f}" aria-pressed="${f === format}">${escapeHtml(nameOf(f))}</button>`).join("")) + row(say("fWords"), `<select id="testSet">${sets.map(s => `<option value="${escapeAttr(s.id)}"${s === set ? " selected" : ""}>${escapeHtml(s.id === VOCAB_ALL_ID ? say("allWords") : s.name)} (${s.items.filter(i => worldOf(itemLangOf(i.term, s.lang)) === world).length})</option>`).join("")}</select>`) + row(say("fParts"), `<div class="ta-toggles">${parts.map((p, i) => {
+  return `<section class="ta-build w-${world}${testBuildIn ? " ta-build-in" : ""}" id="testBuilder" lang="${ui}"><h3 class="ta-h">${say("buildTitle")}</h3>` + row(say("fExam"), formats.map(f => `<button class="ta-pick${f === format ? " on" : ""}" data-act="b-format" data-format="${f}" aria-pressed="${f === format}">${escapeHtml(nameOf(f))}</button>`).join("")) + row(say("fWords"), `<select id="testSet">${sets.map(s => `<option value="${escapeAttr(s.id)}"${s === set ? " selected" : ""}>${escapeHtml(s.id === VOCAB_ALL_ID ? say("allWords") : s.name || "Untitled lesson")} (${s.items.filter(i => worldOf(itemLangOf(i.term, s.lang)) === world).length})</option>`).join("")}</select>`) + row(say("fParts"), `<div class="ta-toggles">${parts.map((p, i) => {
     const ok = key || TEST_TYPES[p.type].offline;
     return `<label class="ta-toggle${ok ? "" : " off"}"><input type="checkbox" value="${i}"${picks.includes(i) && ok ? " checked" : ""}${ok ? "" : " disabled"}><span>${escapeHtml(partName(format, p, ui))}</span></label>`;
   }).join("")}</div>`) + row(say("fLength"), `<div class="ta-seg">${Object.keys(TEST_LENGTHS).map(l => `<button class="${l === length ? "on" : ""}" data-act="b-len" data-len="${l}" aria-pressed="${l === length}">${say("len_" + l)}</button>`).join("")}</div>`) + row(say("fWhen"), '<input type="date" id="testWhen">') + `<div class="ta-build-go"><button class="ta-btn ta-main" data-act="start">▶ ${say("startNow")}</button><button class="ta-btn" data-act="later">📅 ${say("later")}</button></div></section>`;
@@ -20785,7 +20884,7 @@ document.addEventListener("keydown", e => {
     const row = picked || (groupViewStyle === "ielts" && groupState ? scope[0] : null);
     if (!row || cardInVideoLesson(row)) return;
     e.preventDefault();
-    if (!canMoveToVocab(row)) return showToast("A question answered in its own language is studied here, with Speaking");
+    if (!canMoveToVocab(row)) return showToast((row.a || "").trim() ? "A question answered in its own language is studied here, with Speaking" : "A one-sided card is read here, with Speaking");
     moveCardToVocab(row);
     return;
   }
