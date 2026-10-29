@@ -455,12 +455,25 @@ window.onYouTubeIframeAPIReady = function(){
   .quick-add[data-kind="view"]{--kind:var(--due-color);}
   .qa-row{display:flex;gap:10px;align-items:flex-start;}
   .qa-row > textarea{flex:1;min-width:0;}
-  .qa-time{flex:none;box-sizing:border-box;width:72px;height:46px;text-align:center;font-size:16px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--kind);}
-  .quick-add[data-kind]{background:color-mix(in srgb, var(--kind) 6%, var(--surface));border-color:color-mix(in srgb, var(--kind) 40%, var(--border));}
-  .quick-add[data-kind="speak"]{padding-left:56px;background:repeating-linear-gradient(transparent 0 35px, var(--paper-rule) 35px 36px), var(--paper);}
-  .quick-add[data-kind="view"]{background-color:var(--surface);background-image:var(--dot-paper);background-size:24px 24px;background-position:12px 12px;}
-  #addForm[data-kind] #importText{background:color-mix(in srgb, var(--kind) 6%, var(--surface));border-color:color-mix(in srgb, var(--kind) 40%, var(--border));}
-  #addForm[data-kind] #importText::placeholder{color:var(--kind);opacity:1;}
+  .quick-add .qa-time{flex:none;box-sizing:border-box;width:112px;padding:8px 10px;font-size:20px;line-height:28px;font-weight:400;text-align:center;font-variant-numeric:tabular-nums;color:var(--text);}
+  @media (max-width:600px){.quick-add .qa-time{width:100px;font-size:18px;line-height:25px;}}
+  /* A new card is written on what it will be: a Speaking card with an answer on a sheet bound on its left, a one-sided
+     card on dot paper bound at its top, a word on a white flashcard, a video sentence on a white card under a strip of
+     YouTube red. The paste box is always the one-sided sheet: dot paper bound at its top. */
+  .quick-add{position:relative;}
+  .quick-add[data-kind]{--page-x:48px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);}
+  @media (max-width:600px){.quick-add[data-kind]{--page-x:32px;}}
+  .quick-add:is([data-kind="speak"], [data-kind="view"]){background-color:var(--paper);border-color:var(--paper-edge);border-radius:4px;box-shadow:0 1px 0 var(--paper-edge), 0 8px 20px var(--paper-shadow);}
+  .quick-add[data-kind="speak"]{padding-left:var(--page-x);}
+  .quick-add[data-kind="view"], .paste-sheet{margin-top:24px;}
+  .quick-add[data-kind="view"]{background-image:var(--dot-paper);background-size:36px 36px;background-position:18px 18px;}
+  .quick-add[data-kind="listen"]{border-top:4px solid var(--yt-red);}
+  .quick-add:is([data-kind="speak"], [data-kind="view"])::before, .paste-sheet::before{content:"";position:absolute;z-index:1;pointer-events:none;}
+  .quick-add[data-kind="speak"]::before{top:24px;bottom:24px;left:-14px;width:30px;background:var(--ring-left) 0 0 / 30px 36px, radial-gradient(circle at 24px 18px, #1f2633 6px, transparent 6px) 0 0 / 30px 36px;background-repeat:no-repeat space;}
+  .quick-add[data-kind="view"]::before, .paste-sheet::before{top:-14px;left:24px;right:24px;height:30px;background:var(--ring-top) 0 0 / 36px 30px, radial-gradient(circle at 18px 24px, #1f2633 6px, transparent 6px) 0 0 / 36px 30px;background-repeat:space no-repeat;}
+  .paste-sheet{position:relative;}
+  .paste-sheet #importText{display:block;width:100%;box-sizing:border-box;padding-top:24px;background-color:var(--paper);background-image:var(--dot-paper);background-size:24px 24px;background-position:12px 12px;border:1px solid var(--paper-edge);border-radius:4px;box-shadow:0 1px 0 var(--paper-edge), 0 8px 20px var(--paper-shadow);color:var(--paper-ink);}
+  .paste-sheet #importText::placeholder{color:var(--text-2);opacity:1;}
   .vocab-back .vocab-word-notes{box-sizing:border-box;width:fit-content;max-width:100%;padding:0 16px;font-size:26px;line-height:32px;text-align:left;color:var(--text);overflow-wrap:break-word;}
   .vocab-word-notes ul, .vocab-word-notes ol{margin:4px 0;padding-left:24px;}
   .vocab-word-notes > :first-child{margin-top:0;}
@@ -670,7 +683,11 @@ window.onYouTubeIframeAPIReady = function(){
   @media (hover:hover){.link-x:hover{background:var(--danger-soft);color:var(--danger);}}
   .link-bar{display:flex;gap:8px;flex:1;min-width:260px;}
   .link-field{position:relative;display:flex;flex:1;min-width:0;}
-  .link-field input{flex:1;min-width:0;padding-left:44px;}
+  .link-field input{flex:1;min-width:0;padding-left:44px;padding-right:40px;}
+  /* ✕ at the end of the link box empties the box (as the PDF button sits at its start); Clear beside it clears all. */
+  .link-box-x{position:absolute;right:4px;top:3px;bottom:3px;z-index:1;display:flex;align-items:center;justify-content:center;width:32px;padding:0;border:0;border-radius:6px;background:transparent;color:var(--text-2);font-size:13px;line-height:20px;}
+  @media (hover:hover){.link-box-x:hover{background:var(--danger-soft);border-color:transparent;color:var(--danger);}}
+  .link-field:has(input:placeholder-shown) .link-box-x{display:none;}
   .link-file{position:absolute;left:4px;top:3px;bottom:3px;z-index:1;display:flex;align-items:center;justify-content:center;width:36px;padding:0;border:0;border-radius:6px;background:transparent;color:var(--text-2);transition:background .15s, transform .15s;}
   @media (hover:hover){.link-file:hover{background:color-mix(in srgb, #e5483d 10%, transparent);border-color:transparent;transform:translateY(-1px);}}
   .pdf-icon{flex:none;overflow:visible;}
@@ -874,12 +891,19 @@ window.onYouTubeIframeAPIReady = function(){
   table.no-answer-col .a-col{display:none;}
   #cardTable.no-head thead{display:none;}
   #cardTable.full-list thead{display:none;}
-  #cardTable.notebook{--line:36px;display:block;position:relative;overflow:visible;padding:18px 0 26px;background:var(--paper);color:var(--paper-ink);border:1px solid var(--paper-edge);border-radius:4px;box-shadow:0 1px 0 var(--paper-edge), 0 14px 30px var(--paper-shadow);font-family:Georgia, "Times New Roman", serif;}
+  /* A text lesson's list is a pile of the same sheets as Speaking, one per card: a card with its answer on ruled paper
+     bound on its left, a one-sided card on dot paper bound at its top. */
+  #cardTable.notebook{--line:36px;display:block;position:relative;overflow:visible;padding:14px 0 0;background:none;color:var(--paper-ink);border:0;border-radius:0;box-shadow:none;font-family:Georgia, "Times New Roman", serif;}
   #cardTable.notebook colgroup, #cardTable.notebook thead{display:none;}
-  #cardTable.notebook tbody{display:block;}
-  #cardTable.notebook tbody tr{display:grid;grid-template-columns:64px minmax(0, 1fr);padding:14px 36px 14px 0;background:none;}
+  #cardTable.notebook tbody{display:flex;flex-direction:column;gap:24px;}
+  /* The notebook page keeps the same room on both sides as the Speaking paper (--page-x), clear of the rings on the left. */
+  #cardTable.notebook, .ielts-paper{--page-x:48px;}
+  @media (max-width:600px){#cardTable.notebook, .ielts-paper{--page-x:32px;}}
+  #cardTable.notebook tbody tr{position:relative;display:grid;grid-template-columns:0 minmax(0, 1fr);padding:24px var(--page-x);background:var(--paper);border:1px solid var(--paper-edge);border-radius:4px;box-shadow:0 1px 0 var(--paper-edge), 0 8px 20px var(--paper-shadow);}
+  #cardTable.notebook tbody tr.one-sided{background-image:var(--dot-paper);background-size:var(--line) var(--line);background-position:calc(var(--line) / 2) calc(var(--line) / 2);}
+  #cardTable.notebook tbody tr.one-sided .cell[data-field="q"]{padding-bottom:0;font-weight:400;color:var(--paper-ink);text-align:center;}
   #cardTable.notebook tbody td{display:block;border:0;padding:0;overflow:visible;}
-  #cardTable.notebook td.q-col, #cardTable.notebook td.a-col{grid-column:2;grid-row:1;padding-left:24px;}
+  #cardTable.notebook td.q-col, #cardTable.notebook td.a-col{grid-column:2;grid-row:1;padding-left:0;}
   #cardTable.notebook td.a-col{grid-row:2;}
   #cardTable.notebook .cell{display:block;max-width:none;margin:0;padding:0 4px;border-radius:2px;color:var(--paper-ink);}
   #cardTable.notebook .cell[data-field="q"]{padding-bottom:6px;font-size:20px;font-weight:700;line-height:25px;color:var(--accent);}
@@ -887,22 +911,9 @@ window.onYouTubeIframeAPIReady = function(){
   #cardTable.notebook tbody tr.row-selected, #cardTable.notebook tbody tr.row-playing{background:color-mix(in srgb, var(--paper-mark) 45%, transparent) !important;}
   html.touch #cardTable.notebook tbody tr.row-selected > td:first-child{box-shadow:none;}
   html.touch #cardTable.notebook tbody tr.row-selected .cell.shown[data-field="q"]{color:var(--paper-ink);}
-  #cardTable.notebook tbody tr.edit-row{display:block;padding:16px 36px 16px 86px;}
+  #cardTable.notebook tbody tr.edit-row{display:block;padding:16px var(--page-x);}
   #cardTable.notebook tbody tr.edit-row td{display:block;font-family:system-ui, -apple-system, "Segoe UI", sans-serif;}
-  #cardTable.notebook .empty-msg{padding-left:86px;}
-  html.touch #cardTable.notebook tbody tr{grid-template-columns:30px minmax(0, 1fr);}
-  html.touch #cardTable.notebook tbody tr.edit-row{padding-left:52px;}
-  @media (max-width:600px){
-    html.touch #cardTable.notebook tbody tr{grid-template-columns:0 minmax(0, 1fr);padding-right:24px;}
-    html.touch #cardTable.notebook td.q-col, html.touch #cardTable.notebook td.a-col{padding-left:25px;}
-    html.touch #cardTable.notebook tbody tr.edit-row{padding-left:24px;padding-right:24px;}
-    html.touch #cardTable.notebook .empty-msg{padding-left:24px;}
-  }
-  @media (max-width:600px){
-    #cardTable.notebook tbody tr{grid-template-columns:40px minmax(0, 1fr);padding-right:24px;}
-    #cardTable.notebook td.q-col, #cardTable.notebook td.a-col{padding-left:20px;}
-    #cardTable.notebook tbody tr.edit-row{padding:12px 12px 12px 52px;}
-  }
+  #cardTable.notebook .empty-msg{padding-left:var(--page-x);}
   #studyCard.deck .dots{display:inline-block;width:40px;height:10px;font-size:0;vertical-align:middle;--dot:radial-gradient(circle closest-side, currentColor 90%, transparent);background:var(--dot) 0 0 / 10px 10px no-repeat, var(--dot) 15px 0 / 10px 10px no-repeat, var(--dot) 30px 0 / 10px 10px no-repeat;opacity:.5;}
   .rich-editor{
     width:100%;
@@ -1463,7 +1474,7 @@ window.onYouTubeIframeAPIReady = function(){
     .exam-table thead th, .exam-table td{padding:4px 4px;font-size:15px;line-height:22px;}
     .exam-slash{margin:0 8px;}
   }
-  .ielts-paper{--line:36px;position:relative;box-sizing:border-box;width:100%;max-width:780px;margin:0 auto;padding:30px 36px 34px;background:var(--paper);color:var(--paper-ink);border:1px solid var(--paper-edge);border-radius:4px;box-shadow:0 1px 0 var(--paper-edge), 0 14px 30px var(--paper-shadow);font-family:Georgia, "Times New Roman", serif;}
+  .ielts-paper{--line:36px;position:relative;box-sizing:border-box;width:100%;max-width:780px;margin:0 auto;padding:30px var(--page-x) 34px;background:var(--paper);color:var(--paper-ink);border:1px solid var(--paper-edge);border-radius:4px;box-shadow:0 1px 0 var(--paper-edge), 0 14px 30px var(--paper-shadow);font-family:Georgia, "Times New Roman", serif;}
   .paper-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;padding-bottom:12px;margin-bottom:26px;border-bottom:2px solid var(--paper-ink);}
   .paper-topic{margin-top:6px;font-size:22px;font-weight:700;line-height:28px;}
   .paper-meta{text-align:right;font-size:14px;line-height:20px;color:var(--paper-ink-2);white-space:nowrap;}
@@ -1477,10 +1488,10 @@ window.onYouTubeIframeAPIReady = function(){
   /* Binder rings instead of a red margin line: a sheet with one side (dot paper) is a notepad bound at its top, a sheet
      with a question and its answer (the Speaking paper, the notebook page) is bound on its left. Each ring, white with a dark
      outline, runs from outside the sheet into a dark hole punched near its edge. */
-  .ielts-paper.dot-paper::before, .ielts-paper:not(.dot-paper)::before, #cardTable.notebook::before{content:"";position:absolute;z-index:1;pointer-events:none;}
+  .ielts-paper.dot-paper::before, .ielts-paper:not(.dot-paper)::before, #cardTable.notebook tbody tr::before{content:"";position:absolute;z-index:1;pointer-events:none;}
   .ielts-paper.dot-paper{margin-top:16px;}
-  .ielts-paper.dot-paper::before{top:-14px;left:24px;right:24px;height:30px;border:0;background:var(--ring-top) 0 0 / 36px 30px, radial-gradient(circle at 18px 24px, #1f2633 6px, transparent 6px) 0 0 / 36px 30px;background-repeat:space no-repeat;}
-  .ielts-paper:not(.dot-paper)::before, #cardTable.notebook::before{top:24px;bottom:24px;left:-14px;width:30px;border:0;background:var(--ring-left) 0 0 / 30px 36px, radial-gradient(circle at 24px 18px, #1f2633 6px, transparent 6px) 0 0 / 30px 36px;background-repeat:no-repeat space;}
+  .ielts-paper.dot-paper::before, #cardTable.notebook tbody tr.one-sided::before{top:-14px;bottom:auto;width:auto;left:24px;right:24px;height:30px;border:0;background:var(--ring-top) 0 0 / 36px 30px, radial-gradient(circle at 18px 24px, #1f2633 6px, transparent 6px) 0 0 / 36px 30px;background-repeat:space no-repeat;}
+  .ielts-paper:not(.dot-paper)::before, #cardTable.notebook tbody tr::before{top:24px;bottom:24px;left:-14px;width:30px;border:0;background:var(--ring-left) 0 0 / 30px 36px, radial-gradient(circle at 24px 18px, #1f2633 6px, transparent 6px) 0 0 / 30px 36px;background-repeat:no-repeat space;}
   .ielts-paper .cell.hidden.paper-hint, .ielts-paper .cell.hidden.paper-hint:hover{font-style:normal;color:var(--paper-ink);}
   .ielts-paper .paper-prompt:not(.paper-hint):hover{color:var(--paper-ink-2);}
   .paper-hint ol, .paper-notes ol{margin:0;padding:0;list-style:none;counter-reset:paper-n;}
@@ -1506,7 +1517,7 @@ window.onYouTubeIframeAPIReady = function(){
   .paper-dict{height:var(--dict-h, 360px);border-radius:10px;background:var(--surface-2);}
   .paper-dict[hidden]{display:none;}
   @media (max-width:600px){
-    .ielts-paper{padding:24px 24px 28px;}
+    .ielts-paper{padding:24px var(--page-x) 28px;}
     .ielts-paper.with-notes .paper-body{grid-template-columns:minmax(0, 1fr);}
     .paper-notes{margin-top:28px;padding:20px 0 0;border-left:0;border-top:2px solid var(--paper-rule);}
     .paper-head{flex-direction:column;align-items:flex-start;}
@@ -2000,12 +2011,12 @@ window.onYouTubeIframeAPIReady = function(){
     </label>
     <button id="btnSingleCard" class="add-single" aria-label="Add a single card">＋</button>
     <div id="quickAdd" class="vocab-editor quick-add" hidden>
-      <div class="qa-row"><input id="qaTime" class="qa-time" type="text" inputmode="numeric" autocomplete="off" placeholder="0:00" aria-label="Video time" hidden><textarea id="qaQ" class="autofit" rows="1" autocomplete="off" aria-label="Question"></textarea></div>
+      <div class="qa-row"><input id="qaTime" class="qa-time" type="text" inputmode="numeric" autocomplete="off" placeholder="00:00" maxlength="8" aria-label="Video time" hidden><textarea id="qaQ" class="autofit" rows="1" autocomplete="off" aria-label="Question"></textarea></div>
       <textarea id="qaA" class="autofit" rows="1" autocomplete="off" aria-label="Answer"></textarea>
       <div id="qaNotes" class="rich-editor" contenteditable="true" aria-label="Notes"></div>
       <div class="vocab-editor-actions"><button id="qaSave" class="primary">Save</button></div>
     </div>
-    <textarea id="importText" rows="8" placeholder="Paste here!"></textarea>
+    <div class="paste-sheet"><textarea id="importText" rows="8" placeholder="Paste here!"></textarea></div>
     <div id="importPreview" class="import-preview" hidden aria-live="polite"></div>
     <div class="row-flex" style="margin-top:10px;">
       <label class="muted-label" for="colDelim">Column delimiter</label>
@@ -2133,9 +2144,10 @@ window.onYouTubeIframeAPIReady = function(){
       <div class="link-field">
         <button id="btnPdfFile" class="link-file" type="button" aria-label="Add a PDF to read" title="Add a PDF to read beside this lesson"><svg class="pdf-icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path class="pdf-icon-sheet" d="M7 2h8l5 5v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><path class="pdf-icon-fold" d="M15 2v5h5"/><rect class="pdf-icon-band" x="2" y="11" width="15" height="7" rx="2"/><text x="9.5" y="16.5" text-anchor="middle">PDF</text></svg></button>
         <input type="text" id="mediaUrl" name="media-url" autocomplete="off" placeholder="Paste a YouTube, TikTok, Douyin, PDF or any link…" aria-label="Video or PDF link">
+        <button id="btnLinkX" class="link-box-x" type="button" aria-label="Clear the link box" title="Clear the link box">✕</button>
       </div>
       <button id="btnEmbedMedia" class="primary">Open</button>
-      <button id="btnClearMedia">Clear</button>
+      <button id="btnClearMedia" title="Clear everything: the video, the links and the PDF">Clear</button>
       <input type="file" id="pdfFileInput" accept="application/pdf,.pdf" hidden>
     </div>
     <div id="linkList" class="link-list" hidden></div>
@@ -2392,6 +2404,8 @@ function takeSnapshot(label, expiresAt) {
     limits: JSON.stringify(studyLimits),
     limitsExtra: JSON.stringify(limitsExtra),
     links: JSON.stringify(lessonLinks),
+    media: document.getElementById("mediaUrl").value,
+    pdf: JSON.stringify(lessonPdf),
     mix: isAllLessons() ? [ mixFocusId, mixStyle, mixDone ] : null,
     label: label,
     expiresAt: expiresAt
@@ -2489,6 +2503,14 @@ function restoreFrom(fromStack, toStack, verb) {
   if (entry.links != null) {
     lessonLinks = JSON.parse(entry.links);
     renderLinkList();
+  }
+  if (entry.media != null && entry.media !== document.getElementById("mediaUrl").value) {
+    document.getElementById("mediaUrl").value = entry.media;
+    applyMediaUrl(true);
+  }
+  if (entry.pdf != null && entry.pdf !== JSON.stringify(lessonPdf)) {
+    lessonPdf = JSON.parse(entry.pdf);
+    if (lessonPdf) openPdf(lessonPdf); else hidePdf();
   }
   const snapGroup = entry.groupSnapshot ? JSON.parse(entry.groupSnapshot) : null;
   const liveGroup = groupState || savedGroupState;
@@ -2811,6 +2833,12 @@ function matchSpacedTimestamp(line, delim) {
     prefix: line.slice(0, line.length - m[2].length),
     rest: m[2]
   };
+}
+
+// A time with every part two digits: 00:12, 01:06:20.
+function clockText(sec) {
+  const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60;
+  return (h ? [ h, m, s ] : [ m, s ]).map(n => String(n).padStart(2, "0")).join(":");
 }
 
 function formatTime(sec) {
@@ -3237,9 +3265,25 @@ document.getElementById("btnEmbedMedia").onclick = () => {
   if (extractYouTubeId(input.value.trim())) setTimeout(() => fairyGlow(document.getElementById("mediaContainer"), "sweep"), 300);
 };
 
+document.getElementById("btnLinkX").onclick = () => {
+  const input = document.getElementById("mediaUrl");
+  if (!input.value.trim()) return;
+  pushUndo("Cleared the link box");
+  input.value = "";
+  clearMedia();
+  scheduleAutoSave();
+};
+
+// Clear takes everything out: the video, the list of links and the PDF (Undo brings them back).
 document.getElementById("btnClearMedia").onclick = () => {
+  if (!currentLessonId || isVirtualLesson()) return;
+  pushUndo("Cleared the video, links and PDF");
   document.getElementById("mediaUrl").value = "";
   clearMedia();
+  lessonLinks = [];
+  renderLinkList();
+  lessonPdf = null;
+  hidePdf();
   scheduleAutoSave();
 };
 
@@ -5676,6 +5720,15 @@ function syncAddLook() {
 
 [ "qaQ", "qaA", "qaNotes" ].forEach(id => document.getElementById(id).addEventListener("input", syncAddLook));
 
+// The time box takes digits and puts in the colons by itself: two digits and a colon follows (01:06:20).
+document.getElementById("qaTime").addEventListener("input", e => {
+  const box = e.target;
+  const digits = box.value.replace(/\D/g, "").slice(0, 6);
+  let text = digits.replace(/(\d{2})(?=\d)/g, "$1:");
+  if (!(e.inputType || "").startsWith("delete") && digits.length % 2 === 0 && digits.length && digits.length < 6) text += ":";
+  if (text !== box.value) box.value = text;
+});
+
 function cardNotesHtml(row) {
   const html = notesEditorHtml(row);
   return html && plainTextOf(html, "\n").trim() ? `<div class="card-notes">${blockNotesHtml(html)}</div>` : "";
@@ -5776,6 +5829,7 @@ function buildRowTr(r) {
   tr.dataset.id = r.id;
   if (loopingRowId === r.id) tr.classList.add("row-playing");
   if (selectedRowId === r.id) tr.classList.add("row-selected");
+  if (r.time == null && !hasAnswer(r)) tr.classList.add("one-sided");
   const q = `<div class="cell ${r.qHidden ? "hidden" : "shown"}" data-field="q">${qCellContent(r)}</div>`;
   const notes = !r.aHidden && !r.qHidden ? cardNotesHtml(r) : "";
   const a = `<div class="cell ${r.aHidden ? "hidden" : "shown"}" data-field="a">${aCellContent(r)}</div>`;
@@ -7012,6 +7066,15 @@ function showTooltip(cellEl, text) {
   const below = vocabAddPopup && vocabAddPopup.contains(cellEl) ? vocabAddPopup.getBoundingClientRect().bottom : rect.bottom;
   tip.style.top = Math.round(below + window.scrollY) + 4 + "px";
   tip.style.display = "block";
+  keepTipOnScreen(tip, rect.top);
+}
+
+// A tip never runs past the window (it would lengthen the page and bring up its scroll bar, shifting everything): one
+// that would go below the bottom opens above what it is about, and one too wide moves left.
+function keepTipOnScreen(tip, anchorTop) {
+  const r = tip.getBoundingClientRect();
+  if (r.bottom > window.innerHeight - 4 && anchorTop - r.height - 4 >= 4) tip.style.top = Math.round(anchorTop - r.height - 4 + window.scrollY) + "px";
+  if (r.right > document.documentElement.clientWidth - 4) tip.style.left = Math.round(Math.max(4, document.documentElement.clientWidth - 4 - r.width) + window.scrollX) + "px";
 }
 
 // A word's lookup, as the browser extension shows it: the word, its meaning, and the lesson it is in, small and
@@ -7024,6 +7087,7 @@ function showLookupTip(anchor, term, meaning, lesson) {
   // The same box as the browser extension's: the word, its pinyin on a line of its own, the meaning when it has one,
   // the lesson it is in.
   tip.innerHTML = `<b>${escapeHtml(term)}</b>${reading ? `<div class="tip-r">${escapeHtml(reading)}</div>` : ""}${meaning ? `<div class="tip-m">${escapeHtml(meaning)}</div>` : ""}${lesson ? `<small>${fromMark("vocab")}${escapeHtml(lesson)}</small>` : ""}`;
+  keepTipOnScreen(tip, anchor.getBoundingClientRect().top);
 }
 
 // Where a looked-up word or sentence comes from: the app's 字, in the same type as the name after it and in that
@@ -7762,6 +7826,7 @@ function showSentencePinyin(cell, x, y) {
   hoverTooltip.dataset.part = key;
   hoverTooltip.style.left = Math.round(first.left + window.scrollX) + "px";
   hoverTooltip.style.top = Math.round(last.bottom + window.scrollY) + 4 + "px";
+  keepTipOnScreen(hoverTooltip, first.top);
   return true;
 }
 
@@ -8835,7 +8900,12 @@ document.getElementById("btnSingleCard").onclick = e => {
   if (!currentLessonId || isVirtualLesson()) return;
   document.getElementById("btnSingleCard").hidden = true;
   document.getElementById("quickAdd").hidden = false;
-  document.getElementById("qaTime").value = mediaPlayerReady() ? formatTime(Math.floor(ytPlayer.getCurrentTime() || 0)) : "";
+  // The video's time shows only as the box's placeholder; it is used when nothing else is typed.
+  const at = mediaPlayerReady() ? Math.floor(ytPlayer.getCurrentTime() || 0) : null;
+  const timeBox = document.getElementById("qaTime");
+  timeBox.value = "";
+  timeBox.placeholder = at == null ? "00:00" : clockText(at);
+  timeBox.dataset.at = at == null ? "" : at;
   syncAddLook();
   fitTextarea(document.getElementById("qaQ"));
   fitTextarea(document.getElementById("qaA"));
@@ -8865,7 +8935,9 @@ function saveQuickAdd() {
       return q.focus();
     }
     const listen = quickAddKind() === "listen";
-    const time = listen ? parseTimeToSeconds(document.getElementById("qaTime").value.trim()) : null;
+    const timeBox = document.getElementById("qaTime");
+    const typed = timeBox.value.trim().replace(/:$/, "");
+    const time = !listen ? null : typed ? parseTimeToSeconds(typed) : timeBox.dataset.at !== "" ? Number(timeBox.dataset.at) : null;
     if (listen && time == null) {
       showToast("Add the video time of this sentence");
       return document.getElementById("qaTime").focus();
