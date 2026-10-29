@@ -426,7 +426,7 @@ window.onYouTubeIframeAPIReady = function(){
      apart at a glance and goes with its meaning. A card that is a whole sentence with its translation is not marked:
      the sentence in the usual ink, its translation plain in green. */
   .vocab-ctx mark:not(.vocab-hit, .vocab-own){background:none;color:var(--a-text);font-weight:700;text-decoration:underline 3px var(--a-text);text-underline-offset:6px;}
-  .vocab-meaning.word{font-weight:700;}
+  .vocab-meaning.word, .vocab-front .vocab-term.word{font-weight:700;}
   .vocab-ctx mark:has(.rd){padding-top:.7em;padding-top:round(.7em, 1px);}
   .vocab-meaning{font-size:28px;font-weight:400;line-height:35px;color:var(--a-text);overflow-wrap:anywhere;}
   #vocabSpeak{width:48px;}
@@ -15858,15 +15858,20 @@ function lookupOthers(html, item) {
   return tmp.innerHTML;
 }
 
+// A whole sentence and its translation (the word is the sentence) is shown plain, front and back; a word is bold on
+// both sides, and marked in its sentence on the back.
+function wholeSentenceCard(item, sentence) {
+  const bare = t => foldVocab(t || "").replace(/[\p{P}\s]+/gu, "");
+  return bare(item.term) === bare(sentence) || !sentence && (/[.!?。！？]$/.test(item.term.trim()) || item.term.trim().split(/\s+/).length > 4);
+}
+
 function vocabBackInner(item) {
   const {card: card, sentence: sentence, notes: rest} = vocabContext(item);
   if (vocabViewOnly(item)) {
     const notes = wordNotesOf(item);
     return `<div class="vocab-ctx">${lookupOthers(escapeHtml(item.term), item)}</div>` + (notes ? `<div class="vocab-word-notes">${brLines(notes)}</div>` : "");
   }
-  // A whole sentence and its translation (the word is the sentence) is shown plain; a word is marked in its sentence.
-  const bare = t => foldVocab(t || "").replace(/[\p{P}\s]+/gu, "");
-  const whole = bare(item.term) === bare(sentence) || !sentence && (/[.!?。！？]$/.test(item.term.trim()) || item.term.trim().split(/\s+/).length > 4);
+  const whole = wholeSentenceCard(item, sentence);
   const inSentence = !whole && sentence && !!findWordForm(sentence.normalize("NFC"), item.term);
   const main = whole ? `<div class="vocab-ctx">${lookupOthers(vocabSentenceHtml(item.term, "", card), item)}</div>` : inSentence ? `<div class="vocab-ctx">${lookupOthers(vocabSentenceHtml(sentence, item.term, card), item)}</div>` : `<div class="vocab-ctx"><mark>${vocabSentenceHtml(item.term, "", card)}</mark></div>` + (sentence ? `<div class="vocab-ctx small">${lookupOthers(vocabSentenceHtml(sentence, "", card), item)}</div>` : "");
   const notes = rest ?? wordNotesOf(item);
@@ -15919,6 +15924,7 @@ function fillVocabCard(el, item) {
   el.classList.toggle("view-only", viewOnly);
   el.classList.toggle("answer-first", vocabFront === "a" && !viewOnly);
   el.querySelector(".vocab-term").textContent = vocabFront === "a" && !viewOnly ? item.meaning : item.term;
+  el.querySelector(".vocab-term").classList.toggle("word", !viewOnly && !wholeSentenceCard(item, vocabContext(item).sentence));
   const main = el.querySelector(".vocab-back-main");
   const html = vocabBackInner(item);
   if (main.dataset.html === html) return;
