@@ -944,10 +944,10 @@ window.onYouTubeIframeAPIReady = function(){
     white-space:pre-line;
     display:none;
   }
-  .hover-tooltip.lookup-tip{max-width:280px;padding:8px 12px;font-size:13px;line-height:18px;white-space:normal;}
-  .hover-tooltip.lookup-tip .tip-r{margin-top:2px;color:#cfd6e2;}
-  .hover-tooltip.lookup-tip .tip-m{margin-top:4px;}
-  .hover-tooltip.lookup-tip small{display:block;margin-top:6px;font-size:12px;line-height:16px;font-style:italic;color:var(--popup-muted);}
+  .hover-tooltip.lookup-tip{max-width:280px;padding:10px 14px;font-size:13px;line-height:18px;white-space:normal;}
+  .hover-tooltip.lookup-tip .tip-r{margin-top:6px;color:#cfd6e2;}
+  .hover-tooltip.lookup-tip .tip-m{margin-top:6px;}
+  .hover-tooltip.lookup-tip small{display:block;margin-top:8px;font-size:12px;line-height:16px;font-style:italic;color:var(--popup-muted);}
   .hover-tooltip.on-popup{z-index:10001;background:var(--popup-text);color:var(--popup-bg);}
   .vocab-popup .vocab-sentence, .vocab-popup .vocab-note li, .vocab-popup .vocab-note > div{cursor:default;}
   .vocab-popup{
@@ -5811,9 +5811,18 @@ function fitDeck() {
 
 window.addEventListener("resize", fitDeck);
 
+// A dictionary page's height can't be read from another site, so on a phone each dictionary gets the length its
+// pages run to: Bing's translator is short, a list of MDBG results long.
+const PHONE_DICT_H = {
+  bing: 1000,
+  other: 1600
+};
+
+// On a touch phone a dictionary on the page (the Speaking paper, the editor in a list) is as long as a page of Bing's
+// translator, so the page alone scrolls, never the dictionary inside it.
 function fitDictHeight() {
   const phone = matchMedia("(max-width:600px)").matches;
-  const h = phone ? Math.max(240, Math.min(480, Math.round(window.innerHeight * .45 / 2) * 2)) : 360;
+  const h = phone ? matchMedia("(pointer:coarse)").matches ? PHONE_DICT_H.bing : Math.max(240, Math.min(480, Math.round(window.innerHeight * .45 / 2) * 2)) : 360;
   document.documentElement.style.setProperty("--dict-h", h + "px");
 }
 
@@ -7936,10 +7945,19 @@ function popupDictSlot() {
   return slot;
 }
 
+// On a phone the dictionary page in the edit box is as long as a page of it is (PHONE_DICT_H), so only the edit box
+// scrolls: a page scrolling inside a box that scrolls catches the finger in the wrong one.
+function phoneDictHeight(frame, slot) {
+  if (slot.side || !isTouch()) return 0;
+  return PHONE_DICT_H[frame.querySelector("iframe.dict-zoom") ? "bing" : "other"];
+}
+
 function fitPopupDictFrame(frame, slot) {
+  const tall = phoneDictHeight(frame, slot);
+  if (tall && activeDictOverlay && activeDictOverlay.iframe === frame) document.querySelector("#editPopup .le-dict").style.height = tall + "px";
   Object.assign(frame.style, {
     width: slot.width + "px",
-    height: slot.height + "px",
+    height: (tall || slot.height) + "px",
     border: slot.side ? "0" : "1px solid var(--border)",
     borderRadius: slot.side ? `${slot.radius} 0 0 ${slot.radius}` : "10px"
   });
@@ -8018,6 +8036,7 @@ function hideDictOverlay() {
   if (activeDictOverlay.inline) {
     cancelAnimationFrame(activeDictOverlay.rafId);
     document.querySelector("#editPopup .le-dict").classList.remove("on");
+    document.querySelector("#editPopup .le-dict").style.height = "";
     Object.assign(activeDictOverlay.iframe.style, {
       opacity: "0",
       pointerEvents: "none"
@@ -8041,7 +8060,10 @@ function showDictOverlay(placeholder, url) {
   hideDictOverlay();
   if (placeholder.closest(".le-box")) {
     const inline = getPopupDictIframe(url);
-    document.querySelector("#editPopup .le-dict").classList.add("on");
+    const slotEl = document.querySelector("#editPopup .le-dict");
+    slotEl.classList.add("on");
+    const tall = phoneDictHeight(inline, popupDictSlot());
+    slotEl.style.height = tall ? tall + "px" : "";
     Object.assign(inline.style, {
       opacity: "1",
       pointerEvents: "auto"
@@ -15621,9 +15643,11 @@ function vocabContext(item) {
       sentence: sentence
     };
   }
+  // No sentence holds the word (a word filed under a card whose question is a heading, say "Day 2 — After Work"):
+  // the card shows the word alone rather than a line that has nothing to do with it.
   return {
     card: item.card,
-    sentence: (item.card.q || "").trim()
+    sentence: ""
   };
 }
 

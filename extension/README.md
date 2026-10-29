@@ -31,7 +31,7 @@ A browser only updates an extension fully by itself when it comes from the Chrom
 
 ## Words you already have
 
-Every page marks the words that are already in wikiPhidia, the way the app does: a plain green background for words in the app, grey for words waiting to be sent. Point at one to see the same box as in the app: the word in bold, its pinyin on a line of its own for Chinese, its meaning when it has one (a card with only a question shows none, rather than a dash), and, under them, the lesson it is in, small and in italics so it never stands out (the card's note that a word is already in wikiPhidia names the lesson in italics too). A word you save is marked at once, everywhere it appears on the page. Turn this off in Settings if you prefer a clean page.
+Every page marks the words that are already in wikiPhidia, the way the app does: a plain green background for words in the app, grey for words waiting to be sent. Point at one to see the same box as in the app: the word in bold, its pinyin on a line of its own for Chinese, its meaning when it has one (a card with only a question shows none, rather than a dash), and, under them, the lesson it is in, small and in italics so it never stands out (the parts sit a little apart so the box is easy to read: 6 px between the word, its pinyin and its meaning, 8 px above the lesson) (the card's note that a word is already in wikiPhidia names the lesson in italics too). A word you save is marked at once, everywhere it appears on the page. Turn this off in Settings if you prefer a clean page.
 
 ## Getting the words into wikiPhidia
 
