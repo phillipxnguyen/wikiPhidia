@@ -1681,7 +1681,7 @@ window.onYouTubeIframeAPIReady = function(){
   .today-panel .today-task{border-radius:0;border-bottom:1px solid var(--paper-rule);padding-left:4px;}
   .today-panel .today-add{border-top:0;}
   /* The sidebar's first tile: a small notepad of dot paper bound at its top, with the first three tasks. */
-  .today-pad{grid-column:1 / -1;position:relative;display:flex;flex-direction:column;gap:4px;margin-top:8px;padding:30px 12px;background:var(--paper);background-image:var(--dot-paper);background-size:24px 24px;background-position:12px 12px;border:1px solid var(--paper-edge);border-radius:4px;box-shadow:0 1px 0 var(--paper-edge), 0 6px 16px var(--paper-shadow);color:var(--paper-ink);cursor:pointer;}
+  .today-pad{grid-column:1 / -1;position:relative;display:flex;flex-direction:column;gap:4px;margin-top:8px;margin-bottom:8px;padding:30px 12px 10px;background:var(--paper);background-image:var(--dot-paper);background-size:24px 24px;background-position:12px 12px;border:1px solid var(--paper-edge);border-radius:4px;box-shadow:0 1px 0 var(--paper-edge), 0 6px 16px var(--paper-shadow);color:var(--paper-ink);cursor:pointer;}
   .today-pad::before{content:"";position:absolute;z-index:1;top:-8px;left:12px;right:12px;height:32px;pointer-events:none;background:var(--ring-top) 0 0 / 36px 32px, radial-gradient(circle at 18px 26px, #1f2633 6px, transparent 6px) 0 0 / 36px 32px;background-repeat:space no-repeat;}
   .today-pad.active{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft), 0 6px 16px var(--paper-shadow);}
   .pad-task{display:flex;align-items:center;gap:8px;min-width:0;padding:2px 4px;border-radius:6px;font-size:13px;line-height:20px;font-weight:600;}
@@ -1696,8 +1696,6 @@ window.onYouTubeIframeAPIReady = function(){
   .task-bar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:12px;margin:0 0 16px;padding:8px 8px 8px 16px;border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow-sm);}
   .task-bar[hidden]{display:none;}
   .task-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:16px;line-height:22px;font-weight:700;color:var(--text);}
-  .task-step{flex:none;padding:2px 10px;border-radius:12px;background:color-mix(in srgb, var(--lesson-color) 12%, transparent);color:var(--lesson-color);font-size:13px;line-height:20px;font-weight:700;}
-  .task-step.vocab{background:color-mix(in srgb, var(--new-color) 12%, transparent);color:var(--new-color);}
   .task-close{flex:none;width:36px;height:36px;padding:0;border:0;border-radius:18px;background:none;color:var(--text-2);font-size:16px;line-height:20px;}
   @media (hover:hover){.task-close:hover{background:var(--danger-soft);color:var(--danger);}}
   html.in-task .main-inner{box-sizing:border-box;padding:16px;border-radius:var(--radius);background:color-mix(in srgb, var(--surface) 60%, var(--bg));box-shadow:0 20px 60px rgba(10,20,40,.16);}
@@ -2008,7 +2006,7 @@ window.onYouTubeIframeAPIReady = function(){
 
 <main class="main">
 <div class="main-inner">
-<div id="taskBar" class="task-bar" hidden><span class="task-title"></span><span class="task-step"></span><button id="taskClose" class="task-close" aria-label="Back to the tasks" title="Back to the tasks">✕</button></div>
+<div id="taskBar" class="task-bar" hidden><span class="task-title"></span><button id="taskClose" class="task-close" aria-label="Back to the tasks" title="Back to the tasks">✕</button></div>
 
 <section id="viewEmpty" hidden>
   <div class="empty-state">
@@ -12301,6 +12299,7 @@ function resetStudyState() {
 }
 
 function openLesson(lesson) {
+  if (taskRun && !isVirtualId(lesson.id)) endTask();
   if (!isVirtualId(lesson.id)) dropAllCurtain();
   if (lesson.unseen) {
     delete lesson.unseen;
@@ -13474,6 +13473,8 @@ function showListModes() {
 }
 
 function showView(view) {
+  // A task's sheet belongs to the task alone: going anywhere else in the app ends it, so nothing opens over it.
+  if (taskRun && view !== "study" && view !== "vocab") endTask();
   if (view !== "study" && view !== "vocab") dropAllCurtain();
   if (view !== currentView) ytWarm = false;
   if (view === "study" && !currentLessonId) view = "empty";
@@ -17409,6 +17410,7 @@ function replayAnimation(el, cls) {
 }
 
 document.getElementById("btnAppMode").onclick = () => {
+  endTask();
   stopAllSound();
   setAppMode(appMode === "vocab" ? "cards" : "vocab");
   fairyFly({
@@ -17742,14 +17744,17 @@ async function startTaskSide() {
   run.side = side;
   run.busy = false;
   setAppMode(side);
-  if (currentLessonId !== l.id) await switchToLesson(l.id);
+  // Only what is to be studied today comes up, one card or word at a time, picked as All lessons picks them (New
+  // first, in order, within the daily limits): never the whole lesson.
+  const only = {
+    ids: new Set([ l.id ]),
+    name: run.title
+  };
+  if (side === "vocab") await openAllVocabulary(only); else await openAllLessons(only);
   if (taskRun !== run) return;
   if (side === "vocab") {
+    vocabView = "card";
     showView("vocab");
-    setVocabView("card");
-  } else {
-    showView("study");
-    if (!groupState && rows.length) setReviewMode(isVideoLesson() ? "listen" : "ielts");
   }
   renderTaskBar();
 }
@@ -17759,8 +17764,6 @@ function renderTaskBar() {
   bar.hidden = !taskRun;
   if (!taskRun) return;
   bar.querySelector(".task-title").textContent = taskRun.title;
-  bar.querySelector(".task-step").textContent = taskRun.side === "vocab" ? "Words" : "Cards";
-  bar.querySelector(".task-step").classList.toggle("vocab", taskRun.side === "vocab");
 }
 
 function endTask() {
@@ -17774,7 +17777,7 @@ function endTask() {
 // task is done.
 async function taskSideDone() {
   const run = taskRun;
-  if (!run || run.busy || run.lessonId !== currentLessonId) return;
+  if (!run || run.busy || !isVirtualId(currentLessonId)) return;
   run.busy = true;
   await flushAutoSave();
   const l = library.find(x => x.id === run.lessonId);
@@ -17864,23 +17867,24 @@ document.getElementById("todayGoal").addEventListener("keydown", e => {
   if (e.key === "Enter" && e.target.matches("input")) e.target.blur();
 });
 
-async function openAllLessons() {
-  if (isAllLessons()) {
+// only ({ids, name}): a task's mix, the cards of its lesson(s) alone, picked for today the same way.
+async function openAllLessons(only) {
+  if (isAllLessons() && !only) {
     showView("study");
     return;
   }
   commitActiveEdit();
   await discardIfEmptyDraft();
   await flushAutoSave();
-  raiseAllCurtain();
+  if (!only) raiseAllCurtain();
   const picks = [];
-  modeLibrary("cards").forEach(l => l.cards.forEach(c => picks.push({
+  (only ? library.filter(l => only.ids.has(l.id)) : modeLibrary("cards")).forEach(l => l.cards.forEach(c => picks.push({
     card: c,
     lesson: l
   })));
   openLesson({
     id: LESSON_ALL_ID,
-    name: "📚 All lessons",
+    name: only ? only.name : "📚 All lessons",
     mediaUrl: "",
     studyLang: "auto",
     importHistory: [],
@@ -17897,17 +17901,17 @@ async function openAllLessons() {
   renderLessonList();
 }
 
-async function openAllVocabulary() {
-  if (currentLessonId === VOCAB_ALL_ID) {
+async function openAllVocabulary(only) {
+  if (currentLessonId === VOCAB_ALL_ID && !only) {
     showView("study");
     return;
   }
   commitActiveEdit();
   await discardIfEmptyDraft();
   await flushAutoSave();
-  raiseAllCurtain();
+  if (!only) raiseAllCurtain();
   const picks = [];
-  sortedLibrary().forEach(l => lessonCardsWithExtras(l).forEach(c => {
+  (only ? sortedLibrary().filter(l => only.ids.has(l.id)) : sortedLibrary()).forEach(l => lessonCardsWithExtras(l).forEach(c => {
     if (vocabEntriesOf(c).length) picks.push({
       card: c,
       lesson: l
@@ -17917,7 +17921,7 @@ async function openAllVocabulary() {
   vocabAllMultiLang = langs.size > 1;
   openLesson({
     id: VOCAB_ALL_ID,
-    name: "📚 All vocabularies",
+    name: only ? only.name : "📚 All vocabularies",
     mediaUrl: "",
     studyLang: langs.size === 1 ? Array.from(langs)[0] : "auto",
     importHistory: [],
