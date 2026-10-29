@@ -5417,6 +5417,7 @@ function toggleSequenceLoop() {
   }
   if (sequenceReadsAloud()) {
     startTts("q");
+    onceIfFront(isCardMode() ? getCurrentSingleCardRow() : null);
     return;
   }
   if (ytHasError) {
@@ -6542,6 +6543,28 @@ function rowPlayBadge(r) {
   return "";
 }
 
+// While the card being studied is not shown yet, playing it by hand (its time badge, the video, the play button, a
+// tap on a flashcard) plays it once: each click is one more listen. Once it is shown, its sound loops as always.
+function cardFrontShowing(row) {
+  if (currentView === "vocab") return !!vocabSession && !vocabSession.flipped && !vocabViewOnly(currentVocabItem());
+  return !!groupState && !!row && (row.qHidden || row.aHidden);
+}
+
+function onceIfFront(row) {
+  if (!cardFrontShowing(row)) return;
+  if (loopingRowId === row.id) passThen = () => {
+    loopingRowData = null;
+    stopLoop();
+  }; else if (ttsPlaying) passThen = () => cancelSpeechOnly(); else return;
+  passThen.once = true;
+}
+
+// Showing the card while its one round plays lets the sound go on as it always does once a card is shown.
+function keepPlayingShown() {
+  if (passThen && passThen.once) passThen = null;
+  vocabOnce = false;
+}
+
 function toggleRowPlay(row) {
   if (vocabVideoIdFor(row)) {
     if (!ytHasError) toggleLoopForRow(row); else {
@@ -6549,6 +6572,7 @@ function toggleRowPlay(row) {
       retryVideo(true);
     }
   } else if (ttsPlaying && ttsOnlyId === row.id) stopTts(); else startTts("q", row.id);
+  onceIfFront(row);
 }
 
 function qCellContent(r) {
@@ -17157,6 +17181,10 @@ function startPendingVocabVideo() {
   const item = lessonVocabItems(vocabSource()).find(i => i.key === vocabPendingKey);
   vocabPendingKey = null;
   if (item && !ytHasError) startLoop(item.card);
+  if (item && vocabOnce && loopingRowId === item.card.id) {
+    passThen = () => stopVocabSound();
+    passThen.once = true;
+  }
   syncVocabSound();
 }
 
@@ -17166,11 +17194,15 @@ function preloadVocabVideo(item) {
   if (preloadVideo(vocabVideoUrlFor(item.card))) vocabVideoId = id;
 }
 
-function playVocabSound(item) {
+// once: play a single round and stop (a flashcard's front played by hand).
+let vocabOnce = false;
+
+function playVocabSound(item, once) {
   stopVocabSound();
+  vocabOnce = !!once;
   if (!item) return;
   if (navigator.userActivation && !navigator.userActivation.hasBeenActive) {
-    afterFirstTouch(() => currentView === "vocab" && vocabShownRowId === item.card.id && playVocabSound(item));
+    afterFirstTouch(() => currentView === "vocab" && vocabShownRowId === item.card.id && playVocabSound(item, once));
     return;
   }
   const row = item.card;
@@ -17215,7 +17247,12 @@ function playVocabSound(item) {
     const voice = pickVoice(utter.lang);
     if (voice) utter.voice = voice;
     utter.onend = () => setTimeout(() => {
-      if (token === vocabTtsToken) speak();
+      if (token !== vocabTtsToken) return;
+      if (vocabOnce) {
+        vocabTtsOn = false;
+        return syncVocabSound();
+      }
+      speak();
     }, 700);
     utter.onerror = e => {
       if (e.error === "interrupted" || e.error === "canceled" || token !== vocabTtsToken) return;
@@ -17230,7 +17267,7 @@ function playVocabSound(item) {
 
 function toggleVocabSound(item) {
   if (commitVocabEdit()) renderVocab();
-  if (vocabSoundOn() && soundHeard) stopVocabSound(); else playVocabSound(item);
+  if (vocabSoundOn() && soundHeard) stopVocabSound(); else playVocabSound(item, cardFrontShowing(null));
 }
 
 function pinVocabArea(next) {
@@ -17261,6 +17298,7 @@ function flipVocab() {
   if (!item) return;
   if (vocabSession.flipped || vocabViewOnly(item)) return toggleVocabSound(item);
   vocabSession.flipped = true;
+  keepPlayingShown();
   pinVocabArea();
   const card = document.getElementById("vocabCard");
   if (card) {
@@ -21564,6 +21602,7 @@ function revealAction() {
     r.aHidden = false;
   });
   workHushId = null;
+  keepPlayingShown();
   if (soundOnRows(shown)) {
     render();
     if (!rowSoundOn(shown[0].id)) passThen = () => {
