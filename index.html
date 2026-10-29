@@ -6894,6 +6894,71 @@ function findTermIn(text, term) {
   return span ? [ fold.map[span[0]], fold.map[span[1]] ] : null;
 }
 
+// A word's example sentence may hold it in another form: "stop by" in "stopped by", "put off" in "putting it off",
+// "get oneself together" in "got myself together". For an English word or phrase its first word may take any of its
+// endings (-s, -es, -ed, -ing, a doubled last letter, y to i, a dropped e, the common irregular pasts), a particle
+// (by, up, off…) may have a word or two before it, and a stand-in (oneself, someone, something) is any word or two.
+// Only the flashcard's example sentence looks this way; looking up and marking words stay exact.
+const IRREGULAR_FORMS = {
+  be: "is are was were been being am", have: "has had having", do: "does did done doing", go: "goes went gone going",
+  get: "gets got gotten getting", put: "puts putting", sit: "sits sat sitting", set: "sets setting", let: "lets letting",
+  take: "takes took taken taking", make: "makes made making", come: "comes came coming", run: "runs ran running",
+  keep: "keeps kept keeping", give: "gives gave given giving", find: "finds found finding", think: "thinks thought",
+  bring: "brings brought", buy: "buys bought", catch: "catches caught", say: "says said", tell: "tells told",
+  leave: "leaves left leaving", feel: "feels felt", hold: "holds held", stand: "stands stood", break: "breaks broke broken",
+  fall: "falls fell fallen", write: "writes wrote written writing", eat: "eats ate eaten", see: "sees saw seen",
+  know: "knows knew known", grow: "grows grew grown", throw: "throws threw thrown", wear: "wears wore worn",
+  drive: "drives drove driven driving", ride: "rides rode ridden riding", speak: "speaks spoke spoken",
+  wake: "wakes woke woken waking", choose: "chooses chose chosen choosing", begin: "begins began begun beginning",
+  lose: "loses lost losing", send: "sends sent", spend: "spends spent", build: "builds built", meet: "meets met",
+  pay: "pays paid", lay: "lays laid", sell: "sells sold", hear: "hears heard", mean: "means meant", lead: "leads led",
+  fight: "fights fought", teach: "teaches taught", sleep: "sleeps slept", hang: "hangs hung", stick: "sticks stuck",
+  shake: "shakes shook shaken shaking", forget: "forgets forgot forgotten forgetting", win: "wins won winning",
+  cut: "cuts cutting", hit: "hits hitting", shut: "shuts shutting", fly: "flies flew flown", lie: "lies lay lain lying"
+};
+
+const PARTICLES = new Set("up down off on in out away by over into onto through back around round along together about apart aside forward ahead across behind".split(" "));
+
+const STAND_INS = new Set("oneself someone somebody something sth sb smb smth one s".split(" "));
+
+const formReCache = new Map;
+
+function wordForms(w) {
+  const forms = new Set([ w, w + "s", w + "es", w + "ed", w + "ing" ]);
+  if (w.endsWith("e")) [ w + "d", w.slice(0, -1) + "ing" ].forEach(f => forms.add(f));
+  if (/[^aeiou]y$/.test(w)) [ w.slice(0, -1) + "ies", w.slice(0, -1) + "ied" ].forEach(f => forms.add(f));
+  if (/[^aeiou][aeiou][bdgklmnprt]$/.test(w)) [ w + w.slice(-1) + "ed", w + w.slice(-1) + "ing" ].forEach(f => forms.add(f));
+  (IRREGULAR_FORMS[w] || "").split(" ").filter(Boolean).forEach(f => forms.add(f));
+  return [ ...forms ].sort((a, b) => b.length - a.length);
+}
+
+function formRe(key) {
+  if (formReCache.has(key)) return formReCache.get(key);
+  const words = key.replace(/\p{P}+/gu, " ").split(/\s+/).filter(Boolean);
+  let re = null;
+  if (words.length && words.every(w => /^[a-z]+$/.test(w))) {
+    const esc = w => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const parts = words.map((w, i) => {
+      if (i === 0) return "(?:" + wordForms(w).map(esc).join("|") + ")";
+      if (STAND_INS.has(w)) return "(?:\\s+[\\p{L}']+){1,2}";
+      return (PARTICLES.has(w) ? "(?:\\s+[\\p{L}']+){0,2}?" : "") + "\\s+" + esc(w);
+    });
+    re = new RegExp("(?<![\\p{L}\\p{N}])" + parts.join("") + "(?![\\p{L}\\p{N}])", "u");
+  }
+  formReCache.set(key, re);
+  return re;
+}
+
+function findWordForm(text, term) {
+  const exact = findTermIn(text, term);
+  if (exact) return exact;
+  const re = formRe(foldVocab(term));
+  if (!re) return null;
+  const fold = foldWithMap(text);
+  const m = fold.folded.match(re);
+  return m ? [ fold.map[m.index], fold.map[m.index + m[0].length] ] : null;
+}
+
 function vocabCardEntries() {
   const entries = [];
   const taken = new Set;
@@ -15562,7 +15627,7 @@ function fitReadings(root) {
 function vocabSentenceHtml(sentence, term, row) {
   const chars = Array.from((sentence || "").normalize("NFC"));
   const text = chars.join("");
-  const span = term ? findTermIn(text, term) : null;
+  const span = term ? findWordForm(text, term) : null;
   let start = -1, end = -1;
   if (span) {
     start = Array.from(text.slice(0, span[0])).length;
@@ -15613,7 +15678,7 @@ function noteSentence(item) {
   if (!html) return null;
   const box = document.createElement("div");
   box.innerHTML = html;
-  const line = [ ...box.children ].find(el => findTermIn(el.textContent.trim().normalize("NFC"), item.term));
+  const line = [ ...box.children ].find(el => findWordForm(el.textContent.trim().normalize("NFC"), item.term));
   if (!line) return null;
   const sentence = line.textContent.trim();
   line.remove();
@@ -15624,7 +15689,7 @@ function noteSentence(item) {
 }
 
 function vocabContext(item) {
-  const sentenceIn = card => [ card.q || "" ].concat(card.a ? splitIntoSentences(card.a).map(s => s.text) : []).map(t => t.trim()).find(t => t && findTermIn(t.normalize("NFC"), item.term));
+  const sentenceIn = card => [ card.q || "" ].concat(card.a ? splitIntoSentences(card.a).map(s => s.text) : []).map(t => t.trim()).find(t => t && findWordForm(t.normalize("NFC"), item.term));
   const own = sentenceIn(item.card);
   if (own) return {
     card: item.card,
@@ -15667,7 +15732,7 @@ function vocabBackInner(item) {
     const notes = wordNotesOf(item);
     return `<div class="vocab-ctx">${lookupOthers(escapeHtml(item.term), item)}</div>` + (notes ? `<div class="vocab-word-notes">${brLines(notes)}</div>` : "");
   }
-  const inSentence = sentence && !!findTermIn(sentence.normalize("NFC"), item.term);
+  const inSentence = sentence && !!findWordForm(sentence.normalize("NFC"), item.term);
   const main = inSentence ? `<div class="vocab-ctx">${lookupOthers(vocabSentenceHtml(sentence, item.term, card), item)}</div>` : `<div class="vocab-ctx"><mark>${vocabSentenceHtml(item.term, "", card)}</mark></div>` + (sentence ? `<div class="vocab-ctx small">${lookupOthers(vocabSentenceHtml(sentence, "", card), item)}</div>` : "");
   const notes = rest ?? wordNotesOf(item);
   return main + `<div class="vocab-meaning">${escapeHtml(item.meaning)}</div>` + (notes ? `<div class="vocab-word-notes">${brLines(notes)}</div>` : "");
@@ -15999,7 +16064,7 @@ function renderVocab() {
 // The word's editor looks up the sentence the word is in (or the word itself), the same text loaded ahead here.
 function vocabDictText(item) {
   const {sentence: sentence} = vocabContext(item);
-  return sentence && findTermIn(sentence.normalize("NFC"), item.term) ? sentence : item.term;
+  return sentence && findWordForm(sentence.normalize("NFC"), item.term) ? sentence : item.term;
 }
 
 function vocabDictUrl(item) {
@@ -16649,7 +16714,7 @@ function playVocabSound(item) {
     return;
   }
   const ctx = vocabContext(item);
-  const text = ctx.sentence && findTermIn(ctx.sentence.normalize("NFC"), item.term) ? ctx.sentence : item.term;
+  const text = ctx.sentence && findWordForm(ctx.sentence.normalize("NFC"), item.term) ? ctx.sentence : item.term;
   soundHeard = true;
   vocabTtsOn = true;
   const token = ++vocabTtsToken;
