@@ -94,11 +94,11 @@ textarea[hidden], .sent-view[hidden]{display:none;}
 .btn[disabled]{opacity:.5;cursor:default;filter:none;}
 .ghost{background:none;color:var(--ink-2);font-weight:600;}
 .ghost:hover{background:var(--bg-2);color:var(--ink);filter:none;}
-.tip{position:fixed;max-width:280px;padding:10px 14px;border-radius:8px;background:#1d2330;color:#fff;font-size:13px;line-height:18px;box-shadow:0 6px 18px rgba(0,0,0,.25);pointer-events:none;}
+.tip{position:fixed;max-width:280px;padding:10px;border-radius:8px;background:#1d2330;color:#fff;font-size:13px;line-height:18px;box-shadow:0 6px 18px rgba(0,0,0,.25);pointer-events:none;}
 .tip b{font-weight:700;}
-.tip .tip-r{margin-top:6px;color:#cfd6e2;}
-.tip .tip-m{margin-top:6px;}
-.tip small{display:block;margin-top:8px;color:#aab3c2;font-size:12px;line-height:16px;font-style:italic;}
+.tip .tip-r{margin-top:10px;color:#cfd6e2;}
+.tip .tip-m{margin-top:10px;}
+.tip small{display:block;margin-top:10px;color:#aab3c2;font-size:12px;line-height:16px;font-style:italic;}
 .yt{position:fixed;left:16px;bottom:16px;display:flex;align-items:center;gap:8px;height:40px;padding:0 16px 0 6px;border:0;border-radius:20px;background:var(--green);color:#fff;font:700 14px/20px Inter, system-ui, sans-serif;box-shadow:0 6px 18px rgba(0,0,0,.3);cursor:pointer;}
 .yt:hover{filter:brightness(1.08);}
 .yt span{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:14px;background:rgba(255,255,255,.2);font-size:16px;line-height:20px;}

@@ -84,7 +84,6 @@ window.onYouTubeIframeAPIReady = function(){
     --vocab-bg:#dff0cf;
     --vocab-bg-hover:#cde5b6;
     --vocab-text:#2f5a14;
-    --term-bg:#f8d3d3;
     --stroke-outline:#d8dee6;
     --shadow-sm:0 1px 2px rgba(20,30,50,.06);
     --shadow-md:0 6px 20px rgba(20,30,50,.10);
@@ -127,7 +126,6 @@ window.onYouTubeIframeAPIReady = function(){
       --vocab-bg:#3a4a2e;
       --vocab-bg-hover:#4a5e3a;
       --vocab-text:#d7f0b8;
-      --term-bg:#5a2e2e;
       --stroke-outline:#3a4452;
       --shadow-sm:0 1px 2px rgba(0,0,0,.3);
       --shadow-md:0 8px 24px rgba(0,0,0,.45);
@@ -167,7 +165,6 @@ window.onYouTubeIframeAPIReady = function(){
     --vocab-bg:#3a4a2e;
     --vocab-bg-hover:#4a5e3a;
     --vocab-text:#d7f0b8;
-    --term-bg:#5a2e2e;
     --stroke-outline:#3a4452;
     --shadow-sm:0 1px 2px rgba(0,0,0,.3);
     --shadow-md:0 8px 24px rgba(0,0,0,.45);
@@ -245,8 +242,13 @@ window.onYouTubeIframeAPIReady = function(){
   .brand{display:flex;align-items:center;gap:6px;font-size:15px;font-weight:700;padding:0 4px;letter-spacing:-.01em;}
   .streak-chip{flex-shrink:0;margin-left:auto;display:inline-flex;align-items:center;gap:4px;height:20px;min-height:0;padding:0 6px;border:0;border-radius:10px;line-height:20px;font-size:12px;font-weight:700;color:var(--due-color);background:color-mix(in srgb, var(--due-color) 14%, transparent);font-variant-numeric:tabular-nums;}
   .cloud-chip{flex-shrink:0;display:inline-flex;align-items:center;margin-left:0;height:20px;min-height:0;padding:0 6px;border:0;border-radius:10px;font-size:12px;font-weight:700;line-height:20px;color:var(--accent);background:var(--accent-soft);white-space:nowrap;}
-  .limits-pop{position:fixed;z-index:2000;display:flex;flex-direction:column;gap:10px;min-width:260px;padding:15px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);}
+  .limits-pop{position:fixed;z-index:2000;display:flex;flex-direction:column;gap:12px;min-width:260px;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);}
   .limits-pop[hidden]{display:none;}
+  /* "Study N more today" is today's extra room on top of the limit: it shows as a small +N on the box's top right
+     corner, like the counts on the app's chips, so the limit itself stays the number you set. */
+  .limit-field{position:relative;display:inline-flex;}
+  .limit-more{position:absolute;top:-14px;right:-12px;box-sizing:border-box;min-width:24px;height:24px;padding:0 6px;border:2px solid var(--surface);border-radius:12px;font-size:12px;line-height:20px;font-weight:700;text-align:center;font-variant-numeric:tabular-nums;color:#fff;background:var(--badge);pointer-events:none;}
+  .limit-more:empty{display:none;}
   .limits-pop label{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:14px;line-height:20px;white-space:nowrap;}
   .limits-pop input{width:100px;height:30px;padding:0 8px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);color:var(--text);font:inherit;font-size:16px;text-align:right;}
   .limits-pop input{-moz-appearance:textfield;appearance:textfield;}
@@ -369,7 +371,7 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-back .vocab-ctx, .vocab-back .vocab-meaning{box-sizing:border-box;width:fit-content;max-width:100%;padding:0 16px;font-size:28px;line-height:35px;margin:0;text-align:left;}
   .vocab-back .vocab-ctx.small{font-size:26px;line-height:32px;}
   .vocab-back .vocab-meaning{font-size:26px;line-height:32px;font-weight:400;}
-  .vocab-list-meaning .card-notes mark{padding:0 1px;border-radius:4px;background:var(--term-bg);color:inherit;}
+  .vocab-list-meaning .card-notes mark{background:none;color:var(--accent);font-weight:700;text-decoration:underline 2px color-mix(in srgb, var(--accent) 50%, transparent);text-underline-offset:4px;}
   .vocab-back .vocab-ctx mark, .vocab-back .vocab-ctx mark:has(.rd){display:inline;padding:0 1px;margin:0;border-radius:4px;line-height:inherit;}
   .vocab-back .vocab-ctx mark:is(.vocab-hit, .vocab-own){padding:0;border-radius:0;}
   .vocab-back .vocab-ctx mark.vs{border-top-left-radius:4px;border-bottom-left-radius:4px;padding-left:1px;}
@@ -415,7 +417,10 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-ctx.small{font-size:26px;line-height:32px;}
   .rd{position:relative;}
   .rd::before{content:attr(data-rd);position:absolute;left:50%;bottom:100%;transform:translateX(-50%);font-size:.44em;font-size:round(.44em, 1px);line-height:1.2;line-height:round(1.2em, 1px);white-space:nowrap;pointer-events:none;-webkit-user-select:none;user-select:none;}
-  .vocab-ctx mark{display:inline-block;line-height:1.3;line-height:round(1.3em, 1px);padding:.1em .18em .08em;padding:round(.1em, 1px) round(.18em, 1px) round(.08em, 1px);margin:0 .06em;margin:0 round(.06em, 1px);border-radius:8px;background:var(--term-bg);color:inherit;vertical-align:baseline;}
+  .vocab-ctx mark{display:inline-block;line-height:1.3;line-height:round(1.3em, 1px);padding:.1em .18em .08em;padding:round(.1em, 1px) round(.18em, 1px) round(.08em, 1px);margin:0 .06em;margin:0 round(.06em, 1px);border-radius:8px;background:none;color:inherit;vertical-align:baseline;}
+  /* The word a card is about is not boxed like the other words of the sentence (grey boxes, to look up): it is written
+     in the side's colour, bold, on a thick underline of that colour, so it stands apart at a glance. */
+  .vocab-ctx mark:not(.vocab-hit, .vocab-own){background:none;color:var(--accent);font-weight:700;text-decoration:underline 3px color-mix(in srgb, var(--accent) 50%, transparent);text-underline-offset:6px;}
   .vocab-ctx mark:has(.rd){padding-top:.7em;padding-top:round(.7em, 1px);}
   .vocab-meaning{font-size:28px;font-weight:400;line-height:35px;color:var(--a-text);overflow-wrap:anywhere;}
   #vocabSpeak{width:48px;}
@@ -944,10 +949,10 @@ window.onYouTubeIframeAPIReady = function(){
     white-space:pre-line;
     display:none;
   }
-  .hover-tooltip.lookup-tip{max-width:280px;padding:10px 14px;font-size:13px;line-height:18px;white-space:normal;}
-  .hover-tooltip.lookup-tip .tip-r{margin-top:6px;color:#cfd6e2;}
-  .hover-tooltip.lookup-tip .tip-m{margin-top:6px;}
-  .hover-tooltip.lookup-tip small{display:block;margin-top:8px;font-size:12px;line-height:16px;font-style:italic;color:var(--popup-muted);}
+  .hover-tooltip.lookup-tip{max-width:280px;padding:10px;font-size:13px;line-height:18px;white-space:normal;}
+  .hover-tooltip.lookup-tip .tip-r{margin-top:10px;color:#cfd6e2;}
+  .hover-tooltip.lookup-tip .tip-m{margin-top:10px;}
+  .hover-tooltip.lookup-tip small{display:block;margin-top:10px;font-size:12px;line-height:16px;font-style:italic;color:var(--popup-muted);}
   .hover-tooltip.on-popup{z-index:10001;background:var(--popup-text);color:var(--popup-bg);}
   .vocab-popup .vocab-sentence, .vocab-popup .vocab-note li, .vocab-popup .vocab-note > div{cursor:default;}
   .vocab-popup{
@@ -963,7 +968,7 @@ window.onYouTubeIframeAPIReady = function(){
     border:1px solid #333c48;
     border-radius:var(--radius);
     box-shadow:var(--shadow-md);
-    padding:12px 15px 12px;
+    padding:10px;
     font-size:14px;
     line-height:20px;
     display:none;
@@ -980,15 +985,15 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-popup .vocab-more{position:absolute;left:50%;bottom:0;display:flex;align-items:center;justify-content:center;width:32px;height:20px;margin-left:-16px;min-height:0;padding:0;border:0;border-radius:10px;background:color-mix(in srgb, var(--popup-bg) 82%, #fff);color:#cfd6e2;opacity:0;pointer-events:none;transition:opacity .2s;cursor:pointer;}
   .vocab-popup.more-below .vocab-more{opacity:1;pointer-events:auto;}
   @media (hover:hover){.vocab-popup .vocab-more:hover{color:#fff;background:color-mix(in srgb, var(--popup-bg) 72%, #fff);}}
-  .vocab-popup.scrolls{padding-right:7px;}
-  .vocab-popup.scrolls.has-nav{padding-right:20px;}
+  .vocab-popup.scrolls{padding-right:2px;}
+  .vocab-popup.scrolls.has-nav{padding-right:26px;}
   @media (hover:hover){.vocab-popup .vocab-nav:hover{color:#fff;background:rgba(255,255,255,.06);}}
   .vocab-popup .vocab-nav:active{background:rgba(255,255,255,.12);}
   .vocab-popup .vocab-nav.prev{left:0;border-radius:var(--radius) 0 0 var(--radius);}
   .vocab-popup .vocab-nav.next{right:0;border-radius:0 var(--radius) var(--radius) 0;}
-  .vocab-popup.has-nav{padding-left:28px;padding-right:28px;}
+  .vocab-popup.has-nav{padding-left:34px;padding-right:34px;}
   .vocab-popup .vocab-sentence{white-space:pre-line;}
-  .vocab-popup .vocab-note{margin-top:8px;}
+  .vocab-popup .vocab-note{margin-top:10px;}
   .vocab-popup .vocab-sentence:empty{display:none;}
   .vocab-popup .vocab-sentence:empty + .vocab-note{margin-top:0;}
   .vocab-popup .vocab-note > :first-child{margin-top:0;}
@@ -999,7 +1004,7 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-popup .vocab-sentence mark, .vocab-popup .vocab-note mark{background:var(--mark-bg);color:#20242b;border-radius:4px;padding:0 2px;font-style:normal;}
   .vocab-popup .vocab-note{font-style:italic;}
   .vocab-popup .vocab-note:empty{display:none;}
-  .vocab-popup .vocab-counter{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:8px;font-size:12px;line-height:16px;color:var(--popup-muted);text-align:center;}
+  .vocab-popup .vocab-counter{display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:10px;font-size:12px;line-height:16px;color:var(--popup-muted);text-align:center;}
   .vocab-popup .vocab-from{font-size:12px;line-height:16px;font-style:italic;}
   .from-mark{color:var(--mode-blue);font-weight:700;}
   .from-mark.vocab{color:var(--new-color);}
@@ -1828,8 +1833,8 @@ window.onYouTubeIframeAPIReady = function(){
 
 <div id="limitsPop" class="limits-pop" hidden role="dialog" aria-labelledby="limitsTitle">
   <button id="limitsTitle" title="Click to remove both limits. Limits count for each lesson, in Lessons and in Vocabulary. Study modes and flashcards show only what fits; lists always show every card.">Daily limits</button>
-  <label>New cards a day<input id="limitFresh" type="number" min="0" step="1" inputmode="numeric" placeholder="No limit"></label>
-  <label>Reviews a day<input id="limitReview" type="number" min="0" step="1" inputmode="numeric" placeholder="No limit"></label>
+  <label>New cards a day<span class="limit-field"><input id="limitFresh" type="number" min="0" step="1" inputmode="numeric" placeholder="No limit"><b id="limitFreshMore" class="limit-more"></b></span></label>
+  <label>Reviews a day<span class="limit-field"><input id="limitReview" type="number" min="0" step="1" inputmode="numeric" placeholder="No limit"><b id="limitReviewMore" class="limit-more"></b></span></label>
 </div>
 
 <div id="addPopup" class="paused-overlay add-popup" hidden role="dialog" aria-modal="true" aria-labelledby="addPopTitle">
@@ -4483,7 +4488,7 @@ function isTranslationCard(row) {
 // one-sided card stays wherever it is until its answer is filled in. A card brought back from Vocabulary (kept)
 // stays in Lessons: it is never offered to Vocabulary again.
 function belongsInVocab(row) {
-  return row.time == null && !row.kept && isTranslationCard(row);
+  return row.time == null && isTranslationCard(row);
 }
 
 function isTranslationDeck(cards) {
@@ -7735,7 +7740,7 @@ function updateSelBar() {
   bar.style.setProperty("--tb-h", touchBar.offsetHeight + "px");
   const back = !!target.item && canMoveToLesson(target.item);
   const vocabBtn = document.getElementById("selVocab");
-  vocabBtn.hidden = back ? false : !target.row || target.rows.length !== 1 || cardInVideoLesson(target.row);
+  vocabBtn.hidden = back ? false : !target.row || target.rows.length !== 1 || !canMoveToVocab(target.row);
   vocabBtn.classList.toggle("to-lesson", back);
   vocabBtn.setAttribute("aria-label", back ? "Move back to Lessons" : "Move to Vocabulary");
   document.documentElement.style.setProperty("--sel-h", Math.round(window.innerHeight - bar.querySelector(".segmented").getBoundingClientRect().top) + "px");
@@ -11657,6 +11662,104 @@ function scheduleAutoSave() {
   autoSaveDebounceTimer = setTimeout(saveCurrentLesson, STORE_DELAY_MS);
 }
 
+// Every card is where it is studied, always, however long it has been there or studied: a text card whose question
+// and answer are in different languages is a word and its meaning, learnt in Vocabulary; a word whose meaning is in
+// its own language is a question answered in its own language, studied with Speaking in Lessons. Each moves on its
+// own, with its progress (a card's Speaking progress becomes the word's, and the other way round) and its notes. A
+// one-sided card or word (no answer, no meaning) and the sentences of a video stay where they are. The card or word
+// being edited waits until its editor closes.
+function autoSortLibrary() {
+  if (isVirtualLesson()) return false;
+  const live = !!currentLessonId && !isVirtualId(currentLessonId);
+  const homes = library.filter(l => !isVirtualId(l.id) && (!live || l.id !== currentLessonId)).map(l => ({
+    lesson: l,
+    cards: l.cards || [],
+    extras: l.extraWords && l.extraWords.uid ? l.extraWords : normalizeExtras(l.extraWords)
+  }));
+  if (live) homes.unshift({
+    lesson: null,
+    cards: rows,
+    extras: vocabExtras
+  });
+  const editing = activeEdit && activeEdit.row;
+  const stateOf = st => st && st.reps ? Object.assign({}, st, {
+    notes: undefined,
+    added: undefined
+  }) : null;
+  let liveTouched = false;
+  homes.forEach(home => {
+    const toWords = home.cards.filter(c => c && c.uid !== EXTRA_UID && c !== editing && c.time == null && (c.q || "").trim() && (c.a || "").trim() && isTranslationCard(c));
+    const holders = home.cards.filter(c => c && c !== editing).concat(home.extras ? [ home.extras ] : []);
+    const toCards = [];
+    holders.forEach(card => vocabEntriesOf(card).forEach(e => {
+      if (!e.meaning || !e.meaning.trim() || isTranslationCard({
+        q: e.term,
+        a: e.meaning
+      }) || !home.lesson && e.key === vocabEditingKey) return;
+      const own = card.uid !== EXTRA_UID && card.time == null && normalizeVocabText((card.q || "").replace(/\s+/g, " ").trim()) === e.key;
+      if (!own) toCards.push([ card, e ]);
+    }));
+    if (!toWords.length && !toCards.length) return;
+    const made = [];
+    toCards.forEach(([ card, e ]) => {
+      const next = rewrittenVocabNotes(card, e, null, null);
+      if (!next) return;
+      const st = card.vocab && card.vocab[e.key];
+      card.notes = next.notes;
+      card.notesHtml = next.notesHtml;
+      if (card.vocab) delete card.vocab[e.key];
+      const row = newRow(e.term, e.meaning, null);
+      if (st && st.notes) {
+        row.notesHtml = sanitizeHtml(st.notes);
+        row.notes = plainTextOf(row.notesHtml, "\n");
+      }
+      const progress = stateOf(st);
+      if (progress) row.srs.Table = Object.assign(row.srs.Table, progress);
+      made.push(home.lesson ? serializeCard(row) : row);
+    });
+    if (toWords.length) {
+      if (!home.lesson) home.extras = ensureVocabExtras(); else if (!home.extras) home.extras = {
+        uid: EXTRA_UID,
+        q: "",
+        a: "",
+        notes: "",
+        notesHtml: "",
+        time: null,
+        vocab: {}
+      };
+      toWords.forEach(c => {
+        const term = c.q.replace(/\s+/g, " ").trim(), key = normalizeVocabText(term);
+        const pairs = [ [ term, c.a.replace(/\s+/g, " ").trim() ] ].concat(vocabEntriesOf(c).filter(e => e.key !== key).map(e => [ e.term, e.meaning ]));
+        appendWordItems(home.extras, pairs);
+        const progress = stateOf(c.srs && c.srs.Table);
+        if (progress) home.extras.vocab[key] = Object.assign(home.extras.vocab[key] || newSrsState(), progress);
+        vocabEntriesOf(c).forEach(e => {
+          if (c.vocab && c.vocab[e.key]) home.extras.vocab[e.key] = c.vocab[e.key];
+        });
+        const plain = plainTextOf(c.notesHtml || "", "\n").trim();
+        if (plain && !vocabEntriesOf(c).length) setWordNotes(home.extras, key, c.notesHtml);
+      });
+    }
+    const gone = new Set(toWords);
+    const left = home.cards.filter(c => !gone.has(c)).concat(made);
+    if (!home.lesson) {
+      toWords.forEach(c => {
+        pruneIdFromGroupState(groupState, c.id);
+        pruneIdFromGroupState(savedGroupState, c.id);
+      });
+      rows = left;
+      vocabExtras = home.extras;
+      liveTouched = true;
+      return;
+    }
+    home.lesson.cards = left;
+    home.lesson.extraWords = serializeExtras(home.extras);
+    home.lesson.updatedAt = Date.now();
+    dbPut("lessons", home.lesson).catch(() => {});
+  });
+  return liveTouched;
+}
+
 // One of each, everywhere: a question or word exists once in all the lessons, in Lessons and Vocabulary together. A
 // text card (a question without a video time), a word kept in a lesson's own word list and a word filed under a
 // card's notes are the same thing when they read the same, whatever lesson they are in; of each such set one is kept
@@ -11786,7 +11889,8 @@ function saveCurrentLesson() {
   autoSaveDebounceTimer = null;
   if (!currentLessonId || tabPaused) return Promise.resolve();
   if (isVirtualLesson()) return saveVirtualLesson();
-  if (dedupeLibrary()) afterDedupe();
+  const sorted = autoSortLibrary();
+  if (dedupeLibrary() || sorted) afterDedupe();
   const data = serializeCurrentLesson();
   upsertLibrary(data);
   updateLessonListItem(data);
@@ -13523,6 +13627,9 @@ document.getElementById("streakChip").onclick = () => {
   if (!limitsApply()) return;
   document.getElementById("limitFresh").value = studyLimits.fresh || "";
   document.getElementById("limitReview").value = studyLimits.review || "";
+  const more = extraToday(currentView === "vocab", currentLessonId);
+  document.getElementById("limitFreshMore").textContent = studyLimits.fresh && more.fresh ? "+" + more.fresh : "";
+  document.getElementById("limitReviewMore").textContent = studyLimits.review && more.review ? "+" + more.review : "";
   pop.hidden = false;
   const r = document.getElementById("streakChip").getBoundingClientRect();
   pop.style.left = Math.round(Math.max(8, Math.min(r.left, window.innerWidth - pop.offsetWidth - 8))) + "px";
@@ -15200,6 +15307,7 @@ async function initApp() {
     dbDelete("lessons", l.id);
     forgetLesson(l.id);
   });
+  autoSortLibrary();
   dedupeLibrary();
   reviewLog = (await dbGetAll("reviews")).filter(e => e && isFinite(e.ts)).sort((a, b) => a.ts - b.ts);
   renderStreakChip();
@@ -16555,16 +16663,31 @@ function deleteVocabEntry(item, part) {
 // Any word can go to Lessons, one kept in the lesson's own word list or one filed under a card's notes (it then
 // leaves those notes): it becomes a card of its own lesson. In All vocabularies the word's lesson is not open, so
 // there it says to open the lesson first.
+// Cards are sorted by their languages on their own (autoSortLibrary), so a move by hand is only for what that leaves
+// alone: a one-sided word or card (no meaning, no answer). A word with a meaning in another language belongs in
+// Vocabulary, and a card answered in its own language in Lessons, and each says so instead of moving.
+function sortedWord(item) {
+  return !!item && !!(item.meaning || "").trim() && isTranslationCard({
+    q: item.term,
+    a: item.meaning
+  });
+}
+
 function canMoveToLesson(item) {
-  return !!item && !!item.card && !isVirtualLesson() && currentLessonId !== VOCAB_ALL_ID;
+  return !!item && !!item.card && !isVirtualLesson() && currentLessonId !== VOCAB_ALL_ID && !sortedWord(item);
 }
 
 function cantMoveToLesson(item) {
-  if (item && !canMoveToLesson(item) && currentLessonId === VOCAB_ALL_ID) showToast("Open the word's own lesson to move it to Lessons");
+  if (!item || canMoveToLesson(item)) return;
+  showToast(sortedWord(item) ? "A word with its translation is learnt here, in Vocabulary" : "Open the word's own lesson to move it to Lessons");
+}
+
+function canMoveToVocab(row) {
+  return !!row && !cardInVideoLesson(row) && (!(row.a || "").trim() || belongsInVocab(row));
 }
 
 function moveVocabToLesson(item, sorted) {
-  if (!canMoveToLesson(item)) return;
+  if (!canMoveToLesson(item)) return cantMoveToLesson(item);
   commitVocabEdit();
   const extras = item.card;
   const next = rewrittenVocabNotes(extras, item, null, null);
@@ -16601,7 +16724,7 @@ function moveVocabToLesson(item, sorted) {
   swipe(part ? Array.from(part.children) : [ document.getElementById("vocabCard") ].filter(Boolean), 1, () => {
     render();
     renderVocab();
-    renderLessonList();
+    setTimeout(renderLessonList);
   }, false, "Lesson");
   showToast(sorted ? "Moved to Lessons — Speaking" : "Moved back to Lessons");
 }
@@ -20628,6 +20751,7 @@ document.addEventListener("keydown", e => {
     const row = picked || (groupViewStyle === "ielts" && groupState ? scope[0] : null);
     if (!row || cardInVideoLesson(row)) return;
     e.preventDefault();
+    if (!canMoveToVocab(row)) return showToast("A question answered in its own language is studied here, with Speaking");
     moveCardToVocab(row);
     return;
   }
