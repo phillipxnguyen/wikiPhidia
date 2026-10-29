@@ -62,6 +62,8 @@ window.onYouTubeIframeAPIReady = function(){
     --paper-rule:#d6e0ec;
     --dot-paper:radial-gradient(circle, var(--paper-rule) 1px, transparent 1px);
     --paper-margin:#ebb3b3;
+    --ring-top:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2236%22%20height%3D%2230%22%3E%3Crect%20x%3D%2214%22%20y%3D%221%22%20width%3D%228%22%20height%3D%2223%22%20rx%3D%224%22%20fill%3D%22%23fff%22%20stroke%3D%22%231f2633%22%20stroke-width%3D%222%22/%3E%3C/svg%3E");
+    --ring-left:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2230%22%20height%3D%2236%22%3E%3Crect%20x%3D%221%22%20y%3D%2214%22%20width%3D%2223%22%20height%3D%228%22%20rx%3D%224%22%20fill%3D%22%23fff%22%20stroke%3D%22%231f2633%22%20stroke-width%3D%222%22/%3E%3C/svg%3E");
     --paper-mark:rgba(245,205,70,.45);
     --paper-shadow:rgba(20,30,50,.08);
     --danger:#cc3d3d;
@@ -455,7 +457,7 @@ window.onYouTubeIframeAPIReady = function(){
   .qa-row > textarea{flex:1;min-width:0;}
   .qa-time{flex:none;box-sizing:border-box;width:72px;height:46px;text-align:center;font-size:16px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--kind);}
   .quick-add[data-kind]{background:color-mix(in srgb, var(--kind) 6%, var(--surface));border-color:color-mix(in srgb, var(--kind) 40%, var(--border));}
-  .quick-add[data-kind="speak"]{padding-left:56px;background:linear-gradient(to right, transparent 39px, var(--paper-margin) 39px 40px, transparent 40px), repeating-linear-gradient(transparent 0 35px, var(--paper-rule) 35px 36px), var(--paper);}
+  .quick-add[data-kind="speak"]{padding-left:56px;background:repeating-linear-gradient(transparent 0 35px, var(--paper-rule) 35px 36px), var(--paper);}
   .quick-add[data-kind="view"]{background-color:var(--surface);background-image:var(--dot-paper);background-size:24px 24px;background-position:12px 12px;}
   #addForm[data-kind] #importText{background:color-mix(in srgb, var(--kind) 6%, var(--surface));border-color:color-mix(in srgb, var(--kind) 40%, var(--border));}
   #addForm[data-kind] #importText::placeholder{color:var(--kind);opacity:1;}
@@ -873,7 +875,6 @@ window.onYouTubeIframeAPIReady = function(){
   #cardTable.no-head thead{display:none;}
   #cardTable.full-list thead{display:none;}
   #cardTable.notebook{--line:36px;display:block;position:relative;overflow:visible;padding:18px 0 26px;background:var(--paper);color:var(--paper-ink);border:1px solid var(--paper-edge);border-radius:4px;box-shadow:0 1px 0 var(--paper-edge), 0 14px 30px var(--paper-shadow);font-family:Georgia, "Times New Roman", serif;}
-  #cardTable.notebook::before{content:"";position:absolute;top:0;bottom:0;left:64px;border-left:2px solid var(--paper-margin);pointer-events:none;}
   #cardTable.notebook colgroup, #cardTable.notebook thead{display:none;}
   #cardTable.notebook tbody{display:block;}
   #cardTable.notebook tbody tr{display:grid;grid-template-columns:64px minmax(0, 1fr);padding:14px 36px 14px 0;background:none;}
@@ -889,18 +890,15 @@ window.onYouTubeIframeAPIReady = function(){
   #cardTable.notebook tbody tr.edit-row{display:block;padding:16px 36px 16px 86px;}
   #cardTable.notebook tbody tr.edit-row td{display:block;font-family:system-ui, -apple-system, "Segoe UI", sans-serif;}
   #cardTable.notebook .empty-msg{padding-left:86px;}
-  html.touch #cardTable.notebook::before{left:30px;}
   html.touch #cardTable.notebook tbody tr{grid-template-columns:30px minmax(0, 1fr);}
   html.touch #cardTable.notebook tbody tr.edit-row{padding-left:52px;}
   @media (max-width:600px){
-    #cardTable.notebook::before{display:none;}
     html.touch #cardTable.notebook tbody tr{grid-template-columns:0 minmax(0, 1fr);padding-right:24px;}
     html.touch #cardTable.notebook td.q-col, html.touch #cardTable.notebook td.a-col{padding-left:25px;}
     html.touch #cardTable.notebook tbody tr.edit-row{padding-left:24px;padding-right:24px;}
     html.touch #cardTable.notebook .empty-msg{padding-left:24px;}
   }
   @media (max-width:600px){
-    #cardTable.notebook::before{left:40px;}
     #cardTable.notebook tbody tr{grid-template-columns:40px minmax(0, 1fr);padding-right:24px;}
     #cardTable.notebook td.q-col, #cardTable.notebook td.a-col{padding-left:20px;}
     #cardTable.notebook tbody tr.edit-row{padding:12px 12px 12px 52px;}
@@ -1475,6 +1473,14 @@ window.onYouTubeIframeAPIReady = function(){
   .ielts-paper.dot-paper{display:flex;flex-direction:column;justify-content:center;max-width:480px;aspect-ratio:1 / 1;background-image:var(--dot-paper);background-size:var(--line) var(--line);background-position:calc(var(--line) / 2) calc(var(--line) / 2);}
   .ielts-paper .cell.paper-text{font-size:24px;line-height:var(--line);text-align:center;overflow-wrap:anywhere;white-space:pre-line;color:var(--paper-ink);}
   .ielts-paper.dot-paper .paper-extras:empty{display:none;}
+
+  /* Binder rings instead of a red margin line: a sheet with one side (dot paper) is a notepad bound at its top, a sheet
+     with a question and its answer (the Speaking paper, the notebook page) is bound on its left. Each ring, white with a dark
+     outline, runs from outside the sheet into a dark hole punched near its edge. */
+  .ielts-paper.dot-paper::before, .ielts-paper:not(.dot-paper)::before, #cardTable.notebook::before{content:"";position:absolute;z-index:1;pointer-events:none;}
+  .ielts-paper.dot-paper{margin-top:16px;}
+  .ielts-paper.dot-paper::before{top:-14px;left:24px;right:24px;height:30px;border:0;background:var(--ring-top) 0 0 / 36px 30px, radial-gradient(circle at 18px 24px, #1f2633 6px, transparent 6px) 0 0 / 36px 30px;background-repeat:space no-repeat;}
+  .ielts-paper:not(.dot-paper)::before, #cardTable.notebook::before{top:24px;bottom:24px;left:-14px;width:30px;border:0;background:var(--ring-left) 0 0 / 30px 36px, radial-gradient(circle at 24px 18px, #1f2633 6px, transparent 6px) 0 0 / 30px 36px;background-repeat:no-repeat space;}
   .ielts-paper .cell.hidden.paper-hint, .ielts-paper .cell.hidden.paper-hint:hover{font-style:normal;color:var(--paper-ink);}
   .ielts-paper .paper-prompt:not(.paper-hint):hover{color:var(--paper-ink-2);}
   .paper-hint ol, .paper-notes ol{margin:0;padding:0;list-style:none;counter-reset:paper-n;}
@@ -1491,7 +1497,7 @@ window.onYouTubeIframeAPIReady = function(){
   html:not(.touch) .cell.shown, html:not(.touch) .vocab-card.flipped .vocab-ctx, html:not(.touch) .vocab-list-row[data-key] > *{-webkit-user-select:text;user-select:text;}
   .paper-body{display:grid;grid-template-columns:minmax(0, 1fr);column-gap:24px;}
   .ielts-paper.with-notes .paper-body{grid-template-columns:minmax(0, 1fr) fit-content(44%);}
-  .paper-notes{min-width:180px;padding-left:20px;border-left:2px solid var(--paper-margin);font-size:18px;line-height:25px;}
+  .paper-notes{min-width:180px;padding-left:20px;border-left:2px solid var(--paper-rule);font-size:18px;line-height:25px;}
   .paper-notes li + li{margin-top:6px;}
   .paper-notes li{padding-left:24px;}
   .paper-extras{display:flex;flex-direction:column;}
@@ -1502,7 +1508,7 @@ window.onYouTubeIframeAPIReady = function(){
   @media (max-width:600px){
     .ielts-paper{padding:24px 24px 28px;}
     .ielts-paper.with-notes .paper-body{grid-template-columns:minmax(0, 1fr);}
-    .paper-notes{margin-top:28px;padding:20px 0 0;border-left:0;border-top:2px solid var(--paper-margin);}
+    .paper-notes{margin-top:28px;padding:20px 0 0;border-left:0;border-top:2px solid var(--paper-rule);}
     .paper-head{flex-direction:column;align-items:flex-start;}
     .paper-meta{text-align:left;}
   }
@@ -5989,6 +5995,60 @@ function fitDictHeight() {
 fitDictHeight();
 
 window.addEventListener("resize", fitDictHeight);
+
+// The New / Due / Done counts sit in the middle of what is around them. With buttons on both sides (any number on
+// each) they are centred between the two, the same room on either side (their auto margins); with buttons on one
+// side only there is nothing to balance, so they sit in the middle of the toolbar itself, as long as that keeps them
+// clear of the buttons.
+function centerCounts() {
+  document.querySelectorAll(".toolbar").forEach(bar => {
+    const counts = [ ...bar.querySelectorAll(":scope > .toolbar-counts") ].find(el => el.offsetParent && el.offsetWidth);
+    if (!counts) return;
+    const shown = el => !!el && !!el.offsetParent && el.getBoundingClientRect().width > 0;
+    const right = bar.querySelector(":scope > .toolbar-right");
+    const twoSides = !!right && [ ...right.children ].some(el => shown(el) && getComputedStyle(el).visibility !== "hidden");
+    counts.style.marginLeft = "";
+    counts.style.marginRight = "";
+    if (twoSides) {
+      // The same room on both sides, in whole pixels.
+      const auto = parseFloat(getComputedStyle(counts).marginLeft) || 0;
+      counts.style.marginLeft = Math.round(auto) + "px";
+      counts.style.marginRight = "auto";
+      return;
+    }
+    const lefts = [ ...bar.children ].filter(el => el !== counts && el !== right && !el.classList.contains("toolbar-counts") && shown(el));
+    const box = bar.getBoundingClientRect(), c = counts.getBoundingClientRect();
+    if (Math.abs(c.top - box.top) > c.height) return;
+    const cs = getComputedStyle(bar), gap = parseFloat(cs.columnGap) || 0;
+    // Where the counts start with no margin: just after the buttons before them (or at the toolbar's own start).
+    const natural = lefts.length ? Math.max(...lefts.map(el => el.getBoundingClientRect().right)) - box.left + gap : parseFloat(cs.paddingLeft) || 0;
+    counts.style.marginLeft = Math.max(0, Math.round((box.width - c.width) / 2 - natural)) + "px";
+    counts.style.marginRight = "auto";
+  });
+}
+
+let centerCountsRaf = 0;
+
+function queueCenterCounts() {
+  if (!centerCountsRaf) centerCountsRaf = requestAnimationFrame(() => {
+    centerCountsRaf = 0;
+    centerCounts();
+  });
+}
+
+window.addEventListener("resize", queueCenterCounts);
+
+document.querySelectorAll(".toolbar").forEach(bar => {
+  new MutationObserver(list => {
+    if (list.some(m => !(m.type === "attributes" && m.attributeName === "style" && m.target.classList.contains("toolbar-counts")))) queueCenterCounts();
+  }).observe(bar, {
+    subtree: true,
+    childList: true,
+    attributes: true,
+    attributeFilter: [ "style", "hidden", "class" ]
+  });
+  new ResizeObserver(queueCenterCounts).observe(bar);
+});
 
 new ResizeObserver(() => fitDeck()).observe(document.querySelector(".study-head"));
 
