@@ -17790,6 +17790,13 @@ async function taskSideDone() {
   run.busy = true;
   await flushAutoSave();
   const l = library.find(x => x.id === run.lessonId);
+  // The mix shows its end screen for a moment before its first card comes up: the side is done only when it really
+  // has nothing left for today.
+  const mine = l ? leftToday(l, run.side) : null;
+  if (taskRun !== run || mine && mine.fresh + mine.due) {
+    run.busy = false;
+    return;
+  }
   const other = run.side === "vocab" ? "cards" : "vocab";
   const left = l ? leftToday(l, other) : null;
   if (left && left.fresh + left.due) {
