@@ -244,11 +244,13 @@ window.onYouTubeIframeAPIReady = function(){
   .cloud-chip{flex-shrink:0;display:inline-flex;align-items:center;margin-left:0;height:20px;min-height:0;padding:0 6px;border:0;border-radius:10px;font-size:12px;font-weight:700;line-height:20px;color:var(--accent);background:var(--accent-soft);white-space:nowrap;}
   .limits-pop{position:fixed;z-index:2000;display:flex;flex-direction:column;gap:12px;min-width:260px;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);}
   .limits-pop[hidden]{display:none;}
-  /* "Study N more today" is today's extra room on top of the limit: it shows as a small +N on the box's top right
-     corner, like the counts on the app's chips, so the limit itself stays the number you set. */
+  /* "Study N more today" is today's extra room on top of the limit: it shows as a small +N sitting on the box's top
+     right corner, over its border, in the New (green) or Due (orange) colour of the counts, like the counts on the
+     app's chips; the number in the box moves left to keep clear of it, so the limit itself stays the number you set. */
   .limit-field{position:relative;display:inline-flex;}
-  .limits-pop label:has(.limit-more:not(:empty)){margin-top:10px;}
-  .limit-more{position:absolute;bottom:calc(100% + 2px);right:-12px;box-sizing:border-box;min-width:24px;height:22px;padding:0 6px;border:2px solid var(--surface);border-radius:11px;font-size:12px;line-height:18px;font-weight:700;text-align:center;font-variant-numeric:tabular-nums;color:#fff;background:var(--badge);pointer-events:none;}
+  .limit-field:has(.limit-more:not(:empty)) input{padding-right:44px;}
+  .limit-more{position:absolute;top:-10px;right:-10px;box-sizing:border-box;min-width:24px;height:22px;padding:0 6px;border:2px solid var(--surface);border-radius:11px;font-size:12px;line-height:18px;font-weight:700;text-align:center;font-variant-numeric:tabular-nums;color:#fff;background:var(--new-color);pointer-events:none;}
+  #limitReviewMore{background:var(--due-color);}
   .limit-more:empty{display:none;}
   .limits-pop label{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:14px;line-height:20px;white-space:nowrap;}
   .limits-pop input{width:100px;height:30px;padding:0 8px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);color:var(--text);font:inherit;font-size:16px;text-align:right;}
@@ -372,7 +374,7 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-back .vocab-ctx, .vocab-back .vocab-meaning{box-sizing:border-box;width:fit-content;max-width:100%;padding:0 16px;font-size:28px;line-height:35px;margin:0;text-align:left;}
   .vocab-back .vocab-ctx.small{font-size:26px;line-height:32px;}
   .vocab-back .vocab-meaning{font-size:26px;line-height:32px;font-weight:400;}
-  .vocab-list-meaning .card-notes mark{background:none;color:var(--a-text);font-weight:inherit;text-decoration:underline 2px var(--a-text);text-underline-offset:4px;}
+  .vocab-list-meaning .card-notes mark{background:none;color:var(--a-text);font-weight:700;text-decoration:underline 2px var(--a-text);text-underline-offset:4px;}
   .vocab-back .vocab-ctx mark, .vocab-back .vocab-ctx mark:has(.rd){display:inline;padding:0 1px;margin:0;border-radius:4px;line-height:inherit;}
   .vocab-back .vocab-ctx mark:is(.vocab-hit, .vocab-own){padding:0;border-radius:0;}
   .vocab-back .vocab-ctx mark.vs{border-top-left-radius:4px;border-bottom-left-radius:4px;padding-left:1px;}
@@ -420,9 +422,11 @@ window.onYouTubeIframeAPIReady = function(){
   .rd::before{content:attr(data-rd);position:absolute;left:50%;bottom:100%;transform:translateX(-50%);font-size:.44em;font-size:round(.44em, 1px);line-height:1.2;line-height:round(1.2em, 1px);white-space:nowrap;pointer-events:none;-webkit-user-select:none;user-select:none;}
   .vocab-ctx mark{display:inline-block;line-height:1.3;line-height:round(1.3em, 1px);padding:.1em .18em .08em;padding:round(.1em, 1px) round(.18em, 1px) round(.08em, 1px);margin:0 .06em;margin:0 round(.06em, 1px);border-radius:8px;background:none;color:inherit;vertical-align:baseline;}
   /* The word a card is about is not boxed like the other words of the sentence (grey boxes, to look up): it is written
-     in the meaning's green, in the same weight as the meaning, on a thick underline of that same green, so it stands
-     apart at a glance and goes with its meaning below. */
-  .vocab-ctx mark:not(.vocab-hit, .vocab-own){background:none;color:var(--a-text);font-weight:400;text-decoration:underline 3px var(--a-text);text-underline-offset:6px;}
+     in the meaning's green, bold like the meaning under it, on a thick underline of that same green, so it stands
+     apart at a glance and goes with its meaning. A card that is a whole sentence with its translation is not marked:
+     the sentence in the usual ink, its translation plain in green. */
+  .vocab-ctx mark:not(.vocab-hit, .vocab-own){background:none;color:var(--a-text);font-weight:700;text-decoration:underline 3px var(--a-text);text-underline-offset:6px;}
+  .vocab-meaning.word{font-weight:700;}
   .vocab-ctx mark:has(.rd){padding-top:.7em;padding-top:round(.7em, 1px);}
   .vocab-meaning{font-size:28px;font-weight:400;line-height:35px;color:var(--a-text);overflow-wrap:anywhere;}
   #vocabSpeak{width:48px;}
@@ -15860,10 +15864,13 @@ function vocabBackInner(item) {
     const notes = wordNotesOf(item);
     return `<div class="vocab-ctx">${lookupOthers(escapeHtml(item.term), item)}</div>` + (notes ? `<div class="vocab-word-notes">${brLines(notes)}</div>` : "");
   }
-  const inSentence = sentence && !!findWordForm(sentence.normalize("NFC"), item.term);
-  const main = inSentence ? `<div class="vocab-ctx">${lookupOthers(vocabSentenceHtml(sentence, item.term, card), item)}</div>` : `<div class="vocab-ctx"><mark>${vocabSentenceHtml(item.term, "", card)}</mark></div>` + (sentence ? `<div class="vocab-ctx small">${lookupOthers(vocabSentenceHtml(sentence, "", card), item)}</div>` : "");
+  // A whole sentence and its translation (the word is the sentence) is shown plain; a word is marked in its sentence.
+  const bare = t => foldVocab(t || "").replace(/[\p{P}\s]+/gu, "");
+  const whole = bare(item.term) === bare(sentence) || !sentence && (/[.!?。！？]$/.test(item.term.trim()) || item.term.trim().split(/\s+/).length > 4);
+  const inSentence = !whole && sentence && !!findWordForm(sentence.normalize("NFC"), item.term);
+  const main = whole ? `<div class="vocab-ctx">${lookupOthers(vocabSentenceHtml(item.term, "", card), item)}</div>` : inSentence ? `<div class="vocab-ctx">${lookupOthers(vocabSentenceHtml(sentence, item.term, card), item)}</div>` : `<div class="vocab-ctx"><mark>${vocabSentenceHtml(item.term, "", card)}</mark></div>` + (sentence ? `<div class="vocab-ctx small">${lookupOthers(vocabSentenceHtml(sentence, "", card), item)}</div>` : "");
   const notes = rest ?? wordNotesOf(item);
-  return main + `<div class="vocab-meaning">${escapeHtml(item.meaning)}</div>` + (notes ? `<div class="vocab-word-notes">${brLines(notes)}</div>` : "");
+  return main + `<div class="vocab-meaning${whole ? "" : " word"}">${escapeHtml(item.meaning)}</div>` + (notes ? `<div class="vocab-word-notes">${brLines(notes)}</div>` : "");
 }
 
 function buildVocabCard(item) {
