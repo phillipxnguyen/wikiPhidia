@@ -1664,6 +1664,39 @@ window.onYouTubeIframeAPIReady = function(){
   .empty-state h2{font-size:22px;margin:14px 0 6px;}
   .empty-state p{color:var(--text-2);margin:0 0 20px;}
   .empty-state .row-flex{justify-content:center;}
+  /* Today: the day's goal and tasks, the page the app opens on. */
+  .today-goal{display:flex;flex-direction:column;gap:12px;}
+  .today-goal .today-goal-text{box-sizing:border-box;width:calc(100% + 16px);height:36px;padding:4px 8px;margin:-4px -8px 0;border:1px solid transparent;box-shadow:none;border-radius:8px;background:none;color:var(--text);font:inherit;font-size:18px;line-height:26px;font-weight:700;}
+  .today-goal .today-goal-text:focus{border-color:var(--accent);background:var(--surface);}
+  @media (hover:hover){.today-goal .today-goal-text:hover{border-color:var(--border);}}
+  .today-line{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;font-size:14px;line-height:20px;color:var(--text-2);}
+  .today-line b{color:var(--text);font-variant-numeric:tabular-nums;}
+  .today-target{display:inline-flex;align-items:center;gap:8px;}
+  .today-target input{box-sizing:border-box;width:72px;height:30px;padding:0 4px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);color:var(--text);font:inherit;font-size:16px;text-align:center;}
+  .today-bar{height:8px;border-radius:4px;background:var(--surface-2);overflow:hidden;}
+  .today-bar i{display:block;height:100%;border-radius:4px;background:var(--new-color);}
+  .today-langs{display:flex;flex-wrap:wrap;gap:8px;}
+  .today-lang{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px 0 6px;border-radius:14px;background:var(--surface-2);font-size:13px;line-height:20px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--text);}
+  .today-lang i{width:20px;height:15px;border-radius:2px;background:var(--flag) center / cover no-repeat;}
+  .today-tasks{display:flex;flex-direction:column;gap:4px;}
+  .today-empty{margin:0 0 12px;font-size:14px;line-height:20px;color:var(--text-2);}
+  .today-task{display:flex;align-items:center;gap:12px;min-height:48px;box-sizing:border-box;padding:8px 8px 8px 12px;border-radius:10px;cursor:pointer;}
+  @media (hover:hover){.today-task:hover{background:var(--surface-2);}}
+  .today-check{flex:none;display:flex;align-items:center;justify-content:center;width:24px;height:24px;padding:0;border:2px solid var(--border-strong);border-radius:12px;background:none;color:#fff;font-size:14px;line-height:20px;}
+  .today-task.done .today-check{border-color:var(--new-color);background:var(--new-color);}
+  .today-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+  .today-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:16px;line-height:22px;font-weight:600;color:var(--text);}
+  .today-task.done .today-title{color:var(--text-2);text-decoration:line-through;font-weight:400;}
+  .today-sub{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:13px;line-height:18px;color:var(--text-2);}
+  .today-side{font-weight:700;color:var(--lesson-color);}
+  .today-side.vocab{color:var(--new-color);}
+  .today-new{color:var(--new-color);font-weight:600;}
+  .today-due{color:var(--due-color);font-weight:600;}
+  .today-x{flex:none;width:32px;height:32px;padding:0;border:0;border-radius:16px;background:none;color:var(--text-2);font-size:14px;line-height:20px;}
+  @media (hover:hover){.today-x:hover{background:var(--danger-soft);color:var(--danger);}}
+  .today-add{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);}
+  .today-add input{flex:1 1 200px;min-width:0;}
+  .today-add select{flex:0 1 220px;min-width:0;}
   .stats-title{font-size:24px;font-weight:700;letter-spacing:-.015em;margin:4px 0 18px;}
   .both-modes{width:fit-content;background:linear-gradient(90deg, var(--lesson-color), var(--new-color));-webkit-background-clip:text;background-clip:text;color:transparent;}
   .lesson-totals{display:flex;gap:16px;-webkit-user-select:none;user-select:none;font-size:14px;color:var(--text-2);font-variant-numeric:tabular-nums;}
@@ -1993,6 +2026,19 @@ window.onYouTubeIframeAPIReady = function(){
   </div>
 </section>
 
+
+<section id="viewToday" hidden>
+  <h1 class="stats-title both-modes">Today</h1>
+  <div id="todayGoal" class="panel today-goal"></div>
+  <div class="panel today-panel">
+    <div id="todayTasks" class="today-tasks"></div>
+    <form id="todayAdd" class="today-add" autocomplete="off">
+      <input id="todayAddText" type="text" placeholder="Add a task…" aria-label="New task">
+      <select id="todayAddLesson" aria-label="Lesson for this task"></select>
+      <button class="primary" type="submit">Add</button>
+    </form>
+  </div>
+</section>
 
 <section id="viewStats" hidden>
   <h1 class="stats-title both-modes">Statistics</h1>
@@ -13164,7 +13210,7 @@ function updateLessonListItem(lesson) {
     item.querySelector(".lesson-tile-bar").outerHTML = lessonTileBar(c);
   }
   const all = document.querySelector("#lessonList [data-all-vocab]");
-  if (all) all.outerHTML = appMode === "vocab" ? allVocabItemHtml() : allLessonsItemHtml();
+  if (all) all.outerHTML = todayItemHtml();
 }
 
 function lessonThumbHtml(l) {
@@ -13242,7 +13288,7 @@ function buildLessonList() {
   const fresh = items.filter(l => l.unseen && l.id !== currentLessonId).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
   const recent = recentLessonIds().map(id => items.find(l => l.id === id)).filter(l => l && !fresh.includes(l)).slice(0, RECENT_MAX);
   const first = fresh.concat(recent);
-  list.innerHTML = `<div class="lesson-group vocab">${appMode === "vocab" ? allVocabItemHtml() : allLessonsItemHtml()}</div><div class="lesson-group lessons">${first.concat(items.filter(l => !first.includes(l))).map(itemHtml).join("")}</div>`;
+  list.innerHTML = `<div class="lesson-group vocab">${todayItemHtml()}</div><div class="lesson-group lessons">${first.concat(items.filter(l => !first.includes(l))).map(itemHtml).join("")}</div>`;
   watchThumbWords(list);
 }
 
@@ -13306,6 +13352,7 @@ function showView(view) {
   const meta = document.querySelector(".lesson-meta");
   if (view === "vocab" && meta.parentElement.id !== "viewVocab") document.querySelector("#viewVocab > .vocab-head").after(meta); else if (view === "study" && meta.parentElement.id !== "viewStudy") document.getElementById("fileStatus").after(meta);
   document.getElementById("viewStats").hidden = view !== "stats";
+  document.getElementById("viewToday").hidden = view !== "today";
   document.getElementById("viewTest").hidden = view !== "test";
   document.getElementById("viewEmpty").hidden = view !== "empty";
   document.getElementById("viewAdd").hidden = view !== "add";
@@ -13319,6 +13366,7 @@ function showView(view) {
     hideDictOverlay();
   }
   if (view === "stats") renderStats();
+  if (view === "today") renderToday();
   if (view === "test") renderTest(); else {
     stopTestSpeech();
     stopTestAudio();
@@ -17228,6 +17276,7 @@ document.getElementById("btnAppMode").onclick = () => {
   replayAnimation(document.getElementById("lessonList"), "mode-fade");
   document.getElementById("lessonList").scrollTop = 0;
   document.querySelector(".shell").classList.remove("drawer-open");
+  if (currentView === "today") return showView("today");
   const cur = library.find(l => l.id === currentLessonId);
   if (cur && lessonInMode(cur)) {
     showView("study");
@@ -17295,8 +17344,272 @@ async function openDefaultLesson() {
     renderLessonList();
     return;
   }
-  if (appMode === "vocab") await openAllVocabulary(); else await openAllLessons();
+  await openToday();
 }
+
+// Today: the page the app opens on, in place of the old All lessons / All vocabularies mix. It holds the day's goal
+// (a goal of your own, the day of the year it is on, the cards studied today against a target, by language) and one
+// list of tasks for Lessons and Vocabulary together. Each lesson with cards to study today (Due, or New within the
+// daily limits) is a task of its own side, studied on its own, never mixed with other lessons or languages; the
+// lessons opened last that have nothing waiting are tasks too, done once studied today. Tasks of your own (some text,
+// a lesson, or both) come back every day. A task is done (struck through, at the bottom) when its lesson has nothing
+// left for today, or when you tick it; ✕ leaves a suggested task out for today, or deletes one of your own.
+const TODAY_KEY = "flashcards.today";
+
+const TODAY_GOAL = "Fluent in 4 languages in a year";
+
+let todayPlan = Object.assign({
+  goal: TODAY_GOAL,
+  perDay: 100,
+  start: 0,
+  tasks: [],
+  day: "",
+  done: {},
+  seen: [],
+  skipped: []
+}, readLocal(TODAY_KEY) || {});
+
+let todayShown = [];
+
+function saveToday() {
+  try {
+    localStorage.setItem(TODAY_KEY, JSON.stringify(todayPlan));
+  } catch (e) {}
+}
+
+function todayStart() {
+  const d = new Date;
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
+
+// A new day starts with nothing ticked and nothing left out; your own tasks stay.
+function todayRoll() {
+  const d = localDayKey(Date.now());
+  if (!todayPlan.start) todayPlan.start = todayStart();
+  if (todayPlan.day === d) return;
+  Object.assign(todayPlan, {
+    day: d,
+    done: {},
+    seen: [],
+    skipped: []
+  });
+  saveToday();
+}
+
+// What a lesson still has for today on one side, within the daily limits.
+function leftToday(l, side) {
+  const now = Date.now();
+  if (side === "vocab") {
+    const items = lessonVocabItems(lessonCardsWithExtras(l)).filter(i => !vocabViewOnly(i) && vocabStateOf(i).due <= now);
+    const ok = limitStudy(items, true, i => l.id + ":" + i.key, vocabStateOf);
+    const fresh = ok.filter(i => !vocabStateOf(i).reps).length;
+    return {
+      fresh: fresh,
+      due: ok.length - fresh
+    };
+  }
+  const mode = countMode(l.cards);
+  const ok = limitStudy(l.cards.filter(c => cardInMode(c, mode) && cardReady(c, mode, now)), false, c => l.id + ":" + c.uid, c => srsOf(c));
+  const fresh = ok.filter(c => !srsOf(c).reps).length;
+  return {
+    fresh: fresh,
+    due: ok.length - fresh
+  };
+}
+
+function studiedLessonToday(lessonId) {
+  const start = todayStart();
+  for (let i = reviewLog.length - 1; i >= 0 && reviewLog[i].ts >= start; i--) if (reviewLog[i].lessonId === lessonId) return true;
+  return false;
+}
+
+// The side a lesson of your own task opens on: the one with more left today, else the one it has cards on.
+function todaySideOf(l) {
+  const c = leftToday(l, "cards"), v = leftToday(l, "vocab");
+  if (c.fresh + c.due || v.fresh + v.due) return c.fresh + c.due >= v.fresh + v.due ? [ "cards", c ] : [ "vocab", v ];
+  return [ l.cards.length || !lessonHasWords(l) ? "cards" : "vocab", c ];
+}
+
+function todayTasks() {
+  todayRoll();
+  const real = library.filter(l => !isVirtualId(l.id));
+  const list = [];
+  real.forEach(l => [ [ "cards", l.cards.some(c => (c.q || "").trim()) ], [ "vocab", lessonHasWords(l) ] ].forEach(([side, has]) => {
+    if (!has) return;
+    const key = (side === "vocab" ? "v:" : "c:") + l.id;
+    const left = leftToday(l, side);
+    const open = left.fresh + left.due > 0;
+    if (!open && !todayPlan.seen.includes(key)) return;
+    if (open && !todayPlan.seen.includes(key)) todayPlan.seen.push(key);
+    list.push({
+      key: key,
+      lesson: l,
+      side: side,
+      left: left,
+      done: !open || !!todayPlan.done[key]
+    });
+  }));
+  recentLessonIds().slice(0, 3).forEach(id => {
+    const l = real.find(x => x.id === id);
+    if (!l || list.some(t => t.lesson === l)) return;
+    const key = "r:" + id;
+    list.push({
+      key: key,
+      lesson: l,
+      side: l.cards.length || !lessonHasWords(l) ? "cards" : "vocab",
+      recent: true,
+      done: studiedLessonToday(id) || !!todayPlan.done[key]
+    });
+  });
+  todayPlan.tasks.forEach(t => {
+    const key = "m:" + t.id;
+    const l = t.lessonId ? real.find(x => x.id === t.lessonId) : null;
+    const [side, left] = l ? todaySideOf(l) : [ null, null ];
+    list.push({
+      key: key,
+      own: t,
+      lesson: l,
+      side: side,
+      left: left,
+      done: !!todayPlan.done[key] || !!l && studiedLessonToday(l.id) && !left.fresh && !left.due
+    });
+  });
+  saveToday();
+  return list.filter(t => !todayPlan.skipped.includes(t.key)).sort((a, b) => a.done - b.done);
+}
+
+function todayLangOf(lessonId, cache) {
+  if (!cache.has(lessonId)) {
+    const l = library.find(x => x.id === lessonId);
+    cache.set(lessonId, !l ? "" : l.studyLang && l.studyLang !== "auto" ? l.studyLang : autoDetectLangs(l.cards.map(c => c.q).filter(Boolean).slice(0, 60))[0] || "");
+  }
+  return cache.get(lessonId);
+}
+
+function todayGoalHtml(tasks) {
+  const start = todayStart();
+  const studied = reviewLog.filter(e => e.ts >= start);
+  const cache = new Map, langs = new Map;
+  studied.forEach(e => {
+    const lang = e.word ? langCode(e.word) : todayLangOf(e.lessonId, cache);
+    const cc = LANG_COUNTRY[lang];
+    if (cc) langs.set(cc, (langs.get(cc) || 0) + 1);
+  });
+  const day = Math.max(1, Math.round((start - todayPlan.start) / 864e5) + 1);
+  const target = todayPlan.perDay || 0;
+  const pct = target ? Math.min(100, Math.round(studied.length / target * 100)) : 0;
+  const done = tasks.filter(t => t.done).length;
+  return `<input id="todayGoalText" class="today-goal-text" type="text" value="${escapeAttr(todayPlan.goal)}" placeholder="${escapeAttr(TODAY_GOAL)}" aria-label="Your goal">` + `<div class="today-line"><span>Day <b>${day}</b> of 365</span><span><b>${done}</b> of ${tasks.length} tasks done</span>` + `<label class="today-target"><span><b>${studied.length}</b> of</span><input id="todayPerDay" type="text" maxlength="4" inputmode="numeric" pattern="[0-9]*" value="${target || ""}" placeholder="—" aria-label="Cards a day"><span>cards today</span></label></div>` + (target ? `<div class="today-bar"><i style="width:${pct}%"></i></div>` : "") + (langs.size ? `<div class="today-langs">${[ ...langs ].sort((a, b) => b[1] - a[1]).map(([cc, n]) => `<span class="today-lang"><i style='--flag:${flagUrl(cc)}'></i>${n}</span>`).join("")}</div>` : "");
+}
+
+function todayTaskHtml(t, i) {
+  const name = t.lesson ? t.lesson.name || "Untitled lesson" : "";
+  const title = t.own && t.own.text ? t.own.text : name;
+  const sub = [];
+  if (t.lesson) sub.push(`<span class="today-side${t.side === "vocab" ? " vocab" : ""}">${t.side === "vocab" ? "Vocabulary" : "Lessons"}</span>`);
+  if (t.own && t.own.text && name) sub.push(`<span>${escapeHtml(name)}</span>`);
+  if (t.left && t.left.fresh) sub.push(`<span class="today-new">${t.left.fresh} new</span>`);
+  if (t.left && t.left.due) sub.push(`<span class="today-due">${t.left.due} due</span>`);
+  if (t.recent && !t.done) sub.push("<span>Opened lately</span>");
+  const x = t.own ? "Delete this task" : "Leave out today";
+  return `<div class="today-task${t.done ? " done" : ""}" data-i="${i}"><button class="today-check" aria-label="${t.done ? "Done" : "Mark done"}">${t.done ? "✓" : ""}</button><div class="today-body"><div class="today-title">${escapeHtml(title)}</div>${sub.length ? `<div class="today-sub">${sub.join("")}</div>` : ""}</div><button class="today-x" aria-label="${x}" title="${x}">✕</button></div>`;
+}
+
+function renderToday() {
+  const tasks = todayShown = todayTasks();
+  document.getElementById("todayGoal").innerHTML = todayGoalHtml(tasks);
+  document.getElementById("todayTasks").innerHTML = (tasks.length ? "" : '<p class="today-empty">Nothing waiting today. Add a task of your own below.</p>') + tasks.map(todayTaskHtml).join("");
+  const pick = document.getElementById("todayAddLesson");
+  const was = pick.value;
+  pick.innerHTML = '<option value="">No lesson</option>' + sortedLibrary().filter(l => !isVirtualId(l.id)).map(l => `<option value="${escapeAttr(l.id)}">${escapeHtml(l.name || "Untitled lesson")}</option>`).join("");
+  pick.value = was;
+}
+
+function todayItemHtml() {
+  const tasks = todayTasks();
+  const done = tasks.filter(t => t.done).length;
+  const at = tasks.length ? Math.round(done / tasks.length * 100) : 0;
+  const tip = tasks.length ? `Today\n${done} of ${tasks.length} tasks done` : "Today\nNothing waiting";
+  const active = currentView === "today";
+  return `<button class="lesson-item all-vocab today-tile${active ? " active" : ""}" data-all-vocab="1" data-tip="${escapeAttr(tip)}" aria-label="${escapeAttr(tip.replace("\n", ", "))}" style="background-image:linear-gradient(90deg, var(--bar-done) 0% ${at}%, var(--bar-new) ${at}% 100%)"${active ? ' aria-current="page"' : ""}><span class="lesson-item-name">Today</span></button>`;
+}
+
+// Today is not a lesson: the lesson that was open is saved and closed.
+async function openToday() {
+  commitActiveEdit();
+  await discardIfEmptyDraft();
+  await flushAutoSave();
+  if (currentLessonId) {
+    haltAllPlayback();
+    resetStudyState();
+    currentLessonId = null;
+    rows = [];
+    vocabExtras = null;
+    setLessonTitle("");
+  }
+  showView("today");
+}
+
+async function openTodayTask(t) {
+  if (!t.lesson) {
+    todayPlan.done[t.key] = !t.done;
+    saveToday();
+    return renderToday();
+  }
+  setAppMode(t.side === "vocab" ? "vocab" : "cards");
+  await switchToLesson(t.lesson.id);
+  if (t.side !== "vocab" && currentLessonId === t.lesson.id && !groupState && rows.length) setReviewMode(isVideoLesson() ? "listen" : "ielts");
+}
+
+document.getElementById("todayTasks").addEventListener("click", e => {
+  const row = e.target.closest(".today-task");
+  const t = row && todayShown[Number(row.dataset.i)];
+  if (!t) return;
+  if (e.target.closest(".today-check")) {
+    todayPlan.done[t.key] = !t.done;
+    if (t.done && !todayPlan.done[t.key]) delete todayPlan.done[t.key];
+  } else if (e.target.closest(".today-x")) {
+    if (t.own) todayPlan.tasks = todayPlan.tasks.filter(x => x !== t.own); else todayPlan.skipped.push(t.key);
+  } else return openTodayTask(t);
+  saveToday();
+  renderToday();
+  renderLessonList();
+});
+
+document.getElementById("todayAdd").addEventListener("submit", e => {
+  e.preventDefault();
+  const text = cleanText(document.getElementById("todayAddText").value).replace(/\s+/g, " ").trim();
+  const lessonId = document.getElementById("todayAddLesson").value;
+  if (!text && !lessonId) return document.getElementById("todayAddText").focus();
+  todayPlan.tasks.push({
+    id: makeUid(),
+    text: text,
+    lessonId: lessonId
+  });
+  saveToday();
+  document.getElementById("todayAddText").value = "";
+  document.getElementById("todayAddLesson").value = "";
+  renderToday();
+  renderLessonList();
+});
+
+document.getElementById("todayGoal").addEventListener("change", e => {
+  if (e.target.id === "todayGoalText") todayPlan.goal = cleanText(e.target.value).replace(/\s+/g, " ").trim() || TODAY_GOAL;
+  if (e.target.id === "todayPerDay") todayPlan.perDay = Math.min(9999, Math.floor(Number(e.target.value) || 0));
+  saveToday();
+  renderToday();
+});
+
+document.getElementById("todayGoal").addEventListener("input", e => {
+  if (e.target.id !== "todayPerDay") return;
+  const digits = e.target.value.replace(/\D/g, "").slice(0, 4);
+  if (digits !== e.target.value) e.target.value = digits;
+});
+
+document.getElementById("todayGoal").addEventListener("keydown", e => {
+  if (e.key === "Enter" && e.target.matches("input")) e.target.blur();
+});
 
 async function openAllLessons() {
   if (isAllLessons()) {
@@ -17571,7 +17884,7 @@ document.getElementById("lessonList").addEventListener("click", e => {
   const item = e.target.closest("[data-all-vocab]");
   if (!item) return;
   document.querySelector(".shell").classList.remove("drawer-open");
-  if (appMode === "vocab") openAllVocabulary(); else openAllLessons();
+  openToday();
 });
 
 function sentenceOrderAnchor(list, term, text) {
