@@ -1489,10 +1489,13 @@ window.onYouTubeIframeAPIReady = function(){
   /* A one-sided card has no answer to write on lines: it is dot paper instead, the same white sheet. */
   /* Square while its text fits (an invisible spacer as tall as the sheet is wide keeps it so), taller when the text is
      long: the sheet grows with it and the page scrolls, as the Speaking paper with an answer does. */
-  .ielts-paper.dot-paper::after{content:"";grid-area:1 / 1;padding-bottom:calc(100% + var(--page-x) * 2 - var(--page-y) * 2);pointer-events:none;}
-  .ielts-paper.dot-paper > .paper-text{grid-area:1 / 1;align-self:center;}
+  /* The one-sided sheet keeps the same room (32 px) on all four sides of its writing, the top one counted from the
+     bottom of the rings' holes (24 px into the sheet), never from the paper's edge, so nothing ever touches a ring. */
+  .ielts-paper.dot-paper{--page-x:32px;padding:calc(24px + var(--page-x)) var(--page-x) var(--page-x);}
+  .ielts-paper.dot-paper::after{content:"";grid-area:1 / 1;padding-bottom:calc(100% - 24px);pointer-events:none;}
+  .ielts-paper.dot-paper > .paper-body{grid-area:1 / 1;align-self:center;}
   .ielts-paper.dot-paper{display:grid;grid-template-columns:minmax(0, 1fr);max-width:480px;background-image:var(--dot-paper);background-size:var(--line) var(--line);background-position:calc(var(--line) / 2) calc(var(--line) / 2);}
-  .ielts-paper .cell.paper-text{width:fit-content;max-width:100%;box-sizing:border-box;margin:0 auto;font-size:20px;line-height:25px;font-weight:700;text-align:left;overflow-wrap:anywhere;white-space:pre-line;color:var(--accent);}
+  .ielts-paper .cell.paper-text{width:fit-content;max-width:100%;box-sizing:border-box;margin:0 auto;font-size:20px;line-height:25px;font-weight:700;text-align:left;overflow-wrap:anywhere;white-space:pre-line;color:var(--paper-ink);}
   .ielts-paper.dot-paper .paper-extras:empty{display:none;}
 
   /* Binder rings instead of a red margin line: a sheet with one side (dot paper) is a notepad bound at its top, a sheet
@@ -1511,14 +1514,14 @@ window.onYouTubeIframeAPIReady = function(){
   .ielts-paper .paper-question .cell{color:var(--accent);}
   .paper-num{flex:none;}
   .ielts-paper .cell{padding:0;font-size:inherit;color:inherit;text-align:left;border-radius:0;}
-  .paper-label{margin-bottom:6px;font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--paper-ink-2);}
+  .paper-label{margin-bottom:6px;font-size:16px;line-height:24px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--paper-ink-2);}
   .ielts-paper .paper-lines, .ielts-paper .paper-prompt, .ielts-paper .cell.shown.paper-lines:hover, .ielts-paper .cell.hidden.paper-prompt:hover{font-size:20px;line-height:var(--line);background-image:linear-gradient(to bottom, transparent calc(var(--line) - 1px), var(--paper-rule) calc(var(--line) - 1px));background-size:100% var(--line);}
   .ielts-paper .paper-prompt{min-height:calc(var(--line) * 5);color:var(--paper-ink-2);font-style:normal;}
   .ielts-paper .paper-lines{user-select:text;cursor:pointer;}
   html:not(.touch) .cell.shown, html:not(.touch) .vocab-card.flipped .vocab-ctx, html:not(.touch) .vocab-list-row[data-key] > *{-webkit-user-select:text;user-select:text;}
   .paper-body{display:grid;grid-template-columns:minmax(0, 1fr);column-gap:24px;}
   .ielts-paper.with-notes .paper-body{grid-template-columns:minmax(0, 1fr) fit-content(44%);}
-  .paper-notes{min-width:180px;padding-left:20px;border-left:2px solid var(--paper-rule);font-size:18px;line-height:25px;}
+  .paper-notes{min-width:180px;padding-left:20px;border-left:2px solid var(--paper-rule);font-size:16px;line-height:24px;}
   .paper-notes li + li{margin-top:6px;}
   .paper-notes li{padding-left:24px;}
   .paper-extras{display:flex;flex-direction:column;}
@@ -1918,7 +1921,8 @@ window.onYouTubeIframeAPIReady = function(){
   #cardTable.full-list:not(.notebook) .card-notes, .vocab-list-meaning .card-notes{font-size:18px;line-height:25px;}
   @media (max-width:600px){
     :is(.rich-editor, #editQ, #editA, .vocab-editor textarea, #editNotes, #vocabEditNotes, #qaNotes), #cardTable.full-list:not(.notebook) .cell, .vocab-list-row[data-key] > *, #cardTable.notebook .cell[data-field="q"], .paper-question{font-size:18px;line-height:25px;}
-    #cardTable.full-list .card-notes, #cardTable.notebook .card-notes, .vocab-list-meaning .card-notes, .paper-notes{font-size:16px;line-height:22px;}
+    #cardTable.full-list .card-notes, #cardTable.notebook .card-notes, .vocab-list-meaning .card-notes{font-size:16px;line-height:22px;}
+    .paper-notes, .paper-label{font-size:15px;line-height:22px;}
     #cardTable.notebook, .ielts-paper{--line:32px;}
     .ielts-paper .cell.paper-text{font-size:18px;}
     #cardTable.notebook .cell[data-field="a"], .ielts-paper .paper-lines, .ielts-paper .paper-prompt, .ielts-paper .cell.shown.paper-lines:hover, .ielts-paper .cell.hidden.paper-prompt:hover{font-size:18px;}
@@ -6353,10 +6357,11 @@ function ieltsPaperHtml(row, ahead = 0) {
   const answer = row.aHidden ? hints.length ? '<div class="cell hidden paper-prompt paper-hint" data-field="a"><ol>' + hints.map(m => `<li>${escapeHtml(m)}</li>`).join("") + "</ol></div>" : '<div class="cell hidden paper-prompt" data-field="a">···</div>' : `<div class="cell shown paper-lines" data-field="a">${aCellContent(row)}</div>`;
   const notes = words.length ? '<aside class="paper-notes"><div class="paper-label">Notes</div><ol>' + words.map(i => `<li><b>${escapeHtml(i.term)}</b>${i.meaning ? " — " + escapeHtml(i.meaning) : ""}</li>`).join("") + "</ol></aside>" : "";
   const extras = row.aHidden ? "" : '<div class="paper-extras"><div class="paper-stroke"></div><div class="paper-dict" hidden></div></div>';
-  // A one-sided card is a square sheet of dot paper with only its text: no lesson name, count, timer or number.
-  if (!hasAnswer(row)) return '<article class="ielts-paper dot-paper"><div class="paper-text cell shown" data-field="q">' + qCellContent(row) + "</div>" + extras + "</article>";
-  // The question heads the sheet, with the timer on its right; no lesson name, count or number.
-  return `<article class="ielts-paper${notes ? " with-notes" : ""}">` + `<header class="paper-head"><div class="paper-question"><div class="cell shown" data-field="q">${qCellContent(row)}</div></div>` + `<div class="paper-meta"><div${ahead ? "" : ' id="ieltsTimer"'} class="paper-timer${row.aHidden ? "" : " stopped"}">${ahead ? "0:00" : ieltsClockText()}</div></div></header>` + '<div class="paper-body"><div class="paper-main">' + `<div class="paper-answer">${answer}</div>` + `</div>${notes}</div>` + extras + "</article>";
+  // A one-sided card is a square sheet of dot paper with its text and, beside it, its Notes, laid out as on the
+  // Speaking paper; a card with an answer is ruled paper with its question over the answer lines and its Notes beside
+  // them. Neither has a heading, a timer, a lesson name or a count: only what is studied.
+  if (!hasAnswer(row)) return `<article class="ielts-paper dot-paper${notes ? " with-notes" : ""}"><div class="paper-body"><div class="paper-main"><div class="paper-text cell shown" data-field="q">${qCellContent(row)}</div></div>${notes}</div>` + extras + "</article>";
+  return `<article class="ielts-paper${notes ? " with-notes" : ""}">` + '<div class="paper-body"><div class="paper-main">' + `<div class="paper-question"><div class="cell shown" data-field="q">${qCellContent(row)}</div></div>` + `<div class="paper-answer">${answer}</div>` + `</div>${notes}</div>` + extras + "</article>";
 }
 
 let listenSlotRaf = 0;
@@ -10128,7 +10133,7 @@ function restoreDict(ov) {
 }
 
 function swipe(parts, dir, update, next, label = dir > 0 ? "Good" : "Again") {
-  if (label === "Waiting") dir = 1;
+  // A card that waits for its words flies the way it was graded: right for Good (Return), left for Again (Shift+Return).
   const motion = !matchMedia("(prefers-reduced-motion: reduce)").matches;
   const ghost = dragGhost || (motion ? ghostFor(parts) : null);
   const from = dragGhost && dragGhost.style.transform || "none";
