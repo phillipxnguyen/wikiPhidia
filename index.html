@@ -944,7 +944,10 @@ window.onYouTubeIframeAPIReady = function(){
   :is(#editNotes, #vocabEditNotes, #qaNotes) :is(ul, ol):not(:is(ul, ol) *){padding-left:19px;}
   :is(#editNotes, #vocabEditNotes, #qaNotes) li.clip-li{margin-left:26px;}
   :is(#editNotes, #vocabEditNotes, #qaNotes):empty{padding-left:42px;}
-  :is(#editNotes, #vocabEditNotes, #qaNotes)::after{content:"";position:absolute;top:-6px;left:13px;width:16px;height:38px;background:var(--accent);-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 48' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M7 14v22a3 3 0 0 0 6 0V8a5 5 0 0 0-10 0v31a7 7 0 0 0 14 0V14'/%3E%3C/svg%3E") center / contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 48' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M7 14v22a3 3 0 0 0 6 0V8a5 5 0 0 0-10 0v31a7 7 0 0 0 14 0V14'/%3E%3C/svg%3E") center / contain no-repeat;transform:rotate(-14deg);pointer-events:none;}
+  /* The clip hangs on a wrapper around the box rather than inside it: anything drawn inside an editable box after its
+     last line break makes the browser show an empty line there that cannot be deleted. */
+  .notes-clip{position:relative;}
+  .notes-clip::after{content:"";position:absolute;top:-6px;left:13px;width:16px;height:38px;background:var(--accent);-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 48' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M7 14v22a3 3 0 0 0 6 0V8a5 5 0 0 0-10 0v31a7 7 0 0 0 14 0V14'/%3E%3C/svg%3E") center / contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 48' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M7 14v22a3 3 0 0 0 6 0V8a5 5 0 0 0-10 0v31a7 7 0 0 0 14 0V14'/%3E%3C/svg%3E") center / contain no-repeat;transform:rotate(-14deg);pointer-events:none;}
   .edit-qa{display:flex;flex-direction:column;}
   .edit-qa > div{min-width:0;}
   .edit-row .rich-editor{margin-bottom:10px;display:block;}
@@ -2117,7 +2120,7 @@ window.onYouTubeIframeAPIReady = function(){
     <div id="quickAdd" class="vocab-editor quick-add" hidden>
       <div class="qa-row"><input id="qaTime" class="qa-time" type="text" inputmode="numeric" autocomplete="off" placeholder="00:00" maxlength="8" aria-label="Video time" hidden><textarea id="qaQ" class="autofit" rows="1" autocomplete="off" aria-label="Question"></textarea></div>
       <textarea id="qaA" class="autofit" rows="1" autocomplete="off" aria-label="Answer"></textarea>
-      <div id="qaNotes" class="rich-editor" contenteditable="true" aria-label="Notes"></div>
+      <div class="notes-clip"><div id="qaNotes" class="rich-editor" contenteditable="true" aria-label="Notes"></div></div>
       <div class="vocab-editor-actions"><button id="qaSave" class="primary">Save</button></div>
     </div>
     <div class="paste-sheet"><textarea id="importText" rows="8" placeholder="Paste here!"></textarea></div>
@@ -9009,7 +9012,7 @@ window.addEventListener("blur", () => {
 });
 
 function buildEditBoxInner(row) {
-  return `\n    <div class="edit-qa">\n      <div>\n        <div id="editQ" class="rich-editor" contenteditable="true">${getEditInitialHtml(row.q, row.qHtml, row.id)}</div>\n      </div>\n      <div${row.time != null ? " hidden" : ""}>\n        <div id="editA" class="rich-editor" contenteditable="true">${getEditInitialHtml(row.a, row.aHtml, row.id)}</div>\n      </div>\n    </div>\n    <div id="editNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes">${notesEditorHtml(row)}</div>\n    <div class="edit-actions">\n      <button id="editSave" class="primary">Save</button>\n    </div>\n    <div id="editDict"></div>\n  `;
+  return `\n    <div class="edit-qa">\n      <div>\n        <div id="editQ" class="rich-editor" contenteditable="true">${getEditInitialHtml(row.q, row.qHtml, row.id)}</div>\n      </div>\n      <div${row.time != null ? " hidden" : ""}>\n        <div id="editA" class="rich-editor" contenteditable="true">${getEditInitialHtml(row.a, row.aHtml, row.id)}</div>\n      </div>\n    </div>\n    <div class="notes-clip"><div id="editNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes">${notesEditorHtml(row)}</div></div>\n    <div class="edit-actions">\n      <button id="editSave" class="primary">Save</button>\n    </div>\n    <div id="editDict"></div>\n  `;
 }
 
 
@@ -16489,7 +16492,7 @@ function setWordNotes(card, key, html, at) {
 }
 
 function vocabEditorHtml(item) {
-  return '<div class="vocab-editor">' + `<textarea id="vocabEditTerm" class="autofit oneline" rows="1" autocomplete="off" aria-label="Question">${escapeHtml(item.term)}</textarea>` + `<textarea id="vocabEditMeaning" class="autofit oneline" rows="1" autocomplete="off" aria-label="Answer">${escapeHtml(item.meaning)}</textarea>` + `<div id="vocabEditNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes" aria-label="Notes">${wordNotesOf(item)}</div>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
+  return '<div class="vocab-editor">' + `<textarea id="vocabEditTerm" class="autofit oneline" rows="1" autocomplete="off" aria-label="Question">${escapeHtml(item.term)}</textarea>` + `<textarea id="vocabEditMeaning" class="autofit oneline" rows="1" autocomplete="off" aria-label="Answer">${escapeHtml(item.meaning)}</textarea>` + `<div class="notes-clip"><div id="vocabEditNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes" aria-label="Notes">${wordNotesOf(item)}</div></div>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
 }
 
 const VOCAB_FLIP_MS = 450;
