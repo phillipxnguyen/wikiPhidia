@@ -1749,17 +1749,15 @@ window.onYouTubeIframeAPIReady = function(){
   html.in-task .main-inner{box-sizing:border-box;padding:16px;border-radius:var(--radius);background:color-mix(in srgb, var(--surface) 60%, var(--bg));box-shadow:0 20px 60px rgba(10,20,40,.16);}
   html.in-task :is(.lesson-header, #fileStatus, .lesson-meta, .vocab-head){display:none !important;}
   @media (max-width:820px){.task-bar{position:static;}html.in-task .main-inner{padding:12px;}}
-  /* The top of Today is a famous painting, a different one each day (Leonardo, Raphael, Bruegel, Vermeer, Turner, Monet,
-     Van Gogh, Hokusai…), covering the card with a dark glaze over its left side so the writing, in cream, stays easy to
-     read; no border. The painting's own colour is the day's accent for the ring, the calendar and the bars. Until the
-     painting loads (or when it cannot), the card shows a warm oil-coloured glaze in that colour. The dark theme glazes
-     it more deeply. */
-  #viewToday{--warm:#8a5a2b;--warm-2:#6e4a2a;--art:none;--glaze:linear-gradient(90deg, rgba(22,14,6,.72) 0%, rgba(22,14,6,.5) 55%, rgba(22,14,6,.3) 100%);--hero-ink:#fbf3e4;--hero-ink-2:rgba(251,243,228,.82);--hero-card:rgba(255,250,240,.94);--hero-card-ink:#2b2016;--hero-card-ink-2:#6b5a45;}
-  @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) #viewToday{--glaze:linear-gradient(90deg, rgba(8,6,4,.84) 0%, rgba(8,6,4,.66) 55%, rgba(8,6,4,.5) 100%);--hero-card:color-mix(in srgb, var(--surface) 92%, transparent);--hero-card-ink:var(--text);--hero-card-ink-2:var(--text-2);}}
-  :root[data-theme="dark"] #viewToday{--glaze:linear-gradient(90deg, rgba(8,6,4,.84) 0%, rgba(8,6,4,.66) 55%, rgba(8,6,4,.5) 100%);--hero-card:color-mix(in srgb, var(--surface) 92%, transparent);--hero-card-ink:var(--text);--hero-card-ink-2:var(--text-2);}
-  .today-goal{position:relative;display:flex;align-items:center;gap:24px;padding:28px;border:0;border-radius:20px;background:var(--glaze), var(--art) var(--art-pos, center) / cover no-repeat, linear-gradient(135deg, var(--warm), var(--warm-2));color:var(--hero-ink);box-shadow:0 12px 32px rgba(30,20,10,.22);overflow:hidden;text-shadow:0 1px 2px rgba(0,0,0,.35);}
-  .hero-credit{position:absolute;right:16px;bottom:8px;max-width:50%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:16px;font-style:italic;color:var(--hero-ink-2);opacity:.8;pointer-events:none;}
+  /* The top of Today is a small pixel-art landscape painted by the app, a different chill scene each day, blown up with
+     crisp pixels to cover the card (no border), under a light glaze darker on its left so the cream writing stays easy
+     to read; the dark theme glazes it a little more. The scene lends its colour to the ring, the calendar and the bars. */
+  #viewToday{--warm:#d96d5f;--warm-2:#a85a52;--art:none;--glaze:linear-gradient(90deg, rgba(16,14,28,.55) 0%, rgba(16,14,28,.32) 50%, rgba(16,14,28,.08) 100%);--hero-ink:#fffaf0;--hero-ink-2:rgba(255,250,240,.88);--hero-card:rgba(255,252,246,.94);--hero-card-ink:#2b2420;--hero-card-ink-2:#6b5f55;}
+  @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) #viewToday{--glaze:linear-gradient(90deg, rgba(8,8,16,.7) 0%, rgba(8,8,16,.5) 50%, rgba(8,8,16,.3) 100%);--hero-card:color-mix(in srgb, var(--surface) 92%, transparent);--hero-card-ink:var(--text);--hero-card-ink-2:var(--text-2);}}
+  :root[data-theme="dark"] #viewToday{--glaze:linear-gradient(90deg, rgba(8,8,16,.7) 0%, rgba(8,8,16,.5) 50%, rgba(8,8,16,.3) 100%);--hero-card:color-mix(in srgb, var(--surface) 92%, transparent);--hero-card-ink:var(--text);--hero-card-ink-2:var(--text-2);}
+  .today-goal{position:relative;display:flex;align-items:center;gap:24px;padding:28px;border:0;border-radius:20px;background:var(--glaze), var(--art) center bottom / cover no-repeat, linear-gradient(135deg, var(--warm), var(--warm-2));image-rendering:pixelated;color:var(--hero-ink);box-shadow:0 12px 32px rgba(30,20,40,.2);overflow:hidden;text-shadow:0 1px 3px rgba(0,0,0,.45);}
   .hero-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:12px;}
+  .today-goal > *{image-rendering:auto;}
   .today-goal .today-goal-text{box-sizing:border-box;width:calc(100% + 16px);height:40px;padding:4px 8px;margin:-4px -8px 0;border:1px solid transparent;border-radius:10px;background:none;box-shadow:none;color:var(--hero-ink);font:inherit;font-family:Georgia, "Times New Roman", serif;font-size:26px;line-height:30px;font-weight:700;letter-spacing:0;}
   .today-goal .today-goal-text::placeholder{color:var(--hero-ink-2);}
   .today-goal .today-goal-text:focus{border-color:rgba(251,243,228,.6);background:rgba(0,0,0,.2);box-shadow:none;}
@@ -18121,8 +18119,7 @@ function todayGoalHtml(all) {
   const streak = streakInfo().current;
   const nextHtml = next >= 0 ? `<button class="hero-next" data-i="${next}"><span>Next</span><b>${escapeHtml(todayTaskName(all[next]))}</b>${all[next].act ? `<em>${todayPlan.mins[all[next].key] || all[next].act.mins} min</em>` : Math.round(taskMinutes(all[next])) ? `<em>about ${Math.round(taskMinutes(all[next]))} min</em>` : ""}<i aria-hidden="true">▶</i></button>` : `<div class="hero-next all-done"><b>${tasks.length ? "Today's route is done 🎉" : "Nothing on the route today"}</b></div>`;
   const progress = `<div class="hero-progress"><span><b>${done}</b> of ${tasks.length} steps done</span>${streak ? `<span>🔥 <b>${streak}</b> day${streak === 1 ? "" : "s"} in a row</span>` : ""}</div>`;
-  const credit = `<div class="hero-credit">${todayArt && todayArt.ready ? escapeHtml(todayArt.credit) : ""}</div>`;
-  return credit + '<div class="hero-main">' + `<input id="todayGoalText" class="today-goal-text" type="text" value="${escapeAttr(todayPlan.goal)}" placeholder="${escapeAttr(TODAY_GOAL)}" aria-label="Your goal">` + nextHtml + progress + langRow + '</div>' + `<div class="hero-ring${target && minsDone >= target ? " full" : ""}" style="--p:${pct}"><div class="hero-ring-in"><b>${minsDone}</b><label>of <input id="todayPerDay" type="text" maxlength="3" inputmode="numeric" pattern="[0-9]*" value="${target || ""}" placeholder="—" aria-label="Minutes a day"></label><span>min today</span></div></div>`;
+  return '<div class="hero-main">' + `<input id="todayGoalText" class="today-goal-text" type="text" value="${escapeAttr(todayPlan.goal)}" placeholder="${escapeAttr(TODAY_GOAL)}" aria-label="Your goal">` + nextHtml + progress + langRow + '</div>' + `<div class="hero-ring${target && minsDone >= target ? " full" : ""}" style="--p:${pct}"><div class="hero-ring-in"><b>${minsDone}</b><label>of <input id="todayPerDay" type="text" maxlength="3" inputmode="numeric" pattern="[0-9]*" value="${target || ""}" placeholder="—" aria-label="Minutes a day"></label><span>min today</span></div></div>`;
 }
 
 // What a task holds for today, one chip each: a lesson's card in its blue, a word in Vocabulary's green.
@@ -18170,64 +18167,93 @@ function todayTaskHtml(t, i) {
 
 let todayExtraOpen = false;
 
-// The day's painting, from Wikimedia Commons (all in the public domain): its file, artist and title, the part of it to
-// show in the wide card, and the colour it lends the ring, the calendar and the bars.
-const TODAY_ART = [
-  [ "Última_Cena_-_Da_Vinci_5.jpg", "Leonardo da Vinci", "The Last Supper", "center 40%", "#8a5a2b" ],
-  [ "Mona_Lisa,_by_Leonardo_da_Vinci,_from_C2RMF_retouched.jpg", "Leonardo da Vinci", "Mona Lisa", "center 30%", "#6b6a3a" ],
-  [ "\"The_School_of_Athens\"_by_Raffaello_Sanzio_da_Urbino.jpg", "Raphael", "The School of Athens", "center 45%", "#7a5232" ],
-  [ "Pieter_Bruegel_the_Elder_-_Hunters_in_the_Snow_(Winter)_-_Google_Art_Project.jpg", "Pieter Bruegel the Elder", "Hunters in the Snow", "center 60%", "#4f6a6a" ],
-  [ "The_Fighting_Temeraire,_JMW_Turner,_National_Gallery.jpg", "J. M. W. Turner", "The Fighting Temeraire", "center 50%", "#b4782f" ],
-  [ "Monet_-_Impression,_Sunrise.jpg", "Claude Monet", "Impression, Sunrise", "center 50%", "#c0603a" ],
-  [ "Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg", "Vincent van Gogh", "The Starry Night", "center 30%", "#2f5a8a" ],
-  [ "Tsunami_by_hokusai_19th_century.jpg", "Katsushika Hokusai", "The Great Wave off Kanagawa", "center 40%", "#2c4a6e" ],
-  [ "Jean-François_Millet_-_Gleaners_-_Google_Art_Project_2.jpg", "Jean-François Millet", "The Gleaners", "center 60%", "#b07d24" ]
+// The day's scene: a small pixel-art landscape the app paints itself (nothing to download), in a chill lo-fi palette
+// picked at random for the day: sky in soft bands, the sun or the moon, clouds or stars, ranges of hills fading into the
+// distance and water or a meadow below. Each palette lends its colour to the ring, the calendar and the bars.
+const TODAY_SCENES = [
+  { name: "Sunset hills", sky: [ "#ffcf9e", "#ffad8a", "#f4877f", "#e0727e" ], sun: "#fff1c9", hills: [ "#c76b6e", "#9c5468", "#6e3f5c" ], ground: "#4d2f4a", water: true, accent: "#d96d5f" },
+  { name: "Morning lake", sky: [ "#cfe8f5", "#b3dbef", "#f7e3c4", "#ffd6a8" ], sun: "#fff6dc", hills: [ "#9cc3b4", "#6fa394", "#4c8070" ], ground: "#3e6a5c", water: true, accent: "#3f8f7a" },
+  { name: "Golden meadow", sky: [ "#fde9b8", "#fbd78d", "#f6c070", "#eea85a" ], sun: "#fffbe6", hills: [ "#d7a24e", "#b7843d", "#8f6a33" ], ground: "#6f7d3a", water: false, accent: "#c88a2c" },
+  { name: "Pine forest", sky: [ "#d9efe6", "#bfe3d6", "#a6d4c3", "#8cc3af" ], sun: "#f6fff4", hills: [ "#6aa08a", "#4a806b", "#2f5f4e" ], ground: "#244a3c", water: false, accent: "#3b7d63" },
+  { name: "Ocean blue", sky: [ "#d4ecff", "#b5dcfb", "#94c9f2", "#78b5e8" ], sun: "#ffffff", hills: [ "#7fa9cf", "#5f8cb8", "#41709e" ], ground: "#2c5a87", water: true, accent: "#3d7fc0" },
+  { name: "Starry night", sky: [ "#1d2b4f", "#22345d", "#2b3f6c", "#36507c" ], sun: "#fff4cf", hills: [ "#2a3c63", "#213052", "#18233f" ], ground: "#121a30", water: true, night: true, accent: "#5b7fc4" },
+  { name: "Autumn valley", sky: [ "#ffe2c2", "#ffcfa3", "#f7b886", "#eaa06e" ], sun: "#fff3dd", hills: [ "#d4824f", "#b4643f", "#8a4a35" ], ground: "#5e3a2c", water: false, accent: "#c2683a" }
 ];
 
-function artUrl(file) {
-  return "https://commons.wikimedia.org/wiki/Special:FilePath/" + encodeURIComponent(file) + "?width=1280";
-}
-
-// A painting picked at random for each day (the same all day long, on every device), never the same as the day before's.
-function todayArtIndex(time) {
+function todaySceneIndex(time) {
   const d = new Date(time);
   const n = Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - new Date(2024, 0, 1)) / 864e5);
   let h = Math.imul(n, 2654435761) >>> 0;
   h = Math.imul(h ^ h >>> 15, 2246822519) >>> 0;
-  return (h ^ h >>> 13) % TODAY_ART.length;
+  return (h ^ h >>> 13) % TODAY_SCENES.length;
 }
 
-let todayArt = null;
-
-// The painting is loaded first and shown only once it has come; one that cannot be loaded gives way to the next.
-function paintTodayArt() {
-  let i = todayArtIndex(Date.now());
-  if (i === todayArtIndex(Date.now() - 864e5)) i = (i + 1) % TODAY_ART.length;
-  const view = document.getElementById("viewToday");
-  const show = (k, tries) => {
-    const [file, artist, title, pos, color] = TODAY_ART[k];
-    view.style.setProperty("--warm", color);
-    view.style.setProperty("--warm-2", `color-mix(in srgb, ${color} 70%, #1a120a)`);
-    if (todayArt && todayArt.k === k) return;
-    todayArt = { k: k, ready: false, credit: `${artist} · ${title}` };
-    const img = new Image;
-    img.onload = () => {
-      if (!todayArt || todayArt.k !== k) return;
-      todayArt.ready = true;
-      view.style.setProperty("--art", `url("${img.src}")`);
-      view.style.setProperty("--art-pos", pos);
-      const credit = document.querySelector(".hero-credit");
-      if (credit) credit.textContent = todayArt.credit;
-    };
-    img.onerror = () => {
-      if (todayArt && todayArt.k === k && tries < TODAY_ART.length - 1) {
-        todayArt = null;
-        show((k + 1) % TODAY_ART.length, tries + 1);
-      }
-    };
-    img.src = artUrl(file);
+// Paints a scene at 240 × 64 pixels (about the card's shape), shown blown up with crisp pixels; the same day always gives the same picture.
+function paintScene(scene, seed) {
+  const W = 240, H = 64;
+  const c = document.createElement("canvas");
+  c.width = W;
+  c.height = H;
+  const g = c.getContext("2d");
+  let t = seed >>> 0;
+  const rnd = () => {
+    t = t + 1831565813 | 0;
+    let x = Math.imul(t ^ t >>> 15, 1 | t);
+    x = x + Math.imul(x ^ x >>> 7, 61 | x) ^ x;
+    return ((x ^ x >>> 14) >>> 0) / 4294967296;
   };
-  show(i, 0);
+  const band = Math.ceil(H * .62 / scene.sky.length);
+  scene.sky.forEach((col, i) => {
+    g.fillStyle = col;
+    g.fillRect(0, i * band, W, band + 1);
+  });
+  if (scene.night) for (let i = 0; i < 40; i++) {
+    g.fillStyle = rnd() < .3 ? "#fff4cf" : "#c9d6f5";
+    g.fillRect(Math.floor(rnd() * W), Math.floor(rnd() * H * .5), 1, 1);
+  }
+  const sx = Math.floor(W * .48 + rnd() * W * .14), sy = 14 + Math.floor(rnd() * 6), r = scene.night ? 5 : 7;
+  g.fillStyle = scene.sun;
+  for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++) if (x * x + y * y <= r * r) g.fillRect(sx + x, sy + y, 1, 1);
+  if (!scene.night) for (let i = 0; i < 4; i++) {
+    const cx = Math.floor(rnd() * W), cy = 5 + Math.floor(rnd() * 14), cw = 14 + Math.floor(rnd() * 18);
+    g.fillStyle = "rgba(255,255,255,.75)";
+    g.fillRect(cx, cy, cw, 3);
+    g.fillRect(cx + 4, cy - 2, cw - 8, 2);
+  }
+  scene.hills.forEach((col, k) => {
+    const base = H * (.5 + k * .1), amp = 6 + k * 2, f1 = .02 + rnd() * .03, f2 = .06 + rnd() * .05, p = rnd() * 9;
+    g.fillStyle = col;
+    for (let x = 0; x < W; x++) {
+      const y = Math.round(base - amp * (Math.sin(x * f1 + p) * .7 + Math.sin(x * f2 + p * 2) * .3));
+      g.fillRect(x, y, 1, H - y);
+    }
+  });
+  const gy = Math.round(H * .82);
+  g.fillStyle = scene.ground;
+  g.fillRect(0, gy, W, H - gy);
+  if (scene.water) {
+    g.fillStyle = scene.sun;
+    for (let i = 0; i < 6; i++) g.fillRect(sx - 8 + Math.floor(rnd() * 8), gy + 2 + i * 2, 8 + Math.floor(rnd() * 6), 1);
+  } else {
+    g.fillStyle = scene.hills[0];
+    for (let i = 0; i < 50; i++) g.fillRect(Math.floor(rnd() * W), gy + 1 + Math.floor(rnd() * (H - gy - 1)), 1, 1);
+  }
+  return c.toDataURL();
+}
+
+let todayScene = null;
+
+function paintTodayArt() {
+  let i = todaySceneIndex(Date.now());
+  if (i === todaySceneIndex(Date.now() - 864e5)) i = (i + 1) % TODAY_SCENES.length;
+  const day = localDayKey(Date.now());
+  const view = document.getElementById("viewToday");
+  if (todayScene && todayScene.day === day) return;
+  const scene = TODAY_SCENES[i];
+  todayScene = { day: day, name: scene.name };
+  view.style.setProperty("--warm", scene.accent);
+  view.style.setProperty("--warm-2", `color-mix(in srgb, ${scene.accent} 70%, #1a1a2a)`);
+  view.style.setProperty("--art", `url("${paintScene(scene, Number(day.replace(/-/g, "")))}")`);
 }
 
 function renderToday() {
