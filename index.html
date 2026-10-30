@@ -6019,6 +6019,11 @@ function finishText(held, done, next, word, states) {
 // study, and the list below it is the lesson itself. renderStudy shows the toolbar again on its next render.
 function showSessionCompletePanel() {
   const panel = document.getElementById("sessionCompletePanel");
+  // A task goes straight on to its next card or word: no end screen, no confetti, between them or at its end.
+  if (taskRun) {
+    panel.style.display = "none";
+    return;
+  }
   document.querySelector("#viewStudy .toolbar").style.display = "none";
   const now = Date.now();
   const next = rows.filter(r => speakable(r) && !cardWaiting(r)).map(r => srsOf(r, "Table")).filter(st => st.reps && !isDoneState(st) && st.due > now).map(st => st.due).sort((a, b) => a - b)[0];
@@ -16629,9 +16634,13 @@ function renderVocab() {
     const more = heldMore(due, limitVocab(due), vocabStateOf);
     const held = more.total;
     const text = finishText(held, studiedToday(vocabSource(), true), next, "card", items.map(vocabStateOf));
+    if (taskRun) {
+      stage.innerHTML = "";
+      taskSideDone();
+      return;
+    }
     const celebrate = !stage.querySelector(".session-complete") || stage.dataset.lessonId !== String(currentLessonId);
     if (celebrate) stopAllSound();
-    taskSideDone();
     stage.dataset.lessonId = currentLessonId;
     const shown = !celebrate && stage.querySelector(".session-complete");
     if (shown) {
