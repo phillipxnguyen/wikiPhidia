@@ -1779,7 +1779,8 @@ window.onYouTubeIframeAPIReady = function(){
   .hero-next{display:flex;align-items:center;gap:10px;min-width:0;min-height:48px;padding:8px 8px 8px 16px;border:0;border-radius:14px;background:var(--hero-card);box-shadow:0 2px 8px rgba(0,0,0,.18);color:var(--hero-card-ink);text-shadow:none;text-align:left;font-size:15px;line-height:20px;}
   .hero-next span{flex:none;font-size:12px;line-height:16px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--warm);}
   .hero-next b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700;}
-  .hero-next em{flex:none;font-style:normal;font-size:13px;color:var(--hero-card-ink-2);}
+  .hero-next em{flex:none;display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px;border-radius:12px;background:color-mix(in srgb, var(--warm) 14%, transparent);color:var(--warm);font-style:normal;font-size:13px;line-height:16px;font-weight:700;font-variant-numeric:tabular-nums;}
+  .hero-next em svg{width:14px;height:14px;}
   .hero-next i{flex:none;display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:16px;background:var(--warm);color:#fff;font-style:normal;font-size:12px;line-height:16px;}
   .hero-next.all-done{justify-content:center;}
   @media (hover:hover){.hero-next[data-i]:hover{box-shadow:0 4px 14px rgba(0,0,0,.26);}}
@@ -1876,9 +1877,8 @@ window.onYouTubeIframeAPIReady = function(){
   .task-progress i{display:block;height:100%;border-radius:3px;background:var(--new-color);}
   .task-progress-note{margin-top:4px;font-size:12px;line-height:16px;color:var(--text-2);}
   .task-progress-note b{color:var(--text);}
-  /* Yesterday, today, tomorrow and the reviews of the week ahead, side by side (one under the other on a phone). */
-  .today-flow{display:grid;grid-template-columns:repeat(3, minmax(0, 1fr)) minmax(0, 1.2fr);gap:24px;margin-top:16px;}
-  @media (max-width:1100px){.today-flow{grid-template-columns:repeat(3, minmax(0, 1fr));}.flow-fc{grid-column:1 / -1;}}
+  /* Yesterday, today and tomorrow side by side (one under the other on a phone). */
+  .today-flow{display:grid;grid-template-columns:repeat(3, minmax(0, 1fr));gap:24px;margin-top:16px;}
   @media (max-width:700px){.today-flow{grid-template-columns:minmax(0, 1fr);gap:16px;}}
   .today-flow > .today-empty{grid-column:1 / -1;margin:0;}
   .flow-label{margin-bottom:6px;font-size:12px;line-height:16px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-2);}
@@ -1887,11 +1887,6 @@ window.onYouTubeIframeAPIReady = function(){
   .flow-big b{font-size:22px;line-height:28px;font-weight:800;color:var(--text);font-variant-numeric:tabular-nums;}
   .flow-note{margin:6px 0 0;font-size:13px;line-height:18px;color:var(--text-2);}
   .flow-col .today-why{margin-top:8px;}
-  .fc-bars{display:grid;grid-template-columns:repeat(7, minmax(0, 1fr));gap:6px;align-items:end;height:88px;}
-  .fc-day{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;height:100%;}
-  .fc-day span{font-size:11px;line-height:14px;color:var(--text-2);font-variant-numeric:tabular-nums;}
-  .fc-day i{display:block;width:100%;max-width:24px;min-height:2px;border-radius:4px 4px 2px 2px;background:color-mix(in srgb, var(--due-color) 70%, var(--surface));}
-  .fc-day b{font-size:11px;line-height:14px;color:var(--text-2);font-weight:700;}
   /* The week as seven bars, each filled by how much of its plan was done. */
   .wk-strip{display:grid;grid-template-columns:repeat(7, minmax(0, 1fr));gap:6px;align-items:end;height:64px;margin:0 0 12px;}
   .wk-day{position:relative;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:2px;height:100%;}
@@ -18417,6 +18412,8 @@ function todayLangOf(lessonId, cache) {
 // The top of Today: your goal, what to do next (one tap starts it), how far through today's route you are, the
 // languages the route uses (tap a flag to add or take one out), and a ring of the minutes studied today against the
 // minutes you set a day (type a new number in it).
+const CLOCK_ICON = '<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 4.5V8l2.5 1.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+
 function todayGoalHtml(all) {
   const tasks = routeTasks(all);
   const target = todayPlan.minutes || 0;
@@ -18427,7 +18424,8 @@ function todayGoalHtml(all) {
   const done = tasks.filter(t => t.done).length;
   const next = all.indexOf(tasks.find(t => !t.done));
   const streak = streakInfo().current;
-  const nextHtml = next >= 0 ? `<button class="hero-next" data-i="${next}"><span>Next</span><b>${escapeHtml(todayTaskName(all[next]))}</b>${all[next].act ? `<em>${todayPlan.mins[all[next].key] || all[next].act.mins} min</em>` : Math.round(taskMinutes(all[next])) ? `<em>about ${Math.round(taskMinutes(all[next]))} min</em>` : ""}<i aria-hidden="true">▶</i></button>` : `<div class="hero-next all-done"><b>${tasks.length ? "Today's plan is done 🎉" : planLangs().length ? "Nothing on the plan today" : "Light a flag to plan today"}</b></div>`;
+  const nextMins = next < 0 ? 0 : all[next].act ? todayPlan.mins[all[next].key] || all[next].act.mins : Math.max(1, Math.round(taskMinutes(all[next])));
+  const nextHtml = next >= 0 ? `<button class="hero-next" data-i="${next}"><span>Next</span><b>${escapeHtml(todayTaskName(all[next]))}</b>${nextMins ? `<em title="About ${nextMins} min">${CLOCK_ICON}${nextMins} min</em>` : ""}<i aria-hidden="true">▶</i></button>` : `<div class="hero-next all-done"><b>${tasks.length ? "Today's plan is done 🎉" : planLangs().length ? "Nothing on the plan today" : "Light a flag to plan today"}</b></div>`;
   const progress = `<div class="hero-progress"><span><b>${done}</b> of ${tasks.length} steps done</span>${streak ? `<span>🔥 <b>${streak}</b> day${streak === 1 ? "" : "s"} in a row</span>` : ""}</div>`;
   return '<div class="hero-main">' + `<input id="todayGoalText" class="today-goal-text" type="text" value="${escapeAttr(todayPlan.goal)}" placeholder="${escapeAttr(TODAY_GOAL)}" aria-label="Your goal">` + nextHtml + progress + langRow + '</div>' + `<div class="hero-ring${target && minsDone >= target ? " full" : ""}" style="--p:${pct}"><div class="hero-ring-in"><b>${minsDone}</b><label>of <input id="todayPerDay" type="text" maxlength="3" inputmode="numeric" pattern="[0-9]*" value="${target || ""}" placeholder="—" aria-label="Minutes a day"></label><span>min today</span></div></div>`;
 }
@@ -18634,15 +18632,11 @@ function todayFlowHtml(tasks) {
   const why = plan.heavy ? `No new cards today: ${plan.overdueN ? `${plan.overdueN} overdue reviews` : ""}${plan.overdueN && carriedMins > 0 ? " and " : ""}${carriedMins > 0 ? "what was carried" : ""} (${plan.debt} min) come first.` : plan.newN ? `${plan.newN} new cards: the reviews already coming over the next 7 days take about ${plan.aheadMins} min a day of the ${plan.appRoom} min for the app.` : plan.reviewN * MIN_DUE >= plan.appRoom ? "No new cards today: the reviews due take all the time for the app." : "No new cards waiting in your lessons.";
   const doneMins = dayStudy(todayPlan.day).total, total = planMinutes(plan);
   const tHtml = `<div class="flow-big"><b>${doneMins}</b> of ${total} min</div><div class="task-progress"><i style="width:${total ? Math.min(100, Math.round(doneMins / total * 100)) : 0}%"></i></div><div class="today-why">${parts.join("")}</div><p class="flow-note">${why}</p>`;
-  // Tomorrow and the week: the reviews that will fall due, day by day.
-  const fc = dueForecast(8), maxF = Math.max(1, ...fc.slice(1));
+  // Tomorrow: the reviews that will fall due.
+  const fc = dueForecast(2);
   const left = Math.round(routeTasks(tasks).reduce((m, t) => m + (t.done ? 0 : t.act ? todayPlan.mins[t.key] || t.act.mins : taskMinutes(t)), 0));
   const mHtml = `<div class="flow-big"><b>${fc[1]}</b> reviews · ${Math.round(fc[1] * MIN_DUE)} min</div><p class="flow-note">${left ? `Plus what is left today (about ${left} min), as make-up.` : "Nothing left over from today so far."}</p>`;
-  const bars = fc.slice(1).map((n, k) => {
-    const d = new Date(todayStart() + (k + 1) * 864e5 + 36e5);
-    return `<div class="fc-day" title="${n} reviews · ${Math.round(n * MIN_DUE)} min"><span>${n}</span><i style="height:${Math.round(n / maxF * 100)}%"></i><b>${d.toLocaleDateString(undefined, { weekday: "narrow" })}</b></div>`;
-  }).join("");
-  return `<div class="flow-col"><div class="flow-label">Yesterday${prevKey ? " · " + escapeHtml(weekdayOf(prevKey)) : ""}</div>${yHtml}</div>` + `<div class="flow-col now"><div class="flow-label">Today</div>${tHtml}</div>` + `<div class="flow-col"><div class="flow-label">Tomorrow</div>${mHtml}</div>` + `<div class="flow-fc"><div class="flow-label">Reviews due, next 7 days</div><div class="fc-bars">${bars}</div></div>`;
+  return `<div class="flow-col"><div class="flow-label">Yesterday${prevKey ? " · " + escapeHtml(weekdayOf(prevKey)) : ""}</div>${yHtml}</div>` + `<div class="flow-col now"><div class="flow-label">Today</div>${tHtml}</div>` + `<div class="flow-col"><div class="flow-label">Tomorrow</div>${mHtml}</div>`;
 }
 
 function renderToday() {
