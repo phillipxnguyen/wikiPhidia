@@ -16480,9 +16480,12 @@ function fitHighlights(root) {
     const base = probe.getBoundingClientRect().top, box = mark.getClientRects()[0];
     probe.remove();
     if (!box) return;
-    const pad = size * .1, h = box.height;
-    const top = Math.max(0, Math.round(base - box.top - m.actualBoundingBoxAscent - pad));
-    const bottom = Math.min(Math.round(h), Math.round(base - box.top + m.actualBoundingBoxDescent + pad));
+    // Latin letters sit low in their box (their descenders reach far), so their highlight rides a little higher:
+    // more room over them, less under them.
+    const latin = !/[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]/.test(mark.textContent || "");
+    const padTop = size * (latin ? .14 : .1), padBottom = size * (latin ? .04 : .1), h = box.height;
+    const top = Math.max(0, Math.round(base - box.top - m.actualBoundingBoxAscent - padTop));
+    const bottom = Math.min(Math.round(h), Math.round(base - box.top + m.actualBoundingBoxDescent + padBottom));
     mark.style.background = `linear-gradient(transparent ${top}px, var(--word-mark) ${top}px, var(--word-mark) ${bottom}px, transparent ${bottom}px)`;
   }));
 }
