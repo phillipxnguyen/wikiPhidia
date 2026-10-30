@@ -5962,7 +5962,6 @@ function showSessionCompletePanel() {
     return;
   }
   panel.dataset.shown = currentLessonId;
-  taskSideDone();
   panel.querySelectorAll(".confetti-piece").forEach(el => el.remove());
   if (text.emoji === "🎉") addConfetti(panel);
   stopAllSound();
@@ -9734,6 +9733,7 @@ function mixPick(picks) {
 
 function mixNext() {
   if (!isAllLessons()) return;
+  if (taskRun && taskRun.queue) return taskAdvance();
   const picks = mixCandidates();
   const up = mixUpcoming;
   mixUpcoming = null;
@@ -9887,6 +9887,7 @@ function advanceToNextGroup() {
 setInterval(() => {
   if (currentView !== "study" || tabPaused) return;
   if (isAllLessons()) {
+    if (taskRun) return refreshBadges();
     const due = mixCandidates();
     if (!mixSwiping && (!mixFocusId ? due.length : !due.some(([ r ]) => r.id === mixFocusId))) mixNext(); else if (groupState) refreshBadges();
     return;
@@ -17386,7 +17387,7 @@ function setVocabView(view) {
 document.querySelectorAll("#vocabToolbar [data-view]").forEach(btn => btn.onclick = () => setVocabView(btn.dataset.view));
 
 setInterval(() => {
-  if (currentView !== "vocab" || tabPaused || vocabEditingKey || !vocabSession || currentVocabItem()) return;
+  if (currentView !== "vocab" || tabPaused || vocabEditingKey || !vocabSession || currentVocabItem() || taskRun) return;
   const now = Date.now();
   if (!limitVocab(lessonVocabItems(vocabSource()).filter(i => vocabStateOf(i).due <= now)).length) return;
   startVocabSession();
@@ -17641,7 +17642,8 @@ function leftToday(l, side) {
     return {
       fresh: fresh,
       due: ok.length - fresh,
-      items: ok.map(i => i.term)
+      items: ok.map(i => i.term),
+      ids: ok.map(i => i.key)
     };
   }
   const mode = countMode(l.cards);
@@ -17650,7 +17652,8 @@ function leftToday(l, side) {
   return {
     fresh: fresh,
     due: ok.length - fresh,
-    items: ok.map(c => oneLine(c.q || ""))
+    items: ok.map(c => oneLine(c.q || "")),
+    ids: ok.map(c => c.uid)
   };
 }
 
@@ -17837,29 +17840,135 @@ async function openTodayTask(t) {
   await startTaskSide();
 }
 
+// A task's cards and words, mixed: they take turns in proportion to how many of each there are (New first, in
+// order, within the daily limits, as picked for today), one at a time, with no break or end screen between the two.
+function taskQueue(l) {
+  const c = leftToday(l, "cards").ids, v = leftToday(l, "vocab").ids;
+  const out = [];
+  let i = 0, j = 0;
+  while (i < c.length || j < v.length) {
+    const takeCard = j >= v.length || i < c.length && (i + 1) / c.length <= (j + 1) / v.length;
+    out.push(takeCard ? {
+      k: "c",
+      id: c[i++],
+      tries: 0
+    } : {
+      k: "v",
+      id: v[j++],
+      tries: 0
+    });
+  }
+  return out;
+}
+
 async function startTaskSide() {
   const run = taskRun;
   const l = run && library.find(x => x.id === run.lessonId);
   if (!l) return endTask();
-  const left = leftBoth(l);
-  const side = left.cards.fresh + left.cards.due ? "cards" : left.vocab.fresh + left.vocab.due ? "vocab" : l.cards.length || !lessonHasWords(l) ? "cards" : "vocab";
-  run.side = side;
-  run.busy = false;
-  setAppMode(side);
-  // Only what is to be studied today comes up, one card or word at a time, picked as All lessons picks them (New
-  // first, in order, within the daily limits): never the whole lesson.
-  const only = {
-    ids: new Set([ l.id ]),
+  run.queue = taskQueue(l);
+  run.current = null;
+  if (!run.queue.length) {
+    todayPlan.done[run.key] = true;
+    saveToday();
+    return openToday();
+  }
+  await taskAdvance();
+}
+
+function taskOnly(run) {
+  return {
+    ids: new Set([ run.lessonId ]),
     name: run.title
   };
-  if (side === "vocab") await openAllVocabulary(only); else await openAllLessons(only);
+}
+
+// The pick just studied comes back at the end of the run when it was answered Again (three times at most).
+function taskPickAgain(pick) {
+  if (!pick || pick.tries >= 3) return false;
+  const l = library.find(x => x.id === taskRun.lessonId);
+  if (!l) return false;
+  if (pick.k === "c") {
+    const c = l.cards.find(x => x.uid === pick.id);
+    return !!c && srsOf(c).lastGrade === GRADE_AGAIN;
+  }
+  const item = lessonVocabItems(lessonCardsWithExtras(l)).find(i => i.key === pick.id);
+  return !!item && vocabStateOf(item).lastGrade === GRADE_AGAIN;
+}
+
+async function taskAdvance() {
+  const run = taskRun;
+  if (!run || run.opening) return;
+  run.opening = true;
+  await flushAutoSave();
   if (taskRun !== run) return;
-  if (side === "vocab") {
+  if (run.current && taskPickAgain(run.current)) {
+    run.current.tries++;
+    run.queue.push(run.current);
+  }
+  run.current = run.queue.shift() || null;
+  if (!run.current) {
+    run.opening = false;
+    todayPlan.done[run.key] = true;
+    saveToday();
+    showToast("Task done ✓");
+    return openToday();
+  }
+  const pick = run.current;
+  if (pick.k === "c") {
+    setAppMode("cards");
+    if (currentLessonId !== LESSON_ALL_ID) await openAllLessons(taskOnly(run));
+    if (taskRun !== run) return;
+    showView("study");
+    const row = rows.find(r => r.uid === pick.id);
+    const pair = row && mixCandidates(true).find(([r]) => r === row);
+    run.opening = false;
+    if (!pair) return taskAdvance();
+    mixShow(pair[0], pair[1]);
+  } else {
+    setAppMode("vocab");
+    if (currentLessonId !== VOCAB_ALL_ID) await openAllVocabulary(taskOnly(run));
+    if (taskRun !== run) return;
+    if (!vocabSession) startVocabSession();
+    vocabSession.queue = [ pick.id ];
+    vocabSession.pending = [];
+    vocabSession.flipped = false;
     vocabView = "card";
+    run.opening = false;
     showView("vocab");
+    if (!currentVocabItem()) return taskAdvance();
   }
   renderTaskBar();
+  paintTaskBadges();
 }
+
+// While a task runs, the New / Due counts are those of the whole task: its cards and its words still to go.
+function paintTaskBadges() {
+  const run = taskRun;
+  if (!run || !run.queue) return;
+  const l = library.find(x => x.id === run.lessonId);
+  if (!l) return;
+  const items = lessonVocabItems(lessonCardsWithExtras(l));
+  let fresh = 0, due = 0;
+  (run.current ? [ run.current ] : []).concat(run.queue).forEach(pick => {
+    const st = pick.k === "c" ? (c => c && srsOf(c))(l.cards.find(x => x.uid === pick.id)) : (it => it && vocabStateOf(it))(items.find(i => i.key === pick.id));
+    if (!st) return;
+    if (st.reps) due++; else fresh++;
+  });
+  document.querySelectorAll("#singleCardProgress .progress-badge, #vocabBadges .progress-badge").forEach(el => {
+    const b = el.querySelector("b");
+    if (!b) return;
+    const n = el.classList.contains("new") ? fresh : el.classList.contains("due") ? due : null;
+    if (n === null) return;
+    if (b.textContent !== String(n)) b.textContent = n;
+    el.classList.toggle("active", n > 0);
+  });
+}
+
+[ "singleCardProgress", "vocabBadges" ].forEach(id => new MutationObserver(() => {
+  if (taskRun) paintTaskBadges();
+}).observe(document.getElementById(id), {
+  childList: true
+}));
 
 function renderTaskBar() {
   const bar = document.getElementById("taskBar");
@@ -17875,38 +17984,11 @@ function endTask() {
   renderTaskBar();
 }
 
-// One side of the task is caught up (its end screen shows): on to the other side if it has anything today, else the
-// task is done.
-async function taskSideDone() {
+// A word of the task has been graded (its flashcard is gone and nothing else waits in the session): the next pick.
+function taskSideDone() {
   const run = taskRun;
-  if (!run || run.busy || !isVirtualId(currentLessonId)) return;
-  run.busy = true;
-  await flushAutoSave();
-  const l = library.find(x => x.id === run.lessonId);
-  // The mix shows its end screen for a moment before its first card comes up: the side is done only when it really
-  // has nothing left for today.
-  const mine = l ? leftToday(l, run.side) : null;
-  if (taskRun !== run || mine && mine.fresh + mine.due) {
-    run.busy = false;
-    return;
-  }
-  const other = run.side === "vocab" ? "cards" : "vocab";
-  const left = l ? leftToday(l, other) : null;
-  if (left && left.fresh + left.due) {
-    setTimeout(() => {
-      if (taskRun !== run) return;
-      showToast(other === "vocab" ? "Now the words of this lesson" : "Now the cards of this lesson");
-      startTaskSide();
-    }, 1200);
-    return;
-  }
-  todayPlan.done[run.key] = true;
-  saveToday();
-  setTimeout(() => {
-    if (taskRun !== run) return;
-    showToast("Task done ✓");
-    openToday();
-  }, 1800);
+  if (!run || run.opening || !run.current || run.current.k !== "v" || currentView !== "vocab") return;
+  setTimeout(() => taskRun === run && !run.opening && !currentVocabItem() && taskAdvance(), 0);
 }
 
 document.getElementById("taskClose").onclick = () => openToday();
