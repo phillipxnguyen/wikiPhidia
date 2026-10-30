@@ -1864,6 +1864,39 @@ window.onYouTubeIframeAPIReady = function(){
   .today-side.vocab{color:var(--new-color);}
   .today-new{color:var(--new-color);font-weight:600;}
   .today-due{color:var(--due-color);font-weight:600;}
+  /* Why a task is on the plan, and how far along it is. */
+  .today-why{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:2px;font-size:13px;line-height:18px;color:var(--text-2);}
+  .why-make{color:#b4572a;font-weight:700;}
+  .why-late{color:var(--danger);font-weight:600;}
+  .task-progress{height:6px;margin-top:8px;border-radius:3px;background:var(--surface-2);overflow:hidden;}
+  .task-progress i{display:block;height:100%;border-radius:3px;background:var(--new-color);}
+  .task-progress-note{margin-top:4px;font-size:12px;line-height:16px;color:var(--text-2);}
+  .task-progress-note b{color:var(--text);}
+  /* Yesterday, today, tomorrow and the reviews of the week ahead, side by side (one under the other on a phone). */
+  .today-flow{display:grid;grid-template-columns:repeat(3, minmax(0, 1fr)) minmax(0, 1.2fr);gap:24px;margin-top:16px;}
+  @media (max-width:1100px){.today-flow{grid-template-columns:repeat(3, minmax(0, 1fr));}.flow-fc{grid-column:1 / -1;}}
+  @media (max-width:700px){.today-flow{grid-template-columns:minmax(0, 1fr);gap:16px;}}
+  .today-flow > .today-empty{grid-column:1 / -1;margin:0;}
+  .flow-label{margin-bottom:6px;font-size:12px;line-height:16px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-2);}
+  .flow-col.now .flow-label{color:var(--warm, var(--accent));}
+  .flow-big{font-size:14px;line-height:20px;color:var(--text-2);}
+  .flow-big b{font-size:22px;line-height:28px;font-weight:800;color:var(--text);font-variant-numeric:tabular-nums;}
+  .flow-note{margin:6px 0 0;font-size:13px;line-height:18px;color:var(--text-2);}
+  .flow-col .today-why{margin-top:8px;}
+  .fc-bars{display:grid;grid-template-columns:repeat(7, minmax(0, 1fr));gap:6px;align-items:end;height:88px;}
+  .fc-day{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;height:100%;}
+  .fc-day span{font-size:11px;line-height:14px;color:var(--text-2);font-variant-numeric:tabular-nums;}
+  .fc-day i{display:block;width:100%;max-width:24px;min-height:2px;border-radius:4px 4px 2px 2px;background:color-mix(in srgb, var(--due-color) 70%, var(--surface));}
+  .fc-day b{font-size:11px;line-height:14px;color:var(--text-2);font-weight:700;}
+  /* The week as seven bars, each filled by how much of its plan was done. */
+  .wk-strip{display:grid;grid-template-columns:repeat(7, minmax(0, 1fr));gap:6px;align-items:end;height:64px;margin:0 0 12px;}
+  .wk-day{position:relative;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:2px;height:100%;}
+  .wk-day i{display:block;width:100%;max-width:28px;min-height:2px;border-radius:4px;background:color-mix(in srgb, var(--warm, var(--accent)) 75%, var(--surface));box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--warm, var(--accent)) 30%, transparent);}
+  .wk-day b{font-size:11px;line-height:14px;color:var(--text-2);}
+  .wk-day.today b{color:var(--text);text-decoration:underline 2px var(--warm, var(--accent));text-underline-offset:3px;}
+  .wk-day.debt b{color:var(--danger);}
+  .cal-day.debt{position:relative;}
+  .cal-day.debt::after{content:"";position:absolute;top:4px;right:4px;width:6px;height:6px;border-radius:3px;background:var(--danger);}
   .today-x{flex:none;width:32px;height:32px;padding:0;border:0;border-radius:16px;background:none;color:var(--text-2);font-size:14px;line-height:20px;}
   @media (hover:hover){.today-x:hover{background:var(--danger-soft);color:var(--danger);}}
   .today-add{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);}
@@ -2207,6 +2240,7 @@ window.onYouTubeIframeAPIReady = function(){
 
 <section id="viewToday" hidden>
   <div id="todayGoal" class="panel today-goal"></div>
+  <div id="todayFlow" class="panel today-flow"></div>
   <div id="todayTrack" class="panel today-track"></div>
   <div class="panel today-panel">
     <div id="todayTasks" class="today-tasks"></div>
@@ -17775,7 +17809,7 @@ function receiveCloudPlan(d) {
   if (!remote || typeof remote !== "object") return;
   const log = Object.assign({}, remote.log);
   Object.entries(todayPlan.log || {}).forEach(([day, e]) => {
-    if (!log[day] || (e.done || 0) > (log[day].done || 0)) log[day] = e;
+    if (!log[day] || (e.doneMins ?? e.done ?? 0) > (log[day].doneMins ?? log[day].done ?? 0)) log[day] = e;
   });
   if ((d.updatedAt || 0) <= (todayPlan.updatedAt || 0)) {
     if ((d.updatedAt || 0) < (todayPlan.updatedAt || 0) || JSON.stringify(log) !== JSON.stringify(todayPlan.log)) {
@@ -17810,6 +17844,30 @@ function todayRoll() {
   const d = localDayKey(Date.now());
   if (!todayPlan.start) todayPlan.start = todayStart();
   if (todayPlan.day === d) return;
+  // What the last day's plan left undone comes back today as make-up: its new cards not studied and its activities
+  // not done (reviews need no carrying: they stay due and show as overdue).
+  const prev = todayPlan.day && todayPlan.log[todayPlan.day];
+  const carry = {
+    day: d,
+    from: todayPlan.day || "",
+    fresh: {},
+    acts: []
+  };
+  if (prev && prev.lessons) Object.entries(prev.lessons).forEach(([id, x]) => {
+    if (x.leftFresh > 0) carry.fresh[id] = x.leftFresh;
+  });
+  if (prev && prev.actsList) prev.actsList.forEach(a => {
+    if (a.done) return;
+    const same = carry.acts.find(x => x.skill === a.skill && x.lang === a.lang);
+    if (same) return same.mins += a.mins;
+    carry.acts.push({
+      skill: a.skill,
+      lang: a.lang,
+      mins: a.mins,
+      from: a.carry && todayPlan.carry && todayPlan.carry.from || todayPlan.day
+    });
+  });
+  todayPlan.carry = carry;
   Object.assign(todayPlan, {
     day: d,
     done: {},
@@ -17821,28 +17879,35 @@ function todayRoll() {
   saveToday();
 }
 
-// What a lesson still has for today on one side, within the daily limits.
+// What a lesson still has for today on one side, within the daily limits: its new ones and its reviews (those due
+// before today began are overdue), each with its text and id, in study order.
 function leftToday(l, side) {
-  const now = Date.now();
+  const now = Date.now(), start = todayStart();
+  let ok, stateOf, text, idOf;
   if (side === "vocab") {
     const items = lessonVocabItems(lessonCardsWithExtras(l)).filter(i => !vocabViewOnly(i) && vocabStateOf(i).due <= now);
-    const ok = limitStudy(items, true, i => l.id + ":" + i.key, vocabStateOf);
-    const fresh = ok.filter(i => !vocabStateOf(i).reps).length;
-    return {
-      fresh: fresh,
-      due: ok.length - fresh,
-      items: ok.map(i => i.term),
-      ids: ok.map(i => i.key)
-    };
+    ok = limitStudy(items, true, i => l.id + ":" + i.key, vocabStateOf);
+    stateOf = vocabStateOf;
+    text = i => i.term;
+    idOf = i => i.key;
+  } else {
+    const mode = countMode(l.cards);
+    ok = limitStudy(l.cards.filter(c => cardInMode(c, mode) && cardReady(c, mode, now)), false, c => l.id + ":" + c.uid, c => srsOf(c));
+    stateOf = c => srsOf(c);
+    text = c => oneLine(c.q || "");
+    idOf = c => c.uid;
   }
-  const mode = countMode(l.cards);
-  const ok = limitStudy(l.cards.filter(c => cardInMode(c, mode) && cardReady(c, mode, now)), false, c => l.id + ":" + c.uid, c => srsOf(c));
-  const fresh = ok.filter(c => !srsOf(c).reps).length;
+  const fresh = ok.filter(x => !stateOf(x).reps), due = ok.filter(x => stateOf(x).reps);
   return {
-    fresh: fresh,
-    due: ok.length - fresh,
-    items: ok.map(c => oneLine(c.q || "")),
-    ids: ok.map(c => c.uid)
+    fresh: fresh.length,
+    due: due.length,
+    overdue: due.filter(x => (stateOf(x).due || 0) < start).length,
+    items: ok.map(text),
+    ids: ok.map(idOf),
+    freshIds: fresh.map(idOf),
+    dueIds: due.map(idOf),
+    freshItems: fresh.map(text),
+    dueItems: due.map(text)
   };
 }
 
@@ -17858,57 +17923,81 @@ function leftBoth(l) {
   return {
     fresh: c.fresh + v.fresh,
     due: c.due + v.due,
+    overdue: c.overdue + v.overdue,
     cards: c,
     vocab: v,
     items: c.items.map(t => [ t, "c" ]).concat(v.items.map(t => [ t, "v" ]))
   };
 }
 
-// One task per lesson, its cards and its words studied together, one after the other.
+// The cards and words studied today, by lesson: each counted once, as new when it was new.
+function todayCounts() {
+  const start = todayStart(), seen = new Map;
+  for (let i = reviewLog.length - 1; i >= 0 && reviewLog[i].ts >= start; i--) {
+    const e = reviewLog[i], k = e.lessonId + "|" + e.cardUid + "|" + (e.word || "");
+    seen.set(k, seen.get(k) || !!e.fresh);
+  }
+  const out = {};
+  seen.forEach((fresh, k) => {
+    const id = k.split("|")[0];
+    if (!out[id]) out[id] = {
+      due: 0,
+      fresh: 0
+    };
+    out[id][fresh ? "fresh" : "due"]++;
+  });
+  return out;
+}
+
+// Today's tasks: one per lesson on the day's plan (its reviews and its share of new cards, with what was made up from
+// the day before), the activities outside the app, your own tasks, and the lessons the plan had no room for (waiting
+// behind the lock). Each knows what it was planned to hold, what is done and what is left.
 function todayTasks() {
   todayRoll();
-  const real = library.filter(l => !isVirtualId(l.id));
+  const plan = buildPlan();
+  const counts = todayCounts();
   const list = [];
-  real.forEach(l => {
+  library.filter(l => !isVirtualId(l.id)).forEach(l => {
     const key = "l:" + l.id;
+    const p = plan.lessons[l.id];
     const left = leftBoth(l);
-    const open = left.fresh + left.due > 0;
-    if (!open && !todayPlan.seen.includes(key)) return;
-    if (open && !todayPlan.seen.includes(key)) todayPlan.seen.push(key);
-    list.push({
+    if (p && !p.extra) {
+      const c = counts[l.id] || {
+        due: 0,
+        fresh: 0
+      };
+      const remDue = Math.max(0, Math.min(left.due, p.due - (c.due - p.base.due)));
+      const remFresh = Math.max(0, Math.min(left.fresh, p.fresh - (c.fresh - p.base.fresh)));
+      list.push({
+        key: key,
+        lesson: l,
+        left: left,
+        plan: p,
+        remDue: remDue,
+        remFresh: remFresh,
+        planned: p.due + p.fresh,
+        did: p.due + p.fresh - remDue - remFresh,
+        done: !!todayPlan.done[key] || remDue + remFresh === 0
+      });
+    } else if (left.fresh + left.due) list.push({
       key: key,
       lesson: l,
       left: left,
-      done: !open || !!todayPlan.done[key]
+      extra: true,
+      done: !!todayPlan.done[key]
     });
   });
-  recentLessonIds().slice(0, 3).forEach(id => {
-    const l = real.find(x => x.id === id);
-    if (!l || list.some(t => t.lesson === l)) return;
-    const key = "r:" + id;
+  plan.acts.forEach(a => {
+    const key = (a.carry ? "c:" : "a:") + a.skill;
     list.push({
       key: key,
-      lesson: l,
-      recent: true,
-      done: studiedLessonToday(id) || !!todayPlan.done[key]
+      act: a,
+      done: !!todayPlan.done[key]
     });
-  });
-  todayRoute(list).forEach(a => list.push(a));
-  // The lessons the route has no time for today wait under "If you have time"; a lesson the route only has room for
-  // part of is cut to that part.
-  const pick = todayPlan.route && todayPlan.route.pick;
-  if (pick) list.forEach(t => {
-    if (!t.lesson) return;
-    const p = pick[t.key];
-    if (!p) return t.extra = true;
-    if (!t.left || p.n >= p.base) return;
-    t.cap = Math.max(0, p.n - (p.base - (t.left.fresh + t.left.due)));
-    t.of = t.left.fresh + t.left.due;
-    if (!t.cap) t.done = true;
   });
   todayPlan.tasks.forEach(t => {
     const key = "m:" + t.id;
-    const l = t.lessonId ? real.find(x => x.id === t.lessonId) : null;
+    const l = t.lessonId ? library.find(x => x.id === t.lessonId && !isVirtualId(x.id)) : null;
     const left = l ? leftBoth(l) : null;
     list.push({
       key: key,
@@ -17922,24 +18011,32 @@ function todayTasks() {
   return list.filter(t => !todayPlan.skipped.includes(t.key)).sort((a, b) => !!a.extra - !!b.extra || a.done - b.done);
 }
 
-// The tasks on today's route, without those waiting under "If you have time".
+// The tasks on today's plan, without those waiting behind the lock.
 function routeTasks(tasks) {
   return tasks.filter(t => !t.extra);
 }
 
-// About how long a task takes in the app: half a minute for each new card or word, a quarter for each review.
+// About how long a task still takes in the app: half a minute for each new card or word, a quarter for each review.
 function taskMinutes(t) {
+  if (t.plan) return t.remDue * MIN_DUE + t.remFresh * MIN_NEW;
   if (!t.left) return 0;
-  const m = t.left.fresh * MIN_NEW + t.left.due * MIN_DUE;
-  return t.cap != null ? m * t.cap / Math.max(1, t.of) : m;
+  return t.left.fresh * MIN_NEW + t.left.due * MIN_DUE;
 }
 
-// The day's route, worked out by the app itself every morning (and again whenever the minutes or the languages
-// change), then left alone so it stays put while you study. The minutes you set a day are shared out: up to 60% for
-// the lessons' cards and words (about half a minute for a new one and a quarter for a review), taken lesson by
-// lesson in the tasks' order, the last one cut to what fits; the rest for things to do outside the app, in the
-// languages you learn, one language a day in turn: listening and speaking one day, reading and writing the next. When
-// the lessons need less, the outside part gets the rest.
+// The day's plan, worked out by the app itself the first time Today is shown each day (and again when the minutes or
+// the languages change), with plain rules so it is always clear why it holds what it holds:
+//  1. Make-up first: what was left of the last day's plan (its new cards not studied, its activities not done) comes
+//     back on top, marked as such; reviews that were due before today are overdue and count as make-up too. Make-up
+//     has a ceiling: when it is more than half the day's minutes, no new cards are added that day, so the backlog
+//     shrinks instead of growing (and carried activities never take more than half the day).
+//  2. Every review due today is on the plan: skipping them is how cards are forgotten.
+//  3. New cards fill what is left of the app's share of the day (three fifths of the minutes when you also learn
+//     outside the app, all of it otherwise), fewer when the reviews already coming up over the next seven days take
+//     much of that share, so tomorrow never gets heavier than the minutes you set; they are shared out evenly
+//     between the lessons that have new cards, within the daily limits.
+//  4. The rest of the minutes go to things to do outside the app, in one of your languages, taking turns by day.
+// Lessons the plan has no room for wait behind the lock. Each day's plan and what was done of it is kept in the log, for
+// the calendar, the week and the next day's make-up.
 const LANG_NAMES = {
   en: "English",
   "zh-CN": "Chinese",
@@ -17982,59 +18079,138 @@ function round5(n) {
   return Math.max(5, Math.round(n / 5) * 5);
 }
 
-function todayRoute(lessonTasks) {
-  const langs = planLangs();
-  const budget = todayPlan.minutes || 0;
-  if (!budget) {
-    todayPlan.route = null;
-    return [];
-  }
-  const sig = budget + ":" + langs.join(",");
-  if (!todayPlan.route || todayPlan.route.sig !== sig || !todayPlan.route.pick) {
-    const room = langs.length ? Math.round(budget * .6) : budget;
-    const pick = {};
-    let used = 0;
-    lessonTasks.forEach(t => {
-      if (t.recent || !t.left) return;
-      const total = t.left.fresh + t.left.due;
-      if (t.done || !total) return pick[t.key] = {
-        n: 0,
-        base: 0
-      };
-      if (used >= room) return;
-      const est = t.left.fresh * MIN_NEW + t.left.due * MIN_DUE;
-      const n = est <= room - used ? total : Math.max(1, Math.floor(total * (room - used) / est));
-      pick[t.key] = {
-        n: n,
-        base: total
-      };
-      used += est * n / total;
-    });
-    const app = Math.round(used);
-    const rest = langs.length ? Math.max(10, budget - app) : 0;
-    const day = dayIndexOf(Date.now());
-    const lang = langs.length ? langs[day % langs.length] : "";
-    const pair = day % 2 ? [ "read", "write" ] : [ "listen", "speak" ];
-    const first = round5(rest * .6);
-    todayPlan.route = {
-      sig: sig,
-      app: app,
-      pick: pick,
-      acts: rest ? [ [ pair[0], first ], [ pair[1], round5(rest - first) ] ].map(([skill, mins]) => ({
-        skill: skill,
-        lang: lang,
-        mins: mins
-      })) : []
-    };
-  }
-  return todayPlan.route.acts.map(a => {
-    const key = "a:" + a.skill;
-    return {
-      key: key,
-      act: a,
-      done: !!todayPlan.done[key]
-    };
+// How many reviews fall due on each of the next n days (today first, with all that is due already), over every lesson.
+function dueForecast(n) {
+  const start = todayStart(), out = Array(n).fill(0);
+  const add = st => {
+    if (!st || !st.reps || isDoneState(st)) return;
+    const k = Math.floor((Math.max(st.due || 0, start) - start) / 864e5);
+    if (k < n) out[k]++;
+  };
+  library.filter(l => !isVirtualId(l.id)).forEach(l => {
+    const mode = countMode(l.cards);
+    l.cards.forEach(c => cardInMode(c, mode) && add(srsOf(c)));
+    lessonVocabItems(lessonCardsWithExtras(l)).forEach(i => !vocabViewOnly(i) && add(vocabStateOf(i)));
   });
+  return out;
+}
+
+function buildPlan() {
+  const langs = planLangs(), B = todayPlan.minutes || 0;
+  const sig = B + ":" + langs.join(",");
+  const old = todayPlan.route;
+  if (old && old.v === 2 && old.sig === sig && old.day === todayPlan.day) return old;
+  const carry = todayPlan.carry && todayPlan.carry.day === todayPlan.day ? todayPlan.carry : {
+    fresh: {},
+    acts: []
+  };
+  const appRoom = langs.length ? Math.round(B * .6) : B;
+  const counts = todayCounts();
+  const lessons = {};
+  let reviewN = 0, overdueN = 0, carryN = 0;
+  library.filter(l => !isVirtualId(l.id)).forEach(l => {
+    const left = leftBoth(l);
+    const cf = Math.min(left.fresh, carry.fresh[l.id] || 0);
+    if (!left.due && !left.fresh) return;
+    lessons[l.id] = {
+      due: left.due,
+      overdue: left.overdue,
+      carry: cf,
+      share: 0,
+      avail: left.fresh,
+      base: counts[l.id] || {
+        due: 0,
+        fresh: 0
+      }
+    };
+    reviewN += left.due;
+    overdueN += left.overdue;
+    carryN += cf;
+  });
+  // Make-up never takes more than half the day: when what was carried (new cards and activities) is more, all of it
+  // is cut down in the same proportion; the new cards cut away simply stay new in their lessons.
+  const carryActs = langs.length ? (carry.acts || []) : [];
+  const wanted = carryN * MIN_NEW + carryActs.reduce((m, a) => m + a.mins, 0);
+  const heavy = !!B && overdueN * MIN_DUE + wanted > B * .5;
+  const scale = wanted > B * .5 ? B * .5 / wanted : 1;
+  if (scale < 1) {
+    carryN = 0;
+    Object.values(lessons).forEach(x => {
+      x.carry = Math.floor(x.carry * scale);
+      carryN += x.carry;
+    });
+  }
+  const acts = [];
+  let carryActMins = 0;
+  carryActs.forEach(a => {
+    const m = Math.round(a.mins * scale / 5) * 5;
+    if (m < 5) return;
+    acts.push(Object.assign({}, a, {
+      mins: m,
+      carry: true
+    }));
+    carryActMins += m;
+  });
+  const debt = Math.round(overdueN * MIN_DUE + carryN * MIN_NEW + carryActMins);
+  const ahead = dueForecast(8).slice(1);
+  const aheadMins = Math.round(ahead.reduce((a, b) => a + b, 0) / ahead.length * MIN_DUE);
+  const pressure = appRoom ? Math.max(0, Math.min(1, 1 - aheadMins / appRoom)) : 0;
+  const room = Math.max(0, appRoom - reviewN * MIN_DUE - carryN * MIN_NEW);
+  const want = heavy ? 0 : Math.floor(room * pressure / MIN_NEW);
+  // New cards shared out in turn between the lessons that have some, one at a time.
+  const ids = Object.keys(lessons);
+  let given = 0;
+  for (let round = 0; given < want; round++) {
+    let any = false;
+    for (const id of ids) {
+      const x = lessons[id];
+      if (given < want && x.avail - x.carry - x.share > 0) {
+        x.share++;
+        given++;
+        any = true;
+      }
+    }
+    if (!any) break;
+  }
+  Object.values(lessons).forEach(x => {
+    x.fresh = x.carry + x.share;
+    if (!x.due && !x.fresh) x.extra = true;
+  });
+  const appMins = Math.round(reviewN * MIN_DUE + (carryN + given) * MIN_NEW);
+  // Outside the app: what the day has left, at least 10 minutes unless make-up activities already fill that part.
+  const actRoom = langs.length ? Math.max(carryActMins ? 0 : 10, B - appMins - carryActMins) : 0;
+  const day = dayIndexOf(Date.now());
+  const lang = langs.length ? langs[day % langs.length] : "";
+  const pair = day % 2 ? [ "read", "write" ] : [ "listen", "speak" ];
+  const first = round5(actRoom * .6);
+  if (actRoom >= 10) [ [ pair[0], first ], [ pair[1], round5(actRoom - first) ] ].forEach(([skill, mins]) => acts.push({
+    skill: skill,
+    lang: lang,
+    mins: mins
+  }));
+  todayPlan.route = {
+    v: 2,
+    sig: sig,
+    day: todayPlan.day,
+    budget: B,
+    appRoom: appRoom,
+    lessons: lessons,
+    acts: acts,
+    reviewN: reviewN,
+    overdueN: overdueN,
+    carryN: carryN,
+    carryFrom: carry.from || "",
+    newN: given,
+    debt: debt,
+    heavy: heavy,
+    aheadMins: aheadMins,
+    appMins: appMins
+  };
+  return todayPlan.route;
+}
+
+function planMinutes(plan) {
+  return plan ? plan.appMins + plan.acts.reduce((m, a) => m + a.mins, 0) : 0;
 }
 
 function flagChip(lang) {
@@ -18042,7 +18218,8 @@ function flagChip(lang) {
   return cc ? `<i class="flag-dot" style='--flag:${flagUrl(cc)}'></i>` : "";
 }
 
-// Minutes studied on a day: the cards and words answered (as the route counts them) and the activities ticked.
+// Minutes studied on a day: the cards and words answered (as the plan counts them) and the activities ticked; with the
+// day's plan from the log, how much of it that is and how many minutes were left undone.
 function dayStudy(dayKey) {
   const cache = new Map, mins = {};
   let cards = 0;
@@ -18054,28 +18231,60 @@ function dayStudy(dayKey) {
   });
   const log = todayPlan.log[dayKey];
   if (log && log.acts) Object.entries(log.acts).forEach(([lang, m]) => mins[lang] = (mins[lang] || 0) + m);
-  const total = Object.values(mins).reduce((a, b) => a + b, 0);
+  const total = Math.round(Object.values(mins).reduce((a, b) => a + b, 0));
+  const plan = log && log.planMins || 0;
   return {
     cards: cards,
     mins: mins,
-    total: Math.round(total),
-    pct: log && log.total ? Math.round(log.done / log.total * 100) : null
+    total: total,
+    plan: plan,
+    pct: plan ? Math.min(100, Math.round(total / plan * 100)) : log && log.total ? Math.round(log.done / log.total * 100) : null,
+    missed: plan ? Math.max(0, plan - total) : 0,
+    log: log || null
   };
 }
 
-// Today's snapshot for the calendar: how much of the route is done, and the activities' minutes by language.
+// Today's record for the log: the plan's minutes and what was done, each lesson's planned and studied new cards and
+// reviews, and each activity with whether it was done (left out counts as settled, so it is not carried).
 function logToday(all) {
-  const tasks = routeTasks(all);
-  const acts = {};
-  tasks.forEach(t => {
-    if (t.act && t.done) acts[t.act.lang] = (acts[t.act.lang] || 0) + (todayPlan.mins[t.key] || t.act.mins);
+  const plan = todayPlan.route;
+  const acts = {}, actsList = [], lessons = {};
+  all.forEach(t => {
+    const skipped = todayPlan.skipped.includes(t.key);
+    if (t.act) {
+      const m = todayPlan.mins[t.key] || t.act.mins;
+      if (t.done) acts[t.act.lang] = (acts[t.act.lang] || 0) + m;
+      actsList.push({
+        skill: t.act.skill,
+        lang: t.act.lang,
+        mins: t.act.mins,
+        carry: !!t.act.carry,
+        done: t.done || skipped
+      });
+    }
   });
-  todayPlan.log[localDayKey(Date.now())] = {
-    total: tasks.length,
-    done: tasks.filter(t => t.done).length,
+  if (plan) Object.entries(plan.lessons).forEach(([id, p]) => {
+    if (p.extra) return;
+    const t = all.find(x => x.key === "l:" + id) || null;
+    const skipped = todayPlan.skipped.includes("l:" + id);
+    lessons[id] = {
+      due: p.due,
+      fresh: p.fresh,
+      carry: p.carry,
+      leftFresh: skipped || !t || t.done ? 0 : t.remFresh,
+      leftDue: skipped || !t || t.done ? 0 : t.remDue
+    };
+  });
+  const day = localDayKey(Date.now());
+  todayPlan.log[day] = Object.assign({}, todayPlan.log[day], {
+    planMins: planMinutes(plan) || todayPlan.minutes || 0,
     acts: acts,
-    plan: todayPlan.minutes || 0
-  };
+    actsList: actsList,
+    lessons: lessons,
+    total: routeTasks(all).length,
+    done: routeTasks(all).filter(t => t.done).length
+  });
+  todayPlan.log[day].doneMins = dayStudy(day).total;
   const keys = Object.keys(todayPlan.log);
   if (keys.length > 400) keys.sort((a, b) => new Date(a) - new Date(b)).slice(0, keys.length - 400).forEach(k => delete todayPlan.log[k]);
   saveToday();
@@ -18099,10 +18308,17 @@ function todayTrackHtml() {
     const st = dayStudy(key);
     const future = date > now && key !== todayKey;
     const pct = st.pct != null ? st.pct : st.cards ? 30 : 0;
-    cells += `<button class="cal-day${future ? " future" : ""}${key === todayKey ? " today" : ""}${key === trackPicked ? " picked" : ""}" data-day="${key}" style="--p:${pct}"${future ? " disabled" : ""}><b>${d}</b>${st.total ? `<span>${st.total}′</span>` : ""}</button>`;
+    // A day over with part of its plan undone has a red dot: what it missed was carried to the next day.
+    const debt = !future && key !== todayKey && st.missed > 0;
+    cells += `<button class="cal-day${future ? " future" : ""}${key === todayKey ? " today" : ""}${key === trackPicked ? " picked" : ""}${debt ? " debt" : ""}" data-day="${key}" style="--p:${pct}"${future ? " disabled" : ""}${debt ? ` title="Missed ${st.missed} min of ${st.plan}"` : ""}><b>${d}</b>${st.total ? `<span>${st.total}′</span>` : ""}</button>`;
   }
   const picked = trackPicked ? dayStudy(trackPicked) : null;
-  const pickedText = picked ? `<div class="cal-picked"><b>${new Date(trackPicked).toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })}</b> · ${picked.cards} cards · ${picked.total} min${picked.pct != null ? ` · ${picked.pct}% of the route` : ""}${Object.entries(picked.mins).filter(([, m]) => m >= 1).map(([lang, m]) => ` · ${flagChip(lang)}${Math.round(m)} min`).join("")}</div>` : "";
+  let pickedText = "";
+  if (picked) {
+    const log = picked.log || {};
+    const left = Object.entries(log.lessons || {}).filter(([, x]) => x.leftFresh + x.leftDue > 0).map(([id, x]) => `${x.leftDue + x.leftFresh} in ${escapeHtml((library.find(l => l.id === id) || {}).name || "a lesson")}`).concat((log.actsList || []).filter(a => !a.done).map(a => `${SKILLS[a.skill][1]} ${a.mins} min`));
+    pickedText = `<div class="cal-picked"><b>${keyDate(trackPicked).toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })}</b> · ${picked.cards} cards · ${picked.total}${picked.plan ? ` of ${picked.plan}` : ""} min${picked.pct != null ? ` · ${picked.pct}%` : ""}${Object.entries(picked.mins).filter(([, m]) => m >= 1).map(([lang, m]) => ` · ${flagChip(lang)}${Math.round(m)} min`).join("")}${left.length ? `<br><span class="why-late">Left undone: ${left.join(", ")}</span>` : ""}</div>`;
+  }
   const week = [];
   const monday = new Date;
   monday.setHours(0, 0, 0, 0);
@@ -18113,16 +18329,25 @@ function todayTrackHtml() {
     if (d <= now && d.getTime() >= todayPlan.start) week.push(dayStudy(localDayKey(d.getTime())));
   }
   const done = week.reduce((a, d) => a + d.total, 0), cards = week.reduce((a, d) => a + d.cards, 0);
-  const plan = (todayPlan.minutes || 0) * week.length;
+  const plan = week.reduce((a, d) => a + (d.plan || todayPlan.minutes || 0), 0);
   const onTrack = week.filter(d => d.pct != null && d.pct >= 80 || todayPlan.minutes && d.total >= todayPlan.minutes).length;
   const byLang = {};
   week.forEach(d => Object.entries(d.mins).forEach(([lang, m]) => byLang[lang] = (byLang[lang] || 0) + m));
   const maxLang = Math.max(1, ...Object.values(byLang));
   // Ahead or behind counts the days already over (today is still going), plus anything today already did beyond its share.
-  const todayDone = week.length ? week[week.length - 1].total : 0;
-  const diff = done - todayDone - (todayPlan.minutes || 0) * (week.length - 1) + Math.max(0, todayDone - (todayPlan.minutes || 0));
+  const last = week.length ? week[week.length - 1] : null, todayDone = last ? last.total : 0, todayPlanned = last ? last.plan || todayPlan.minutes || 0 : 0;
+  const diff = done - todayDone - (plan - todayPlanned) + Math.max(0, todayDone - todayPlanned);
+  // The week's seven days side by side: each a bar filled by how much of its plan was done, today outlined, the days to
+  // come empty, a day with part of its plan undone marked red.
+  const strip = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(monday);
+    d.setDate(d.getDate() + i);
+    const key = localDayKey(d.getTime()), st = d <= now ? dayStudy(key) : null;
+    const debt = st && key !== localDayKey(Date.now()) && st.missed > 0;
+    return `<div class="wk-day${key === localDayKey(Date.now()) ? " today" : ""}${debt ? " debt" : ""}" title="${st ? `${st.total}${st.plan ? ` of ${st.plan}` : ""} min` : "To come"}"><i style="height:${st && st.pct != null ? st.pct : 0}%"></i><b>${d.toLocaleDateString(undefined, { weekday: "narrow" })}</b></div>`;
+  }).join("");
   const status = !plan || week.length < 2 && diff <= 0 ? "" : diff >= 0 ? `<span class="track-ahead">Ahead by ${diff} min</span>` : `<span class="track-behind">Behind by ${-diff} min</span>`;
-  return '<div class="track-cal"><div class="track-head"><button class="track-nav" data-month="-1" aria-label="Earlier month">‹</button>' + `<b>${first.toLocaleDateString(undefined, { month: "long", year: "numeric" })}</b>` + `<button class="track-nav" data-month="1" aria-label="Later month"${trackMonth >= 0 ? " disabled" : ""}>›</button></div>` + `<div class="cal-grid">${[ "M", "T", "W", "T", "F", "S", "S" ].map(d => `<span class="cal-dow">${d}</span>`).join("")}${cells}</div>${pickedText}</div>` + `<div class="track-week"><div class="track-head"><b>This week</b>${status}</div>` + `<div class="track-stats"><span><b>${done}</b> of ${plan} min</span><span><b>${cards}</b> cards</span><span><b>${onTrack}</b> of ${week.length} days on track</span></div>` + (plan ? `<div class="track-bar"><i style="width:${Math.min(100, Math.round(done / plan * 100))}%"></i></div>` : "") + `<div class="track-langs">${Object.entries(byLang).filter(([lang, m]) => LANG_NAMES[lang] && m >= 1).sort((a, b) => b[1] - a[1]).map(([lang, m]) => `<div class="track-lang">${flagChip(lang)}<span>${LANG_NAMES[lang]}</span><i style="width:${Math.round(m / maxLang * 100)}%"></i><b>${Math.round(m)} min</b></div>`).join("") || '<p class="today-empty">Nothing studied yet this week.</p>'}</div></div>`;
+  return '<div class="track-cal"><div class="track-head"><button class="track-nav" data-month="-1" aria-label="Earlier month">‹</button>' + `<b>${first.toLocaleDateString(undefined, { month: "long", year: "numeric" })}</b>` + `<button class="track-nav" data-month="1" aria-label="Later month"${trackMonth >= 0 ? " disabled" : ""}>›</button></div>` + `<div class="cal-grid">${[ "M", "T", "W", "T", "F", "S", "S" ].map(d => `<span class="cal-dow">${d}</span>`).join("")}${cells}</div>${pickedText}</div>` + `<div class="track-week"><div class="track-head"><b>This week</b>${status}</div>` + `<div class="wk-strip">${strip}</div>` + `<div class="track-stats"><span><b>${done}</b> of ${plan} min</span><span><b>${cards}</b> cards</span><span><b>${onTrack}</b> of ${week.length} days on track</span></div>` + (plan ? `<div class="track-bar"><i style="width:${Math.min(100, Math.round(done / plan * 100))}%"></i></div>` : "") + `<div class="track-langs">${Object.entries(byLang).filter(([lang, m]) => LANG_NAMES[lang] && m >= 1).sort((a, b) => b[1] - a[1]).map(([lang, m]) => `<div class="track-lang">${flagChip(lang)}<span>${LANG_NAMES[lang]}</span><i style="width:${Math.round(m / maxLang * 100)}%"></i><b>${Math.round(m)} min</b></div>`).join("") || '<p class="today-empty">Nothing studied yet this week.</p>'}</div></div>`;
 }
 
 function todayLangOf(lessonId, cache) {
@@ -18172,26 +18397,67 @@ function todayTaskName(t) {
   return t.own && t.own.text ? t.own.text : name;
 }
 
+// A day of the log by its key (2026-10-30), at local midnight, and its short weekday name.
+function keyDate(k) {
+  const [y, m, d] = String(k).split("-").map(Number);
+  return new Date(y, (m || 1) - 1, d || 1);
+}
+
+function weekdayOf(k) {
+  return k ? keyDate(k).toLocaleDateString(undefined, { weekday: "short" }) : "";
+}
+
+// Why a task is on today's plan, in small coloured words: what is made up from an earlier day, overdue and due
+// reviews, and the new cards it was given.
+function taskWhyHtml(t) {
+  const p = t.plan, why = [], from = todayPlan.route && todayPlan.route.carryFrom;
+  if (p.carry) why.push(`<span class="why-make">Make-up: ${p.carry} new from ${escapeHtml(weekdayOf(from))}</span>`);
+  if (p.overdue) why.push(`<span class="why-late">${p.overdue} overdue</span>`);
+  if (p.due - p.overdue) why.push(`<span class="today-due">${p.due - p.overdue} due</span>`);
+  if (p.share) why.push(`<span class="today-new">${p.share} new</span>`);
+  return why.length ? `<div class="today-why">${why.join("")}</div>` : "";
+}
+
+function taskBarHtml(did, of, note) {
+  const pct = of ? Math.min(100, Math.round(did / of * 100)) : 0;
+  return `<div class="task-progress"><i style="width:${pct}%"></i></div><div class="task-progress-note">${note}</div>`;
+}
+
 function todayActHtml(t, i) {
   const [icon, name, hint] = SKILLS[t.act.skill];
   const mins = todayPlan.mins[t.key] || t.act.mins;
-  return `<div class="today-task act${t.done ? " done" : ""}" data-i="${i}"><button class="today-check" aria-label="${t.done ? "Done" : "Mark done"}">${t.done ? "✓" : ""}</button><div class="today-body"><div class="today-title">${icon} ${name} ${flagChip(t.act.lang)}${escapeHtml(LANG_NAMES[t.act.lang] || "")}</div><div class="today-sub"><span>${escapeHtml(hint)}</span><label class="act-mins"><input type="text" inputmode="numeric" maxlength="3" value="${mins}" data-mins="${escapeAttr(t.key)}" aria-label="Minutes"> min</label></div></div><button class="today-x" aria-label="Leave out today" title="Leave out today">✕</button></div>`;
+  const make = t.act.carry ? `<div class="today-why"><span class="why-make">Make-up from ${escapeHtml(weekdayOf(t.act.from))}</span></div>` : "";
+  return `<div class="today-task act${t.done ? " done" : ""}" data-i="${i}"><button class="today-check" aria-label="${t.done ? "Done" : "Mark done"}">${t.done ? "✓" : ""}</button><div class="today-body"><div class="today-title">${icon} ${name} ${flagChip(t.act.lang)}${escapeHtml(LANG_NAMES[t.act.lang] || "")}</div>${make}<div class="today-sub"><span>${escapeHtml(hint)}</span><label class="act-mins"><input type="text" inputmode="numeric" maxlength="3" value="${mins}" data-mins="${escapeAttr(t.key)}" aria-label="Minutes"> min</label></div></div><button class="today-x" aria-label="Leave out today" title="Leave out today">✕</button></div>`;
 }
 
 function todayTaskHtml(t, i) {
   if (t.act) return todayActHtml(t, i);
   const name = t.lesson ? t.lesson.name || "Untitled lesson" : "";
-  const sub = [];
-  if (t.own && t.own.text && name) sub.push(`<span>${escapeHtml(name)}</span>`);
-  if (t.cap != null && !t.done) sub.push(`<span><b>${t.cap}</b> of ${t.of} today</span>`); else {
+  let body = "";
+  if (t.plan) {
+    const left = Math.round(taskMinutes(t));
+    body = taskWhyHtml(t) + taskBarHtml(t.did, t.planned, t.done ? `All ${t.planned} done` : `<b>${t.did}</b> of ${t.planned} done · about ${Math.max(1, left)} min left`);
+    if (!t.done) {
+      // What is left of the plan: its reviews first, then its new cards.
+      const items = [], c = t.left.cards, v = t.left.vocab;
+      let due = t.remDue, fresh = t.remFresh;
+      c.dueItems.concat([]).forEach(x => due-- > 0 && items.push([ x, "c" ]));
+      v.dueItems.forEach(x => due-- > 0 && items.push([ x, "v" ]));
+      c.freshItems.forEach(x => fresh-- > 0 && items.push([ x, "c" ]));
+      v.freshItems.forEach(x => fresh-- > 0 && items.push([ x, "v" ]));
+      if (items.length) body += todayItemsHtml(items);
+    }
+  } else {
+    const sub = [];
+    if (t.own && t.own.text && name) sub.push(`<span>${escapeHtml(name)}</span>`);
     if (t.left && t.left.fresh) sub.push(`<span class="today-new">${t.left.fresh} new</span>`);
     if (t.left && t.left.due) sub.push(`<span class="today-due">${t.left.due} due</span>`);
+    const mins = Math.round(taskMinutes(t));
+    if (!t.done && mins) sub.push(`<span>about ${mins} min</span>`);
+    body = (sub.length ? `<div class="today-sub">${sub.join("")}</div>` : "") + (!t.done && t.left && t.left.items.length ? todayItemsHtml(t.left.items) : "");
   }
-  const mins = Math.round(taskMinutes(t));
-  if (!t.done && mins) sub.push(`<span>about ${mins} min</span>`);
-  if (t.recent && !t.done) sub.push("<span>Opened lately</span>");
   const x = t.own ? "Delete this task" : "Leave out today";
-  return `<div class="today-task${t.done ? " done" : ""}" data-i="${i}"><button class="today-check" aria-label="${t.done ? "Done" : "Mark done"}">${t.done ? "✓" : ""}</button><div class="today-body"><div class="today-title">${escapeHtml(todayTaskName(t))}</div>${sub.length ? `<div class="today-sub">${sub.join("")}</div>` : ""}${!t.done && t.left && t.left.items.length ? todayItemsHtml(t.cap != null ? t.left.items.slice(0, t.cap) : t.left.items) : ""}</div><button class="today-x" aria-label="${x}" title="${x}">✕</button></div>`;
+  return `<div class="today-task${t.done ? " done" : ""}" data-i="${i}"><button class="today-check" aria-label="${t.done ? "Done" : "Mark done"}">${t.done ? "✓" : ""}</button><div class="today-body"><div class="today-title">${escapeHtml(todayTaskName(t))}</div>${body}</div><button class="today-x" aria-label="${x}" title="${x}">✕</button></div>`;
 }
 
 let todayExtraOpen = false;
@@ -18285,20 +18551,54 @@ function paintTodayArt() {
   root.style.setProperty("--art", `url("${paintScene(scene, Number(day.replace(/-/g, "")))}")`);
 }
 
+// The plan at a glance: what yesterday left, what today holds and why, and what is coming tomorrow and over the week.
+function todayFlowHtml(tasks) {
+  const plan = todayPlan.route;
+  if (!plan || !plan.budget) return '<p class="today-empty">Set the minutes you study a day (in the ring above) and the app plans each day for you.</p>';
+  // Yesterday: the last day with a plan before today.
+  const prevKey = Object.keys(todayPlan.log).filter(k => k !== todayPlan.day && keyDate(k) < keyDate(todayPlan.day)).sort((a, b) => keyDate(b) - keyDate(a))[0];
+  let yHtml = '<p class="flow-note">No plan yet on an earlier day.</p>';
+  if (prevKey) {
+    const st = dayStudy(prevKey), log = st.log || {};
+    const leftFresh = Object.entries(log.lessons || {}).filter(([, x]) => x.leftFresh > 0);
+    const leftActs = (log.actsList || []).filter(a => !a.done);
+    const lines = leftFresh.map(([id, x]) => `${x.leftFresh} new in ${escapeHtml((library.find(l => l.id === id) || {}).name || "a lesson")}`).concat(leftActs.map(a => `${SKILLS[a.skill][0]} ${SKILLS[a.skill][1]} ${a.mins} min`));
+    yHtml = `<div class="flow-big"><b>${st.total}</b> of ${st.plan || "—"} min${st.pct != null ? ` · ${st.pct}%` : ""}</div>` + (lines.length ? `<p class="flow-note">Left: ${lines.slice(0, 4).join(", ")}${lines.length > 4 ? "…" : ""}. ${plan.carryFrom === prevKey ? "Carried to today." : ""}</p>` : '<p class="flow-note">All of it done ✓</p>');
+  }
+  // Today: the plan's parts and why it holds as many new cards as it does.
+  const actMins = plan.acts.reduce((m, a) => m + a.mins, 0), carryActs = plan.acts.filter(a => a.carry).reduce((m, a) => m + a.mins, 0);
+  const parts = [];
+  if (plan.debt) parts.push(`<span class="why-make">Make-up ${plan.debt} min</span>`);
+  if (plan.reviewN - plan.overdueN) parts.push(`<span class="today-due">Reviews ${plan.reviewN - plan.overdueN} · ${Math.round((plan.reviewN - plan.overdueN) * MIN_DUE)} min</span>`);
+  if (plan.newN) parts.push(`<span class="today-new">New ${plan.newN} · ${Math.round(plan.newN * MIN_NEW)} min</span>`);
+  if (actMins - carryActs) parts.push(`<span>Outside the app ${actMins - carryActs} min</span>`);
+  const why = plan.heavy ? `No new cards today: catching up on ${plan.debt} min of make-up first.` : plan.newN ? `${plan.newN} new cards: the reviews already coming over the next 7 days take about ${plan.aheadMins} min a day of the ${plan.appRoom} min for the app.` : plan.reviewN * MIN_DUE >= plan.appRoom ? "No new cards today: the reviews due take all the time for the app." : "No new cards waiting in your lessons.";
+  const doneMins = dayStudy(todayPlan.day).total, total = planMinutes(plan);
+  const tHtml = `<div class="flow-big"><b>${doneMins}</b> of ${total} min</div><div class="task-progress"><i style="width:${total ? Math.min(100, Math.round(doneMins / total * 100)) : 0}%"></i></div><div class="today-why">${parts.join("")}</div><p class="flow-note">${why}</p>`;
+  // Tomorrow and the week: the reviews that will fall due, day by day.
+  const fc = dueForecast(8), maxF = Math.max(1, ...fc.slice(1));
+  const left = Math.round(routeTasks(tasks).reduce((m, t) => m + (t.done ? 0 : t.act ? todayPlan.mins[t.key] || t.act.mins : taskMinutes(t)), 0));
+  const mHtml = `<div class="flow-big"><b>${fc[1]}</b> reviews · ${Math.round(fc[1] * MIN_DUE)} min</div><p class="flow-note">${left ? `Plus what is left today (about ${left} min), as make-up.` : "Nothing left over from today so far."}</p>`;
+  const bars = fc.slice(1).map((n, k) => {
+    const d = new Date(todayStart() + (k + 1) * 864e5 + 36e5);
+    return `<div class="fc-day" title="${n} reviews · ${Math.round(n * MIN_DUE)} min"><span>${n}</span><i style="height:${Math.round(n / maxF * 100)}%"></i><b>${d.toLocaleDateString(undefined, { weekday: "narrow" })}</b></div>`;
+  }).join("");
+  return `<div class="flow-col"><div class="flow-label">Yesterday${prevKey ? " · " + escapeHtml(weekdayOf(prevKey)) : ""}</div>${yHtml}</div>` + `<div class="flow-col now"><div class="flow-label">Today</div>${tHtml}</div>` + `<div class="flow-col"><div class="flow-label">Tomorrow</div>${mHtml}</div>` + `<div class="flow-fc"><div class="flow-label">Reviews due, next 7 days</div><div class="fc-bars">${bars}</div></div>`;
+}
+
 function renderToday() {
   paintTodayArt();
   const tasks = todayShown = todayTasks();
   logToday(tasks);
   document.getElementById("todayTrack").innerHTML = todayTrackHtml();
   document.getElementById("todayGoal").innerHTML = todayGoalHtml(tasks);
+  document.getElementById("todayFlow").innerHTML = todayFlowHtml(tasks);
   const route = todayPlan.route;
-  const acts = route ? route.acts : [];
-  const actMins = acts.reduce((m, a) => m + a.mins, 0);
-  // The languages take turns day by day: the next one is named too, so a flag switched on or off shows at once.
-  const langs = planLangs();
+  // The languages take turns day by day: today's and tomorrow's are named, so a flag switched on or off shows at once.
+  const langs = planLangs(), lang = route && route.acts.length ? route.acts[route.acts.length - 1].lang : "";
   const next = langs.length > 1 ? langs[(dayIndexOf(Date.now()) + 1) % langs.length] : "";
-  const parts = route ? [ `about ${route.app} in the app` ].concat(acts.length ? [ `${actMins} outside it, in ${flagChip(acts[0].lang)}${escapeHtml(LANG_NAMES[acts[0].lang] || "")}` + (next ? ` (tomorrow ${flagChip(next)}${escapeHtml(LANG_NAMES[next])})` : "") ] : []) : [];
-  const head = route ? `<div class="route-head"><b>Today's route</b><span>${todayPlan.minutes} min · ${parts.join(", ")}</span></div>` : "";
+  const turn = lang ? ` · outside the app in ${flagChip(lang)}${escapeHtml(LANG_NAMES[lang] || "")}${next ? ` (tomorrow ${flagChip(next)}${escapeHtml(LANG_NAMES[next])})` : ""}` : "";
+  const head = route && route.budget ? `<div class="route-head"><b>Today's plan</b><span>${planMinutes(route)} min · ${routeTasks(tasks).filter(t => !t.own).length} steps, in the order to do them${turn}</span></div>` : "";
   const extra = tasks.filter(t => t.extra);
   const main = tasks.length - extra.length;
   const label = `${extra.length} more lesson${extra.length === 1 ? "" : "s"} if you have time`;
@@ -18358,29 +18658,31 @@ async function openTodayTask(t) {
     key: t.key,
     lessonId: t.lesson.id,
     title: todayTaskName(t),
-    cap: t.cap
+    remDue: t.plan ? t.remDue : null,
+    remFresh: t.plan ? t.remFresh : null
   };
   document.documentElement.classList.add("in-task");
   await startTaskSide();
 }
 
-// A task's cards and words, mixed: they take turns in proportion to how many of each there are (New first, in
-// order, within the daily limits, as picked for today), one at a time, with no break or end screen between the two.
-function taskQueue(l) {
-  const c = leftToday(l, "cards").ids, v = leftToday(l, "vocab").ids;
+// A task's cards and words, mixed: they take turns in proportion to how many of each there are, one at a time, with
+// no break or end screen between the two. A task on the plan holds just what the plan gave it: its reviews first
+// (overdue ones first of all), then its share of new cards; other tasks hold all the lesson has for today.
+function taskQueue(l, run) {
+  const lc = leftToday(l, "cards"), lv = leftToday(l, "vocab");
+  if (run && run.remDue != null) {
+    const mix = (c, v) => interleave(c.map(id => ({ k: "c", id: id, tries: 0 })), v.map(id => ({ k: "v", id: id, tries: 0 })));
+    return mix(lc.dueIds, lv.dueIds).slice(0, run.remDue).concat(mix(lc.freshIds, lv.freshIds).slice(0, run.remFresh));
+  }
+  return interleave(lc.ids.map(id => ({ k: "c", id: id, tries: 0 })), lv.ids.map(id => ({ k: "v", id: id, tries: 0 })));
+}
+
+function interleave(c, v) {
   const out = [];
   let i = 0, j = 0;
   while (i < c.length || j < v.length) {
     const takeCard = j >= v.length || i < c.length && (i + 1) / c.length <= (j + 1) / v.length;
-    out.push(takeCard ? {
-      k: "c",
-      id: c[i++],
-      tries: 0
-    } : {
-      k: "v",
-      id: v[j++],
-      tries: 0
-    });
+    out.push(takeCard ? c[i++] : v[j++]);
   }
   return out;
 }
@@ -18389,8 +18691,7 @@ async function startTaskSide() {
   const run = taskRun;
   const l = run && library.find(x => x.id === run.lessonId);
   if (!l) return endTask();
-  run.queue = taskQueue(l);
-  if (run.cap != null) run.queue = run.queue.slice(0, run.cap);
+  run.queue = taskQueue(l, run);
   run.current = null;
   if (!run.queue.length) {
     todayPlan.done[run.key] = true;
