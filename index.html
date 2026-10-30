@@ -3245,6 +3245,8 @@ function destroyYtPlayer() {
   updateSequenceBtnUI();
 }
 
+let ytApiReloadAt = Date.now();
+
 function createYtPlayer(videoId) {
   ytHasError = false;
   ytWarm = false;
@@ -3254,6 +3256,8 @@ function createYtPlayer(videoId) {
   }
   if (!window.__ytApiReady || !ytPlayer || !ytReady) {
     pendingVideoId = videoId;
+    if (!window.__ytApiReady && (window.YT && window.YT.Player)) window.onYouTubeIframeAPIReady();
+    kickYtApi();
     setMediaState("loading");
     whenYtApiReady(ensurePlayer);
     updateSequenceBtnUI();
@@ -3325,6 +3329,21 @@ const retriedVideos = new Set;
 let retryPlay = null;
 
 let autoPlayFor = null;
+
+function kickYtApi() {
+  if (window.__ytApiReady || Date.now() - ytApiReloadAt < 1e4) return;
+  ytApiReloadAt = Date.now();
+  const api = document.createElement("script");
+  api.src = "https://www.youtube.com/iframe_api";
+  document.head.appendChild(api);
+}
+
+function wakeVideo(play) {
+  if (!extractYouTubeId(document.getElementById("mediaUrl").value.trim())) return false;
+  retryVideo(play);
+  fairyWait();
+  return true;
+}
 
 function retryVideo(play) {
   const id = extractYouTubeId(document.getElementById("mediaUrl").value.trim());
@@ -4358,7 +4377,9 @@ function startLoop(row) {
   if (row.time == null) return;
   if (ytHasError) return;
   if (!ytPlayer || !ytReady || !ytHasVideo || typeof ytPlayer.seekTo !== "function") {
-    if (ytHasVideo) fairyWait(); else showToast("Add a YouTube video first");
+    if (ytHasVideo && ytReady && !ytCueing || !wakeVideo(true)) {
+      if (ytHasVideo) fairyWait(); else showToast("Add a YouTube video first");
+    }
     return;
   }
   const wasSequencePlaying = !groupState && (loopingRowData ? loopingRowData.wasSequencePlaying : isSequencePlaying);
@@ -5492,7 +5513,9 @@ function toggleSequenceLoop() {
     return;
   }
   if (!ytPlayer || !ytReady || !ytHasVideo) {
-    if (ytHasVideo) fairyWait(); else showToast("Add a YouTube video first");
+    if (ytHasVideo && ytReady && !ytCueing || !wakeVideo(true)) {
+      if (ytHasVideo) fairyWait(); else showToast("Add a YouTube video first");
+    }
     return;
   }
   const currentRow = isCardMode() ? getCurrentSingleCardRow() : null;
@@ -9663,7 +9686,13 @@ function mixShow(row, style) {
   mixStyle = style;
   const url = vocabVideoUrlFor(row);
   const input = document.getElementById("mediaUrl");
-  if (style !== "ielts" && input.value.trim() !== url) {
+  if (style !== "ielts" && url && input.value.trim() === url && !ytHasVideo && !pendingVideoId) {
+    mixAwaitCue = true;
+    mixCueSince = Date.now();
+    clearTimeout(mixCueTimer);
+    mixCueTimer = setTimeout(mixCueDone, 1500);
+    createYtPlayer(extractYouTubeId(url));
+  } else if (style !== "ielts" && input.value.trim() !== url) {
     mixAwaitCue = false;
     clearTimeout(mixCueTimer);
     input.value = url;
@@ -12824,7 +12853,7 @@ function fairyWait() {
   fairyWaiting = fairyFly({
     kind: "circle",
     box: box,
-    until: () => ytReady || !ytHasVideo || ytHasError || Date.now() - since > 10000,
+    until: () => ytReady && !pendingVideoId || !ytHasVideo && !pendingVideoId || ytHasError || Date.now() - since > 10000,
     onDone: () => fairyWaiting = null
   });
 }
