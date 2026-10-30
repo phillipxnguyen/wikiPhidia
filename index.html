@@ -16723,8 +16723,9 @@ function renderVocab() {
     const more = heldMore(due, limitVocab(due), vocabStateOf);
     const held = more.total;
     const text = finishText(held, studiedToday(vocabSource(), true), next, "card", items.map(vocabStateOf));
+    // In a task the word just studied stays where it is until the next card or word takes its place: never an empty
+    // frame between them.
     if (taskRun) {
-      stage.innerHTML = "";
       taskSideDone();
       return;
     }
@@ -18797,7 +18798,8 @@ async function taskAdvance() {
     setAppMode("cards");
     if (currentLessonId !== LESSON_ALL_ID) await openAllLessons(taskOnly(run));
     if (taskRun !== run) return;
-    showView("study");
+    // Staying in the same view, the next card simply comes up, as in a lesson: nothing is rebuilt around it.
+    if (currentView !== "study") showView("study");
     const row = rows.find(r => r.uid === pick.id);
     const pair = row && mixCandidates(true).find(([r]) => r === row);
     run.opening = false;
@@ -18813,7 +18815,7 @@ async function taskAdvance() {
     vocabSession.flipped = false;
     vocabView = "card";
     run.opening = false;
-    showView("vocab");
+    if (currentView !== "vocab") showView("vocab"); else renderVocab();
     if (!currentVocabItem()) return taskAdvance();
   }
   renderTaskBar();
@@ -18827,7 +18829,10 @@ function paintTaskBadges() {
   const l = library.find(x => x.id === run.lessonId);
   if (!l) return;
   const items = lessonVocabItems(lessonCardsWithExtras(l));
-  let fresh = 0, due = 0;
+  let fresh = 0, due = 0, curFresh = false;
+  const stateOf = pick => pick.k === "c" ? (c => c && srsOf(c))(l.cards.find(x => x.uid === pick.id)) : (it => it && vocabStateOf(it))(items.find(i => i.key === pick.id));
+  // As in a lesson, only the count of what is being studied now (New or Due) is lit.
+  if (run.current) curFresh = !(stateOf(run.current) || {}).reps;
   (run.current ? [ run.current ] : []).concat(run.queue).forEach(pick => {
     const st = pick.k === "c" ? (c => c && srsOf(c))(l.cards.find(x => x.uid === pick.id)) : (it => it && vocabStateOf(it))(items.find(i => i.key === pick.id));
     if (!st) return;
@@ -18839,7 +18844,7 @@ function paintTaskBadges() {
     const n = el.classList.contains("new") ? fresh : el.classList.contains("due") ? due : null;
     if (n === null) return;
     if (b.textContent !== String(n)) b.textContent = n;
-    el.classList.toggle("active", n > 0);
+    el.classList.toggle("active", el.classList.contains(curFresh ? "new" : "due") && n > 0);
   });
 }
 
