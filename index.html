@@ -1501,7 +1501,7 @@ window.onYouTubeIframeAPIReady = function(){
      the writing sits in the middle of the paper the rings leave free. The list's one-sided sheets do the same. */
   .ielts-paper.dot-paper{--page-x:24px;padding:calc(24px + var(--page-x)) var(--page-x) var(--page-x);}
   .ielts-paper.dot-paper.with-notes .paper-body{grid-template-columns:minmax(0, 1fr);}
-  .ielts-paper.dot-paper .paper-notes{min-width:0;margin-top:24px;padding:16px 0 0;border-left:0;border-top:1px solid var(--paper-rule);}
+  .ielts-paper.dot-paper .paper-notes{min-width:0;margin-top:24px;padding:0;border-left:0;}
   .ielts-paper.dot-paper{min-height:0;background-image:var(--dot-paper);background-size:var(--line) var(--line);background-position:calc(var(--line) / 2) calc(var(--line) / 2);}
   .ielts-paper .cell.paper-text{width:fit-content;max-width:100%;box-sizing:border-box;margin:0 auto;font-size:20px;line-height:25px;font-weight:700;text-align:left;overflow-wrap:anywhere;white-space:pre-line;color:var(--paper-ink);}
   .ielts-paper.dot-paper .paper-extras:empty{display:none;}
@@ -1522,7 +1522,8 @@ window.onYouTubeIframeAPIReady = function(){
   .ielts-paper .paper-question .cell{color:var(--accent);}
   .paper-num{flex:none;}
   .ielts-paper .cell{padding:0;font-size:inherit;color:inherit;text-align:left;border-radius:0;}
-  .paper-label{margin-bottom:6px;font-size:16px;line-height:24px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--paper-ink-2);}
+  /* Notes on the paper are headed by the same paper clip as the Notes box, in the paper's black ink, tilted the same way. */
+  .paper-label{display:block;width:16px;height:38px;margin:-6px 0 4px 2px;background:var(--paper-ink);-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 48' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M7 14v22a3 3 0 0 0 6 0V8a5 5 0 0 0-10 0v31a7 7 0 0 0 14 0V14'/%3E%3C/svg%3E") center / contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 48' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M7 14v22a3 3 0 0 0 6 0V8a5 5 0 0 0-10 0v31a7 7 0 0 0 14 0V14'/%3E%3C/svg%3E") center / contain no-repeat;transform:rotate(-14deg);}
   .ielts-paper .paper-lines, .ielts-paper .paper-prompt, .ielts-paper .cell.shown.paper-lines:hover, .ielts-paper .cell.hidden.paper-prompt:hover{font-size:20px;line-height:var(--line);background-image:linear-gradient(to bottom, transparent calc(var(--line) - 1px), var(--paper-rule) calc(var(--line) - 1px));background-size:100% var(--line);}
   .ielts-paper .paper-prompt{min-height:calc(var(--line) * 5);color:var(--paper-ink-2);font-style:normal;}
   .ielts-paper .paper-lines{user-select:text;cursor:pointer;}
@@ -1979,7 +1980,7 @@ window.onYouTubeIframeAPIReady = function(){
   @media (max-width:600px){
     :is(.rich-editor, #editQ, #editA, .vocab-editor textarea, #editNotes, #vocabEditNotes, #qaNotes), #cardTable.full-list:not(.notebook) .cell, .vocab-list-row[data-key] > *, #cardTable.notebook .cell[data-field="q"], .paper-question{font-size:18px;line-height:25px;}
     #cardTable.full-list .card-notes, #cardTable.notebook .card-notes, .vocab-list-meaning .card-notes{font-size:16px;line-height:22px;}
-    .paper-notes, .paper-label{font-size:15px;line-height:22px;}
+    .paper-notes{font-size:15px;line-height:22px;}
     #cardTable.notebook, .ielts-paper{--line:32px;}
     .ielts-paper .cell.paper-text{font-size:18px;}
     #cardTable.notebook .cell[data-field="a"], .ielts-paper .paper-lines, .ielts-paper .paper-prompt, .ielts-paper .cell.shown.paper-lines:hover, .ielts-paper .cell.hidden.paper-prompt:hover{font-size:18px;}
@@ -6413,7 +6414,7 @@ function ieltsPaperHtml(row, ahead = 0) {
   const words = row.aHidden ? [] : cardWords(row);
   const hints = row.aHidden && ieltsHintId === row.id ? ieltsHints(row) : [];
   const answer = row.aHidden ? hints.length ? '<div class="cell hidden paper-prompt paper-hint" data-field="a"><ol>' + hints.map(m => `<li>${escapeHtml(m)}</li>`).join("") + "</ol></div>" : '<div class="cell hidden paper-prompt" data-field="a">···</div>' : `<div class="cell shown paper-lines" data-field="a">${aCellContent(row)}</div>`;
-  const notes = words.length ? '<aside class="paper-notes"><div class="paper-label">Notes</div><ol>' + words.map(i => `<li><b>${escapeHtml(i.term)}</b>${i.meaning ? " — " + escapeHtml(i.meaning) : ""}</li>`).join("") + "</ol></aside>" : "";
+  const notes = words.length ? '<aside class="paper-notes"><div class="paper-label" role="img" aria-label="Notes"></div><ol>' + words.map(i => `<li><b>${escapeHtml(i.term)}</b>${i.meaning ? " — " + escapeHtml(i.meaning) : ""}</li>`).join("") + "</ol></aside>" : "";
   const extras = row.aHidden ? "" : '<div class="paper-extras"><div class="paper-stroke"></div><div class="paper-dict" hidden></div></div>';
   // A one-sided card is a sheet of dot paper just as tall as its text with its Notes under it; a card with an answer is ruled paper with its question over the answer lines and its Notes beside
   // them. Neither has a heading, a timer, a lesson name or a count: only what is studied.
