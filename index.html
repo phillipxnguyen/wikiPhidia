@@ -16455,7 +16455,39 @@ function fillVocabCard(el, item) {
   main.dataset.html = html;
   main.innerHTML = html;
   fitReadings(main);
+  fitHighlights(main);
 }
+
+// The yellow highlight hugs the word's own letters, whatever their language: each script sits at its own height in its
+// font (Latin, Hangul, Chinese characters…), so the highlight is measured on the letters themselves and runs from a
+// little above their tops to a little below their bottoms, cut off above and below that.
+const HIGHLIGHT_SEL = ".vocab-ctx mark:not(.vocab-hit, .vocab-own), .vocab-list-meaning .card-notes mark";
+
+let highlightCanvas = null;
+
+function fitHighlights(root) {
+  requestAnimationFrame(() => (root || document).querySelectorAll(HIGHLIGHT_SEL).forEach(mark => {
+    if (!mark.isConnected || mark.querySelector(".rd")) return;
+    const cs = getComputedStyle(mark), size = parseFloat(cs.fontSize);
+    const g = (highlightCanvas = highlightCanvas || document.createElement("canvas")).getContext("2d");
+    g.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+    const m = g.measureText(mark.textContent || "");
+    if (!isFinite(m.actualBoundingBoxAscent)) return;
+    // Where the baseline falls in the highlight's box: a zero-size probe sitting on it.
+    const probe = document.createElement("span");
+    probe.style.cssText = "display:inline-block;width:0;height:0;vertical-align:baseline";
+    mark.prepend(probe);
+    const base = probe.getBoundingClientRect().top, box = mark.getClientRects()[0];
+    probe.remove();
+    if (!box) return;
+    const pad = size * .1, h = box.height;
+    const top = Math.max(0, Math.round(base - box.top - m.actualBoundingBoxAscent - pad));
+    const bottom = Math.min(Math.round(h), Math.round(base - box.top + m.actualBoundingBoxDescent + pad));
+    mark.style.background = `linear-gradient(transparent ${top}px, var(--word-mark) ${top}px, var(--word-mark) ${bottom}px, transparent ${bottom}px)`;
+  }));
+}
+
+document.fonts && document.fonts.ready.then(() => fitHighlights());
 
 const VOCAB_CARD_GAP = 40;
 
@@ -16646,6 +16678,7 @@ function renderVocab() {
   })}</div>` : "";
   const open = !studyOnly && (vocabView === "list" || caughtUp) || !!vocabEditingKey && (vocabEditingInList || vocabEditingKey === NEW_WORD_KEY);
   list.hidden = items.length ? !open : vocabEditingKey !== NEW_WORD_KEY;
+  queueMicrotask(() => fitHighlights(list));
   list.innerHTML = adder + (list.hidden ? "" : shown.map(item => `<div class="vocab-list-row" data-key="${escapeAttr(item.key)}"><span class="vocab-list-term">${escapeHtml(item.term)}</span><span class="vocab-list-meaning">${wordNotesOf(item) ? `<span>${escapeHtml(item.meaning)}</span><div class="card-notes">${wordNotesView(item)}</div>` : escapeHtml(item.meaning)}</span><span class="vocab-list-status">${vocabStatusIcon(vocabStateOf(item))}</span></div>`).join("") + (more ? `<button id="vocabMore" class="vocab-more ghost">Show ${more} more</button>` : ""));
   watchVocabMore();
   if (emptyLesson) {
