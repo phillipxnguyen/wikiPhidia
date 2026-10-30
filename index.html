@@ -17996,7 +17996,13 @@ function todayTasks() {
   const plan = buildPlan();
   const counts = todayCounts();
   const list = [];
-  library.filter(l => !isVirtualId(l.id)).forEach(l => {
+  // The steps in the order to do them: lessons with make-up or overdue reviews, then those with reviews due, then
+  // those with new cards only; the activities after them.
+  const rank = l => {
+    const p = plan.lessons[l.id];
+    return !p || p.extra ? 9 : p.carry || p.overdue ? 0 : p.due ? 1 : 2;
+  };
+  library.filter(l => !isVirtualId(l.id)).sort((a, b) => rank(a) - rank(b)).forEach(l => {
     const key = "l:" + l.id;
     const p = plan.lessons[l.id];
     const left = leftBoth(l);
@@ -18134,11 +18140,13 @@ function dueForecast(n) {
   return out;
 }
 
+const NEW_LESSONS_A_DAY = 3;
+
 function buildPlan() {
   const langs = planLangs(), B = todayPlan.minutes || 0;
   const sig = B + ":" + langs.join(",");
   const old = todayPlan.route;
-  if (old && old.v === 2 && old.sig === sig && old.day === todayPlan.day) return old;
+  if (old && old.v === 3 && old.sig === sig && old.day === todayPlan.day) return old;
   const carry = todayPlan.carry && todayPlan.carry.day === todayPlan.day ? todayPlan.carry : {
     fresh: {},
     acts: []
@@ -18147,7 +18155,13 @@ function buildPlan() {
   const counts = todayCounts();
   const lessons = {};
   let reviewN = 0, overdueN = 0, carryN = 0;
-  library.filter(l => !isVirtualId(l.id)).forEach(l => {
+  // Only the lessons in the languages you learn (the lit flags) go on the plan; the others wait behind the lock.
+  const cache = new Map;
+  const inLangs = l => {
+    const lang = todayLangOf(l.id, cache);
+    return !langs.length || !lang || langs.some(x => x.split("-")[0] === lang.split("-")[0]);
+  };
+  library.filter(l => !isVirtualId(l.id) && inLangs(l)).forEach(l => {
     const left = leftBoth(l);
     const cf = Math.min(left.fresh, carry.fresh[l.id] || 0);
     if (!left.due && !left.fresh) return;
@@ -18196,21 +18210,22 @@ function buildPlan() {
   const pressure = appRoom ? Math.max(0, Math.min(1, 1 - aheadMins / appRoom)) : 0;
   const room = Math.max(0, appRoom - reviewN * MIN_DUE - carryN * MIN_NEW);
   const want = heavy ? 0 : Math.floor(room * pressure / MIN_NEW);
-  // New cards shared out in turn between the lessons that have some, one at a time.
-  const ids = Object.keys(lessons);
+  // New cards go to a few lessons at a time, so each gets finished rather than all of them crawling: the lessons you
+  // have already started come first (the one studied last first), then the ones not started yet (the oldest first);
+  // each takes as many new cards as it has for today before the next one gets any, three lessons a day at most.
+  const last = {};
+  reviewLog.forEach(e => last[e.lessonId] = Math.max(last[e.lessonId] || 0, e.ts));
+  const byId = new Map(library.map(l => [ l.id, l ]));
+  const started = id => !!last[id] || byId.get(id).cards.some(c => srsOf(c).reps);
+  const ranked = Object.keys(lessons).filter(id => lessons[id].avail - lessons[id].carry > 0).sort((a, b) => started(b) - started(a) || (last[b] || 0) - (last[a] || 0) || (byId.get(a).createdAt || 0) - (byId.get(b).createdAt || 0));
   let given = 0;
-  for (let round = 0; given < want; round++) {
-    let any = false;
-    for (const id of ids) {
-      const x = lessons[id];
-      if (given < want && x.avail - x.carry - x.share > 0) {
-        x.share++;
-        given++;
-        any = true;
-      }
+  ranked.slice(0, NEW_LESSONS_A_DAY).forEach(id => {
+    const x = lessons[id], n = Math.min(x.avail - x.carry, want - given);
+    if (n > 0) {
+      x.share = n;
+      given += n;
     }
-    if (!any) break;
-  }
+  });
   Object.values(lessons).forEach(x => {
     x.fresh = x.carry + x.share;
     if (!x.due && !x.fresh) x.extra = true;
@@ -18228,7 +18243,7 @@ function buildPlan() {
     mins: mins
   }));
   todayPlan.route = {
-    v: 2,
+    v: 3,
     sig: sig,
     day: todayPlan.day,
     budget: B,
@@ -18607,11 +18622,13 @@ function todayFlowHtml(tasks) {
   // Today: the plan's parts and why it holds as many new cards as it does.
   const actMins = plan.acts.reduce((m, a) => m + a.mins, 0), carryActs = plan.acts.filter(a => a.carry).reduce((m, a) => m + a.mins, 0);
   const parts = [];
-  if (plan.debt) parts.push(`<span class="why-make">Make-up ${plan.debt} min</span>`);
+  const overdueMins = Math.round(plan.overdueN * MIN_DUE), carriedMins = plan.debt - overdueMins;
+  if (plan.overdueN) parts.push(`<span class="why-late">Overdue ${plan.overdueN} · ${overdueMins} min</span>`);
+  if (carriedMins > 0) parts.push(`<span class="why-make">Carried from ${escapeHtml(weekdayOf(plan.carryFrom))} ${carriedMins} min</span>`);
   if (plan.reviewN - plan.overdueN) parts.push(`<span class="today-due">Reviews ${plan.reviewN - plan.overdueN} · ${Math.round((plan.reviewN - plan.overdueN) * MIN_DUE)} min</span>`);
   if (plan.newN) parts.push(`<span class="today-new">New ${plan.newN} · ${Math.round(plan.newN * MIN_NEW)} min</span>`);
   if (actMins - carryActs) parts.push(`<span>Outside the app ${actMins - carryActs} min</span>`);
-  const why = plan.heavy ? `No new cards today: catching up on ${plan.debt} min of make-up first.` : plan.newN ? `${plan.newN} new cards: the reviews already coming over the next 7 days take about ${plan.aheadMins} min a day of the ${plan.appRoom} min for the app.` : plan.reviewN * MIN_DUE >= plan.appRoom ? "No new cards today: the reviews due take all the time for the app." : "No new cards waiting in your lessons.";
+  const why = plan.heavy ? `No new cards today: ${plan.overdueN ? `${plan.overdueN} overdue reviews` : ""}${plan.overdueN && carriedMins > 0 ? " and " : ""}${carriedMins > 0 ? "what was carried" : ""} (${plan.debt} min) come first.` : plan.newN ? `${plan.newN} new cards: the reviews already coming over the next 7 days take about ${plan.aheadMins} min a day of the ${plan.appRoom} min for the app.` : plan.reviewN * MIN_DUE >= plan.appRoom ? "No new cards today: the reviews due take all the time for the app." : "No new cards waiting in your lessons.";
   const doneMins = dayStudy(todayPlan.day).total, total = planMinutes(plan);
   const tHtml = `<div class="flow-big"><b>${doneMins}</b> of ${total} min</div><div class="task-progress"><i style="width:${total ? Math.min(100, Math.round(doneMins / total * 100)) : 0}%"></i></div><div class="today-why">${parts.join("")}</div><p class="flow-note">${why}</p>`;
   // Tomorrow and the week: the reviews that will fall due, day by day.
