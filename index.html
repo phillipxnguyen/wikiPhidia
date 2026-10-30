@@ -910,6 +910,8 @@ window.onYouTubeIframeAPIReady = function(){
   /* Room around the writing: 24 px above and below, 48 px left and right (40 px on a phone), the same on the Speaking
      paper and on every sheet of the list; a ringed sheet is never shorter than two rings need. */
   #cardTable.notebook, .ielts-paper{--page-x:48px;--page-y:24px;}
+  #cardTable.notebook.no-answer-col{--page-x:32px;}
+  #cardTable.notebook:not(.no-answer-col) tbody tr{padding-right:32px;}
   @media (max-width:600px){#cardTable.notebook, .ielts-paper{--page-x:40px;}}
   .ielts-paper{min-height:104px;box-sizing:border-box;}
   /* Cards follow each other with nothing between them but room: 12 px above and below each, so 24 px from one to the
@@ -1192,6 +1194,7 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-list-meaning .card-notes{margin-top:4px;}
   #cardTable.notebook .card-notes{padding:6px 4px 0;font-size:18px;line-height:25px;}
   #cardTable.notebook tbody tr.one-sided .card-notes{padding-top:12px;}
+  #cardTable.notebook tbody tr.one-sided .card-notes > :not(ul):not(ol){padding-left:0;}
   @media (prefers-reduced-motion: reduce){.listen-cover i, .listen-slot .media-video{animation:none !important;}}
   .single-card-q{background:var(--q-bg);}
   .single-card-a{background:var(--a-bg);}
@@ -1516,7 +1519,7 @@ window.onYouTubeIframeAPIReady = function(){
   /* A one-sided sheet keeps the same room (24 px) on all four sides of its writing, the top one counted from the
      bottom of the rings' holes (24 px into the sheet), never from the paper's edge, so nothing ever touches a ring and
      the writing sits in the middle of the paper the rings leave free. The list's one-sided sheets do the same. */
-  .ielts-paper.dot-paper{--page-x:24px;padding:calc(24px + var(--page-x)) var(--page-x) var(--page-x);}
+  .ielts-paper.dot-paper{--page-x:32px;padding:48px var(--page-x) 24px;}
   .ielts-paper.dot-paper.with-notes .paper-body{grid-template-columns:minmax(0, 1fr);}
   .ielts-paper.dot-paper .paper-notes{min-width:0;margin-top:24px;padding:0;border:0;}
   /* The text and its Notes share one left edge, the whole block in the middle of the sheet. */
@@ -1531,7 +1534,7 @@ window.onYouTubeIframeAPIReady = function(){
      with a question and its answer (the Speaking paper, the notebook page) is bound on its left. Each ring, white with a dark
      outline, runs from outside the sheet into a dark hole punched near its edge. */
   .ielts-paper.dot-paper::before, .ielts-paper:not(.dot-paper)::before, #cardTable.notebook tbody::before{content:"";position:absolute;z-index:1;pointer-events:none;}
-  .ielts-paper.dot-paper{margin-top:8px;}
+  .ielts-paper.dot-paper{margin-top:0;}
   .ielts-paper.dot-paper::before, #cardTable.notebook.no-answer-col tbody::before{top:-8px;bottom:auto;width:auto;left:24px;right:24px;height:32px;border:0;background:var(--ring-top) 0 0 / 36px 32px, radial-gradient(circle at 18px 26px, #1f2633 6px, transparent 6px) 0 0 / 36px 32px;background-repeat:space no-repeat;}
   .ielts-paper:not(.dot-paper)::before, #cardTable.notebook:not(.no-answer-col) tbody::before{top:16px;bottom:16px;left:-8px;width:32px;border:0;background:var(--ring-left) 0 0 / 32px 36px, radial-gradient(circle at 26px 18px, #1f2633 6px, transparent 6px) 0 0 / 32px 36px;background-repeat:no-repeat space;}
   .ielts-paper .cell.hidden.paper-hint, .ielts-paper .cell.hidden.paper-hint:hover{font-style:normal;color:var(--paper-ink);}
@@ -1544,11 +1547,9 @@ window.onYouTubeIframeAPIReady = function(){
   .paper-num{flex:none;}
   .ielts-paper .cell{padding:0;font-size:inherit;color:inherit;text-align:left;border-radius:0;}
   /* Notes on the paper start with the same paper clip as the Notes box, in the paper's black ink, tilted the same way,
-     standing on their first line like its first word, the lines below starting under the line's text. */
-  .paper-notes{display:flex;align-items:flex-start;gap:10px;}
-  .paper-notes > .paper-label + *{flex:1;min-width:0;}
+     taking the start of their first line as in the Notes box, the lines below running under it to the left edge. */
   .paper-notes .card-notes{padding:0;font-size:inherit;line-height:inherit;}
-  .paper-label{flex:none;display:block;width:12px;height:25px;margin-top:-4px;background:var(--paper-ink);-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 48' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M7 14v22a3 3 0 0 0 6 0V8a5 5 0 0 0-10 0v31a7 7 0 0 0 14 0V14'/%3E%3C/svg%3E") center / contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 48' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M7 14v22a3 3 0 0 0 6 0V8a5 5 0 0 0-10 0v31a7 7 0 0 0 14 0V14'/%3E%3C/svg%3E") center / contain no-repeat;transform:rotate(-14deg);}
+  .paper-label{display:inline-block;width:12px;height:22px;margin-right:8px;vertical-align:-4px;background:var(--paper-ink);-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 48' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M7 14v22a3 3 0 0 0 6 0V8a5 5 0 0 0-10 0v31a7 7 0 0 0 14 0V14'/%3E%3C/svg%3E") center / contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 48' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M7 14v22a3 3 0 0 0 6 0V8a5 5 0 0 0-10 0v31a7 7 0 0 0 14 0V14'/%3E%3C/svg%3E") center / contain no-repeat;transform:rotate(-14deg);}
   .ielts-paper .paper-lines, .ielts-paper .paper-prompt, .ielts-paper .cell.shown.paper-lines:hover, .ielts-paper .cell.hidden.paper-prompt:hover{font-size:20px;line-height:var(--line);background-image:linear-gradient(to bottom, transparent calc(var(--line) - 1px), var(--paper-rule) calc(var(--line) - 1px));background-size:100% var(--line);}
   .ielts-paper .paper-prompt{min-height:calc(var(--line) * 5);color:var(--paper-ink-2);font-style:normal;}
   .ielts-paper .paper-lines{user-select:text;cursor:pointer;}
@@ -1557,7 +1558,9 @@ window.onYouTubeIframeAPIReady = function(){
   .ielts-paper.with-notes .paper-body{grid-template-columns:minmax(0, 1fr) fit-content(44%);}
   .paper-notes{min-width:180px;padding-left:20px;border-left:2px solid var(--paper-rule);font-size:18px;line-height:25px;}
   .paper-notes li + li{margin-top:6px;}
-  .paper-notes li{padding-left:24px;}
+  .paper-notes li{padding-left:0;}
+  .paper-notes li::before{content:none;}
+  .paper-notes .pn{display:inline-block;min-width:24px;}
   .paper-extras{display:flex;flex-direction:column;}
   .paper-extras > *{margin-top:24px;}
   .paper-stroke .stroke-order-row{justify-content:flex-start;}
@@ -6448,14 +6451,31 @@ function ieltsHints(row) {
   }).sort((x, y) => x.at - y.at).map(h => h.meaning);
 }
 
+// The paper clip that heads the Notes stands at the start of their first line, like its first word (as in the Notes box).
+function clipFirstLine(html) {
+  const box = document.createElement("div");
+  box.innerHTML = html;
+  const first = document.createTreeWalker(box, NodeFilter.SHOW_TEXT, {
+    acceptNode: n => n.nodeValue.trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP
+  }).nextNode();
+  const clip = document.createElement("span");
+  clip.className = "paper-label";
+  clip.setAttribute("role", "img");
+  clip.setAttribute("aria-label", "Notes");
+  let at = first;
+  while (at && at.parentNode !== box && /^(SPAN|B|STRONG|I|EM|U|MARK|A)$/.test(at.parentNode.nodeName)) at = at.parentNode;
+  if (at) at.parentNode.insertBefore(clip, at); else box.prepend(clip);
+  return box.innerHTML;
+}
+
 function ieltsPaperHtml(row, ahead = 0) {
   const words = row.aHidden ? [] : cardWords(row);
   const hints = row.aHidden && ieltsHintId === row.id ? ieltsHints(row) : [];
   const answer = row.aHidden ? hints.length ? '<div class="cell hidden paper-prompt paper-hint" data-field="a"><ol>' + hints.map(m => `<li>${escapeHtml(m)}</li>`).join("") + "</ol></div>" : '<div class="cell hidden paper-prompt" data-field="a">···</div>' : `<div class="cell shown paper-lines" data-field="a">${aCellContent(row)}</div>`;
   // The words the card holds, numbered; a card holding none shows its own notes as they were written.
   const own = row.aHidden || words.length ? "" : cardNotesHtml(row);
-  const clip = '<aside class="paper-notes"><div class="paper-label" role="img" aria-label="Notes"></div>';
-  const notes = words.length ? clip + '<ol>' + words.map(i => `<li><b>${escapeHtml(i.term)}</b>${i.meaning ? " — " + escapeHtml(i.meaning) : ""}</li>`).join("") + "</ol></aside>" : own ? clip + own + "</aside>" : "";
+  const list = words.length ? "<ol>" + words.map((i, n) => `<li><span class="pn">${n + 1}.</span><b>${escapeHtml(i.term)}</b>${i.meaning ? " — " + escapeHtml(i.meaning) : ""}</li>`).join("") + "</ol>" : own;
+  const notes = list ? `<aside class="paper-notes">${clipFirstLine(list)}</aside>` : "";
   const extras = row.aHidden ? "" : '<div class="paper-extras"><div class="paper-stroke"></div><div class="paper-dict" hidden></div></div>';
   // A one-sided card is a sheet of dot paper just as tall as its text with its Notes under it; a card with an answer is ruled paper with its question over the answer lines and its Notes beside
   // them. Neither has a heading, a timer, a lesson name or a count: only what is studied.
