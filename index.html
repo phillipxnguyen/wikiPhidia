@@ -1746,6 +1746,44 @@ window.onYouTubeIframeAPIReady = function(){
   .hero-ring-in input:focus{border-color:#fff;box-shadow:none;outline:none;}
   .hero-ring-in span{font-size:12px;line-height:16px;color:rgba(255,255,255,.85);}
   @media (max-width:600px){.today-goal{flex-direction:column-reverse;align-items:stretch;padding:20px;gap:16px;}.hero-ring{align-self:center;}.today-goal .today-goal-text{font-size:20px;line-height:28px;}}
+  .route-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;padding:4px 8px 12px 12px;border-bottom:1px solid var(--paper-rule);font-size:13px;line-height:20px;color:var(--text-2);}
+  .route-head b{font-size:16px;line-height:22px;color:var(--text);}
+  .flag-dot{display:inline-block;width:20px;height:15px;margin:0 4px 0 2px;border-radius:2px;vertical-align:-2px;background:var(--flag) center / cover no-repeat;}
+  .hero-langs{display:flex;gap:6px;margin-top:2px;}
+  .hero-lang{display:flex;align-items:center;justify-content:center;width:36px;height:28px;padding:0;border:0;border-radius:14px;background:rgba(255,255,255,.12);opacity:.45;}
+  .hero-lang.on{background:rgba(255,255,255,.3);opacity:1;}
+  .hero-lang .flag-dot{margin:0;}
+  @media (hover:hover){.hero-lang:hover{opacity:1;background:rgba(255,255,255,.22);}}
+  .today-task.act .today-title{color:var(--text);}
+  .act-mins{display:inline-flex;align-items:center;gap:4px;font-weight:600;color:var(--text);}
+  .act-mins input{box-sizing:border-box;width:44px;height:24px;padding:0 4px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font:inherit;font-size:13px;line-height:20px;text-align:center;}
+  /* Tracking: a month of days coloured by how much of their route was done, and the week against the plan. */
+  .today-track{display:grid;grid-template-columns:minmax(0, 1fr) minmax(0, 1fr);gap:24px;margin-top:16px;}
+  @media (max-width:820px){.today-track{grid-template-columns:minmax(0, 1fr);}}
+  .track-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;font-size:15px;line-height:20px;}
+  .track-nav{width:32px;height:32px;padding:0;border:0;border-radius:16px;background:var(--surface-2);color:var(--text);font-size:18px;line-height:20px;}
+  .track-nav:disabled{opacity:.35;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7, minmax(0, 1fr));gap:4px;}
+  .cal-dow{text-align:center;font-size:12px;line-height:16px;font-weight:700;color:var(--text-2);}
+  .cal-day{--p:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;height:44px;padding:0;border:0;border-radius:10px;background:color-mix(in srgb, #ff6a1a calc(var(--p) * .8%), var(--surface-2));color:var(--text);font-size:13px;line-height:16px;}
+  .cal-day b{font-weight:700;}
+  .cal-day span{font-size:10px;line-height:12px;color:var(--text-2);}
+  .cal-day.blank{background:none;}
+  .cal-day.future{opacity:.4;}
+  .cal-day.today{box-shadow:inset 0 0 0 2px #e8243c;}
+  .cal-day.picked{box-shadow:inset 0 0 0 2px var(--text);}
+  .cal-picked{margin-top:12px;font-size:13px;line-height:20px;color:var(--text-2);}
+  .cal-picked b{color:var(--text);}
+  .track-stats{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:14px;line-height:20px;color:var(--text-2);}
+  .track-stats b{color:var(--text);font-variant-numeric:tabular-nums;}
+  .track-bar{height:8px;margin:10px 0 14px;border-radius:4px;background:var(--surface-2);overflow:hidden;}
+  .track-bar i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg, #ff8a00, #e8243c);}
+  .track-ahead{font-size:13px;font-weight:700;color:var(--new-color);}
+  .track-behind{font-size:13px;font-weight:700;color:var(--danger);}
+  .track-langs{display:flex;flex-direction:column;gap:8px;}
+  .track-lang{display:grid;grid-template-columns:auto 84px minmax(0, 1fr) auto;align-items:center;gap:8px;font-size:13px;line-height:20px;}
+  .track-lang i{height:8px;border-radius:4px;background:linear-gradient(90deg, #ff8a00, #e8243c);}
+  .track-lang b{font-variant-numeric:tabular-nums;}
   .today-items{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
   .today-item{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:2px 10px;border-radius:12px;background:color-mix(in srgb, var(--lesson-color) 12%, transparent);color:var(--lesson-color);font-size:13px;line-height:20px;font-weight:600;}
   .today-item.vocab{background:color-mix(in srgb, var(--new-color) 14%, transparent);color:var(--new-color);}
@@ -2114,6 +2152,7 @@ window.onYouTubeIframeAPIReady = function(){
       <button class="primary" type="submit">Add</button>
     </form>
   </div>
+  <div id="todayTrack" class="panel today-track"></div>
 </section>
 
 <section id="viewStats" hidden>
@@ -17596,6 +17635,11 @@ const TODAY_GOAL = "Fluent in 4 languages in a year";
 let todayPlan = Object.assign({
   goal: TODAY_GOAL,
   perDay: 100,
+  minutes: 60,
+  langs: [],
+  route: null,
+  mins: {},
+  log: {},
   start: 0,
   tasks: [],
   day: "",
@@ -17627,7 +17671,9 @@ function todayRoll() {
     day: d,
     done: {},
     seen: [],
-    skipped: []
+    skipped: [],
+    route: null,
+    mins: {}
   });
   saveToday();
 }
@@ -17704,6 +17750,7 @@ function todayTasks() {
       done: studiedLessonToday(id) || !!todayPlan.done[key]
     });
   });
+  todayRoute(list).forEach(a => list.push(a));
   todayPlan.tasks.forEach(t => {
     const key = "m:" + t.id;
     const l = t.lessonId ? real.find(x => x.id === t.lessonId) : null;
@@ -17718,6 +17765,169 @@ function todayTasks() {
   });
   saveToday();
   return list.filter(t => !todayPlan.skipped.includes(t.key)).sort((a, b) => a.done - b.done);
+}
+
+// The day's route: the time you set a day is shared out between studying in the app (the lessons' cards and words,
+// about half a minute for a new one and a quarter for a review) and things to do outside it, in the languages you
+// learn, one language a day in turn: listening and speaking one day, reading and writing the next. Worked out once a
+// day (again only when the minutes or the languages change) so it stays put while you study.
+const LANG_NAMES = {
+  en: "English",
+  "zh-CN": "Chinese",
+  "zh-TW": "Chinese",
+  ja: "Japanese",
+  ko: "Korean",
+  vi: "Vietnamese"
+};
+
+const SKILLS = {
+  listen: [ "🎧", "Listen", "a podcast, a YouTube video or a film" ],
+  read: [ "📖", "Read", "an article or a few pages of a book" ],
+  speak: [ "🗣️", "Speak", "shadow a clip out loud or talk with someone" ],
+  write: [ "✍️", "Write", "a short journal entry or a few sentences" ]
+};
+
+const MIN_NEW = .5, MIN_DUE = .25;
+
+function libraryLangs() {
+  const cache = new Map, count = new Map;
+  library.filter(l => !isVirtualId(l.id)).forEach(l => {
+    const lang = todayLangOf(l.id, cache);
+    if (LANG_NAMES[lang]) count.set(lang, (count.get(lang) || 0) + l.cards.length + 1);
+  });
+  return [ ...count ].sort((a, b) => b[1] - a[1]).map(([lang]) => lang).slice(0, 4);
+}
+
+function planLangs() {
+  const set = (todayPlan.langs || []).filter(l => LANG_NAMES[l]);
+  return set.length ? set : libraryLangs();
+}
+
+function dayIndexOf(ts) {
+  return Math.max(0, Math.round((new Date(ts).setHours(0, 0, 0, 0) - todayPlan.start) / 864e5));
+}
+
+function round5(n) {
+  return Math.max(5, Math.round(n / 5) * 5);
+}
+
+function todayRoute(lessonTasks) {
+  const langs = planLangs();
+  const budget = todayPlan.minutes || 0;
+  if (!budget || !langs.length) return [];
+  const sig = budget + ":" + langs.join(",");
+  if (!todayPlan.route || todayPlan.route.sig !== sig) {
+    const app = lessonTasks.reduce((m, t) => m + (t.left ? t.left.fresh * MIN_NEW + t.left.due * MIN_DUE : 0), 0);
+    const rest = Math.max(10, Math.round(budget - Math.min(app, budget * .7)));
+    const day = dayIndexOf(Date.now());
+    const lang = langs[day % langs.length];
+    const pair = day % 2 ? [ "read", "write" ] : [ "listen", "speak" ];
+    const first = round5(rest * .6);
+    todayPlan.route = {
+      sig: sig,
+      app: Math.round(app),
+      acts: [ [ pair[0], first ], [ pair[1], round5(rest - first) ] ].map(([skill, mins]) => ({
+        skill: skill,
+        lang: lang,
+        mins: mins
+      }))
+    };
+  }
+  return todayPlan.route.acts.map(a => {
+    const key = "a:" + a.skill;
+    return {
+      key: key,
+      act: a,
+      done: !!todayPlan.done[key]
+    };
+  });
+}
+
+function flagChip(lang) {
+  const cc = LANG_COUNTRY[lang];
+  return cc ? `<i class="flag-dot" style='--flag:${flagUrl(cc)}'></i>` : "";
+}
+
+// Minutes studied on a day: the cards and words answered (as the route counts them) and the activities ticked.
+function dayStudy(dayKey) {
+  const cache = new Map, mins = {};
+  let cards = 0;
+  reviewLog.forEach(e => {
+    if (localDayKey(e.ts) !== dayKey) return;
+    cards++;
+    const lang = e.word ? langCode(e.word) : todayLangOf(e.lessonId, cache);
+    mins[lang] = (mins[lang] || 0) + (e.fresh ? MIN_NEW : MIN_DUE);
+  });
+  const log = todayPlan.log[dayKey];
+  if (log && log.acts) Object.entries(log.acts).forEach(([lang, m]) => mins[lang] = (mins[lang] || 0) + m);
+  const total = Object.values(mins).reduce((a, b) => a + b, 0);
+  return {
+    cards: cards,
+    mins: mins,
+    total: Math.round(total),
+    pct: log && log.total ? Math.round(log.done / log.total * 100) : null
+  };
+}
+
+// Today's snapshot for the calendar: how much of the route is done, and the activities' minutes by language.
+function logToday(tasks) {
+  const acts = {};
+  tasks.forEach(t => {
+    if (t.act && t.done) acts[t.act.lang] = (acts[t.act.lang] || 0) + (todayPlan.mins[t.key] || t.act.mins);
+  });
+  todayPlan.log[localDayKey(Date.now())] = {
+    total: tasks.length,
+    done: tasks.filter(t => t.done).length,
+    acts: acts,
+    plan: todayPlan.minutes || 0
+  };
+  const keys = Object.keys(todayPlan.log);
+  if (keys.length > 400) keys.sort((a, b) => new Date(a) - new Date(b)).slice(0, keys.length - 400).forEach(k => delete todayPlan.log[k]);
+  saveToday();
+}
+
+let trackMonth = 0, trackPicked = null;
+
+// Below the tasks: a month of days, each coloured by how much of its route was done, and the week so far against
+// the plan, with the minutes in each language.
+function todayTrackHtml() {
+  const now = new Date;
+  const first = new Date(now.getFullYear(), now.getMonth() + trackMonth, 1);
+  const days = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
+  const lead = (first.getDay() + 6) % 7;
+  const todayKey = localDayKey(Date.now());
+  let cells = "";
+  for (let i = 0; i < lead; i++) cells += '<span class="cal-day blank"></span>';
+  for (let d = 1; d <= days; d++) {
+    const date = new Date(first.getFullYear(), first.getMonth(), d);
+    const key = localDayKey(date.getTime());
+    const st = dayStudy(key);
+    const future = date > now && key !== todayKey;
+    const pct = st.pct != null ? st.pct : st.cards ? 30 : 0;
+    cells += `<button class="cal-day${future ? " future" : ""}${key === todayKey ? " today" : ""}${key === trackPicked ? " picked" : ""}" data-day="${key}" style="--p:${pct}"${future ? " disabled" : ""}><b>${d}</b>${st.total ? `<span>${st.total}′</span>` : ""}</button>`;
+  }
+  const picked = trackPicked ? dayStudy(trackPicked) : null;
+  const pickedText = picked ? `<div class="cal-picked"><b>${new Date(trackPicked).toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })}</b> · ${picked.cards} cards · ${picked.total} min${picked.pct != null ? ` · ${picked.pct}% of the route` : ""}${Object.entries(picked.mins).filter(([, m]) => m >= 1).map(([lang, m]) => ` · ${flagChip(lang)}${Math.round(m)} min`).join("")}</div>` : "";
+  const week = [];
+  const monday = new Date;
+  monday.setHours(0, 0, 0, 0);
+  monday.setDate(monday.getDate() - (monday.getDay() + 6) % 7);
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(d.getDate() + i);
+    if (d <= now && d.getTime() >= todayPlan.start) week.push(dayStudy(localDayKey(d.getTime())));
+  }
+  const done = week.reduce((a, d) => a + d.total, 0), cards = week.reduce((a, d) => a + d.cards, 0);
+  const plan = (todayPlan.minutes || 0) * week.length;
+  const onTrack = week.filter(d => d.pct != null && d.pct >= 80 || todayPlan.minutes && d.total >= todayPlan.minutes).length;
+  const byLang = {};
+  week.forEach(d => Object.entries(d.mins).forEach(([lang, m]) => byLang[lang] = (byLang[lang] || 0) + m));
+  const maxLang = Math.max(1, ...Object.values(byLang));
+  // Ahead or behind counts the days already over (today is still going), plus anything today already did beyond its share.
+  const todayDone = week.length ? week[week.length - 1].total : 0;
+  const diff = done - todayDone - (todayPlan.minutes || 0) * (week.length - 1) + Math.max(0, todayDone - (todayPlan.minutes || 0));
+  const status = !plan || week.length < 2 && diff <= 0 ? "" : diff >= 0 ? `<span class="track-ahead">Ahead by ${diff} min</span>` : `<span class="track-behind">Behind by ${-diff} min</span>`;
+  return '<div class="track-cal"><div class="track-head"><button class="track-nav" data-month="-1" aria-label="Earlier month">‹</button>' + `<b>${first.toLocaleDateString(undefined, { month: "long", year: "numeric" })}</b>` + `<button class="track-nav" data-month="1" aria-label="Later month"${trackMonth >= 0 ? " disabled" : ""}>›</button></div>` + `<div class="cal-grid">${[ "M", "T", "W", "T", "F", "S", "S" ].map(d => `<span class="cal-dow">${d}</span>`).join("")}${cells}</div>${pickedText}</div>` + `<div class="track-week"><div class="track-head"><b>This week</b>${status}</div>` + `<div class="track-stats"><span><b>${done}</b> of ${plan} min</span><span><b>${cards}</b> cards</span><span><b>${onTrack}</b> of ${week.length} days on track</span></div>` + (plan ? `<div class="track-bar"><i style="width:${Math.min(100, Math.round(done / plan * 100))}%"></i></div>` : "") + `<div class="track-langs">${Object.entries(byLang).filter(([lang, m]) => LANG_NAMES[lang] && m >= 1).sort((a, b) => b[1] - a[1]).map(([lang, m]) => `<div class="track-lang">${flagChip(lang)}<span>${LANG_NAMES[lang]}</span><i style="width:${Math.round(m / maxLang * 100)}%"></i><b>${Math.round(m)} min</b></div>`).join("") || '<p class="today-empty">Nothing studied yet this week.</p>'}</div></div>`;
 }
 
 function todayLangOf(lessonId, cache) {
@@ -17741,12 +17951,15 @@ function todayGoalHtml(tasks) {
     if (cc) langs.set(cc, (langs.get(cc) || 0) + 1);
   });
   const day = Math.max(1, Math.round((start - todayPlan.start) / 864e5) + 1);
-  const target = todayPlan.perDay || 0;
-  const pct = target ? Math.min(100, Math.round(studied.length / target * 100)) : 0;
+  const target = todayPlan.minutes || 0;
+  const minsDone = dayStudy(localDayKey(Date.now())).total;
+  const pct = target ? Math.min(100, Math.round(minsDone / target * 100)) : 0;
+  const planned = planLangs();
+  const langRow = `<div class="hero-langs">${[ "en", "zh-CN", "ja", "ko", "vi" ].map(l => `<button class="hero-lang${planned.includes(l) ? " on" : ""}" data-lang="${l}" title="${LANG_NAMES[l]}" aria-pressed="${planned.includes(l)}">${flagChip(l)}</button>`).join("")}</div>`;
   const done = tasks.filter(t => t.done).length;
   const streak = streakInfo().current;
-  const chips = [ `<span class="hero-chip">✓ <b>${done}</b>/${tasks.length} tasks</span>`, `<span class="hero-chip">🔥 <b>${streak}</b> day${streak === 1 ? "" : "s"}</span>` ].concat([ ...langs ].sort((a, b) => b[1] - a[1]).map(([cc, n]) => `<span class="hero-chip"><i style='--flag:${flagUrl(cc)}'></i><b>${n}</b></span>`));
-  return '<div class="hero-main">' + `<input id="todayGoalText" class="today-goal-text" type="text" value="${escapeAttr(todayPlan.goal)}" placeholder="${escapeAttr(TODAY_GOAL)}" aria-label="Your goal">` + `<div class="hero-day"><b>Day ${Math.min(day, 999)}</b> of 365</div><div class="hero-year"><i style="width:${Math.min(100, Math.round(day / 365 * 100))}%"></i></div>` + `<div class="hero-chips">${chips.join("")}</div></div>` + `<div class="hero-ring${target && studied.length >= target ? " full" : ""}" style="--p:${pct}"><div class="hero-ring-in"><b>${studied.length}</b><label>of <input id="todayPerDay" type="text" maxlength="4" inputmode="numeric" pattern="[0-9]*" value="${target || ""}" placeholder="—" aria-label="Cards a day"></label><span>cards today</span></div></div>`;
+  const chips = [ `<span class="hero-chip">✓ <b>${done}</b>/${tasks.length} tasks</span>`, `<span class="hero-chip">🃏 <b>${studied.length}</b> cards</span>`, `<span class="hero-chip">🔥 <b>${streak}</b> day${streak === 1 ? "" : "s"}</span>` ].concat([ ...langs ].sort((a, b) => b[1] - a[1]).map(([cc, n]) => `<span class="hero-chip"><i style='--flag:${flagUrl(cc)}'></i><b>${n}</b></span>`));
+  return '<div class="hero-main">' + `<input id="todayGoalText" class="today-goal-text" type="text" value="${escapeAttr(todayPlan.goal)}" placeholder="${escapeAttr(TODAY_GOAL)}" aria-label="Your goal">` + `<div class="hero-day"><b>Day ${Math.min(day, 999)}</b> of 365</div><div class="hero-year"><i style="width:${Math.min(100, Math.round(day / 365 * 100))}%"></i></div>` + `<div class="hero-chips">${chips.join("")}</div>${langRow}</div>` + `<div class="hero-ring${target && minsDone >= target ? " full" : ""}" style="--p:${pct}"><div class="hero-ring-in"><b>${minsDone}</b><label>of <input id="todayPerDay" type="text" maxlength="3" inputmode="numeric" pattern="[0-9]*" value="${target || ""}" placeholder="—" aria-label="Minutes a day"></label><span>min today</span></div></div>`;
 }
 
 // What a task holds for today, one chip each: a lesson's card in its blue, a word in Vocabulary's green.
@@ -17765,11 +17978,19 @@ function todayItemsHtml(items) {
 }
 
 function todayTaskName(t) {
+  if (t.act) return SKILLS[t.act.skill][0] + " " + SKILLS[t.act.skill][1] + " · " + (LANG_NAMES[t.act.lang] || "");
   const name = t.lesson ? t.lesson.name || "Untitled lesson" : "";
   return t.own && t.own.text ? t.own.text : name;
 }
 
+function todayActHtml(t, i) {
+  const [icon, name, hint] = SKILLS[t.act.skill];
+  const mins = todayPlan.mins[t.key] || t.act.mins;
+  return `<div class="today-task act${t.done ? " done" : ""}" data-i="${i}"><button class="today-check" aria-label="${t.done ? "Done" : "Mark done"}">${t.done ? "✓" : ""}</button><div class="today-body"><div class="today-title">${icon} ${name} ${flagChip(t.act.lang)}${escapeHtml(LANG_NAMES[t.act.lang] || "")}</div><div class="today-sub"><span>${escapeHtml(hint)}</span><label class="act-mins"><input type="text" inputmode="numeric" maxlength="3" value="${mins}" data-mins="${escapeAttr(t.key)}" aria-label="Minutes"> min</label></div></div><button class="today-x" aria-label="Leave out today" title="Leave out today">✕</button></div>`;
+}
+
 function todayTaskHtml(t, i) {
+  if (t.act) return todayActHtml(t, i);
   const name = t.lesson ? t.lesson.name || "Untitled lesson" : "";
   const sub = [];
   if (t.own && t.own.text && name) sub.push(`<span>${escapeHtml(name)}</span>`);
@@ -17782,8 +18003,13 @@ function todayTaskHtml(t, i) {
 
 function renderToday() {
   const tasks = todayShown = todayTasks();
+  logToday(tasks);
+  document.getElementById("todayTrack").innerHTML = todayTrackHtml();
   document.getElementById("todayGoal").innerHTML = todayGoalHtml(tasks);
-  document.getElementById("todayTasks").innerHTML = (tasks.length ? "" : '<p class="today-empty">Nothing waiting today. Add a task of your own below.</p>') + tasks.map(todayTaskHtml).join("");
+  const route = todayPlan.route;
+  const actMins = route ? route.acts.reduce((m, a) => m + a.mins, 0) : 0;
+  const head = route ? `<div class="route-head"><b>Today's route</b><span>${todayPlan.minutes} min · about ${route.app} in the app, ${actMins} for ${flagChip(route.acts[0].lang)}${escapeHtml(LANG_NAMES[route.acts[0].lang] || "")} outside it</span></div>` : "";
+  document.getElementById("todayTasks").innerHTML = head + (tasks.length ? "" : '<p class="today-empty">Nothing waiting today. Add a task of your own below.</p>') + tasks.map(todayTaskHtml).join("");
   const pick = document.getElementById("todayAddLesson");
   const was = pick.value;
   pick.innerHTML = '<option value="">No lesson</option>' + sortedLibrary().filter(l => !isVirtualId(l.id)).map(l => `<option value="${escapeAttr(l.id)}">${escapeHtml(l.name || "Untitled lesson")}</option>`).join("");
@@ -18009,7 +18235,16 @@ document.getElementById("lessonList").addEventListener("keydown", e => {
   }
 });
 
+document.getElementById("todayTasks").addEventListener("change", e => {
+  const key = e.target.dataset.mins;
+  if (!key) return;
+  todayPlan.mins[key] = Math.max(0, Math.min(999, Math.floor(Number(e.target.value) || 0)));
+  saveToday();
+  renderToday();
+});
+
 document.getElementById("todayTasks").addEventListener("click", e => {
+  if (e.target.closest(".act-mins")) return;
   const row = e.target.closest(".today-task");
   const t = row && todayShown[Number(row.dataset.i)];
   if (!t) return;
@@ -18043,15 +18278,42 @@ document.getElementById("todayAdd").addEventListener("submit", e => {
 
 document.getElementById("todayGoal").addEventListener("change", e => {
   if (e.target.id === "todayGoalText") todayPlan.goal = cleanText(e.target.value).replace(/\s+/g, " ").trim() || TODAY_GOAL;
-  if (e.target.id === "todayPerDay") todayPlan.perDay = Math.min(9999, Math.floor(Number(e.target.value) || 0));
+  if (e.target.id === "todayPerDay") todayPlan.minutes = Math.min(999, Math.floor(Number(e.target.value) || 0));
   saveToday();
   renderToday();
 });
 
 document.getElementById("todayGoal").addEventListener("input", e => {
   if (e.target.id !== "todayPerDay") return;
-  const digits = e.target.value.replace(/\D/g, "").slice(0, 4);
+  const digits = e.target.value.replace(/\D/g, "").slice(0, 3);
   if (digits !== e.target.value) e.target.value = digits;
+});
+
+// The languages the route takes turns with (all the lessons' languages until you pick).
+document.getElementById("todayGoal").addEventListener("click", e => {
+  const b = e.target.closest(".hero-lang");
+  if (!b) return;
+  const langs = planLangs().slice();
+  const at = langs.indexOf(b.dataset.lang);
+  if (at >= 0) {
+    if (langs.length > 1) langs.splice(at, 1);
+  } else langs.push(b.dataset.lang);
+  todayPlan.langs = langs;
+  saveToday();
+  renderToday();
+  renderLessonList();
+});
+
+document.getElementById("todayTrack").addEventListener("click", e => {
+  const nav = e.target.closest(".track-nav");
+  if (nav) {
+    trackMonth = Math.min(0, trackMonth + Number(nav.dataset.month));
+    return renderToday();
+  }
+  const day = e.target.closest(".cal-day[data-day]");
+  if (!day) return;
+  trackPicked = trackPicked === day.dataset.day ? null : day.dataset.day;
+  renderToday();
 });
 
 document.getElementById("todayGoal").addEventListener("keydown", e => {
