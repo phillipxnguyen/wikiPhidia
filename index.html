@@ -16460,7 +16460,7 @@ function fillVocabCard(el, item) {
 
 // The yellow highlight hugs the word's own letters, whatever their language: each script sits at its own height in its
 // font (Latin, Hangul, Chinese characters…), so the highlight is measured on the letters themselves and runs from a
-// little above their tops to a little below their bottoms, cut off above and below that.
+// little above their tops to as little below their bottoms, cut off above and below that.
 const HIGHLIGHT_SEL = ".vocab-ctx mark:not(.vocab-hit, .vocab-own), .vocab-list-meaning .card-notes mark";
 
 let highlightCanvas = null;
@@ -16480,10 +16480,9 @@ function fitHighlights(root) {
     const base = probe.getBoundingClientRect().top, box = mark.getClientRects()[0];
     probe.remove();
     if (!box) return;
-    // Latin letters sit low in their box (their descenders reach far), so their highlight rides a little higher:
-    // more room over them, less under them.
-    const latin = !/[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]/.test(mark.textContent || "");
-    const padTop = size * (latin ? .14 : .1), padBottom = size * (latin ? .04 : .1), h = box.height;
+    // The same small room above the highest mark and below the lowest one of these very letters (accents, descenders,
+    // characters), in every language.
+    const padTop = Math.round(size * .08), padBottom = padTop, h = box.height;
     const top = Math.max(0, Math.round(base - box.top - m.actualBoundingBoxAscent - padTop));
     const bottom = Math.min(Math.round(h), Math.round(base - box.top + m.actualBoundingBoxDescent + padBottom));
     mark.style.background = `linear-gradient(transparent ${top}px, var(--word-mark) ${top}px, var(--word-mark) ${bottom}px, transparent ${bottom}px)`;
