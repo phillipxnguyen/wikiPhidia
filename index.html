@@ -1820,6 +1820,29 @@ window.onYouTubeIframeAPIReady = function(){
   .hero-lang{display:flex;align-items:center;justify-content:center;width:36px;height:28px;padding:0;border:0;border-radius:14px;background:rgba(251,243,228,.12);opacity:.45;}
   .hero-lang.on{background:rgba(251,243,228,.9);box-shadow:none;opacity:1;}
   .hero-lang .flag-dot{margin:0;}
+  .hero-preset{display:inline-flex;align-items:center;gap:6px;min-width:0;height:28px;margin-left:6px;padding:0 12px 0 8px;border:0;border-radius:14px;background:rgba(251,243,228,.9);box-shadow:none;color:var(--hero-card-ink);text-shadow:none;font-size:13px;line-height:20px;font-weight:700;}
+  .hero-preset svg{flex:none;width:16px;height:16px;color:var(--warm);}
+  .hero-preset span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  @media (hover:hover){.hero-preset:hover{background:#fffaf0;}}
+  @media (max-width:600px){.hero-langs{flex-wrap:wrap;}.hero-preset{margin-left:0;}}
+  /* The study rules: a small card under the ⚙ button with the presets (one in use) and the rules of the one in use. */
+  .preset-pop{position:fixed;z-index:2000;box-sizing:border-box;display:flex;flex-direction:column;gap:12px;width:360px;max-width:calc(100vw - 16px);max-height:calc(100vh - 16px);overflow:auto;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);color:var(--text);}
+  .preset-pop[hidden]{display:none;}
+  .preset-list{display:flex;flex-wrap:wrap;gap:6px;}
+  .preset-chip{height:32px;padding:0 12px;border:1px solid var(--border);border-radius:16px;background:var(--surface-2);color:var(--text);font-size:13px;line-height:20px;font-weight:600;}
+  .preset-chip.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);}
+  .preset-add{border-style:dashed;color:var(--text-2);}
+  .preset-name{box-sizing:border-box;width:100%;height:36px;padding:0 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);color:var(--text);font:inherit;font-size:15px;line-height:20px;font-weight:700;}
+  .preset-row{display:flex;align-items:center;gap:10px;min-height:32px;font-size:14px;line-height:20px;}
+  .preset-row > span{flex:1;min-width:0;}
+  .preset-row input[type=text]{box-sizing:border-box;width:72px;height:30px;padding:0 4px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);color:var(--text);font:inherit;font-size:15px;line-height:20px;text-align:center;}
+  .preset-row input[type=text]:disabled{opacity:.4;}
+  .preset-row input[type=text]::placeholder{font-size:13px;}
+  .preset-row input[type=checkbox]{flex:none;width:18px;height:18px;margin:0;accent-color:var(--accent);}
+  .preset-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-top:12px;border-top:1px solid var(--border);font-size:12px;line-height:16px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-2);}
+  .preset-del{height:28px;padding:0 10px;border:0;border-radius:14px;background:none;color:var(--text-2);font-size:13px;line-height:20px;text-transform:none;letter-spacing:0;}
+  @media (hover:hover){.preset-del:hover{background:var(--danger-soft);color:var(--danger);}}
+  .preset-note{margin:0;font-size:12px;line-height:18px;color:var(--text-2);}
   @media (hover:hover){.hero-lang:hover{opacity:1;}}
   .today-task.act .today-title{color:var(--text);}
   .act-mins{display:inline-flex;align-items:center;gap:4px;font-weight:600;color:var(--text);}
@@ -2100,6 +2123,8 @@ window.onYouTubeIframeAPIReady = function(){
   <label>New cards a day<span class="limit-field"><input id="limitFresh" type="text" maxlength="4" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="No limit"><b id="limitFreshMore" class="limit-more"></b></span></label>
   <label>Reviews a day<span class="limit-field"><input id="limitReview" type="text" maxlength="4" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="No limit"><b id="limitReviewMore" class="limit-more"></b></span></label>
 </div>
+
+<div id="presetPop" class="preset-pop" hidden role="dialog" aria-label="Study rules"></div>
 
 <div id="addPopup" class="paused-overlay add-popup" hidden role="dialog" aria-modal="true" aria-labelledby="addPopTitle">
   <div class="add-pop-card">
@@ -18137,12 +18162,17 @@ function todayCounts() {
   }
   const out = {};
   seen.forEach((fresh, k) => {
-    const id = k.split("|")[0];
+    const [ id, , word ] = k.split("|");
     if (!out[id]) out[id] = {
       due: 0,
-      fresh: 0
+      fresh: 0,
+      dueC: 0,
+      dueV: 0,
+      freshC: 0,
+      freshV: 0
     };
     out[id][fresh ? "fresh" : "due"]++;
+    out[id][(fresh ? "fresh" : "due") + (word ? "V" : "C")]++;
   });
   return out;
 }
@@ -18170,13 +18200,21 @@ function todayTasks() {
         due: 0,
         fresh: 0
       };
-      const remDue = Math.max(0, Math.min(left.due, p.due - (c.due - p.base.due)));
-      const remFresh = Math.max(0, Math.min(left.fresh, p.fresh - (c.fresh - p.base.fresh)));
+      // What is left of each side's share: its cards and its words, each against what was done of it today.
+      const rest = (k, side, of) => Math.max(0, Math.min(left[side][of], (p[k] || 0) - ((c[k] || 0) - (p.base[k] || 0))));
+      const rem = {
+        dueC: rest("dueC", "cards", "due"),
+        dueV: rest("dueV", "vocab", "due"),
+        freshC: rest("freshC", "cards", "fresh"),
+        freshV: rest("freshV", "vocab", "fresh")
+      };
+      const remDue = rem.dueC + rem.dueV, remFresh = rem.freshC + rem.freshV;
       list.push({
         key: key,
         lesson: l,
         left: left,
         plan: p,
+        rem: rem,
         remDue: remDue,
         remFresh: remFresh,
         planned: p.due + p.fresh,
@@ -18299,18 +18337,107 @@ function dueForecast(n) {
   return out;
 }
 
-const NEW_LESSONS_A_DAY = 3;
+// Study rules, kept as presets: one is in use for the whole day's plan. Each says how many minutes a day, which kinds
+// of study go on the plan (🎧 Listening: video lessons; 🗣️ Speaking: the other lessons; 🔤 Vocabulary: their words),
+// how many new ones of each at most (none set: as many as the minutes leave room for), how many lessons get new cards
+// at once, and whether part of the day goes to things outside the app. What stays the same in every preset, as
+// spaced-repetition apps advise: every review due is on the plan, make-up never takes more than half the day, and new
+// cards slow down when the coming week's reviews are heavy.
+const PLAN_PRESETS = [ {
+  id: "balanced",
+  emoji: "⚖️",
+  name: "Balanced",
+  minutes: 60,
+  listen: { on: true, new: null },
+  speak: { on: true, new: null },
+  vocab: { on: true, new: null },
+  lessons: 3,
+  outside: true
+}, {
+  id: "listening",
+  emoji: "🎧",
+  name: "Listening",
+  minutes: 45,
+  listen: { on: true, new: 40 },
+  speak: { on: false, new: null },
+  vocab: { on: true, new: 20 },
+  lessons: 2,
+  outside: true
+}, {
+  id: "speaking",
+  emoji: "🗣️",
+  name: "Speaking",
+  minutes: 45,
+  listen: { on: true, new: 10 },
+  speak: { on: true, new: 20 },
+  vocab: { on: true, new: 10 },
+  lessons: 2,
+  outside: true
+}, {
+  id: "busy",
+  emoji: "⏱️",
+  name: "Busy day",
+  minutes: 15,
+  listen: { on: true, new: 0 },
+  speak: { on: true, new: 0 },
+  vocab: { on: true, new: 0 },
+  lessons: 0,
+  outside: false
+}, {
+  id: "fresh",
+  emoji: "🆕",
+  name: "New words",
+  minutes: 60,
+  listen: { on: true, new: 20 },
+  speak: { on: true, new: 20 },
+  vocab: { on: true, new: 20 },
+  lessons: 3,
+  outside: false
+} ];
+
+const PLAN_SKILLS = [ [ "listen", "🎧", "Listening" ], [ "speak", "🗣️", "Speaking" ], [ "vocab", "🔤", "Vocabulary" ] ];
+
+function planPresets() {
+  if (!Array.isArray(todayPlan.presets) || !todayPlan.presets.length) {
+    todayPlan.presets = JSON.parse(JSON.stringify(PLAN_PRESETS));
+    todayPlan.presets[0].minutes = todayPlan.minutes || 60;
+  }
+  return todayPlan.presets;
+}
+
+function activePreset() {
+  const list = planPresets();
+  return list.find(x => x.id === todayPlan.preset) || list[0];
+}
+
+// A video lesson is studied by listening, any other by speaking.
+function lessonSkill(l) {
+  return extractYouTubeId(l.mediaUrl || "") || l.cards.some(c => c.time != null) || isTranslationDeck(l.cards) ? "listen" : "speak";
+}
+
+const NO_LEFT = {
+  fresh: 0,
+  due: 0,
+  overdue: 0,
+  ids: [],
+  freshIds: [],
+  dueIds: [],
+  items: [],
+  freshItems: [],
+  dueItems: []
+};
 
 function buildPlan() {
-  const langs = planLangs(), B = todayPlan.minutes || 0;
-  const sig = B + ":" + langs.join(",");
+  const langs = planLangs(), B = todayPlan.minutes || 0, P = activePreset();
+  const sig = B + ":" + langs.join(",") + ":" + JSON.stringify([ P.listen, P.speak, P.vocab, P.lessons, P.outside ]);
   const old = todayPlan.route;
-  if (old && old.v === 3 && old.sig === sig && old.day === todayPlan.day) return old;
+  if (old && old.v === 4 && old.sig === sig && old.day === todayPlan.day) return old;
+  const outside = P.outside !== false && langs.length > 0;
   const carry = todayPlan.carry && todayPlan.carry.day === todayPlan.day ? todayPlan.carry : {
     fresh: {},
     acts: []
   };
-  const appRoom = langs.length ? Math.round(B * .6) : B;
+  const appRoom = outside ? Math.round(B * .6) : B;
   const counts = todayCounts();
   const lessons = {};
   let reviewN = 0, overdueN = 0, carryN = 0;
@@ -18321,28 +18448,36 @@ function buildPlan() {
     const lang = todayLangOf(l.id, cache);
     return langs.length > 0 && (!lang || langs.some(x => x.split("-")[0] === lang.split("-")[0]));
   };
+  // A kind of study the preset leaves out (its cards, or the words) waits behind the lock with the rest.
   library.filter(l => !isVirtualId(l.id) && inLangs(l)).forEach(l => {
-    const left = leftBoth(l);
-    const cf = Math.min(left.fresh, carry.fresh[l.id] || 0);
-    if (!left.due && !left.fresh) return;
+    const kind = lessonSkill(l);
+    const lc = P[kind].on ? leftToday(l, "cards") : NO_LEFT, lv = P.vocab.on ? leftToday(l, "vocab") : NO_LEFT;
+    const fresh = lc.fresh + lv.fresh, due = lc.due + lv.due;
+    const cf = Math.min(fresh, carry.fresh[l.id] || 0);
+    if (!due && !fresh) return;
     lessons[l.id] = {
-      due: left.due,
-      overdue: left.overdue,
+      kind: kind,
+      due: due,
+      dueC: lc.due,
+      dueV: lv.due,
+      overdue: lc.overdue + lv.overdue,
       carry: cf,
       share: 0,
-      avail: left.fresh,
+      avail: fresh,
+      availC: lc.fresh,
+      availV: lv.fresh,
       base: counts[l.id] || {
         due: 0,
         fresh: 0
       }
     };
-    reviewN += left.due;
-    overdueN += left.overdue;
+    reviewN += due;
+    overdueN += lc.overdue + lv.overdue;
     carryN += cf;
   });
   // Make-up never takes more than half the day: when what was carried (new cards and activities) is more, all of it
   // is cut down in the same proportion; the new cards cut away simply stay new in their lessons.
-  const carryActs = langs.length ? (carry.acts || []) : [];
+  const carryActs = outside ? (carry.acts || []) : [];
   const wanted = carryN * MIN_NEW + carryActs.reduce((m, a) => m + a.mins, 0);
   const heavy = !!B && overdueN * MIN_DUE + wanted > B * .5;
   const scale = wanted > B * .5 ? B * .5 / wanted : 1;
@@ -18378,21 +18513,36 @@ function buildPlan() {
   const byId = new Map(library.map(l => [ l.id, l ]));
   const started = id => !!last[id] || byId.get(id).cards.some(c => srsOf(c).reps);
   const ranked = Object.keys(lessons).filter(id => lessons[id].avail - lessons[id].carry > 0).sort((a, b) => started(b) - started(a) || (last[b] || 0) - (last[a] || 0) || (byId.get(a).createdAt || 0) - (byId.get(b).createdAt || 0));
+  // The preset's most new ones of each kind (none set: no limit but the minutes).
+  const caps = {};
+  PLAN_SKILLS.forEach(([k]) => caps[k] = P[k].new == null || P[k].new === "" ? Infinity : Math.max(0, Number(P[k].new) || 0));
+  Object.values(lessons).forEach(x => {
+    x.carryC = Math.min(x.carry, x.availC);
+    x.carryV = x.carry - x.carryC;
+    x.shareC = x.shareV = 0;
+  });
   let given = 0;
-  ranked.slice(0, NEW_LESSONS_A_DAY).forEach(id => {
-    const x = lessons[id], n = Math.min(x.avail - x.carry, want - given);
-    if (n > 0) {
-      x.share = n;
-      given += n;
-    }
+  ranked.slice(0, Math.max(0, P.lessons == null ? 3 : Number(P.lessons) || 0)).forEach(id => {
+    const x = lessons[id];
+    const c = Math.max(0, Math.min(x.availC - x.carryC, caps[x.kind], want - given));
+    caps[x.kind] -= c;
+    given += c;
+    const v = Math.max(0, Math.min(x.availV - x.carryV, caps.vocab, want - given));
+    caps.vocab -= v;
+    given += v;
+    x.shareC = c;
+    x.shareV = v;
+    x.share = c + v;
   });
   Object.values(lessons).forEach(x => {
+    x.freshC = x.carryC + x.shareC;
+    x.freshV = x.carryV + x.shareV;
     x.fresh = x.carry + x.share;
     if (!x.due && !x.fresh) x.extra = true;
   });
   const appMins = Math.round(reviewN * MIN_DUE + (carryN + given) * MIN_NEW);
   // Outside the app: what the day has left, at least 10 minutes unless make-up activities already fill that part.
-  const actRoom = langs.length ? Math.max(carryActMins ? 0 : 10, B - appMins - carryActMins) : 0;
+  const actRoom = outside ? Math.max(carryActMins ? 0 : 10, B - appMins - carryActMins) : 0;
   const day = dayIndexOf(Date.now());
   const lang = langs.length ? langs[day % langs.length] : "";
   const pair = day % 2 ? [ "read", "write" ] : [ "listen", "speak" ];
@@ -18403,7 +18553,8 @@ function buildPlan() {
     mins: mins
   }));
   todayPlan.route = {
-    v: 3,
+    v: 4,
+    preset: P.id,
     sig: sig,
     day: todayPlan.day,
     budget: B,
@@ -18577,13 +18728,16 @@ function todayLangOf(lessonId, cache) {
 // minutes you set a day (type a new number in it).
 const CLOCK_ICON = '<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 4.5V8l2.5 1.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
 
+const GEAR_ICON = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Zm5.6 3.6.1-1.1-.1-1.1 1.4-1.1-1.4-2.4-1.7.6a5 5 0 0 0-1.9-1.1L9.7 1H6.3L6 2.8a5 5 0 0 0-1.9 1.1l-1.7-.6L1 5.7l1.4 1.1L2.3 8l.1 1.1L1 10.3l1.4 2.4 1.7-.6a5 5 0 0 0 1.9 1.1l.3 1.8h3.4l.3-1.8a5 5 0 0 0 1.9-1.1l1.7.6 1.4-2.4-1.4-1.2Z" fill="currentColor"/></svg>';
+
 function todayGoalHtml(all) {
   const tasks = routeTasks(all);
   const target = todayPlan.minutes || 0;
   const minsDone = dayStudy(localDayKey(Date.now())).total;
   const pct = target ? Math.min(100, Math.round(minsDone / target * 100)) : 0;
   const planned = planLangs();
-  const langRow = `<div class="hero-langs"><span>Learning</span>${[ "en", "zh-CN", "ja", "ko", "vi" ].map(l => `<button class="hero-lang${planned.includes(l) ? " on" : ""}" data-lang="${l}" title="${LANG_NAMES[l]}" aria-pressed="${planned.includes(l)}">${flagChip(l)}</button>`).join("")}</div>`;
+  const P = activePreset();
+  const langRow = `<div class="hero-langs"><span>Learning</span>${[ "en", "zh-CN", "ja", "ko", "vi" ].map(l => `<button class="hero-lang${planned.includes(l) ? " on" : ""}" data-lang="${l}" title="${LANG_NAMES[l]}" aria-pressed="${planned.includes(l)}">${flagChip(l)}</button>`).join("")}<button class="hero-preset" aria-haspopup="dialog" aria-controls="presetPop" title="Study rules for the day">${GEAR_ICON}<span>${escapeHtml(P.emoji || "")} ${escapeHtml(P.name)}</span></button></div>`;
   const done = tasks.filter(t => t.done).length;
   const next = all.indexOf(tasks.find(t => !t.done));
   const streak = streakInfo().current;
@@ -18656,12 +18810,11 @@ function todayTaskHtml(t, i) {
     body = taskWhyHtml(t) + taskBarHtml(t.did, t.planned, t.done ? `All ${t.planned} done` : `<b>${t.did}</b> of ${t.planned} done · about ${Math.max(1, left)} min left`);
     if (!t.done) {
       // What is left of the plan: its reviews first, then its new cards.
-      const items = [], c = t.left.cards, v = t.left.vocab;
-      let due = t.remDue, fresh = t.remFresh;
-      c.dueItems.concat([]).forEach(x => due-- > 0 && items.push([ x, "c" ]));
-      v.dueItems.forEach(x => due-- > 0 && items.push([ x, "v" ]));
-      c.freshItems.forEach(x => fresh-- > 0 && items.push([ x, "c" ]));
-      v.freshItems.forEach(x => fresh-- > 0 && items.push([ x, "v" ]));
+      const items = [], c = t.left.cards, v = t.left.vocab, r = t.rem;
+      c.dueItems.slice(0, r.dueC).forEach(x => items.push([ x, "c" ]));
+      v.dueItems.slice(0, r.dueV).forEach(x => items.push([ x, "v" ]));
+      c.freshItems.slice(0, r.freshC).forEach(x => items.push([ x, "c" ]));
+      v.freshItems.slice(0, r.freshV).forEach(x => items.push([ x, "v" ]));
       if (items.length) body += todayItemsHtml(items);
     }
   } else {
@@ -18875,7 +19028,8 @@ async function openTodayTask(t) {
     lessonId: t.lesson.id,
     title: todayTaskName(t),
     remDue: t.plan ? t.remDue : null,
-    remFresh: t.plan ? t.remFresh : null
+    remFresh: t.plan ? t.remFresh : null,
+    rem: t.plan ? t.rem : null
   };
   document.documentElement.classList.add("in-task");
   await startTaskSide();
@@ -18899,9 +19053,10 @@ function taskQueue(l, run) {
     return c && srsOf(c).reps ? sentenceKey(c.q) : "";
   };
   const picks = (k, ids) => ids.map(id => ({ k: k, id: id, tries: 0 }));
-  if (run && run.remDue != null) {
-    const due = spreadSameSentence(interleave(picks("c", lc.dueIds), picks("v", lv.dueIds)), sentenceOf).slice(0, run.remDue);
-    return due.concat(interleave(picks("c", lc.freshIds), picks("v", lv.freshIds)).slice(0, run.remFresh));
+  if (run && run.rem) {
+    const r = run.rem;
+    const due = spreadSameSentence(interleave(picks("c", lc.dueIds.slice(0, r.dueC)), picks("v", lv.dueIds.slice(0, r.dueV))), sentenceOf);
+    return due.concat(interleave(picks("c", lc.freshIds.slice(0, r.freshC)), picks("v", lv.freshIds.slice(0, r.freshV))));
   }
   return spreadSameSentence(interleave(picks("c", lc.ids), picks("v", lv.ids)), sentenceOf);
 }
@@ -19148,7 +19303,7 @@ document.getElementById("todayAdd").addEventListener("submit", e => {
 
 document.getElementById("todayGoal").addEventListener("change", e => {
   if (e.target.id === "todayGoalText") todayPlan.goal = cleanText(e.target.value).replace(/\s+/g, " ").trim() || TODAY_GOAL;
-  if (e.target.id === "todayPerDay") todayPlan.minutes = Math.min(999, Math.floor(Number(e.target.value) || 0));
+  if (e.target.id === "todayPerDay") todayPlan.minutes = activePreset().minutes = Math.min(999, Math.floor(Number(e.target.value) || 0));
   saveToday();
   renderToday();
 });
@@ -19159,10 +19314,115 @@ document.getElementById("todayGoal").addEventListener("input", e => {
   if (digits !== e.target.value) e.target.value = digits;
 });
 
+// The study rules: the presets, one in use for the day, and the rules of that one, changed in place. Any change plans
+// the day again at once.
+function presetPopHtml() {
+  const P = activePreset();
+  const num = v => v == null ? "" : String(v);
+  const list = planPresets().map(x => `<button class="preset-chip${x === P ? " on" : ""}" data-preset="${escapeAttr(x.id)}" aria-pressed="${x === P}">${escapeHtml(((x.emoji || "") + " " + x.name).trim())}</button>`).join("") + '<button class="preset-chip preset-add" data-preset-add="1">＋ New</button>';
+  const skills = PLAN_SKILLS.map(([k, e, name]) => `<div class="preset-row"><input type="checkbox" id="presetOn-${k}" data-on="${k}"${P[k].on ? " checked" : ""}><label for="presetOn-${k}">${e} ${name}</label><span></span><input type="text" data-new="${k}" maxlength="3" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="Any" value="${num(P[k].new)}"${P[k].on ? "" : " disabled"} aria-label="${name}: most new a day"></div>`).join("");
+  return `<div class="preset-list">${list}</div>` + `<div class="preset-head"><span>This preset</span>${planPresets().length > 1 ? '<button class="preset-del">Delete</button>' : ""}</div>` + `<input class="preset-name" type="text" maxlength="40" value="${escapeAttr(P.name)}" aria-label="Preset name">` + `<div class="preset-row"><span>Minutes a day</span><input type="text" data-field="minutes" maxlength="3" inputmode="numeric" pattern="[0-9]*" autocomplete="off" value="${num(P.minutes)}" aria-label="Minutes a day"></div>` + '<div class="preset-head"><span>What to study</span><span>New a day</span></div>' + skills + `<div class="preset-row"><span>Lessons getting new cards at once</span><input type="text" data-field="lessons" maxlength="2" inputmode="numeric" pattern="[0-9]*" autocomplete="off" value="${num(P.lessons)}" aria-label="Lessons getting new cards at once"></div>` + `<div class="preset-row"><input type="checkbox" id="presetOutside" data-field="outside"${P.outside !== false ? " checked" : ""}><label for="presetOutside">Time outside the app (listen, read, speak, write)</label></div>` + '<p class="preset-note">Every review due is always on the plan, and make-up never takes more than half the day. New a day left blank: as many as the minutes leave room for.</p>';
+}
+
+function renderPresetPop() {
+  const pop = document.getElementById("presetPop");
+  if (pop.hidden) return;
+  pop.innerHTML = presetPopHtml();
+  placePresetPop();
+}
+
+function placePresetPop() {
+  const pop = document.getElementById("presetPop"), btn = document.querySelector(".hero-preset");
+  if (pop.hidden || !btn) return;
+  const r = btn.getBoundingClientRect();
+  pop.style.left = Math.round(Math.max(8, Math.min(r.left, window.innerWidth - pop.offsetWidth - 8))) + "px";
+  pop.style.top = Math.round(Math.max(8, Math.min(r.bottom + 8, window.innerHeight - pop.offsetHeight - 8))) + "px";
+}
+
+function togglePresetPop() {
+  const pop = document.getElementById("presetPop");
+  pop.hidden = !pop.hidden;
+  renderPresetPop();
+}
+
+function presetChanged(redraw) {
+  todayPlan.minutes = activePreset().minutes || 0;
+  saveToday();
+  renderToday();
+  renderLessonList();
+  if (redraw) renderPresetPop(); else placePresetPop();
+}
+
+document.getElementById("presetPop").addEventListener("click", e => {
+  const pick = e.target.closest("[data-preset]");
+  if (pick) {
+    todayPlan.preset = pick.dataset.preset;
+    return presetChanged(true);
+  }
+  if (e.target.closest("[data-preset-add]")) {
+    const copy = JSON.parse(JSON.stringify(activePreset()));
+    copy.id = "p" + Date.now().toString(36);
+    copy.emoji = "⭐";
+    copy.name = "My preset " + (planPresets().filter(x => x.emoji === "⭐").length + 1);
+    planPresets().push(copy);
+    todayPlan.preset = copy.id;
+    presetChanged(true);
+    const name = document.querySelector("#presetPop .preset-name");
+    if (name) name.select();
+    return;
+  }
+  if (e.target.closest(".preset-del")) {
+    const P = activePreset();
+    todayPlan.presets = planPresets().filter(x => x !== P);
+    todayPlan.preset = todayPlan.presets[0].id;
+    showToast(`Deleted ${P.name}`);
+    return presetChanged(true);
+  }
+});
+
+document.getElementById("presetPop").addEventListener("input", e => {
+  if (e.target.type !== "text" || e.target.classList.contains("preset-name")) return;
+  const digits = e.target.value.replace(/\D/g, "").slice(0, Number(e.target.maxLength) || 3);
+  if (digits !== e.target.value) e.target.value = digits;
+});
+
+document.getElementById("presetPop").addEventListener("change", e => {
+  const P = activePreset(), t = e.target;
+  if (t.classList.contains("preset-name")) {
+    P.name = cleanText(t.value).replace(/\s+/g, " ").trim() || P.name;
+    return presetChanged(true);
+  }
+  if (t.dataset.on) {
+    P[t.dataset.on].on = t.checked;
+    return presetChanged(true);
+  }
+  if (t.dataset.new) P[t.dataset.new].new = t.value === "" ? null : Math.min(999, Number(t.value));
+  if (t.dataset.field === "minutes") P.minutes = Math.min(999, Number(t.value) || 0);
+  if (t.dataset.field === "lessons") P.lessons = Math.min(99, Number(t.value) || 0);
+  if (t.dataset.field === "outside") P.outside = t.checked;
+  presetChanged(false);
+});
+
+document.getElementById("presetPop").addEventListener("keydown", e => {
+  e.stopPropagation();
+  if (e.key === "Enter" && e.target.type === "text") e.target.blur();
+  if (e.key === "Escape") document.getElementById("presetPop").hidden = true;
+});
+
+document.addEventListener("pointerdown", e => {
+  const pop = document.getElementById("presetPop");
+  if (pop.hidden || pop.contains(e.target) || e.target.closest(".hero-preset")) return;
+  if (document.activeElement && pop.contains(document.activeElement)) document.activeElement.blur();
+  pop.hidden = true;
+}, true);
+
+addEventListener("resize", placePresetPop);
+
 // The languages the route takes turns with (all the lessons' languages until you pick).
 document.getElementById("todayGoal").addEventListener("click", e => {
   const next = e.target.closest(".hero-next[data-i]");
   if (next && todayShown[Number(next.dataset.i)]) return openTodayTask(todayShown[Number(next.dataset.i)]);
+  if (e.target.closest(".hero-preset")) return togglePresetPop(e.target.closest(".hero-preset"));
   const b = e.target.closest(".hero-lang");
   if (!b) return;
   const langs = planLangs().slice();
