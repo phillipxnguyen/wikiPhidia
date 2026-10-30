@@ -379,7 +379,7 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-back .vocab-ctx, .vocab-back .vocab-meaning{box-sizing:border-box;width:fit-content;max-width:100%;padding:0 16px;font-size:28px;line-height:35px;margin:0;text-align:left;}
   .vocab-back .vocab-ctx.small{font-size:26px;line-height:32px;}
   .vocab-back .vocab-meaning{font-size:26px;line-height:32px;font-weight:400;}
-  .vocab-list-meaning .card-notes mark{background:linear-gradient(transparent 50%, var(--word-mark) 50%, var(--word-mark) 92%, transparent 92%);color:var(--text);font-weight:700;text-decoration:none;-webkit-box-decoration-break:clone;box-decoration-break:clone;}
+  .vocab-list-meaning .card-notes mark{background:none;color:var(--text);font-weight:400;font-size:1.25em;text-decoration:none;}
   .vocab-back .vocab-ctx mark, .vocab-back .vocab-ctx mark:has(.rd){display:inline;padding:0 1px;margin:0;border-radius:4px;line-height:inherit;}
   .vocab-back .vocab-ctx mark:is(.vocab-hit, .vocab-own){padding:0;border-radius:0;}
   .vocab-back .vocab-ctx mark.vs{border-top-left-radius:4px;border-bottom-left-radius:4px;padding-left:1px;}
@@ -431,16 +431,17 @@ window.onYouTubeIframeAPIReady = function(){
      looks darker), bold like the meaning under it, on a thick underline of that same green, so it stands
      apart at a glance and goes with its meaning. A card that is a whole sentence with its translation is not marked:
      the sentence in the usual ink, its translation plain in green. */
-  /* The word being learnt, in its sentence: in the ordinary ink and bold, run over with a yellow highlighter across its
-     lower half, so it is seen at once and stays easy to read; on its own it is just bold in the ordinary ink. */
-  .vocab-ctx mark:not(.vocab-hit, .vocab-own){background:linear-gradient(transparent 50%, var(--word-mark) 50%, var(--word-mark) 92%, transparent 92%);color:var(--text);font-weight:700;text-decoration:none;-webkit-box-decoration-break:clone;box-decoration-break:clone;}
+  /* The word being learnt is written in the ordinary ink and weight, only a quarter larger than the words around it,
+     on both sides of the card alike: in its sentence, on its own, and in a word's notes in ☰ List. */
+  .vocab-ctx mark:not(.vocab-hit, .vocab-own){background:none;color:var(--text);font-weight:400;font-size:1.25em;text-decoration:none;}
   /* One rule for every flashcard, a single word or a phrase alike: the underline only picks the word out of an example
      sentence. A word with no sentence that holds it stands alone, bold in the same green, never underlined. The front
      shows the word (or, answer first, its meaning) exactly as the back does: a word and its meaning bold in that green,
      a whole sentence and its translation plain. */
-  .vocab-ctx .vocab-word{font-weight:700;color:var(--text);}
+  .vocab-ctx .vocab-word{font-weight:400;font-size:1.25em;color:var(--text);}
   .vocab-meaning.word, .vocab-card.answer-first .vocab-front .vocab-term.word{font-weight:700;color:var(--word-green);}
-  .vocab-card:not(.answer-first) .vocab-front .vocab-term.word{font-weight:700;color:var(--text);}
+  .vocab-card:not(.answer-first) .vocab-front .vocab-term.word{font-weight:400;font-size:35px;color:var(--text);}
+  @media (max-width:600px){.vocab-card:not(.answer-first) .vocab-front .vocab-term.word{font-size:30px;}}
   .vocab-ctx mark:has(.rd){padding-top:.7em;padding-top:round(.7em, 1px);}
   .vocab-meaning{font-size:28px;font-weight:400;line-height:35px;color:var(--a-text);overflow-wrap:anywhere;}
   #vocabSpeak{width:48px;}
@@ -692,8 +693,8 @@ window.onYouTubeIframeAPIReady = function(){
   .link-box-x{position:absolute;right:4px;top:3px;bottom:3px;z-index:1;display:flex;align-items:center;justify-content:center;width:32px;padding:0;border:0;border-radius:6px;background:transparent;color:var(--text-2);font-size:13px;line-height:20px;}
   @media (hover:hover){.link-box-x:hover{background:var(--danger-soft);border-color:transparent;color:var(--danger);}}
   .link-field:has(input:placeholder-shown) .link-box-x{display:none;}
-  .link-file{position:absolute;left:4px;top:3px;bottom:3px;z-index:1;display:flex;align-items:center;justify-content:center;width:36px;padding:0;border:0;border-radius:6px;background:transparent;color:var(--text-2);transition:background .15s, transform .15s;}
-  @media (hover:hover){.link-file:hover{background:color-mix(in srgb, #e5483d 10%, transparent);border-color:transparent;transform:translateY(-1px);}}
+  .link-file{position:absolute;left:4px;top:3px;bottom:3px;z-index:1;display:flex;align-items:center;justify-content:center;width:36px;padding:0;border:0;border-radius:6px;background:transparent;color:var(--text-2);transition:background .15s;}
+  @media (hover:hover){.link-file:hover{background:color-mix(in srgb, #e5483d 10%, transparent);border-color:transparent;}}
   .pdf-icon{flex:none;overflow:visible;}
   .pdf-icon-sheet{fill:var(--surface);stroke:var(--text-2);stroke-width:1.6;stroke-linejoin:round;}
   .pdf-icon-fold{fill:none;stroke:var(--text-2);stroke-width:1.6;stroke-linejoin:round;}
@@ -17935,9 +17936,11 @@ function libraryLangs() {
   return [ ...count ].sort((a, b) => b[1] - a[1]).map(([lang]) => lang).slice(0, 4);
 }
 
+// The languages you picked (none at all is a choice too: then the route is only the app); until you pick, those of
+// your lessons.
 function planLangs() {
   const set = (todayPlan.langs || []).filter(l => LANG_NAMES[l]);
-  return set.length ? set : libraryLangs();
+  return set.length || todayPlan.langsSet ? set : libraryLangs();
 }
 
 function dayIndexOf(ts) {
@@ -18192,7 +18195,10 @@ function renderToday() {
   const route = todayPlan.route;
   const acts = route ? route.acts : [];
   const actMins = acts.reduce((m, a) => m + a.mins, 0);
-  const parts = route ? [ `about ${route.app} in the app` ].concat(acts.length ? [ `${actMins} outside it, in ${flagChip(acts[0].lang)}${escapeHtml(LANG_NAMES[acts[0].lang] || "")}` ] : []) : [];
+  // The languages take turns day by day: the next one is named too, so a flag switched on or off shows at once.
+  const langs = planLangs();
+  const next = langs.length > 1 ? langs[(dayIndexOf(Date.now()) + 1) % langs.length] : "";
+  const parts = route ? [ `about ${route.app} in the app` ].concat(acts.length ? [ `${actMins} outside it, in ${flagChip(acts[0].lang)}${escapeHtml(LANG_NAMES[acts[0].lang] || "")}` + (next ? ` (tomorrow ${flagChip(next)}${escapeHtml(LANG_NAMES[next])})` : "") ] : []) : [];
   const head = route ? `<div class="route-head"><b>Today's route</b><span>${todayPlan.minutes} min · ${parts.join(", ")}</span></div>` : "";
   const extra = tasks.filter(t => t.extra);
   const main = tasks.length - extra.length;
@@ -18491,11 +18497,12 @@ document.getElementById("todayGoal").addEventListener("click", e => {
   if (!b) return;
   const langs = planLangs().slice();
   const at = langs.indexOf(b.dataset.lang);
-  if (at >= 0) {
-    if (langs.length > 1) langs.splice(at, 1);
-  } else langs.push(b.dataset.lang);
+  if (at >= 0) langs.splice(at, 1); else langs.push(b.dataset.lang);
   todayPlan.langs = langs;
+  todayPlan.langsSet = true;
   saveToday();
+  const name = LANG_NAMES[b.dataset.lang];
+  showToast(at >= 0 ? `${name} is out of your plan${langs.length ? "" : ": today's route is only the app"}` : `${name} is in your plan, taking its turn on the days outside the app`);
   renderToday();
   renderLessonList();
 });
