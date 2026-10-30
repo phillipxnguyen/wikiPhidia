@@ -16487,6 +16487,85 @@ function fitHighlights(root) {
 
 document.fonts && document.fonts.ready.then(() => fitHighlights());
 
+// The grey and green lookup boxes hug their word's own letters the same way, 3 px above the highest mark and 3 px below
+// the lowest one, with their usual rounded corners. A word cut into pieces (words that overlap) is measured as one, so
+// its pieces stay level. Only font metrics are needed, so it works on hidden pages too; the box is cut with a mask, so
+// the hover and stacked colours stay in the stylesheet.
+const LOOKUP_SEL = ":is(.rich-editor, .cell, .vocab-ctx) mark:is(.vocab-hit, .vocab-own)";
+const LOOKUP_PAD = 3;
+
+function lookupRun(mark) {
+  const run = [ mark ];
+  for (let m = mark; !m.classList.contains("ve") && m.nextSibling && m.nextSibling.matches && m.nextSibling.matches("mark"); ) run.push(m = m.nextSibling);
+  return run;
+}
+
+function fitLookupMarks(root) {
+  const marks = root && root.matches && root.matches(LOOKUP_SEL) ? [ root ] : Array.from((root || document).querySelectorAll(LOOKUP_SEL));
+  const done = new Set;
+  marks.forEach(mark => {
+    if (done.has(mark) || !mark.isConnected) return;
+    // Go back to where the word starts, then take every piece up to where it ends.
+    let first = mark;
+    while (!first.classList.contains("vs") && first.previousSibling && first.previousSibling.matches && first.previousSibling.matches("mark")) first = first.previousSibling;
+    const run = lookupRun(first);
+    run.forEach(m => done.add(m));
+    const cs = getComputedStyle(first);
+    const g = (highlightCanvas = highlightCanvas || document.createElement("canvas")).getContext("2d");
+    g.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+    const m = g.measureText(run.map(r => r.textContent).join(""));
+    if (!isFinite(m.actualBoundingBoxAscent) || !isFinite(m.fontBoundingBoxAscent)) return;
+    const h = m.fontBoundingBoxAscent + m.fontBoundingBoxDescent;
+    const top = Math.max(0, Math.round(m.fontBoundingBoxAscent - m.actualBoundingBoxAscent - LOOKUP_PAD));
+    let bottom = Math.min(Math.round(h), Math.round(m.fontBoundingBoxAscent + m.actualBoundingBoxDescent + LOOKUP_PAD));
+    // An underline runs below the letters: the box keeps it.
+    for (let el = first.parentElement; el && !el.matches(".rich-editor, .cell, .vocab-ctx"); el = el.parentElement) if (/underline/.test(getComputedStyle(el).textDecorationLine)) bottom = Math.round(h);
+    run.forEach(r => {
+      const ht = bottom - top;
+      const rects = `<rect y='${top}' width='100%' height='${ht}' rx='4'/>` + (r.classList.contains("vs") ? "" : `<rect y='${top}' width='50%' height='${ht}'/>`) + (r.classList.contains("ve") ? "" : `<rect x='50%' y='${top}' width='50%' height='${ht}'/>`);
+      const url = `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='100%' height='100%'>${rects}</svg>`)}")`;
+      if (r.dataset.fit === url) return;
+      r.dataset.fit = url;
+      r.style.setProperty("-webkit-mask", `${url} 0 0 / 100% 100% no-repeat`);
+      r.style.setProperty("mask", `${url} 0 0 / 100% 100% no-repeat`);
+    });
+  });
+}
+
+let lookupFitAll = false, lookupFitRoots = new Set, lookupFitFrame = 0;
+
+function queueLookupFit(root) {
+  if (root) lookupFitRoots.add(root); else lookupFitAll = true;
+  if (lookupFitFrame) return;
+  lookupFitFrame = requestAnimationFrame(() => {
+    lookupFitFrame = 0;
+    const all = lookupFitAll, roots = lookupFitRoots;
+    lookupFitAll = false;
+    lookupFitRoots = new Set;
+    if (all) fitLookupMarks(); else roots.forEach(r => r.isConnected && fitLookupMarks(r));
+  });
+}
+
+new MutationObserver(records => records.forEach(r => {
+  if (r.type === "characterData") {
+    const mk = r.target.parentElement && r.target.parentElement.closest(LOOKUP_SEL);
+    if (mk) queueLookupFit(mk);
+    return;
+  }
+  r.addedNodes.forEach(n => {
+    if (n.nodeType !== 1) return;
+    if (n.matches(LOOKUP_SEL)) queueLookupFit(n.parentElement || n); else if (n.querySelector("mark")) queueLookupFit(n);
+  });
+})).observe(document.body, {
+  childList: true,
+  subtree: true,
+  characterData: true
+});
+
+addEventListener("resize", () => queueLookupFit());
+document.fonts && document.fonts.ready.then(() => queueLookupFit());
+queueLookupFit();
+
 const VOCAB_CARD_GAP = 40;
 
 const VOCAB_CARD_MIN = 200;
