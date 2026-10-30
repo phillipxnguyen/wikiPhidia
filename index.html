@@ -2706,11 +2706,9 @@ function taskStepAcross(fromStack, toStack, verb) {
   const side = entry.ctx === VOCAB_ALL_ID ? "v" : entry.ctx === LESSON_ALL_ID ? "c" : null;
   if (!side) return false;
   run.opening = true;
-  taskOpenSide(run, side).then(() => {
-    run.opening = false;
-    if (taskRun !== run) return;
-    restoreFrom(fromStack, toStack, verb);
-  });
+  taskOpenSide(run, side);
+  run.opening = false;
+  if (taskRun === run) restoreFrom(fromStack, toStack, verb);
   return true;
 }
 
@@ -18580,8 +18578,7 @@ async function taskAdvance() {
   const run = taskRun;
   if (!run || run.opening) return;
   run.opening = true;
-  await flushAutoSave();
-  if (taskRun !== run) return;
+  flushAutoSave();
   if (run.current && taskPickAgain(run.current)) {
     run.current.tries++;
     run.queue.push(run.current);
@@ -18596,7 +18593,7 @@ async function taskAdvance() {
   }
   const pick = run.current;
   if (pick.k === "c") {
-    await taskOpenSide(run, "c");
+    taskOpenSide(run, "c");
     if (taskRun !== run) return;
     if (currentView !== "study") showView("study");
     const row = rows.find(r => r.uid === pick.id);
@@ -18605,7 +18602,7 @@ async function taskAdvance() {
     if (!pair) return taskAdvance();
     mixShow(pair[0], pair[1]);
   } else {
-    await taskOpenSide(run, "v");
+    taskOpenSide(run, "v");
     if (taskRun !== run) return;
     if (!vocabSession) startVocabSession();
     vocabSession.queue = [ pick.id ];
@@ -18620,10 +18617,10 @@ async function taskAdvance() {
   paintTaskBadges();
 }
 
-async function taskOpenSide(run, side) {
+function taskOpenSide(run, side) {
   const keep = run.sided ? [ undoStack, redoStack ] : null;
   setAppMode(side === "c" ? "cards" : "vocab");
-  if (side === "c" && currentLessonId !== LESSON_ALL_ID) await openAllLessons(taskOnly(run)); else if (side === "v" && currentLessonId !== VOCAB_ALL_ID) await openAllVocabulary(taskOnly(run));
+  if (side === "c" && currentLessonId !== LESSON_ALL_ID) openAllLessons(taskOnly(run)); else if (side === "v" && currentLessonId !== VOCAB_ALL_ID) openAllVocabulary(taskOnly(run));
   if (taskRun !== run) return;
   [ undoStack, redoStack ] = keep || [ [], [] ];
   run.sided = true;
@@ -18907,10 +18904,10 @@ document.getElementById("todayGoal").addEventListener("keydown", e => {
   if (e.key === "Enter" && e.target.matches("input")) e.target.blur();
 });
 
-async function openAllLessons(only) {
+function openAllLessons(only) {
   commitActiveEdit();
-  await discardIfEmptyDraft();
-  await flushAutoSave();
+  discardIfEmptyDraft();
+  flushAutoSave();
   const picks = [];
   library.filter(l => only.ids.has(l.id)).forEach(l => l.cards.forEach(c => picks.push({
     card: c,
@@ -18934,10 +18931,10 @@ async function openAllLessons(only) {
   renderLessonList();
 }
 
-async function openAllVocabulary(only) {
+function openAllVocabulary(only) {
   commitActiveEdit();
-  await discardIfEmptyDraft();
-  await flushAutoSave();
+  discardIfEmptyDraft();
+  flushAutoSave();
   const picks = [];
   sortedLibrary().filter(l => only.ids.has(l.id)).forEach(l => lessonCardsWithExtras(l).forEach(c => {
     if (vocabEntriesOf(c).length) picks.push({
