@@ -16301,14 +16301,7 @@ function vocabContext(item) {
     sentence: noted.sentence,
     notes: noted.rest
   };
-  for (const card of rows) {
-    const sentence = sentenceIn(card);
-    if (sentence) return {
-      card: card,
-      sentence: sentence
-    };
-  }
-  // No sentence holds the word (a word filed under a card whose question is a heading, say "Day 2 — After Work"):
+  // No sentence of its own card holds the word (a word filed under a card whose question is a heading, say "Day 2 — After Work"):
   // the card shows the word alone rather than a line that has nothing to do with it.
   return {
     card: item.card,
@@ -16326,13 +16319,12 @@ function lookupOthers(html, item) {
   return tmp.innerHTML;
 }
 
-// A whole sentence and its translation is shown plain, front and back: the word is the sentence, or nearly all of it
-// (four fifths of its letters or more), so there is nothing to pick out; a word that is only a small part of its
-// sentence is highlighted in it on the back.
+// A whole sentence and its translation is shown plain, front and back; only a word taken from a sentence is highlighted
+// in it on the back.
 function wholeSentenceCard(item, sentence) {
   const bare = t => foldVocab(t || "").replace(/[\p{P}\s]+/gu, "");
   const term = bare(item.term), line = bare(sentence);
-  return term === line || !!line && term.length >= line.length * .8 || !sentence && (/[.!?。！？]$/.test(item.term.trim()) || item.term.trim().split(/\s+/).length > 4);
+  return term === line || !sentence && (/[.!?。！？]$/.test(item.term.trim()) || item.term.trim().split(/\s+/).length > 4);
 }
 
 function vocabBackInner(item) {
