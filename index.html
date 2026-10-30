@@ -1836,10 +1836,9 @@ window.onYouTubeIframeAPIReady = function(){
   .today-items{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
   .today-item{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:2px 10px;border-radius:12px;background:color-mix(in srgb, var(--lesson-color) 12%, transparent);color:var(--lesson-color);font-size:13px;line-height:20px;font-weight:600;}
   .today-item.vocab{background:color-mix(in srgb, var(--new-color) 14%, transparent);color:var(--new-color);}
-  .today-more{display:inline-flex;}
-  .today-more > .today-item{font-weight:800;}
-  .today-more > .today-item + .today-item{border-top-left-radius:0;border-bottom-left-radius:0;}
-  .today-more > .today-item:not(:last-child){border-top-right-radius:0;border-bottom-right-radius:0;}
+  /* One count for all that is left; its chip is the lesson's blue for the share that is cards and Vocabulary's green
+     for the share that is words. */
+  .today-item.today-more{--c:50%;background:linear-gradient(90deg, color-mix(in srgb, var(--lesson-color) 12%, transparent) var(--c), color-mix(in srgb, var(--new-color) 14%, transparent) var(--c));color:var(--text);font-weight:800;}
   .today-tasks{display:flex;flex-direction:column;gap:4px;}
   .today-empty{margin:0 0 12px;font-size:14px;line-height:20px;color:var(--text-2);}
   .today-task{display:flex;align-items:center;gap:12px;min-height:48px;box-sizing:border-box;padding:8px 8px 8px 12px;border-radius:10px;cursor:pointer;}
@@ -18150,10 +18149,10 @@ function todayItemsHtml(items) {
   const w = Math.min(words.length, cards.length ? 3 : TODAY_CHIPS);
   const shown = cards.slice(0, TODAY_CHIPS - w).concat(words.slice(0, w));
   const more = items.length - shown.length;
-  // What is left shows as one chip in two halves, each with its own count: cards in the lesson's blue, words in
-  // Vocabulary's green (a single half when only one kind is left).
+  // What is left shows as one chip with one count, coloured in two parts by how much of it is cards (the lesson's blue)
+  // and how much words (Vocabulary's green).
   const leftCards = cards.length - shown.filter(i => i[1] === "c").length, leftWords = more - leftCards;
-  return '<div class="today-items">' + shown.map(([text, kind]) => `<span class="today-item${kind === "v" ? " vocab" : ""}" title="${escapeAttr(text)}">${escapeHtml(truncate(text, 28))}</span>`).join("") + (more > 0 ? `<span class="today-more" title="${leftCards} more card${leftCards === 1 ? "" : "s"}, ${leftWords} more word${leftWords === 1 ? "" : "s"}">${leftCards ? `<span class="today-item">+${leftCards}</span>` : ""}${leftWords ? `<span class="today-item vocab">+${leftWords}</span>` : ""}</span>` : "") + "</div>";
+  return '<div class="today-items">' + shown.map(([text, kind]) => `<span class="today-item${kind === "v" ? " vocab" : ""}" title="${escapeAttr(text)}">${escapeHtml(truncate(text, 28))}</span>`).join("") + (more > 0 ? `<span class="today-item today-more" style="--c:${Math.round(leftCards / more * 100)}%" title="${leftCards} more card${leftCards === 1 ? "" : "s"}, ${leftWords} more word${leftWords === 1 ? "" : "s"}">+${more}</span>` : "") + "</div>";
 }
 
 function todayTaskName(t) {
