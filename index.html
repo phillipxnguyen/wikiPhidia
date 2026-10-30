@@ -19149,11 +19149,6 @@ function openAddPopup() {
   document.getElementById("importText").focus();
 }
 
-// Anything typed in the add window (the ＋ card or the paste box): a stray click outside then never closes it.
-function addTyped() {
-  return !document.getElementById("quickAdd").hidden && !!([ "qaQ", "qaA", "qaTime" ].some(id => document.getElementById(id).value.trim()) || document.getElementById("qaNotes").textContent.trim()) || !!document.getElementById("importText").value.trim();
-}
-
 function closeAddPopup() {
   const pop = document.getElementById("addPopup");
   if (pop.hidden) return;
@@ -19167,8 +19162,16 @@ function closeAddPopup() {
 
 document.getElementById("addPopClose").onclick = closeAddPopup;
 
+// A click outside closes the window as it closes the card editor, keeping what was typed: a card being written is
+// added (it stays open only when that card cannot be, a duplicate), and pasted text waits in the paste box.
 document.getElementById("addPopup").addEventListener("click", e => {
-  if (e.target === e.currentTarget && !addTyped()) closeAddPopup();
+  if (e.target !== e.currentTarget) return;
+  const q = document.getElementById("qaQ");
+  if (!document.getElementById("quickAdd").hidden && q.value.trim()) {
+    saveQuickAdd();
+    if (q.value.trim()) return;
+  }
+  closeAddPopup();
 });
 
 document.addEventListener("keydown", e => {
