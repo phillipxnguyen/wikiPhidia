@@ -65,6 +65,7 @@ window.onYouTubeIframeAPIReady = function(){
     --ring-top:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2236%22%20height%3D%2232%22%3E%3Crect%20x%3D%2214%22%20y%3D%221%22%20width%3D%228%22%20height%3D%2225%22%20rx%3D%224%22%20fill%3D%22%23fff%22%20stroke%3D%22%231f2633%22%20stroke-width%3D%222%22/%3E%3C/svg%3E");
     --ring-left:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2232%22%20height%3D%2236%22%3E%3Crect%20x%3D%221%22%20y%3D%2214%22%20width%3D%2225%22%20height%3D%228%22%20rx%3D%224%22%20fill%3D%22%23fff%22%20stroke%3D%22%231f2633%22%20stroke-width%3D%222%22/%3E%3C/svg%3E");
     --paper-mark:rgba(245,205,70,.45);
+    --word-mark:rgba(255,206,40,.55);
     --paper-shadow:rgba(20,30,50,.08);
     --danger:#cc3d3d;
     --danger-soft:rgba(204,61,61,.1);
@@ -100,6 +101,7 @@ window.onYouTubeIframeAPIReady = function(){
       --paper-rule:rgba(150,175,210,.16);
       --paper-margin:rgba(220,120,120,.38);
       --paper-mark:rgba(240,195,70,.28);
+      --word-mark:rgba(240,190,40,.38);
       --paper-shadow:rgba(0,0,0,.4);
       --surface:#171c25;
       --surface-2:#1d2430;
@@ -140,6 +142,7 @@ window.onYouTubeIframeAPIReady = function(){
     --paper-rule:rgba(150,175,210,.16);
     --paper-margin:rgba(220,120,120,.38);
     --paper-mark:rgba(240,195,70,.28);
+    --word-mark:rgba(240,190,40,.38);
     --paper-shadow:rgba(0,0,0,.4);
     --surface:#171c25;
     --surface-2:#1d2430;
@@ -376,7 +379,7 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-back .vocab-ctx, .vocab-back .vocab-meaning{box-sizing:border-box;width:fit-content;max-width:100%;padding:0 16px;font-size:28px;line-height:35px;margin:0;text-align:left;}
   .vocab-back .vocab-ctx.small{font-size:26px;line-height:32px;}
   .vocab-back .vocab-meaning{font-size:26px;line-height:32px;font-weight:400;}
-  .vocab-list-meaning .card-notes mark{background:none;color:var(--word-green);font-weight:700;text-decoration:underline 2px var(--word-green);text-underline-offset:4px;}
+  .vocab-list-meaning .card-notes mark{background:linear-gradient(transparent 50%, var(--word-mark) 50%, var(--word-mark) 92%, transparent 92%);color:var(--text);font-weight:700;text-decoration:none;-webkit-box-decoration-break:clone;box-decoration-break:clone;}
   .vocab-back .vocab-ctx mark, .vocab-back .vocab-ctx mark:has(.rd){display:inline;padding:0 1px;margin:0;border-radius:4px;line-height:inherit;}
   .vocab-back .vocab-ctx mark:is(.vocab-hit, .vocab-own){padding:0;border-radius:0;}
   .vocab-back .vocab-ctx mark.vs{border-top-left-radius:4px;border-bottom-left-radius:4px;padding-left:1px;}
@@ -428,13 +431,16 @@ window.onYouTubeIframeAPIReady = function(){
      looks darker), bold like the meaning under it, on a thick underline of that same green, so it stands
      apart at a glance and goes with its meaning. A card that is a whole sentence with its translation is not marked:
      the sentence in the usual ink, its translation plain in green. */
-  .vocab-ctx mark:not(.vocab-hit, .vocab-own){background:none;color:var(--word-green);font-weight:700;text-decoration:underline 3px var(--word-green);text-underline-offset:6px;}
+  /* The word being learnt, in its sentence: in the ordinary ink and bold, run over with a yellow highlighter across its
+     lower half, so it is seen at once and stays easy to read; on its own it is just bold in the ordinary ink. */
+  .vocab-ctx mark:not(.vocab-hit, .vocab-own){background:linear-gradient(transparent 50%, var(--word-mark) 50%, var(--word-mark) 92%, transparent 92%);color:var(--text);font-weight:700;text-decoration:none;-webkit-box-decoration-break:clone;box-decoration-break:clone;}
   /* One rule for every flashcard, a single word or a phrase alike: the underline only picks the word out of an example
      sentence. A word with no sentence that holds it stands alone, bold in the same green, never underlined. The front
      shows the word (or, answer first, its meaning) exactly as the back does: a word and its meaning bold in that green,
      a whole sentence and its translation plain. */
-  .vocab-ctx .vocab-word{font-weight:700;color:var(--word-green);}
-  .vocab-meaning.word, .vocab-front .vocab-term.word, .vocab-card.answer-first .vocab-front .vocab-term.word{font-weight:700;color:var(--word-green);}
+  .vocab-ctx .vocab-word{font-weight:700;color:var(--text);}
+  .vocab-meaning.word, .vocab-card.answer-first .vocab-front .vocab-term.word{font-weight:700;color:var(--word-green);}
+  .vocab-card:not(.answer-first) .vocab-front .vocab-term.word{font-weight:700;color:var(--text);}
   .vocab-ctx mark:has(.rd){padding-top:.7em;padding-top:round(.7em, 1px);}
   .vocab-meaning{font-size:28px;font-weight:400;line-height:35px;color:var(--a-text);overflow-wrap:anywhere;}
   #vocabSpeak{width:48px;}
@@ -908,6 +914,9 @@ window.onYouTubeIframeAPIReady = function(){
   #cardTable.notebook tbody tr.one-sided{background-image:var(--dot-paper);background-size:var(--line) var(--line);background-position:calc(var(--line) / 2) calc(var(--line) / 2);}
   /* A one-sided card's text is written as the Speaking question is (bold, in the lesson colour), as one block in the
      middle of its sheet whose lines start at the same left edge, as on a flashcard. */
+  /* The room above and below a one-sided card's text is measured from its letters (the top of its capitals, its
+     baseline), not from its line, so the 24 px look the same above and below. */
+  #cardTable.notebook tbody tr.one-sided .cell[data-field="q"], .ielts-paper .cell.paper-text{text-box:trim-both cap alphabetic;}
   #cardTable.notebook tbody tr.one-sided .cell[data-field="q"]{width:fit-content;max-width:100%;box-sizing:border-box;margin:0 auto;padding-bottom:0;text-align:left;}
   #cardTable.notebook tbody tr.one-sided:not(.edit-row) .cell[data-field="a"]{display:none;}
   #cardTable.notebook tbody td{display:block;border:0;padding:0;overflow:visible;}
@@ -1175,6 +1184,7 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-list-meaning:has(.card-notes){flex-direction:column;align-items:flex-start;justify-content:center;}
   .vocab-list-meaning .card-notes{margin-top:4px;}
   #cardTable.notebook .card-notes{padding:6px 4px 0;font-size:18px;line-height:25px;}
+  #cardTable.notebook tbody tr.one-sided .card-notes{padding-top:16px;}
   @media (prefers-reduced-motion: reduce){.listen-cover i, .listen-slot .media-video{animation:none !important;}}
   .single-card-q{background:var(--q-bg);}
   .single-card-a{background:var(--a-bg);}
@@ -1505,6 +1515,8 @@ window.onYouTubeIframeAPIReady = function(){
   .ielts-paper.dot-paper{min-height:0;background-image:var(--dot-paper);background-size:var(--line) var(--line);background-position:calc(var(--line) / 2) calc(var(--line) / 2);}
   .ielts-paper .cell.paper-text{width:fit-content;max-width:100%;box-sizing:border-box;margin:0 auto;font-size:20px;line-height:25px;font-weight:700;text-align:left;overflow-wrap:anywhere;white-space:pre-line;color:var(--paper-ink);}
   .ielts-paper.dot-paper .paper-extras:empty{display:none;}
+  .ielts-paper.dot-paper .paper-extras > *{margin-top:24px;}
+  .paper-extras > .paper-stroke:empty{display:none;}
 
   /* Binder rings instead of a red margin line: a sheet with one side (dot paper) is a notepad bound at its top, a sheet
      with a question and its answer (the Speaking paper, the notebook page) is bound on its left. Each ring, white with a dark
@@ -1733,7 +1745,7 @@ window.onYouTubeIframeAPIReady = function(){
      light tone: the top card fades from the day's colour into its neighbour's on the rainbow, with dark writing and the day's colour as
      its accent, and the calendar and bars take it too. */
   #viewToday{--warm:#e5534b;--warm-2:#f07a2a;}
-  .today-goal{position:relative;display:flex;align-items:center;gap:24px;padding:24px 28px;border:1px solid color-mix(in srgb, var(--warm) 18%, var(--border));border-radius:20px;background:linear-gradient(135deg, color-mix(in srgb, var(--warm) 20%, var(--surface)), color-mix(in srgb, var(--warm-2) 18%, var(--surface)));color:var(--text);box-shadow:0 8px 24px color-mix(in srgb, var(--warm) 10%, transparent);overflow:hidden;}
+  .today-goal{position:relative;display:flex;align-items:center;gap:24px;padding:24px 28px;border:1px solid color-mix(in srgb, var(--warm) 18%, var(--border));border-radius:20px;background:linear-gradient(135deg, color-mix(in srgb, var(--warm) 34%, var(--surface)), color-mix(in srgb, var(--warm-2) 30%, var(--surface)));color:var(--text);box-shadow:0 8px 24px color-mix(in srgb, var(--warm) 10%, transparent);overflow:hidden;}
   .hero-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:12px;}
   .today-goal .today-goal-text{box-sizing:border-box;width:calc(100% + 16px);height:40px;padding:4px 8px;margin:-4px -8px 0;border:1px solid transparent;border-radius:10px;background:none;box-shadow:none;color:var(--text);font:inherit;font-size:24px;line-height:30px;font-weight:800;letter-spacing:-.01em;}
   .today-goal .today-goal-text::placeholder{color:var(--text-2);}
@@ -1781,7 +1793,7 @@ window.onYouTubeIframeAPIReady = function(){
   .track-nav:disabled{opacity:.35;}
   .cal-grid{display:grid;grid-template-columns:repeat(7, minmax(0, 1fr));gap:4px;}
   .cal-dow{text-align:center;font-size:12px;line-height:16px;font-weight:700;color:var(--text-2);}
-  .cal-day{--p:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;height:44px;padding:0;border:0;border-radius:10px;background:color-mix(in srgb, var(--warm) calc(var(--p) * .55%), var(--surface-2));color:var(--text);font-size:13px;line-height:16px;}
+  .cal-day{--p:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;height:44px;padding:0;border:0;border-radius:10px;background:color-mix(in srgb, var(--warm) calc(var(--p) * .7%), var(--surface-2));color:var(--text);font-size:13px;line-height:16px;}
   .cal-day b{font-weight:700;}
   .cal-day span{font-size:10px;line-height:12px;color:var(--text-2);}
   .cal-day.blank{background:none;}
@@ -18142,14 +18154,22 @@ function todayTaskHtml(t, i) {
 
 let todayExtraOpen = false;
 
-// The day's colour, in turn through the rainbow without its purples.
-const TODAY_COLORS = [ "#e5534b", "#f07a2a", "#e3a008", "#2fa36b", "#14a3a8", "#3b82f6" ];
+// The day's colour, from the rainbow without its purples.
+const TODAY_COLORS = [ "#e5534b", "#f07a2a", "#e3a008", "#2fa36b", "#14a3a8", "#1e8fe0" ];
+
+// A colour picked at random for each day (the same all day long, on every device), never the same as the day before's.
+function todayColorIndex(time) {
+  const d = new Date(time);
+  const n = Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - new Date(2024, 0, 1)) / 864e5);
+  let h = Math.imul(n, 2654435761) >>> 0;
+  h = Math.imul(h ^ h >>> 15, 2246822519) >>> 0;
+  return (h ^ h >>> 13) % TODAY_COLORS.length;
+}
 
 function paintTodayColor() {
-  const d = new Date;
-  const n = Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - new Date(2024, 0, 1)) / 864e5);
+  let i = todayColorIndex(Date.now());
+  if (i === todayColorIndex(Date.now() - 864e5)) i = (i + 1) % TODAY_COLORS.length;
   const view = document.getElementById("viewToday");
-  const i = n % TODAY_COLORS.length;
   // It fades into its neighbour on the rainbow; blue fades back into teal, as blue into red would turn purple.
   view.style.setProperty("--warm", TODAY_COLORS[i]);
   view.style.setProperty("--warm-2", TODAY_COLORS[i === TODAY_COLORS.length - 1 ? i - 1 : i + 1]);
