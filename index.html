@@ -379,7 +379,7 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-back .vocab-ctx, .vocab-back .vocab-meaning{box-sizing:border-box;width:fit-content;max-width:100%;padding:0 16px;font-size:28px;line-height:35px;margin:0;text-align:left;}
   .vocab-back .vocab-ctx.small{font-size:26px;line-height:32px;}
   .vocab-back .vocab-meaning{font-size:26px;line-height:32px;font-weight:400;}
-  .vocab-list-meaning .card-notes mark{background:none;color:var(--text);font-weight:400;font-size:1.25em;text-decoration:none;}
+  .vocab-list-meaning .card-notes mark{background:linear-gradient(transparent 50%, var(--word-mark) 50%, var(--word-mark) 92%, transparent 92%);color:var(--text);font-weight:400;font-size:1.25em;text-decoration:none;-webkit-box-decoration-break:clone;box-decoration-break:clone;}
   .vocab-back .vocab-ctx mark, .vocab-back .vocab-ctx mark:has(.rd){display:inline;padding:0 1px;margin:0;border-radius:4px;line-height:inherit;}
   .vocab-back .vocab-ctx mark:is(.vocab-hit, .vocab-own){padding:0;border-radius:0;}
   .vocab-back .vocab-ctx mark.vs{border-top-left-radius:4px;border-bottom-left-radius:4px;padding-left:1px;}
@@ -431,16 +431,18 @@ window.onYouTubeIframeAPIReady = function(){
      looks darker), bold like the meaning under it, on a thick underline of that same green, so it stands
      apart at a glance and goes with its meaning. A card that is a whole sentence with its translation is not marked:
      the sentence in the usual ink, its translation plain in green. */
-  /* The word being learnt is written in the ordinary ink and weight, only a quarter larger than the words around it,
-     on both sides of the card alike: in its sentence, on its own, and in a word's notes in ☰ List. */
-  .vocab-ctx mark:not(.vocab-hit, .vocab-own){background:none;color:var(--text);font-weight:400;font-size:1.25em;text-decoration:none;}
+  /* The word being learnt, on both sides of the card alike: in the ordinary ink and weight, a quarter larger than the
+     words around it and run over with a yellow highlighter across its lower half (in its sentence, on its own, and in a
+     word's notes in ☰ List). Question and answer are plain as in every other mode: the ink, then the answer green. */
+  .vocab-ctx mark:not(.vocab-hit, .vocab-own){background:linear-gradient(transparent 50%, var(--word-mark) 50%, var(--word-mark) 92%, transparent 92%);color:var(--text);font-weight:400;font-size:1.25em;text-decoration:none;-webkit-box-decoration-break:clone;box-decoration-break:clone;}
   /* One rule for every flashcard, a single word or a phrase alike: the underline only picks the word out of an example
      sentence. A word with no sentence that holds it stands alone, bold in the same green, never underlined. The front
      shows the word (or, answer first, its meaning) exactly as the back does: a word and its meaning bold in that green,
      a whole sentence and its translation plain. */
-  .vocab-ctx .vocab-word{font-weight:400;font-size:1.25em;color:var(--text);}
-  .vocab-meaning.word, .vocab-card.answer-first .vocab-front .vocab-term.word{font-weight:700;color:var(--word-green);}
+  .vocab-ctx .vocab-word{background:linear-gradient(transparent 50%, var(--word-mark) 50%, var(--word-mark) 92%, transparent 92%);color:var(--text);font-weight:400;font-size:1.25em;text-decoration:none;-webkit-box-decoration-break:clone;box-decoration-break:clone;}
+  .vocab-meaning.word, .vocab-card.answer-first .vocab-front .vocab-term.word{font-weight:400;color:var(--a-text);}
   .vocab-card:not(.answer-first) .vocab-front .vocab-term.word{font-weight:400;font-size:35px;color:var(--text);}
+  .vocab-card:not(.answer-first) .vocab-front .vocab-term.word > span{background:linear-gradient(transparent 50%, var(--word-mark) 50%, var(--word-mark) 92%, transparent 92%);color:var(--text);font-weight:400;text-decoration:none;-webkit-box-decoration-break:clone;box-decoration-break:clone;}
   @media (max-width:600px){.vocab-card:not(.answer-first) .vocab-front .vocab-term.word{font-size:30px;}}
   .vocab-ctx mark:has(.rd){padding-top:.7em;padding-top:round(.7em, 1px);}
   .vocab-meaning{font-size:28px;font-weight:400;line-height:35px;color:var(--a-text);overflow-wrap:anywhere;}
@@ -16385,7 +16387,8 @@ function fillVocabCard(el, item) {
   const viewOnly = vocabViewOnly(item);
   el.classList.toggle("view-only", viewOnly);
   el.classList.toggle("answer-first", vocabFront === "a" && !viewOnly);
-  el.querySelector(".vocab-term").textContent = vocabFront === "a" && !viewOnly ? item.meaning : item.term;
+  // In a span, so the word's highlighter follows its letters (and its lines) rather than the whole box.
+  el.querySelector(".vocab-term").innerHTML = `<span>${escapeHtml(vocabFront === "a" && !viewOnly ? item.meaning : item.term)}</span>`;
   el.querySelector(".vocab-term").classList.toggle("word", !viewOnly && !wholeSentenceCard(item, vocabContext(item).sentence));
   const main = el.querySelector(".vocab-back-main");
   const html = vocabBackInner(item);
