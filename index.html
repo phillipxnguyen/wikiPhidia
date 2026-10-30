@@ -16326,11 +16326,13 @@ function lookupOthers(html, item) {
   return tmp.innerHTML;
 }
 
-// A whole sentence and its translation (the word is the sentence) is shown plain, front and back; a word is bold on
-// both sides, and marked in its sentence on the back.
+// A whole sentence and its translation is shown plain, front and back: the word is the sentence, or nearly all of it
+// (four fifths of its letters or more), so there is nothing to pick out; a word that is only a small part of its
+// sentence is highlighted in it on the back.
 function wholeSentenceCard(item, sentence) {
   const bare = t => foldVocab(t || "").replace(/[\p{P}\s]+/gu, "");
-  return bare(item.term) === bare(sentence) || !sentence && (/[.!?。！？]$/.test(item.term.trim()) || item.term.trim().split(/\s+/).length > 4);
+  const term = bare(item.term), line = bare(sentence);
+  return term === line || !!line && term.length >= line.length * .8 || !sentence && (/[.!?。！？]$/.test(item.term.trim()) || item.term.trim().split(/\s+/).length > 4);
 }
 
 function vocabBackInner(item) {
