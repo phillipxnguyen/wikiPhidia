@@ -891,9 +891,9 @@ window.onYouTubeIframeAPIReady = function(){
   #cardTable.full-list thead{display:none;}
   /* A text lesson's list is a pile of the same sheets as Speaking, one per card: a card with its answer on ruled paper
      bound on its left, a one-sided card on dot paper bound at its top. */
-  #cardTable.notebook{--line:36px;display:block;position:relative;overflow:visible;padding:14px 0 0;background:none;color:var(--paper-ink);border:0;border-radius:0;box-shadow:none;font-family:Georgia, "Times New Roman", serif;}
+  #cardTable.notebook{--line:36px;display:block;position:relative;overflow:visible;padding:0;background:none;color:var(--paper-ink);border:0;border-radius:0;box-shadow:none;font-family:Georgia, "Times New Roman", serif;}
   #cardTable.notebook colgroup, #cardTable.notebook thead{display:none;}
-  #cardTable.notebook tbody{display:flex;flex-direction:column;gap:24px;}
+  #cardTable.notebook tbody{display:flex;flex-direction:column;gap:16px;}
   /* The notebook page keeps the same room on both sides as the Speaking paper (--page-x), clear of the rings on the left. */
   /* Room around the writing: 24 px above and below, 48 px left and right (40 px on a phone), the same on the Speaking
      paper and on every sheet of the list; a ringed sheet is never shorter than two rings need. */
@@ -901,11 +901,12 @@ window.onYouTubeIframeAPIReady = function(){
   @media (max-width:600px){#cardTable.notebook, .ielts-paper{--page-x:40px;}}
   .ielts-paper, #cardTable.notebook tbody tr{min-height:104px;box-sizing:border-box;}
   #cardTable.notebook tbody tr{position:relative;display:grid;grid-template-columns:0 minmax(0, 1fr);padding:var(--page-y) var(--page-x);background:var(--paper);border:1px solid var(--paper-edge);border-radius:4px;box-shadow:0 1px 0 var(--paper-edge), 0 8px 20px var(--paper-shadow);}
-  #cardTable.notebook tbody tr.one-sided{padding-top:40px;background-image:var(--dot-paper);background-size:var(--line) var(--line);background-position:calc(var(--line) / 2) calc(var(--line) / 2);}
+  #cardTable.notebook tbody tr.one-sided{min-height:0;padding-top:48px;padding-bottom:24px;background-image:var(--dot-paper);background-size:var(--line) var(--line);background-position:calc(var(--line) / 2) calc(var(--line) / 2);}
   /* A one-sided card's text is written as the Speaking question is (bold, in the lesson colour), as one block in the
      middle of its sheet whose lines start at the same left edge, as on a flashcard. */
   #cardTable.notebook tbody tr.one-sided .cell[data-field="q"]{width:fit-content;max-width:100%;box-sizing:border-box;margin:0 auto;padding-bottom:0;text-align:left;}
   #cardTable.notebook tbody tr.one-sided.edit-row{padding-top:40px;}
+  #cardTable.notebook tbody tr.one-sided:not(.edit-row) .cell[data-field="a"]{display:none;}
   #cardTable.notebook tbody td{display:block;border:0;padding:0;overflow:visible;}
   #cardTable.notebook td.q-col, #cardTable.notebook td.a-col{grid-column:2;grid-row:1;padding-left:0;}
   #cardTable.notebook td.a-col{grid-row:2;}
@@ -974,10 +975,10 @@ window.onYouTubeIframeAPIReady = function(){
     white-space:pre-line;
     display:none;
   }
-  .hover-tooltip.lookup-tip{max-width:280px;padding:10px;font-size:13px;line-height:18px;white-space:normal;}
-  .hover-tooltip.lookup-tip .tip-r{margin-top:10px;color:#cfd6e2;}
-  .hover-tooltip.lookup-tip .tip-m{margin-top:10px;}
-  .hover-tooltip.lookup-tip small{display:block;margin-top:10px;font-size:12px;line-height:16px;font-style:italic;color:var(--popup-muted);}
+  .hover-tooltip.lookup-tip{max-width:280px;padding:8px 10px;font-size:13px;line-height:18px;white-space:normal;}
+  .hover-tooltip.lookup-tip .tip-r{margin-top:4px;color:#cfd6e2;}
+  .hover-tooltip.lookup-tip .tip-m{margin-top:4px;}
+  .hover-tooltip.lookup-tip small{display:block;margin-top:6px;font-size:12px;line-height:16px;font-style:italic;color:var(--popup-muted);}
   .hover-tooltip.on-popup{z-index:10001;background:var(--popup-text);color:var(--popup-bg);}
   .vocab-popup .vocab-sentence, .vocab-popup .vocab-note li, .vocab-popup .vocab-note > div{cursor:default;}
   .vocab-popup{
@@ -1489,9 +1490,10 @@ window.onYouTubeIframeAPIReady = function(){
   /* A one-sided card has no answer to write on lines: it is dot paper instead, the same white sheet. */
   /* Square while its text fits (an invisible spacer as tall as the sheet is wide keeps it so), taller when the text is
      long: the sheet grows with it and the page scrolls, as the Speaking paper with an answer does. */
-  /* The one-sided sheet keeps the same room (32 px) on all four sides of its writing, the top one counted from the
-     bottom of the rings' holes (24 px into the sheet), never from the paper's edge, so nothing ever touches a ring. */
-  .ielts-paper.dot-paper{--page-x:32px;padding:calc(24px + var(--page-x)) var(--page-x) var(--page-x);}
+  /* A one-sided sheet keeps the same room (24 px) on all four sides of its writing, the top one counted from the
+     bottom of the rings' holes (24 px into the sheet), never from the paper's edge, so nothing ever touches a ring and
+     the writing sits in the middle of the paper the rings leave free. The list's one-sided sheets do the same. */
+  .ielts-paper.dot-paper{--page-x:24px;padding:calc(24px + var(--page-x)) var(--page-x) var(--page-x);}
   .ielts-paper.dot-paper::after{content:"";grid-area:1 / 1;padding-bottom:calc(100% - 24px);pointer-events:none;}
   .ielts-paper.dot-paper > .paper-body{grid-area:1 / 1;align-self:center;}
   .ielts-paper.dot-paper{display:grid;grid-template-columns:minmax(0, 1fr);max-width:480px;background-image:var(--dot-paper);background-size:var(--line) var(--line);background-position:calc(var(--line) / 2) calc(var(--line) / 2);}
@@ -1720,7 +1722,7 @@ window.onYouTubeIframeAPIReady = function(){
   html.in-task .main-inner{box-sizing:border-box;padding:16px;border-radius:var(--radius);background:color-mix(in srgb, var(--surface) 60%, var(--bg));box-shadow:0 20px 60px rgba(10,20,40,.16);}
   html.in-task :is(.lesson-header, #fileStatus, .lesson-meta, .vocab-head){display:none !important;}
   @media (max-width:820px){.task-bar{position:static;}html.in-task .main-inner{padding:12px;}}
-  .today-goal{position:relative;display:flex;align-items:center;gap:24px;padding:28px;border:0;border-radius:20px;background:linear-gradient(135deg, var(--lesson-color), var(--new-color));color:#fff;box-shadow:0 18px 40px color-mix(in srgb, var(--lesson-color) 30%, transparent);overflow:hidden;}
+  .today-goal{position:relative;display:flex;align-items:center;gap:24px;padding:28px;border:0;border-radius:20px;--fire-1:#ff8a00;--fire-2:#e8243c;background:linear-gradient(135deg, var(--fire-1), var(--fire-2));color:#fff;box-shadow:0 18px 40px rgba(232,36,60,.3);overflow:hidden;}
   .today-goal::before{content:"";position:absolute;right:-60px;top:-80px;width:280px;height:280px;border-radius:140px;background:radial-gradient(circle, rgba(255,255,255,.22), transparent 70%);pointer-events:none;}
   .hero-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px;}
   .today-goal .today-goal-text{box-sizing:border-box;width:calc(100% + 16px);height:40px;padding:4px 8px;margin:-4px -8px 0;border:1px solid transparent;border-radius:10px;background:none;box-shadow:none;color:#fff;font:inherit;font-size:24px;line-height:30px;font-weight:800;letter-spacing:-.01em;}
@@ -1737,7 +1739,7 @@ window.onYouTubeIframeAPIReady = function(){
   .hero-chip i{width:20px;height:15px;border-radius:2px;background:var(--flag) center / cover no-repeat;}
   .hero-ring{--p:0;flex:none;position:relative;width:148px;height:148px;border-radius:74px;background:conic-gradient(#fff calc(var(--p) * 1%), rgba(255,255,255,.22) 0);}
   .hero-ring.full{background:conic-gradient(#ffe27a 100%, transparent 0);}
-  .hero-ring-in{position:absolute;inset:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-radius:62px;background:color-mix(in srgb, var(--lesson-color) 55%, var(--new-color));text-align:center;}
+  .hero-ring-in{position:absolute;inset:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-radius:62px;background:color-mix(in srgb, var(--fire-1) 45%, var(--fire-2));text-align:center;}
   .hero-ring-in b{font-size:36px;line-height:40px;font-weight:800;font-variant-numeric:tabular-nums;}
   .hero-ring-in label{display:flex;align-items:center;gap:4px;font-size:13px;line-height:20px;color:rgba(255,255,255,.85);}
   .hero-ring-in input{box-sizing:border-box;width:52px;height:24px;padding:0 4px;border:1px solid rgba(255,255,255,.4);border-radius:8px;background:rgba(255,255,255,.15);color:#fff;font:inherit;font-size:14px;line-height:20px;font-weight:700;text-align:center;}
@@ -1747,7 +1749,10 @@ window.onYouTubeIframeAPIReady = function(){
   .today-items{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
   .today-item{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:2px 10px;border-radius:12px;background:color-mix(in srgb, var(--lesson-color) 12%, transparent);color:var(--lesson-color);font-size:13px;line-height:20px;font-weight:600;}
   .today-item.vocab{background:color-mix(in srgb, var(--new-color) 14%, transparent);color:var(--new-color);}
-  .today-item.more{background:linear-gradient(90deg, color-mix(in srgb, var(--lesson-color) 32%, var(--surface)) var(--split), color-mix(in srgb, var(--new-color) 34%, var(--surface)) var(--split));color:var(--text);font-weight:700;}
+  .today-more{display:inline-flex;}
+  .today-more > .today-item{font-weight:800;}
+  .today-more > .today-item + .today-item{border-top-left-radius:0;border-bottom-left-radius:0;}
+  .today-more > .today-item:not(:last-child){border-top-right-radius:0;border-bottom-right-radius:0;}
   .today-tasks{display:flex;flex-direction:column;gap:4px;}
   .today-empty{margin:0 0 12px;font-size:14px;line-height:20px;color:var(--text-2);}
   .today-task{display:flex;align-items:center;gap:12px;min-height:48px;box-sizing:border-box;padding:8px 8px 8px 12px;border-radius:10px;cursor:pointer;}
@@ -17750,10 +17755,10 @@ function todayItemsHtml(items) {
   const w = Math.min(words.length, cards.length ? 3 : TODAY_CHIPS);
   const shown = cards.slice(0, TODAY_CHIPS - w).concat(words.slice(0, w));
   const more = items.length - shown.length;
-  // The +N chip is split in the two colours by what is left: the lesson's blue for cards, Vocabulary's green for words.
-  const leftCards = cards.length - shown.filter(i => i[1] === "c").length;
-  const split = more > 0 ? Math.round(leftCards / more * 100) : 0;
-  return '<div class="today-items">' + shown.map(([text, kind]) => `<span class="today-item${kind === "v" ? " vocab" : ""}" title="${escapeAttr(text)}">${escapeHtml(truncate(text, 28))}</span>`).join("") + (more > 0 ? `<span class="today-item more" style="--split:${split}%" title="${leftCards} more card${leftCards === 1 ? "" : "s"}, ${more - leftCards} more word${more - leftCards === 1 ? "" : "s"}">+${more}</span>` : "") + "</div>";
+  // What is left shows as one chip in two halves, each with its own count: cards in the lesson's blue, words in
+  // Vocabulary's green (a single half when only one kind is left).
+  const leftCards = cards.length - shown.filter(i => i[1] === "c").length, leftWords = more - leftCards;
+  return '<div class="today-items">' + shown.map(([text, kind]) => `<span class="today-item${kind === "v" ? " vocab" : ""}" title="${escapeAttr(text)}">${escapeHtml(truncate(text, 28))}</span>`).join("") + (more > 0 ? `<span class="today-more" title="${leftCards} more card${leftCards === 1 ? "" : "s"}, ${leftWords} more word${leftWords === 1 ? "" : "s"}">${leftCards ? `<span class="today-item">+${leftCards}</span>` : ""}${leftWords ? `<span class="today-item vocab">+${leftWords}</span>` : ""}</span>` : "") + "</div>";
 }
 
 function todayTaskName(t) {
