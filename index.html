@@ -889,23 +889,26 @@ window.onYouTubeIframeAPIReady = function(){
   table.no-answer-col .a-col{display:none;}
   #cardTable.no-head thead{display:none;}
   #cardTable.full-list thead{display:none;}
-  /* A text lesson's list is a pile of the same sheets as Speaking, one per card: a card with its answer on ruled paper
-     bound on its left, a one-sided card on dot paper bound at its top. */
+  /* A text lesson's list is one sheet of the Speaking paper, divided into one part per card by a thin rule: bound on its
+     left, with a card's answer on ruled lines and a one-sided card's part on dot paper; a lesson of one-sided cards
+     only is all dot paper, bound at its top. */
   #cardTable.notebook{--line:36px;display:block;position:relative;overflow:visible;padding:0;background:none;color:var(--paper-ink);border:0;border-radius:0;box-shadow:none;font-family:Georgia, "Times New Roman", serif;}
   #cardTable.notebook colgroup, #cardTable.notebook thead{display:none;}
-  #cardTable.notebook tbody{display:flex;flex-direction:column;gap:16px;}
+  #cardTable.notebook tbody{position:relative;display:flex;flex-direction:column;min-height:104px;box-sizing:border-box;background:var(--paper);border:1px solid var(--paper-edge);border-radius:4px;box-shadow:0 1px 0 var(--paper-edge), 0 14px 30px var(--paper-shadow);}
+  #cardTable.notebook.no-answer-col tbody{padding-top:24px;background-image:var(--dot-paper);background-size:var(--line) var(--line);background-position:calc(var(--line) / 2) calc(var(--line) / 2);}
   /* The notebook page keeps the same room on both sides as the Speaking paper (--page-x), clear of the rings on the left. */
   /* Room around the writing: 24 px above and below, 48 px left and right (40 px on a phone), the same on the Speaking
      paper and on every sheet of the list; a ringed sheet is never shorter than two rings need. */
   #cardTable.notebook, .ielts-paper{--page-x:48px;--page-y:24px;}
   @media (max-width:600px){#cardTable.notebook, .ielts-paper{--page-x:40px;}}
-  .ielts-paper, #cardTable.notebook tbody tr{min-height:104px;box-sizing:border-box;}
-  #cardTable.notebook tbody tr{position:relative;display:grid;grid-template-columns:0 minmax(0, 1fr);padding:var(--page-y) var(--page-x);background:var(--paper);border:1px solid var(--paper-edge);border-radius:4px;box-shadow:0 1px 0 var(--paper-edge), 0 8px 20px var(--paper-shadow);}
-  #cardTable.notebook tbody tr.one-sided{min-height:0;padding-top:48px;padding-bottom:24px;background-image:var(--dot-paper);background-size:var(--line) var(--line);background-position:calc(var(--line) / 2) calc(var(--line) / 2);}
+  .ielts-paper{min-height:104px;box-sizing:border-box;}
+  #cardTable.notebook tbody tr{position:relative;display:grid;grid-template-columns:0 minmax(0, 1fr);box-sizing:border-box;padding:var(--page-y) var(--page-x);background:none;border:0;}
+  #cardTable.notebook tbody tr + tr{border-top:1px solid var(--paper-rule);}
+  #cardTable.notebook.no-answer-col tbody tr.one-sided{background-image:none;}
+  #cardTable.notebook tbody tr.one-sided{background-image:var(--dot-paper);background-size:var(--line) var(--line);background-position:calc(var(--line) / 2) calc(var(--line) / 2);}
   /* A one-sided card's text is written as the Speaking question is (bold, in the lesson colour), as one block in the
      middle of its sheet whose lines start at the same left edge, as on a flashcard. */
   #cardTable.notebook tbody tr.one-sided .cell[data-field="q"]{width:fit-content;max-width:100%;box-sizing:border-box;margin:0 auto;padding-bottom:0;text-align:left;}
-  #cardTable.notebook tbody tr.one-sided.edit-row{padding-top:40px;}
   #cardTable.notebook tbody tr.one-sided:not(.edit-row) .cell[data-field="a"]{display:none;}
   #cardTable.notebook tbody td{display:block;border:0;padding:0;overflow:visible;}
   #cardTable.notebook td.q-col, #cardTable.notebook td.a-col{grid-column:2;grid-row:1;padding-left:0;}
@@ -1491,25 +1494,25 @@ window.onYouTubeIframeAPIReady = function(){
   .paper-timer{margin-top:4px;font:600 22px/28px ui-monospace, "SF Mono", Menlo, Consolas, monospace;color:var(--paper-ink);}
   .paper-timer.stopped{color:var(--paper-ink-2);}
   /* A one-sided card has no answer to write on lines: it is dot paper instead, the same white sheet. */
-  /* Square while its text fits (an invisible spacer as tall as the sheet is wide keeps it so), taller when the text is
-     long: the sheet grows with it and the page scrolls, as the Speaking paper with an answer does. */
+  /* Just as tall as its writing, as wide as the Speaking paper with an answer, its Notes under the text; once shown,
+     the text's stroke order and dictionary follow, as on the Speaking paper. */
   /* A one-sided sheet keeps the same room (24 px) on all four sides of its writing, the top one counted from the
      bottom of the rings' holes (24 px into the sheet), never from the paper's edge, so nothing ever touches a ring and
      the writing sits in the middle of the paper the rings leave free. The list's one-sided sheets do the same. */
   .ielts-paper.dot-paper{--page-x:24px;padding:calc(24px + var(--page-x)) var(--page-x) var(--page-x);}
-  .ielts-paper.dot-paper::after{content:"";grid-area:1 / 1;padding-bottom:calc(100% - 24px);pointer-events:none;}
-  .ielts-paper.dot-paper > .paper-body{grid-area:1 / 1;align-self:center;}
-  .ielts-paper.dot-paper{display:grid;grid-template-columns:minmax(0, 1fr);max-width:480px;background-image:var(--dot-paper);background-size:var(--line) var(--line);background-position:calc(var(--line) / 2) calc(var(--line) / 2);}
+  .ielts-paper.dot-paper.with-notes .paper-body{grid-template-columns:minmax(0, 1fr);}
+  .ielts-paper.dot-paper .paper-notes{min-width:0;margin-top:24px;padding:16px 0 0;border-left:0;border-top:1px solid var(--paper-rule);}
+  .ielts-paper.dot-paper{min-height:0;background-image:var(--dot-paper);background-size:var(--line) var(--line);background-position:calc(var(--line) / 2) calc(var(--line) / 2);}
   .ielts-paper .cell.paper-text{width:fit-content;max-width:100%;box-sizing:border-box;margin:0 auto;font-size:20px;line-height:25px;font-weight:700;text-align:left;overflow-wrap:anywhere;white-space:pre-line;color:var(--paper-ink);}
   .ielts-paper.dot-paper .paper-extras:empty{display:none;}
 
   /* Binder rings instead of a red margin line: a sheet with one side (dot paper) is a notepad bound at its top, a sheet
      with a question and its answer (the Speaking paper, the notebook page) is bound on its left. Each ring, white with a dark
      outline, runs from outside the sheet into a dark hole punched near its edge. */
-  .ielts-paper.dot-paper::before, .ielts-paper:not(.dot-paper)::before, #cardTable.notebook tbody tr::before{content:"";position:absolute;z-index:1;pointer-events:none;}
+  .ielts-paper.dot-paper::before, .ielts-paper:not(.dot-paper)::before, #cardTable.notebook tbody::before{content:"";position:absolute;z-index:1;pointer-events:none;}
   .ielts-paper.dot-paper{margin-top:16px;}
-  .ielts-paper.dot-paper::before, #cardTable.notebook tbody tr.one-sided::before{top:-8px;bottom:auto;width:auto;left:24px;right:24px;height:32px;border:0;background:var(--ring-top) 0 0 / 36px 32px, radial-gradient(circle at 18px 26px, #1f2633 6px, transparent 6px) 0 0 / 36px 32px;background-repeat:space no-repeat;}
-  .ielts-paper:not(.dot-paper)::before, #cardTable.notebook tbody tr::before{top:16px;bottom:16px;left:-8px;width:32px;border:0;background:var(--ring-left) 0 0 / 32px 36px, radial-gradient(circle at 26px 18px, #1f2633 6px, transparent 6px) 0 0 / 32px 36px;background-repeat:no-repeat space;}
+  .ielts-paper.dot-paper::before, #cardTable.notebook.no-answer-col tbody::before{top:-8px;bottom:auto;width:auto;left:24px;right:24px;height:32px;border:0;background:var(--ring-top) 0 0 / 36px 32px, radial-gradient(circle at 18px 26px, #1f2633 6px, transparent 6px) 0 0 / 36px 32px;background-repeat:space no-repeat;}
+  .ielts-paper:not(.dot-paper)::before, #cardTable.notebook:not(.no-answer-col) tbody::before{top:16px;bottom:16px;left:-8px;width:32px;border:0;background:var(--ring-left) 0 0 / 32px 36px, radial-gradient(circle at 26px 18px, #1f2633 6px, transparent 6px) 0 0 / 32px 36px;background-repeat:no-repeat space;}
   .ielts-paper .cell.hidden.paper-hint, .ielts-paper .cell.hidden.paper-hint:hover{font-style:normal;color:var(--paper-ink);}
   .ielts-paper .paper-prompt:not(.paper-hint):hover{color:var(--paper-ink-2);}
   .paper-hint ol, .paper-notes ol{margin:0;padding:0;list-style:none;counter-reset:paper-n;}
@@ -6379,7 +6382,8 @@ function singleCardFieldsHtml(row) {
 function showPaperExtras(bodyEl, row) {
   const holder = bodyEl.querySelector(".paper-dict");
   if (!holder) return;
-  const text = (row.a || "").trim();
+  // The answer's, or a one-sided card's own text.
+  const text = (hasAnswer(row) ? row.a : row.q || "").trim();
   drawStrokeOrder(bodyEl.querySelector(".paper-stroke"), text, cjkScriptFor(text, row) === "ja");
   const url = dictUrlFor(text, row);
   holder.hidden = !url;
@@ -6409,8 +6413,7 @@ function ieltsPaperHtml(row, ahead = 0) {
   const answer = row.aHidden ? hints.length ? '<div class="cell hidden paper-prompt paper-hint" data-field="a"><ol>' + hints.map(m => `<li>${escapeHtml(m)}</li>`).join("") + "</ol></div>" : '<div class="cell hidden paper-prompt" data-field="a">···</div>' : `<div class="cell shown paper-lines" data-field="a">${aCellContent(row)}</div>`;
   const notes = words.length ? '<aside class="paper-notes"><div class="paper-label">Notes</div><ol>' + words.map(i => `<li><b>${escapeHtml(i.term)}</b>${i.meaning ? " — " + escapeHtml(i.meaning) : ""}</li>`).join("") + "</ol></aside>" : "";
   const extras = row.aHidden ? "" : '<div class="paper-extras"><div class="paper-stroke"></div><div class="paper-dict" hidden></div></div>';
-  // A one-sided card is a square sheet of dot paper with its text and, beside it, its Notes, laid out as on the
-  // Speaking paper; a card with an answer is ruled paper with its question over the answer lines and its Notes beside
+  // A one-sided card is a sheet of dot paper just as tall as its text with its Notes under it; a card with an answer is ruled paper with its question over the answer lines and its Notes beside
   // them. Neither has a heading, a timer, a lesson name or a count: only what is studied.
   if (!hasAnswer(row)) return `<article class="ielts-paper dot-paper${notes ? " with-notes" : ""}"><div class="paper-body"><div class="paper-main"><div class="paper-text cell shown" data-field="q">${qCellContent(row)}</div></div>${notes}</div>` + extras + "</article>";
   return `<article class="ielts-paper${notes ? " with-notes" : ""}">` + '<div class="paper-body"><div class="paper-main">' + `<div class="paper-question"><div class="cell shown" data-field="q">${qCellContent(row)}</div></div>` + `<div class="paper-answer">${answer}</div>` + `</div>${notes}</div>` + extras + "</article>";
