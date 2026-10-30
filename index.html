@@ -16196,9 +16196,12 @@ function vocabKind(st, now) {
 
 // Due words that share their example sentence never come one right after the other: at least one card or word
 // between them. The order stays as it was wherever that already holds.
+function sentenceKey(text) {
+  return text ? foldVocab(text).replace(/[\p{P}\s]+/gu, "") : "";
+}
+
 function vocabSentenceKey(item) {
-  const sentence = item && !vocabViewOnly(item) ? vocabContext(item).sentence : "";
-  return sentence ? foldVocab(sentence).replace(/[\p{P}\s]+/gu, "") : "";
+  return item && !vocabViewOnly(item) ? sentenceKey(vocabContext(item).sentence) : "";
 }
 
 function spreadSameSentence(list, keyOf) {
@@ -18841,16 +18844,24 @@ async function openTodayTask(t) {
 // (overdue ones first of all), then its share of new cards; other tasks hold all the lesson has for today.
 function taskQueue(l, run) {
   const lc = leftToday(l, "cards"), lv = leftToday(l, "vocab");
-  // Due words sharing a sentence are kept apart, as in Vocabulary.
+  // Due reviews that share a sentence are kept apart, as in Vocabulary: two words from one sentence, or a card and
+  // a word of its own sentence, always have something else between them.
   const words = new Map(lessonVocabItems(lessonCardsWithExtras(l)).map(i => [ i.key, i ]));
-  const sentenceOf = key => words.has(key) && vocabStateOf(words.get(key)).reps ? vocabSentenceKey(words.get(key)) : "";
-  lv.dueIds = spreadSameSentence(lv.dueIds, sentenceOf);
-  lv.ids = spreadSameSentence(lv.ids, sentenceOf);
+  const cards = new Map(l.cards.map(c => [ c.uid, c ]));
+  const sentenceOf = pick => {
+    if (pick.k === "v") {
+      const w = words.get(pick.id);
+      return w && vocabStateOf(w).reps ? vocabSentenceKey(w) : "";
+    }
+    const c = cards.get(pick.id);
+    return c && srsOf(c).reps ? sentenceKey(c.q) : "";
+  };
+  const picks = (k, ids) => ids.map(id => ({ k: k, id: id, tries: 0 }));
   if (run && run.remDue != null) {
-    const mix = (c, v) => interleave(c.map(id => ({ k: "c", id: id, tries: 0 })), v.map(id => ({ k: "v", id: id, tries: 0 })));
-    return mix(lc.dueIds, lv.dueIds).slice(0, run.remDue).concat(mix(lc.freshIds, lv.freshIds).slice(0, run.remFresh));
+    const due = spreadSameSentence(interleave(picks("c", lc.dueIds), picks("v", lv.dueIds)), sentenceOf).slice(0, run.remDue);
+    return due.concat(interleave(picks("c", lc.freshIds), picks("v", lv.freshIds)).slice(0, run.remFresh));
   }
-  return interleave(lc.ids.map(id => ({ k: "c", id: id, tries: 0 })), lv.ids.map(id => ({ k: "v", id: id, tries: 0 })));
+  return spreadSameSentence(interleave(picks("c", lc.ids), picks("v", lv.ids)), sentenceOf);
 }
 
 function interleave(c, v) {

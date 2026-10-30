@@ -225,7 +225,7 @@ Tests are part of the backup (💾) and come back with it. A test keeps its own 
 
 ## Vocabulary
 
-Switch from **Lessons** to **Vocabulary** with the 字 button at the top. Words come from the `question: answer` lines in your notes, or can be pasted in directly. They have their own review sessions and scheduling, one lesson at a time or all words together. Words due for review come in a mixed order, but two words with the same example sentence never come one right after the other: at least one other card or word comes between them (in a task on Today too).
+Switch from **Lessons** to **Vocabulary** with the 字 button at the top. Words come from the `question: answer` lines in your notes, or can be pasted in directly. They have their own review sessions and scheduling, one lesson at a time or all words together. Words due for review come in a mixed order, but two words with the same example sentence never come one right after the other: at least one other card or word comes between them. The same holds wherever reviews come one after another: in a task on Today, where a lesson's cards and words are mixed, neither two words of one sentence nor a card and a word of its own sentence follow each other (in Lessons each card is a sentence of its own, so its cards never share one).
 
 | Mode | What it does |
 | --- | --- |
