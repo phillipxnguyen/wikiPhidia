@@ -1734,7 +1734,7 @@ window.onYouTubeIframeAPIReady = function(){
   .today-panel::before{content:"";position:absolute;z-index:1;top:16px;bottom:16px;left:-8px;width:32px;pointer-events:none;background:var(--ring-left) 0 0 / 32px 36px, radial-gradient(circle at 26px 18px, #1f2633 6px, transparent 6px) 0 0 / 32px 36px;background-repeat:no-repeat space;}
   .today-panel .today-tasks{gap:0;}
   .today-panel .today-task{border-radius:0;border-bottom:1px solid var(--paper-rule);padding-left:4px;}
-  .today-panel .today-add{border-top:0;margin-top:0;padding-top:16px;}
+  .today-panel .today-add{border-top:0;margin-top:0;padding-top:8px;}
   /* The sidebar's first tile: a small notepad of dot paper bound at its top, with the first three tasks. */
   .today-pad{grid-column:1 / -1;position:relative;display:flex;flex-direction:column;gap:6px;margin-top:8px;margin-bottom:6px;padding:30px 12px 12px;background:linear-gradient(rgba(16,14,28,.45), rgba(16,14,28,.45)), var(--art) center bottom / cover no-repeat, linear-gradient(135deg, var(--warm), var(--warm-2));image-rendering:pixelated;border:0;border-radius:6px;box-shadow:0 6px 16px rgba(30,20,40,.18);color:var(--hero-ink);text-shadow:0 1px 2px rgba(0,0,0,.45);cursor:pointer;}
   /* The sidebar's Today notepad wears the same pixel scene as the top of Today, under a light glaze, in cream writing. */
@@ -1794,8 +1794,8 @@ window.onYouTubeIframeAPIReady = function(){
   .route-head b{font-size:16px;line-height:22px;color:var(--text);}
   /* The lessons the route has no time for are locked away behind a clasp on the binding: a small dark lock sitting on
      the binding, half on the sheet and half off its left edge, at the rule under the route, with how many lessons wait in a badge on its corner. A
-     click opens it (its shackle lifts and swings open) and the lessons slide out under the route; another click locks
-     them away again. Nothing takes a line of the sheet. */
+     click opens it (its shackle lifts and swings open) and the lessons show at once under the route, after its rule;
+     another click locks them away again. Nothing takes a line of the sheet. */
   .route-clasp-row{position:relative;height:0;}
   .route-clasp{position:absolute;z-index:2;left:calc(-16px - var(--page-x));top:-16px;display:flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border:2px solid var(--paper);border-radius:10px;background:#1f2633;color:#fff;box-shadow:0 2px 6px rgba(20,30,50,.3);cursor:pointer;transition:transform .2s;}
   @media (hover:hover){button.route-clasp:hover{background:#2c3546;border-color:var(--paper);transform:scale(1.08);}}
@@ -1803,9 +1803,10 @@ window.onYouTubeIframeAPIReady = function(){
   .route-clasp .shackle{transform-origin:12px 9px;transition:transform .35s cubic-bezier(.3,1.4,.5,1);}
   .route-clasp.open .shackle{transform:translateY(-3px) rotate(30deg);}
   .route-clasp b{position:absolute;right:-12px;top:-10px;min-width:16px;padding:0 4px;border-radius:8px;background:var(--lesson-color, var(--accent));color:#fff;font-size:10px;line-height:16px;font-weight:800;text-align:center;}
-  .route-extras{display:grid;grid-template-rows:0fr;transition:grid-template-rows .35s ease;}
-  .route-extras.open{grid-template-rows:1fr;}
-  .route-extras > div{min-height:0;overflow:hidden;}
+  .route-extras:not(.open){display:none;}
+  /* The sheet's last task has no rule under it (nor the route's last one while the lock is shut): the add box follows
+     16 px under its writing, as it sits 16 px above the sheet's bottom edge. */
+  .today-tasks > .today-task:last-child, .route-extras .today-task:last-child, .today-tasks:not(.extras-open) > .today-task:has(+ .route-clasp-row){border-bottom:0;}
   .flag-dot{display:inline-block;width:20px;height:15px;margin:0 4px 0 2px;border-radius:2px;vertical-align:-2px;background:var(--flag) center / cover no-repeat;}
   .hero-langs{display:flex;align-items:center;gap:6px;}
   .hero-langs > span{margin-right:4px;font-size:13px;line-height:20px;color:var(--hero-ink-2);}
@@ -18303,6 +18304,7 @@ function renderToday() {
   const label = `${extra.length} more lesson${extra.length === 1 ? "" : "s"} if you have time`;
   const lock = '<svg viewBox="0 0 16 16" aria-hidden="true"><path class="shackle" d="M5 7V5a3 3 0 0 1 6 0v2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><rect x="3" y="7" width="10" height="8" rx="2" fill="currentColor"/></svg>';
   const extraHtml = extra.length ? `<div class="route-clasp-row"><button class="route-clasp${todayExtraOpen ? " open" : ""}" aria-expanded="${todayExtraOpen}" aria-label="${escapeAttr(label)}" title="${escapeAttr(label)}">${lock}<b>${extra.length}</b></button></div><div class="route-extras${todayExtraOpen ? " open" : ""}"><div>${extra.map((t, j) => todayTaskHtml(t, main + j)).join("")}</div></div>` : "";
+  document.getElementById("todayTasks").classList.toggle("extras-open", todayExtraOpen && extra.length > 0);
   document.getElementById("todayTasks").innerHTML = head + (tasks.length ? "" : '<p class="today-empty">Nothing waiting today. Add a task of your own below.</p>') + tasks.slice(0, main).map(todayTaskHtml).join("") + extraHtml;
   const pick = document.getElementById("todayAddLesson");
   const was = pick.value;
@@ -18548,6 +18550,7 @@ document.getElementById("todayTasks").addEventListener("click", e => {
     clasp.classList.toggle("open", todayExtraOpen);
     clasp.setAttribute("aria-expanded", todayExtraOpen);
     document.querySelector("#todayTasks .route-extras").classList.toggle("open", todayExtraOpen);
+    document.getElementById("todayTasks").classList.toggle("extras-open", todayExtraOpen);
     return;
   }
   const row = e.target.closest(".today-task");
