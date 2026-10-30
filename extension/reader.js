@@ -336,11 +336,13 @@ textarea[hidden], .sent-view[hidden]{display:none;}
   let translateToken = 0;
 
   let cardTranslate = null;
+  let cardKeyDown = null;
 
   function closeCard() {
     if (card) card.remove();
     card = null;
     cardTranslate = null;
+    cardKeyDown = null;
     cardWord = null;
   }
 
@@ -364,10 +366,22 @@ textarea[hidden], .sent-view[hidden]{display:none;}
 
   const same = (a, b) => (a || "").trim().toLowerCase() === (b || "").trim().toLowerCase();
 
+  // The lesson last picked on this website: the next words from it go there too, until another is picked.
+  let picks = {};
+  const site = () => location.hostname || location.href;
+  function rememberPick(value) {
+    if (!value || value === "new") return;
+    const name = value.startsWith("name:") ? value.slice(5) : (app.lessons.find(l => "id:" + l.id === value) || {}).name || "";
+    picks = Object.assign({}, picks, { [site()]: { id: value.startsWith("id:") ? value.slice(3) : "", name } });
+    chrome.storage.local.set({ picks });
+  }
+
   function lessonOptions() {
     const list = app.lessons.slice().sort((a, b) => (b.words ? 1 : 0) - (a.words ? 1 : 0) || a.name.localeCompare(b.name));
+    const last = picks[site()];
+    const lastLesson = last && (last.id && list.find(l => l.id === last.id) || last.name && list.find(l => same(l.name, last.name)));
     const fixed = settings.lessonId && list.find(l => l.id === settings.lessonId) || settings.lessonName && list.find(l => same(l.name, settings.lessonName));
-    const wanted = fixed ? fixed.name : settings.lessonName || articleTitle();
+    const wanted = lastLesson ? lastLesson.name : last && last.name ? last.name : fixed ? fixed.name : settings.lessonName || articleTitle();
     const there = list.find(l => same(l.name, wanted));
     let html = there ? "" : `<option value="name:${esc(wanted)}" selected>🆕 ${esc(wanted)}</option>`;
     html += list.map(l => `<option value="id:${esc(l.id)}"${l === there ? " selected" : ""}>${esc(l.name)}</option>`).join("");
@@ -409,9 +423,6 @@ textarea[hidden], .sent-view[hidden]{display:none;}
     // The word and the meaning wrap instead of being cut off; they are still read and set as values.
     [termEl, meaningEl].forEach(el => {
       Object.defineProperty(el, "value", { get() { return this.textContent; }, set(v) { this.textContent = v; } });
-      el.addEventListener("keydown", e => {
-        if (e.key === "Enter") e.preventDefault();
-      });
       el.addEventListener("input", () => {
         if (!el.textContent && el.innerHTML) el.innerHTML = "";
       });
@@ -523,7 +534,7 @@ textarea[hidden], .sent-view[hidden]{display:none;}
     };
     $(".tr-btn").addEventListener("click", cardTranslate);
     $(".lesson").addEventListener("change", e => {
-      if (e.target.value !== "new") return;
+      if (e.target.value !== "new") return rememberPick(e.target.value);
       const name = (prompt("Name of the new lesson", "") || "").trim();
       if (!name) {
         e.target.value = e.target.options[0].value;
@@ -534,15 +545,21 @@ textarea[hidden], .sent-view[hidden]{display:none;}
       opt.textContent = "🆕 " + name;
       e.target.insertBefore(opt, e.target.lastElementChild);
       e.target.value = opt.value;
+      rememberPick(opt.value);
     });
     $(".add").addEventListener("click", () => save());
+    // Enter saves (a new line only in the sentence), Esc closes. Also called from guard.js, which takes the card's keys
+    // away from the page before the page sees them; the target is then the card's focused box.
+    cardKeyDown = (e, target) => {
+      if (e.key === "Escape") closeCard();
+      if (e.key === "Enter" && target !== sentEl) {
+        e.preventDefault();
+        if (!e.shiftKey && !e.isComposing) save();
+      }
+    };
     card.addEventListener("keydown", e => {
       e.stopPropagation();
-      if (e.key === "Escape") closeCard();
-      if (e.key === "Enter" && !e.shiftKey && !e.isComposing && e.target !== sentEl) {
-        e.preventDefault();
-        save();
-      }
+      cardKeyDown(e, e.target);
     });
     ["keyup", "keypress", "mousedown", "mouseup", "click"].forEach(t => card.addEventListener(t, e => e.stopPropagation()));
     meaningEl.focus();
@@ -551,6 +568,7 @@ textarea[hidden], .sent-view[hidden]{display:none;}
       const t = termEl.value.replace(/\s+/g, " ").trim();
       if (!t || $(".add").disabled) return;
       const pick = $(".lesson").value;
+      rememberPick(pick);
       const word = {
         id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
         term: t,
@@ -588,10 +606,10 @@ textarea[hidden], .sent-view[hidden]{display:none;}
   }
 
   let shiftAlone = false;
-  document.addEventListener("keydown", e => {
+  const docKeyDown = e => {
     shiftAlone = e.key === "Shift" && !e.ctrlKey && !e.metaKey && !e.altKey;
-  }, true);
-  document.addEventListener("keyup", e => {
+  };
+  const docKeyUp = e => {
     if (gone()) return;
     if (e.key !== "Shift" || !shiftAlone || !settings.shift || !on()) return;
     shiftAlone = false;
@@ -601,7 +619,20 @@ textarea[hidden], .sent-view[hidden]{display:none;}
     }
     const found = selectedText();
     if (found) openCard(found.text, found.range);
-  }, true);
+  };
+  document.addEventListener("keydown", docKeyDown, true);
+  document.addEventListener("keyup", docKeyUp, true);
+  // Typing in the card is the card's alone: guard.js, listening before the page's own scripts, stops these keys from
+  // ever reaching the page (sites such as ChatGPT otherwise pull every key into their own box) and hands them here.
+  globalThis.wkpGuard = {
+    host,
+    keydown: e => {
+      if (gone()) return;
+      docKeyDown(e);
+      if (cardKeyDown) cardKeyDown(e, root.activeElement);
+    },
+    keyup: e => gone() || docKeyUp(e)
+  };
 
   document.addEventListener("mouseup", e => {
     if (gone() || e.composedPath().includes(host)) return;
@@ -667,6 +698,7 @@ textarea[hidden], .sent-view[hidden]{display:none;}
     if (changes.settings) settings = Object.assign({}, DEFAULTS, changes.settings.newValue || {});
     if (changes.app) app = Object.assign({ lessons: [], words: [] }, changes.app.newValue || {});
     if (changes.pending) pending = changes.pending.newValue || [];
+    if (changes.picks) picks = changes.picks.newValue || {};
     if (changes.settings || changes.app || changes.pending) rescan();
     if (changes.settings) syncYouTube();
     if (changes.settings && !on()) {
@@ -675,7 +707,8 @@ textarea[hidden], .sent-view[hidden]{display:none;}
     }
   });
 
-  chrome.storage.local.get([ "settings", "app", "pending" ]).then(data => {
+  chrome.storage.local.get([ "settings", "app", "pending", "picks" ]).then(data => {
+    picks = data.picks || {};
     settings = Object.assign({}, DEFAULTS, data.settings || {});
     app = Object.assign({ lessons: [], words: [] }, data.app || {});
     pending = data.pending || [];
