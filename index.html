@@ -18156,11 +18156,12 @@ function buildPlan() {
   const counts = todayCounts();
   const lessons = {};
   let reviewN = 0, overdueN = 0, carryN = 0;
-  // Only the lessons in the languages you learn (the lit flags) go on the plan; the others wait behind the lock.
+  // Only the lessons in the languages you learn (the lit flags) go on the plan; the others wait behind the lock. With
+  // no flag lit, nothing does: the plan waits for you to pick a language.
   const cache = new Map;
   const inLangs = l => {
     const lang = todayLangOf(l.id, cache);
-    return !langs.length || !lang || langs.some(x => x.split("-")[0] === lang.split("-")[0]);
+    return langs.length > 0 && (!lang || langs.some(x => x.split("-")[0] === lang.split("-")[0]));
   };
   library.filter(l => !isVirtualId(l.id) && inLangs(l)).forEach(l => {
     const left = leftBoth(l);
@@ -18426,7 +18427,7 @@ function todayGoalHtml(all) {
   const done = tasks.filter(t => t.done).length;
   const next = all.indexOf(tasks.find(t => !t.done));
   const streak = streakInfo().current;
-  const nextHtml = next >= 0 ? `<button class="hero-next" data-i="${next}"><span>Next</span><b>${escapeHtml(todayTaskName(all[next]))}</b>${all[next].act ? `<em>${todayPlan.mins[all[next].key] || all[next].act.mins} min</em>` : Math.round(taskMinutes(all[next])) ? `<em>about ${Math.round(taskMinutes(all[next]))} min</em>` : ""}<i aria-hidden="true">▶</i></button>` : `<div class="hero-next all-done"><b>${tasks.length ? "Today's route is done 🎉" : "Nothing on the route today"}</b></div>`;
+  const nextHtml = next >= 0 ? `<button class="hero-next" data-i="${next}"><span>Next</span><b>${escapeHtml(todayTaskName(all[next]))}</b>${all[next].act ? `<em>${todayPlan.mins[all[next].key] || all[next].act.mins} min</em>` : Math.round(taskMinutes(all[next])) ? `<em>about ${Math.round(taskMinutes(all[next]))} min</em>` : ""}<i aria-hidden="true">▶</i></button>` : `<div class="hero-next all-done"><b>${tasks.length ? "Today's plan is done 🎉" : planLangs().length ? "Nothing on the plan today" : "Light a flag to plan today"}</b></div>`;
   const progress = `<div class="hero-progress"><span><b>${done}</b> of ${tasks.length} steps done</span>${streak ? `<span>🔥 <b>${streak}</b> day${streak === 1 ? "" : "s"} in a row</span>` : ""}</div>`;
   return '<div class="hero-main">' + `<input id="todayGoalText" class="today-goal-text" type="text" value="${escapeAttr(todayPlan.goal)}" placeholder="${escapeAttr(TODAY_GOAL)}" aria-label="Your goal">` + nextHtml + progress + langRow + '</div>' + `<div class="hero-ring${target && minsDone >= target ? " full" : ""}" style="--p:${pct}"><div class="hero-ring-in"><b>${minsDone}</b><label>of <input id="todayPerDay" type="text" maxlength="3" inputmode="numeric" pattern="[0-9]*" value="${target || ""}" placeholder="—" aria-label="Minutes a day"></label><span>min today</span></div></div>`;
 }
@@ -18610,6 +18611,7 @@ function paintTodayArt() {
 function todayFlowHtml(tasks) {
   const plan = todayPlan.route;
   if (!plan || !plan.budget) return '<p class="today-empty">Set the minutes you study a day (in the ring above) and the app plans each day for you.</p>';
+  if (!planLangs().length) return '<p class="today-empty">Light the flags of the languages you learn (above) and the app plans each day for you from those lessons.</p>';
   // Yesterday: the last day with a plan before today.
   const prevKey = Object.keys(todayPlan.log).filter(k => k !== todayPlan.day && keyDate(k) < keyDate(todayPlan.day)).sort((a, b) => keyDate(b) - keyDate(a))[0];
   let yHtml = '<p class="flow-note">No plan yet on an earlier day.</p>';
@@ -18655,14 +18657,14 @@ function renderToday() {
   const langs = planLangs(), lang = route && route.acts.length ? route.acts[route.acts.length - 1].lang : "";
   const next = langs.length > 1 ? langs[(dayIndexOf(Date.now()) + 1) % langs.length] : "";
   const turn = lang ? ` · outside the app in ${flagChip(lang)}${escapeHtml(LANG_NAMES[lang] || "")}${next ? ` (tomorrow ${flagChip(next)}${escapeHtml(LANG_NAMES[next])})` : ""}` : "";
-  const head = route && route.budget ? `<div class="route-head"><b>Today's plan</b><span>${planMinutes(route)} min · ${routeTasks(tasks).filter(t => !t.own).length} steps, in the order to do them${turn}</span></div>` : "";
+  const head = route && route.budget && langs.length ? `<div class="route-head"><b>Today's plan</b><span>${planMinutes(route)} min · ${routeTasks(tasks).filter(t => !t.own).length} steps, in the order to do them${turn}</span></div>` : "";
   const extra = tasks.filter(t => t.extra);
   const main = tasks.length - extra.length;
   const label = `${extra.length} more lesson${extra.length === 1 ? "" : "s"} if you have time`;
   const lock = '<svg viewBox="0 0 16 16" aria-hidden="true"><path class="shackle" d="M5 7V5a3 3 0 0 1 6 0v2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><rect x="3" y="7" width="10" height="8" rx="2" fill="currentColor"/></svg>';
   const extraHtml = extra.length ? `<div class="route-clasp-row"><button class="route-clasp${todayExtraOpen ? " open" : ""}" aria-expanded="${todayExtraOpen}" aria-label="${escapeAttr(label)}" title="${escapeAttr(label)}">${lock}<b>${extra.length}</b></button></div><div class="route-extras${todayExtraOpen ? " open" : ""}"><div>${extra.map((t, j) => todayTaskHtml(t, main + j)).join("")}</div></div>` : "";
   document.getElementById("todayTasks").classList.toggle("extras-open", todayExtraOpen && extra.length > 0);
-  document.getElementById("todayTasks").innerHTML = head + (tasks.length ? "" : '<p class="today-empty">Nothing waiting today. Add a task of your own below.</p>') + tasks.slice(0, main).map(todayTaskHtml).join("") + extraHtml;
+  document.getElementById("todayTasks").innerHTML = head + (routeTasks(tasks).length ? "" : langs.length ? '<p class="today-empty">Nothing waiting today. Add a task of your own below.</p>' : '<p class="today-empty">No language picked: light a flag above to plan your lessons. Your own tasks still go here.</p>') + tasks.slice(0, main).map(todayTaskHtml).join("") + extraHtml;
   const pick = document.getElementById("todayAddLesson");
   const was = pick.value;
   pick.innerHTML = '<option value="">No lesson</option>' + sortedLibrary().filter(l => !isVirtualId(l.id)).map(l => `<option value="${escapeAttr(l.id)}">${escapeHtml(l.name || "Untitled lesson")}</option>`).join("");
