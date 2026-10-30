@@ -1791,15 +1791,20 @@ window.onYouTubeIframeAPIReady = function(){
   @media (max-width:600px){.today-goal{flex-direction:column-reverse;align-items:stretch;padding:20px;gap:16px;}.hero-ring{align-self:center;}.today-goal .today-goal-text{font-size:20px;line-height:28px;}}
   .route-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;padding:4px 8px 12px 12px;border-bottom:1px solid var(--paper-rule);font-size:13px;line-height:20px;color:var(--text-2);}
   .route-head b{font-size:16px;line-height:22px;color:var(--text);}
-  .route-extra{display:flex;align-items:center;gap:8px;width:100%;padding:12px 8px 12px 12px;border:0;border-radius:0;background:none;color:var(--text-2);font-size:13px;line-height:20px;text-align:left;}
-  @media (hover:hover){button.route-extra:hover{background:none;}}
-  /* As much room under the line as over it: open, the first lesson under it starts as close as the rule above; closed,
-     the add box follows just as close. */
-  .route-extra.open{padding-bottom:4px;}
-  .today-tasks:has(> .route-extra:last-child) + .today-add{margin-top:0;padding-top:0;}
-  .route-extra b{color:var(--text);font-weight:600;}
-  .route-extra i{margin-left:auto;font-style:normal;font-size:18px;line-height:20px;transition:transform .15s;}
-  .route-extra.open i{transform:rotate(90deg);}
+  /* The lessons the route has no time for are locked away behind a clasp on the binding: a small dark lock sitting on
+     the rings in the left margin, at the rule under the route, with how many lessons wait in a badge on its corner. A
+     click opens it (its shackle lifts and swings open) and the lessons slide out under the route; another click locks
+     them away again. Nothing takes a line of the sheet. */
+  .route-clasp-row{position:relative;height:0;}
+  .route-clasp{position:absolute;z-index:2;left:-50px;top:-16px;display:flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border:2px solid var(--paper);border-radius:10px;background:#1f2633;color:#fff;box-shadow:0 2px 6px rgba(20,30,50,.3);cursor:pointer;transition:transform .2s;}
+  @media (hover:hover){button.route-clasp:hover{background:#2c3546;border-color:var(--paper);transform:scale(1.08);}}
+  .route-clasp svg{width:16px;height:16px;overflow:visible;}
+  .route-clasp .shackle{transform-origin:12px 9px;transition:transform .35s cubic-bezier(.3,1.4,.5,1);}
+  .route-clasp.open .shackle{transform:translateY(-3px) rotate(30deg);}
+  .route-clasp b{position:absolute;right:-12px;top:-10px;min-width:16px;padding:0 4px;border-radius:8px;background:var(--lesson-color, var(--accent));color:#fff;font-size:10px;line-height:16px;font-weight:800;text-align:center;}
+  .route-extras{display:grid;grid-template-rows:0fr;transition:grid-template-rows .35s ease;}
+  .route-extras.open{grid-template-rows:1fr;}
+  .route-extras > div{min-height:0;overflow:hidden;}
   .flag-dot{display:inline-block;width:20px;height:15px;margin:0 4px 0 2px;border-radius:2px;vertical-align:-2px;background:var(--flag) center / cover no-repeat;}
   .hero-langs{display:flex;align-items:center;gap:6px;}
   .hero-langs > span{margin-right:4px;font-size:13px;line-height:20px;color:var(--hero-ink-2);}
@@ -18294,7 +18299,9 @@ function renderToday() {
   const head = route ? `<div class="route-head"><b>Today's route</b><span>${todayPlan.minutes} min · ${parts.join(", ")}</span></div>` : "";
   const extra = tasks.filter(t => t.extra);
   const main = tasks.length - extra.length;
-  const extraHtml = extra.length ? `<button class="route-extra${todayExtraOpen ? " open" : ""}" aria-expanded="${todayExtraOpen}"><span>If you have time</span><b>${extra.length} more lesson${extra.length === 1 ? "" : "s"}</b><i aria-hidden="true">›</i></button>` + (todayExtraOpen ? extra.map((t, j) => todayTaskHtml(t, main + j)).join("") : "") : "";
+  const label = `${extra.length} more lesson${extra.length === 1 ? "" : "s"} if you have time`;
+  const lock = '<svg viewBox="0 0 16 16" aria-hidden="true"><path class="shackle" d="M5 7V5a3 3 0 0 1 6 0v2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><rect x="3" y="7" width="10" height="8" rx="2" fill="currentColor"/></svg>';
+  const extraHtml = extra.length ? `<div class="route-clasp-row"><button class="route-clasp${todayExtraOpen ? " open" : ""}" aria-expanded="${todayExtraOpen}" aria-label="${escapeAttr(label)}" title="${escapeAttr(label)}">${lock}<b>${extra.length}</b></button></div><div class="route-extras${todayExtraOpen ? " open" : ""}"><div>${extra.map((t, j) => todayTaskHtml(t, main + j)).join("")}</div></div>` : "";
   document.getElementById("todayTasks").innerHTML = head + (tasks.length ? "" : '<p class="today-empty">Nothing waiting today. Add a task of your own below.</p>') + tasks.slice(0, main).map(todayTaskHtml).join("") + extraHtml;
   const pick = document.getElementById("todayAddLesson");
   const was = pick.value;
@@ -18534,9 +18541,13 @@ document.getElementById("todayTasks").addEventListener("change", e => {
 
 document.getElementById("todayTasks").addEventListener("click", e => {
   if (e.target.closest(".act-mins")) return;
-  if (e.target.closest(".route-extra")) {
+  const clasp = e.target.closest(".route-clasp");
+  if (clasp) {
     todayExtraOpen = !todayExtraOpen;
-    return renderToday();
+    clasp.classList.toggle("open", todayExtraOpen);
+    clasp.setAttribute("aria-expanded", todayExtraOpen);
+    document.querySelector("#todayTasks .route-extras").classList.toggle("open", todayExtraOpen);
+    return;
   }
   const row = e.target.closest(".today-task");
   const t = row && todayShown[Number(row.dataset.i)];
