@@ -10009,6 +10009,8 @@ function ghostFor(parts) {
   const shown = parts.filter(visible).flatMap(el => el.id === "cardTable" || el.id === "singleCardView" && !deckOn() ? [ contentShape(el) ] : [ el ]);
   const rects = shown.map(el => el.id === "singleCardView" && deckOn() ? deckRects() : [ el.getBoundingClientRect() ]).flat();
   if (!rects.length) return null;
+  const bar = !row && taskModeChanges() && document.querySelector(currentView === "vocab" ? "#vocabToolbar" : "#viewStudy .toolbar");
+  if (bar && bar.offsetParent) rects.push(bar.getBoundingClientRect());
   const left = Math.round(Math.min(...rects.map(r => r.left)));
   const top = Math.round(Math.min(...rects.map(r => r.top)));
   const bottom = Math.round(Math.max(...rects.map(r => r.bottom)));
@@ -18615,6 +18617,20 @@ async function taskAdvance() {
   }
   renderTaskBar();
   paintTaskBadges();
+}
+
+function taskModeOf(pick) {
+  if (!pick) return "";
+  if (pick.k === "v") return "word";
+  const l = library.find(x => x.id === taskRun.lessonId);
+  return l ? lessonSkill(l) : "";
+}
+
+function taskModeChanges() {
+  const run = taskRun;
+  if (!run || !run.queue || !run.current || !run.queue.length) return false;
+  const now = currentView === "vocab" ? "word" : mixStyle === "listen" ? "listen" : "speak";
+  return taskModeOf(run.queue[0]) !== now;
 }
 
 function taskOpenSide(run, side) {
