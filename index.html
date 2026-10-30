@@ -1546,10 +1546,6 @@ window.onYouTubeIframeAPIReady = function(){
   .ielts-paper .paper-question .cell{color:var(--accent);}
   .paper-num{flex:none;}
   .ielts-paper .cell{padding:0;font-size:inherit;color:inherit;text-align:left;border-radius:0;}
-  /* Notes on the paper start with the same paper clip as the Notes box, in the paper's black ink, tilted the same way,
-     taking the start of their first line as in the Notes box, the lines below running under it to the left edge. */
-  .paper-notes .card-notes{padding:0;font-size:inherit;line-height:inherit;}
-  .paper-label{display:inline-block;width:12px;height:22px;margin-right:8px;vertical-align:-4px;background:var(--paper-ink);-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 48' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M7 14v22a3 3 0 0 0 6 0V8a5 5 0 0 0-10 0v31a7 7 0 0 0 14 0V14'/%3E%3C/svg%3E") center / contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 48' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M7 14v22a3 3 0 0 0 6 0V8a5 5 0 0 0-10 0v31a7 7 0 0 0 14 0V14'/%3E%3C/svg%3E") center / contain no-repeat;transform:rotate(-14deg);}
   .ielts-paper .paper-lines, .ielts-paper .paper-prompt, .ielts-paper .cell.shown.paper-lines:hover, .ielts-paper .cell.hidden.paper-prompt:hover{font-size:20px;line-height:var(--line);background-image:linear-gradient(to bottom, transparent calc(var(--line) - 1px), var(--paper-rule) calc(var(--line) - 1px));background-size:100% var(--line);}
   .ielts-paper .paper-prompt{min-height:calc(var(--line) * 5);color:var(--paper-ink-2);font-style:normal;}
   .ielts-paper .paper-lines{user-select:text;cursor:pointer;}
@@ -1558,6 +1554,7 @@ window.onYouTubeIframeAPIReady = function(){
   .ielts-paper.with-notes .paper-body{grid-template-columns:minmax(0, 1fr) fit-content(44%);}
   .paper-notes{min-width:180px;padding-left:20px;border-left:2px solid var(--paper-rule);font-size:18px;line-height:25px;}
   .paper-notes li + li{margin-top:6px;}
+  .paper-notes .card-notes{padding:0;font-size:inherit;line-height:inherit;}
   .paper-notes li{padding-left:0;}
   .paper-notes li::before{content:none;}
   .paper-notes .pn{display:inline-block;min-width:24px;}
@@ -6451,23 +6448,6 @@ function ieltsHints(row) {
   }).sort((x, y) => x.at - y.at).map(h => h.meaning);
 }
 
-// The paper clip that heads the Notes stands at the start of their first line, like its first word (as in the Notes box).
-function clipFirstLine(html) {
-  const box = document.createElement("div");
-  box.innerHTML = html;
-  const first = document.createTreeWalker(box, NodeFilter.SHOW_TEXT, {
-    acceptNode: n => n.nodeValue.trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP
-  }).nextNode();
-  const clip = document.createElement("span");
-  clip.className = "paper-label";
-  clip.setAttribute("role", "img");
-  clip.setAttribute("aria-label", "Notes");
-  let at = first;
-  while (at && at.parentNode !== box && /^(SPAN|B|STRONG|I|EM|U|MARK|A)$/.test(at.parentNode.nodeName)) at = at.parentNode;
-  if (at) at.parentNode.insertBefore(clip, at); else box.prepend(clip);
-  return box.innerHTML;
-}
-
 function ieltsPaperHtml(row, ahead = 0) {
   const words = row.aHidden ? [] : cardWords(row);
   const hints = row.aHidden && ieltsHintId === row.id ? ieltsHints(row) : [];
@@ -6475,7 +6455,7 @@ function ieltsPaperHtml(row, ahead = 0) {
   // The words the card holds, numbered; a card holding none shows its own notes as they were written.
   const own = row.aHidden || words.length ? "" : cardNotesHtml(row);
   const list = words.length ? "<ol>" + words.map((i, n) => `<li><span class="pn">${n + 1}.</span><b>${escapeHtml(i.term)}</b>${i.meaning ? " — " + escapeHtml(i.meaning) : ""}</li>`).join("") + "</ol>" : own;
-  const notes = list ? `<aside class="paper-notes">${clipFirstLine(list)}</aside>` : "";
+  const notes = list ? `<aside class="paper-notes">${list}</aside>` : "";
   const extras = row.aHidden ? "" : '<div class="paper-extras"><div class="paper-stroke"></div><div class="paper-dict" hidden></div></div>';
   // A one-sided card is a sheet of dot paper just as tall as its text with its Notes under it; a card with an answer is ruled paper with its question over the answer lines and its Notes beside
   // them. Neither has a heading, a timer, a lesson name or a count: only what is studied.
