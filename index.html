@@ -2260,6 +2260,7 @@ window.onYouTubeIframeAPIReady = function(){
       <button id="listenModeBtn" style="display:none;" aria-label="Listening">🎧</button>
       <button id="ieltsModeBtn" style="display:none;" aria-label="Speaking">🗒️</button>
     </div>
+    <span class="flag-set toolbar-flag" aria-hidden="true" hidden></span>
     <div class="toolbar-right">
       <button id="btnPlaySequence" aria-label="Play"></button>
       <select id="playbackSpeed" style="visibility:hidden;">
@@ -6140,7 +6141,7 @@ function centerCounts() {
     const twoSides = !!right && [ ...right.children ].some(el => shown(el) && getComputedStyle(el).visibility !== "hidden");
     counts.style.marginLeft = "";
     counts.style.marginRight = "";
-    if (twoSides && !taskRun) {
+    if (twoSides) {
       const auto = parseFloat(getComputedStyle(counts).marginLeft) || 0;
       counts.style.marginLeft = Math.round(auto) + "px";
       counts.style.marginRight = "auto";
@@ -6151,8 +6152,7 @@ function centerCounts() {
     if (Math.abs(c.top - box.top) > c.height) return;
     const cs = getComputedStyle(bar), gap = parseFloat(cs.columnGap) || 0;
     const natural = lefts.length ? Math.max(...lefts.map(el => el.getBoundingClientRect().right)) - box.left + gap : parseFloat(cs.paddingLeft) || 0;
-    const room = twoSides ? box.width - natural - c.width - gap - right.getBoundingClientRect().width - (parseFloat(cs.paddingRight) || 0) : Infinity;
-    counts.style.marginLeft = Math.max(0, Math.round(Math.min(room, (box.width - c.width) / 2 - natural))) + "px";
+    counts.style.marginLeft = Math.max(0, Math.round((box.width - c.width) / 2 - natural)) + "px";
     counts.style.marginRight = "auto";
   });
 }
@@ -9475,6 +9475,7 @@ function syncModeButtonHighlights() {
   listenBtn.style.display = deckHasVideoCards() && !isVirtualLesson() && !caughtUp ? "" : "none";
   ieltsBtn.style.display = rows.some(speakable) && !video && !caughtUp ? "" : "none";
   fullBtn.closest(".segmented").hidden = isAllLessons();
+  document.querySelector("#viewStudy .toolbar-flag").hidden = !isAllLessons();
   fullBtn.classList.toggle("active", !groupState);
   listenBtn.classList.toggle("active", !!groupState && groupViewStyle === "listen");
   ieltsBtn.classList.toggle("active", !!groupState && groupViewStyle === "ielts");
@@ -18614,7 +18615,6 @@ async function taskAdvance() {
   }
   renderTaskBar();
   paintTaskBadges();
-  centerCounts();
 }
 
 function taskOpenSide(run, side) {
