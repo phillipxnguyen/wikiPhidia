@@ -380,7 +380,7 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-back .vocab-ctx.small{font-size:28px;line-height:35px;}
   /* On a flashcard the question and the answer are the same size, front and back; its notes are 2 px smaller. */
   .vocab-back .vocab-meaning{font-size:28px;line-height:35px;font-weight:400;}
-  .vocab-list-meaning .card-notes mark{background:linear-gradient(transparent 10%, var(--word-mark) 10%, var(--word-mark) 96%, transparent 96%);border-radius:0 !important;color:var(--text);font-weight:400;font-size:1.25em;text-decoration:none;-webkit-box-decoration-break:clone;box-decoration-break:clone;}
+  .vocab-list-meaning .card-notes mark{background:linear-gradient(transparent 10%, var(--word-mark) 10%, var(--word-mark) 96%, transparent 96%);border-radius:0 !important;color:var(--text);font-weight:400;text-decoration:none;-webkit-box-decoration-break:clone;box-decoration-break:clone;}
   .vocab-back .vocab-ctx mark, .vocab-back .vocab-ctx mark:has(.rd){display:inline;padding:0 1px;margin:0;border-radius:4px;line-height:inherit;}
   .vocab-back .vocab-ctx mark:is(.vocab-hit, .vocab-own){padding:0;border-radius:0;}
   .vocab-back .vocab-ctx mark.vs{border-top-left-radius:4px;border-bottom-left-radius:4px;padding-left:1px;}
@@ -16194,6 +16194,32 @@ function vocabKind(st, now) {
   return st.streak === 0 ? 0 : 1;
 }
 
+// Due words that share their example sentence never come one right after the other: at least one card or word
+// between them. The order stays as it was wherever that already holds.
+function vocabSentenceKey(item) {
+  const sentence = item && !vocabViewOnly(item) ? vocabContext(item).sentence : "";
+  return sentence ? foldVocab(sentence).replace(/[\p{P}\s]+/gu, "") : "";
+}
+
+function spreadSameSentence(list, keyOf) {
+  const keys = new Map(list.map(x => [ x, keyOf(x) ]));
+  const left = new Map;
+  keys.forEach(k => k && left.set(k, (left.get(k) || 0) + 1));
+  const out = [], rest = list.slice();
+  while (rest.length) {
+    const last = out.length ? keys.get(out[out.length - 1]) : "";
+    const fits = x => !last || keys.get(x) !== last;
+    // A sentence holding more than half of what is left goes first whenever it can, or it would end up in a row.
+    const heavy = [ ...left ].find(([ k, n ]) => k !== last && n * 2 > rest.length);
+    let i = heavy ? rest.findIndex(x => keys.get(x) === heavy[0]) : rest.findIndex(fits);
+    if (i === -1) i = 0;
+    const [ x ] = rest.splice(i, 1);
+    if (keys.get(x)) left.set(keys.get(x), left.get(keys.get(x)) - 1);
+    out.push(x);
+  }
+  return out;
+}
+
 function startVocabSession() {
   const now = Date.now();
   const items = lessonVocabItems(vocabSource()).filter(i => !vocabViewOnly(i));
@@ -16204,7 +16230,9 @@ function startVocabSession() {
     shuffle: Math.random()
   })).filter(p => vocabStateOf(p.item).due <= now);
   picked.sort((a, b) => a.kind - b.kind || (a.kind === 2 ? a.at - b.at : a.shuffle - b.shuffle));
-  const allowed = limitVocab(picked.map(p => p.item));
+  let allowed = limitVocab(picked.map(p => p.item));
+  const dueCount = allowed.filter(i => vocabStateOf(i).reps).length;
+  if (allowed.slice(0, dueCount).every(i => vocabStateOf(i).reps)) allowed = spreadSameSentence(allowed.slice(0, dueCount), vocabSentenceKey).concat(allowed.slice(dueCount));
   vocabSession = {
     lessonId: currentLessonId,
     queue: allowed.map(i => i.key),
@@ -16492,12 +16520,12 @@ function fitHighlights(root) {
 
 document.fonts && document.fonts.ready.then(() => fitHighlights());
 
-// The grey and green lookup boxes hug their word's own letters the same way, 3 px above the highest mark and 3 px below
+// The grey and green lookup boxes hug their word's own letters the same way, 2 px above the highest mark and 2 px below
 // the lowest one, with their usual rounded corners. A word cut into pieces (words that overlap) is measured as one, so
 // its pieces stay level. Only font metrics are needed, so it works on hidden pages too; the box is cut with a mask, so
 // the hover and stacked colours stay in the stylesheet.
 const LOOKUP_SEL = ":is(.rich-editor, .cell, .vocab-ctx) mark:is(.vocab-hit, .vocab-own)";
-const LOOKUP_PAD = 3;
+const LOOKUP_PAD = 2;
 
 function lookupRun(mark) {
   const run = [ mark ];
@@ -16635,7 +16663,8 @@ function showVocabDeck(stage, item) {
     stage.innerHTML = '<div class="vocab-deck"></div>';
     deck = stage.firstElementChild;
   }
-  const nextKey = vocabSession && vocabSession.queue[1];
+  // In a task the next word is the task's own next pick, made ready under this one as in any lesson.
+  const nextKey = vocabSession && (vocabSession.queue[1] || taskRun && taskRun.queue && taskRun.queue[0] && taskRun.queue[0].k === "v" && taskRun.queue[0].id);
   const next = nextKey && nextKey !== item.key ? lessonVocabItems(vocabSource()).find(i => i.key === nextKey) : null;
   const want = [ item, next ].filter(Boolean);
   const same = (el, it) => el.dataset.key === it.key && el.dataset.term === it.term;
@@ -16709,6 +16738,12 @@ const VOCAB_FLIP_MS = 450;
 function renderVocab() {
   markFreshLesson();
   if (currentView !== "vocab") return;
+  // In a task the word just studied stays where it is, counts, toolbar and all, until the next card or word takes its
+  // place: never an empty or shifted frame between them.
+  if (taskRun && vocabView === "card" && !vocabEditingKey && vocabSession && vocabSession.lessonId === currentLessonId && (taskRun.opening || taskRun.current && taskRun.current.k === "v") && !currentVocabItem()) {
+    taskSideDone();
+    return;
+  }
   vocabStudying = false;
   document.getElementById("viewVocab").classList.remove("focus-study");
   setTimeout(updateTouchBar, 0);
@@ -16799,6 +16834,10 @@ function renderVocab() {
     due: buckets.has("due"),
     done: buckets.has("done")
   });
+  if (!studying.length && taskRun) {
+    taskSideDone();
+    return;
+  }
   if (!studying.length) {
     badges.innerHTML = "";
     document.getElementById("vocabToolbar").style.display = "none";
@@ -16807,12 +16846,6 @@ function renderVocab() {
     const more = heldMore(due, limitVocab(due), vocabStateOf);
     const held = more.total;
     const text = finishText(held, studiedToday(vocabSource(), true), next, "card", items.map(vocabStateOf));
-    // In a task the word just studied stays where it is until the next card or word takes its place: never an empty
-    // frame between them.
-    if (taskRun) {
-      taskSideDone();
-      return;
-    }
     const celebrate = !stage.querySelector(".session-complete") || stage.dataset.lessonId !== String(currentLessonId);
     if (celebrate) stopAllSound();
     stage.dataset.lessonId = currentLessonId;
@@ -18808,6 +18841,11 @@ async function openTodayTask(t) {
 // (overdue ones first of all), then its share of new cards; other tasks hold all the lesson has for today.
 function taskQueue(l, run) {
   const lc = leftToday(l, "cards"), lv = leftToday(l, "vocab");
+  // Due words sharing a sentence are kept apart, as in Vocabulary.
+  const words = new Map(lessonVocabItems(lessonCardsWithExtras(l)).map(i => [ i.key, i ]));
+  const sentenceOf = key => words.has(key) && vocabStateOf(words.get(key)).reps ? vocabSentenceKey(words.get(key)) : "";
+  lv.dueIds = spreadSameSentence(lv.dueIds, sentenceOf);
+  lv.ids = spreadSameSentence(lv.ids, sentenceOf);
   if (run && run.remDue != null) {
     const mix = (c, v) => interleave(c.map(id => ({ k: "c", id: id, tries: 0 })), v.map(id => ({ k: "v", id: id, tries: 0 })));
     return mix(lc.dueIds, lv.dueIds).slice(0, run.remDue).concat(mix(lc.freshIds, lv.freshIds).slice(0, run.remFresh));
@@ -18972,8 +19010,9 @@ function taskCardGone() {
 // A word of the task has been graded (its flashcard is gone and nothing else waits in the session): the next pick.
 function taskSideDone() {
   const run = taskRun;
-  if (!run || run.opening || !run.current || run.current.k !== "v" || currentView !== "vocab") return;
+  if (!run || run.opening || !run.current || run.current.k !== "v" || currentView !== "vocab") return false;
   setTimeout(() => taskRun === run && !run.opening && !currentVocabItem() && taskAdvance(), 0);
+  return true;
 }
 
 document.getElementById("taskClose").onclick = () => openToday();

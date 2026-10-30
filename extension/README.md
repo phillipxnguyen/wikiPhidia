@@ -4,15 +4,15 @@ A browser extension for reading on the web (news, articles, any page) that picks
 
 ## Install (Chrome, Edge, Brave, Arc)
 
-1. Download this repository (Code → Download ZIP) and unzip it, or pull it.
+1. Download [Extension.zip](https://github.com/phillipxnguyen/wikiPhidia/raw/main/Extension.zip) and unzip it: it gives a folder named `Extension` (or pull this repository and use its `extension` folder).
 2. Open `chrome://extensions` (`edge://extensions` in Edge) and turn on **Developer mode**.
-3. Click **Load unpacked** and pick the `extension` folder.
+3. Click **Load unpacked** and pick the `Extension` folder.
 4. Pin the green 字 icon to the toolbar.
 5. Open wikiPhidia once (https://phillipxnguyen.github.io/wikiPhidia/) so the extension connects and learns your lessons and words.
 
 ## Updating
 
-The extension checks GitHub for a newer version every time you open its popup (and when the browser starts). When there is one, the icon shows a blue **↑** and the popup a banner: **Download** gets the new files, unzip them over your `extension` folder, then press **Reload** right there (no need to open `chrome://extensions`). **Settings** shows the version you have and has a **Reload extension** button too.
+The extension checks GitHub for a newer version every time you open its popup (and when the browser starts). When there is one, the icon shows a blue **↑** and the popup a banner: **Download** gets Extension.zip, which unzips to a folder named `Extension`; put its files in place of those in the folder you loaded, then press **Reload** right there (no need to open `chrome://extensions`). **Settings** shows the version you have and has a **Reload extension** button too.
 
 After an update or a reload, pages that are already open pick up the new version by themselves (no need to reload them): saving words and marking them keep working at once.
 
