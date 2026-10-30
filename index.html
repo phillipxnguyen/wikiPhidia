@@ -5280,9 +5280,19 @@ function doneWordKeys() {
   return keys;
 }
 
+// Words just added to the notes of the card on screen don't take it away: it is graded as it is now, and waits for
+// those words from its next showing on. (Card uid → the keys added while it was on screen.)
+const addedOnScreen = new Map;
+
+function waitWords(r) {
+  const fresh = addedOnScreen.get(r.uid);
+  const words = vocabEntriesOf(r);
+  return fresh ? words.filter(e => !fresh.has(e.key)) : words;
+}
+
 function cardWaiting(r) {
   if (!r || r.uid === EXTRA_UID || !srsOf(r).reps) return false;
-  const words = vocabEntriesOf(r);
+  const words = waitWords(r);
   if (!words.length) return false;
   const done = doneWordKeys();
   return words.some(e => !done.has(e.key));
@@ -5290,7 +5300,7 @@ function cardWaiting(r) {
 
 function gradeWaits(r) {
   if (!r || r.uid === EXTRA_UID) return false;
-  const words = vocabEntriesOf(r);
+  const words = waitWords(r);
   if (!words.length) return false;
   const done = doneWordKeys();
   return words.some(e => !done.has(e.key));
@@ -6481,8 +6491,8 @@ function renderStudy() {
   if (singleCard) {
     table.style.display = "none";
     if (singleCardRows.length === 0) {
-      // The card on screen has just left the study (a review given a new word in its notes now waits for that word):
-      // the next one comes up at once, in a task as in All lessons, rather than an empty page.
+      // The card on screen has just left the study: the next one comes up at once, in a task as in All lessons,
+      // rather than an empty page.
       if (taskRun && taskRun.queue) {
         if (taskCardGone()) return;
       } else if (isAllLessons() && mixFocusId && !mixSwiping && mixCandidates().some(([ r ]) => r.id !== mixFocusId)) return mixNext();
@@ -10126,6 +10136,7 @@ function applyGrade(r, isAgain, mode, now) {
   scheduleReview(st, grade, now);
   logReview(r, mode, grade, now, fresh);
   const waits = cardWaiting(r);
+  addedOnScreen.delete(r.uid);
   if (waits) st.due = now;
   if (isAgain && mode === "Table" && !waits) {
     if (!groupState.pendingAgain) groupState.pendingAgain = [];
@@ -10134,6 +10145,7 @@ function applyGrade(r, isAgain, mode, now) {
       readyAt: st.due
     });
   }
+  return waits;
 }
 
 function gradeCard(row, isAgain) {
@@ -10146,7 +10158,7 @@ function gradeCard(row, isAgain) {
   if (isCardMode()) stopTts();
   adjustSequenceIndexForRemoval(row.id);
   pushUndo(gradeLabel(isAgain) + " — " + cardSummary(row));
-  applyGrade(row, isAgain, mode, Date.now());
+  const waits = applyGrade(row, isAgain, mode, Date.now());
   if (groupViewStyle === "ielts") {
     ieltsAnswered++;
     ieltsHintId = null;
@@ -10162,7 +10174,7 @@ function gradeCard(row, isAgain) {
       return mixNext();
     }
     render();
-  }, next, cardWaiting(row) ? "Waiting" : undefined);
+  }, next, waits ? "Waiting" : undefined);
 }
 
 let heldPage = null;
@@ -16179,6 +16191,11 @@ function vocabKeysOf(card) {
 function stampNewVocab(card, before) {
   const fresh = vocabEntriesOf(card).filter(e => !before.has(e.key));
   if (!fresh.length) return;
+  if (currentView === "study" && [ mixFocusId, pinnedCardId, lastShownCardId ].includes(card.id) && card.uid) {
+    const keys = addedOnScreen.get(card.uid) || new Set;
+    fresh.forEach(e => keys.add(e.key));
+    addedOnScreen.set(card.uid, keys);
+  }
   const at = vocabStamp();
   if (!card.vocab) card.vocab = {};
   fresh.forEach(e => {
@@ -19208,18 +19225,13 @@ function endTask() {
   renderTaskBar();
 }
 
-// The task's card has left the study while on screen: a review that was given a new word in its notes waits for that
-// word. The word comes up next, the card goes to the end of the task (it shows then if its words are done by then).
+// The task's card has left the study while on screen (it now waits for words of its notes, say): the next pick comes
+// up and the card goes to the end of the task, shown then if it is ready by then.
 function taskCardGone() {
   const run = taskRun;
   if (!run || run.opening || !run.current || run.current.k !== "c") return false;
   const pick = run.current, row = rows.find(r => r.uid === pick.id);
-  if (row && cardWaiting(row)) {
-    const done = doneWordKeys();
-    const words = vocabEntriesOf(row).filter(e => !done.has(e.key) && !run.queue.some(q => q.k === "v" && q.id === e.key)).map(e => ({ k: "v", id: e.key, tries: 0 }));
-    run.queue.unshift(...words);
-    run.queue.push(pick);
-  }
+  if (row && cardWaiting(row)) run.queue.push(pick);
   run.current = null;
   taskAdvance();
   return true;
