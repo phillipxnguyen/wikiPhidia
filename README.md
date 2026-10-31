@@ -8,12 +8,12 @@ The whole app is one file, `index.html`. There is no build step and nothing to i
 
 ## Search or ask
 
-The box at the top of the sidebar (**Search or ask…**) opens one search for everything, like Spotlight on a Mac: click it, or press **⌘K** (Ctrl K on Windows) or **/** anywhere. A large rounded field drops in near the top of the screen, frosted over the page, with the results in a second frosted panel under it. Type part of a word you half remember and it finds it even with a letter wrong or missing (*scren* finds *screen*), with or without accents (*kiem tra* finds *kiểm tra*), in any of your lessons:
+The box at the top of the sidebar (**Search or ask…**) opens one search for everything, like Spotlight on a Mac: click it, or press **⌘K** (Ctrl K on Windows) or **/** anywhere. A large rounded field drops in high on the screen, like Spotlight, frosted over the page, with the results in a second frosted panel under it. Type part of a word you half remember and it finds it even with a letter wrong or missing (*scren* finds *screen*), with or without accents (*kiem tra* finds *kiểm tra*), in any of your lessons:
 
 - **Words**: each word with its meaning (in the answers' green) and its lesson; Enter (or a click) opens it in its lesson's Vocabulary list, in its editor.
 - **Cards**: the card's question with its answer and lesson; Enter opens the lesson in ☰ Full at that card, in its editor.
 - **Lessons** by name; Enter opens the lesson.
-- **Actions**: Today, New lesson, Open file, Back up everything, Statistics, Tests, switching Lessons / Vocabulary, the light or dark theme; with nothing typed they are all listed.
+- **Actions**: Today, New lesson, Open file, Back up everything, Statistics, Tests, switching Lessons / Vocabulary, the light or dark theme. With nothing typed only Today, Tests and Switch Lessons / Vocabulary are listed (the others are already in the sidebar); a long list scrolls inside its panel.
 - **Look up "…"**: always last, opens the dictionary for what you typed in a new tab, for a word that is in none of your lessons yet.
 
 ↑ ↓ move through the results (the one picked is tinted, with ↵ at its end), Enter opens it, Esc or a click outside closes it, and ⌘K again too. On a phone the field sits at the top of the screen; open it from the box in the menu.
