@@ -1787,6 +1787,22 @@ window.onYouTubeIframeAPIReady = function(){
   @media (max-width:600px){.hero-langs{flex-wrap:wrap;}.hero-preset{margin-left:0;}}
   .preset-pop{position:fixed;z-index:2000;box-sizing:border-box;display:flex;flex-direction:column;gap:12px;width:360px;max-width:calc(100vw - 16px);max-height:calc(100vh - 16px);overflow:auto;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);color:var(--text);}
   .preset-pop[hidden]{display:none;}
+  .settings-pop{position:fixed;z-index:2000;box-sizing:border-box;display:flex;flex-direction:column;gap:10px;width:380px;max-width:calc(100vw - 16px);max-height:calc(100vh - 16px);overflow:auto;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);color:var(--text);}
+  .settings-pop[hidden]{display:none;}
+  .set-title{font-size:16px;line-height:22px;font-weight:700;}
+  .set-head{padding-top:10px;border-top:1px solid var(--border);font-size:12px;line-height:16px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-2);}
+  .set-theme{align-self:flex-start;}
+  .set-theme button{min-width:44px;padding:6px 10px;font-size:18px;line-height:24px;}
+  .set-note{margin:0;font-size:13px;line-height:18px;color:var(--text-2);}
+  .set-font{display:grid;grid-template-columns:88px minmax(0, 1fr) 150px;align-items:center;gap:10px;min-height:36px;font-size:14px;line-height:20px;}
+  .set-lang{font-weight:600;}
+  .set-sample{overflow:hidden;font-size:20px;line-height:28px;white-space:nowrap;text-overflow:ellipsis;}
+  .set-font select{box-sizing:border-box;width:100%;height:32px;padding:0 8px;font-size:14px;line-height:18px;}
+  @media (max-width:600px){.set-font{grid-template-columns:76px minmax(0, 1fr) 160px;}.set-font select{font-size:16px;}}
+  :is(#singleCardBody, #vocabStage, .settings-pop) [data-sl="zh"]{font-family:var(--sf-zh);}
+  :is(#singleCardBody, #vocabStage, .settings-pop) [data-sl="ja"]{font-family:var(--sf-ja);}
+  :is(#singleCardBody, #vocabStage, .settings-pop) [data-sl="ko"]{font-family:var(--sf-ko);}
+  :is(#singleCardBody, #vocabStage) [data-sl] :is(.loop-time, rt), :is(#singleCardBody, #vocabStage) [data-sl] .rd::before{font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;}
   .preset-list{display:flex;flex-wrap:wrap;gap:6px;}
   .preset-chip{height:32px;padding:0 12px;border:1px solid var(--border);border-radius:16px;background:var(--surface-2);color:var(--text);font-size:13px;line-height:20px;font-weight:600;}
   .preset-chip.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);}
@@ -2036,7 +2052,7 @@ window.onYouTubeIframeAPIReady = function(){
     <input type="file" id="fileInput" class="file-input-hidden" accept=".json" multiple>
     <button id="btnBackupAll" class="ghost" title="Save every lesson and your review history as YYYY-MM-DD-flashcards.json. The first time you pick a folder; after that it saves there directly (one file per day). Shift-click to pick a different folder." aria-label="Back up">💾</button>
     <button id="btnStats" class="ghost" title="Statistics" aria-label="Statistics">📊</button>
-    <button id="btnTheme" class="ghost" title="Theme — switch between light ☀️ and dark 🌙. Starts with your computer's setting." aria-label="Theme: light">☀️</button>
+    <button id="btnSettings" class="ghost" title="Settings: theme and the fonts used while you study" aria-label="Settings" aria-haspopup="dialog" aria-controls="settingsPop" aria-expanded="false">⚙️</button>
   </div>
 </aside>
 
@@ -2047,6 +2063,7 @@ window.onYouTubeIframeAPIReady = function(){
 </div>
 
 <div id="presetPop" class="preset-pop" hidden role="dialog" aria-label="Study rules"></div>
+<div id="settingsPop" class="settings-pop" hidden role="dialog" aria-label="Settings"></div>
 
 <div id="spot" class="spot" hidden role="dialog" aria-modal="true" aria-label="Search or Ask">
   <div class="spot-box">
@@ -8349,7 +8366,7 @@ touchQuery.addEventListener("change", () => {
 document.getElementById("btnDrawer").onclick = () => document.querySelector(".shell").classList.toggle("drawer-open");
 
 document.querySelector(".sidebar").addEventListener("click", e => {
-  if (e.target.closest(".lesson-item, .sidebar-footer button:not(#btnTheme)")) document.querySelector(".shell").classList.remove("drawer-open");
+  if (e.target.closest(".lesson-item, .sidebar-footer button:not(#btnSettings)")) document.querySelector(".shell").classList.remove("drawer-open");
 });
 
 [ "tbody", "singleCardBody" ].forEach(id => {
@@ -13709,11 +13726,6 @@ function openAddView() {
   showView(currentView === "add" ? "study" : "add");
 }
 
-const THEME_LABELS = {
-  light: "☀️",
-  dark: "🌙"
-};
-
 const systemDarkQuery = matchMedia("(prefers-color-scheme: dark)");
 
 function systemTheme() {
@@ -13729,10 +13741,14 @@ function shownTheme() {
   return currentTheme() === "auto" ? systemTheme() : currentTheme();
 }
 
+let pendingTheme = null;
+
 function updateThemeButton() {
-  const btn = document.getElementById("btnTheme");
-  btn.textContent = THEME_LABELS[shownTheme()];
-  btn.setAttribute("aria-label", "Theme: " + (shownTheme() === "dark" ? "dark" : "light"));
+  const shown = pendingTheme || shownTheme();
+  document.querySelectorAll("#settingsPop [data-theme-pick]").forEach(b => {
+    b.classList.toggle("active", b.dataset.themePick === shown);
+    b.setAttribute("aria-pressed", String(b.dataset.themePick === shown));
+  });
 }
 
 systemDarkQuery.addEventListener("change", updateThemeButton);
@@ -14333,19 +14349,18 @@ document.getElementById("btnBackupAll").onclick = backupEverything;
 
 document.getElementById("btnStats").onclick = () => showView(currentView === "stats" ? "study" : "stats");
 
-let pendingTheme = null;
-
-document.getElementById("btnTheme").onclick = () => {
-  const next = (pendingTheme || shownTheme()) === "dark" ? "light" : "dark";
+function switchTheme(next, anchor) {
+  if (next === (pendingTheme || shownTheme())) return;
   const apply = () => {
     if (pendingTheme === next) pendingTheme = null;
     applyTheme(next === systemTheme() ? "auto" : next);
   };
   if (!document.startViewTransition || reducedMotion()) return apply();
   pendingTheme = next;
+  updateThemeButton();
   fairyFly({
     kind: "tap",
-    box: onScreenBox(document.getElementById("btnTheme")),
+    box: onScreenBox(anchor),
     liveName: "fairy-magic",
     onTouch: (x, y) => {
       const r = Math.ceil(Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y)));
@@ -14358,7 +14373,146 @@ document.getElementById("btnTheme").onclick = () => {
       })).catch(() => {});
     }
   });
-};
+}
+
+function toggleTheme() {
+  switchTheme((pendingTheme || shownTheme()) === "dark" ? "light" : "dark", document.getElementById("btnSettings"));
+}
+
+const STUDY_FONTS_KEY = "flashcards.studyFonts";
+
+const STUDY_FONT_LANGS = [ [ "zh", "Chinese", "学习", [ "Ma Shan Zheng", "Long Cang", "Zhi Mang Xing", "ZCOOL KuaiLe", "Liu Jian Mao Cao" ] ], [ "ja", "Japanese", "勉強", [ "Klee One", "Yomogi", "Zen Kurenaido", "Hachi Maru Pop", "Yusei Magic" ] ], [ "ko", "Korean", "공부", [ "Gaegu", "Poor Story", "Nanum Pen Script", "Gamja Flower", "Hi Melody" ] ] ];
+
+const UI_FONT = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+
+let studyFonts = readLocal(STUDY_FONTS_KEY) || {};
+
+function loadStudyFont(name) {
+  if ([ ...document.querySelectorAll("link[data-study-font]") ].some(l => l.dataset.studyFont === name)) return;
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.dataset.studyFont = name;
+  link.href = "https://fonts.googleapis.com/css2?family=" + name.replace(/ /g, "+") + "&display=swap";
+  document.head.appendChild(link);
+}
+
+function applyStudyFonts() {
+  STUDY_FONT_LANGS.forEach(([ k, , , list ]) => {
+    const name = studyFonts[k];
+    if (name && list.includes(name)) {
+      loadStudyFont(name);
+      document.documentElement.style.setProperty("--sf-" + k, `"${name}", ${UI_FONT}`);
+    } else document.documentElement.style.removeProperty("--sf-" + k);
+  });
+}
+
+function settingsPopHtml() {
+  const shown = pendingTheme || shownTheme();
+  const theme = [ [ "light", "☀️", "Light" ], [ "dark", "🌙", "Dark" ] ].map(([ k, icon, name ]) => `<button type="button" data-theme-pick="${k}" class="${k === shown ? "active" : ""}" aria-pressed="${k === shown}" aria-label="${name}" title="${name}">${icon}</button>`).join("");
+  const fonts = STUDY_FONT_LANGS.map(([ k, name, sample, list ]) => `<label class="set-font"><span class="set-lang">${name}</span><span class="set-sample" data-sl="${k}">${sample}</span><select data-font-lang="${k}" aria-label="${name} font"><option value="">System</option>${list.map(f => `<option value="${escapeAttr(f)}"${studyFonts[k] === f ? " selected" : ""}>${escapeHtml(f)}</option>`).join("")}</select></label>`).join("");
+  return `<div class="set-title">Settings</div><div class="set-head">Theme</div><div class="segmented set-theme" role="group" aria-label="Theme">${theme}</div><div class="set-head">Fonts while studying</div><p class="set-note">Only on the cards while you study (Listening, Speaking, Flashcards), for Chinese, Japanese and Korean; lists, editors and the rest keep the usual font.</p>${fonts}`;
+}
+
+function placeSettingsPop() {
+  const pop = document.getElementById("settingsPop"), btn = document.getElementById("btnSettings");
+  if (pop.hidden) return;
+  const r = btn.getBoundingClientRect();
+  pop.style.left = Math.round(Math.max(8, Math.min(r.left, window.innerWidth - pop.offsetWidth - 8))) + "px";
+  pop.style.top = Math.round(Math.max(8, r.top - pop.offsetHeight - 8)) + "px";
+}
+
+function toggleSettingsPop(open) {
+  const pop = document.getElementById("settingsPop");
+  pop.hidden = open === undefined ? !pop.hidden : !open;
+  document.getElementById("btnSettings").setAttribute("aria-expanded", String(!pop.hidden));
+  document.getElementById("btnSettings").classList.toggle("active", !pop.hidden);
+  if (pop.hidden) return;
+  pop.innerHTML = settingsPopHtml();
+  placeSettingsPop();
+}
+
+document.getElementById("btnSettings").onclick = () => toggleSettingsPop();
+
+document.getElementById("settingsPop").addEventListener("click", e => {
+  const b = e.target.closest("[data-theme-pick]");
+  if (b) switchTheme(b.dataset.themePick, b);
+});
+
+document.getElementById("settingsPop").addEventListener("change", e => {
+  const k = e.target.dataset.fontLang;
+  if (!k) return;
+  if (e.target.value) studyFonts[k] = e.target.value; else delete studyFonts[k];
+  try {
+    localStorage.setItem(STUDY_FONTS_KEY, JSON.stringify(studyFonts));
+  } catch (err) {}
+  applyStudyFonts();
+});
+
+document.getElementById("settingsPop").addEventListener("keydown", e => {
+  e.stopPropagation();
+  if (e.key === "Escape") {
+    toggleSettingsPop(false);
+    document.getElementById("btnSettings").focus();
+  }
+});
+
+document.addEventListener("keydown", e => {
+  if (e.key !== "Escape" || document.getElementById("settingsPop").hidden) return;
+  e.preventDefault();
+  e.stopPropagation();
+  toggleSettingsPop(false);
+}, true);
+
+document.addEventListener("pointerdown", e => {
+  const pop = document.getElementById("settingsPop");
+  if (pop.hidden || pop.contains(e.target) || e.target.closest("#btnSettings")) return;
+  toggleSettingsPop(false);
+}, true);
+
+addEventListener("resize", placeSettingsPop);
+
+const STUDY_TEXT_SEL = ".cell[data-field], .card-notes li, .card-notes > div, .card-notes > p, .card-notes b, .card-notes strong, .paper-notes li, .paper-notes b, .vocab-term, .vocab-ctx, .vocab-meaning, .vocab-word-notes li, .vocab-word-notes > div, .vocab-word-notes b, .vocab-word-notes strong";
+
+function studyTextLang(text) {
+  const count = re => (text.match(re) || []).length;
+  const n = {
+    ko: count(/[\uAC00-\uD7A3\u1100-\u11FF\u3130-\u318F]/g),
+    kana: count(/[\u3040-\u30FF]/g),
+    han: count(/[\u4E00-\u9FFF]/g),
+    latin: count(/[A-Za-z\u00C0-\u024F\u1E00-\u1EFF]/g)
+  };
+  const top = Math.max(n.ko, n.kana + n.han, n.latin);
+  if (!top || n.latin === top) return "";
+  if (n.ko === top) return "ko";
+  return n.kana || detectScript(text) === "ja" ? "ja" : "zh";
+}
+
+function markStudyText(root) {
+  root.querySelectorAll(STUDY_TEXT_SEL).forEach(el => {
+    const lang = studyTextLang(el.textContent);
+    if ((el.dataset.sl || "") === lang) return;
+    if (lang) el.dataset.sl = lang; else delete el.dataset.sl;
+  });
+}
+
+const studyTextRoots = [ document.getElementById("singleCardBody"), document.getElementById("vocabStage") ];
+
+let studyTextFrame = 0;
+
+const studyTextObserver = new MutationObserver(() => {
+  if (!studyTextFrame) studyTextFrame = requestAnimationFrame(() => {
+    studyTextFrame = 0;
+    studyTextRoots.forEach(markStudyText);
+  });
+});
+
+studyTextRoots.forEach(el => studyTextObserver.observe(el, {
+  childList: true,
+  subtree: true,
+  characterData: true
+}));
+
+applyStudyFonts();
 
 document.getElementById("btnOpenFile").onclick = () => document.getElementById("fileInput").click();
 
@@ -22661,8 +22815,7 @@ const SIDEBAR_KEYS = {
   KeyB: "btnBackupAll",
   KeyW: "btnStats",
   KeyO: "btnOpenFile",
-  KeyQ: "btnAppMode",
-  KeyT: "btnTheme"
+  KeyQ: "btnAppMode"
 };
 
 const APP_KEYS = {
@@ -22686,10 +22839,10 @@ document.addEventListener("keydown", e => {
     });
     return;
   }
-  if (e.altKey && (e.metaKey || e.ctrlKey) && !e.shiftKey && (SIDEBAR_KEYS[e.code] || e.code === "KeyA" || e.code === "KeyX")) {
+  if (e.altKey && (e.metaKey || e.ctrlKey) && !e.shiftKey && (SIDEBAR_KEYS[e.code] || e.code === "KeyA" || e.code === "KeyX" || e.code === "KeyT")) {
     e.preventDefault();
     if (e.repeat || tabPaused || dialogOpen()) return;
-    if (e.code === "KeyA") addFromKey(); else if (e.code === "KeyX") openTests(); else document.getElementById(SIDEBAR_KEYS[e.code]).click();
+    if (e.code === "KeyA") addFromKey(); else if (e.code === "KeyX") openTests(); else if (e.code === "KeyT") toggleTheme(); else document.getElementById(SIDEBAR_KEYS[e.code]).click();
     return;
   }
   if (e.isComposing || e.keyCode === 229 || e.metaKey || e.ctrlKey || e.altKey || e.shiftKey || e.repeat || tabPaused) return;
