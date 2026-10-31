@@ -13,7 +13,7 @@ The box at the top of the sidebar (**Search or Ask**) opens one search for every
 - **Words**: each word with its meaning (in the answers' green) and its lesson; Enter (or a click) opens it in its lesson's Vocabulary list, in its editor.
 - **Cards**: the card's question with its answer and lesson; Enter opens the lesson in ☰ Full at that card, in its editor.
 - **Lessons** by name; Enter opens the lesson.
-- **Actions**: Today, New lesson, Open file, Back up everything, Statistics, Tests, switching Lessons / Vocabulary, the light or dark theme. With nothing typed only Today, Tests and Switch Lessons / Vocabulary are listed (the others are already in the sidebar); a long list scrolls inside its panel.
+- **Recent**: with nothing typed, the list shows only what you opened lately: the words, cards, lessons and look-ups you picked in Search, newest first, then the lessons you opened last, up to 8 in all (kept in this browser only). There are no buttons for other parts of the app here; they are in the sidebar. A long list scrolls inside its panel.
 - **Look up "…"**: always last, opens the dictionary for what you typed in a new tab, for a word that is in none of your lessons yet.
 
 ↑ ↓ move through the results (the one picked is tinted, with ↵ at its end), Enter opens it, Esc or a click outside closes it, and ⌘/ again too. On a phone the field sits at the top of the screen; open it from the box in the menu.

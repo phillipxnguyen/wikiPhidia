@@ -19539,9 +19539,9 @@ function toggleBigVideo() {
   return true;
 }
 
-const SPOT_ACTIONS = [ [ "📅", "Today", "today plan tasks hom nay", () => openToday() ], [ "➕", "New lesson", "new lesson add create them bai moi", () => createLesson() ], [ "📥", "Open file", "open import file backup mo", () => document.getElementById("fileInput").click() ], [ "💾", "Back up everything", "backup save luu sao luu", () => backupEverything() ], [ "📊", "Statistics", "stats statistics thong ke", () => showView("stats") ], [ "📝", "Tests", "test exam kiem tra thi", () => document.getElementById("testNav").click() ], [ "字", "Switch Lessons / Vocabulary", "switch mode vocabulary lessons doi tu vung", () => document.getElementById("btnAppMode").click() ], [ "🌗", "Light / dark theme", "theme dark light giao dien toi sang", () => document.getElementById("btnTheme").click() ] ];
+const SPOT_RECENT_KEY = "flashcards.spotRecent";
 
-const SPOT_SIDEBAR = [ "New lesson", "Open file", "Back up everything", "Statistics", "Light / dark theme" ];
+const SPOT_RECENT_MAX = 8;
 
 let spotItems = [], spotAt = 0;
 
@@ -19597,11 +19597,85 @@ function spotResults(raw) {
     if (c.length) groups.push([ "Cards", c ]);
     if (ls.length) groups.push([ "Lessons", ls ]);
   }
-  const acts = SPOT_ACTIONS.map(([ icon, label, keys, run ]) => ({ kind: "action", icon: icon, label: label, run: run, score: q ? Math.max(spotScore(q, label), spotScore(q, keys)) : 1 }));
-  const a = q ? take(acts, 4) : acts.filter(x => !SPOT_SIDEBAR.includes(x.label));
-  if (q) a.push({ kind: "look", label: raw.trim() });
-  if (a.length) groups.push([ q ? "Actions" : "Go to", a ]);
+  if (q) groups.push([ "Dictionary", [ {
+    kind: "look",
+    label: raw.trim()
+  } ] ]);
+  else {
+    const recent = spotRecentItems();
+    if (recent.length) groups.push([ "Recent", recent ]);
+  }
   return groups;
+}
+
+function spotRecentItems() {
+  const saved = readLocal(SPOT_RECENT_KEY);
+  const out = [], seen = new Set;
+  const add = it => {
+    const id = spotRecentId(spotRecentEntry(it));
+    if (seen.has(id) || out.length >= SPOT_RECENT_MAX) return;
+    seen.add(id);
+    out.push(it);
+  };
+  (Array.isArray(saved) ? saved : []).forEach(r => {
+    if (r.kind === "look") return add({
+      kind: "look",
+      label: r.label
+    });
+    const lesson = library.find(l => l.id === r.lessonId);
+    if (!lesson) return;
+    if (r.kind === "lesson") return add({
+      kind: "lesson",
+      lesson: lesson
+    });
+    if (r.kind === "word") {
+      const item = lessonVocabItems(lessonCardsWithExtras(lesson)).find(x => x.key === r.key);
+      return item && add({
+        kind: "word",
+        lesson: lesson,
+        item: item
+      });
+    }
+    const card = r.kind === "card" && lesson.cards.find(c => c.uid === r.uid);
+    if (card) add({
+      kind: "card",
+      lesson: lesson,
+      card: card
+    });
+  });
+  recentLessonIds().forEach(id => {
+    const lesson = library.find(l => l.id === id);
+    if (lesson) add({
+      kind: "lesson",
+      lesson: lesson
+    });
+  });
+  return out;
+}
+
+function spotRecentEntry(it) {
+  return it.kind === "look" ? {
+    kind: "look",
+    label: it.label
+  } : {
+    kind: it.kind,
+    lessonId: it.lesson.id,
+    key: it.item ? it.item.key : undefined,
+    uid: it.card ? it.card.uid : undefined
+  };
+}
+
+function spotRecentId(r) {
+  return r.kind === "look" ? "look|" + r.label : [ r.kind, r.lessonId, r.key || "", r.uid || "" ].join("|");
+}
+
+function noteSpotRecent(it) {
+  const entry = spotRecentEntry(it), id = spotRecentId(entry);
+  const saved = readLocal(SPOT_RECENT_KEY);
+  const rest = (Array.isArray(saved) ? saved : []).filter(r => r && spotRecentId(r) !== id);
+  try {
+    localStorage.setItem(SPOT_RECENT_KEY, JSON.stringify([ entry ].concat(rest).slice(0, SPOT_RECENT_MAX)));
+  } catch (e) {}
 }
 
 function renderSpot() {
@@ -19614,7 +19688,7 @@ function renderSpot() {
   const row = it => {
     const n = i++;
     const name = it.lesson ? escapeHtml(it.lesson.name || "Untitled lesson") : "";
-    const inner = it.kind === "word" ? `<span class="spot-ico">🔤</span><span class="spot-main"><b>${escapeHtml(it.item.term)}</b><span><span class="spot-mean">${escapeHtml(it.item.meaning || "")}</span>${it.item.meaning ? " · " : ""}${name}</span></span>` : it.kind === "card" ? `<span class="spot-ico">🗂️</span><span class="spot-main"><b>${escapeHtml(oneLine(it.card.q || it.card.a))}</b><span>${it.card.q && it.card.a ? `<span class="spot-mean">${escapeHtml(oneLine(it.card.a))}</span> · ` : ""}${name}</span></span>` : it.kind === "lesson" ? `<span class="spot-ico">📘</span><span class="spot-main"><b>${name}</b><span>${it.lesson.cards.length} cards</span></span>` : it.kind === "look" ? `<span class="spot-ico">📖</span><span class="spot-main"><b>Look up “${escapeHtml(it.label)}”</b><span>In the dictionary, in a new tab</span></span>` : `<span class="spot-ico">${it.icon}</span><span class="spot-main"><b>${escapeHtml(it.label)}</b></span>`;
+    const inner = it.kind === "word" ? `<span class="spot-ico">🔤</span><span class="spot-main"><b>${escapeHtml(it.item.term)}</b><span><span class="spot-mean">${escapeHtml(it.item.meaning || "")}</span>${it.item.meaning ? " · " : ""}${name}</span></span>` : it.kind === "card" ? `<span class="spot-ico">🗂️</span><span class="spot-main"><b>${escapeHtml(oneLine(it.card.q || it.card.a))}</b><span>${it.card.q && it.card.a ? `<span class="spot-mean">${escapeHtml(oneLine(it.card.a))}</span> · ` : ""}${name}</span></span>` : it.kind === "lesson" ? `<span class="spot-ico">📘</span><span class="spot-main"><b>${name}</b><span>${countOf(it.lesson.cards.length, "card")}</span></span>` : `<span class="spot-ico">📖</span><span class="spot-main"><b>Look up “${escapeHtml(it.label)}”</b><span>In the dictionary, in a new tab</span></span>`;
     return `<button class="spot-item${n === spotAt ? " on" : ""}" data-n="${n}" role="option" aria-selected="${n === spotAt}">${inner}${n === spotAt ? "<kbd>↵</kbd>" : ""}</button>`;
   };
   list.innerHTML = groups.map(([head, items]) => `<div class="spot-head">${head}</div>` + items.map(row).join("")).join("") || (raw.trim() ? '<div class="spot-empty">Nothing found</div>' : "");
@@ -19640,7 +19714,7 @@ function closeSpot() {
 async function runSpot(it) {
   if (!it) return;
   closeSpot();
-  if (it.kind === "action") return it.run();
+  noteSpotRecent(it);
   if (it.kind === "look") {
     const url = dictUrlFor(it.label, null);
     if (url) window.open(url, "_blank", "noopener");
