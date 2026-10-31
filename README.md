@@ -162,7 +162,7 @@ With reduced motion turned on in the system, she stays away and things simply ha
 | ⌘⌥X (Ctrl+Alt+X) | Tests |
 | ⌘⌥Q (Ctrl+Alt+Q) | Switch between Lessons and Vocabulary |
 | ⌘⌥T (Ctrl+Alt+T) | Switch between the light and dark theme |
-| / | Jump to the lesson search box (on a phone it opens the menu first) |
+| ⌘/ (Ctrl+/) or / | Open Search or Ask (press ⌘/ again to close it) |
 | ⌘/Ctrl + S | Save the lesson as a .json file, like Save (add Shift to pick a different file); works even while typing |
 
 The same keys work in every study mode, in Lessons and in Vocabulary. In a Lesson group, pointing at a row makes the grading keys grade just that card.
