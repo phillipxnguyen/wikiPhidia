@@ -6,9 +6,9 @@ The app is called **Flashcard**, and its icon is a white 字 on a blue rounded s
 
 The whole app is one file, `index.html`. There is no build step and nothing to install: open it in a browser, or host it anywhere that serves static files. On a phone it can be added to the home screen and runs full screen.
 
-## Search or ask
+## Search or Ask
 
-The box at the top of the sidebar (**Search or ask**) opens one search for everything, like Spotlight on a Mac: click it, or press **⌘/** (Ctrl / on Windows, the **/ ?** key) or **/** anywhere. A large rounded field drops in high on the screen, like Spotlight, frosted over the page, with the results in a second frosted panel under it. Type part of a word you half remember and it finds it even with a letter wrong or missing (*scren* finds *screen*), with or without accents (*kiem tra* finds *kiểm tra*), in any of your lessons:
+The box at the top of the sidebar (**Search or Ask**) opens one search for everything, like Spotlight on a Mac: click it, or press **⌘/** (Ctrl / on Windows, the **/ ?** key) or **/** anywhere. A large rounded field drops in high on the screen, like Spotlight, frosted over the page, with the results in a second frosted panel under it. Type part of a word you half remember and it finds it even with a letter wrong or missing (*scren* finds *screen*), with or without accents (*kiem tra* finds *kiểm tra*), in any of your lessons:
 
 - **Words**: each word with its meaning (in the answers' green) and its lesson; Enter (or a click) opens it in its lesson's Vocabulary list, in its editor.
 - **Cards**: the card's question with its answer and lesson; Enter opens the lesson in ☰ Full at that card, in its editor.
