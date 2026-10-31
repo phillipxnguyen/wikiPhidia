@@ -10016,7 +10016,7 @@ function pinLimit(target) {
 }
 
 function scrollToPinned(target) {
-  if (deckOn()) return;
+  if (deckOn() || taskRun) return;
   target = pinLimit(target);
   holdPageTo(target + window.innerHeight);
   window.scrollTo({
@@ -10052,7 +10052,7 @@ function dropLift() {
 }
 
 function showFromTop(target) {
-  if (deckOn()) return;
+  if (deckOn() || taskRun) return;
   target = pinLimit(target);
   const below = window.scrollY - target;
   if (below <= 0) return scrollToPinned(target);
@@ -16444,12 +16444,13 @@ function fitVocabCards() {
   let fit = floor - VOCAB_CARD_GAP - stickyTop - below;
   if (taskRun) {
     const inner = parseFloat(getComputedStyle(document.querySelector(".main-inner")).paddingBottom) || 0;
-    fit = floor - card.getBoundingClientRect().top - window.scrollY - parseFloat(getComputedStyle(card).marginBottom) - inner * 2;
+    const outer = floor < window.innerHeight ? inner : parseFloat(getComputedStyle(document.querySelector(".main")).paddingBottom) || 0;
+    fit = floor - (card.getBoundingClientRect().top + window.scrollY) - parseFloat(getComputedStyle(card).marginBottom) - inner - outer;
   } else if (toolbarTop + window.scrollY <= stickyTop + 1) {
     const room = window.innerHeight - card.getBoundingClientRect().top - window.scrollY - parseFloat(getComputedStyle(card).marginBottom) - parseFloat(getComputedStyle(document.querySelector(".main")).paddingBottom);
     fit = Math.min(fit, room);
   }
-  fit = Math.max(min, fit);
+  fit = Math.max(taskRun ? VOCAB_CARD_MIN : min, fit);
   cards.forEach(el => el.style.setProperty("--fit-h", Math.min(wholePx(fit), wholePx(Math.max(VOCAB_CARD_MIN, vocabCardNeed(el)), true)) + "px"));
 }
 
@@ -17388,6 +17389,7 @@ function toggleVocabSound(item) {
 }
 
 function pinVocabArea(next) {
+  if (taskRun) return;
   const toolbar = document.getElementById("vocabToolbar");
   if (toolbar.hidden) {
     const cover = topCover();
