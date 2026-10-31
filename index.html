@@ -9618,7 +9618,7 @@ function mixCueDone() {
   mixAwaitCue = false;
   const id = mixFocusId;
   setTimeout(() => {
-    if (mixFocusId === id && !mixAwaitCue && !ytHasError && isAllLessons() && currentView === "study" && isListenMode() && !isSequencePlaying) startSequenceLoop(true);
+    if (mixFocusId === id && !mixAwaitCue && !ytHasError && isAllLessons() && currentView === "study" && isListenMode() && !isSequencePlaying && !(taskRun && taskRun.peeking)) startSequenceLoop(true);
   }, 300);
 }
 
@@ -10167,7 +10167,8 @@ window.addEventListener("pointermove", e => {
     } catch (err) {}
     getSelection().removeAllRanges();
     hideTooltip();
-    drag.restore = drag.vocab ? hideUnderSwipe(drag.parts) : showNextUnderSwipe();
+    if (drag.waits === undefined) drag.waits = !drag.vocab && gradeWaits(studyPickRow());
+    drag.restore = taskRun && taskModeChanges() && taskPeek() || (drag.vocab ? hideUnderSwipe(drag.parts) : showNextUnderSwipe());
     drag.dict = drag.vocab ? null : dictUnderSwipe(drag.parts);
   }
   drag.dx = dx;
@@ -10229,7 +10230,7 @@ function showNextUnderSwipe() {
     aHidden: entryHidden(r).a
   });
   {
-    const nextBatch = (isListenMode() ? nextListenBatch() : singleCardQueue().slice(1, 2)).map(entryCopy);
+    const nextBatch = (taskRun && taskRun.queue ? [ taskNextRow() ].filter(Boolean) : isListenMode() ? nextListenBatch() : singleCardQueue().slice(1, 2)).map(entryCopy);
     const next = nextBatch[0];
     const body = document.getElementById("singleCardBody");
     if (next) {
@@ -16369,7 +16370,7 @@ function showVocabDeck(stage, item) {
     stage.innerHTML = '<div class="vocab-deck"></div>';
     deck = stage.firstElementChild;
   }
-  const nextKey = vocabSession && (vocabSession.queue[1] || taskRun && taskRun.queue && taskRun.queue[0] && taskRun.queue[0].k === "v" && taskRun.queue[0].id);
+  const nextKey = taskRun && taskRun.queue ? taskRun.queue[0] && taskRun.queue[0].k === "v" && taskRun.queue[0].id : vocabSession && vocabSession.queue[1];
   const next = nextKey && nextKey !== item.key ? lessonVocabItems(vocabSource()).find(i => i.key === nextKey) : null;
   const want = [ item, next ].filter(Boolean);
   const same = (el, it) => el.dataset.key === it.key && el.dataset.term === it.term;
@@ -18601,30 +18602,67 @@ async function taskAdvance() {
     showToast("Task done ✓");
     return openToday();
   }
-  const pick = run.current;
+  const shown = taskShowPick(run, run.current);
+  if (taskRun !== run) return;
+  if (!shown) return taskAdvance();
+  renderTaskBar();
+  paintTaskBadges();
+}
+
+function taskShowPick(run, pick) {
+  run.opening = true;
   if (pick.k === "c") {
     taskOpenSide(run, "c");
-    if (taskRun !== run) return;
+    if (taskRun !== run) return false;
     if (currentView !== "study") showView("study");
     const row = rows.find(r => r.uid === pick.id);
     const pair = row && mixCandidates(true).find(([r]) => r === row);
     run.opening = false;
-    if (!pair) return taskAdvance();
+    if (!pair) return false;
     mixShow(pair[0], pair[1]);
-  } else {
-    taskOpenSide(run, "v");
-    if (taskRun !== run) return;
-    if (!vocabSession) startVocabSession();
-    vocabSession.queue = [ pick.id ];
-    vocabSession.pending = [];
-    vocabSession.flipped = false;
-    vocabView = "card";
-    run.opening = false;
-    if (currentView !== "vocab") showView("vocab"); else renderVocab();
-    if (!currentVocabItem()) return taskAdvance();
+    return true;
   }
-  renderTaskBar();
-  paintTaskBadges();
+  taskOpenSide(run, "v");
+  if (taskRun !== run) return false;
+  if (!vocabSession) startVocabSession();
+  vocabSession.queue = [ pick.id ];
+  vocabSession.pending = [];
+  vocabSession.flipped = false;
+  vocabView = "card";
+  run.opening = false;
+  if (currentView !== "vocab") showView("vocab"); else renderVocab();
+  return !!currentVocabItem();
+}
+
+function taskPeek() {
+  const run = taskRun, now = run && run.current, next = run && run.queue && run.queue[0];
+  if (!now || !next || run.opening) return null;
+  const flipped = !!(vocabSession && vocabSession.flipped);
+  const row = now.k === "c" && rows.find(r => r.uid === now.id);
+  const hid = row ? [ row.qHidden, row.aHidden ] : null;
+  run.peeking = true;
+  taskShowPick(run, next);
+  return () => {
+    run.peeking = false;
+    if (taskRun !== run) return;
+    taskShowPick(run, now);
+    if (now.k === "v" && vocabSession) {
+      vocabSession.flipped = flipped;
+      renderVocab();
+    } else {
+      const back = rows.find(r => r.uid === now.id);
+      if (back && hid) {
+        [ back.qHidden, back.aHidden ] = hid;
+        render();
+      }
+    }
+    paintTaskBadges();
+  };
+}
+
+function taskNextRow() {
+  const next = taskRun && taskRun.queue && taskRun.queue[0];
+  return next && next.k === "c" ? rows.find(r => r.uid === next.id) || null : null;
 }
 
 function taskModeOf(pick) {
