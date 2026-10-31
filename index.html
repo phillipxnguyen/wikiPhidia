@@ -461,7 +461,7 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-word-notes ul, .vocab-word-notes ol{margin:4px 0;padding-left:24px;}
   .vocab-back .vocab-word-notes :is(ul, ol){display:flex;flex-wrap:wrap;gap:8px;margin:0;padding:0;list-style:none;}
   .vocab-back .vocab-word-notes > :is(ul, ol):first-child{margin-top:8px;}
-  .vocab-back .vocab-word-notes > :is(ul, ol) + *{margin-top:18px;}
+  .vocab-back .vocab-word-notes > :is(ul, ol) + *{margin-top:20px;}
   .vocab-back .vocab-word-notes > :not(ul):not(ol) + :is(ul, ol){margin-top:24px;}
   .vocab-word-notes > :first-child{margin-top:0;}
   .vocab-word-notes > :last-child{margin-bottom:0;}
@@ -1535,7 +1535,6 @@ window.onYouTubeIframeAPIReady = function(){
   .edit-popup[hidden] :is(.le-box, .le-dict){overflow:visible;}
   .le-box{position:fixed;display:flex;flex-direction:column;box-sizing:border-box;width:min(440px, calc(100vw - 32px));max-height:min(760px, 80dvh);overflow-y:auto;overscroll-behavior:contain;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);}
   .le-box > *{flex-shrink:0;}
-  .le-box .edit-stroke{margin-top:10px;}
   #editPopup .vocab-editor{margin:0;padding:0;border:0;box-shadow:none;background:none;}
   .le-box #editDict{display:none;}
   .le-dict{position:relative;height:0;overflow:hidden;}
@@ -9240,13 +9239,6 @@ function wireEditBox(host, row) {
     dictDebounce = setTimeout(refreshDict, 300);
   }
   editSrc.addEventListener("input", updateEditDict);
-  const strokeText = (row.q || "") + (row.a || "");
-  if (host.classList.contains("le-box") && /[一-鿿]/.test(strokeText)) {
-    const stroke = document.createElement("div");
-    stroke.className = "edit-stroke";
-    editDict.before(stroke);
-    drawStrokeOrder(stroke, strokeText, cjkScriptFor(strokeText, row) === "ja");
-  }
   refreshDict();
   function autoResizeDiv(el) {
     el.style.minHeight = "";
@@ -16618,19 +16610,11 @@ function syncVocabEditPopup(items) {
     return false;
   }
   if (pop.dataset.vocab === item.key && !pop.hidden) return false;
-  const {card: card} = vocabContext(item);
-  const text = vocabDictText(item);
   pop.querySelector(".le-box").classList.remove("edit-row");
   pop.querySelector(".le-content").innerHTML = vocabEditorHtml(item) + '<div id="vocabEditDict"></div>';
   pop.dataset.vocab = item.key;
   pop.hidden = false;
   const dict = document.getElementById("vocabEditDict");
-  if (/[\p{Script=Han}]/u.test(text)) {
-    const stroke = document.createElement("div");
-    stroke.className = "edit-stroke";
-    dict.before(stroke);
-    drawStrokeOrder(stroke, text, cjkScriptFor(text, card) === "ja");
-  }
   const url = vocabDictUrl(item);
   if (url) showDictOverlay(dict, url);
   placeEditPopup();
