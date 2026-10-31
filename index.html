@@ -1787,15 +1787,24 @@ window.onYouTubeIframeAPIReady = function(){
   @media (max-width:600px){.hero-langs{flex-wrap:wrap;}.hero-preset{margin-left:0;}}
   .preset-pop{position:fixed;z-index:2000;box-sizing:border-box;display:flex;flex-direction:column;gap:12px;width:360px;max-width:calc(100vw - 16px);max-height:calc(100vh - 16px);overflow:auto;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);color:var(--text);}
   .preset-pop[hidden]{display:none;}
-  .settings-pop{position:fixed;z-index:2000;box-sizing:border-box;display:flex;flex-direction:column;gap:10px;width:380px;max-width:calc(100vw - 16px);max-height:calc(100vh - 16px);overflow:auto;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);color:var(--text);}
+  .settings-pop{position:fixed;z-index:2000;box-sizing:border-box;display:flex;flex-direction:column;gap:10px;width:320px;max-width:calc(100vw - 16px);max-height:calc(100vh - 16px);overflow:auto;padding:10px;border-radius:22px;background:color-mix(in srgb, var(--surface) 84%, transparent);-webkit-backdrop-filter:blur(24px) saturate(1.6);backdrop-filter:blur(24px) saturate(1.6);box-shadow:0 24px 60px rgba(10,20,40,.26), 0 2px 6px rgba(10,20,40,.08), inset 0 0 0 1px color-mix(in srgb, var(--border) 70%, transparent);color:var(--text);}
   .settings-pop[hidden]{display:none;}
-  .set-theme{align-self:flex-start;margin-bottom:4px;}
-  .set-theme button{min-width:44px;padding:6px 10px;font-size:18px;line-height:24px;}
-  .set-font{display:grid;grid-template-columns:88px minmax(0, 1fr) 150px;align-items:center;gap:10px;min-height:36px;font-size:14px;line-height:20px;}
-  .set-lang{font-weight:600;}
-  .set-sample{overflow:hidden;font-size:20px;line-height:28px;white-space:nowrap;text-overflow:ellipsis;}
-  .set-font select{box-sizing:border-box;width:100%;height:32px;padding:0 8px;font-size:14px;line-height:18px;}
-  @media (max-width:600px){.set-font{grid-template-columns:76px minmax(0, 1fr) 160px;}.set-font select{font-size:16px;}}
+  .set-theme{display:flex;gap:4px;padding:4px;border-radius:14px;background:color-mix(in srgb, var(--text) 6%, transparent);}
+  .set-theme button{flex:1 1 0;height:36px;padding:0;border:0;border-radius:10px;background:none;font-size:18px;line-height:24px;opacity:.55;transition:background-color .2s, box-shadow .2s, opacity .2s;}
+  .set-theme button.active{background:var(--surface);box-shadow:0 1px 3px rgba(10,20,40,.14), 0 0 0 1px color-mix(in srgb, var(--border) 60%, transparent);opacity:1;}
+  @media (hover:hover){.set-theme button:not(.active):hover{opacity:.85;}}
+  .set-fonts{display:flex;flex-direction:column;gap:4px;}
+  .set-font{position:relative;display:flex;align-items:center;gap:12px;padding:8px 14px 8px 8px;border-radius:16px;transition:background-color .15s;}
+  @media (hover:hover){.set-font:hover{background:color-mix(in srgb, var(--accent) 7%, transparent);}}
+  .set-font:focus-within{background:color-mix(in srgb, var(--accent) 7%, transparent);box-shadow:inset 0 0 0 2px color-mix(in srgb, var(--accent) 40%, transparent);}
+  .set-sample{flex:none;display:flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg, color-mix(in srgb, var(--accent) 10%, var(--surface)), color-mix(in srgb, var(--accent) 22%, var(--surface)));box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent);color:var(--text-2);font-size:20px;line-height:28px;white-space:nowrap;}
+  .set-font.picked .set-sample{background:linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 60%, #8b5cf6));box-shadow:0 6px 16px color-mix(in srgb, var(--accent) 30%, transparent);color:#fff;}
+  .set-meta{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+  .set-meta b{font-size:15px;line-height:20px;font-weight:600;}
+  .set-meta span{overflow:hidden;font-size:13px;line-height:18px;color:var(--text-2);white-space:nowrap;text-overflow:ellipsis;}
+  .set-font.picked .set-meta span{color:var(--accent);font-weight:600;}
+  .set-chev{flex:none;width:12px;height:12px;fill:none;stroke:var(--text-2);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+  .set-font select{position:absolute;inset:0;width:100%;height:100%;padding:0;border:0;opacity:0;cursor:pointer;font-size:16px;}
   .settings-pop [data-sl="zh"]{font-family:var(--sf-zh);}
   .settings-pop [data-sl="ja"]{font-family:var(--sf-ja);}
   .settings-pop [data-sl="ko"]{font-family:var(--sf-ko);}
@@ -14409,8 +14418,8 @@ function applyStudyFonts() {
 function settingsPopHtml() {
   const shown = pendingTheme || shownTheme();
   const theme = [ [ "light", "☀️", "Light" ], [ "dark", "🌙", "Dark" ] ].map(([ k, icon, name ]) => `<button type="button" data-theme-pick="${k}" class="${k === shown ? "active" : ""}" aria-pressed="${k === shown}" aria-label="${name}" title="${name}">${icon}</button>`).join("");
-  const fonts = STUDY_FONT_LANGS.map(([ k, name, sample, list ]) => `<label class="set-font"><span class="set-lang">${name}</span><span class="set-sample" data-sl="${k}">${sample}</span><select data-font-lang="${k}" aria-label="${name} font"><option value="">System</option>${list.map(f => `<option value="${escapeAttr(f)}"${studyFonts[k] === f ? " selected" : ""}>${escapeHtml(f)}</option>`).join("")}</select></label>`).join("");
-  return `<div class="segmented set-theme" role="group" aria-label="Theme">${theme}</div>${fonts}`;
+  const fonts = STUDY_FONT_LANGS.map(([ k, name, sample, list ]) => `<label class="set-font${studyFonts[k] ? " picked" : ""}"><span class="set-sample" data-sl="${k}">${sample}</span><span class="set-meta"><b>${name}</b><span>${escapeHtml(studyFonts[k] || "System")}</span></span><svg class="set-chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3"/></svg><select data-font-lang="${k}" aria-label="${name} font"><option value="">System</option>${list.map(f => `<option value="${escapeAttr(f)}"${studyFonts[k] === f ? " selected" : ""}>${escapeHtml(f)}</option>`).join("")}</select></label>`).join("");
+  return `<div class="set-theme" role="group" aria-label="Theme">${theme}</div><div class="set-fonts">${fonts}</div>`;
 }
 
 function placeSettingsPop() {
@@ -14446,6 +14455,9 @@ document.getElementById("settingsPop").addEventListener("change", e => {
     localStorage.setItem(STUDY_FONTS_KEY, JSON.stringify(studyFonts));
   } catch (err) {}
   applyStudyFonts();
+  const row = e.target.closest(".set-font");
+  row.classList.toggle("picked", !!e.target.value);
+  row.querySelector(".set-meta > span").textContent = e.target.value || "System";
 });
 
 document.getElementById("settingsPop").addEventListener("keydown", e => {
