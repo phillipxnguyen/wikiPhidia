@@ -923,7 +923,7 @@ window.onYouTubeIframeAPIReady = function(){
   :is(#editNotes, #vocabEditNotes, #qaNotes):focus{box-shadow:inset 0 0 0 1px var(--accent), 0 0 0 4px var(--accent-soft);}
   :is(#editNotes, #vocabEditNotes, #qaNotes):not(:empty):not(.clip-list)::before{content:"";float:left;width:25px;height:1lh;}
   :is(#editNotes, #vocabEditNotes, #qaNotes) :is(ul, ol):not(:is(ul, ol) *){padding-left:19px;}
-  :is(#editNotes, #vocabEditNotes, #qaNotes).clip-list :is(ul, ol):not(:is(ul, ol) *){padding-left:45px;}
+  :is(#editNotes, #vocabEditNotes, #qaNotes) li.clip-li{margin-left:26px;}
   :is(#editNotes, #vocabEditNotes, #qaNotes):empty{padding-left:42px;}
   .notes-clip{position:relative;}
   .notes-clip::after{content:"";position:absolute;top:-6px;left:13px;width:16px;height:38px;background:var(--accent);-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 48' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M7 14v22a3 3 0 0 0 6 0V8a5 5 0 0 0-10 0v31a7 7 0 0 0 14 0V14'/%3E%3C/svg%3E") center / contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 48' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M7 14v22a3 3 0 0 0 6 0V8a5 5 0 0 0-10 0v31a7 7 0 0 0 14 0V14'/%3E%3C/svg%3E") center / contain no-repeat;transform:rotate(-14deg);pointer-events:none;}
@@ -8843,6 +8843,27 @@ document.addEventListener("keydown", e => {
 
 const NOTES_CLIP_IDS = [ "editNotes", "vocabEditNotes", "qaNotes" ];
 
+document.addEventListener("keydown", e => {
+  if (!e.shiftKey || e.key !== "Enter" || e.isComposing) return;
+  const el = e.target.closest && e.target.closest("#vocabEditNotes, #qaNotes");
+  if (!el) return;
+  const node = window.getSelection().anchorNode;
+  const host = node && (node.nodeType === 1 ? node : node.parentElement);
+  const li = host && host.closest("li");
+  if (!li || !el.contains(li)) return;
+  e.preventDefault();
+  document.execCommand("insertParagraph");
+  if (el.id === "qaNotes" && li.isConnected && !li.contains(window.getSelection().anchorNode) && !isVocabItem(li) && NOTE_VOCAB_ITEM_RE.test(ownLiTextNodes(li).map(n => n.nodeValue).join(""))) {
+    if (noteItemIsDuplicate(li, noteVocabKeys(el, [ li ]))) warnVocabDuplicates([ noteItemTerm(li) ]); else boldVocabItem(li);
+  }
+}, true);
+
+document.addEventListener("paste", e => {
+  if (!e.target.closest || !e.target.closest("#vocabEditNotes, #qaNotes")) return;
+  e.preventDefault();
+  document.execCommand("insertText", false, e.clipboardData.getData("text/plain"));
+}, true);
+
 function markNotesClip(box) {
   const walker = document.createTreeWalker(box, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT, {
     acceptNode: n => (n.nodeType === Node.TEXT_NODE ? n.nodeValue.trim() : /^(BR|IMG|LI)$/.test(n.nodeName)) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP
@@ -16645,9 +16666,16 @@ function wireVocabEditor(items) {
   fitTextarea(meaning);
   const item = items.find(i => i.key === vocabEditingKey);
   const notes = document.getElementById("vocabEditNotes");
-  notes.addEventListener("paste", e => {
-    e.preventDefault();
-    document.execCommand("insertHTML", false, pastedHtml(e));
+  notes.querySelectorAll("li").forEach(li => {
+    if (!li.querySelector(":scope > br")) return;
+    const parts = [ [] ];
+    [ ...li.childNodes ].forEach(n => n.nodeName === "BR" ? parts.push([]) : parts[parts.length - 1].push(n));
+    const lis = parts.filter(p => p.some(n => n.nodeType !== 3 || n.nodeValue.trim())).map(p => {
+      const one = document.createElement("li");
+      p.forEach(n => one.appendChild(n));
+      return one;
+    });
+    if (lis.length) li.replaceWith(...lis);
   });
   const save = () => {
     const key = vocabEditingKey;
