@@ -817,7 +817,17 @@ window.onYouTubeIframeAPIReady = function(){
   .toolbar > .segmented button{align-self:stretch;padding-top:0;padding-bottom:0;}
   .toolbar :is(#btnPlaySequence, #vocabSpeak, #playbackSpeed, #vocabSpeed){box-sizing:border-box;height:var(--tb-h);padding-top:0;padding-bottom:0;}
   .toolbar :is(#playbackSpeed, #vocabSpeed){text-align:center;text-align-last:center;}
-  .toolbar-counts .progress-badge{box-sizing:border-box;height:var(--tb-h);padding:0 12px;border-radius:18px;font-size:14px;}
+  .toolbar-counts .progress-badge{position:relative;box-sizing:border-box;height:var(--tb-h);padding:0 12px;border-radius:18px;font-size:14px;}
+  .progress-badge.healed{animation:badgeHeal .7s ease-out;}
+  @keyframes badgeHeal{0%{transform:scale(1);box-shadow:0 0 0 0 color-mix(in srgb, currentColor 40%, transparent);}35%{transform:scale(1.18);box-shadow:0 0 0 6px color-mix(in srgb, currentColor 22%, transparent);}100%{transform:scale(1);box-shadow:0 0 0 12px transparent;}}
+  .badge-heal{position:absolute;left:0;right:0;bottom:100%;z-index:5;font-size:14px;line-height:16px;font-weight:800;text-align:center;color:currentColor;pointer-events:none;animation:healUp 1s ease-out forwards;}
+  @keyframes healUp{0%{opacity:0;transform:translateY(8px);}20%{opacity:1;}100%{opacity:0;transform:translateY(-16px);}}
+  @media (prefers-reduced-motion: reduce){.progress-badge.healed, .badge-heal{animation:none;}}
+  .today-task.just-done .today-check, .pad-task.just-done .today-check{animation:doneTick .6s cubic-bezier(.34,1.56,.64,1);}
+  @keyframes doneTick{0%{transform:scale(.4);}60%{transform:scale(1.3);}100%{transform:scale(1);}}
+  .today-task.just-done .today-title, .pad-task.just-done .pad-name{animation:doneFade .8s ease-out;}
+  @keyframes doneFade{from{opacity:.2;}to{opacity:1;}}
+  @media (prefers-reduced-motion: reduce){.just-done .today-check, .just-done :is(.today-title, .pad-name){animation:none;}}
   .segmented[hidden], .segmented button[hidden]{display:none;}
   .segmented{align-items:center;}
   .segmented .sep-before{position:relative;margin-left:8px;}
@@ -2609,6 +2619,7 @@ function restoreFrom(fromStack, toStack, verb) {
   discardActiveEdit();
   haltAllPlayback();
   const entry = fromStack.pop();
+  healQuietUntil = Date.now() + 800;
   const resetMagic = /^Reset (progress|words) — /.test(entry.label);
   const countsBefore = resetMagic ? currentCounts() : null;
   const oppositeEntry = takeSnapshot(entry.label, entry.expiresAt);
@@ -5248,6 +5259,45 @@ function badgesHtml(newN, dueN, doneN, active) {
   }
   return '<div class="progress-badges">' + '<span class="progress-badge new' + (active.new ? " active" : "") + '" title="New — never studied yet"><i>🆕</i><b>' + newN + "</b></span>" + '<span class="progress-badge due' + (active.due ? " active" : "") + '" title="Due — ready to review now"><i>⏳</i><b>' + dueN + "</b></span>" + '<span class="progress-badge done' + (active.done ? " active" : "") + '" title="Done — ' + DONE_STREAK + ' Good in a row"><i>✅</i><b>' + doneN + "</b></span>" + "</div>";
 }
+
+let healSeen = null, healQuietUntil = 0, healFrame = 0;
+
+function checkHeal() {
+  healFrame = 0;
+  const box = [ ...document.querySelectorAll("#singleCardProgress, #tableProgress, #vocabBadges") ].find(el => el.offsetParent);
+  if (!box) return;
+  const now = {};
+  box.querySelectorAll(".progress-badge").forEach(el => {
+    const k = [ "new", "due", "done" ].find(c => el.classList.contains(c));
+    const n = Number((el.querySelector("b") || {}).textContent);
+    if (k && !isNaN(n)) now[k] = [ n, el ];
+  });
+  const ctx = taskRun ? "task:" + taskRun.key : [ currentLessonId, currentView, appMode, groupViewStyle ].join("|");
+  if (healSeen && healSeen.ctx === ctx && Date.now() > healQuietUntil && !reducedMotion()) Object.entries(now).forEach(([k, [n, el]]) => {
+    const was = healSeen.n[k];
+    if (was == null || n <= was) return;
+    el.classList.remove("healed");
+    void el.offsetWidth;
+    el.classList.add("healed");
+    const tag = document.createElement("span");
+    tag.className = "badge-heal";
+    tag.textContent = "+" + (n - was);
+    el.appendChild(tag);
+    setTimeout(() => tag.remove(), 1e3);
+  });
+  healSeen = {
+    ctx: ctx,
+    n: Object.fromEntries(Object.entries(now).map(([k, [n]]) => [ k, n ]))
+  };
+}
+
+[ "singleCardProgress", "tableProgress", "vocabBadges" ].forEach(id => new MutationObserver(() => {
+  if (!healFrame) healFrame = requestAnimationFrame(checkHeal);
+}).observe(document.getElementById(id), {
+  childList: true,
+  subtree: true,
+  characterData: true
+}));
 
 function modeKey() {
   return groupViewStyle === "listen" ? "Listen" : "Table";
@@ -17816,12 +17866,13 @@ function todayTasks() {
       };
       const rest = (k, side, of) => Math.max(0, Math.min(left[side][of], (p[k] || 0) - ((c[k] || 0) - (p.base[k] || 0))));
       const rem = {
-        dueC: rest("dueC", "cards", "due"),
-        dueV: rest("dueV", "vocab", "due"),
+        dueC: p.onC === false ? 0 : left.cards.due,
+        dueV: p.onV === false ? 0 : left.vocab.due,
         freshC: rest("freshC", "cards", "fresh"),
         freshV: rest("freshV", "vocab", "fresh")
       };
       const remDue = rem.dueC + rem.dueV, remFresh = rem.freshC + rem.freshV;
+      const did = Math.max(0, c.due - p.base.due) + Math.max(0, c.fresh - p.base.fresh);
       list.push({
         key: key,
         lesson: l,
@@ -17830,8 +17881,8 @@ function todayTasks() {
         rem: rem,
         remDue: remDue,
         remFresh: remFresh,
-        planned: p.due + p.fresh,
-        did: p.due + p.fresh - remDue - remFresh,
+        planned: did + remDue + remFresh,
+        did: did,
         done: !!todayPlan.done[key] || remDue + remFresh === 0
       });
     } else if (left.fresh + left.due) list.push({
@@ -18041,6 +18092,8 @@ function buildPlan() {
     if (!due && !fresh) return;
     lessons[l.id] = {
       kind: kind,
+      onC: P[kind].on,
+      onV: P.vocab.on,
       due: due,
       dueC: lc.due,
       dueV: lv.due,
@@ -18572,6 +18625,8 @@ async function openTodayTask(t) {
     remDue: t.plan ? t.remDue : null,
     remFresh: t.plan ? t.remFresh : null,
     rem: t.plan ? t.rem : null,
+    onC: t.plan ? t.plan.onC : undefined,
+    onV: t.plan ? t.plan.onV : undefined,
     homeMode: taskRun && taskRun.homeMode || appMode
   };
   document.documentElement.classList.add("in-task");
@@ -18616,11 +18671,7 @@ async function startTaskSide() {
   if (!l) return endTask();
   run.queue = taskQueue(l, run);
   run.current = null;
-  if (!run.queue.length) {
-    todayPlan.done[run.key] = true;
-    saveToday();
-    return openToday();
-  }
+  if (!run.queue.some(taskShowable)) return openToday();
   await taskAdvance();
 }
 
@@ -18652,13 +18703,13 @@ async function taskAdvance() {
     run.current.tries++;
     run.queue.push(run.current);
   }
-  run.current = run.queue.shift() || null;
+  const next = run.queue.findIndex(taskShowable);
+  run.current = next < 0 ? null : run.queue.splice(next, 1)[0];
   if (!run.current) {
     run.opening = false;
-    todayPlan.done[run.key] = true;
-    saveToday();
-    showToast("Task done ✓");
-    return openToday();
+    taskJustDone = run.key;
+    await openToday();
+    return celebrateTaskDone();
   }
   const shown = taskShowPick(run, run.current);
   if (taskRun !== run) return;
@@ -18723,6 +18774,70 @@ function taskNextRow() {
   return next && next.k === "c" ? rows.find(r => r.uid === next.id) || null : null;
 }
 
+let showableMemo = null;
+
+function taskShowable(pick) {
+  const run = taskRun, l = run && library.find(x => x.id === run.lessonId);
+  if (!l || !pick) return false;
+  const now = Date.now();
+  if (pick.k === "c") {
+    const c = l.cards.find(x => x.uid === pick.id);
+    return !!c && srsOf(c).due <= now && !cardWaiting(c);
+  }
+  if (!showableMemo || showableMemo.lesson !== l) {
+    showableMemo = {
+      lesson: l,
+      items: new Map(lessonVocabItems(lessonCardsWithExtras(l)).map(i => [ i.key, i ]))
+    };
+    queueMicrotask(() => showableMemo = null);
+  }
+  const item = showableMemo.items.get(pick.id);
+  return !!item && vocabStateOf(item).due <= now;
+}
+
+function taskRefresh() {
+  const run = taskRun, l = run && run.queue && library.find(x => x.id === run.lessonId);
+  if (!l || run.opening || run.peeking || drag) return;
+  flushAutoSave();
+  const lc = leftToday(l, "cards"), lv = leftToday(l, "vocab");
+  const has = (k, id) => run.current && run.current.k === k && run.current.id === id || run.queue.some(q => q.k === k && q.id === id);
+  const sides = run.rem ? [ [ "c", run.onC === false ? [] : lc.dueIds ], [ "v", run.onV === false ? [] : lv.dueIds ] ] : [ [ "c", lc.ids ], [ "v", lv.ids ] ];
+  const add = [];
+  sides.forEach(([k, ids]) => ids.forEach(id => !has(k, id) && add.push({ k: k, id: id, tries: 0 })));
+  if (!add.length) return;
+  run.queue.unshift(...add);
+  paintTaskBadges();
+}
+
+setInterval(() => {
+  if (taskRun && !tabPaused) taskRefresh();
+}, 5e3);
+
+let taskJustDone = null;
+
+function celebrateTaskDone() {
+  const key = taskJustDone;
+  taskJustDone = null;
+  const at = todayShown.findIndex(t => t.key === key);
+  const row = at >= 0 && document.querySelector(`#todayTasks .today-task[data-i="${at}"]`);
+  const pad = [ ...document.querySelectorAll("#lessonList .pad-task") ].find(el => todayTileShown[Number(el.dataset.pad)] && todayTileShown[Number(el.dataset.pad)].key === key);
+  const mark = () => [ row, pad ].forEach(el => {
+    if (!el) return;
+    el.classList.remove("just-done");
+    void el.offsetWidth;
+    el.classList.add("just-done");
+    glowTouch(el);
+  });
+  const box = onScreenBox(row && row.querySelector(".today-check")) || onScreenBox(pad && pad.querySelector(".today-check"));
+  if (!box) return mark();
+  showToast("Task done ✓");
+  fairyFly({
+    kind: "tap",
+    box: box,
+    onTouch: mark
+  });
+}
+
 function taskModeOf(pick) {
   if (!pick) return "";
   if (pick.k === "v") return "word";
@@ -18755,7 +18870,7 @@ function paintTaskBadges() {
   let fresh = 0, due = 0, curFresh = false;
   const stateOf = pick => pick.k === "c" ? (c => c && srsOf(c))(l.cards.find(x => x.uid === pick.id)) : (it => it && vocabStateOf(it))(items.find(i => i.key === pick.id));
   if (run.current) curFresh = !(stateOf(run.current) || {}).reps;
-  (run.current ? [ run.current ] : []).concat(run.queue).forEach(pick => {
+  (run.current ? [ run.current ] : []).concat(run.queue.filter(taskShowable)).forEach(pick => {
     const st = pick.k === "c" ? (c => c && srsOf(c))(l.cards.find(x => x.uid === pick.id)) : (it => it && vocabStateOf(it))(items.find(i => i.key === pick.id));
     if (!st) return;
     if (st.reps) due++; else fresh++;
