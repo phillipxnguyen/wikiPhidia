@@ -16587,7 +16587,7 @@ function vocabCardNeed(card) {
     const shown = Array.from(face.children).filter(el => getComputedStyle(el).display !== "none");
     const items = shown.length + (after.content !== "none" ? 1 : 0);
     const edges = [ "paddingTop", "paddingBottom", "borderTopWidth", "borderBottomWidth" ].reduce((sum, k) => sum + (parseFloat(style[k]) || 0), 0) + (after.content !== "none" ? parseFloat(after.height) || 0 : 0);
-    return shown.reduce((sum, el) => sum + el.getBoundingClientRect().height, 0) + (parseFloat(style.rowGap) || 0) * Math.max(0, items - 1) + edges;
+    return shown.reduce((sum, el) => sum + el.offsetHeight, 0) + (parseFloat(style.rowGap) || 0) * Math.max(0, items - 1) + edges;
   };
   return Math.ceil(Math.max(need(card.querySelector(".vocab-front")), need(card.querySelector(".vocab-back"))));
 }
@@ -16600,7 +16600,7 @@ function fitVocabCards() {
   const stickyTop = parseFloat(getComputedStyle(toolbar).top) || 0;
   toolbar.style.position = "static";
   const toolbarTop = toolbar.getBoundingClientRect().top;
-  const below = card.getBoundingClientRect().top - toolbarTop;
+  const below = card.parentElement.getBoundingClientRect().top - toolbarTop;
   toolbar.style.position = "";
   const bar = document.getElementById("touchBar");
   const sel = document.querySelector("#selBar:not([hidden]) .segmented");
@@ -16610,9 +16610,9 @@ function fitVocabCards() {
   if (taskRun) {
     const inner = parseFloat(getComputedStyle(document.querySelector(".main-inner")).paddingBottom) || 0;
     const outer = floor < window.innerHeight ? inner : parseFloat(getComputedStyle(document.querySelector(".main")).paddingBottom) || 0;
-    fit = floor - (card.getBoundingClientRect().top + window.scrollY) - parseFloat(getComputedStyle(card).marginBottom) - inner - outer;
+    fit = floor - (card.parentElement.getBoundingClientRect().top + window.scrollY) - parseFloat(getComputedStyle(card).marginBottom) - inner - outer;
   } else if (toolbarTop + window.scrollY <= stickyTop + 1) {
-    const room = window.innerHeight - card.getBoundingClientRect().top - window.scrollY - parseFloat(getComputedStyle(card).marginBottom) - parseFloat(getComputedStyle(document.querySelector(".main")).paddingBottom);
+    const room = window.innerHeight - card.parentElement.getBoundingClientRect().top - window.scrollY - parseFloat(getComputedStyle(card).marginBottom) - parseFloat(getComputedStyle(document.querySelector(".main")).paddingBottom);
     fit = Math.min(fit, room);
   }
   fit = Math.max(taskRun ? VOCAB_CARD_MIN : min, fit);
@@ -18629,7 +18629,7 @@ function todaySceneIndex(time) {
   const n = Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - new Date(2024, 0, 1)) / 864e5);
   let h = Math.imul(n, 2654435761) >>> 0;
   h = Math.imul(h ^ h >>> 15, 2246822519) >>> 0;
-  return (h ^ h >>> 13) % TODAY_SCENES.length;
+  return ((h ^ h >>> 13) >>> 0) % TODAY_SCENES.length;
 }
 
 function paintScene(scene, seed) {
