@@ -1588,8 +1588,16 @@ window.onYouTubeIframeAPIReady = function(){
   @container (max-width:699px){
     .dict-frame > iframe.dict-zoom{width:160%;height:160%;transform:scale(.625);transform-origin:0 0;}
   }
-  html.touch .le-box:has(> .le-dict.on){overflow:hidden;}
+  .le-tabs{display:none;}
+  html.touch .le-box:has(> .le-dict.on){max-height:min(760px, calc(100dvh - 32px));overflow:hidden;}
+  html.touch .le-box[data-tab="dict"]:has(> .le-dict.on){height:min(760px, calc(100dvh - 32px));}
+  html.touch .le-box:has(> .le-dict.on) > .le-tabs{display:flex;flex:none;margin-bottom:10px;}
+  html.touch .le-box:has(> .le-dict.on) > .le-tabs button{flex:1 1 0;height:36px;padding:0;font-size:15px;line-height:20px;}
   html.touch .le-box:has(> .le-dict.on) > .le-content{flex:0 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;}
+  html.touch .le-box[data-tab="dict"]:has(> .le-dict.on) > .le-content{display:none;}
+  html.touch .le-box:has(> .le-dict.on) > .le-dict.on{flex:1 1 0;height:auto;min-height:0;margin-top:0;}
+  html.touch .le-box[data-tab="edit"]:has(> .le-dict.on) > .le-dict.on{position:absolute;left:12px;right:12px;top:56px;bottom:10px;visibility:hidden;pointer-events:none;}
+  html.touch #editPopup .dict-frame > iframe.dict-zoom{width:100%;height:100%;transform:none;}
   @media (min-width:1000px){
     html:not(.touch) .le-box:has(> .le-dict.on){flex-direction:row;width:min(900px, calc(100vw - 32px));height:min(640px, calc(100dvh - 32px));max-height:none;overflow:hidden;padding:0;}
     html:not(.touch) .le-box:has(> .le-dict.on) > .le-content{flex:1 1 0;min-width:0;overflow-y:auto;overscroll-behavior:contain;padding:10px 12px;}
@@ -2135,7 +2143,7 @@ window.onYouTubeIframeAPIReady = function(){
   </div>
 </div>
 
-<div id="editPopup" class="edit-popup" hidden role="dialog" aria-modal="true" aria-label="Edit card"><div class="le-box"><div class="le-content"></div><div class="le-dict"></div></div></div>
+<div id="editPopup" class="edit-popup" hidden role="dialog" aria-modal="true" aria-label="Edit card"><div class="le-box" data-tab="edit"><div class="le-tabs segmented" role="tablist" aria-label="Edit or dictionary"><button type="button" role="tab" data-le-tab="edit">Edit</button><button type="button" role="tab" data-le-tab="dict">Dictionary</button></div><div class="le-content"></div><div class="le-dict"></div></div></div>
 <div id="pausedOverlay" class="paused-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="pausedTitle">
   <div class="paused-card">
     <div class="emoji">🗂️</div>
@@ -8931,7 +8939,7 @@ function placeEditPopup() {
   const w = box.offsetWidth, h = box.offsetHeight, gap = 16;
   const clamp = (v, max) => Math.round(Math.max(gap, Math.min(v, max - gap)));
   box.style.left = clamp(x < window.innerWidth / 2 ? x : x - w, window.innerWidth - w) + "px";
-  box.style.top = clamp(y < window.innerHeight / 2 ? y : y - h, window.innerHeight - h) + "px";
+  box.style.top = (isTouch() && box.querySelector(".le-dict.on") ? gap : clamp(y < window.innerHeight / 2 ? y : y - h, window.innerHeight - h)) + "px";
 }
 
 new ResizeObserver(() => {
@@ -9313,6 +9321,23 @@ function showEditBox(el, top) {
   followInView(() => activeEdit && activeEdit.tr === el ? el : null);
 }
 
+let editPopupTab = "edit";
+
+function setEditPopupTab(tab) {
+  editPopupTab = tab;
+  const box = document.querySelector("#editPopup .le-box");
+  box.dataset.tab = tab;
+  box.querySelectorAll("[data-le-tab]").forEach(b => {
+    b.classList.toggle("active", b.dataset.leTab === tab);
+    b.setAttribute("aria-selected", String(b.dataset.leTab === tab));
+  });
+}
+
+document.querySelector("#editPopup .le-tabs").addEventListener("click", e => {
+  const b = e.target.closest("[data-le-tab]");
+  if (b) setEditPopupTab(b.dataset.leTab);
+});
+
 function openEditPopup(row) {
   hideTooltip();
   if (activeEdit && activeEdit.row.id !== row.id) {
@@ -9320,6 +9345,7 @@ function openEditPopup(row) {
     render();
   }
   const box = document.querySelector("#editPopup .le-box");
+  setEditPopupTab(editPopupTab);
   box.classList.add("edit-row");
   box.dataset.id = row.id;
   box.querySelector(".le-content").innerHTML = buildEditBoxInner(row);
