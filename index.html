@@ -10072,6 +10072,7 @@ function gradeCard(row, isAgain) {
     ieltsHintId = null;
   }
   scheduleAutoSave();
+  flushAutoSave();
   if (hoveredRowId === row.id) hoveredRowId = null;
   if (!next) holdPage();
   swipe(parts, isAgain ? -1 : 1, () => {
@@ -12425,6 +12426,8 @@ function flushAutoSave() {
 }
 
 window.addEventListener("pagehide", flushAutoSave);
+
+document.addEventListener("freeze", flushAutoSave);
 
 window.addEventListener("beforeunload", flushAutoSave);
 
@@ -15133,11 +15136,15 @@ async function readCloudLessonData(id, d) {
   return d.data || "";
 }
 
+function flushOpenLesson(id) {
+  if (autoSaveDebounceTimer && (id === currentLessonId || isVirtualLesson() && rows.some(r => r.srcLessonId === id))) saveCurrentLesson();
+}
+
 async function receiveCloudLesson(id, d) {
   const syncedAt = readCloudState().synced[id] || 0;
   const remoteAt = d.updatedAt || 0;
   if (remoteAt <= syncedAt) return;
-  if (id === currentLessonId && autoSaveDebounceTimer) saveCurrentLesson();
+  flushOpenLesson(id);
   const local = library.find(l => l.id === id);
   const markSynced = at => writeCloudState(st => {
     st.synced[id] = Math.max(st.synced[id] || 0, at);
@@ -15166,6 +15173,7 @@ async function receiveCloudLesson(id, d) {
   if (deletedAt) writeCloudState(st => {
     delete st.deleted[id];
   });
+  flushOpenLesson(id);
   const current = library.find(l => l.id === id);
   if (!current || (current.updatedAt || 0) <= syncedAt) {
     applyCloudLesson(remote);
@@ -17585,6 +17593,7 @@ function gradeVocabItems(items, isAgain, label) {
   s.flipped = false;
   closeVocabList();
   scheduleAutoSave();
+  flushAutoSave();
   holdPageTo(window.scrollY + window.innerHeight);
   renderVocab();
   pinVocabArea(true);
