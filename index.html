@@ -1589,8 +1589,9 @@ window.onYouTubeIframeAPIReady = function(){
     .dict-frame > iframe.dict-zoom{width:160%;height:160%;transform:scale(.625);transform-origin:0 0;}
   }
   .le-tabs{display:none;}
-  html.touch .le-box:has(> .le-dict.on){max-height:min(760px, calc(100dvh - 32px));overflow:hidden;}
-  html.touch .le-box[data-tab="dict"]:has(> .le-dict.on){height:min(760px, calc(100dvh - 32px));}
+  html.touch .le-box{max-height:min(760px, calc(100dvh - 80px));}
+  html.touch .le-box:has(> .le-dict.on){overflow:hidden;}
+  html.touch .le-box[data-tab="dict"]:has(> .le-dict.on){height:min(760px, calc(100dvh - 80px));}
   html.touch .le-box:has(> .le-dict.on) > .le-tabs{display:flex;flex:none;margin-bottom:10px;}
   html.touch .le-box:has(> .le-dict.on) > .le-tabs button{flex:1 1 0;height:36px;padding:0;font-size:15px;line-height:20px;}
   html.touch .le-box:has(> .le-dict.on) > .le-content{flex:0 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;}
@@ -8950,6 +8951,8 @@ document.addEventListener("pointerdown", e => {
 
 let editPopupAnchor = null;
 
+const EDIT_POPUP_TOP = 64;
+
 function placeEditPopup() {
   const box = document.querySelector("#editPopup .le-box");
   if (!editPopupAnchor) {
@@ -8965,8 +8968,13 @@ function placeEditPopup() {
   const {x: x, y: y} = editPopupAnchor;
   const w = box.offsetWidth, h = box.offsetHeight, gap = 16;
   const clamp = (v, max) => Math.round(Math.max(gap, Math.min(v, max - gap)));
+  if (isTouch()) {
+    box.style.left = Math.round((window.innerWidth - w) / 2) + "px";
+    box.style.top = EDIT_POPUP_TOP + "px";
+    return;
+  }
   box.style.left = clamp(x < window.innerWidth / 2 ? x : x - w, window.innerWidth - w) + "px";
-  box.style.top = (isTouch() && box.querySelector(".le-dict.on") ? gap : clamp(y < window.innerHeight / 2 ? y : y - h, window.innerHeight - h)) + "px";
+  box.style.top = clamp(y < window.innerHeight / 2 ? y : y - h, window.innerHeight - h) + "px";
 }
 
 new ResizeObserver(() => {
