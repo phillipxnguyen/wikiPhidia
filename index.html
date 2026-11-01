@@ -1691,9 +1691,6 @@ window.onYouTubeIframeAPIReady = function(){
   @keyframes bounce-in{0%{transform:scale(0);opacity:0;}60%{transform:scale(1.15);opacity:1;}100%{transform:scale(1);}}
   .session-complete-title{font-size:22px;font-weight:700;margin-top:14px;animation:fade-up .5s ease .1s both;}
   .session-complete-sub{font-size:14px;color:var(--text);margin-top:6px;animation:fade-up .5s ease .2s both;}
-  .yt-grab-row{margin-top:8px;}
-  .yt-grab{display:inline-flex;align-items:center;height:34px;padding:0 10px;border:1px dashed var(--accent);border-radius:8px;background:none;color:var(--accent);font-size:14px;font-weight:600;line-height:20px;text-decoration:none;cursor:help;}
-  #ytGrabCopy{cursor:pointer;}
   #ytDialog .cloud-row button{white-space:nowrap;}
   #ytDialog .paused-card{position:relative;}
   .dialog-x{position:absolute;top:8px;right:8px;width:44px;height:44px;min-height:0;padding:0;border-radius:22px;font-size:22px;line-height:44px;}
@@ -1705,9 +1702,6 @@ window.onYouTubeIframeAPIReady = function(){
   @keyframes ytShimmer{to{background-position:-200% 0;}}
   @keyframes ytBob{0%, 100%{transform:translateY(0);}50%{transform:translateY(-6px);}}
   @media (prefers-reduced-motion: reduce){#ytDialog.loading :is(#ytTrack, .cloud-row button, .emoji){animation:none;}}
-  .yt-grab-hint{font-size:12px;line-height:18px;}
-  html.touch #ytGrabLink, html:not(.touch) #ytGrabCopy, .touch-hint:not(.shown){display:none;}
-  html:not(.has-reader) .reader-yt-hint, html.has-reader .yt-grab-row > :not(.reader-yt-hint){display:none;}
   .lesson-item.importing{pointer-events:none;animation:importBlink 1.2s ease-in-out infinite;}
   @keyframes importBlink{0%, 100%{opacity:1;filter:blur(0);}50%{opacity:.35;filter:blur(2px);}}
   @media (prefers-reduced-motion: reduce){.lesson-item.importing{animation:none;opacity:.6;}}
@@ -2020,7 +2014,7 @@ window.onYouTubeIframeAPIReady = function(){
   #addForm.in-popup{margin:0;padding:0;border:0;box-shadow:none;background:none;}
   #addForm.in-popup #importInfo, #importInfo{line-height:20px;}
   .add-pop-head #addPopClose{display:none;}
-  #addForm.in-popup :is(.add-target, .yt-grab-row){display:none;}
+  #addForm.in-popup .add-target{display:none;}
   @media (max-width:600px){.add-pop-card{margin:12px auto;}}
   .move-mark{font-weight:700;color:#1e9466;}
   .cloud-error{min-height:18px;font-size:14px;color:var(--danger);}
@@ -2244,12 +2238,6 @@ window.onYouTubeIframeAPIReady = function(){
       </div>
       <button class="lang-btn" data-lang="en">English</button>
       <button class="lang-btn" data-lang="vi">Vietnamese</button>
-    </div>
-    <div class="row-flex yt-grab-row">
-      <a id="ytGrabLink" class="yt-grab" href="#" title="Drag to your bookmarks bar, then click it on a YouTube video">YouTube subtitles</a>
-      <button id="ytGrabCopy" class="yt-grab">YouTube subtitles</button>
-      <span class="muted-label yt-grab-hint touch-hint">Now bookmark any page and paste it as the bookmark's address.</span>
-      <span class="muted-label reader-yt-hint">YouTube lessons: on any video, click 字 to make a lesson</span>
     </div>
     <div id="importStatus" class="muted-label" style="margin-top:6px;"></div>
     <div id="importInfo" style="font-size:12px;color:var(--text-2);margin-top:8px;"></div>
@@ -15431,139 +15419,6 @@ document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden" && cloudSignedIn() && (cloudPendingLessons.size || cloudPendingReviews.size)) cloudFlush();
 });
 
-async function ytGrab(app) {
-  const say = m => alert("wikiPhidia: " + m);
-  const id = new URL(location.href).searchParams.get("v") || (location.pathname.match(/\/(?:shorts|live)\/([\w-]{11})/) || [])[1];
-  if (!/(^|\.)youtube\.com$/.test(location.hostname) || !id) return say("open a YouTube video first");
-  const win = window.open(app + "#yt-import=" + id, "_blank");
-  if (!win) return say("allow pop-ups for youtube.com and try again");
-  let ready = false, payload = null;
-  const send = () => ready && payload && win.postMessage(payload, new URL(app).origin);
-  window.addEventListener("message", e => {
-    if (e.source === win && e.data && e.data.wikiPhidia === "ready") {
-      ready = true;
-      send();
-    }
-  });
-  const player = document.getElementById("movie_player");
-  let resp = player && player.getPlayerResponse ? player.getPlayerResponse() : window.ytInitialPlayerResponse;
-  if (!resp || !resp.videoDetails || resp.videoDetails.videoId !== id) {
-    try {
-      const m = (await (await fetch("/watch?v=" + id)).text()).match(/ytInitialPlayerResponse\s*=\s*(\{.+?\});\s*(?:var|<\/script)/s);
-      resp = m ? JSON.parse(m[1]) : null;
-    } catch (e) {
-      resp = null;
-    }
-  }
-  const tracks = resp && resp.captions && resp.captions.playerCaptionsTracklistRenderer && resp.captions.playerCaptionsTracklistRenderer.captionTracks || [];
-  const base = t => t.languageCode.split("-")[0];
-  const title = resp && resp.videoDetails && resp.videoDetails.title || document.title.replace(/ - YouTube$/, "");
-  const script = /[぀-ヿ]/.test(title) ? "ja" : /[가-힯]/.test(title) ? "ko" : /[一-鿿]/.test(title) ? "zh" : /\bkorean\b/i.test(title) ? "ko" : /\bjapanese\b/i.test(title) ? "ja" : /\b(chinese|mandarin)\b/i.test(title) ? "zh" : "";
-  const inLang = l => {
-    const list = tracks.filter(t => base(t) === l);
-    return list.find(t => t.kind !== "asr") || list[0];
-  };
-  const spoken = tracks.find(t => t.kind === "asr");
-  const audio = tracks.length && resp.captions.playerCaptionsTracklistRenderer.audioTracks;
-  const guess = script && inLang(script) || spoken && inLang(base(spoken)) || audio && audio[0] && tracks[audio[0].defaultCaptionTrackIndex] || tracks[0];
-  const load = async url => {
-    try {
-      const j = await (await fetch(url + "&fmt=json3")).json();
-      return (j.events || []).filter(e => e.segs).map(e => ({
-        t: e.tStartMs / 1e3,
-        s: e.segs.map(x => x.utf8).join("").replace(/\s+/g, " ").trim()
-      })).filter(e => e.s);
-    } catch (e) {
-      return [];
-    }
-  };
-  const signed = () => performance.getEntriesByType("resource").map(e => e.name).reverse().find(u => u.includes("/api/timedtext") && u.includes("pot="));
-  let extra = "";
-  const loadAll = () => Promise.all(tracks.map(async t => ({
-    name: t.name && (t.name.simpleText || (t.name.runs || []).map(r => r.text).join("")) || t.languageCode,
-    lang: t.languageCode,
-    guess: t === guess,
-    lines: await load(t.baseUrl + extra),
-    target: /^en/.test(t.languageCode) ? "vi" : "en",
-    track: t
-  })));
-  let found = (await loadAll()).filter(t => t.lines.length);
-  if (!found.length && tracks.length) {
-    let url = signed();
-    if (!url && player && player.setOption) {
-      const was = player.getOption ? player.getOption("captions", "track") : null;
-      try {
-        player.loadModule("captions");
-        player.setOption("captions", "track", {
-          languageCode: (guess || tracks[0]).languageCode
-        });
-      } catch (e) {}
-      for (let n = 0; n < 30 && !url; n++) {
-        await new Promise(r => setTimeout(r, 200));
-        url = signed();
-      }
-      try {
-        player.setOption("captions", "track", was && was.languageCode ? was : {});
-      } catch (e) {}
-    }
-    if (url) {
-      const q = new URL(url, location.href).searchParams;
-      extra = [ "pot", "potc", "c", "cver" ].filter(k => q.has(k)).map(k => "&" + k + "=" + encodeURIComponent(q.get(k))).join("");
-      found = (await loadAll()).filter(t => t.lines.length);
-    }
-  }
-  const best = found.find(t => t.guess) || found[0];
-  if (best && base(best.track) !== best.target) best.translated = await load(best.track.baseUrl + extra + "&tlang=" + best.target);
-  if (!found.length) {
-    const find = () => document.querySelectorAll("ytd-transcript-segment-renderer");
-    if (!find().length) {
-      const open = document.querySelector("ytd-video-description-transcript-section-renderer button");
-      if (open) open.click();
-      for (let n = 0; n < 40 && !find().length; n++) await new Promise(r => setTimeout(r, 200));
-    }
-    const lines = [ ...find() ].map(el => ({
-      t: ((el.querySelector(".segment-timestamp") || {}).textContent || "").trim().split(":").map(Number).reduce((a, b) => a * 60 + b, 0),
-      s: ((el.querySelector(".segment-text") || {}).textContent || "").replace(/\s+/g, " ").trim()
-    })).filter(e => e.s);
-    if (lines.length) found.push({
-      name: "Transcript panel",
-      lang: "",
-      lines: lines
-    });
-  }
-  payload = {
-    wikiPhidia: "tracks",
-    version: 4,
-    id: id,
-    title: title,
-    best: found.indexOf(best),
-    tracks: found.map(t => ({
-      name: t.name,
-      lang: t.lang,
-      target: t.lang ? t.target : "",
-      lines: t.lines,
-      translated: t.translated || []
-    }))
-  };
-  send();
-}
-
-function ytGrabHref() {
-  return "javascript:" + encodeURIComponent("(" + ytGrab.toString() + ")(" + JSON.stringify(location.origin + location.pathname) + ")");
-}
-
-document.getElementById("ytGrabLink").href = ytGrabHref();
-
-document.getElementById("ytGrabLink").addEventListener("click", e => {
-  e.preventDefault();
-  showToast("Drag it to your bookmarks bar");
-});
-
-document.getElementById("ytGrabCopy").onclick = () => {
-  copyText(ytGrabHref());
-  document.querySelector(".touch-hint").classList.add("shown");
-};
-
 const YT_STUDY_LANGS = {
   zh: "zh-CN",
   "zh-Hans": "zh-CN",
@@ -15691,30 +15546,6 @@ async function importFromYouTube(d, translate) {
   openLesson(lesson);
   showView("study");
   finishYouTubeImport(untranslated ? "Lesson created, some lines not translated" : "Lesson created");
-}
-
-const YT_GRAB_VERSION = 4;
-
-function receiveYouTubeImport() {
-  if (!/^#yt-import/.test(location.hash)) return;
-  const id = (location.hash.match(/^#yt-import=([\w-]{11})$/) || [])[1];
-  history.replaceState(null, "", location.pathname + location.search);
-  if (!id) return showToast("Old bookmark: drag YouTube subtitles again");
-  if (!window.opener) return;
-  ytImport = {
-    id: id,
-    title: "Getting subtitles…",
-    timer: setTimeout(() => finishYouTubeImport("Couldn't get the subtitles"), 6e4)
-  };
-  renderLessonList();
-  document.getElementById("ytDialog").hidden = false;
-  window.addEventListener("message", e => {
-    if (!/^https:\/\/(www|m)\.youtube\.com$/.test(e.origin) || !e.data || !e.data.wikiPhidia || e.data.wikiPhidia === "ready") return;
-    if (e.data.version === YT_GRAB_VERSION && e.data.wikiPhidia === "tracks") receiveYouTubeTracks(e.data); else finishYouTubeImport("Old bookmark: drag YouTube subtitles again");
-  });
-  window.opener.postMessage({
-    wikiPhidia: "ready"
-  }, "*");
 }
 
 const READER_DEFAULT_LESSON = "Reading";
@@ -15892,10 +15723,7 @@ function readerYouTube(d) {
 function startReaderBridge() {
   window.addEventListener("message", e => {
     if (e.source !== window || !e.data || e.data.from !== "wikiphidia-reader" || tabPaused) return;
-    if (e.data.type === "hello") {
-      document.documentElement.classList.add("has-reader");
-      window.postMessage(readerState(), "*");
-    }
+    if (e.data.type === "hello") window.postMessage(readerState(), "*");
     if (e.data.type === "add") {
       window.postMessage(readerAdd(e.data.words), "*");
       window.postMessage(readerState(), "*");
@@ -15967,7 +15795,6 @@ async function initApp() {
   startReaderBridge();
   if (!dbAvailable) showToast("Browser storage is unavailable here");
   initCloudUi();
-  receiveYouTubeImport();
   if (navigator.storage && navigator.storage.persist) navigator.storage.persisted().then(done => done || navigator.storage.persist()).catch(() => {});
 }
 
