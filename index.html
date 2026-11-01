@@ -2776,7 +2776,7 @@ function restoreFrom(fromStack, toStack, verb) {
       taskRun.queue = t.queue;
       paintTaskBadges();
       const side = t.current && t.current.k === "v" ? "vocab" : "study";
-      if (t.current && currentView !== side) {
+      if (!t.current) taskAdvance(); else if (currentView !== side) {
         taskRun.queue.unshift(t.current);
         taskRun.current = null;
         taskAdvance();
@@ -2805,6 +2805,7 @@ function currentCounts() {
 }
 
 function undo() {
+  if (!taskRun && taskResume && currentView === "today" && !currentLessonId) resumeTaskToUndo();
   pruneExpiredUndoEntries();
   if (taskStepAcross(undoStack, redoStack, "Undo")) return;
   restoreFrom(undoStack, redoStack, "Undo");
@@ -6966,7 +6967,7 @@ const FLAG_SVGS = {
   vn: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480"><defs><clipPath id="vn-a"><path fill-opacity=".7" d="M-85.3 0h682.6v512H-85.3z"/></clipPath></defs><g fill-rule="evenodd" clip-path="url(#vn-a)" transform="translate(80)scale(.9375)"><path fill="#da251d" d="M-128 0h768v512h-768z"/><path fill="#ff0" d="M349.6 381 260 314.3l-89 67.3L204 272l-89-67.7 110.1-1 34.2-109.4L294 203l110.1.1-88.5 68.4 33.9 109.6z"/></g></svg>'
 };
 
-const MANY_FLAGS = [ "en", "zh-CN", "vi" ];
+const MANY_FLAGS = [ "en", "zh-CN", "ko", "ja", "vi" ];
 
 let shownFlags = "";
 
@@ -6975,12 +6976,12 @@ function flagUrl(cc) {
 }
 
 function showFlags(langs) {
-  let ccs = [ ...new Set(langs.map(l => LANG_COUNTRY[l]).filter(Boolean)) ].slice(0, 3);
+  let ccs = [ ...new Set(langs.map(l => LANG_COUNTRY[l]).filter(Boolean)) ].slice(0, 5);
   if (!ccs.length) ccs = MANY_FLAGS.map(l => LANG_COUNTRY[l]);
   const key = ccs.join(",");
   if (shownFlags === key) return;
   shownFlags = key;
-  const n = ccs.length, SLOPE = Math.tan(10 * Math.PI / 180), H = 24, STEP = 36;
+  const n = ccs.length, SLOPE = Math.tan(10 * Math.PI / 180), H = 24, STEP = n > 3 ? 22 : 36;
   const ropeY = x => 3 + (x - 3) * SLOPE;
   const at = k => {
     const x = 6 + k * STEP, tie = 2 + Math.floor(Math.random() * (H - 3));
@@ -7007,7 +7008,7 @@ function autoDetectLangs(texts) {
 
 function updateLessonFlag() {
   const row = groupState ? studyScope().find(r => r.q) : null;
-  if (currentView !== "vocab") showFlags(row ? [ langCode(row.q) ] : studyLang === "auto" ? autoDetectLangs().slice(0, isAllLessons() ? 3 : 1) : [ studyLang ]);
+  if (currentView !== "vocab") showFlags(row ? [ langCode(row.q) ] : studyLang === "auto" ? autoDetectLangs().slice(0, isAllLessons() ? 5 : 1) : [ studyLang ]);
 }
 
 document.getElementById("studyLang").addEventListener("change", e => {
@@ -18871,7 +18872,27 @@ async function openToday() {
 
 let taskRun = null;
 
+let taskResume = null;
+
+function resumeTaskToUndo() {
+  const r = taskResume;
+  taskResume = null;
+  taskRun = Object.assign({}, r.run, {
+    opening: true,
+    sided: true
+  });
+  document.documentElement.classList.add("in-task");
+  document.documentElement.classList.toggle("home-vocab", taskRun.homeMode === "vocab");
+  taskOpenSide(taskRun, r.side);
+  undoStack = r.undo;
+  redoStack = r.redo;
+  showView(r.side === "v" ? "vocab" : "study");
+  taskRun.opening = false;
+  renderTaskBar();
+}
+
 async function openTodayTask(t) {
+  taskResume = null;
   if (!t.lesson) {
     todayPlan.done[t.key] = !t.done;
     saveToday();
@@ -18968,7 +18989,19 @@ async function taskAdvance() {
   if (!run.current) {
     run.opening = false;
     taskJustDone = run.key;
+    const keep = {
+      run: Object.assign({}, run, {
+        queue: [],
+        current: null,
+        opening: false,
+        peeking: false
+      }),
+      side: appMode === "vocab" ? "v" : "c",
+      undo: undoStack.slice(),
+      redo: redoStack.slice()
+    };
     await openToday();
+    taskResume = keep.undo.length ? keep : null;
     return celebrateTaskDone();
   }
   const shown = taskShowPick(run, run.current);
