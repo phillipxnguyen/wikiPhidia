@@ -2677,6 +2677,7 @@ function skipEmptyGroups() {
 }
 
 function restoreFrom(fromStack, toStack, verb) {
+  dismissLookups();
   if (fromStack.length === 0) return;
   discardActiveEdit();
   haltAllPlayback();
@@ -4703,7 +4704,18 @@ function queueScrollCues() {
     cueFrame = 0;
     placeScrollRail();
     document.querySelectorAll(EDGE_SEL).forEach(markEdges);
+    dropOrphanLookups();
   });
+}
+
+function dropOrphanLookups() {
+  const gone = el => !el || !el.isConnected || !el.getClientRects().length;
+  if (hoverTooltip && hoverTooltip.style.display === "block" && gone(hoverTooltip.anchor)) hideTooltip();
+}
+
+function dismissLookups() {
+  hideTooltip();
+  hideVocabPopup();
 }
 
 document.addEventListener("scroll", queueScrollCues, true);
@@ -10058,6 +10070,7 @@ function applyGrade(r, isAgain, mode, now) {
 
 function gradeCard(row, isAgain) {
   if (!groupState || !row) return;
+  dismissLookups();
   const mode = modeKey();
   const next = !isListenMode() || listenBatch().filter(r => r.id !== row.id).length <= 1;
   const parts = next ? studyParts() : [ cardLineEl(row.id) ];
@@ -12517,6 +12530,7 @@ function resetStudyState() {
 }
 
 function openLesson(lesson) {
+  dismissLookups();
   if (taskRun && !isVirtualId(lesson.id)) endTask();
   if (lesson.unseen) {
     delete lesson.unseen;
@@ -13675,6 +13689,7 @@ function showListModes() {
 }
 
 function showView(view) {
+  dismissLookups();
   if (taskRun && view !== "study" && view !== "vocab") endTask();
   if (view !== currentView) ytWarm = false;
   if (view === "study" && !currentLessonId) view = "empty";
@@ -17554,6 +17569,7 @@ function flipVocab() {
 }
 
 function flyVocab(isAgain) {
+  dismissLookups();
   if (commitVocabEdit()) renderVocab();
   if (!currentVocabItem()) return;
   const card = document.getElementById("vocabCard");
