@@ -1117,12 +1117,15 @@ window.onYouTubeIframeAPIReady = function(){
   @media (hover:hover){.loop-time:not(.looping):hover{filter:brightness(1.1);}}
   .loop-time.looping{background:var(--accent);color:var(--on-accent);}
   .loop-time, .exam-play{position:relative;}
-  :is(#btnPlaySequence, #vocabSpeak, #tbShow, .loop-time, .exam-play){transition:none;}
-  .sound-ring{position:absolute;overflow:visible;pointer-events:none;--ring:var(--accent);}
+  :is(#btnPlaySequence, #vocabSpeak, #tbShow, .loop-time, .exam-play){transition:background-color .4s ease, border-color .4s ease, color .4s ease;}
+  .sound-ring{position:absolute;overflow:visible;pointer-events:none;--ring:var(--accent);animation:ringIn .4s ease;transition:opacity .4s ease;}
+  .sound-ring.out{opacity:0;}
+  @keyframes ringIn{from{opacity:0;}to{opacity:1;}}
   .exam-sheet .sound-ring{--ring:var(--sheet-edge);}
   .sound-ring path{fill:none;stroke-width:2;}
   .sound-ring .ring-track{stroke:color-mix(in srgb, var(--ring) 38%, #fff);}
-  .sound-ring .ring-run{stroke:var(--ring);stroke-linecap:round;}
+  .sound-ring .ring-run{stroke:var(--ring);stroke-linecap:round;opacity:0;}
+  .sound-ring .ring-run.on{opacity:1;transition:opacity .4s ease;}
   .sound-wait{animation:zap-jolt .6s steps(1) infinite;}
   @keyframes zap-jolt{0%{transform:translate(1px, 0);}20%{transform:none;}50%{transform:translate(-1px, 0);}70%{transform:none;}}
   .zap{position:absolute;overflow:visible;pointer-events:none;z-index:2;}
@@ -4465,6 +4468,7 @@ function startLoop(row) {
     if (!ytPlayer || typeof ytPlayer.seekTo !== "function") return;
     playbackRateOnce();
     seamTo(row.time);
+    if (soundSegment.id === row.id) soundSegment.ready = true;
   }, 100);
   loopInterval = setInterval(() => {
     if (!ytPlayer || !ytReady || typeof ytPlayer.getCurrentTime !== "function") return;
@@ -4520,6 +4524,10 @@ function paintRing(el, p) {
   const box = el.getBoundingClientRect();
   const w = Math.round(box.width * 100) / 100, h = Math.round(box.height * 100) / 100;
   let svg = el.querySelector(":scope > .sound-ring");
+  if (svg && svg.classList.contains("out")) {
+    clearTimeout(svg.outTimer);
+    svg.classList.remove("out");
+  }
   if (!svg || svg.dataset.size !== w + "x" + h) {
     if (svg) svg.remove();
     const x = 1, y = 1, rw = w + 4, rh = h + 4, mid = x + rw / 2;
@@ -4534,7 +4542,14 @@ function paintRing(el, p) {
   const run = svg.querySelector(".ring-run");
   run.style.strokeDasharray = `${(100 - done).toFixed(2)} 100`;
   run.style.strokeDashoffset = (-done).toFixed(2);
-  run.style.visibility = done >= 100 ? "hidden" : "";
+  run.classList.toggle("on", done < 100);
+}
+
+function dropRing(el) {
+  const svg = el.querySelector(":scope > .sound-ring");
+  if (!svg || svg.classList.contains("out")) return;
+  svg.classList.add("out");
+  svg.outTimer = setTimeout(() => svg.remove(), 400);
 }
 
 let ringHold = null;
@@ -4550,7 +4565,7 @@ function soundProgressLoop() {
     let video = null;
     if (row && soundSegment.id === row.id && ytPlayer && typeof ytPlayer.getCurrentTime === "function") {
       const now = ytPlayer.getCurrentTime();
-      if (!soundSegment.armed && now >= soundSegment.start - .3 && now <= soundSegment.start + 1) soundSegment.armed = true;
+      if (!soundSegment.armed && soundSegment.ready && now >= soundSegment.start - .3 && now <= soundSegment.start + 1) soundSegment.armed = true;
       video = soundSegment.armed ? Math.max(0, Math.min(1, (now - soundSegment.start) / Math.max(.1, soundSegment.end - soundSegment.start))) : 0;
     }
     const speech = speechProgress();
@@ -4575,7 +4590,7 @@ function soundProgressLoop() {
     };
     const hold = !chosen && ringHold && ringHold.el.offsetParent && performance.now() < ringHold.until && soundStillOn() ? ringHold.el : null;
     all.forEach(([ el, p ]) => {
-      if (chosen && chosen[0] === el) paintRing(el, p); else if (el === hold) paintRing(el, 1); else el.querySelector(":scope > .sound-ring")?.remove();
+      if (chosen && chosen[0] === el) paintRing(el, p); else if (el === hold) paintRing(el, 1); else dropRing(el);
     });
     soundFrame = video != null || speech != null || exam != null || chosen && chosen[2] || hold ? requestAnimationFrame(tick) : 0;
   };
@@ -5817,6 +5832,7 @@ function playNextSequenceStep() {
       fadeVolume(100, 180);
       unmuteNow();
     } else seamTo(currentRow.time);
+    soundSegment.ready = true;
     videoActionSeq++;
     const next = oneCard ? currentRow : visible[sequenceIndex + 1] || (listenAutoPlayOnce && isCardMode() ? null : visible[0]);
     const jump = !next || next.time == null || Math.abs(next.time - end) > .3;
