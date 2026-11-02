@@ -5249,8 +5249,8 @@ function modeScopeRows(mode) {
 
 function srsBucket(st, now) {
   if (!st.reps) return "new";
-  if (st.due <= now) return "due";
-  return isDoneState(st) ? "done" : null;
+  if (isDoneState(st)) return "done";
+  return st.due <= now ? "due" : null;
 }
 
 let doneWordCache = null;
@@ -16161,7 +16161,7 @@ function vocabCounts(items) {
   };
   items.forEach(item => {
     const st = vocabStateOf(item);
-    if (!st.reps) c.fresh++; else if (st.due <= now) c.due++; else if (isDoneState(st)) c.done++;
+    if (!st.reps) c.fresh++; else if (isDoneState(st)) c.done++; else if (st.due <= now) c.due++;
   });
   return c;
 }
@@ -16250,8 +16250,8 @@ function currentVocabItem() {
 
 function vocabStatusIcon(st) {
   if (!st.reps) return "🆕";
-  if (st.due <= Date.now()) return "⏳";
-  return isDoneState(st) ? "✅" : "🕒";
+  if (isDoneState(st)) return "✅";
+  return st.due <= Date.now() ? "⏳" : "🕒";
 }
 
 function formatDueIn(ts) {
@@ -19286,21 +19286,24 @@ function paintTaskBadges() {
   const l = library.find(x => x.id === run.lessonId);
   if (!l) return;
   const items = lessonVocabItems(lessonCardsWithExtras(l));
-  let fresh = 0, due = 0, curFresh = false;
+  let fresh = 0, due = 0, cur = "due";
   const stateOf = pick => pick.k === "c" ? (c => c && srsOf(c))(l.cards.find(x => x.uid === pick.id)) : (it => it && vocabStateOf(it))(items.find(i => i.key === pick.id));
-  if (run.current) curFresh = !(stateOf(run.current) || {}).reps;
+  if (run.current) {
+    const st = stateOf(run.current) || {};
+    cur = !st.reps ? "new" : isDoneState(st) ? "done" : "due";
+  }
   (run.current ? [ run.current ] : []).concat(run.queue.filter(taskShowable)).forEach(pick => {
     const st = pick.k === "c" ? (c => c && srsOf(c))(l.cards.find(x => x.uid === pick.id)) : (it => it && vocabStateOf(it))(items.find(i => i.key === pick.id));
     if (!st) return;
-    if (st.reps) due++; else fresh++;
+    if (!st.reps) fresh++; else if (!isDoneState(st)) due++;
   });
   document.querySelectorAll("#singleCardProgress .progress-badge, #vocabBadges .progress-badge").forEach(el => {
     const b = el.querySelector("b");
     if (!b) return;
-    const n = el.classList.contains("new") ? fresh : el.classList.contains("due") ? due : null;
-    if (n === null) return;
-    if (b.textContent !== String(n)) b.textContent = n;
-    el.classList.toggle("active", el.classList.contains(curFresh ? "new" : "due") && n > 0);
+    const kind = [ "new", "due", "done" ].find(k => el.classList.contains(k));
+    const n = kind === "new" ? fresh : kind === "due" ? due : null;
+    if (n !== null && b.textContent !== String(n)) b.textContent = n;
+    el.classList.toggle("active", kind === cur && (n === null ? Number(b.textContent) > 0 : n > 0));
   });
 }
 
