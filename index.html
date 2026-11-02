@@ -1876,6 +1876,13 @@ window.onYouTubeIframeAPIReady = function(){
   .today-flow{display:grid;grid-template-columns:minmax(0, 1fr) minmax(0, 1fr);gap:24px;margin-top:16px;}
   @media (max-width:700px){.today-flow{grid-template-columns:minmax(0, 1fr);gap:16px;}}
   .today-flow > .today-empty{grid-column:1 / -1;margin:0;}
+  .task-more{display:flex;flex-direction:column;align-items:center;gap:8px;padding:48px 24px;text-align:center;font-size:15px;line-height:22px;color:var(--text-2);}
+  .task-more[hidden]{display:none;}
+  .task-more b{font-size:20px;line-height:28px;color:var(--text);}
+  .task-more p{max-width:420px;margin:0;}
+  .task-more-mark{display:flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:28px;background:color-mix(in srgb, var(--new-color) 14%, var(--surface));color:var(--new-color);font-size:28px;line-height:32px;font-weight:700;}
+  .task-more-acts{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:8px;}
+  html.task-more-on :is(#viewStudy, #viewVocab, #touchBar, #selBar){display:none !important;}
   .under-done{display:flex;align-items:center;justify-content:center;box-sizing:border-box;width:100%;height:100%;min-height:200px;font-size:20px;line-height:28px;font-weight:700;color:var(--text-2);}
   .vocab-deck > .under-done{position:absolute;inset:0 0 16px;}
   .flow-sum{margin:0;font-size:17px;line-height:26px;color:var(--text-2);}
@@ -2779,7 +2786,7 @@ function restoreFrom(fromStack, toStack, verb) {
       taskRun.queue = t.queue;
       paintTaskBadges();
       const side = t.current && t.current.k === "v" ? "vocab" : "study";
-      if (!t.current) taskAdvance(); else if (currentView !== side) {
+      if (!t.current) setTimeout(() => taskRun && !taskRun.current && taskAdvance(), 0); else if (currentView !== side) {
         taskRun.queue.unshift(t.current);
         taskRun.current = null;
         taskAdvance();
@@ -2808,6 +2815,7 @@ function currentCounts() {
 }
 
 function undo() {
+  hideTaskMore();
   if (!taskRun && taskResume && currentView === "today" && !currentLessonId) resumeTaskToUndo();
   pruneExpiredUndoEntries();
   if (taskStepAcross(undoStack, redoStack, "Undo")) return;
@@ -10513,7 +10521,7 @@ function showNextUnderSwipe() {
 }
 
 function underDoneHtml() {
-  return `<div class="under-done">${taskRun ? "✓ Task done" : "🎉 All caught up!"}</div>`;
+  return `<div class="under-done">${taskRun ? "✓ Today's part done" : "🎉 All caught up!"}</div>`;
 }
 
 function endDrag(e) {
@@ -18011,11 +18019,12 @@ function todayTasks() {
         due: 0,
         fresh: 0
       };
+      const rest = (k, side, of) => Math.max(0, Math.min(left[side][of], (p[k] || 0) - ((c[k] || 0) - (p.base[k] || 0))));
       const rem = {
         dueC: p.onC === false ? 0 : left.cards.due,
         dueV: p.onV === false ? 0 : left.vocab.due,
-        freshC: p.onC === false ? 0 : left.cards.fresh,
-        freshV: p.onV === false ? 0 : left.vocab.fresh
+        freshC: rest("freshC", "cards", "fresh"),
+        freshV: rest("freshV", "vocab", "fresh")
       };
       const remDue = rem.dueC + rem.dueV, remFresh = rem.freshC + rem.freshV;
       const did = Math.max(0, c.due - p.base.due) + Math.max(0, c.fresh - p.base.fresh);
@@ -19021,27 +19030,84 @@ async function taskAdvance() {
   run.current = next < 0 ? null : run.queue.splice(next, 1)[0];
   if (!run.current) {
     run.opening = false;
-    taskJustDone = run.key;
-    const keep = {
-      run: Object.assign({}, run, {
-        queue: [],
-        current: null,
-        opening: false,
-        peeking: false
-      }),
-      side: appMode === "vocab" ? "v" : "c",
-      undo: undoStack.slice(),
-      redo: redoStack.slice()
-    };
-    await openToday();
-    taskResume = keep.undo.length ? keep : null;
-    return celebrateTaskDone();
+    if (taskMoreFresh(run)) return showTaskMore(run);
+    return finishTask(run);
   }
   const shown = taskShowPick(run, run.current);
   if (taskRun !== run) return;
   if (!shown) return taskAdvance();
   renderTaskBar();
   paintTaskBadges();
+}
+
+const TASK_MORE = 10;
+
+function taskMoreFresh(run) {
+  if (autoSaveDebounceTimer) saveCurrentLesson();
+  const l = library.find(x => x.id === run.lessonId);
+  if (!l) return 0;
+  const left = leftBoth(l);
+  return (run.onC === false ? 0 : left.cards.fresh) + (run.onV === false ? 0 : left.vocab.fresh);
+}
+
+function showTaskMore(run) {
+  const n = taskMoreFresh(run), take = Math.min(TASK_MORE, n);
+  let box = document.getElementById("taskMore");
+  if (!box) {
+    box = document.createElement("div");
+    box.id = "taskMore";
+    box.className = "task-more";
+    document.getElementById("taskBar").after(box);
+  }
+  box.innerHTML = `<div class="task-more-mark" aria-hidden="true">✓</div><b>Today's part of this lesson is done</b><p>${n} new card${n === 1 ? "" : "s"} still wait${n === 1 ? "s" : ""} in it. Learn a few more now, or stop here; they stay for another day.</p><div class="task-more-acts"><button class="primary" data-more="go">Learn ${take} more</button><button data-more="stop">Back to Today</button></div>`;
+  box.hidden = false;
+  document.documentElement.classList.add("task-more-on");
+  renderTaskBar();
+}
+
+function hideTaskMore() {
+  const box = document.getElementById("taskMore");
+  if (box) box.hidden = true;
+  document.documentElement.classList.remove("task-more-on");
+}
+
+document.addEventListener("click", e => {
+  const b = e.target.closest && e.target.closest("#taskMore [data-more]");
+  const run = taskRun;
+  if (!b || !run) return;
+  hideTaskMore();
+  if (b.dataset.more === "stop") return finishTask(run);
+  const l = library.find(x => x.id === run.lessonId);
+  const left = l && leftBoth(l);
+  if (!left) return finishTask(run);
+  const freshC = run.onC === false ? 0 : Math.min(TASK_MORE, left.cards.fresh);
+  const freshV = run.onV === false ? 0 : Math.min(TASK_MORE - freshC, left.vocab.fresh);
+  run.rem = {
+    dueC: run.onC === false ? 0 : left.cards.due,
+    dueV: run.onV === false ? 0 : left.vocab.due,
+    freshC: freshC,
+    freshV: freshV
+  };
+  run.queue = taskQueue(l, run);
+  taskAdvance();
+});
+
+async function finishTask(run) {
+  taskJustDone = run.key;
+  const keep = {
+    run: Object.assign({}, run, {
+      queue: [],
+      current: null,
+      opening: false,
+      peeking: false
+    }),
+    side: appMode === "vocab" ? "v" : "c",
+    undo: undoStack.slice(),
+    redo: redoStack.slice()
+  };
+  await openToday();
+  taskResume = keep.undo.length ? keep : null;
+  return celebrateTaskDone();
 }
 
 function taskShowPick(run, pick) {
@@ -19231,6 +19297,7 @@ function renderTaskBar() {
 }
 
 function endTask() {
+  hideTaskMore();
   if (!taskRun && !document.documentElement.classList.contains("in-task")) return;
   const home = taskRun && taskRun.homeMode;
   taskRun = null;
