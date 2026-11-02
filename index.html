@@ -1234,6 +1234,9 @@ window.onYouTubeIframeAPIReady = function(){
   .test-chip{flex-shrink:0;display:inline-flex;align-items:center;gap:4px;height:20px;min-height:0;margin-left:auto;padding:0 6px;border:0;border-radius:10px;font-size:12px;font-weight:700;line-height:20px;color:var(--accent);background:var(--accent-soft);font-variant-numeric:tabular-nums;}
   @media (max-width:820px){#testNav + .streak-chip{margin-left:0;}}
   #testNavCount:empty{display:none;}
+  #testNav[hidden]{display:none;}
+  #testNav[hidden] + .streak-chip{margin-left:auto;}
+  .set-switch input{flex:none;width:20px;height:20px;margin:0;accent-color:var(--accent);}
   .test-chip.due{color:var(--due-color);background:color-mix(in srgb, var(--due-color) 14%, transparent);}
   .test-chip.active{color:var(--on-accent);background:var(--accent);}
   .test-chip:focus:not(:focus-visible){outline:none;}
@@ -14636,7 +14639,8 @@ function settingsPopHtml() {
   const shown = pendingTheme || shownTheme();
   const theme = [ [ "light", "☀️", "Light" ], [ "dark", "🌙", "Dark" ] ].map(([ k, icon, name ]) => `<button type="button" data-theme-pick="${k}" class="${k === shown ? "active" : ""}" aria-pressed="${k === shown}" aria-label="${name}" title="${name}">${icon}</button>`).join("");
   const fonts = STUDY_FONT_LANGS.map(([ k, name, sample, list ]) => `<label class="set-font${studyFonts[k] ? " picked" : ""}"><span class="set-sample" data-sl="${k}">${sample}</span><span class="set-meta"><b>${name}</b><span>${escapeHtml(studyFonts[k] || "System")}</span></span><svg class="set-chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3"/></svg><select data-font-lang="${k}" aria-label="${name} font"><option value="">System</option>${list.map(f => `<option value="${escapeAttr(f)}"${studyFonts[k] === f ? " selected" : ""}>${escapeHtml(f)}</option>`).join("")}</select></label>`).join("");
-  return `<div class="set-theme" role="group" aria-label="Theme">${theme}</div><div class="set-fonts">${fonts}</div>`;
+  const tests = `<label class="set-font set-switch"><span class="set-sample">📝</span><span class="set-meta"><b>Tests</b><span>${testsOn ? "On: 📝 is in the logo row" : "Paused: turn on to use them"}</span></span><input type="checkbox" data-tests-on${testsOn ? " checked" : ""} aria-label="Show Tests"></label>`;
+  return `<div class="set-theme" role="group" aria-label="Theme">${theme}</div><div class="set-fonts">${fonts}</div><div class="set-fonts">${tests}</div>`;
 }
 
 function placeSettingsPop() {
@@ -14665,6 +14669,16 @@ document.getElementById("settingsPop").addEventListener("click", e => {
 });
 
 document.getElementById("settingsPop").addEventListener("change", e => {
+  if (e.target.matches("[data-tests-on]")) {
+    testsOn = e.target.checked;
+    try {
+      localStorage.setItem(TESTS_ON_KEY, JSON.stringify(testsOn));
+    } catch (err) {}
+    e.target.closest(".set-font").querySelector(".set-meta > span").textContent = testsOn ? "On: 📝 is in the logo row" : "Paused: turn on to use them";
+    syncTestNav();
+    if (!testsOn && currentView === "test") openToday();
+    return;
+  }
   const k = e.target.dataset.fontLang;
   if (!k) return;
   if (e.target.value) studyFonts[k] = e.target.value; else delete studyFonts[k];
@@ -22239,9 +22253,14 @@ function testSpan(seconds, t) {
   });
 }
 
+const TESTS_ON_KEY = "flashcards.testsOn";
+
+let testsOn = readLocal(TESTS_ON_KEY) === true;
+
 function syncTestNav() {
   const chip = document.getElementById("testNav");
   if (!chip) return;
+  chip.hidden = !testsOn;
   const bank = testBank();
   const going = bank.filter(t => t.status === "active").length;
   const due = bank.filter(testDue).length;
@@ -22959,7 +22978,7 @@ document.addEventListener("keydown", e => {
   if (e.altKey && (e.metaKey || e.ctrlKey) && !e.shiftKey && (SIDEBAR_KEYS[e.code] || e.code === "KeyA" || e.code === "KeyX" || e.code === "KeyT")) {
     e.preventDefault();
     if (e.repeat || tabPaused || dialogOpen()) return;
-    if (e.code === "KeyA") addFromKey(); else if (e.code === "KeyX") openTests(); else if (e.code === "KeyT") toggleTheme(); else document.getElementById(SIDEBAR_KEYS[e.code]).click();
+    if (e.code === "KeyA") addFromKey(); else if (e.code === "KeyX") testsOn && openTests(); else if (e.code === "KeyT") toggleTheme(); else document.getElementById(SIDEBAR_KEYS[e.code]).click();
     return;
   }
   if (e.isComposing || e.keyCode === 229 || e.metaKey || e.ctrlKey || e.altKey || e.shiftKey || e.repeat || tabPaused) return;

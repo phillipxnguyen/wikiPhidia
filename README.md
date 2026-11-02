@@ -177,7 +177,7 @@ With reduced motion turned on in the system, she stays away and things simply ha
 | ⌘⌥O (Ctrl+Alt+O) | Open a file (the same as Open file) |
 | ⌘⌥B (Ctrl+Alt+B) | Back up |
 | ⌘⌥W (Ctrl+Alt+W) | Statistics |
-| ⌘⌥X (Ctrl+Alt+X) | Tests |
+| ⌘⌥X (Ctrl+Alt+X) | Tests (only while Tests are on in ⚙️ Settings) |
 | ⌘⌥Q (Ctrl+Alt+Q) | Switch between Lessons and Vocabulary |
 | ⌘⌥T (Ctrl+Alt+T) | Switch between the light and dark theme |
 | ⌘/ (Ctrl+/) or / | Open Search or Ask (press ⌘/ again to close it) |
@@ -189,7 +189,9 @@ On a phone, swipe a card right for Good and left for Again. Whatever flies off (
 
 ## Tests
 
-📝 Tests sits in the logo row, in Lessons and in Vocabulary alike (in a phone's top bar too), counting the tests in progress and the ones due, and lit while the test centre is open. ⌘⌥X (Ctrl+Alt+X) opens it too. Tests are built for active recall: every answer is brought back from memory and typed or spoken, never picked. There is no multiple choice, no word bank, no scrambled words to put in order and no list to choose from, and each word is tested only once on a paper. A word used in one question never comes back in another part further down. When a paper needs more words than there are, it has fewer questions instead.
+**Paused for now.** Tests are switched off: 📝 is gone from the logo row and ⌘⌥X does nothing, while every test, result and setting is kept as it was. ⚙️ Settings has a **Tests** switch at its bottom (📝, *Paused: turn on to use them*); tick it and everything below comes back at once, untick it and they are put away again (leaving the test centre if it is open). The switch is kept in this browser.
+
+When on, 📝 Tests sits in the logo row, in Lessons and in Vocabulary alike (in a phone's top bar too), counting the tests in progress and the ones due, and lit while the test centre is open. ⌘⌥X (Ctrl+Alt+X) opens it too. Tests are built for active recall: every answer is brought back from memory and typed or spoken, never picked. There is no multiple choice, no word bank, no scrambled words to put in order and no list to choose from, and each word is tested only once on a paper. A word used in one question never comes back in another part further down. When a paper needs more words than there are, it has fewer questions instead.
 
 **Languages first.** The test centre opens on four big language cards: English, 中文, 한국어 and 日本語, each in its own colours with a large letter (Aa, 中, 한, 日), its number of words and how far its route has gone. A language opens once it has at least 3 of your Vocabulary words; until then its card is greyed and dashed. Clicking the language you are already on, or 📝 while the test centre is open, changes nothing, and the page only plays its short entrance (the banner and the route's cards rising in) when it opens or another language is picked, not on every button. Each language is its own world and never mixes with another: its papers use only its words, and everything in it is written in that language (路线, 第1步, 开始… for Chinese), except the ✦ Claude key at the top.
 
