@@ -2877,7 +2877,7 @@ const AGAIN_DELAY_MS = 10 * 60 * 1e3;
 
 const DONE_STREAK = 5;
 
-const DONE_STEPS_DAYS = [ 1, 3, 7 ];
+const DONE_REVIEW_DAYS = 7;
 
 const GRADE_AGAIN = 1;
 
@@ -2934,8 +2934,12 @@ function mergeModeSrs(srs) {
 }
 
 function goodDelayMs(streak) {
-  if (streak < DONE_STREAK) return DAY_MS;
-  return DONE_STEPS_DAYS[Math.min(streak - DONE_STREAK, DONE_STEPS_DAYS.length - 1)] * DAY_MS;
+  return streak < DONE_STREAK ? DAY_MS : DONE_REVIEW_DAYS * DAY_MS;
+}
+
+function doneSpacing(st) {
+  if (st && isDoneState(st) && st.last) st.due = Math.max(st.due || 0, st.last + DONE_REVIEW_DAYS * DAY_MS);
+  return st;
 }
 
 function isDoneState(st) {
@@ -5244,8 +5248,8 @@ function modeScopeRows(mode) {
 
 function srsBucket(st, now) {
   if (!st.reps) return "new";
-  if (isDoneState(st)) return "done";
-  return st.due <= now ? "due" : null;
+  if (st.due <= now) return "due";
+  return isDoneState(st) ? "done" : null;
 }
 
 let doneWordCache = null;
@@ -6158,7 +6162,7 @@ function showSessionCompletePanel() {
   }
   document.querySelector("#viewStudy .toolbar").style.display = "none";
   const now = Date.now();
-  const next = rows.filter(r => speakable(r) && !cardWaiting(r)).map(r => srsOf(r, "Table")).filter(st => st.reps && !isDoneState(st) && st.due > now).map(st => st.due).sort((a, b) => a - b)[0];
+  const next = rows.filter(r => speakable(r) && !cardWaiting(r)).map(r => srsOf(r, "Table")).filter(st => st.reps && st.due > now).map(st => st.due).sort((a, b) => a - b)[0];
   const due = isAllLessons() ? mixCandidates(true).map(([ r ]) => r) : modeScopeRows(modeKey()).filter(r => cardReady(r, "Table", now));
   const more = heldMore(due, isAllLessons() ? mixCandidates().map(([ r ]) => r) : limitRows(due), r => srsOf(r, "Table"));
   const held = more.total;
@@ -9645,8 +9649,8 @@ function splitIntoGroups(ids) {
 
 function cardKind(r, mode, now) {
   const st = srsOf(r, mode);
-  if (isDoneState(st)) return 4 + Math.min(st.streak - DONE_STREAK, DONE_STEPS_DAYS.length - 1);
   if (!st.reps) return 2;
+  if (isDoneState(st)) return st.due > now ? 4 : 1;
   if (st.due > now) return 3;
   return st.streak === 0 ? 0 : 1;
 }
@@ -11879,6 +11883,7 @@ function normalizeSrs(srs) {
       if (typeof st[k] === "number" && isFinite(st[k])) out[mode][k] = st[k];
     });
     if (typeof st.streak !== "number") fromFsrsState(st, out[mode]);
+    doneSpacing(out[mode]);
   });
   return out;
 }
@@ -16124,6 +16129,7 @@ function normalizeVocabSrs(vocab) {
     Object.keys(clean).forEach(f => {
       if (typeof st[f] === "number" && isFinite(st[f])) clean[f] = st[f];
     });
+    doneSpacing(clean);
     if (typeof st.added === "number" && isFinite(st.added)) clean.added = st.added;
     if (typeof st.notes === "string" && st.notes.trim()) {
       clean.notes = sanitizeHtml(st.notes);
@@ -16154,14 +16160,14 @@ function vocabCounts(items) {
   };
   items.forEach(item => {
     const st = vocabStateOf(item);
-    if (!st.reps) c.fresh++; else if (isDoneState(st)) c.done++; else if (st.due <= now) c.due++;
+    if (!st.reps) c.fresh++; else if (st.due <= now) c.due++; else if (isDoneState(st)) c.done++;
   });
   return c;
 }
 
 function vocabKind(st, now) {
-  if (isDoneState(st)) return 4;
   if (!st.reps) return 2;
+  if (isDoneState(st)) return st.due > now ? 4 : 1;
   if (st.due > now) return 3;
   return st.streak === 0 ? 0 : 1;
 }
@@ -16243,8 +16249,8 @@ function currentVocabItem() {
 
 function vocabStatusIcon(st) {
   if (!st.reps) return "🆕";
-  if (isDoneState(st)) return "✅";
-  return st.due <= Date.now() ? "⏳" : "🕒";
+  if (st.due <= Date.now()) return "⏳";
+  return isDoneState(st) ? "✅" : "🕒";
 }
 
 function formatDueIn(ts) {
@@ -16795,7 +16801,7 @@ function renderVocab() {
   if (!studying.length) {
     badges.innerHTML = "";
     document.getElementById("vocabToolbar").style.display = "none";
-    const next = items.map(i => vocabStateOf(i)).filter(st => st.reps && !isDoneState(st)).map(st => st.due).sort((a, b) => a - b)[0];
+    const next = items.map(i => vocabStateOf(i)).filter(st => st.reps).map(st => st.due).sort((a, b) => a - b)[0];
     const due = items.filter(i => vocabStateOf(i).due <= now);
     const more = heldMore(due, limitVocab(due), vocabStateOf);
     const held = more.total;
@@ -18125,7 +18131,7 @@ function round5(n) {
 function dueForecast(n) {
   const start = todayStart(), out = Array(n).fill(0);
   const add = st => {
-    if (!st || !st.reps || isDoneState(st)) return;
+    if (!st || !st.reps) return;
     const k = Math.floor((Math.max(st.due || 0, start) - start) / 864e5);
     if (k < n) out[k]++;
   };
@@ -18452,7 +18458,7 @@ function dueLessonsByDay(n) {
   library.filter(l => !isVirtualId(l.id)).forEach(l => {
     const mode = countMode(l.cards);
     const add = st => {
-      if (!st || !st.reps || isDoneState(st)) return;
+      if (!st || !st.reps) return;
       const k = Math.floor((Math.max(st.due || 0, start) - start) / 864e5);
       if (k < n) out[k].add(l.id);
     };
