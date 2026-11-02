@@ -1769,6 +1769,21 @@ window.onYouTubeIframeAPIReady = function(){
   .hero-kicker{font-size:12px;line-height:16px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--hero-ink-2);}
   .hero-sum{font-size:28px;line-height:36px;font-weight:700;color:var(--hero-ink);}
   .hero-sum b{font-weight:800;font-variant-numeric:tabular-nums;}
+  .hero-next{display:flex;align-items:center;gap:10px;min-width:0;min-height:48px;padding:8px 8px 8px 16px;border:0;border-radius:14px;background:var(--hero-card);box-shadow:0 2px 8px rgba(0,0,0,.18);color:var(--hero-card-ink);text-shadow:none;text-align:left;font-size:15px;line-height:20px;}
+  .hero-next span{flex:none;font-size:12px;line-height:16px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--warm);}
+  .hero-next b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700;}
+  .hero-next em{flex:none;display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px;border-radius:12px;background:color-mix(in srgb, var(--warm) 14%, transparent);color:var(--warm);font-style:normal;font-size:13px;line-height:16px;font-weight:700;font-variant-numeric:tabular-nums;}
+  .hero-next em svg{width:14px;height:14px;}
+  .hero-next i{flex:none;display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:16px;background:var(--warm);color:#fff;font-style:normal;font-size:12px;line-height:16px;}
+  .hero-next.all-done{justify-content:center;}
+  @media (hover:hover){.hero-next[data-i]:hover{box-shadow:0 4px 14px rgba(0,0,0,.26);}}
+  .hero-pick{display:flex;gap:8px;min-width:0;}
+  .hero-next small{font-size:inherit;}
+  @media (max-width:600px){.hero-next small, .hero-next em{display:none;}}
+  .hero-pick .hero-next{flex:1;}
+  .hero-roll{flex:none;width:48px;height:48px;padding:0;border:0;border-radius:14px;background:var(--hero-card);box-shadow:0 2px 8px rgba(0,0,0,.18);text-shadow:none;font-size:22px;line-height:28px;transition:transform .3s cubic-bezier(.3,1.4,.5,1);}
+  .hero-roll.rolled{transform:rotate(360deg);}
+  @media (hover:hover){.hero-roll:hover{box-shadow:0 4px 14px rgba(0,0,0,.26);}}
   .hero-dot{display:inline-block;width:10px;height:10px;margin-right:6px;border-radius:5px;vertical-align:0;}
   .hero-dot.min{background:#f2d48a;}
   .hero-dot.task{background:#9fe0b4;}
@@ -18552,6 +18567,25 @@ function todayLangOf(lessonId, cache) {
   return cache.get(lessonId);
 }
 
+const CLOCK_ICON = '<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 4.5V8l2.5 1.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+
+let todayPick = null;
+
+function todayPickable(tasks) {
+  return tasks.filter(t => !t.done && t.lesson && (n => n.due + n.fresh > 0)(todayTaskCounts(t)));
+}
+
+function todayPickTask(tasks, reroll) {
+  const open = todayPickable(tasks);
+  if (!open.length) return todayPick = null;
+  const now = open.find(t => t.key === todayPick);
+  if (now && !reroll) return now;
+  const from = open.length > 1 ? open.filter(t => t !== now) : open;
+  const t = from[Math.floor(Math.random() * from.length)];
+  todayPick = t.key;
+  return t;
+}
+
 function todaySum(tasks) {
   let due = 0, fresh = 0, mins = 0;
   tasks.forEach(t => {
@@ -18595,7 +18629,10 @@ function todayGoalHtml(tasks) {
   const arc = (r, pct, cls) => `<circle class="ring-track ${cls}" cx="80" cy="80" r="${r}" pathLength="100"/><circle class="ring-fill ${cls}" cx="80" cy="80" r="${r}" pathLength="100" stroke-dasharray="${pct} 100"${pct ? "" : ' opacity="0"'}/>`;
   const full = target && minsDone >= target;
   const ring = `<div class="hero-ring${full ? " full" : ""}${all && done === all ? " tasks-full" : ""}" title="${minsDone} of ${target || "—"} min today · ${done} of ${all} tasks done"><svg viewBox="0 0 160 160" aria-hidden="true">${arc(72, minPct, "min")}${arc(56, taskPct, "task")}</svg><div class="hero-ring-in"><b>${minsDone}</b><label>of <input id="todayPerDay" type="text" maxlength="3" inputmode="numeric" pattern="[0-9]*" value="${target || ""}" placeholder="—" aria-label="Minutes a day"></label><span>${full ? "✓ goal met" : "min today"}</span></div></div>`;
-  return `<div class="hero-main"><div class="hero-kicker">Today</div><div class="hero-sum">${head}</div>${legend}${langRow}</div>${ring}`;
+  const pick = todayPickTask(tasks), many = todayPickable(tasks).length > 1;
+  const pickMins = pick ? Math.max(1, Math.round(taskMinutes(pick))) : 0;
+  const pickHtml = pick ? `<div class="hero-pick"><button class="hero-next" data-i="${todayShown.indexOf(pick)}"><span>🎲<small> Random</small></span><b>${escapeHtml(todayTaskName(pick))}</b><em title="About ${pickMins} min">${CLOCK_ICON}${pickMins} min</em><i aria-hidden="true">▶</i></button>${many ? '<button class="hero-roll" aria-label="Pick another lesson" title="Pick another lesson">🎲</button>' : ""}</div>` : "";
+  return `<div class="hero-main"><div class="hero-kicker">Today</div><div class="hero-sum">${head}</div>${pickHtml}${legend}${langRow}</div>${ring}`;
 }
 
 function todayTaskName(t) {
@@ -19335,6 +19372,15 @@ document.addEventListener("pointerdown", e => {
 addEventListener("resize", placePresetPop);
 
 document.getElementById("todayGoal").addEventListener("click", e => {
+  const next = e.target.closest(".hero-next[data-i]");
+  if (next && todayShown[Number(next.dataset.i)]) return openTodayTask(todayShown[Number(next.dataset.i)]);
+  if (e.target.closest(".hero-roll")) {
+    todayPickTask(routeTasks(todayShown), true);
+    renderToday();
+    const roll = document.querySelector("#todayGoal .hero-roll");
+    if (roll) requestAnimationFrame(() => roll.classList.add("rolled"));
+    return;
+  }
   if (e.target.closest(".hero-preset")) return togglePresetPop(e.target.closest(".hero-preset"));
   const b = e.target.closest(".hero-lang");
   if (!b) return;
