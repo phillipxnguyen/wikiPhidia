@@ -1732,7 +1732,7 @@ window.onYouTubeIframeAPIReady = function(){
   .empty-state h2{font-size:22px;margin:14px 0 6px;}
   .empty-state p{color:var(--text-2);margin:0 0 20px;}
   .empty-state .row-flex{justify-content:center;}
-  .today-panel{--page-x:40px;position:relative;padding:16px 24px 16px var(--page-x);background:var(--paper);border:1px solid var(--paper-edge);border-radius:4px;box-shadow:0 1px 0 var(--paper-edge), 0 14px 30px var(--paper-shadow);}
+  .today-panel{--page-x:40px;position:relative;padding:16px 24px 16px var(--page-x);background:var(--paper);border:1px solid var(--paper-edge);border-radius:20px;box-shadow:0 1px 0 var(--paper-edge), 0 14px 30px var(--paper-shadow);}
   @media (max-width:600px){.today-panel{padding-right:16px;}}
   .today-panel::before{content:"";position:absolute;z-index:1;top:16px;bottom:16px;left:-8px;width:32px;pointer-events:none;background:var(--ring-left) 0 0 / 32px 36px, radial-gradient(circle at 26px 18px, #1f2633 6px, transparent 6px) 0 0 / 32px 36px;background-repeat:no-repeat space;}
   .today-panel .today-tasks{gap:0;}
@@ -1805,6 +1805,7 @@ window.onYouTubeIframeAPIReady = function(){
   .route-clasp{position:absolute;z-index:2;left:calc(-20px - var(--page-x));top:-20px;display:flex;align-items:center;justify-content:center;width:40px;height:40px;padding:0;border:2px solid var(--paper);border-radius:12px;background:#1f2633;color:#fff;box-shadow:0 2px 6px rgba(20,30,50,.3);cursor:pointer;transition:transform .2s;}
   @media (hover:hover){button.route-clasp:hover{background:#2c3546;border-color:var(--paper);transform:scale(1.08);}}
   .route-clasp svg{width:20px;height:20px;overflow:visible;}
+  @media (max-width:600px){.route-clasp{left:calc(-12px - var(--page-x));}}
   .route-clasp .shackle{transform-origin:12px 9px;transition:transform .35s cubic-bezier(.3,1.4,.5,1);}
   .route-clasp.open .shackle{transform:translateY(-3px) rotate(30deg);}
   .route-clasp b{position:absolute;right:-12px;top:-10px;min-width:18px;padding:0 4px;border-radius:9px;background:var(--lesson-color, var(--accent));color:#fff;font-size:11px;line-height:18px;font-weight:800;text-align:center;}
@@ -1815,9 +1816,9 @@ window.onYouTubeIframeAPIReady = function(){
   .hero-lang{display:flex;align-items:center;justify-content:center;width:36px;height:28px;padding:0;border:0;border-radius:14px;background:rgba(251,243,228,.12);opacity:.45;}
   .hero-lang.on{background:rgba(251,243,228,.9);box-shadow:none;opacity:1;}
   .hero-lang .flag-dot{margin:0;}
-  .hero-preset{display:inline-flex;align-items:center;gap:6px;min-width:0;height:28px;margin-left:6px;padding:0 12px;border:0;border-radius:14px;background:rgba(251,243,228,.9);box-shadow:none;color:var(--hero-card-ink);text-shadow:none;font-size:13px;line-height:20px;font-weight:700;}
+  .hero-preset{display:inline-flex;align-items:center;gap:6px;min-width:0;height:28px;margin-left:6px;padding:0 12px;border:0;border-radius:14px;background:var(--hero-card);box-shadow:none;color:var(--hero-card-ink);text-shadow:none;font-size:13px;line-height:20px;font-weight:700;}
   .hero-preset span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  @media (hover:hover){.hero-preset:hover{background:#fffaf0;}}
+  @media (hover:hover){.hero-preset:hover{filter:brightness(1.06);}}
   @media (max-width:600px){.hero-langs{flex-wrap:wrap;}.hero-preset{margin-left:0;}}
   .preset-pop{position:fixed;z-index:2000;box-sizing:border-box;display:flex;flex-direction:column;gap:12px;width:360px;max-width:calc(100vw - 16px);max-height:calc(100vh - 16px);overflow:auto;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);color:var(--text);}
   .preset-pop[hidden]{display:none;}
@@ -1864,7 +1865,7 @@ window.onYouTubeIframeAPIReady = function(){
   .today-board{display:grid;grid-template-columns:minmax(0, 1fr) minmax(0, 1fr);gap:16px;align-items:start;margin-top:16px;}
   .today-board > .panel{margin:0;}
   @media (max-width:900px){.today-board{grid-template-columns:minmax(0, 1fr);}}
-  .today-track{padding:16px 24px;background:var(--paper);border:1px solid var(--paper-edge);border-radius:4px;box-shadow:0 1px 0 var(--paper-edge), 0 14px 30px var(--paper-shadow);}
+  .today-track{padding:16px 24px;background:var(--paper);border:1px solid var(--paper-edge);border-radius:20px;box-shadow:0 1px 0 var(--paper-edge), 0 14px 30px var(--paper-shadow);}
   @media (max-width:600px){.today-track{padding:16px;}}
   .track-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;font-size:16px;line-height:22px;}
   .track-nav{width:32px;height:32px;padding:0;border:0;border-radius:16px;background:var(--surface-2);color:var(--text);font-size:18px;line-height:20px;}
@@ -18482,14 +18483,15 @@ function lessonNameOf(id) {
   return l ? l.name || "Untitled lesson" : "";
 }
 
-function dueByDay(n) {
-  const start = todayStart(), out = Array.from({ length: n }, () => new Map);
+function dueByDay(endKey) {
+  const start = todayStart(), out = new Map, end = keyDate(endKey).getTime();
   library.filter(l => !isVirtualId(l.id)).forEach(l => {
     const mode = countMode(l.cards);
     const add = st => {
-      if (!st || !st.reps) return;
-      const k = Math.floor((Math.max(st.due || 0, start) - start) / 864e5);
-      if (k < n) out[k].set(l.id, (out[k].get(l.id) || 0) + 1);
+      if (!st || !st.reps || (st.due || 0) >= end) return;
+      const k = localDayKey(Math.max(st.due || 0, start));
+      if (!out.has(k)) out.set(k, new Map);
+      out.get(k).set(l.id, (out.get(k).get(l.id) || 0) + 1);
     };
     l.cards.forEach(c => cardInMode(c, mode) && add(srsOf(c)));
     lessonVocabItems(lessonCardsWithExtras(l)).forEach(i => !vocabViewOnly(i) && add(vocabStateOf(i)));
@@ -18523,7 +18525,7 @@ function dayInfo(key, ctx) {
     };
   }
   if (date > keyDate(todayKey)) {
-    const items = list(ctx.due[Math.round((date - keyDate(todayKey)) / 864e5)]);
+    const items = list(ctx.due.get(key));
     return { kind: "future", n: items.reduce((a, x) => a + x.n, 0), items: items };
   }
   const items = list(ctx.studied.get(key));
@@ -18540,8 +18542,7 @@ function todayTrackHtml() {
   const days = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
   const lead = (first.getDay() + 6) % 7;
   const todayKey = localDayKey(Date.now());
-  const ahead = Math.max(8, Math.min(100, Math.round((new Date(first.getFullYear(), first.getMonth() + 1, 1) - keyDate(todayKey)) / 864e5) + 1));
-  const ctx = { due: dueByDay(ahead), studied: studiedByDay(), cache: new Map };
+  const ctx = { due: dueByDay(localDayKey(new Date(first.getFullYear(), first.getMonth() + 1, 1).getTime())), studied: studiedByDay(), cache: new Map };
   const info = [];
   for (let d = 1; d <= days; d++) {
     const key = localDayKey(new Date(first.getFullYear(), first.getMonth(), d).getTime());
