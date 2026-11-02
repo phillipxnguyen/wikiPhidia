@@ -1880,6 +1880,7 @@ window.onYouTubeIframeAPIReady = function(){
   .task-more[hidden]{display:none;}
   .task-more b{font-size:20px;line-height:28px;color:var(--text);}
   .task-more p{max-width:420px;margin:0;}
+  .task-more-next{font-size:13px;line-height:20px;}
   .task-more-mark{display:flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:28px;background:color-mix(in srgb, var(--new-color) 14%, var(--surface));color:var(--new-color);font-size:28px;line-height:32px;font-weight:700;}
   .task-more-acts{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:8px;}
   html.task-more-on :is(#viewStudy, #viewVocab, #touchBar, #selBar){display:none !important;}
@@ -19057,7 +19058,7 @@ function taskMoreFresh(run) {
 }
 
 function showTaskMore(run) {
-  const n = taskMoreFresh(run), take = Math.min(TASK_MORE, n);
+  const n = taskMoreFresh(run), take = Math.min(TASK_MORE, n), back = lessonDueTomorrow(run.lessonId);
   let box = document.getElementById("taskMore");
   if (!box) {
     box = document.createElement("div");
@@ -19065,10 +19066,24 @@ function showTaskMore(run) {
     box.className = "task-more";
     document.getElementById("taskBar").after(box);
   }
-  box.innerHTML = `<div class="task-more-mark" aria-hidden="true">✓</div><b>Today's part of this lesson is done</b><p>${n} new card${n === 1 ? "" : "s"} still wait${n === 1 ? "s" : ""} in it. Learn a few more now, or stop here; they stay for another day.</p><div class="task-more-acts"><button class="primary" data-more="go">Learn ${take} more</button><button data-more="stop">Back to Today</button></div>`;
+  box.innerHTML = `<div class="task-more-mark" aria-hidden="true">✓</div><b>Today's part of this lesson is done</b><p>No reviews are due now. ${n} new card${n === 1 ? "" : "s"} still wait${n === 1 ? "s" : ""} in it: learn a few more now, or stop here; they stay for another day.</p>${back ? `<p class="task-more-next">Tomorrow ${back} review${back === 1 ? "" : "s"} from this lesson come${back === 1 ? "s" : ""} back first, before anything new.</p>` : ""}<div class="task-more-acts"><button class="primary" data-more="go">Learn ${take} more</button><button data-more="stop">Back to Today</button></div>`;
   box.hidden = false;
   document.documentElement.classList.add("task-more-on");
   renderTaskBar();
+}
+
+function lessonDueTomorrow(id) {
+  const l = library.find(x => x.id === id);
+  if (!l) return 0;
+  const end = todayStart() + 2 * DAY_MS, now = Date.now();
+  let n = 0;
+  const add = st => {
+    if (st && st.reps && st.due > now && st.due < end) n++;
+  };
+  const mode = countMode(l.cards);
+  l.cards.forEach(c => cardInMode(c, mode) && add(srsOf(c)));
+  lessonVocabItems(lessonCardsWithExtras(l)).forEach(i => !vocabViewOnly(i) && add(vocabStateOf(i)));
+  return n;
 }
 
 function hideTaskMore() {
