@@ -264,6 +264,10 @@ window.onYouTubeIframeAPIReady = function(){
   .limits-pop label{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:14px;line-height:20px;white-space:nowrap;}
   .limits-pop input{width:96px;height:30px;padding:0 4px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);color:var(--text);font:inherit;font-size:16px;text-align:center;}
   .limits-pop input{-moz-appearance:textfield;appearance:textfield;}
+  .limits-head{padding-top:12px;border-top:1px solid var(--border);font-size:12px;line-height:16px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-2);}
+  .rule-order{display:flex;}
+  .rule-order button{flex:1 1 auto;min-width:0;padding:6px 10px;font-size:13px;line-height:18px;white-space:nowrap;}
+  .limits-pop .rule-select{box-sizing:border-box;width:160px;height:30px;padding:0 6px;font-size:14px;line-height:18px;}
   .limits-pop input::-webkit-inner-spin-button, .limits-pop input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
   #limitsTitle{align-self:flex-start;padding:0;cursor:help;border:0;background:none;font-size:15px;font-weight:700;line-height:20px;color:var(--text);}
   @media (hover:hover){#limitsTitle:hover{background:none;color:var(--accent);}}
@@ -2110,6 +2114,11 @@ window.onYouTubeIframeAPIReady = function(){
   <button id="limitsTitle" title="Click to remove both limits. Limits count for each lesson, in Lessons and in Vocabulary. Study modes and flashcards show only what fits; lists always show every card.">Daily limits</button>
   <label>New cards a day<span class="limit-field"><input id="limitFresh" type="text" maxlength="4" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="No limit"><b id="limitFreshMore" class="limit-more"></b></span></label>
   <label>Reviews a day<span class="limit-field"><input id="limitReview" type="text" maxlength="4" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="No limit"><b id="limitReviewMore" class="limit-more"></b></span></label>
+  <div class="limits-head">How you review</div>
+  <div class="rule-order segmented" role="group" aria-label="Order"><button type="button" data-order="reviews">Reviews first</button><button type="button" data-order="mixed">Mixed</button><button type="button" data-order="new">New first</button></div>
+  <label>Again comes back after<select id="ruleAgain" class="rule-select"><option value="1">1 min</option><option value="5">5 min</option><option value="10">10 min</option><option value="30">30 min</option></select></label>
+  <label>Done after<select id="ruleDoneAfter" class="rule-select"><option value="3">3 Good in a row</option><option value="5">5 Good in a row</option><option value="7">7 Good in a row</option></select></label>
+  <label>Done cards come back<select id="ruleDoneEvery" class="rule-select"><option value="7">every 7 days</option><option value="14">every 14 days</option><option value="30">every 30 days</option><option value="0">never</option></select></label>
 </div>
 
 <div id="presetPop" class="preset-pop" hidden role="dialog" aria-label="Study rules"></div>
@@ -2874,11 +2883,30 @@ const MODES = [ "Table", "Listen", "Write" ];
 
 const DAY_MS = 24 * 60 * 60 * 1e3;
 
-const AGAIN_DELAY_MS = 10 * 60 * 1e3;
 
-const DONE_STREAK = 5;
 
-const DONE_REVIEW_DAYS = 7;
+const STUDY_RULES_KEY = "flashcards.studyRules";
+
+const STUDY_RULE_DEFAULTS = {
+  order: "reviews",
+  again: 10,
+  doneAfter: 5,
+  doneEvery: 7
+};
+
+let studyRules = Object.assign({}, STUDY_RULE_DEFAULTS, readLocal(STUDY_RULES_KEY) || {});
+
+function againDelayMs() {
+  return studyRules.again * 60 * 1e3;
+}
+
+function doneStreak() {
+  return studyRules.doneAfter;
+}
+
+function doneEveryMs() {
+  return (studyRules.doneEvery || 36500) * DAY_MS;
+}
 
 const GRADE_AGAIN = 1;
 
@@ -2935,16 +2963,16 @@ function mergeModeSrs(srs) {
 }
 
 function goodDelayMs(streak) {
-  return streak < DONE_STREAK ? DAY_MS : DONE_REVIEW_DAYS * DAY_MS;
+  return streak < doneStreak() ? DAY_MS : doneEveryMs();
 }
 
 function doneSpacing(st) {
-  if (st && isDoneState(st) && st.last) st.due = Math.max(st.due || 0, st.last + DONE_REVIEW_DAYS * DAY_MS);
+  if (st && isDoneState(st) && st.last) st.due = Math.max(st.due || 0, st.last + doneEveryMs());
   return st;
 }
 
 function isDoneState(st) {
-  return st.streak >= DONE_STREAK;
+  return st.streak >= doneStreak();
 }
 
 function scheduleReview(st, g, now) {
@@ -2954,7 +2982,7 @@ function scheduleReview(st, g, now) {
   if (g === GRADE_AGAIN) {
     st.streak = 0;
     st.lapses++;
-    st.due = now + AGAIN_DELAY_MS;
+    st.due = now + againDelayMs();
   } else {
     st.streak++;
     st.due = now + goodDelayMs(st.streak);
@@ -2973,7 +3001,7 @@ function migrateLegacySrs(c) {
       streak: streak,
       reps: Math.max(1, streak + again),
       lapses: again,
-      last: Math.max(0, due - (streak > 0 ? goodDelayMs(streak) : AGAIN_DELAY_MS)),
+      last: Math.max(0, due - (streak > 0 ? goodDelayMs(streak) : againDelayMs())),
       lastGrade: streak > 0 ? GRADE_GOOD : GRADE_AGAIN
     });
   });
@@ -2982,8 +3010,8 @@ function migrateLegacySrs(c) {
 
 function fromFsrsState(raw, st) {
   if (!st.reps) return;
-  if (st.lastGrade === GRADE_AGAIN) st.streak = 0; else st.streak = raw.s >= 21 ? DONE_STREAK : Math.max(1, Math.min(DONE_STREAK - 1, st.reps - st.lapses));
-  if (st.last) st.due = st.last + (st.lastGrade === GRADE_AGAIN ? AGAIN_DELAY_MS : goodDelayMs(st.streak));
+  if (st.lastGrade === GRADE_AGAIN) st.streak = 0; else st.streak = raw.s >= 21 ? doneStreak() : Math.max(1, Math.min(doneStreak() - 1, st.reps - st.lapses));
+  if (st.last) st.due = st.last + (st.lastGrade === GRADE_AGAIN ? againDelayMs() : goodDelayMs(st.streak));
 }
 
 function makeUid() {
@@ -5357,7 +5385,7 @@ function badgesHtml(newN, dueN, doneN, active) {
       done: doneN > 0
     };
   }
-  return '<div class="progress-badges">' + '<span class="progress-badge new' + (active.new ? " active" : "") + '" title="New — never studied yet"><i>🆕</i><b>' + newN + "</b></span>" + '<span class="progress-badge due' + (active.due ? " active" : "") + '" title="Due — ready to review now"><i>⏳</i><b>' + dueN + "</b></span>" + '<span class="progress-badge done' + (active.done ? " active" : "") + '" title="Done — ' + DONE_STREAK + ' Good in a row"><i>✅</i><b>' + doneN + "</b></span>" + "</div>";
+  return '<div class="progress-badges">' + '<span class="progress-badge new' + (active.new ? " active" : "") + '" title="New — never studied yet"><i>🆕</i><b>' + newN + "</b></span>" + '<span class="progress-badge due' + (active.due ? " active" : "") + '" title="Due — ready to review now"><i>⏳</i><b>' + dueN + "</b></span>" + '<span class="progress-badge done' + (active.done ? " active" : "") + '" title="Done — ' + doneStreak() + ' Good in a row"><i>✅</i><b>' + doneN + "</b></span>" + "</div>";
 }
 
 let healSeen = null, healQuietUntil = 0, healFrame = 0;
@@ -5558,7 +5586,13 @@ function limitVocab(items) {
 
 function dueRows(mode) {
   const now = Date.now();
-  return limitRows(modeScopeRows(mode).filter(r => cardReady(r, mode, now)).sort(dueScoreCompare(mode)));
+  return orderStudy(limitRows(modeScopeRows(mode).filter(r => cardReady(r, mode, now)).sort(dueScoreCompare(mode))), r => !srsOf(r, mode).reps);
+}
+
+function orderStudy(list, isFresh) {
+  if (studyRules.order !== "new" && studyRules.order !== "mixed") return list;
+  const fresh = list.filter(isFresh), reviews = list.filter(x => !isFresh(x));
+  return studyRules.order === "new" ? fresh.concat(reviews) : interleave(reviews, fresh);
 }
 
 function singleCardQueue() {
@@ -14160,8 +14194,61 @@ document.getElementById("streakChip").onclick = () => {
   const r = document.getElementById("streakChip").getBoundingClientRect();
   pop.style.left = Math.round(Math.max(8, Math.min(r.left, window.innerWidth - pop.offsetWidth - 8))) + "px";
   pop.style.top = Math.round(r.bottom + 8) + "px";
+  paintStudyRules();
   document.getElementById("limitFresh").focus();
 };
+
+function paintStudyRules() {
+  document.querySelectorAll("#limitsPop [data-order]").forEach(b => {
+    b.classList.toggle("active", b.dataset.order === studyRules.order);
+    b.setAttribute("aria-pressed", String(b.dataset.order === studyRules.order));
+  });
+  document.getElementById("ruleAgain").value = String(studyRules.again);
+  document.getElementById("ruleDoneAfter").value = String(studyRules.doneAfter);
+  document.getElementById("ruleDoneEvery").value = String(studyRules.doneEvery);
+}
+
+function respaceDone() {
+  const fix = st => {
+    if (st && st.reps && isDoneState(st) && st.last) st.due = st.last + doneEveryMs();
+  };
+  const fixCard = c => {
+    if (c.srs) MODES.forEach(m => fix(c.srs[m]));
+    Object.values(c.vocab || {}).forEach(fix);
+  };
+  library.filter(l => !isVirtualId(l.id)).forEach(l => {
+    l.cards.forEach(fixCard);
+    if (l.extraWords) fixCard(l.extraWords);
+    if (l.id !== currentLessonId) dbPut("lessons", l).catch(() => {});
+  });
+  rows.forEach(fixCard);
+  if (vocabExtras) fixCard(vocabExtras);
+}
+
+function setStudyRule(key, value) {
+  if (studyRules[key] === value) return;
+  studyRules[key] = value;
+  try {
+    localStorage.setItem(STUDY_RULES_KEY, JSON.stringify(studyRules));
+  } catch (e) {}
+  if (key === "doneAfter" || key === "doneEvery") respaceDone();
+  if (currentLessonId) saveCurrentLesson();
+  if (key === "order" && currentView === "vocab") vocabSession = null;
+  paintStudyRules();
+  if (currentView === "study") render(); else if (currentView === "vocab") renderVocab(); else if (currentView === "today") renderToday();
+  renderLessonList();
+}
+
+document.getElementById("limitsPop").addEventListener("click", e => {
+  const b = e.target.closest("[data-order]");
+  if (b) setStudyRule("order", b.dataset.order);
+});
+
+[ [ "ruleAgain", "again" ], [ "ruleDoneAfter", "doneAfter" ], [ "ruleDoneEvery", "doneEvery" ] ].forEach(([id, key]) => {
+  const el = document.getElementById(id);
+  el.addEventListener("change", () => setStudyRule(key, Number(el.value)));
+  el.addEventListener("keydown", e => e.stopPropagation());
+});
 
 [ "limitFresh", "limitReview" ].forEach(id => {
   const input = document.getElementById(id);
@@ -14454,7 +14541,7 @@ function renderStats() {
   if (!lessonRows.length) {
     lessonsEl.innerHTML = '<div class="stats-empty">No lessons yet.</div>';
   } else {
-    lessonsEl.innerHTML = '<table class="stats-table"><thead><tr><th>' + totalsHtml + "</th>" + '<th class="num" title="Total cards" aria-label="Total cards">Σ</th><th class="num" title="New — never studied yet" aria-label="New">🆕</th><th class="num" title="Due — ready to review now" aria-label="Due">⏳</th><th class="num" title="Done — ' + DONE_STREAK + ' Good in a row" aria-label="Done">✅</th><th class="num" title="Reviews in the last 30 days" aria-label="Reviews in the last 30 days">🔁</th></tr></thead><tbody>' + lessonRows.sort((a, b) => (a.l.name || "").localeCompare(b.l.name || "", undefined, {
+    lessonsEl.innerHTML = '<table class="stats-table"><thead><tr><th>' + totalsHtml + "</th>" + '<th class="num" title="Total cards" aria-label="Total cards">Σ</th><th class="num" title="New — never studied yet" aria-label="New">🆕</th><th class="num" title="Due — ready to review now" aria-label="Due">⏳</th><th class="num" title="Done — ' + doneStreak() + ' Good in a row" aria-label="Done">✅</th><th class="num" title="Reviews in the last 30 days" aria-label="Reviews in the last 30 days">🔁</th></tr></thead><tbody>' + lessonRows.sort((a, b) => (a.l.name || "").localeCompare(b.l.name || "", undefined, {
       numeric: true
     })).map(x => `<tr><td title="${escapeAttr(x.l.name || "Untitled lesson")}"><span class="clamp">${escapeHtml(x.l.name || "Untitled lesson")}</span></td><td class="num">${x.l.cards.length}</td><td class="num">${x.fresh}</td><td class="num">${x.due}</td><td class="num">${x.done}</td><td class="num">${x.reviews30}</td></tr>`).join("") + "</tbody></table>";
   }
@@ -16212,6 +16299,7 @@ function startVocabSession() {
   let allowed = limitVocab(picked.map(p => p.item));
   const dueCount = allowed.filter(i => vocabStateOf(i).reps).length;
   if (allowed.slice(0, dueCount).every(i => vocabStateOf(i).reps)) allowed = spreadSameSentence(allowed.slice(0, dueCount), vocabSentenceKey).concat(allowed.slice(dueCount));
+  allowed = orderStudy(allowed, i => !vocabStateOf(i).reps);
   vocabSession = {
     lessonId: currentLessonId,
     queue: allowed.map(i => i.key),
@@ -18980,7 +19068,8 @@ function taskQueue(l, run) {
   if (run && run.rem) {
     const r = run.rem;
     const due = spreadSameSentence(interleave(picks("c", lc.dueIds.slice(0, r.dueC)), picks("v", lv.dueIds.slice(0, r.dueV))), sentenceOf);
-    return due.concat(interleave(picks("c", lc.freshIds.slice(0, r.freshC)), picks("v", lv.freshIds.slice(0, r.freshV))));
+    const fresh = interleave(picks("c", lc.freshIds.slice(0, r.freshC)), picks("v", lv.freshIds.slice(0, r.freshV)));
+    return studyRules.order === "new" ? fresh.concat(due) : studyRules.order === "mixed" ? interleave(due, fresh) : due.concat(fresh);
   }
   return spreadSameSentence(interleave(picks("c", lc.ids), picks("v", lv.ids)), sentenceOf);
 }
