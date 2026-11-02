@@ -19142,7 +19142,8 @@ async function taskAdvance() {
     run.current.tries++;
     run.queue.push(run.current);
   }
-  const next = run.queue.findIndex(taskShowable);
+  let next = run.queue.findIndex(taskShowable);
+  if (next < 0 && taskBringBack(run)) next = run.queue.findIndex(taskShowable);
   run.current = next < 0 ? null : run.queue.splice(next, 1)[0];
   if (!run.current && taskRefillDue(run)) {
     run.opening = false;
@@ -19161,6 +19162,34 @@ async function taskAdvance() {
 }
 
 const TASK_MORE = 10;
+
+function taskBringBack(run) {
+  const l = library.find(x => x.id === run.lessonId), now = Date.now();
+  const back = run.queue.filter(p => p.tries > 0);
+  if (!l || !back.length) return false;
+  let moved = false;
+  const pull = st => {
+    if (st && st.reps && st.due > now) {
+      st.due = now;
+      moved = true;
+    }
+  };
+  back.forEach(p => {
+    if (p.k === "c") return [ l.cards.find(x => x.uid === p.id), rows.find(r => r.uid === p.id) ].forEach(c => c && pull(srsOf(c)));
+    l.cards.concat([ l.extraWords, virtualExtras[l.id] ], vocabSource()).forEach(c => c && c.vocab && pull(c.vocab[p.id]));
+  });
+  if (moved) {
+    saveCurrentLesson();
+    showableMemo = null;
+  }
+  return moved;
+}
+
+function markTaskDone(run) {
+  if (!run || !run.key || todayPlan.done[run.key]) return;
+  todayPlan.done[run.key] = true;
+  saveToday();
+}
 
 function taskRefillDue(run) {
   if (autoSaveDebounceTimer) saveCurrentLesson();
@@ -19191,6 +19220,7 @@ function taskMoreFresh(run) {
 }
 
 function showTaskMore(run) {
+  markTaskDone(run);
   const n = taskMoreFresh(run), take = Math.min(TASK_MORE, n), back = lessonDueTomorrow(run.lessonId);
   let box = document.getElementById("taskMore");
   if (!box) {
@@ -19248,6 +19278,7 @@ document.addEventListener("click", e => {
 });
 
 async function finishTask(run) {
+  markTaskDone(run);
   taskJustDone = run.key;
   const keep = {
     run: Object.assign({}, run, {
