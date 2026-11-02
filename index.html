@@ -19142,6 +19142,10 @@ async function taskAdvance() {
   }
   const next = run.queue.findIndex(taskShowable);
   run.current = next < 0 ? null : run.queue.splice(next, 1)[0];
+  if (!run.current && taskRefillDue(run)) {
+    run.opening = false;
+    return taskAdvance();
+  }
   if (!run.current) {
     run.opening = false;
     if (taskMoreFresh(run)) return showTaskMore(run);
@@ -19155,6 +19159,26 @@ async function taskAdvance() {
 }
 
 const TASK_MORE = 10;
+
+function taskRefillDue(run) {
+  if (autoSaveDebounceTimer) saveCurrentLesson();
+  const l = library.find(x => x.id === run.lessonId);
+  if (!l) return false;
+  const left = leftBoth(l);
+  const dueC = run.onC === false ? 0 : left.cards.due, dueV = run.onV === false ? 0 : left.vocab.due;
+  if (!dueC && !dueV) return false;
+  run.rem = {
+    dueC: dueC,
+    dueV: dueV,
+    freshC: 0,
+    freshV: 0
+  };
+  const queue = taskQueue(l, run).filter(taskShowable), sig = queue.map(p => p.k + p.id).join("|");
+  if (!queue.length || sig === run.refillSig) return false;
+  run.refillSig = sig;
+  run.queue = queue;
+  return true;
+}
 
 function taskMoreFresh(run) {
   if (autoSaveDebounceTimer) saveCurrentLesson();
@@ -19177,6 +19201,7 @@ function showTaskMore(run) {
   box.hidden = false;
   document.documentElement.classList.add("task-more-on");
   renderTaskBar();
+  paintTaskBadges();
 }
 
 function lessonDueTomorrow(id) {
@@ -19393,7 +19418,7 @@ function paintTaskBadges() {
   const l = library.find(x => x.id === run.lessonId);
   if (!l) return;
   const items = lessonVocabItems(lessonCardsWithExtras(l));
-  let fresh = 0, due = 0, cur = "due";
+  let fresh = 0, due = 0, done = 0, cur = "due";
   const stateOf = pick => pick.k === "c" ? (c => c && srsOf(c))(l.cards.find(x => x.uid === pick.id)) : (it => it && vocabStateOf(it))(items.find(i => i.key === pick.id));
   if (run.current) {
     const st = stateOf(run.current) || {};
@@ -19402,13 +19427,13 @@ function paintTaskBadges() {
   (run.current ? [ run.current ] : []).concat(run.queue.filter(taskShowable)).forEach(pick => {
     const st = pick.k === "c" ? (c => c && srsOf(c))(l.cards.find(x => x.uid === pick.id)) : (it => it && vocabStateOf(it))(items.find(i => i.key === pick.id));
     if (!st) return;
-    if (!st.reps) fresh++; else if (!isDoneState(st)) due++;
+    if (!st.reps) fresh++; else if (isDoneState(st)) done++; else due++;
   });
   document.querySelectorAll("#singleCardProgress .progress-badge, #vocabBadges .progress-badge").forEach(el => {
     const b = el.querySelector("b");
     if (!b) return;
     const kind = [ "new", "due", "done" ].find(k => el.classList.contains(k));
-    const n = kind === "new" ? fresh : kind === "due" ? due : null;
+    const n = kind === "new" ? fresh : kind === "due" ? due : kind === "done" ? done : null;
     if (n !== null && b.textContent !== String(n)) b.textContent = n;
     el.classList.toggle("active", kind === cur && (n === null ? Number(b.textContent) > 0 : n > 0));
   });
