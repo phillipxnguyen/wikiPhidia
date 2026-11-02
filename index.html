@@ -1864,7 +1864,7 @@ window.onYouTubeIframeAPIReady = function(){
   .today-board{display:grid;grid-template-columns:minmax(0, 1fr) minmax(0, 1fr);gap:16px;align-items:start;margin-top:16px;}
   .today-board > .panel{margin:0;}
   @media (max-width:900px){.today-board{grid-template-columns:minmax(0, 1fr);}}
-  .today-track{padding:16px;}
+  .today-track{padding:16px;border-radius:4px;}
   .track-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;font-size:16px;line-height:22px;}
   .track-nav{width:32px;height:32px;padding:0;border:0;border-radius:16px;background:var(--surface-2);color:var(--text);font-size:18px;line-height:20px;}
   .track-nav:disabled{opacity:.35;}
@@ -18650,7 +18650,7 @@ function todayGoalHtml(tasks) {
   const langRow = `<div class="hero-langs">${[ "en", "zh-CN", "ko", "ja", "vi" ].map(l => `<button class="hero-lang${planned.includes(l) ? " on" : ""}" data-lang="${l}" title="${LANG_NAMES[l]}" aria-pressed="${planned.includes(l)}">${flagChip(l)}</button>`).join("")}<button class="hero-preset" aria-haspopup="dialog" aria-controls="presetPop" title="Study rules for the day"><span>${escapeHtml(P.emoji || "")} ${escapeHtml(P.name)}</span></button></div>`;
   const arc = (r, pct, cls) => `<circle class="ring-track ${cls}" cx="80" cy="80" r="${r}" pathLength="100"/><circle class="ring-fill ${cls}" cx="80" cy="80" r="${r}" pathLength="100" stroke-dasharray="${pct} 100"${pct ? "" : ' opacity="0"'}/>`;
   const full = sum.all > 0 && sum.did >= sum.all;
-  const ring = `<div class="hero-ring${full ? " full" : ""}" title="${sum.did} of ${sum.all} cards studied today · ${done} of ${all} tasks done"><svg viewBox="0 0 160 160" aria-hidden="true">${arc(72, cardPct, "card")}${arc(56, taskPct, "task")}</svg><div class="hero-ring-in">${full ? '<b class="ring-done">✓</b><span>All done</span>' : `<b>${sum.did}<small>/${sum.all}</small></b><span>cards</span>`}</div></div>`;
+  const ring = `<div class="hero-ring${full ? " full" : ""}" title="${sum.did} of ${sum.all} cards studied today · ${done} of ${all} tasks done"><svg viewBox="0 0 160 160" aria-hidden="true">${arc(72, cardPct, "card")}${arc(56, taskPct, "task")}</svg><div class="hero-ring-in">${full ? '<b class="ring-done">✓</b><span>All done</span>' : `<b>${sum.did}${sum.all ? `<small>/${sum.all}</small>` : ""}</b><span>cards</span>`}</div></div>`;
   const pick = todayPickTask(tasks), many = todayPickable(tasks).length > 1;
   const pickHtml = pick ? `<div class="hero-pick"><button class="hero-next" data-i="${todayShown.indexOf(pick)}"><b>${escapeHtml(todayTaskName(pick))}</b><i aria-hidden="true">▶</i></button>${many ? '<button class="hero-roll" aria-label="Pick another lesson" title="Pick another lesson">🎲</button>' : ""}</div>` : "";
   return `<div class="hero-main"><div class="hero-kicker">${new Date().toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" })}</div>${head}${pickHtml}${legend}${langRow}</div>${ring}`;
@@ -18961,6 +18961,9 @@ function taskBringBack(run) {
 
 function markTaskDone(run) {
   if (!run || !run.key || todayPlan.done[run.key]) return;
+  if (autoSaveDebounceTimer) saveCurrentLesson();
+  const t = todayTasks().find(x => x.key === run.key);
+  if (!t || (t.plan ? t.remDue + t.remFresh : t.left ? t.left.fresh + t.left.due : 0) > 0) return;
   todayPlan.done[run.key] = true;
   saveToday();
 }
