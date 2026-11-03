@@ -12698,7 +12698,7 @@ function dedupeLibrary(prefer = dedupePrefer) {
     a: u.entry.meaning
   });
   const first = u => (prefer && u.card === prefer.card && u.key === (prefer.key || null) ? 8 : 0) + (u.card === editing && u.key === null || u.key && u.key === vocabEditingKey && !u.home.lesson ? 8 : 0);
-  const dropCards = new Set, dropEntries = [], keptEntries = [];
+  const dropCards = new Set, dropEntries = [], keptEntries = [], mergeMeanings = [], mergedTerms = [];
   groups.forEach(list => {
     if (list.length < 2) {
       if (list[0].key !== null) keptEntries.push(list[0]);
@@ -12710,11 +12710,29 @@ function dedupeLibrary(prefer = dedupePrefer) {
       if (u.key === null) dropCards.add(u.card); else dropEntries.push(u);
     });
     if (keep.key !== null) keptEntries.push(keep);
+    if (keep.key !== null && keep.entry) {
+      const norm = m => (m || "").trim().toLowerCase();
+      const have = new Set(keep.entry.meaning.split(/\s*[;；]\s*/).map(norm));
+      const extra = list.filter(u => u !== keep && u.key !== null && u.entry && norm(u.entry.meaning) && !have.has(norm(u.entry.meaning))).map(u => (have.add(norm(u.entry.meaning)), u.entry.meaning.trim()));
+      if (extra.length) mergeMeanings.push({
+        u: keep,
+        meaning: [ keep.entry.meaning.trim() ].concat(extra).filter(Boolean).join("; ")
+      });
+    }
+  });
+  mergeMeanings.forEach(({u: u, meaning: meaning}) => {
+    const next = rewrittenVocabNotes(u.card, u.entry, u.entry.term, meaning);
+    if (!next) return;
+    u.card.notes = next.notes;
+    u.card.notesHtml = next.notesHtml;
+    u.entry.meaning = meaning;
+    mergedTerms.push(u.entry.term);
   });
   if (!dropCards.size && !dropEntries.length) return false;
   const already = dropEntries.filter(u => !u.home.lesson && u.card !== EXTRA_UID && !dropCards.has(u.card) && rows.includes(u.card)).map(u => u.entry.term);
-  if (already.length) showToast(`${already.map(t => "“" + t + "”").join(", ")} already ${already.length > 1 ? "have cards" : "has a card"}: it shows here as a lookup`);
+  if (already.length) showToast(mergedTerms.length ? `New meaning added to the card ${mergedTerms.map(t => "“" + t + "”").join(", ")} already ${mergedTerms.length > 1 ? "have" : "has"}` : `${already.map(t => "“" + t + "”").join(", ")} already ${already.length > 1 ? "have cards" : "has a card"}: it shows here as a lookup`);
   const touched = new Set;
+  mergeMeanings.forEach(m => touched.add(m.u.home));
   dropEntries.forEach(u => {
     if (dropCards.has(u.card)) return;
     const next = rewrittenVocabNotes(u.card, u.entry, null, null);
