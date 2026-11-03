@@ -9328,6 +9328,20 @@ window.addEventListener("keydown", e => {
     render();
     return;
   }
+  if (popupEnterSaves(e) && !vocabAddPopup) {
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    if (pop.dataset.vocab) {
+      const save = document.getElementById("vocabEditSave");
+      if (save) save.click();
+      return;
+    }
+    if (activeEdit) {
+      commitActiveEdit();
+      render();
+    }
+    return;
+  }
   if (!pop.contains(e.target)) e.stopImmediatePropagation();
 }, true);
 
@@ -9462,6 +9476,19 @@ document.getElementById("qaSave").onclick = saveQuickAdd;
 
 [ "qaQ", "qaA" ].forEach(id => enterSaves(document.getElementById(id), saveQuickAdd, true));
 
+
+function popupEnterSaves(e) {
+  if (e.key !== "Enter" || e.shiftKey || e.isComposing || e.keyCode === 229 || e.metaKey || e.ctrlKey || e.altKey) return false;
+  const t = e.target;
+  return !(t && t.closest && t.closest("input, textarea, select, button, a, [contenteditable]:not([contenteditable=false])"));
+}
+
+window.addEventListener("keydown", e => {
+  if (document.getElementById("addPopup").hidden || document.getElementById("quickAdd").hidden || !popupEnterSaves(e)) return;
+  e.preventDefault();
+  e.stopImmediatePropagation();
+  saveQuickAdd();
+}, true);
 
 document.getElementById("quickAdd").addEventListener("keydown", e => {
   if (e.key !== "Escape") return;
