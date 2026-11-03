@@ -1534,7 +1534,6 @@ window.onYouTubeIframeAPIReady = function(){
   }
   .ielts-paper{--line:36px;position:relative;box-sizing:border-box;width:100%;max-width:780px;margin:0 auto;padding:var(--page-y) var(--page-x);background:var(--paper);color:var(--paper-ink);border:1px solid var(--paper-edge);border-radius:12px;box-shadow:0 1px 0 var(--paper-edge), 0 14px 30px var(--paper-shadow);font-family:Georgia, "Times New Roman", serif;}
   .ielts-paper .cell.paper-text{width:fit-content;max-width:100%;box-sizing:border-box;margin:0 auto;font-size:20px;line-height:var(--line);font-weight:700;text-align:left;overflow-wrap:anywhere;white-space:pre-line;color:var(--paper-ink);}
-  .paper-extras > .paper-stroke:empty{display:none;}
 
   .ielts-paper::before, #cardTable.notebook tbody::before{content:"";position:absolute;z-index:1;pointer-events:none;}
   .ielts-paper::before, #cardTable.notebook tbody::before{top:16px;bottom:16px;left:-8px;width:32px;border:0;background:var(--ring-left) 0 0 / 32px 36px, radial-gradient(circle at 26px 18px, #1f2633 6px, transparent 6px) 0 0 / 32px 36px;background-repeat:no-repeat space;}
@@ -1542,7 +1541,6 @@ window.onYouTubeIframeAPIReady = function(){
   @media (min-width:601px){.ielts-paper.top-rings.with-notes .paper-notes{padding-top:9px;}}
   .ielts-paper.top-rings .paper-body{width:fit-content;max-width:100%;margin:0 auto;}
   .ielts-paper.top-rings.with-notes .paper-body{width:auto;margin:0;}
-  .ielts-paper.top-rings .paper-extras:empty{display:none;}
   #cardTable.notebook.top-rings{--page-x:32px;}
   #cardTable.notebook.top-rings tbody{padding-top:22px;}
   @media (max-width:600px){#cardTable.notebook.top-rings tbody{padding-top:23px;}}
@@ -1567,11 +1565,6 @@ window.onYouTubeIframeAPIReady = function(){
   .paper-notes li{padding-left:0;}
   .paper-notes li::before{content:none;}
   .paper-notes .pn{display:inline-block;min-width:24px;}
-  .paper-extras{display:flex;flex-direction:column;}
-  .paper-extras > *{margin-top:24px;}
-  .paper-stroke .stroke-order-row{justify-content:flex-start;}
-  .paper-dict{height:var(--dict-h, 360px);border-radius:10px;background:var(--surface-2);}
-  .paper-dict[hidden]{display:none;}
   @media (max-width:600px){
     .ielts-paper.with-notes .paper-body{grid-template-columns:minmax(0, 1fr);}
     .paper-notes{margin-top:24px;padding:0;border:0;}
@@ -6857,16 +6850,6 @@ function singleCardFieldsHtml(row) {
   return qField + aField;
 }
 
-function showPaperExtras(bodyEl, row) {
-  const holder = bodyEl.querySelector(".paper-dict");
-  if (!holder) return;
-  const text = (hasAnswer(row) ? row.a : row.q || "").trim();
-  drawStrokeOrder(bodyEl.querySelector(".paper-stroke"), text, cjkScriptFor(text, row) === "ja");
-  const url = dictUrlFor(text, row);
-  holder.hidden = !url;
-  if (url) showDictOverlay(holder, url);
-}
-
 let ieltsHintId = null;
 
 function ieltsHintNext(row) {
@@ -6891,7 +6874,7 @@ function ieltsPaperHtml(row, ahead = 0) {
   const own = row.aHidden || words.length ? "" : cardNotesHtml(row);
   const list = words.length ? "<ol>" + words.map((i, n) => `<li><span class="pn">${n + 1}.</span><b>${escapeHtml(i.term)}</b>${i.meaning ? " — " + escapeHtml(i.meaning) : ""}</li>`).join("") + "</ol>" : own;
   const notes = list ? `<aside class="paper-notes">${list}</aside>` : "";
-  const extras = row.aHidden ? "" : '<div class="paper-extras"><div class="paper-stroke"></div><div class="paper-dict" hidden></div></div>';
+  const extras = "";
   if (!hasAnswer(row)) return `<article class="ielts-paper top-rings${notes ? " with-notes" : ""}"><div class="paper-body"><div class="paper-main"><div class="paper-answer"><div class="cell shown paper-lines" data-field="q">${qCellContent(row)}</div></div></div>${notes}</div>` + extras + "</article>";
   return `<article class="ielts-paper${notes ? " with-notes" : ""}">` + '<div class="paper-body"><div class="paper-main">' + `<div class="paper-question"><div class="cell shown" data-field="q">${qCellContent(row)}</div></div>` + `<div class="paper-answer">${answer}</div>` + `</div>${notes}</div>` + extras + "</article>";
 }
@@ -7013,7 +6996,6 @@ function renderSingleCard(visibleRows) {
   if (isListenMode() && firstShow) bodyEl.scrollTop = 0;
   if (groupViewStyle === "ielts") {
     visibleRows.slice(0, 2).forEach(preloadCardDict);
-    showPaperExtras(bodyEl, row);
   }
   dictPreloadObserver.observe(bodyEl);
   syncMediaLayout();
@@ -9785,7 +9767,7 @@ function openSingleCardEdit(row) {
     commitActiveEdit();
     render();
   }
-  if (isListenMode() && deckOn()) return openEditPopup(row);
+  if (isListenMode() && deckOn() || groupViewStyle === "ielts") return openEditPopup(row);
   const body = document.getElementById("singleCardBody");
   if (!body) return;
   const top = body.getBoundingClientRect().top;
