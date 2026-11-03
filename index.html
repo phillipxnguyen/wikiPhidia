@@ -986,6 +986,8 @@ window.onYouTubeIframeAPIReady = function(){
   .edit-qa > div{min-width:0;}
   .edit-row .rich-editor{margin-bottom:10px;display:block;}
   .rich-editor:empty::before{content:attr(data-placeholder);color:var(--placeholder);}
+  .rich-editor.yt-ph:empty::before{content:"";display:inline-block;width:28px;height:20px;vertical-align:-3px;background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2028%2020%22%3E%3Crect%20width%3D%2228%22%20height%3D%2220%22%20rx%3D%225%22%20fill%3D%22%23FF0000%22%2F%3E%3Cpath%20d%3D%22M11%205.5v9l8-4.5z%22%20fill%3D%22%23fff%22%2F%3E%3C%2Fsvg%3E") center / 28px 20px no-repeat;opacity:.45;}
+  #qaQ.yt-ph:placeholder-shown{background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2028%2020%22%3E%3Crect%20width%3D%2228%22%20height%3D%2220%22%20rx%3D%225%22%20fill%3D%22%23FF0000%22%2F%3E%3Cpath%20d%3D%22M11%205.5v9l8-4.5z%22%20fill%3D%22%23fff%22%2F%3E%3C%2Fsvg%3E");background-repeat:no-repeat;background-size:28px 20px;background-position:12px center;}
   :is(.rich-editor, .cell, .vocab-ctx) mark.vocab-own{background:color-mix(in srgb, var(--text) 22%, transparent);color:inherit;}
   @media (hover:hover){:is(.rich-editor, .cell, .vocab-ctx) mark.vocab-own{cursor:pointer;}}
   :is(.rich-editor, .cell, .vocab-ctx) mark.vocab-hit{background:var(--vocab-bg);color:var(--vocab-text);cursor:pointer;}
@@ -6313,7 +6315,8 @@ function syncAddLook() {
   document.getElementById("qaTime").hidden = kind !== "listen";
   const merged = appMode !== "vocab" && lessonAddKind() === "speak";
   document.getElementById("qaA").hidden = kind === "listen" || merged;
-  document.getElementById("qaQ").placeholder = kind === "listen" ? "" : merged ? "/Question, then the Answer below" : kind ? "Question" : "";
+  document.getElementById("qaQ").classList.toggle("yt-ph", kind === "listen");
+  document.getElementById("qaQ").placeholder = kind === "listen" ? " " : merged ? "/Question, then the Answer below" : kind ? "Question" : "";
   document.getElementById("qaQ").setAttribute("aria-label", appMode === "vocab" ? "Question" : "Card");
   document.getElementById("qaA").placeholder = kind ? "Answer" : "";
   if (kind) document.getElementById("qaNotes").dataset.placeholder = "Notes"; else delete document.getElementById("qaNotes").dataset.placeholder;
@@ -9469,7 +9472,7 @@ window.addEventListener("blur", () => {
 });
 
 function buildEditBoxInner(row) {
-  return `\n    <div class="edit-qa">\n      <div>\n        <div id="editQ" class="rich-editor" contenteditable="true" ${row.time == null ? ' data-placeholder="/Question, then the Answer below"' : ""} aria-label="Card">${row.time == null ? mergedCardEditHtml(row) : getEditInitialHtml(row.q, row.qHtml, row.id)}</div>\n      </div>\n      <div hidden>\n        <div id="editA" class="rich-editor" contenteditable="true">${getEditInitialHtml(row.a, row.aHtml, row.id)}</div>\n      </div>\n    </div>\n    <div class="notes-clip"><div id="editNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes">${notesEditorHtml(row)}</div></div>\n    <div class="edit-actions">\n      <button id="editSave" class="primary">Save</button>\n    </div>\n    <div id="editDict"></div>\n  `;
+  return `\n    <div class="edit-qa">\n      <div>\n        <div id="editQ" class="rich-editor${row.time == null ? "" : " yt-ph"}" contenteditable="true"${row.time == null ? ' data-placeholder="/Question, then the Answer below"' : ""} aria-label="Card">${row.time == null ? mergedCardEditHtml(row) : getEditInitialHtml(row.q, row.qHtml, row.id)}</div>\n      </div>\n      <div hidden>\n        <div id="editA" class="rich-editor" contenteditable="true">${getEditInitialHtml(row.a, row.aHtml, row.id)}</div>\n      </div>\n    </div>\n    <div class="notes-clip"><div id="editNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes">${notesEditorHtml(row)}</div></div>\n    <div class="edit-actions">\n      <button id="editSave" class="primary">Save</button>\n    </div>\n    <div id="editDict"></div>\n  `;
 }
 
 
