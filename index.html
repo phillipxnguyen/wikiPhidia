@@ -6313,7 +6313,7 @@ function syncAddLook() {
   document.getElementById("qaTime").hidden = kind !== "listen";
   const merged = appMode !== "vocab" && lessonAddKind() === "speak";
   document.getElementById("qaA").hidden = kind === "listen" || merged;
-  document.getElementById("qaQ").placeholder = kind === "listen" ? "Card" : merged ? "Card: /question, then the answer below" : kind ? "Question" : "";
+  document.getElementById("qaQ").placeholder = kind === "listen" ? "" : merged ? "/Question, then the Answer below" : kind ? "Question" : "";
   document.getElementById("qaQ").setAttribute("aria-label", appMode === "vocab" ? "Question" : "Card");
   document.getElementById("qaA").placeholder = kind ? "Answer" : "";
   if (kind) document.getElementById("qaNotes").dataset.placeholder = "Notes"; else delete document.getElementById("qaNotes").dataset.placeholder;
@@ -9469,7 +9469,7 @@ window.addEventListener("blur", () => {
 });
 
 function buildEditBoxInner(row) {
-  return `\n    <div class="edit-qa">\n      <div>\n        <div id="editQ" class="rich-editor" contenteditable="true" data-placeholder="${row.time == null ? "Card: /question, then the answer below" : "Card"}" aria-label="Card">${row.time == null ? mergedCardEditHtml(row) : getEditInitialHtml(row.q, row.qHtml, row.id)}</div>\n      </div>\n      <div hidden>\n        <div id="editA" class="rich-editor" contenteditable="true">${getEditInitialHtml(row.a, row.aHtml, row.id)}</div>\n      </div>\n    </div>\n    <div class="notes-clip"><div id="editNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes">${notesEditorHtml(row)}</div></div>\n    <div class="edit-actions">\n      <button id="editSave" class="primary">Save</button>\n    </div>\n    <div id="editDict"></div>\n  `;
+  return `\n    <div class="edit-qa">\n      <div>\n        <div id="editQ" class="rich-editor" contenteditable="true" ${row.time == null ? ' data-placeholder="/Question, then the Answer below"' : ""} aria-label="Card">${row.time == null ? mergedCardEditHtml(row) : getEditInitialHtml(row.q, row.qHtml, row.id)}</div>\n      </div>\n      <div hidden>\n        <div id="editA" class="rich-editor" contenteditable="true">${getEditInitialHtml(row.a, row.aHtml, row.id)}</div>\n      </div>\n    </div>\n    <div class="notes-clip"><div id="editNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes">${notesEditorHtml(row)}</div></div>\n    <div class="edit-actions">\n      <button id="editSave" class="primary">Save</button>\n    </div>\n    <div id="editDict"></div>\n  `;
 }
 
 
@@ -14049,9 +14049,10 @@ function buildLessonList() {
     return `<button class="lesson-item tile${active ? " active" : ""}" data-lesson-id="${escapeAttr(l.id)}" data-tip="${escapeAttr(tip)}" aria-label="${escapeAttr(tip.replace("\n", ", "))}"${active ? ' aria-current="page"' : ""}>` + lessonThumbHtml(l) + (l.unseen && !active ? `<span class="tile-new" aria-label="${countOf(Number(l.unseen) || 1, "new word")}">${badgeCount(Number(l.unseen) || 1)}</span>` : "") + `<span class="lesson-item-name">${escapeHtml(name)}</span>` + lessonTileBar(c) + "</button>";
   };
   const fresh = items.filter(l => l.unseen && l.id !== currentLessonId).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
-  const recent = recentLessonIds().map(id => items.find(l => l.id === id)).filter(l => l && !fresh.includes(l)).slice(0, RECENT_MAX);
+  const recent = recentLessonIds().map(id => items.find(l => l.id === id)).filter(l => l && !fresh.includes(l));
   const first = fresh.concat(recent);
-  list.innerHTML = `<div class="lesson-group vocab">${todayItemHtml()}</div><div class="lesson-group lessons">${first.concat(items.filter(l => !first.includes(l))).map(itemHtml).join("")}</div>`;
+  const rest = items.filter(l => !first.includes(l)).sort((a, b) => (b.createdAt || b.updatedAt || 0) - (a.createdAt || a.updatedAt || 0));
+  list.innerHTML = `<div class="lesson-group vocab">${todayItemHtml()}</div><div class="lesson-group lessons">${first.concat(rest).map(itemHtml).join("")}</div>`;
   watchThumbWords(list);
 }
 
@@ -14062,7 +14063,6 @@ function watchThumbWords(list) {
 
 const RECENT_KEY = "flashcards.recentLessons";
 
-const RECENT_MAX = 3;
 
 function recentLessonIds() {
   const ids = readLocal(RECENT_KEY);
@@ -14072,7 +14072,7 @@ function recentLessonIds() {
 function noteRecentLesson(id) {
   if (!id || isVirtualId(id)) return;
   try {
-    localStorage.setItem(RECENT_KEY, JSON.stringify([ id ].concat(recentLessonIds().filter(x => x !== id)).slice(0, 10)));
+    localStorage.setItem(RECENT_KEY, JSON.stringify([ id ].concat(recentLessonIds().filter(x => x !== id)).slice(0, 500)));
   } catch (e) {}
 }
 
