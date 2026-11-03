@@ -413,6 +413,7 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-card.pending{position:absolute;top:0;left:0;right:0;opacity:0;pointer-events:none;z-index:-1;}
   .vocab-card.settled .vocab-card-inner{transform:none;transition:none;transform-style:flat;}
   .vocab-card.settled .vocab-back{transform:none;}
+  .vocab-card:not(.settled) .vocab-back{overflow:hidden;}
   ::-webkit-scrollbar{width:8px;height:8px;}
   ::-webkit-scrollbar-track, ::-webkit-scrollbar-corner{background:transparent;}
   ::-webkit-scrollbar-thumb{border:2px solid transparent;border-radius:4px;background:color-mix(in srgb, currentColor 30%, transparent) padding-box;}
@@ -1647,7 +1648,8 @@ window.onYouTubeIframeAPIReady = function(){
   #studyCard.deck .lp-a .cell{color:var(--a-text);}
   #studyCard.deck .listen-pair .card-notes{margin:8px 0 9px;font-size:18px;line-height:24px;}
   #studyCard.deck .listen-pair .card-notes :is(ul, ol){display:flex;flex-wrap:wrap;gap:8px;margin:0;padding:0;list-style:none;}
-  #studyCard.deck .listen-pair .card-notes li{padding:6px 12px;border-radius:19px;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-sm);}
+  #studyCard.deck .listen-pair .card-notes li.vw{padding:6px 12px;border-radius:19px;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-sm);}
+  #studyCard.deck .listen-pair .card-notes li:not(.vw){flex-basis:100%;color:var(--a-text);}
   #studyCard.deck .listen-pair .card-notes > :not(ul):not(ol){font-size:24px;line-height:34px;color:var(--a-text);}
   @media (max-width:600px){#studyCard.deck .listen-pair .card-notes > :not(ul):not(ol){font-size:20px;line-height:30px;}}
   #studyCard.deck .listen-pair .card-notes :is(:is(ul, ol) + *, :not(li) + :is(ul, ol)){margin-top:8px;}
@@ -5895,10 +5897,20 @@ function currentCardRows() {
 
 const VOICE_BARS = [ 6, 10, 14, 18, 22, 26, 30 ];
 
+function vocabChipNotes(html) {
+  if (!html || !/<li/i.test(html)) return html;
+  const box = document.createElement("div");
+  box.innerHTML = html;
+  box.querySelectorAll("li").forEach(li => {
+    if (parseVocabLine(li.textContent)) li.classList.add("vw");
+  });
+  return box.innerHTML;
+}
+
 function listenPairsHtml(batch) {
   return batch.map(r => {
     const cell = (field, hidden, html) => `<div class="cell ${hidden ? "hidden" : "shown"}" data-field="${field}">${html}</div>`;
-    const notes = r.qHidden || r.aHidden ? "" : cardNotesHtml(r);
+    const notes = r.qHidden || r.aHidden ? "" : vocabChipNotes(cardNotesHtml(r));
     const answer = hasAnswer(r) && !r.aHidden ? cell("a", false, aCellContent(r)) : "";
     const open = `<div class="listen-pair tr-current" data-id="${r.id}">`;
     if (!r.qHidden) return open + `<div class="lp-q">${cell("q", false, qCellContent(r))}</div>${answer || notes ? `<div class="lp-a">${answer}${notes}</div>` : ""}</div>`;
@@ -5906,7 +5918,7 @@ function listenPairsHtml(batch) {
       qHidden: false,
       aHidden: false
     });
-    const fullNotes = cardNotesHtml(full);
+    const fullNotes = vocabChipNotes(cardNotesHtml(full));
     const reserve = `<div class="lp-q"><div class="lp-r">${qCellContent(full)}</div></div>` + (hasAnswer(r) || fullNotes ? `<div class="lp-a">${hasAnswer(r) ? `<div class="lp-r">${aCellContent(full)}</div>` : ""}${fullNotes}</div>` : "");
     return open + `<div class="lp-stack"><div class="lp-q">${cell("q", true, qCellContent(r))}</div><div class="lp-reserve" aria-hidden="true">${reserve}</div></div></div>`;
   }).join("");
@@ -16766,7 +16778,8 @@ function noteSentence(item) {
 }
 
 function vocabContext(item) {
-  const sentenceIn = card => [ card.q || "" ].concat(card.a ? splitIntoSentences(card.a).map(s => s.text) : []).map(t => t.trim()).find(t => t && findWordForm(t.normalize("NFC"), item.term));
+  const pieces = text => (text || "").split(/\n+/).flatMap(line => splitIntoSentences(line).map(s => s.text));
+  const sentenceIn = card => pieces(card.q).concat(pieces(card.a)).map(t => t.trim()).find(t => t && findWordForm(t.normalize("NFC"), item.term));
   const own = sentenceIn(item.card);
   if (own) return {
     card: item.card,
@@ -18339,6 +18352,7 @@ function todayRoll() {
     done: {},
     seen: [],
     skipped: [],
+    order: [],
     route: null,
     mins: {}
   });
@@ -18475,8 +18489,13 @@ function todayTasks() {
       done: !!todayPlan.done[key] || !!l && studiedLessonToday(l.id) && !left.fresh && !left.due
     });
   });
+  if (!Array.isArray(todayPlan.order)) todayPlan.order = [];
+  list.forEach(t => {
+    if (!todayPlan.order.includes(t.key)) todayPlan.order.push(t.key);
+  });
+  const at = new Map(todayPlan.order.map((k, i) => [ k, i ]));
   saveToday();
-  return list.filter(t => !todayPlan.skipped.includes(t.key)).sort((a, b) => !!a.extra - !!b.extra || a.done - b.done);
+  return list.filter(t => !todayPlan.skipped.includes(t.key)).sort((a, b) => !!a.extra - !!b.extra || a.done - b.done || at.get(a.key) - at.get(b.key));
 }
 
 function routeTasks(tasks) {
