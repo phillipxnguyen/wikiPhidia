@@ -2120,9 +2120,15 @@ window.onYouTubeIframeAPIReady = function(){
   .bp-sec + .bp-sec{margin-top:12px;}
   .bp-sec-row{display:grid;grid-template-columns:minmax(0, 1fr) 220px;gap:24px;}
   .bp-sec-main{display:flex;flex-direction:column;gap:12px;}
-  .bp-side{display:flex;flex-direction:column;gap:4px;align-self:start;padding-left:16px;border-left:1px dashed var(--paper-rule);font-size:15px;line-height:22px;}
-  .bp-side > b{color:var(--c);font-size:13px;line-height:20px;}
-  .bp-side-m{color:var(--text-2);}
+  .bp-side{align-self:start;padding:12px 16px;border-radius:12px;background:color-mix(in srgb, var(--c) 7%, var(--paper));box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--c) 22%, transparent);}
+  .bp-side-h{display:block;margin-bottom:4px;color:var(--c);font-size:13px;line-height:20px;font-weight:800;letter-spacing:.04em;}
+  .bp-side ol{margin:0;padding:0;list-style:none;}
+  .bp-side li{display:flex;gap:10px;padding:6px 0;border-top:1px solid color-mix(in srgb, var(--c) 14%, transparent);}
+  .bp-side li:first-child{border-top:0;}
+  .bp-side-n{flex:none;min-width:20px;color:var(--c);font-size:13px;line-height:24px;font-weight:800;text-align:right;}
+  .bp-side-w{display:flex;flex-direction:column;min-width:0;}
+  .bp-side-w > .bp-s{font-size:17px;line-height:24px;font-weight:700;}
+  .bp-side-m{font-size:13px;line-height:18px;color:var(--text-2);}
   @media (max-width:600px){.bp-sec-row{grid-template-columns:minmax(0, 1fr);gap:12px;}.bp-side{padding:12px 0 0;border-left:0;border-top:1px dashed var(--paper-rule);}}
   .bp-h{margin:12px 0 0;font-size:16px;line-height:24px;font-weight:800;color:var(--c);}
   .bp-cmd{display:flex;gap:12px;margin-top:12px;font-weight:700;}
@@ -24496,6 +24502,7 @@ function bookPageHtml(book, unit, part) {
   if (part === "text") {
     const vocab = (unit.pages.vocab || []).filter(x => x.t === "word").map(x => x.w);
     const secs = [], shown = new Set;
+    let num = 0;
     items.forEach(x => {
       if (x.t === "head" || !secs.length) secs.push({
         head: x.t === "head" ? x : null,
@@ -24513,7 +24520,7 @@ function bookPageHtml(book, unit, part) {
           words: []
         }))
       }))).join("");
-      return `<section class="bp-sec">${sec.head ? `<h3 class="bp-h"><span class="bp-s" data-say="${escapeAttr(sec.head.text)}">${escapeHtml(sec.head.text)}</span></h3>` : ""}<div class="bp-sec-row"><div class="bp-sec-main">${lines}</div>${side.length ? `<aside class="bp-side"><b>生词</b>${side.map(([t, m]) => `<div>${bookSayHtml(t)} <span class="bp-side-m">${escapeHtml(m)}</span></div>`).join("")}</aside>` : ""}</div></section>`;
+      return `<section class="bp-sec">${sec.head ? `<h3 class="bp-h"><span class="bp-s" data-say="${escapeAttr(sec.head.text)}">${escapeHtml(sec.head.text)}</span></h3>` : ""}<div class="bp-sec-row"><div class="bp-sec-main">${lines}</div>${side.length ? `<aside class="bp-side"><b class="bp-side-h">生词</b><ol>${side.map(([t, m]) => `<li><span class="bp-side-n">${++num}</span><span class="bp-side-w">${bookSayHtml(t)}<span class="bp-side-m">${escapeHtml(m)}</span></span></li>`).join("")}</ol></aside>` : ""}</div></section>`;
     }).join("");
   } else if (part === "vocab") body = `<div class="bp-words">${items.filter(x => x.t === "word").map(x => `<div class="bp-word">${bookSayHtml(x.w[0])}${bookGlossHtml([ [ "", x.w[1] ] ])}</div>`).join("")}</div>`; else items.forEach(x => {
     if (x.t === "head") return no = 0, body += shut() + `<h3 class="bp-h"><span class="bp-s" data-say="${escapeAttr(x.text)}">${escapeHtml(x.text)}</span>${bookGlossHtml(x.words || [])}</h3>`;
