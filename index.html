@@ -986,6 +986,7 @@ window.onYouTubeIframeAPIReady = function(){
   .edit-qa > div{min-width:0;}
   .edit-row .rich-editor{margin-bottom:10px;display:block;}
   .rich-editor:empty::before{content:attr(data-placeholder);color:var(--placeholder);}
+  .vocab-edit-ctx{padding:0 4px 4px;font-size:16px;line-height:24px;color:var(--text-2);-webkit-user-select:text;user-select:text;cursor:text;}
   .rich-editor.yt-ph:empty::before{content:"";display:inline-block;width:28px;height:20px;vertical-align:-3px;background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2028%2020%22%3E%3Crect%20width%3D%2228%22%20height%3D%2220%22%20rx%3D%225%22%20fill%3D%22%23FF0000%22%2F%3E%3Cpath%20d%3D%22M11%205.5v9l8-4.5z%22%20fill%3D%22%23fff%22%2F%3E%3C%2Fsvg%3E") center / 28px 20px no-repeat;opacity:.45;}
   #qaQ.yt-ph:placeholder-shown{background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2028%2020%22%3E%3Crect%20width%3D%2228%22%20height%3D%2220%22%20rx%3D%225%22%20fill%3D%22%23FF0000%22%2F%3E%3Cpath%20d%3D%22M11%205.5v9l8-4.5z%22%20fill%3D%22%23fff%22%2F%3E%3C%2Fsvg%3E");background-repeat:no-repeat;background-size:28px 20px;background-position:12px center;}
   :is(.rich-editor, .cell, .vocab-ctx) mark.vocab-own{background:color-mix(in srgb, var(--text) 22%, transparent);color:inherit;}
@@ -17163,8 +17164,15 @@ function setWordNotes(card, key, html, at) {
   return true;
 }
 
+function vocabEditCtxHtml(item) {
+  if (!item || !item.card || item.card.uid === EXTRA_UID) return "";
+  const {sentence: sentence} = vocabContext(item);
+  if (!sentence || wholeSentenceCard(item, sentence)) return "";
+  return `<div class="vocab-edit-ctx" title="Select a word here and press Shift to add it">${lookupOthers(vocabSentenceHtml(sentence, item.term, item.card), item)}</div>`;
+}
+
 function vocabEditorHtml(item) {
-  return '<div class="vocab-editor">' + `<textarea id="vocabEditTerm" class="autofit oneline" rows="1" autocomplete="off" aria-label="Question">${escapeHtml(item.term)}</textarea>` + `<textarea id="vocabEditMeaning" class="autofit oneline" rows="1" autocomplete="off" aria-label="Answer">${escapeHtml(item.meaning)}</textarea>` + `<div class="notes-clip"><div id="vocabEditNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes" aria-label="Notes">${wordNotesOf(item)}</div></div>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
+  return '<div class="vocab-editor">' + vocabEditCtxHtml(item) + `<textarea id="vocabEditTerm" class="autofit oneline" rows="1" autocomplete="off" aria-label="Question">${escapeHtml(item.term)}</textarea>` + `<textarea id="vocabEditMeaning" class="autofit oneline" rows="1" autocomplete="off" aria-label="Answer">${escapeHtml(item.meaning)}</textarea>` + `<div class="notes-clip"><div id="vocabEditNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes" aria-label="Notes">${wordNotesOf(item)}</div></div>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
 }
 
 const VOCAB_FLIP_MS = 450;
@@ -24859,6 +24867,39 @@ document.addEventListener("keydown", e => {
 
 document.addEventListener("keydown", e => {
   if (e.key !== "Shift" || e.repeat || e.metaKey || e.ctrlKey) return;
+  const sel = getSelection();
+  const ctx = sel && sel.rangeCount && !sel.isCollapsed && sel.anchorNode && sel.anchorNode.parentElement && sel.anchorNode.parentElement.closest(".vocab-edit-ctx");
+  if (ctx && appMode === "vocab") {
+    const text = sel.toString().replace(/\s+/g, " ").trim();
+    const item = lessonVocabItems(vocabSource()).find(i => i.key === vocabEditingKey);
+    if (!text || !item || !item.card) return;
+    e.preventDefault();
+    if (existingVocab(text)) return warnVocabExists(text);
+    const card = item.card;
+    showVocabAddPopup(null, text, sel.getRangeAt(0).getBoundingClientRect(), null, (term, meaning) => {
+      const before = vocabKeysOf(card);
+      const box = document.createElement("div");
+      box.innerHTML = card.notesHtml || (card.notes ? textHtml(card.notes) : "");
+      let list = box.querySelector("ul");
+      if (!list) {
+        list = document.createElement("ul");
+        box.appendChild(list);
+      }
+      const li = document.createElement("li");
+      li.innerHTML = "<b>" + escapeHtml(term) + "</b>: " + escapeHtml(meaning);
+      list.appendChild(li);
+      pushUndo("Added — " + term);
+      card.notesHtml = sanitizeHtml(box.innerHTML);
+      card.notes = plainTextOf(card.notesHtml, "\n");
+      stampNewVocab(card, before);
+      scheduleAutoSave();
+      flushAutoSave();
+      showToast(`Added “${term}”`);
+      const here = document.querySelector(".vocab-edit-ctx");
+      if (here) here.innerHTML = lookupOthers(vocabSentenceHtml(vocabContext(item).sentence, item.term, card), item);
+    });
+    return;
+  }
   const field = e.target.closest && e.target.closest("#qaQ, #qaA");
   if (!field || appMode === "vocab") return;
   const text = field.value.slice(field.selectionStart, field.selectionEnd).replace(/\s+/g, " ").trim();
