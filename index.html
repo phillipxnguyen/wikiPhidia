@@ -2116,6 +2116,7 @@ window.onYouTubeIframeAPIReady = function(){
   .bp-gl b{font-weight:700;color:var(--text);}
   .nogloss .bp-gl{display:none;}
   .bp-h .bp-gl{font-weight:400;}
+  .bp-line{display:contents;}
   .bp-sec{display:flex;flex-direction:column;gap:12px;}
   .bp-sec + .bp-sec{margin-top:12px;}
   .bp-sec-row{display:grid;grid-template-columns:minmax(0, 1fr) 220px;gap:24px;}
@@ -24160,6 +24161,7 @@ function bookParsed(book) {
         words: words
       });
       page.push(Object.assign(info, {
+        uid: uid,
         t: "line",
         words: all,
         inGroup: !!group
@@ -24479,6 +24481,10 @@ function bookGlossHtml(words) {
 }
 
 function bookLineHtml(x) {
+  return `<div class="bp-line" data-uid="${escapeAttr(x.uid || "")}">${bookLineInner(x)}</div>`;
+}
+
+function bookLineInner(x) {
   const segs = x.text.split(" / "), tag = /^=([^=]{1,12})= (.+)$/, ab = /^([AB]) (.+)$/;
   const rows = segs.some(t => tag.test(t)) ? segs.map(t => (m => m ? [ m[1], m[2], "" ] : [ "", t, "" ])(t.match(tag))) : segs.length > 1 && segs.every(t => ab.test(t)) ? segs.map(t => (m => [ m[1], m[2], " ab" ])(t.match(ab))) : null;
   if (rows) return rows.map(([who, t, cls], k) => `<div class="bp-talk"><span class="bp-who${cls}">${escapeHtml(who)}</span><div>${bookSayHtml(t)}${k === rows.length - 1 ? bookGlossHtml(x.words) : ""}</div></div>`).join("");
@@ -24493,7 +24499,14 @@ function bookPageHtml(book, unit, part) {
   const meta = BOOK_PARTS.find(x => x[0] === part);
   const at = parts.findIndex(([p]) => p === part), next = parts[at + 1];
   const items = [];
-  (unit.pages[part] || []).forEach(x => {
+  const live = library.find(l => l.id === bookLessonId(book, unit.n, part));
+  const liveWords = x => {
+    const card = live && x.uid && live.cards.find(c => c.uid === x.uid);
+    return card ? vocabEntriesOf(card).map(e => [ e.term, e.meaning ]) : x.words;
+  };
+  (unit.pages[part] || []).map(x => x.t === "line" ? Object.assign({}, x, {
+    words: liveWords(x)
+  }) : x).forEach(x => {
     const last = items[items.length - 1];
     if (x.cont && last && last.t === "line" && !last.cmd) last.more = (last.more || []).concat(x); else items.push(Object.assign({}, x));
   });
@@ -24512,7 +24525,8 @@ function bookPageHtml(book, unit, part) {
     });
     body = secs.map(sec => {
       const text = sec.lines.map(x => [ x ].concat(x.more || []).map(m => m.text).join("")).join("\n") + (sec.head ? sec.head.text : "");
-      const side = vocab.filter(([t]) => !shown.has(t) && text.includes(t));
+      const own = sec.lines.flatMap(x => [ x ].concat(x.more || []).flatMap(m => m.words || [])).filter(([t]) => !vocab.some(([v]) => v === t) && !(unit.pages[part] || []).some(p => p.t === "line" && (p.words || []).some(([w]) => w === t)));
+      const side = vocab.filter(([t]) => !shown.has(t) && text.includes(t)).concat(own.filter(([t]) => !shown.has(t)));
       side.forEach(([t]) => shown.add(t));
       const lines = sec.lines.map(x => bookLineHtml(Object.assign({}, x, {
         words: [],
@@ -24976,6 +24990,42 @@ document.addEventListener("keydown", e => {
   if (hit.row) extrasFor(hit.row);
   if (existingVocab(hit.text, lessonRowsOf(hit.row))) warnVocabExists(hit.text); else showVocabAddPopup(hit.row, hit.text, hit.rect);
 });
+
+document.addEventListener("keydown", e => {
+  if (e.key !== "Shift" || e.repeat || e.metaKey || e.ctrlKey || currentView !== "books" || !bookPage) return;
+  const sel = getSelection();
+  const line = sel && sel.rangeCount && !sel.isCollapsed && sel.anchorNode && sel.anchorNode.parentElement && sel.anchorNode.parentElement.closest(".bp-sheet .bp-line[data-uid]");
+  const text = line ? sel.toString().replace(/\s+/g, " ").trim() : "";
+  if (!line || !text || !line.dataset.uid) return;
+  e.preventDefault();
+  e.stopImmediatePropagation();
+  const book = bookOpen(), {n: n, part: part} = bookPage, uid = line.dataset.uid, rect = sel.getRangeAt(0).getBoundingClientRect();
+  showVocabAddPopup(null, text, rect, null, async (term, meaning) => {
+    await installBookUnit(book, n);
+    const lesson = library.find(l => l.id === bookLessonId(book, n, part));
+    const card = lesson && lesson.cards.find(c => c.uid === uid);
+    if (!card) return showToast("This sentence was deleted: restore it from the archive first");
+    const box = document.createElement("div");
+    box.innerHTML = card.notesHtml || "";
+    let list = box.querySelector("ul");
+    if (!list) {
+      list = document.createElement("ul");
+      box.appendChild(list);
+    }
+    const li = document.createElement("li");
+    li.innerHTML = "<b>" + escapeHtml(term) + "</b>: " + escapeHtml(meaning);
+    list.appendChild(li);
+    const before = vocabKeysOf(card);
+    card.notesHtml = sanitizeHtml(box.innerHTML);
+    card.notes = plainTextOf(card.notesHtml, "\n");
+    stampNewVocab(card, before);
+    lesson.updatedAt = Date.now();
+    upsertLibrary(lesson);
+    dbPut("lessons", lesson).catch(() => {});
+    showToast(`Added “${term}”`);
+    renderBooks();
+  });
+}, true);
 
 document.addEventListener("keydown", e => {
   if (e.key !== "Shift" || e.repeat || e.metaKey || e.ctrlKey) return;
