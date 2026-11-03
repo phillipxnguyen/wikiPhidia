@@ -434,7 +434,7 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-card.answer-first .vocab-front{background:var(--a-bg);}
   .vocab-card.answer-first .vocab-front .vocab-term{color:var(--a-text);font-size:28px;line-height:35px;}
   .vocab-card.answer-first .vocab-back{background:var(--surface);}
-  .vocab-card.view-only :is(.vocab-front, .vocab-back){background-color:var(--surface);background-image:var(--dot-paper);background-size:24px 24px;background-position:12px 12px;}
+  .vocab-card.view-only :is(.vocab-front, .vocab-back){background-color:var(--surface);}
   @keyframes vocabSquash{0%{transform:none;}40%{transform:scale(1.02,.9);}75%{transform:scale(.99,1.02);}100%{transform:none;}}
   .vocab-card.vocab-swap{transform-origin:50% 100%;animation:vocabSquash .35s ease-out;}
   .vocab-term{font-size:28px;font-weight:400;line-height:35px;overflow-wrap:anywhere;}
@@ -481,7 +481,7 @@ window.onYouTubeIframeAPIReady = function(){
   @media (hover:hover){#addForm.in-popup .add-single:hover{background:color-mix(in srgb, var(--accent) 20%, transparent);}}
   #addForm.in-popup .quick-add[data-kind]{background:color-mix(in srgb, var(--kind) 6%, var(--surface));border-color:color-mix(in srgb, var(--kind) 40%, var(--border));border-radius:var(--radius);box-shadow:none;}
   #addForm.in-popup .quick-add[data-kind="speak"]{background:repeating-linear-gradient(transparent 0 35px, var(--paper-rule) 35px 36px), var(--paper);}
-  #addForm.in-popup .quick-add[data-kind="view"]{background-color:var(--surface);background-image:var(--dot-paper);background-size:24px 24px;background-position:12px 12px;}
+  #addForm.in-popup .quick-add[data-kind="view"]{background-color:var(--surface);}
   #addForm.in-popup[data-kind] .paste-sheet #importText{background:color-mix(in srgb, var(--kind) 6%, var(--surface));border-color:color-mix(in srgb, var(--kind) 40%, var(--border));border-radius:var(--radius);box-shadow:none;}
   #addForm.in-popup[data-kind] .paste-sheet #importText::placeholder{color:var(--kind);}
   .vocab-back .vocab-word-notes{box-sizing:border-box;width:fit-content;max-width:100%;margin-top:-2px;padding:0 16px;font-size:26px;line-height:32px;text-align:left;color:var(--text);overflow-wrap:break-word;}
@@ -1539,6 +1539,13 @@ window.onYouTubeIframeAPIReady = function(){
 
   .ielts-paper::before, #cardTable.notebook tbody::before{content:"";position:absolute;z-index:1;pointer-events:none;}
   .ielts-paper::before, #cardTable.notebook tbody::before{top:16px;bottom:16px;left:-8px;width:32px;border:0;background:var(--ring-left) 0 0 / 32px 36px, radial-gradient(circle at 26px 18px, #1f2633 6px, transparent 6px) 0 0 / 32px 36px;background-repeat:no-repeat space;}
+  .ielts-paper.top-rings{--page-x:32px;min-height:0;margin-top:0;padding:42px var(--page-x) 24px;}
+  .ielts-paper.top-rings .paper-body{width:fit-content;max-width:100%;margin:0 auto;}
+  .ielts-paper.top-rings.with-notes .paper-body{width:auto;margin:0;}
+  .ielts-paper.top-rings .paper-extras:empty{display:none;}
+  #cardTable.notebook.top-rings{--page-x:32px;}
+  #cardTable.notebook.top-rings tbody{padding-top:30px;}
+  .ielts-paper.top-rings::before, #cardTable.notebook.top-rings tbody::before{top:-8px;bottom:auto;width:auto;left:24px;right:24px;height:32px;border:0;background:var(--ring-top) 0 0 / 36px 32px, radial-gradient(circle at 18px 26px, #1f2633 6px, transparent 6px) 0 0 / 36px 32px;background-repeat:space no-repeat;}
   .ielts-paper .cell.hidden.paper-hint, .ielts-paper .cell.hidden.paper-hint:hover{font-style:normal;color:var(--paper-ink);}
   .ielts-paper .paper-prompt:not(.paper-hint):hover{color:var(--paper-ink-2);}
   .paper-hint ol, .paper-notes ol{margin:0;padding:0;list-style:none;counter-reset:paper-n;}
@@ -6883,7 +6890,7 @@ function ieltsPaperHtml(row, ahead = 0) {
   const list = words.length ? "<ol>" + words.map((i, n) => `<li><span class="pn">${n + 1}.</span><b>${escapeHtml(i.term)}</b>${i.meaning ? " — " + escapeHtml(i.meaning) : ""}</li>`).join("") + "</ol>" : own;
   const notes = list ? `<aside class="paper-notes">${list}</aside>` : "";
   const extras = row.aHidden ? "" : '<div class="paper-extras"><div class="paper-stroke"></div><div class="paper-dict" hidden></div></div>';
-  if (!hasAnswer(row)) return `<article class="ielts-paper one-side${notes ? " with-notes" : ""}"><div class="paper-body"><div class="paper-main"><div class="paper-answer"><div class="cell shown paper-lines" data-field="q">${qCellContent(row)}</div></div></div>${notes}</div>` + extras + "</article>";
+  if (!hasAnswer(row)) return `<article class="ielts-paper top-rings${notes ? " with-notes" : ""}"><div class="paper-body"><div class="paper-main"><div class="paper-answer"><div class="cell shown paper-lines" data-field="q">${qCellContent(row)}</div></div></div>${notes}</div>` + extras + "</article>";
   return `<article class="ielts-paper${notes ? " with-notes" : ""}">` + '<div class="paper-body"><div class="paper-main">' + `<div class="paper-question"><div class="cell shown" data-field="q">${qCellContent(row)}</div></div>` + `<div class="paper-answer">${answer}</div>` + `</div>${notes}</div>` + extras + "</article>";
 }
 
@@ -10112,6 +10119,7 @@ function applyColumnLayout() {
   const noAnswer = isVideoLesson() || !deckHasAnswers() && !!groupState;
   table.classList.toggle("notebook", !groupState && !isVideoLesson());
   table.classList.toggle("no-answer-col", noAnswer);
+  table.classList.toggle("top-rings", !groupState && !isVideoLesson() && !deckHasAnswers());
   const headTh = table.querySelector("thead th:not(.a-col)");
   table.classList.toggle("full-list", !groupState);
   headTh.colSpan = noAnswer || !groupState ? 2 : 1;
@@ -28230,7 +28238,7 @@ document.addEventListener("keydown", e => {
     const row = picked || (groupViewStyle === "ielts" && groupState ? scope[0] : null);
     if (!row || cardInVideoLesson(row)) return;
     e.preventDefault();
-    if (!canMoveToVocab(row)) return showToast((row.a || "").trim() ? "A question answered in its own language is studied here, with Speaking" : "A one-sided card is read here, with Speaking");
+    if (!canMoveToVocab(row)) return showToast((row.a || "").trim() ? "A question answered in its own language is studied here, with Speaking" : "This card is studied here, with Speaking");
     moveCardToVocab(row);
     return;
   }
