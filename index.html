@@ -6416,7 +6416,7 @@ function buildRowTr(r) {
   const q = `<div class="cell ${r.qHidden ? "hidden" : "shown"}" data-field="q">${qCellContent(r)}</div>`;
   const notes = !r.aHidden && !r.qHidden ? cardNotesHtml(r) : "";
   const a = `<div class="cell ${r.aHidden ? "hidden" : "shown"}" data-field="a">${aCellContent(r)}</div>`;
-  tr.innerHTML = document.getElementById("cardTable").classList.contains("no-answer-col") ? `<td class="q-col" colspan="2">${q}${notes}</td>` : `<td class="q-col">${q}</td><td class="a-col">${a}${notes}</td>`;
+  tr.innerHTML = document.getElementById("cardTable").classList.contains("no-answer-col") ? `<td class="q-col" colspan="2">${q}${hasAnswer(r) ? a : ""}${notes}</td>` : `<td class="q-col">${q}</td><td class="a-col">${a}${notes}</td>`;
   dictPreloadObserver.observe(tr);
   return tr;
 }
@@ -10074,7 +10074,7 @@ function updateGroupUI() {
 function applyColumnLayout() {
   const table = document.getElementById("cardTable");
   const cols = table.querySelectorAll("colgroup col");
-  const noAnswer = !deckHasAnswers();
+  const noAnswer = !deckHasAnswers() || isVideoLesson();
   table.classList.toggle("notebook", !groupState && !isVideoLesson());
   table.classList.toggle("no-answer-col", noAnswer);
   const headTh = table.querySelector("thead th:not(.a-col)");
@@ -12712,6 +12712,8 @@ function dedupeLibrary(prefer = dedupePrefer) {
     if (keep.key !== null) keptEntries.push(keep);
   });
   if (!dropCards.size && !dropEntries.length) return false;
+  const already = dropEntries.filter(u => !u.home.lesson && u.card !== EXTRA_UID && !dropCards.has(u.card) && rows.includes(u.card)).map(u => u.entry.term);
+  if (already.length) showToast(`${already.map(t => "“" + t + "”").join(", ")} already ${already.length > 1 ? "have cards" : "has a card"}: it shows here as a lookup`);
   const touched = new Set;
   dropEntries.forEach(u => {
     if (dropCards.has(u.card)) return;
