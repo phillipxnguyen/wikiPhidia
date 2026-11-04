@@ -1681,7 +1681,7 @@ window.onYouTubeIframeAPIReady = function(){
   .swipe-ghost.delete{color:var(--text);border-color:currentColor;}
   .swipe-ghost.to-vocab{color:#1e9466;border-color:currentColor;}
   .swipe-ghost.to-lesson{color:var(--lesson-color);border-color:currentColor;}
-  .swipe-ghost.angel{overflow:visible;background:var(--surface-2);color:var(--text-2);border-color:currentColor;}
+  .swipe-ghost.angel{overflow:visible;border:1px solid var(--border);border-radius:12px;background:var(--surface-2);color:var(--text-2);-webkit-text-stroke:0;}
   @media (prefers-reduced-motion: reduce){html .wl-wing{animation:none;}}
   .session-complete{
     display:none;
@@ -2226,7 +2226,8 @@ window.onYouTubeIframeAPIReady = function(){
   .wl-words > .wl-band:first-child{margin-right:46px;}
   @media (max-width:760px){#wordPop{padding:12px;}.word-box{--wp:12px;--fs:18px;--lh:28px;--dp:12px;}.wl-main{gap:12px;}.wl-main.picked{grid-template-columns:minmax(0, 1fr);grid-template-rows:minmax(0, 1fr) minmax(0, 1fr);}}
   .wl-band{display:flex;gap:calc(var(--wp) + 1px);align-items:flex-start;}
-  .wl-label{flex:none;width:40px;font-size:var(--fs);line-height:38px;font-weight:800;color:var(--accent);text-align:center;}
+  .wl-label.row-selected{border-radius:8px;background:var(--accent-soft);}
+  .wl-label{flex:none;cursor:pointer;-webkit-user-select:none;user-select:none;width:40px;font-size:var(--fs);line-height:38px;font-weight:800;color:var(--accent);text-align:center;}
   .wl-chips{display:flex;flex-wrap:wrap;gap:8px;min-width:0;}
   .wl-w{-webkit-user-select:none;user-select:none;display:inline-flex;align-items:baseline;gap:5px;height:38px;box-sizing:border-box;padding:0 14px;border:1px solid var(--border);border-radius:19px;background:var(--surface);color:var(--text);font-size:var(--fs);line-height:36px;font-weight:400;cursor:pointer;}
   .wl-w i{font-style:normal;font-size:var(--fs);line-height:36px;font-weight:700;color:var(--accent);}
@@ -15500,7 +15501,7 @@ function wordPopHtml() {
   const bands = [ [ 20, "20+" ], [ 10, "10+" ], [ 5, "5+" ], [ 4, "4" ], [ 3, "3" ], [ 2, "2" ], [ 1, "1" ] ].map(([min, label]) => {
     const these = rest.filter(w => w.n >= min);
     rest = rest.filter(w => w.n < min);
-    return these.length ? `<div class="wl-band"><span class="wl-label">${label}</span><div class="wl-chips">${these.map(chip).join("")}</div></div>` : "";
+    return these.length ? `<div class="wl-band"><span class="wl-label${sel("b", label)}" data-band="${label}">${label}</span><div class="wl-chips">${these.map(chip).join("")}</div></div>` : "";
   }).join("");
   const pick = wordPick && words.find(w => w.w === wordPick), meaning = pick && (states.get(pick.w) || {}).meaning;
   const detail = pick ? `<div class="wl-dhead"><b>${escapeHtml(pick.text)}<em title="${countOf(pick.n, "time")} in ${countOf(pick.rows.length, "sentence")}">${pick.n}</em></b>${meaning ? `<i>${escapeHtml(meaning)}</i>` : ""}</div>${pick.rows.map(r => `<div class="wl-sent${sel("s", r.id)}" data-id="${r.id}">${wordMarked(r, pick.w)}</div>`).join("")}` : "";
@@ -15579,6 +15580,14 @@ function wordTarget() {
   if (t.kind === "w") return {
     word: t.id
   };
+  if (t.kind === "b") {
+    const label = document.querySelector(`#wordPop .wl-label[data-band="${CSS.escape(t.id)}"]`);
+    const band = label ? [ ...label.parentElement.querySelectorAll("[data-w]") ].map(e => e.dataset.w) : [];
+    return band.length ? {
+      band: band,
+      label: t.id
+    } : null;
+  }
   const row = rows.find(r => r.id === t.id);
   return row ? {
     row: row,
@@ -15659,6 +15668,20 @@ function wordFly(el, label) {
 function wordAct(act) {
   const t = wordTarget();
   if (!t) return false;
+  if (t.band) {
+    if (act === "copy") copyText(t.band.join("\n"));
+    if (act !== "delete") return true;
+    pushUndo("Hidden — " + t.label).hiddenWords = JSON.stringify(readLocal(HIDDEN_WORDS_KEY) || {});
+    t.band.forEach(w => {
+      const chip = document.querySelector(`#wordPop [data-w="${CSS.escape(w)}"]`);
+      if (chip) wordFly(chip, "Delete");
+      hideWord(w);
+    });
+    if (t.band.includes(wordPick)) wordPick = null;
+    wordSel = wordHover = null;
+    setTimeout(openWords, reducedMotion() ? 0 : 180);
+    return true;
+  }
   const el = (act === "delete" || act === "vocab" && t.row && !cardInVideoLesson(t.row) && canMoveToVocab(t.row)) && document.querySelector(t.word ? `#wordPop [data-w="${CSS.escape(t.word)}"]` : `#wordPop .wl-sent[data-id="${t.row.id}"]`);
   if (el) wordFly(el, act === "vocab" ? "Vocab" : "Delete");
   if (act === "copy") copyText(t.word || oneLine(t.row.q));
@@ -15686,8 +15709,11 @@ document.addEventListener("click", e => {
 
 document.getElementById("wordPop").addEventListener("mouseover", e => {
   if (isTouch()) return;
-  const w = e.target.closest("[data-w]"), s = e.target.closest(".wl-sent");
-  wordHover = s ? {
+  const w = e.target.closest("[data-w]"), s = e.target.closest(".wl-sent"), band = e.target.closest("[data-band]");
+  wordHover = band ? {
+    kind: "b",
+    id: band.dataset.band
+  } : s ? {
     kind: "s",
     id: Number(s.dataset.id)
   } : w ? {
@@ -15700,6 +15726,17 @@ document.getElementById("wordPop").addEventListener("mouseleave", () => wordHove
 
 document.getElementById("wordPop").addEventListener("click", e => {
   if (e.target.closest("[data-wclose]")) return closeWords();
+  const band = e.target.closest("[data-band]");
+  if (band) {
+    if (isTouch()) {
+      wordSel = wordSel && wordSel.kind === "b" && wordSel.id === band.dataset.band ? null : {
+        kind: "b",
+        id: band.dataset.band
+      };
+      openWords();
+    }
+    return;
+  }
   const w = e.target.closest("[data-w]"), s = e.target.closest(".wl-sent");
   if (w) {
     wordAnchor = {
