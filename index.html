@@ -4482,7 +4482,7 @@ function knownWord(term) {
   if (!key) return null;
   for (const l of library) {
     if (isVirtualId(l.id)) continue;
-    const item = lessonVocabItems(readerCards(l)).find(i => i.key === key);
+    const item = lessonVocabItems(readerCards(l)).find(i => i.tkey === key);
     if (item) return {
       lesson: l.name || "Untitled lesson",
       meaning: item.meaning || ""
@@ -5371,8 +5371,8 @@ function moveCardsToVocab(list) {
     const own = vocabEntriesOf(r).map(e => [ e.term, e.meaning ]);
     if (!own.some(([t]) => normalizeVocabText(t) === normalizeVocabText(term))) own.unshift([ term, meaning ]);
     own.forEach(pair => {
-      const key = normalizeVocabText(pair[0]);
-      if (seen.has(key) || existingVocab(pair[0], others)) return;
+      const key = wordKey(pair[0], pair[1]);
+      if (seen.has(key) || existingVocab(pair[0], others, pair[1])) return;
       seen.add(key);
       carry.push(pair);
     });
@@ -5394,8 +5394,8 @@ function moveCardsToVocab(list) {
 }
 
 function carryWordNotes(cards, carry, extras) {
-  carry.forEach(([term]) => {
-    const key = normalizeVocabText(term);
+  carry.forEach(([term, meaning]) => {
+    const key = wordKey(term, meaning);
     const st = cards.map(c => c.vocab && c.vocab[key]).find(x => x && x.notes);
     if (st) setWordNotes(extras, key, st.notes, st.notesAt);
   });
@@ -5458,8 +5458,8 @@ function moveOneCardToVocab(row) {
   if (!vocabEntryOk(term)) return;
   extrasFor(row);
   const others = lessonRowsOf(row).filter(r => r !== row);
-  const carry = vocabEntriesOf(row).filter(e => !existingVocab(e.term, others)).map(e => [ e.term, e.meaning ]);
-  if (!carry.some(([t]) => normalizeVocabText(t) === normalizeVocabText(term)) && !existingVocab(term, others)) carry.unshift([ term, meaning ]);
+  const carry = vocabEntriesOf(row).filter(e => !existingVocab(e.term, others, e.meaning)).map(e => [ e.term, e.meaning ]);
+  if (!carry.some(([t]) => normalizeVocabText(t) === normalizeVocabText(term)) && !existingVocab(term, others, meaning)) carry.unshift([ term, meaning ]);
   pushUndo("Moved to Vocabulary — " + cardSummary(row));
   if (carry.length) appendWordItems(extrasFor(row, true), carry);
   carryWordNotes([ row ], carry, extrasFor(row));
@@ -5468,7 +5468,7 @@ function moveOneCardToVocab(row) {
   rows = rows.filter(r => r !== row);
   dedupeLibrary({
     card: extrasFor(row),
-    key: normalizeVocabText(term)
+    key: wordKey(term, meaning)
   });
   if (hoveredRowId === row.id) hoveredRowId = null;
   if (selectedRowId === row.id) selectedRowId = null;
@@ -7773,6 +7773,24 @@ function normalizeVocabText(s) {
   return (s || "").normalize("NFC").toLowerCase();
 }
 
+function wordKey(term, meaning) {
+  const m = normalizeVocabText((meaning || "").replace(/\s+/g, " ").trim());
+  return normalizeVocabText(term) + (m ? "\u0001" + m : "");
+}
+
+function withWordKeys(card) {
+  if (!card.vocab) return card;
+  const entries = vocabEntriesOf(card), used = new Set(entries.map(e => e.key));
+  entries.forEach(e => {
+    if (card.vocab[e.key]) return;
+    const from = Object.keys(card.vocab).find(k => !used.has(k) && k.split("\u0001")[0] === e.tkey);
+    if (!from) return;
+    card.vocab[e.key] = card.vocab[from];
+    delete card.vocab[from];
+  });
+  return card;
+}
+
 const UNSPACED_RE = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Thai}\p{Script=Lao}\p{Script=Khmer}\p{Script=Myanmar}\u30fc]/u;
 
 function scriptGroup(ch) {
@@ -8580,7 +8598,7 @@ function handleCardAreaClick(e) {
     e.stopPropagation();
     hideTooltip();
     const key = normalizeVocabText((own.dataset.own || "").split("\n")[0]);
-    const item = lessonVocabItems(vocabSource()).find(i => i.key === key && i.card === row) || lessonVocabItems(vocabSource()).find(i => i.key === key);
+    const item = lessonVocabItems(vocabSource()).find(i => i.tkey === key && i.card === row) || lessonVocabItems(vocabSource()).find(i => i.tkey === key);
     if (item && isTouch()) showWordView(row, item.term, item.meaning, own.getBoundingClientRect()); else if (item) showVocabAddPopup(row, item.term, own.getBoundingClientRect(), item);
     return;
   }
@@ -9625,7 +9643,7 @@ function saveQuickAdd() {
       row.notes = plainTextOf(html, "\n");
     }
     if (belongsInVocab(row)) {
-      if (existingVocab(row.q)) {
+      if (existingVocab(row.q, undefined, row.a)) {
         warnVocabExists(row.q);
         return q.focus();
       }
@@ -10035,7 +10053,7 @@ function wireEditBox(host, row) {
       const range = sel.getRangeAt(0);
       if (!field.contains(range.commonAncestorContainer)) return;
       e.preventDefault();
-      if (existingVocab(selectedText) || wordAlreadyInNotes(editNotes.querySelector("ul.notes-list"), selectedText)) {
+      if (wordAlreadyInNotes(editNotes.querySelector("ul.notes-list"), selectedText)) {
         warnVocabExists(selectedText);
         return;
       }
@@ -11575,8 +11593,8 @@ function planWords(items) {
   const seen = new Set;
   items.forEach(it => {
     if (it.kind !== "word") return;
-    const key = normalizeVocabText(it.term);
-    if (seen.has(key) || existingVocab(it.term)) it.wordKind = "duplicate"; else {
+    const key = wordKey(it.term, it.meaning);
+    if (seen.has(key) || existingVocab(it.term, undefined, it.meaning || "")) it.wordKind = "duplicate"; else {
       it.wordKind = "new";
       seen.add(key);
     }
@@ -11960,15 +11978,15 @@ function analyzeImportText(raw) {
   if (delim !== "none") lines.forEach(l => {
     l.entry = parseImportLine(l.text, delim);
   });
-  const seen = new Set(lines.filter(l => l.word).map(l => normalizeVocabText(l.word.term)));
+  const seen = new Set(lines.filter(l => l.word).map(l => wordKey(l.word.term, l.word.meaning)));
   lines.forEach(l => {
     const e = l.entry;
     if (!e || !belongsInVocab(e)) return;
-    const term = e.q.replace(/\s+/g, " ").trim(), key = normalizeVocabText(term);
+    const term = e.q.replace(/\s+/g, " ").trim(), meaning = e.a.replace(/\s+/g, " ").trim(), key = wordKey(term, meaning);
     l.word = {
       term: term,
-      meaning: e.a.replace(/\s+/g, " ").trim(),
-      wordKind: seen.has(key) || existingVocab(term) ? "duplicate" : "new"
+      meaning: meaning,
+      wordKind: seen.has(key) || existingVocab(term, undefined, meaning) ? "duplicate" : "new"
     };
     seen.add(key);
     l.entry = null;
@@ -12079,9 +12097,9 @@ document.querySelectorAll(".lang-btn").forEach(btn => {
         });
       });
       const seen = new Set;
-      const words = importEntries.filter(e => e.time == null).map(e => [ e.q.replace(/\s+/g, " ").trim(), e.a.replace(/\s+/g, " ").trim() ]).filter(([t]) => {
-        const key = normalizeVocabText(t);
-        if (!key || seen.has(key) || existingVocab(t)) return false;
+      const words = importEntries.filter(e => e.time == null).map(e => [ e.q.replace(/\s+/g, " ").trim(), e.a.replace(/\s+/g, " ").trim() ]).filter(([t, m]) => {
+        const key = t && wordKey(t, m);
+        if (!key || seen.has(key) || existingVocab(t, undefined, m)) return false;
         seen.add(key);
         return true;
       });
@@ -12357,7 +12375,7 @@ function normalizeCard(c) {
   const qHtml = c.qHtml ? cleanPunctHtml(sanitizeHtml(String(c.qHtml), "br")) : "";
   const aHtml = c.aHtml ? cleanPunctHtml(sanitizeHtml(String(c.aHtml), "br")) : "";
   const notesHtml = c.notesHtml ? sanitizeHtml(String(c.notesHtml)) : "";
-  return {
+  return withWordKeys({
     uid: typeof c.uid === "string" && c.uid ? c.uid : makeUid(),
     q: qHtml ? cleanPunct(plainTextOf(qHtml, "\n")) : cleanPunct(cleanText(c.q)),
     a: aHtml ? cleanPunct(plainTextOf(aHtml, "\n")) : cleanPunct(cleanText(c.a)),
@@ -12370,7 +12388,7 @@ function normalizeCard(c) {
     vocab: normalizeVocabSrs(c.vocab),
     merged: !!c.merged,
     kept: !!c.kept
-  };
+  });
 }
 
 function legacyStudyLang(data) {
@@ -12731,7 +12749,7 @@ function autoSortLibrary() {
         q: e.term,
         a: e.meaning
       }) || !home.lesson && e.key === vocabEditingKey) return;
-      const own = card.uid !== EXTRA_UID && card.time == null && normalizeVocabText((card.q || "").replace(/\s+/g, " ").trim()) === e.key;
+      const own = card.uid !== EXTRA_UID && card.time == null && normalizeVocabText((card.q || "").replace(/\s+/g, " ").trim()) === e.tkey;
       if (!own) toCards.push([ card, e ]);
     }));
     if (!toWords.length && !toCards.length) return;
@@ -12763,7 +12781,7 @@ function autoSortLibrary() {
         vocab: {}
       };
       toWords.forEach(c => {
-        const term = c.q.replace(/\s+/g, " ").trim(), key = normalizeVocabText(term);
+        const term = c.q.replace(/\s+/g, " ").trim(), key = wordKey(term, c.a);
         const pairs = [ [ term, c.a.replace(/\s+/g, " ").trim() ] ].concat(vocabEntriesOf(c).filter(e => e.key !== key).map(e => [ e.term, e.meaning ]));
         appendWordItems(home.extras, pairs);
         const progress = stateOf(c.srs && c.srs.Table);
@@ -12821,7 +12839,7 @@ function dedupeLibrary(prefer = dedupePrefer) {
   homes.forEach((home, hi) => {
     home.cards.forEach(card => {
       if (!card || card.uid === EXTRA_UID) return;
-      const own = card.time == null ? normalizeVocabText((card.q || "").replace(/\s+/g, " ").trim()) : "";
+      const own = card.time == null && (card.q || "").trim() ? wordKey((card.q || "").replace(/\s+/g, " ").trim(), card.a) : "";
       if (own) add(own, {
         home: home,
         hi: hi,
@@ -16486,7 +16504,7 @@ function readerAdd(list) {
     if (!w || typeof w !== "object") return;
     const term = cleanPunct(cleanText(String(w.term || "")).replace(/\n/g, " "));
     const meaning = cleanPunct(cleanText(String(w.meaning || "")).replace(/\n/g, " "));
-    const key = normalizeVocabText(term);
+    const key = term && wordKey(term, meaning);
     if (!key) return skipped.push({
       id: w.id,
       reason: "empty"
@@ -16740,9 +16758,11 @@ const vocabEntryCache = new Map;
 
 const VOCAB_LINE_RE = new RegExp(`^\\s*([^:：]+?)\\s*[:：]\\s*(\\S[\\s\\S]*?)\\s*$`);
 
-function existingVocab(term, rowsToCheck) {
-  const key = normalizeVocabText((term || "").trim());
-  return key ? lessonVocabItems(rowsToCheck || vocabSource()).find(i => i.key === key) || null : null;
+function existingVocab(term, rowsToCheck, meaning) {
+  const tkey = normalizeVocabText((term || "").trim());
+  if (!tkey) return null;
+  const key = meaning === undefined ? null : wordKey(term.trim(), meaning);
+  return lessonVocabItems(rowsToCheck || vocabSource()).find(i => key === null ? i.tkey === tkey : i.key === key) || null;
 }
 
 function warnVocabExists(term) {
@@ -16790,7 +16810,8 @@ function liVocabEntry(li) {
   const term = head.replace(/\s+/g, " ").trim();
   const meaning = ownLiText(li).slice(head.length).replace(/^\s*[:：]\s*/, "").replace(/\s+/g, " ").trim();
   return meaning || !li.querySelector("ul, ol") ? {
-    key: normalizeVocabText(term),
+    key: wordKey(term, meaning),
+    tkey: normalizeVocabText(term),
     term: term,
     meaning: meaning
   } : null;
@@ -16799,10 +16820,12 @@ function liVocabEntry(li) {
 function boldLineEntry(line) {
   const m = line.match(/^\s*\u0001([^\u0002]*)\u0002\s*[:：]\s*([\s\S]*)$/);
   const term = m && m[1].replace(/[\u0001\u0002]/g, "").replace(/\s+/g, " ").trim();
+  const meaning = term ? m[2].replace(/[\u0001\u0002]/g, "").replace(/\s+/g, " ").trim() : "";
   return term ? {
-    key: normalizeVocabText(term),
+    key: wordKey(term, meaning),
+    tkey: normalizeVocabText(term),
     term: term,
-    meaning: m[2].replace(/[\u0001\u0002]/g, "").replace(/\s+/g, " ").trim()
+    meaning: meaning
   } : null;
 }
 
@@ -16822,7 +16845,8 @@ function ownLiText(li) {
 function parseVocabLine(line) {
   const m = (line || "").replace(/ /g, " ").match(VOCAB_LINE_RE);
   return m ? {
-    key: normalizeVocabText(m[1]),
+    key: wordKey(m[1], m[2]),
+    tkey: normalizeVocabText(m[1]),
     term: m[1],
     meaning: (m[2] || "").replace(/\s+/g, " ")
   } : null;
@@ -16838,7 +16862,7 @@ function normalizeExtras(x) {
   if (!x || typeof x !== "object") return null;
   const notesHtml = x.notesHtml ? sanitizeHtml(String(x.notesHtml)) : "";
   if (!notesHtml.trim()) return null;
-  return {
+  return withWordKeys({
     uid: EXTRA_UID,
     q: "",
     a: "",
@@ -16846,7 +16870,7 @@ function normalizeExtras(x) {
     notesHtml: notesHtml,
     time: null,
     vocab: normalizeVocabSrs(x.vocab)
-  };
+  });
 }
 
 function serializeExtras(x) {
@@ -16940,7 +16964,7 @@ function keepVocabAdded(vocab, at = Date.now()) {
 function vocabStateOf(item) {
   const card = item.card;
   if (!card.vocab) card.vocab = {};
-  return card.vocab[item.key] || newSrsState();
+  return card.vocab[item.key] || withWordKeys(card).vocab[item.key] || newSrsState();
 }
 
 function normalizeVocabSrs(vocab) {
@@ -16967,6 +16991,7 @@ function normalizeVocabSrs(vocab) {
 function vocabForSave(r) {
   const out = {};
   if (!r.vocab) return out;
+  withWordKeys(r);
   vocabEntriesOf(r).forEach(e => {
     if (r.vocab[e.key]) out[e.key] = r.vocab[e.key];
   });
@@ -17261,7 +17286,7 @@ function buildVocabCard(item) {
       if (matches.length) return showVocabPopup(matches, hit.getBoundingClientRect());
     }
     const own = e.target.closest(".vocab-ctx mark.vocab-own");
-    const ownItem = own && getSelection().isCollapsed && lessonVocabItems(vocabSource()).find(i => i.key === normalizeVocabText((own.dataset.own || own.textContent).split("\n")[0]));
+    const ownItem = own && getSelection().isCollapsed && lessonVocabItems(vocabSource()).find(i => i.tkey === normalizeVocabText((own.dataset.own || own.textContent).split("\n")[0]));
     if (ownItem && ownItem.key !== item.key) {
       hideTooltip();
       return showWordView(ownItem.card, ownItem.term, ownItem.meaning, own.getBoundingClientRect());
@@ -17544,7 +17569,7 @@ document.addEventListener("click", e => {
     return;
   }
   const own = e.target.closest("mark.vocab-own");
-  const ownItem = own && lessonVocabItems(vocabSource()).find(i => i.key === normalizeVocabText((own.dataset.own || own.textContent).split("\n")[0]));
+  const ownItem = own && lessonVocabItems(vocabSource()).find(i => i.tkey === normalizeVocabText((own.dataset.own || own.textContent).split("\n")[0]));
   if (ownItem) showWordView(ownItem.card, ownItem.term, ownItem.meaning, own.getBoundingClientRect());
 });
 
@@ -17856,12 +17881,12 @@ function addExtraWord(termRaw, meaningRaw, explicit) {
   const meaning = (meaningRaw || "").replace(/\s+/g, " ").trim();
   if (!term && !meaning) return true;
   if (!vocabEntryOk(term)) return false;
-  if (existingVocab(term)) {
+  if (existingVocab(term, undefined, meaning)) {
     warnVocabExists(term);
     return false;
   }
   addVocabToRow(ensureVocabExtras(), term, meaning);
-  if (vocabSession && explicit !== undefined) vocabSession.queue.push(normalizeVocabText(term));
+  if (vocabSession && explicit !== undefined) vocabSession.queue.push(wordKey(term, meaning));
   return true;
 }
 
@@ -17881,7 +17906,7 @@ function saveVocabEditor(item, termRaw, meaningRaw, notesHtml, explicit, keep) {
   termRaw = cleanPunct(termRaw);
   meaningRaw = cleanPunct(meaningRaw);
   const term = (termRaw || "").replace(/\s+/g, " ").trim();
-  const key = normalizeVocabText(term);
+  const key = wordKey(term, meaningRaw);
   if (!item) {
     if (!addExtraWord(termRaw, meaningRaw, explicit)) return false;
     if (term && vocabExtras) setWordNotes(vocabExtras, key, notesHtml);
@@ -17932,7 +17957,7 @@ function keepVocabEdit() {
   const item = lessonVocabItems(vocabSource()).find(i => i.key === vocabEditingKey);
   const text = term && cleanPunct(term.value).replace(/\s+/g, " ").trim();
   if (!item || !text) return;
-  const key = normalizeVocabText(text);
+  const key = wordKey(text, cleanPunct(meaning ? meaning.value : item.meaning));
   if (key !== item.key && lessonVocabItems(vocabSource()).some(i => i.key === key)) return;
   const blank = !item.meaning || vocabKeptBlank === item.key;
   vocabEditingKey = null;
@@ -18128,7 +18153,7 @@ function updateVocabEntry(item, termRaw, meaningRaw) {
   if (!item) return false;
   if (!vocabEntryOk(term)) return false;
   if (term === item.term && meaning === item.meaning) return true;
-  const newKey = normalizeVocabText(term);
+  const newKey = wordKey(term, meaning);
   if (newKey !== item.key && lessonVocabItems(vocabSource()).some(i => i.key === newKey)) {
     warnVocabExists(term);
     return false;
@@ -24570,7 +24595,7 @@ function bookArchived(book, unit, part) {
     cards: [],
     words: []
   };
-  const have = new Set(lessonVocabItems(lessonCardsWithExtras(l)).map(i => i.key));
+  const have = new Set(lessonVocabItems(lessonCardsWithExtras(l)).map(i => i.tkey));
   return {
     cards: data.cards.filter(c => !l.cards.some(o => o.uid === c.uid)),
     words: data.words.filter(w => !have.has(normalizeVocabText(w[0])))
@@ -24675,7 +24700,7 @@ async function installBookUnit(book, n) {
         cards: kept.concat(have.cards.filter(o => !fresh.cards.some(c => c.uid === o.uid)))
       });
       if (fresh.extraWords) {
-        const words = new Set(lessonVocabItems(lessonCardsWithExtras(have)).map(i => i.key));
+        const words = new Set(lessonVocabItems(lessonCardsWithExtras(have)).map(i => i.tkey));
         const add = data.words.filter(w => !words.has(normalizeVocabText(w[0])) && !known.has("w:" + normalizeVocabText(w[0])));
         lesson.extraWords = normalizeExtras(Object.assign({}, have.extraWords || {}, {
           notesHtml: (have.extraWords && have.extraWords.notesHtml || "") + bookWordsHtml(add),
@@ -25308,13 +25333,13 @@ function showVocabAddPopup(row, term, rect, editing, onSave, meaning) {
       if (updateVocabEntry(editing, m[1], m[2])) hideVocabAddPopup();
       return;
     }
+    if (existingVocab(m[1], row ? lessonRowsOf(row) : undefined, m[2] || "")) {
+      warnVocabExists(m[1]);
+      return;
+    }
     if (onSave) {
       hideVocabAddPopup();
       onSave(m[1].replace(/\s+/g, " ").trim(), (m[2] || "").replace(/\s+/g, " ").trim());
-      return;
-    }
-    if (existingVocab(m[1], lessonRowsOf(row))) {
-      warnVocabExists(m[1]);
       return;
     }
     hideVocabAddPopup();
@@ -25363,7 +25388,7 @@ document.addEventListener("keydown", e => {
   if (!hit || isVirtualLesson() && !hit.row) return;
   e.preventDefault();
   if (hit.row) extrasFor(hit.row);
-  if (existingVocab(hit.text, lessonRowsOf(hit.row))) warnVocabExists(hit.text); else showVocabAddPopup(hit.row, hit.text, hit.rect);
+  showVocabAddPopup(hit.row, hit.text, hit.rect);
 });
 
 document.addEventListener("keydown", e => {
@@ -25412,7 +25437,6 @@ document.addEventListener("keydown", e => {
     const item = lessonVocabItems(vocabSource()).find(i => i.key === key);
     if (!text || !item || !item.card) return;
     e.preventDefault();
-    if (existingVocab(text)) return warnVocabExists(text);
     const card = item.card;
     showVocabAddPopup(null, text, sel.getRangeAt(0).getBoundingClientRect(), null, (term, meaning) => {
       const before = vocabKeysOf(card);
@@ -25444,7 +25468,6 @@ document.addEventListener("keydown", e => {
   if (!text || text === field.value.trim()) return;
   if (isVirtualLesson()) return;
   e.preventDefault();
-  if (existingVocab(text)) return warnVocabExists(text);
   const rect = field.getBoundingClientRect();
   showVocabAddPopup(null, text, rect, null, (term, meaning) => {
     const notes = document.getElementById("qaNotes");
