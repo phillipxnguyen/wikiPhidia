@@ -2217,7 +2217,7 @@ window.onYouTubeIframeAPIReady = function(){
   .wl-band{display:flex;gap:12px;align-items:flex-start;}
   .wl-label{flex:none;width:36px;padding-top:6px;font-size:13px;line-height:20px;font-weight:700;color:var(--text-2);}
   .wl-chips{display:flex;flex-wrap:wrap;gap:6px;min-width:0;}
-  .wl-w{display:inline-flex;align-items:baseline;gap:4px;height:32px;box-sizing:border-box;padding:0 10px;border:1px solid var(--border);border-radius:16px;background:var(--surface);color:var(--text);font-size:16px;line-height:30px;font-weight:400;cursor:pointer;}
+  .wl-w{-webkit-user-select:none;user-select:none;display:inline-flex;align-items:baseline;gap:4px;height:32px;box-sizing:border-box;padding:0 10px;border:1px solid var(--border);border-radius:16px;background:var(--surface);color:var(--text);font-size:16px;line-height:30px;font-weight:400;cursor:pointer;}
   .wl-w i{font-style:normal;font-size:12px;line-height:16px;color:var(--text-2);}
   .wl-w.s2{color:var(--new-color);background:color-mix(in srgb, var(--new-color) 10%, var(--surface));}
   .wl-w.s1{color:var(--due-color);background:color-mix(in srgb, var(--due-color) 10%, var(--surface));}
@@ -2226,10 +2226,15 @@ window.onYouTubeIframeAPIReady = function(){
   .wl-dhead{display:flex;align-items:baseline;flex-wrap:wrap;gap:8px;padding-bottom:6px;font-size:18px;line-height:26px;}
   .wl-dhead span{font-size:13px;line-height:20px;font-weight:700;color:var(--accent);}
   .wl-dhead i{font-style:normal;font-size:15px;line-height:22px;color:var(--text-2);}
-  .wl-sent{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid var(--border);font-size:16px;line-height:24px;}
+  .wl-sent{margin:0 -12px;padding:8px 12px;border-top:1px solid var(--border);font-size:16px;line-height:24px;cursor:pointer;-webkit-user-select:none;user-select:none;}
+  .wl-sent.row-selected{background:var(--accent-soft);box-shadow:inset 4px 0 var(--accent);}
+  @media (hover:hover){.wl-sent:hover{background:var(--accent-soft);}}
+  .wl-w.row-selected{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent) inset;}
+  .wl-close{flex:none;width:36px;height:36px;margin:-6px -6px -6px 0;padding:0;font-size:16px;line-height:20px;}
+  .wl-head .wl-sum{margin-left:auto;}
+  html.words-open .sel-bar{z-index:1450;}
+  html.words-open.sel-on #wordPop{padding-bottom:calc(var(--sel-h, 116px) + 8px);}
   .wl-sent mark{padding:0 2px;border-radius:4px;background:var(--mark-bg);color:#20242b;}
-  .wl-act{display:flex;flex:none;gap:4px;}
-  .wl-act button{width:32px;height:32px;padding:0;}
   .set-tools{display:flex;gap:8px;}
   .set-tools button{flex:1;}
   .today-tasks{display:flex;flex-direction:column;gap:4px;}
@@ -3035,6 +3040,13 @@ function restoreFrom(fromStack, toStack, verb) {
   const countsBefore = resetMagic ? currentCounts() : null;
   const oppositeEntry = takeSnapshot(entry.label, entry.expiresAt);
   toStack.push(oppositeEntry);
+  if (entry.hiddenWords !== undefined) {
+    oppositeEntry.hiddenWords = JSON.stringify(readLocal(HIDDEN_WORDS_KEY) || {});
+    try {
+      localStorage.setItem(HIDDEN_WORDS_KEY, entry.hiddenWords);
+    } catch (e) {}
+    if (wordsOpen()) openWords();
+  }
   if (entry.others) {
     oppositeEntry.others = entry.others.map(o => ({
       id: o.id,
@@ -8687,6 +8699,7 @@ function clearRowSelection() {
 
 function selectionTarget() {
   if (!isTouch()) return null;
+  if (wordsOpen()) return wordTarget();
   if (currentView === "vocab") {
     if (vocabView === "card") {
       const item = document.getElementById("vocabCard") && currentVocabItem();
@@ -8734,7 +8747,7 @@ function updateSelBar() {
   bar.style.setProperty("--tb-h", touchBar.offsetHeight + "px");
   const back = !!target.item && canMoveToLesson(target.item);
   const vocabBtn = document.getElementById("selVocab");
-  vocabBtn.hidden = back ? false : !target.row || target.rows.length !== 1 || !canMoveToVocab(target.row);
+  vocabBtn.hidden = back ? false : !target.row || target.rows.length !== 1 || !canMoveToVocab(target.row) || cardInVideoLesson(target.row);
   vocabBtn.classList.toggle("to-lesson", back);
   vocabBtn.setAttribute("aria-label", back ? "Move back to Lessons" : "Move to Vocabulary");
   document.documentElement.style.setProperty("--sel-h", Math.round(window.innerHeight - bar.querySelector(".segmented").getBoundingClientRect().top) + "px");
@@ -8744,18 +8757,21 @@ function updateSelBar() {
 document.getElementById("selCopy").onclick = e => {
   e.currentTarget.blur();
   if (!selectionTarget()) return;
+  if (wordsOpen()) return wordAct("copy");
   if (currentView === "vocab") vocabCopyAction(); else studyCopyAction();
 };
 
 document.getElementById("selDelete").onclick = e => {
   e.currentTarget.blur();
   if (!selectionTarget()) return;
+  if (wordsOpen()) return wordAct("delete");
   if (currentView === "vocab") vocabDeleteAction(); else deleteAction();
 };
 
 document.getElementById("selVocab").onclick = e => {
   e.currentTarget.blur();
   const target = selectionTarget();
+  if (wordsOpen()) return wordAct("vocab");
   if (target && target.item) return moveVocabToLesson(target.item);
   if (!target || !target.row) return;
   clearRowSelection();
@@ -9538,6 +9554,7 @@ function closeEditPopup() {
   delete pop.dataset.vocab;
   hideDictOverlay();
   pop.querySelector(".le-content").innerHTML = "";
+  if (wordsOpen()) setTimeout(openWords);
 }
 
 window.addEventListener("keydown", e => {
@@ -15317,12 +15334,30 @@ function toolDupGroups() {
   return [ ...groups.values() ].filter(g => g.length > 1);
 }
 
-let wordPick = null, wordSeg = null;
+let wordPick = null, wordSeg = null, wordSel = null, wordHover = null, wordTap = null;
+
+const HIDDEN_WORDS_KEY = "flashcards.hiddenWords";
+
+function wordLang() {
+  return (studyLang && studyLang !== "auto" ? studyLang : detectLang(rows.map(r => r.q || "").join(" ").slice(0, 400))).split("-")[0];
+}
+
+function hiddenWords() {
+  const all = readLocal(HIDDEN_WORDS_KEY) || {};
+  return new Set(Array.isArray(all[wordLang()]) ? all[wordLang()] : []);
+}
+
+function setHiddenWords(set) {
+  const all = readLocal(HIDDEN_WORDS_KEY) || {};
+  all[wordLang()] = [ ...set ];
+  try {
+    localStorage.setItem(HIDDEN_WORDS_KEY, JSON.stringify(all));
+  } catch (e) {}
+}
 
 function wordSegmenter() {
-  const lang = (studyLang && studyLang !== "auto" ? studyLang : detectLang(rows.map(r => r.q || "").join(" ").slice(0, 400))).split("-")[0];
   try {
-    return new Intl.Segmenter(lang, {
+    return new Intl.Segmenter(wordLang(), {
       granularity: "word"
     });
   } catch (e) {
@@ -15330,13 +15365,18 @@ function wordSegmenter() {
   }
 }
 
+function wordPlain(text) {
+  return (text || "").replace(/[(（][぀-ヿ]+[)）]/g, "");
+}
+
 function lessonWords() {
-  const map = new Map;
+  const map = new Map, hidden = hiddenWords();
   if (wordSeg) rows.forEach(r => {
     if (r.uid === EXTRA_UID || !(r.q || "").trim()) return;
-    for (const s of wordSeg.segment(r.q)) {
-      if (!s.isWordLike || /^[\d\s.,]+$/.test(s.segment)) continue;
+    for (const s of wordSeg.segment(wordPlain(r.q))) {
+      if (!s.isWordLike || /^[\d\s.,０-９]+$/.test(s.segment)) continue;
       const w = normalizeVocabText(s.segment);
+      if (hidden.has(w)) continue;
       if (!map.has(w)) map.set(w, {
         w: w,
         text: s.segment,
@@ -15366,16 +15406,24 @@ function wordStates() {
 }
 
 function wordMarked(text, w) {
-  return wordSeg ? [ ...wordSeg.segment(text) ].map(s => normalizeVocabText(s.segment) === w ? `<mark>${escapeHtml(s.segment)}</mark>` : escapeHtml(s.segment)).join("") : escapeHtml(text);
+  const low = normalizeVocabText(text), out = [];
+  let at = 0, i;
+  while (w && (i = low.indexOf(w, at)) !== -1) {
+    out.push(escapeHtml(text.slice(at, i)), `<mark>${escapeHtml(text.slice(i, i + w.length))}</mark>`);
+    at = i + w.length;
+  }
+  return out.join("") + escapeHtml(text.slice(at));
 }
 
 function wordPopHtml() {
   const words = lessonWords(), states = wordStates();
   const st = w => (states.get(w.w) || {}).v || 0;
   const count = v => words.filter(w => st(w) === v).length;
-  const head = `<div class="wl-head"><b>Words</b><span class="wl-sum"><span class="wl-s2">✅ ${count(2)}</span><span class="wl-s1">📖 ${count(1)}</span><span>🆕 ${count(0)}</span><span>/ ${words.length}</span></span></div>`;
+  const head = `<div class="wl-head"><b>Words</b><span class="wl-sum"><span class="wl-s2">✅ ${count(2)}</span><span class="wl-s1">📖 ${count(1)}</span><span>🆕 ${count(0)}</span><span>/ ${words.length}</span></span><button class="wl-close" data-wclose aria-label="Close" title="Close">✕</button></div>`;
+  if (wordPick && !words.some(w => w.w === wordPick)) wordPick = null;
   if (!words.length) return head + '<p class="tool-empty">No words in this lesson yet.</p>';
-  const chip = w => `<button class="wl-w s${st(w)}${wordPick === w.w ? " on" : ""}" data-w="${escapeAttr(w.w)}">${escapeHtml(w.text)}<i>${w.n}</i></button>`;
+  const sel = (kind, id) => wordSel && wordSel.kind === kind && wordSel.id === id ? " row-selected" : "";
+  const chip = w => `<span class="wl-w s${st(w)}${wordPick === w.w ? " on" : ""}${sel("w", w.w)}" data-w="${escapeAttr(w.w)}">${escapeHtml(w.text)}<i>${w.n}</i></span>`;
   let rest = words;
   const bands = [ [ 20, "20+" ], [ 10, "10+" ], [ 5, "5+" ], [ 4, "4" ], [ 3, "3" ], [ 2, "2" ], [ 1, "1" ] ].map(([min, label]) => {
     const these = rest.filter(w => w.n >= min);
@@ -15383,8 +15431,7 @@ function wordPopHtml() {
     return these.length ? `<div class="wl-band"><span class="wl-label">${label}</span><div class="wl-chips">${these.map(chip).join("")}</div></div>` : "";
   }).join("");
   const pick = wordPick && words.find(w => w.w === wordPick), meaning = pick && (states.get(pick.w) || {}).meaning;
-  const act = r => `<span class="wl-act"><button data-wl="edit" aria-label="Edit" title="Edit (E)">✎</button><button data-wl="del" aria-label="Delete" title="Delete">✕</button>${!cardInVideoLesson(r) && canMoveToVocab(r) ? '<button data-wl="vocab" aria-label="Move to Vocabulary" title="Move to Vocabulary (W)">字</button>' : ""}</span>`;
-  const detail = pick ? `<div class="wl-detail"><div class="wl-dhead"><b>${escapeHtml(pick.text)}</b><span>${pick.n}×</span>${meaning ? `<i>${escapeHtml(meaning)}</i>` : ""}</div>${pick.rows.map(r => `<div class="wl-sent" data-id="${r.id}"><span>${wordMarked(r.q, pick.w)}</span>${act(r)}</div>`).join("")}</div>` : "";
+  const detail = pick ? `<div class="wl-detail"><div class="wl-dhead"><b>${escapeHtml(pick.text)}</b><span>${pick.n}×</span>${meaning ? `<i>${escapeHtml(meaning)}</i>` : ""}</div>${pick.rows.map(r => `<div class="wl-sent${sel("s", r.id)}" data-id="${r.id}">${wordMarked(r.q, pick.w)}</div>`).join("")}</div>` : "";
   return head + detail + bands;
 }
 
@@ -15395,43 +15442,126 @@ function openWords() {
   const pop = document.getElementById("wordPop"), box = pop.querySelector(".tool-box");
   const top = pop.hidden ? 0 : box.scrollTop;
   pop.hidden = false;
+  document.documentElement.classList.add("words-open");
   box.innerHTML = wordPopHtml();
   box.scrollTop = top;
+  updateSelBar();
 }
 
 function closeWords() {
   document.getElementById("wordPop").hidden = true;
-  wordPick = null;
+  document.documentElement.classList.remove("words-open");
+  wordPick = wordSel = wordHover = null;
+  updateSelBar();
+}
+
+function wordsOpen() {
+  return !document.getElementById("wordPop").hidden;
+}
+
+function wordTarget() {
+  const t = isTouch() ? wordSel : wordHover;
+  if (!t) return null;
+  if (t.kind === "w") return {
+    word: t.id
+  };
+  const row = rows.find(r => r.id === t.id);
+  return row ? {
+    row: row,
+    rows: [ row ]
+  } : null;
+}
+
+function wordAct(act) {
+  const t = wordTarget();
+  if (!t) return false;
+  if (act === "copy") copyText(t.word || oneLine(t.row.q));
+  if (act === "edit" && t.row) openEditPopup(t.row);
+  if (act === "vocab" && t.row) {
+    if (cardInVideoLesson(t.row)) showToast("A video sentence stays in its lesson"); else if (!canMoveToVocab(t.row)) showToast("This card is studied here, with Speaking"); else moveCardToVocab(t.row);
+  }
+  if (act === "delete") {
+    if (t.word) {
+      const set = hiddenWords();
+      pushUndo("Hidden — " + t.word).hiddenWords = JSON.stringify(readLocal(HIDDEN_WORDS_KEY) || {});
+      set.add(t.word);
+      setHiddenWords(set);
+      if (wordPick === t.word) wordPick = null;
+    } else deleteRow(t.row.id);
+  }
+  if (act !== "copy" && act !== "edit") {
+    wordSel = wordHover = null;
+    openWords();
+  }
+  return true;
 }
 
 document.addEventListener("click", e => {
   if (e.target.closest("[data-words]")) openWords();
 });
 
+document.getElementById("wordPop").addEventListener("mouseover", e => {
+  if (isTouch()) return;
+  const w = e.target.closest("[data-w]"), s = e.target.closest(".wl-sent");
+  wordHover = s ? {
+    kind: "s",
+    id: Number(s.dataset.id)
+  } : w ? {
+    kind: "w",
+    id: w.dataset.w
+  } : null;
+});
+
+document.getElementById("wordPop").addEventListener("mouseleave", () => wordHover = null);
+
 document.getElementById("wordPop").addEventListener("click", e => {
-  if (e.target.id === "wordPop") return closeWords();
-  const w = e.target.closest("[data-w]");
+  if (e.target.closest("[data-wclose]")) return closeWords();
+  const w = e.target.closest("[data-w]"), s = e.target.closest(".wl-sent");
   if (w) {
-    wordPick = wordPick === w.dataset.w ? null : w.dataset.w;
+    wordPick = wordPick === w.dataset.w && !isTouch() ? null : w.dataset.w;
+    wordSel = isTouch() ? {
+      kind: "w",
+      id: w.dataset.w
+    } : null;
     openWords();
     if (wordPick) document.querySelector("#wordPop .tool-box").scrollTop = 0;
     return;
   }
-  const btn = e.target.closest("[data-wl]"), sent = btn && btn.closest(".wl-sent");
-  const row = sent && rows.find(r => r.id === Number(sent.dataset.id));
+  if (!s) {
+    if (wordSel) {
+      wordSel = null;
+      openWords();
+    }
+    return;
+  }
+  const id = Number(s.dataset.id), row = rows.find(r => r.id === id);
   if (!row) return;
-  if (btn.dataset.wl === "edit") {
-    closeWords();
+  if (!isTouch()) return openEditPopup(row);
+  const twice = wordTap && wordTap.id === id && Date.now() - wordTap.at < 400;
+  wordTap = {
+    id: id,
+    at: Date.now()
+  };
+  if (twice) {
+    wordSel = null;
+    openWords();
     return openEditPopup(row);
   }
-  if (btn.dataset.wl === "del") deleteRow(row.id); else moveCardToVocab(row);
+  wordSel = {
+    kind: "s",
+    id: id
+  };
   openWords();
 });
 
 window.addEventListener("keydown", e => {
-  if (e.key !== "Escape" || document.getElementById("wordPop").hidden) return;
+  if (!wordsOpen() || !document.getElementById("editPopup").hidden || e.target.closest && e.target.closest("input, textarea, [contenteditable]")) return;
+  const key = e.key, mod = e.metaKey || e.ctrlKey;
+  const act = key === "Escape" ? "close" : key === "Delete" || key === "Backspace" ? "delete" : !mod && !e.altKey && e.code === "KeyE" ? "edit" : !mod && !e.altKey && e.code === "KeyW" ? "vocab" : mod && e.code === "KeyC" && !String(getSelection()) ? "copy" : "";
+  if (!act) return;
+  e.preventDefault();
   e.stopPropagation();
-  closeWords();
+  if (act === "close") closeWords(); else wordAct(act);
 }, true);
 
 function toolPopHtml(tab) {
