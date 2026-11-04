@@ -16712,13 +16712,13 @@ function vocabSentenceKey(item) {
   return item && !vocabViewOnly(item) ? sentenceKey(vocabContext(item).sentence) : "";
 }
 
-function spreadSameSentence(list, keyOf) {
+function spreadSameSentence(list, keyOf, prev = "") {
   const keys = new Map(list.map(x => [ x, keyOf(x) ]));
   const left = new Map;
   keys.forEach(k => k && left.set(k, (left.get(k) || 0) + 1));
   const out = [], rest = list.slice();
   while (rest.length) {
-    const last = out.length ? keys.get(out[out.length - 1]) : "";
+    const last = out.length ? keys.get(out[out.length - 1]) : prev;
     const fits = x => !last || keys.get(x) !== last;
     const heavy = [ ...left ].find(([ k, n ]) => k !== last && n * 2 > rest.length);
     let i = heavy ? rest.findIndex(x => keys.get(x) === heavy[0]) : rest.findIndex(fits);
@@ -18176,7 +18176,10 @@ function gradeVocabItems(items, isAgain, label) {
   const ready = s.pending.filter(p => p.readyAt <= now).map(p => p.key);
   s.pending = s.pending.filter(p => p.readyAt > now);
   const states = new Map(lessonVocabItems(vocabSource()).map(i => [ i.key, vocabStateOf(i) ]));
-  s.queue = ready.concat(shuffleReviewSlots(s.queue, k => !!(states.get(k) || {}).reps));
+  const byKey = new Map(lessonVocabItems(vocabSource()).map(i => [ i.key, i ]));
+  const sent = k => (states.get(k) || {}).reps && byKey.get(k) ? vocabSentenceKey(byKey.get(k)) : "";
+  const last = items[items.length - 1] && items[items.length - 1].key;
+  s.queue = spreadSameSentence(ready.concat(shuffleReviewSlots(s.queue, k => !!(states.get(k) || {}).reps)), sent, last ? sent(last) : "");
   s.flipped = false;
   closeVocabList();
   scheduleAutoSave();
@@ -19428,10 +19431,11 @@ async function taskAdvance() {
   if (tl && run.current) {
     const words = new Map(lessonVocabItems(lessonCardsWithExtras(tl)).map(i => [ i.key, i ]));
     const cards = new Map(tl.cards.map(c => [ c.uid, c ]));
-    run.queue = shuffleReviewSlots(run.queue, p => p.tries === 0 && (p.k === "v" ? !!(words.get(p.id) && vocabStateOf(words.get(p.id)).reps) : !!(cards.get(p.id) && srsOf(cards.get(p.id)).reps)));
+    const reviewed = p => p.k === "v" ? !!(words.get(p.id) && vocabStateOf(words.get(p.id)).reps) : !!(cards.get(p.id) && srsOf(cards.get(p.id)).reps);
+    const sentenceOf = p => !reviewed(p) ? "" : p.k === "v" ? vocabSentenceKey(words.get(p.id)) : sentenceKey(cards.get(p.id).q);
+    run.queue = spreadSameSentence(shuffleReviewSlots(run.queue, p => p.tries === 0 && reviewed(p)), sentenceOf, sentenceOf(run.current));
   }
   let next = run.queue.findIndex(taskShowable);
-  if (next < 0 && taskBringBack(run)) next = run.queue.findIndex(taskShowable);
   run.current = next < 0 ? null : run.queue.splice(next, 1)[0];
   if (!run.current && taskRefillDue(run)) {
     run.opening = false;
@@ -19446,28 +19450,6 @@ async function taskAdvance() {
   if (!shown) return taskAdvance();
   renderTaskBar();
   paintTaskBadges();
-}
-
-function taskBringBack(run) {
-  const l = library.find(x => x.id === run.lessonId), now = Date.now();
-  const back = run.queue.filter(p => p.tries > 0);
-  if (!l || !back.length) return false;
-  let moved = false;
-  const pull = st => {
-    if (st && st.reps && st.due > now) {
-      st.due = now;
-      moved = true;
-    }
-  };
-  back.forEach(p => {
-    if (p.k === "c") return [ l.cards.find(x => x.uid === p.id), rows.find(r => r.uid === p.id) ].forEach(c => c && pull(srsOf(c)));
-    l.cards.concat([ l.extraWords, virtualExtras[l.id] ], vocabSource()).forEach(c => c && c.vocab && pull(c.vocab[p.id]));
-  });
-  if (moved) {
-    saveCurrentLesson();
-    showableMemo = null;
-  }
-  return moved;
 }
 
 function markTaskDone(run) {
@@ -19962,6 +19944,14 @@ function bookPartNative(book, entry) {
 }
 
 const BOOK_STAGES = [ "#e0457b", "#3fa45b", "#ef9a1a" ];
+
+const HSK12_WORDS = new Set("爱 八 爸爸 杯子 北京 本 不 不客气 菜 茶 吃 出租车 打电话 大 的 点 电脑 电视 电影 东西 都 读 对不起 多 多少 儿子 二 饭店 飞机 分钟 高兴 个 工作 狗 汉语 好 号 喝 和 很 后面 回 会 几 家 叫 今天 九 开 看 看见 块 来 老师 了 冷 里 六 吗 妈妈 买 猫 没关系 没有 米饭 名字 明天 哪 哪儿 那 呢 能 你 年 女儿 朋友 漂亮 苹果 七 前面 钱 请 去 热 人 认识 三 商店 上 上午 少 谁 什么 十 时候 是 书 水 水果 睡觉 说 四 岁 他 她 太 天气 听 同学 喂 我 我们 五 喜欢 下 下午 下雨 先生 现在 想 小 小姐 些 写 谢谢 星期 学生 学习 学校 一 一点儿 衣服 医生 医院 椅子 有 月 在 再见 怎么 怎么样 这 中国 中午 住 桌子 字 昨天 坐 做 吧 白 百 帮助 报纸 比 别 宾馆 长 唱歌 出 穿 次 从 错 打篮球 大家 到 得 等 弟弟 第一 懂 对 房间 非常 服务员 高 告诉 哥哥 给 公共汽车 公司 贵 过 还 孩子 好吃 黑 红 欢迎 回答 机场 鸡蛋 件 教室 姐姐 介绍 进 近 就 觉得 咖啡 开始 考试 可能 可以 课 快 快乐 累 离 两 零 路 旅游 卖 慢 忙 每 妹妹 门 面条 男 您 牛奶 女 旁边 跑步 便宜 票 妻子 起床 千 铅笔 晴 去年 让 日 上班 身体 生病 生日 时间 事情 手表 手机 说话 送 虽然 但是 它 踢足球 题 跳舞 外 完 玩 晚上 往 为什么 问 问题 西瓜 希望 洗 小时 笑 新 姓 休息 雪 颜色 眼睛 羊肉 药 要 也 一起 一下 已经 意思 因为 所以 阴 游泳 右边 鱼 远 运动 再 早上 丈夫 找 着 真 正在 知道 准备 走 最 左边".split(" "));
+
+function bookSkips(book, term) {
+  if (!book || !/^hsk[3-6]$/.test(book.id)) return false;
+  const t = (term || "").trim();
+  return HSK12_WORDS.has(t) || /儿$/.test(t) && HSK12_WORDS.has(t.slice(0, -1));
+}
 
 const HSK3_UNITS = [ [ "周末你有什么打算?", "Anh dự định làm gì vào cuối tuần vậy?", [ "结果补语“好”", "一……也/都+不/没……", "连词“那”" ], `
 @vocab
@@ -24093,7 +24083,7 @@ A 연락을 드리려던 참이었는데, 연락을 주셨네요. / B 그러셨�
   units: []
 })), ...[ 1, 2, 3, 4, 5, 6 ].map(n => ({
   id: "hsk" + n,
-  version: n === 3 ? "5" : "1",
+  version: n === 3 ? "6" : "1",
   series: "HSK Standard Course",
   title: "HSK 标准教程",
   level: "HSK " + n,
@@ -24218,7 +24208,7 @@ function bookParsed(book) {
       const [head, list] = line.split(" | ");
       const info = bookLine(head);
       const q = info.q;
-      const all = (list || "").split(";").map(x => bookWord(x)).filter(Boolean);
+      const all = (list || "").split(";").map(x => bookWord(x)).filter(w => w && !bookSkips(book, w[0]));
       const words = (group ? [ group ] : []).concat(all).filter(keep);
       let uid = "b" + bookHash(q);
       while (part.cards.some(c => c.uid === uid)) uid += "x";
@@ -24353,10 +24343,24 @@ async function installBookUnit(book, n) {
       const known = new Set(have.book && have.book.ids || []);
       const kept = fresh.cards.filter(c => have.cards.some(o => o.uid === c.uid) || !known.has(c.uid)).map(c => {
         const old = have.cards.find(o => o.uid === c.uid);
-        return old ? Object.assign({}, old, {
+        if (!old) return c;
+        let notesHtml = old.notesHtml || "";
+        if (notesHtml && /^hsk[3-6]$/.test(book.id)) {
+          const box = document.createElement("div");
+          box.innerHTML = notesHtml;
+          box.querySelectorAll("li").forEach(li => {
+            const e = liVocabEntry(li);
+            if (e && bookSkips(book, e.term)) li.remove();
+          });
+          box.querySelectorAll("ul, ol").forEach(ul => ul.children.length || ul.remove());
+          notesHtml = box.innerHTML;
+        }
+        return Object.assign({}, old, {
           q: c.q,
-          qHtml: c.qHtml
-        }) : c;
+          qHtml: c.qHtml,
+          notesHtml: notesHtml,
+          notes: plainTextOf(notesHtml, "\n")
+        });
       });
       lesson = Object.assign({}, have, {
         name: fresh.name,
