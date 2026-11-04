@@ -1177,10 +1177,10 @@ window.onYouTubeIframeAPIReady = function(){
     :is(html, html.touch) .toolbar :is(#playbackSpeed, #vocabSpeed){padding:0 4px;}
   }
   .progress-badges{display:flex;justify-content:center;align-items:center;gap:8px;-webkit-user-select:none;user-select:none;}
-  .add-fab{position:fixed;right:var(--fab-r, 24px);bottom:30px;z-index:50;display:flex;align-items:center;justify-content:center;width:50px;height:50px;margin:0;padding:0;border:0;border-radius:25px;background:var(--accent);color:#fff;box-shadow:var(--shadow-md);cursor:pointer;}
+  .add-fab{position:fixed;right:var(--fab-r, 24px);bottom:calc(30px - var(--fab-push, 0px));z-index:50;display:flex;align-items:center;justify-content:center;width:50px;height:50px;margin:0;padding:0;border:0;border-radius:25px;background:var(--accent);color:#fff;box-shadow:var(--shadow-md);cursor:pointer;}
   .add-fab svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;}
-  html.touch .add-fab{bottom:calc(77px + env(safe-area-inset-bottom));}
-  html.sel-on .add-fab{bottom:calc(131px + env(safe-area-inset-bottom));}
+  html.touch .add-fab{bottom:calc(77px + env(safe-area-inset-bottom) - var(--fab-push, 0px));}
+  html.sel-on .add-fab{bottom:calc(131px + env(safe-area-inset-bottom) - var(--fab-push, 0px));}
   .fresh-lesson .add-fab{background:linear-gradient(135deg, var(--lesson-color), var(--new-color));}
   @media (hover:hover){.add-fab:hover{background:var(--accent-hover);}.fresh-lesson .add-fab:hover{background:linear-gradient(135deg, var(--lesson-color), var(--new-color));filter:brightness(1.1);}}
   .vocab-list > .vocab-list-row:first-child > *, .vocab-list > .vocab-list-row.editing:first-child{border-top:0;}
@@ -2211,9 +2211,9 @@ window.onYouTubeIframeAPIReady = function(){
   .tool-item{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:15px;line-height:22px;}
   .tool-item > span{display:flex;flex-direction:column;min-width:0;}
   .tool-item i{font-style:normal;font-size:13px;line-height:18px;color:var(--text-2);}
-  .words-fab{bottom:88px;border:1px solid var(--border);background:var(--surface);color:var(--accent);}
-  html.touch .words-fab{bottom:calc(135px + env(safe-area-inset-bottom));}
-  html.sel-on .words-fab{bottom:calc(189px + env(safe-area-inset-bottom));}
+  .words-fab{bottom:calc(96px - var(--fab-push, 0px));border:1px solid var(--border);background:var(--surface);color:var(--accent);}
+  html.touch .words-fab{bottom:calc(143px + env(safe-area-inset-bottom) - var(--fab-push, 0px));}
+  html.sel-on .words-fab{bottom:calc(197px + env(safe-area-inset-bottom) - var(--fab-push, 0px));}
   .fresh-lesson .words-fab{background:var(--surface);}
   @media (hover:hover){.words-fab:hover, .fresh-lesson .words-fab:hover{background:var(--surface-2);filter:none;}}
   #wordPop{padding:32px;}
@@ -2245,9 +2245,13 @@ window.onYouTubeIframeAPIReady = function(){
   .wl-close, html.pixel .wl-close{position:absolute;top:calc(var(--wp) - 2px);right:calc(var(--wp) - 2px);z-index:2;width:36px;height:36px;padding:0;border:0;border-radius:18px;background:var(--surface-2);box-shadow:none;color:var(--text-2);font-size:16px;line-height:20px;}
   @media (hover:hover){.wl-close:hover{background:color-mix(in srgb, var(--text) 12%, var(--surface));color:var(--text);}}
   .wl-ghost{position:fixed;z-index:1500;box-sizing:border-box;margin:0;pointer-events:none;box-shadow:0 12px 28px rgba(10,14,22,.2);}
-  .wl-ghost.delete{border:1px solid color-mix(in srgb, var(--danger) 45%, transparent);background:color-mix(in srgb, var(--danger) 14%, var(--surface));}
-  .wl-ghost.to-vocab{border:1px solid color-mix(in srgb, var(--new-color) 45%, transparent);background:color-mix(in srgb, var(--new-color) 14%, var(--surface));}
+  .wl-ghost{overflow:visible;border:1px solid var(--border);background:var(--surface-2);color:var(--text-2);filter:grayscale(1);}
+  .wl-ghost i:not(.wl-wing), .wl-ghost mark{color:inherit;background:none;}
   .wl-ghost.wl-sent{border-radius:12px;}
+  .wl-wing{position:absolute;top:50%;width:28px;height:28px;margin-top:-14px;font-style:normal;font-size:24px;line-height:28px;text-align:center;filter:grayscale(1) drop-shadow(0 1px 2px rgba(10,14,22,.45));animation:wingFlap .28s ease-in-out infinite alternate;}
+  .wl-wing.l{right:100%;margin-right:2px;--flip:-1;}
+  .wl-wing.r{left:100%;margin-left:2px;--flip:1;}
+  @keyframes wingFlap{from{transform:scaleX(var(--flip)) rotate(-12deg);}to{transform:scaleX(var(--flip)) rotate(22deg);}}
   .wl-main.picked .wl-words > .wl-band:first-child{margin-right:0;}
   .wl-main.picked .wl-dhead{padding-right:40px;}
   .wl-detail.enter{animation:wlIn .22s ease-out;}
@@ -15354,16 +15358,33 @@ function toolDupGroups() {
   return [ ...groups.values() ].filter(g => g.length > 1);
 }
 
+let fabFrame = 0;
+
 function placeFabs() {
-  requestAnimationFrame(() => document.querySelectorAll(".add-fab").forEach(fab => {
-    if (fab.hidden || !fab.parentElement) return;
-    const host = fab.parentElement.getBoundingClientRect();
-    const gap = Math.round(window.innerWidth - host.right);
-    if (host.width) fab.style.setProperty("--fab-r", (gap >= 66 ? Math.round((gap - 50) / 2) : 16) + "px");
-  }));
+  if (fabFrame) return;
+  fabFrame = requestAnimationFrame(() => {
+    fabFrame = 0;
+    const fabs = [ ...document.querySelectorAll(".add-fab") ].filter(f => !f.hidden && f.getClientRects().length);
+    fabs.forEach(fab => {
+      const host = fab.parentElement.getBoundingClientRect();
+      if (host.width) fab.style.setProperty("--fab-r", Math.round(window.innerWidth - host.right) + "px");
+    });
+    const words = fabs.find(f => f.classList.contains("words-fab")), view = words && words.closest("#viewStudy, #viewVocab");
+    const bar = view && view.querySelector(".toolbar");
+    const root = document.documentElement, was = parseFloat(root.style.getPropertyValue("--fab-push")) || 0;
+    if (!bar || !bar.getClientRects().length) return root.style.removeProperty("--fab-push");
+    const top = words.getBoundingClientRect().top - was;
+    const push = Math.max(0, Math.round(bar.getBoundingClientRect().bottom + 16 - top));
+    if (push !== was) root.style.setProperty("--fab-push", push + "px");
+  });
 }
 
 window.addEventListener("resize", placeFabs);
+
+document.addEventListener("scroll", placeFabs, {
+  passive: true,
+  capture: true
+});
 
 let wordPick = null, wordSeg = null, wordSel = null, wordHover = null, wordTap = null;
 
@@ -15548,10 +15569,36 @@ function wordTarget() {
 
 function wordFly(el, label) {
   if (reducedMotion()) return;
-  const r = el.getBoundingClientRect(), dir = label === "Vocab" ? 1 : -1;
+  const r = el.getBoundingClientRect();
+  if (label === "Vocab") {
+    const ghost = document.createElement("div");
+    ghost.className = "swipe-ghost row to-vocab";
+    Object.assign(ghost.style, {
+      left: Math.round(r.left) + "px",
+      top: Math.round(r.top) + "px",
+      width: Math.round(r.width) + "px",
+      height: Math.round(r.height) + "px",
+      zIndex: "1500",
+      borderRadius: getComputedStyle(el).borderTopLeftRadius
+    });
+    ghost.textContent = "字";
+    document.body.appendChild(ghost);
+    el.style.visibility = "hidden";
+    ghost.animate([ {
+      transform: "none"
+    }, {
+      transform: "translate(110vw, -25vh) rotate(24deg)"
+    } ], {
+      duration: 750,
+      easing: "ease-in-out",
+      fill: "forwards"
+    }).finished.then(() => ghost.remove(), () => ghost.remove());
+    return;
+  }
   const ghost = el.cloneNode(true);
   ghost.classList.remove("on", "row-selected");
-  ghost.classList.add("wl-ghost", label === "Vocab" ? "to-vocab" : "delete");
+  ghost.classList.add("wl-ghost");
+  ghost.insertAdjacentHTML("beforeend", '<i class="wl-wing l" aria-hidden="true">🪽</i><i class="wl-wing r" aria-hidden="true">🪽</i>');
   Object.assign(ghost.style, {
     left: Math.round(r.left) + "px",
     top: Math.round(r.top) + "px",
@@ -15564,14 +15611,18 @@ function wordFly(el, label) {
     transform: "none",
     opacity: 1
   }, {
-    transform: `translate(${dir * 18}px, -12px) rotate(${dir * 4}deg) scale(1.04)`,
+    transform: "translateY(-10px) scale(1.03)",
     opacity: 1,
     offset: .2
   }, {
-    transform: `translate(${dir * 70}vw, -45vh) rotate(${dir * 28}deg) scale(.5)`,
+    transform: "translate(-12px, -30vh) rotate(-3deg) scale(.9)",
+    opacity: .8,
+    offset: .65
+  }, {
+    transform: "translate(8px, -55vh) rotate(2deg) scale(.75)",
     opacity: 0
   } ], {
-    duration: 700,
+    duration: 1100,
     easing: "ease-in",
     fill: "forwards"
   }).finished.then(() => ghost.remove(), () => ghost.remove());
