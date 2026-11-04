@@ -12413,6 +12413,9 @@ function normalizeLesson(data, fileName) {
     } : {}),
     ...(data.unseen ? {
       unseen: Math.max(1, Math.round(Number(data.unseen)) || 1)
+    } : {}),
+    ...(Object.keys(goneOf(data.gone)).length ? {
+      gone: goneOf(data.gone)
     } : {})
   };
 }
@@ -12587,7 +12590,23 @@ function serializeCurrentLesson() {
 
 function upsertLibrary(lesson) {
   const i = library.findIndex(l => l.id === lesson.id);
+  trackGone(i === -1 ? null : library[i], lesson);
   if (i === -1) library.push(lesson); else library[i] = lesson;
+}
+
+function trackGone(prev, lesson) {
+  const now = Date.now(), gone = Object.assign({}, prev && prev.gone, lesson.gone);
+  const have = new Set((lesson.cards || []).map(c => c.uid));
+  if (prev) (prev.cards || []).forEach(c => have.has(c.uid) || (gone[c.uid] = now));
+  have.forEach(u => gone[u] > 0 && (gone[u] = -now));
+  Object.keys(gone).forEach(u => Math.abs(gone[u]) < now - 180 * DAY_MS && delete gone[u]);
+  if (Object.keys(gone).length) lesson.gone = gone; else delete lesson.gone;
+}
+
+function goneOf(x) {
+  const out = {};
+  if (x && typeof x === "object") Object.keys(x).forEach(u => isFinite(x[u]) && x[u] && (out[u] = Number(x[u])));
+  return out;
 }
 
 const STORE_DELAY_MS = 400;
@@ -15803,6 +15822,12 @@ async function cloudFlush() {
 }
 
 function mergeLessons(a, b) {
+  const gone = goneOf(a.gone);
+  Object.entries(goneOf(b.gone)).forEach(([u, t]) => (!gone[u] || Math.abs(t) > Math.abs(gone[u])) && (gone[u] = t));
+  const alive = c => !(gone[c.uid] > 0);
+  [ a, b ] = [ a, b ].map(l => Object.assign({}, l, {
+    cards: l.cards.filter(alive)
+  }));
   const [base, other] = (a.updatedAt || 0) >= (b.updatedAt || 0) ? [ a, b ] : [ b, a ];
   const otherCards = new Map(other.cards.map(c => [ c.uid, c ]));
   const cards = base.cards.map(c => {
@@ -15843,6 +15868,7 @@ function mergeLessons(a, b) {
   });
   return Object.assign({}, base, {
     cards: dedupeCards(cards),
+    gone: gone,
     updatedAt: Date.now()
   });
 }
