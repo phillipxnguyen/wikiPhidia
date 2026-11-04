@@ -2253,7 +2253,7 @@ window.onYouTubeIframeAPIReady = function(){
   @media (prefers-reduced-motion: reduce){.wl-detail.enter{animation:none;}}
   @media (max-width:760px){.wl-main.picked .wl-words > .wl-band:first-child{margin-right:44px;}.wl-main.picked .wl-dhead{padding-right:0;}}
   html.words-open .sel-bar{z-index:1450;}
-  html.words-open.sel-on #wordPop{padding-bottom:calc(var(--sel-h, 116px) + 8px);}
+  html.touch.words-open #wordPop{padding-bottom:calc(var(--sel-h, 116px) + 8px);}
   .wl-sent mark.wl-pick{padding:0 2px;border-radius:4px;background:var(--mark-bg);color:#20242b;}
   .set-tools{display:flex;gap:8px;}
   .set-tools button{flex:1;}
@@ -15483,6 +15483,17 @@ function openWords() {
   const pop = document.getElementById("wordPop"), box = pop.querySelector(".tool-box");
   const keep = el => pop.hidden || !box.querySelector(el) ? 0 : box.querySelector(el).scrollTop;
   const top = keep(".wl-words"), side = keep(".wl-detail"), was = box.dataset.pick;
+  if (pop.hidden && isTouch() && !document.documentElement.style.getPropertyValue("--sel-h")) {
+    const bar = document.getElementById("selBar"), touchBar = document.getElementById("touchBar");
+    if (bar.hidden && !touchBar.hidden) {
+      bar.style.visibility = "hidden";
+      bar.hidden = false;
+      bar.style.setProperty("--tb-h", touchBar.offsetHeight + "px");
+      document.documentElement.style.setProperty("--sel-h", Math.round(window.innerHeight - bar.querySelector(".segmented").getBoundingClientRect().top) + "px");
+      bar.hidden = true;
+      bar.style.visibility = "";
+    }
+  }
   pop.hidden = false;
   document.documentElement.classList.add("words-open");
   box.innerHTML = wordPopHtml();
@@ -15603,6 +15614,7 @@ document.getElementById("wordPop").addEventListener("click", e => {
   if (!s) {
     if (wordSel) {
       wordSel = null;
+      if (isTouch()) wordPick = null;
       openWords();
     }
     return;
