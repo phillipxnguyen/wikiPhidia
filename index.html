@@ -3007,7 +3007,7 @@ function takeSnapshot(label, expiresAt) {
 function pushUndo(label) {
   const entry = takeSnapshot(label);
   undoStack.push(entry);
-  if (undoStack.length > 50) undoStack.shift();
+  if (undoStack.length > 20) undoStack.shift();
   redoStack = [];
   return entry;
 }
@@ -3018,7 +3018,7 @@ function discardActiveEdit() {
   closeEditPopup();
 }
 
-const DELETE_UNDO_TTL_MS = 2 * 60 * 1e3;
+const DELETE_UNDO_TTL_MS = 60 * 1e3;
 
 function pushDeleteUndo(label) {
   const entry = pushUndo(label);
@@ -3091,7 +3091,7 @@ function restoreFrom(fromStack, toStack, verb) {
     });
     renderLessonList();
   }
-  if (toStack.length > 50) toStack.shift();
+  if (toStack.length > 20) toStack.shift();
   if (entry.reviewCount != null && localReviewKeys.length > entry.reviewCount) {
     const keys = new Set(localReviewKeys.splice(entry.reviewCount));
     oppositeEntry.reviewsRemoved = reviewLog.filter(e => keys.has(e.key));
