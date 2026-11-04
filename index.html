@@ -2218,15 +2218,15 @@ window.onYouTubeIframeAPIReady = function(){
   .fresh-lesson .words-fab{background:var(--surface);}
   @media (hover:hover){.words-fab:hover, .fresh-lesson .words-fab:hover{background:var(--surface-2);filter:none;}}
   #wordPop{padding:32px;}
-  .word-box{width:100%;max-width:1400px;height:100%;max-height:none;padding:20px;gap:0;overflow:hidden;}
+  .word-box{--wp:16px;width:100%;max-width:1400px;height:100%;max-height:none;padding:var(--wp);gap:0;overflow:hidden;}
   .wl-main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0, 1fr);gap:20px;}
   .wl-main.picked{grid-template-columns:minmax(0, 3fr) minmax(0, 2fr);}
   .wl-words, .wl-detail{min-height:0;overflow:auto;overscroll-behavior:contain;}
   .wl-words{display:flex;flex-direction:column;gap:14px;}
-  .wl-words > .wl-band:first-child{margin-right:48px;}
-  @media (max-width:760px){#wordPop{padding:12px;}.word-box{padding:12px;}.wl-main{gap:12px;}.wl-main.picked{grid-template-columns:minmax(0, 1fr);grid-template-rows:minmax(0, 1fr) minmax(0, 1fr);}}
-  .wl-band{display:flex;gap:8px;align-items:flex-start;}
-  .wl-label{flex:none;min-width:28px;font-size:13px;line-height:32px;font-weight:800;color:var(--accent);text-align:right;}
+  .wl-words > .wl-band:first-child{margin-right:44px;}
+  @media (max-width:760px){#wordPop{padding:12px;}.word-box{--wp:12px;}.wl-main{gap:12px;}.wl-main.picked{grid-template-columns:minmax(0, 1fr);grid-template-rows:minmax(0, 1fr) minmax(0, 1fr);}}
+  .wl-band{display:flex;gap:calc(var(--wp) + 1px);align-items:flex-start;}
+  .wl-label{flex:none;width:32px;font-size:13px;line-height:32px;font-weight:800;color:var(--accent);text-align:center;}
   .wl-chips{display:flex;flex-wrap:wrap;gap:6px;min-width:0;}
   .wl-w{-webkit-user-select:none;user-select:none;display:inline-flex;align-items:baseline;gap:4px;height:32px;box-sizing:border-box;padding:0 10px;border:1px solid var(--border);border-radius:16px;background:var(--surface);color:var(--text);font-size:16px;line-height:30px;font-weight:400;cursor:pointer;}
   .wl-w i{font-style:normal;font-size:12px;line-height:16px;font-weight:700;color:var(--accent);}
@@ -2244,10 +2244,18 @@ window.onYouTubeIframeAPIReady = function(){
   @media (hover:hover){.wl-sent:hover{background:var(--accent-soft);}}
   .wl-w.row-selected{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent) inset;}
   .word-box{position:relative;}
-  .wl-close{position:absolute;top:18px;right:18px;z-index:2;width:36px;height:36px;padding:0;font-size:16px;line-height:20px;}
+  .wl-close{position:absolute;top:calc(var(--wp) - 2px);right:calc(var(--wp) - 2px);z-index:2;width:36px;height:36px;padding:0;font-size:16px;line-height:20px;}
   .wl-main.picked .wl-words > .wl-band:first-child{margin-right:0;}
   .wl-main.picked .wl-dhead{padding-right:40px;}
-  @media (max-width:760px){.wl-close{top:10px;right:10px;}.wl-main.picked .wl-words > .wl-band:first-child{margin-right:48px;}.wl-main.picked .wl-dhead{padding-right:0;}}
+  .wl-w, .wl-sent{transition:opacity .18s ease, transform .18s ease;}
+  .wl-w.wl-gone{opacity:0;transform:scale(.8);}
+  .wl-sent.wl-gone{opacity:0;transform:translateX(-24px);}
+  .wl-detail.enter{animation:wlIn .22s ease-out;}
+  @keyframes wlIn{from{opacity:0;transform:translateX(16px);}to{opacity:1;transform:none;}}
+  @media (max-width:760px){.wl-detail.enter{animation-name:wlUp;}}
+  @keyframes wlUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:none;}}
+  @media (prefers-reduced-motion: reduce){.wl-w, .wl-sent{transition:none;}.wl-detail.enter{animation:none;}}
+  @media (max-width:760px){.wl-main.picked .wl-words > .wl-band:first-child{margin-right:44px;}.wl-main.picked .wl-dhead{padding-right:0;}}
   html.words-open .sel-bar{z-index:1450;}
   html.words-open.sel-on #wordPop{padding-bottom:calc(var(--sel-h, 116px) + 8px);}
   .wl-sent mark{padding:0 2px;border-radius:4px;background:var(--mark-bg);color:#20242b;}
@@ -15470,7 +15478,10 @@ function openWords() {
   box.innerHTML = wordPopHtml();
   box.dataset.pick = wordPick || "";
   if (box.querySelector(".wl-words")) box.querySelector(".wl-words").scrollTop = top;
-  if (box.querySelector(".wl-detail")) box.querySelector(".wl-detail").scrollTop = was === box.dataset.pick ? side : 0;
+  if (box.querySelector(".wl-detail")) {
+    box.querySelector(".wl-detail").scrollTop = was === box.dataset.pick ? side : 0;
+    if (was !== box.dataset.pick) box.querySelector(".wl-detail").classList.add("enter");
+  }
   updateSelBar();
 }
 
@@ -15501,6 +15512,8 @@ function wordTarget() {
 function wordAct(act) {
   const t = wordTarget();
   if (!t) return false;
+  const el = (act === "delete" || act === "vocab" && t.row && !cardInVideoLesson(t.row) && canMoveToVocab(t.row)) && document.querySelector(t.word ? `#wordPop [data-w="${CSS.escape(t.word)}"]` : `#wordPop .wl-sent[data-id="${t.row.id}"]`);
+  if (el) el.classList.add("wl-gone");
   if (act === "copy") copyText(t.word || oneLine(t.row.q));
   if (act === "edit" && t.row) openEditPopup(t.row);
   if (act === "vocab" && t.row) {
@@ -15515,7 +15528,7 @@ function wordAct(act) {
   }
   if (act !== "copy" && act !== "edit") {
     wordSel = wordHover = null;
-    openWords();
+    setTimeout(openWords, el && !reducedMotion() ? 180 : 0);
   }
   return true;
 }
