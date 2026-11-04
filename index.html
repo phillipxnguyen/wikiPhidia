@@ -17015,7 +17015,7 @@ function fitReadings(root) {
   });
 }
 
-function vocabSentenceHtml(sentence, term, row) {
+function vocabSentenceHtml(sentence, term, row, bare) {
   const chars = Array.from((sentence || "").normalize("NFC"));
   const text = chars.join("");
   const span = term ? findWordForm(text, term) : null;
@@ -17025,7 +17025,7 @@ function vocabSentenceHtml(sentence, term, row) {
     end = Array.from(text.slice(0, span[1])).length;
   }
   const script = cjkScriptFor(text, row);
-  if (script === "ja") {
+  if (script === "ja" && !bare) {
     const ja = japaneseFor(text);
     if (ja) {
       const units = ja.units;
@@ -17047,7 +17047,7 @@ function vocabSentenceHtml(sentence, term, row) {
     }
   }
   let pys = null;
-  if (script === "zh" && typeof pinyinPro !== "undefined") {
+  if (script === "zh" && !bare && typeof pinyinPro !== "undefined") {
     try {
       pys = pinyinPro.pinyin(text, {
         type: "array"
@@ -17403,7 +17403,7 @@ function showVocabDeck(stage, item) {
 
 function wordNotesView(item) {
   const noted = noteSentence(item);
-  return noted ? `<div>${vocabSentenceHtml(noted.sentence, item.term, item.card)}</div>` + noted.rest : wordNotesOf(item);
+  return noted ? `<div>${vocabSentenceHtml(noted.sentence, item.term, item.card, true)}</div>` + noted.rest : wordNotesOf(item);
 }
 
 function wordNotesOf(item) {

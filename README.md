@@ -86,6 +86,8 @@ Only YouTube gives a lesson video times; any other link changes nothing, so a le
 
 **A card never marks itself.** On a Vocabulary flashcard whose word is a whole sentence (`That may have caused it.`), the sentence is not shaded as its own word (the full stop or other punctuation no longer hides that it is the same text); only the other words inside it show, as lookups.
 
+**No pinyin printed in ☰ List.** The yellow-marked word in a word's notes in Vocabulary's ☰ List is shown without pinyin or readings above it; pointing at the line shows them, as everywhere. The flashcard's back keeps its readings above the sentence while you study.
+
 **☰ and the flag.** In Vocabulary there is no 🗃️ button: in the list, ☰ starts the flashcards; while you study, ☰ makes way for the lesson's language flag at the left of the toolbar, the same flag a task shows, so you always see what you are learning, and clicking it goes back to the list (M does both).
 
 **Text sizes.** Every card's question, answer and notes outside the big flashcards are 2 px larger than they were: questions and answers 22 px (20 px on a phone) in the editors, ☰ Full, ☰ List and on the Speaking paper, notes 20 px (18 px on a phone); the Listening study card is left exactly as it was (its sentence 28 px, 24 px on a phone, its notes 18 px), and so are Vocabulary's flashcards.
