@@ -16718,7 +16718,8 @@ function syncYouTubeTrackNote() {
   const prefer = readLocal("flashcards.ytTarget");
   const name = l => l === "vi" ? "Vietnamese" : "English";
   const langs = [ "vi", "en" ].filter(l => l !== base(track));
-  const subs = langs.map(l => [ l, ytPairTrack(d.tracks.filter(t => base(t) === l), track) ]).filter(([, t]) => t);
+  const ytName = t => String(t.name || t.lang || "");
+  const subs = langs.map(l => [ l, ytPairTrack(d.tracks.filter(t => base(t) === l), track) ]).filter(([, t]) => t).sort((a, b) => ytName(a[1]).localeCompare(ytName(b[1])));
   const opts = subs.map(([l, t]) => [ "t:" + d.tracks.indexOf(t), escapeHtml(String(t.name || name(l))) + " subtitles", l ]).concat(langs.slice().reverse().map(l => [ "auto:" + l, "Translate automatically → " + name(l), l ]));
   const on = (opts.find(o => o[2] === prefer) || opts[0])[0];
   document.getElementById("ytTransMenu").innerHTML = opts.map(([v, label]) => `<button role="menuitem" data-trans="${v}"${v === on ? ' class="on"' : ""}>${label}</button>`).join("");
