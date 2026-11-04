@@ -15106,26 +15106,58 @@ function settingsPopHtml() {
 }
 
 function tidyTools() {
-  return currentLessonId && !isVirtualLesson() && (currentView === "study" || currentView === "vocab");
+  return !isVirtualLesson();
 }
 
 function toolBare(t) {
   return foldVocab(t || "").replace(/[\p{P}\p{S}\s]+/gu, "");
 }
 
-function toolCards() {
-  return rows.concat(vocabExtras ? [ vocabExtras ] : []);
+function toolHomes() {
+  const live = !!currentLessonId && !isVirtualLesson();
+  const homes = library.filter(l => !isVirtualId(l.id) && !(live && l.id === currentLessonId)).map(l => ({
+    lesson: l,
+    cards: l.cards || [],
+    extras: normalizeExtras(l.extraWords)
+  }));
+  if (live) homes.unshift({
+    lesson: null,
+    cards: rows,
+    extras: vocabExtras
+  });
+  return homes;
+}
+
+function toolCardsOf(home) {
+  return home.cards.concat(home.extras ? [ home.extras ] : []);
+}
+
+function toolSave(home) {
+  if (!home.lesson) return scheduleAutoSave();
+  home.lesson.extraWords = serializeExtras(home.extras);
+  home.lesson.updatedAt = Date.now();
+  dbPut("lessons", home.lesson).catch(() => {});
+}
+
+function toolRefresh() {
+  doneWordCache = null;
+  if (currentLessonId) {
+    flushAutoSave();
+    if (currentView === "vocab") renderVocab(); else render();
+  }
+  renderLessonList();
 }
 
 function toolRegex(find, cased) {
   return find ? new RegExp(find.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), cased ? "g" : "gi") : null;
 }
 
+function toolHitsIn(c, re) {
+  return [ c.q, c.a, c.notesHtml ? plainTextOf(c.notesHtml, "\n") : c.notes ].reduce((n, t) => n + ((t || "").match(re) || []).length, 0);
+}
+
 function toolCount(re) {
-  if (!re) return 0;
-  let n = 0;
-  toolCards().forEach(c => [ c.q, c.a, c.notesHtml ? plainTextOf(c.notesHtml, "\n") : c.notes ].forEach(t => n += ((t || "").match(re) || []).length));
-  return n;
+  return re ? toolHomes().reduce((n, h) => n + toolCardsOf(h).reduce((m, c) => m + toolHitsIn(c, re), 0), 0) : 0;
 }
 
 function replaceInHtml(html, re, to) {
@@ -15138,48 +15170,57 @@ function replaceInHtml(html, re, to) {
   return box.innerHTML;
 }
 
+function replaceInCard(c, re, to) {
+  const before = vocabEntriesOf(c).map(e => e.key);
+  [ "q", "a", "notes" ].forEach(k => {
+    if (c[k]) c[k] = c[k].replace(re, to);
+  });
+  [ "qHtml", "aHtml", "notesHtml" ].forEach(k => {
+    if (c[k]) c[k] = replaceInHtml(c[k], re, to);
+  });
+  const after = vocabEntriesOf(c).map(e => e.key);
+  if (c.vocab && before.length === after.length) before.forEach((k, i) => {
+    if (k !== after[i] && c.vocab[k] && !c.vocab[after[i]]) {
+      c.vocab[after[i]] = c.vocab[k];
+      delete c.vocab[k];
+    }
+  });
+}
+
 function toolReplaceAll(find, to, cased) {
   const re = toolRegex(find, cased);
   const n = toolCount(re);
   if (!n) return 0;
-  pushUndo(`Replaced “${find}”`);
-  toolCards().forEach(c => {
-    const before = vocabEntriesOf(c).map(e => e.key);
-    [ "q", "a", "notes" ].forEach(k => {
-      if (c[k]) c[k] = c[k].replace(re, to);
-    });
-    [ "qHtml", "aHtml", "notesHtml" ].forEach(k => {
-      if (c[k]) c[k] = replaceInHtml(c[k], re, to);
-    });
-    const after = vocabEntriesOf(c).map(e => e.key);
-    if (c.vocab && before.length === after.length) before.forEach((k, i) => {
-      if (k !== after[i] && c.vocab[k] && !c.vocab[after[i]]) {
-        c.vocab[after[i]] = c.vocab[k];
-        delete c.vocab[k];
-      }
-    });
+  if (currentLessonId && !isVirtualLesson()) pushUndo(`Replaced “${find}”`);
+  toolHomes().forEach(h => {
+    const hit = toolCardsOf(h).filter(c => toolHitsIn(c, re));
+    if (!hit.length) return;
+    hit.forEach(c => replaceInCard(c, re, to));
+    toolSave(h);
   });
-  doneWordCache = null;
-  scheduleAutoSave();
-  flushAutoSave();
-  if (currentView === "vocab") renderVocab(); else render();
+  toolRefresh();
   return n;
 }
 
 function toolDupGroups() {
   const groups = new Map;
   const add = (key, x) => key && (groups.has(key) || groups.set(key, []), groups.get(key).push(x));
-  if (appMode === "vocab") lessonVocabItems(vocabSource()).forEach(i => add(toolBare(i.term), {
-    word: i,
-    text: i.term,
-    sub: i.meaning,
-    worth: (vocabStateOf(i).reps || 0)
-  })); else rows.forEach(r => add(toolBare(r.q), {
-    row: r,
-    text: r.q,
-    sub: r.time != null ? formatTime(r.time) : r.a || "",
-    worth: cardWorth(r)
-  }));
+  const where = h => h.lesson ? h.lesson.name || "Untitled lesson" : document.getElementById("lessonName").value || "Untitled lesson";
+  toolHomes().forEach(h => {
+    if (appMode === "vocab") lessonVocabItems(toolCardsOf(h)).forEach(i => add(toolBare(i.term), {
+      home: h,
+      word: i,
+      text: i.term,
+      sub: [ where(h), i.meaning ].filter(Boolean).join(" · "),
+      worth: (vocabStateOf(i).reps || 0)
+    })); else h.cards.forEach(r => add(toolBare(r.q), {
+      home: h,
+      row: r,
+      text: r.q,
+      sub: [ where(h), r.time != null ? formatTime(r.time) : r.a || "" ].filter(Boolean).join(" · "),
+      worth: cardWorth(r)
+    }));
+  });
   return [ ...groups.values() ].filter(g => g.length > 1);
 }
 
@@ -15187,14 +15228,14 @@ function toolPopHtml(tab) {
   const tabs = `<div class="tool-tabs segmented"><button data-tool-tab="replace" class="${tab === "replace" ? "active" : ""}">Find & replace</button><button data-tool-tab="dups" class="${tab === "dups" ? "active" : ""}">Duplicates</button></div>`;
   if (tab === "replace") return tabs + `<input id="toolFind" type="text" placeholder="Find" autocomplete="off"><input id="toolTo" type="text" placeholder="Replace with" autocomplete="off"><label class="tool-case"><input id="toolCase" type="checkbox"> Match case</label><div class="tool-foot"><span id="toolHits"></span><button id="toolGo" class="primary">Replace all</button></div>`;
   const groups = toolDupGroups();
-  if (!groups.length) return tabs + '<p class="tool-empty">No duplicates in this lesson.</p>';
+  if (!groups.length) return tabs + '<p class="tool-empty">No duplicates.</p>';
   return tabs + `<div class="tool-dups">${groups.map((g, gi) => `<div class="tool-group"><div class="tool-group-head"><span>${g.length}×</span><button data-tool-keep="${gi}">Keep one</button></div>${g.map((x, xi) => `<div class="tool-item"><span><b>${escapeHtml(x.text)}</b>${x.sub ? `<i>${escapeHtml(x.sub)}</i>` : ""}</span><button data-tool-del="${gi}:${xi}" aria-label="Delete">✕</button></div>`).join("")}</div>`).join("")}</div>`;
 }
 
 let toolTab = "replace", toolGroups = [];
 
 function openTools(tab) {
-  if (!tidyTools()) return showToast("Open a lesson first");
+  if (!tidyTools()) return showToast("Leave the task first");
   commitActiveEdit();
   if (currentView === "vocab") commitVocabEdit();
   toolTab = tab || toolTab;
@@ -15211,7 +15252,16 @@ function closeTools() {
 }
 
 function toolDelete(x) {
-  if (x.row) deleteRow(x.row.id); else deleteVocabEntry(x.word);
+  if (!x.home.lesson) return x.row ? deleteRow(x.row.id) : deleteVocabEntry(x.word);
+  if (x.row) x.home.lesson.cards = x.home.lesson.cards.filter(c => c !== x.row); else {
+    const card = x.word.card, next = rewrittenVocabNotes(card, x.word, null, null);
+    if (!next) return;
+    card.notes = next.notes;
+    card.notesHtml = next.notesHtml;
+    if (card.vocab) delete card.vocab[x.word.key];
+  }
+  toolSave(x.home);
+  toolRefresh();
 }
 
 document.getElementById("toolPop").addEventListener("click", e => {
