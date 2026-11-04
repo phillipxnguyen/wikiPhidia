@@ -83,6 +83,7 @@
       });
     }
     if (e.data.type === "added") settle(e.data);
+    if (e.data.type === "ytDone") chrome.storage.local.set({ ytDone: { id: e.data.id, ok: !!e.data.ok, text: String(e.data.text || ""), at: Date.now() } });
     if (e.data.type === "ytTaken") chrome.storage.local.get("ytPending").then(({ ytPending }) => {
       if (ytPending && ytPending.id === e.data.id) chrome.storage.local.remove("ytPending");
     });

@@ -174,14 +174,15 @@ async function grabTracks() {
 
 async function importYouTube(tabId) {
   const say = text => chrome.tabs.sendMessage(tabId, { type: "toast", text: text }).catch(() => {});
+  const fail = text => chrome.tabs.sendMessage(tabId, { type: "ytFail", text: text }).catch(() => {});
   say("Getting the subtitles…");
   let result;
   try {
     [ { result } ] = await chrome.scripting.executeScript({ target: { tabId: tabId }, world: "MAIN", func: grabTracks });
   } catch (e) {
-    return say("Couldn't read this page: " + (e && e.message || e));
+    return fail("Couldn't read this page: " + (e && e.message || e));
   }
-  if (!result || result.error) return say(result && result.error || "Couldn't get the subtitles");
+  if (!result || result.error) return fail(result && result.error || "Couldn't get the subtitles");
   await chrome.storage.local.set({ ytPending: Object.assign({ at: Date.now() }, result) });
   say("Opening wikiPhidia…");
   await openApp();

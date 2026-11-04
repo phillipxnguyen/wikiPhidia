@@ -102,7 +102,9 @@ textarea[hidden], .sent-view[hidden]{display:none;}
 .yt{position:fixed;left:16px;bottom:16px;display:flex;align-items:center;gap:8px;height:40px;padding:0 16px 0 6px;border:0;border-radius:20px;background:var(--green);color:#fff;font:700 14px/20px Inter, system-ui, sans-serif;box-shadow:0 6px 18px rgba(0,0,0,.3);cursor:pointer;}
 .yt:hover{filter:brightness(1.08);}
 .yt span{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:14px;background:rgba(255,255,255,.2);font-size:16px;line-height:20px;}
-.yt[disabled]{opacity:.7;cursor:default;}
+.yt[disabled]{cursor:default;}
+.yt.busy span{border:3px solid rgba(255,255,255,.3);border-top-color:#fff;box-sizing:border-box;font-size:0;animation:ytspin .8s linear infinite;}
+@keyframes ytspin{to{transform:rotate(360deg);}}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);padding:10px 16px;border-radius:10px;background:#1d2330;color:#fff;font-size:14px;line-height:20px;box-shadow:0 8px 24px rgba(0,0,0,.3);}
 </style><div class="wrap"></div>`;
   const wrap = root.querySelector(".wrap");
@@ -654,8 +656,25 @@ textarea[hidden], .sent-view[hidden]{display:none;}
     if (tip) tip.remove(), tip = null;
   }, { passive: true, capture: true });
 
-  let ytBtn = null;
-  const ytVideo = () => /(^|\.)youtube\.com$/.test(location.hostname) && (new URL(location.href).searchParams.get("v") || /\/(shorts|live)\/[\w-]{11}/.test(location.pathname));
+  let ytBtn = null, ytWait = null, ytWaitTimer = 0;
+  const ytVideo = () => /(^|\.)youtube\.com$/.test(location.hostname) && (new URL(location.href).searchParams.get("v") || (location.pathname.match(/\/(?:shorts|live)\/([\w-]{11})/) || [])[1]);
+  function ytLabel(state, text) {
+    if (!ytBtn) return;
+    ytBtn.classList.toggle("busy", state === "busy");
+    ytBtn.disabled = state !== "idle";
+    ytBtn.innerHTML = state === "busy" ? "<span>字</span>Making the lesson…" : state === "done" ? "<span>✓</span>" + text : "<span>字</span>Make a lesson";
+  }
+  function ytFinish(ok, text) {
+    if (!ytWait) return;
+    ytWait = null;
+    clearTimeout(ytWaitTimer);
+    if (!ok) {
+      ytLabel("idle");
+      return toast(text || "Couldn't make the lesson");
+    }
+    ytLabel("done", text || "Lesson created");
+    ytWaitTimer = setTimeout(() => ytLabel("idle"), 3e3);
+  }
   function syncYouTube() {
     if (gone()) return;
     const show = ytVideo() && settings.youtube !== false && on();
@@ -668,11 +687,14 @@ textarea[hidden], .sent-view[hidden]{display:none;}
     mount();
     ytBtn = document.createElement("button");
     ytBtn.className = "yt";
-    ytBtn.innerHTML = "<span>字</span>Make a lesson";
     ytBtn.title = "Make a wikiPhidia lesson from this video's subtitles";
+    ytLabel(ytWait ? "busy" : "idle");
     ytBtn.addEventListener("click", () => {
-      ytBtn.disabled = true;
-      setTimeout(() => ytBtn && (ytBtn.disabled = false), 4e3);
+      if (ytWait) return;
+      ytWait = ytVideo();
+      ytLabel("busy");
+      clearTimeout(ytWaitTimer);
+      ytWaitTimer = setTimeout(() => ytFinish(false, "Not finished yet: open wikiPhidia to finish the lesson"), 6e5);
       chrome.runtime.sendMessage({ type: "youtube" });
     });
     wrap.appendChild(ytBtn);
@@ -687,6 +709,7 @@ textarea[hidden], .sent-view[hidden]{display:none;}
 
   chrome.runtime.onMessage.addListener(msg => {
     if (msg && msg.type === "toast") toast(msg.text);
+    if (msg && msg.type === "ytFail") ytFinish(false, msg.text);
     if (msg && msg.type === "open" && on()) {
       const found = selectedText();
       openCard(found ? found.text : msg.text, found ? found.range : null);
@@ -699,6 +722,8 @@ textarea[hidden], .sent-view[hidden]{display:none;}
     if (changes.app) app = Object.assign({ lessons: [], words: [] }, changes.app.newValue || {});
     if (changes.pending) pending = changes.pending.newValue || [];
     if (changes.picks) picks = changes.picks.newValue || {};
+    const done = changes.ytDone && changes.ytDone.newValue;
+    if (done && ytWait && done.id === ytWait) ytFinish(done.ok, done.text);
     if (changes.settings || changes.app || changes.pending) rescan();
     if (changes.settings) syncYouTube();
     if (changes.settings && !on()) {
