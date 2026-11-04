@@ -88,6 +88,8 @@ Only YouTube gives a lesson video times; any other link changes nothing, so a le
 
 **No pinyin printed in ☰ List.** The yellow-marked word in a word's notes in Vocabulary's ☰ List is shown without pinyin or readings above it; pointing at the line shows them, as everywhere. The flashcard's back keeps its readings above the sentence while you study.
 
+**One toolbar for every mode, as in a task.** Lessons work like Vocabulary: a lesson has one way to study it (Listening for a video, Speaking otherwise), so there are no ☰ 🎧 🗒️ buttons side by side any more. In ☰ Full a single ☰ starts studying the lesson; while you study it gives way to the lesson's language flag at the left of the toolbar, the same flag a task shows, and clicking the flag (or M) goes back to ☰ Full. The flag sits as far from what follows it as the buttons on the right sit from each other. When nothing is left to study the ☰ is not shown.
+
 **☰ and the flag.** In Vocabulary there is no 🗃️ button: in the list, ☰ starts the flashcards; while you study, ☰ makes way for the lesson's language flag at the left of the toolbar, the same flag a task shows, so you always see what you are learning, and clicking it goes back to the list (M does both).
 
 **Text sizes.** Every card's question, answer and notes outside the big flashcards are 2 px larger than they were: questions and answers 22 px (20 px on a phone) in the editors, ☰ Full, ☰ List and on the Speaking paper, notes 20 px (18 px on a phone); the Listening study card is left exactly as it was (its sentence 28 px, 24 px on a phone, its notes 18 px), and so are Vocabulary's flashcards.
@@ -209,7 +211,7 @@ With reduced motion turned on in the system, she stays away and things simply ha
 | Delete or Backspace | Delete the card; it flies off marked ✕. In a group, pointing at a card's row deletes that card and the row flies off, and the page keeps your place, the same as grading. Nothing happens while a card is open for editing, or when a Vietnamese typing tool (Telex, VNI) sends Backspace to turn a letter into ê, đ, é and so on |
 | Shift (with text selected) | In Lessons, add the selected text as a card of this lesson: select it in a card editor's Question or Answer box (the ＋ boxes too), in any study mode or list (the Speaking paper, Listening, ☰ Full) and a small box opens to write its answer; it goes into the same lesson's data, and if the lesson already has it you are told so instead. Vocabulary has no such way of making cards from a selection: there words are only looked up. On a flashcard's back, other cards of your lessons are marked in the sentence as in Lessons: click one to see its meaning; the card being studied is pale red, so it never looks like those green and grey marks |
 | Esc | Close a popup |
-| M | Next study mode (☰ → Listening / Speaking in Lessons, ☰ → flashcards → ☰ in Vocabulary) |
+| M | Switch between the list and studying, on both sides: ☰ Full → the lesson's study mode (Listening or Speaking) → ☰ Full in Lessons, ☰ List → flashcards → ☰ List in Vocabulary |
 | F | In Vocabulary, switch which side shows first (⇄) |
 | [ and ] | Slower or faster sound (the speed beside the sound button) |
 | Y | Make the video large or put it back in the bar; when it grows, the page scrolls back up to it |

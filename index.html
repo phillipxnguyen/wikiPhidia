@@ -351,7 +351,7 @@ window.onYouTubeIframeAPIReady = function(){
   .toolbar-flag[hidden]{display:none;}
   .toolbar-flag.flag-back{cursor:pointer;pointer-events:auto;}
   .vocab-toolbar > .toolbar-flag{order:-1;margin-right:calc(var(--btn-gap) - var(--tb-gap));}
-  #viewStudy .segmented + .toolbar-flag{margin-left:calc(var(--btn-gap) - var(--tb-gap));}
+  #viewStudy .toolbar > .toolbar-flag{order:-1;margin-right:calc(var(--btn-gap) - var(--tb-gap));}
   .toolbar-flag .flag-unit{width:calc(var(--cw) + (var(--n) - 1) * 8px);height:calc(var(--ch) + (var(--n) - 1) * 4px);}
   .toolbar-flag .flag-unit::before, .toolbar-flag .flag-unit::after, .toolbar-flag .flag-cloth::after{display:none;}
   .toolbar-flag .flag-cloth{left:calc(var(--k) * 8px);top:calc((var(--n) - 1 - var(--k)) * 4px);animation:none;transform:none;}
@@ -2749,11 +2749,11 @@ window.onYouTubeIframeAPIReady = function(){
 
   <div class="toolbar">
     <div class="segmented" role="group" aria-label="Study mode">
-      <button id="fullModeBtn" aria-label="Full">☰</button>
+      <button id="fullModeBtn" aria-label="Study" title="Study">☰</button>
       <button id="listenModeBtn" style="display:none;" aria-label="Listening">🎧</button>
       <button id="ieltsModeBtn" style="display:none;" aria-label="Speaking">🗒️</button>
     </div>
-    <span class="flag-set toolbar-flag" aria-hidden="true" hidden></span>
+    <span id="studyFlag" class="flag-set toolbar-flag" role="button" tabindex="0" aria-label="Back to the list" title="Back to the list" hidden></span>
     <div class="toolbar-right">
       <button id="btnPlaySequence" aria-label="Play"></button>
       <select id="playbackSpeed" style="visibility:hidden;">
@@ -10262,18 +10262,24 @@ function applyGroupEntryHiddenState(ids) {
   });
 }
 
+function lessonStudyMode() {
+  if (lessonCaughtUp()) return null;
+  if (deckHasVideoCards() && !isVirtualLesson()) return "listen";
+  return rows.some(speakable) && !isVideoLesson() ? "ielts" : null;
+}
+
 function syncModeButtonHighlights() {
   const fullBtn = document.getElementById("fullModeBtn");
   const listenBtn = document.getElementById("listenModeBtn");
   const ieltsBtn = document.getElementById("ieltsModeBtn");
   if (!fullBtn || !listenBtn || !ieltsBtn) return;
-  const caughtUp = lessonCaughtUp();
-  const video = isVideoLesson();
-  listenBtn.style.display = deckHasVideoCards() && !isVirtualLesson() && !caughtUp ? "" : "none";
-  ieltsBtn.style.display = rows.some(speakable) && !video && !caughtUp ? "" : "none";
-  fullBtn.closest(".segmented").hidden = isAllLessons();
-  document.querySelector("#viewStudy .toolbar-flag").hidden = !isAllLessons();
-  fullBtn.classList.toggle("active", !groupState);
+  const mode = lessonStudyMode(), flag = document.getElementById("studyFlag");
+  listenBtn.style.display = "none";
+  ieltsBtn.style.display = "none";
+  fullBtn.closest(".segmented").hidden = isAllLessons() || !!groupState || !mode;
+  flag.hidden = !isAllLessons() && !groupState;
+  flag.classList.toggle("flag-back", !!groupState && !isAllLessons());
+  fullBtn.classList.remove("active");
   listenBtn.classList.toggle("active", !!groupState && groupViewStyle === "listen");
   ieltsBtn.classList.toggle("active", !!groupState && groupViewStyle === "ielts");
 }
@@ -10549,7 +10555,14 @@ function goToReviewMode(style) {
   pinStudyArea();
 }
 
-document.getElementById("fullModeBtn").onclick = () => goToReviewMode("full");
+document.getElementById("fullModeBtn").onclick = () => {
+  const mode = lessonStudyMode();
+  if (mode) goToReviewMode(mode);
+};
+
+document.getElementById("studyFlag").onclick = e => e.currentTarget.classList.contains("flag-back") && goToReviewMode("full");
+
+document.getElementById("studyFlag").onkeydown = e => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), e.stopPropagation(), e.currentTarget.click());
 
 document.getElementById("btnPlaySequence").addEventListener("click", () => setTimeout(noteWorkHush, 0));
 
@@ -26123,10 +26136,10 @@ function cycleMode() {
     t.click();
     return true;
   }
-  const buttons = [ "fullModeBtn", "listenModeBtn", "ieltsModeBtn" ].map(id => document.getElementById(id)).filter(b => b.style.display !== "none");
-  if (buttons.length < 2) return false;
-  const at = buttons.findIndex(b => b.classList.contains("active"));
-  buttons[(at + 1) % buttons.length].click();
+  const flag = document.getElementById("studyFlag"), full = document.getElementById("fullModeBtn");
+  const t = groupState ? flag.classList.contains("flag-back") && flag : !full.closest(".segmented").hidden && full;
+  if (!t) return false;
+  t.click();
   return true;
 }
 
