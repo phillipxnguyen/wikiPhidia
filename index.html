@@ -2234,7 +2234,6 @@ window.onYouTubeIframeAPIReady = function(){
   .wl-w.s1{color:var(--due-color);background:color-mix(in srgb, var(--due-color) 10%, var(--surface));}
   .wl-w.on, .wl-w.row-selected{border-color:var(--accent);background:var(--accent);color:#fff;box-shadow:none;}
   .wl-w.on i, .wl-w.row-selected i{color:#fff;}
-  @media (hover:hover){.wl-w:not(.on):hover{background:var(--accent-soft);border-color:color-mix(in srgb, var(--accent) 40%, var(--border));}}
   .wl-detail{padding:10px 12px;border-radius:12px;background:var(--surface-2);}
   .wl-dhead{position:relative;display:flex;flex-direction:column;gap:2px;padding:2px 0 10px;}
   .wl-dhead b{position:relative;align-self:flex-start;}
@@ -2243,19 +2242,15 @@ window.onYouTubeIframeAPIReady = function(){
   .wl-dhead i{font-style:normal;font-size:16px;line-height:24px;color:var(--text);}
   .wl-sent{margin:0 -12px;padding:8px 12px;border-top:1px solid var(--border);font-size:16px;line-height:24px;cursor:pointer;-webkit-user-select:none;user-select:none;}
   .wl-sent.row-selected{background:var(--accent-soft);box-shadow:inset 4px 0 var(--accent);}
-  @media (hover:hover){.wl-sent:hover{background:var(--accent-soft);}}
   .word-box{position:relative;}
   .wl-close{position:absolute;top:calc(var(--wp) - 2px);right:calc(var(--wp) - 2px);z-index:2;width:36px;height:36px;padding:0;font-size:16px;line-height:20px;}
   .wl-main.picked .wl-words > .wl-band:first-child{margin-right:0;}
   .wl-main.picked .wl-dhead{padding-right:40px;}
-  .wl-w, .wl-sent{transition:opacity .18s ease, transform .18s ease;}
-  .wl-w.wl-gone{opacity:0;transform:scale(.8);}
-  .wl-sent.wl-gone{opacity:0;transform:translateX(-24px);}
   .wl-detail.enter{animation:wlIn .22s ease-out;}
   @keyframes wlIn{from{opacity:0;transform:translateX(16px);}to{opacity:1;transform:none;}}
   @media (max-width:760px){.wl-detail.enter{animation-name:wlUp;}}
   @keyframes wlUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:none;}}
-  @media (prefers-reduced-motion: reduce){.wl-w, .wl-sent{transition:none;}.wl-detail.enter{animation:none;}}
+  @media (prefers-reduced-motion: reduce){.wl-detail.enter{animation:none;}}
   @media (max-width:760px){.wl-main.picked .wl-words > .wl-band:first-child{margin-right:44px;}.wl-main.picked .wl-dhead{padding-right:0;}}
   html.words-open .sel-bar{z-index:1450;}
   html.words-open.sel-on #wordPop{padding-bottom:calc(var(--sel-h, 116px) + 8px);}
@@ -15524,11 +15519,38 @@ function wordTarget() {
   } : null;
 }
 
+function wordFly(el, label) {
+  if (reducedMotion()) return;
+  const r = el.getBoundingClientRect(), dir = label === "Vocab" ? 1 : -1;
+  const ghost = document.createElement("div");
+  ghost.className = "swipe-ghost row " + (label === "Vocab" ? "to-vocab" : "delete");
+  Object.assign(ghost.style, {
+    left: Math.round(r.left) + "px",
+    top: Math.round(r.top) + "px",
+    width: Math.round(r.width) + "px",
+    height: Math.round(r.height) + "px",
+    zIndex: "1500",
+    borderRadius: getComputedStyle(el).borderTopLeftRadius
+  });
+  ghost.textContent = label === "Vocab" ? "字" : "✕";
+  document.body.appendChild(ghost);
+  el.style.visibility = "hidden";
+  ghost.animate([ {
+    transform: "none"
+  }, {
+    transform: `translate(${dir * 110}vw, -25vh) rotate(${dir * 24}deg)`
+  } ], {
+    duration: 750,
+    easing: "ease-in-out",
+    fill: "forwards"
+  }).finished.then(() => ghost.remove(), () => ghost.remove());
+}
+
 function wordAct(act) {
   const t = wordTarget();
   if (!t) return false;
   const el = (act === "delete" || act === "vocab" && t.row && !cardInVideoLesson(t.row) && canMoveToVocab(t.row)) && document.querySelector(t.word ? `#wordPop [data-w="${CSS.escape(t.word)}"]` : `#wordPop .wl-sent[data-id="${t.row.id}"]`);
-  if (el) el.classList.add("wl-gone");
+  if (el) wordFly(el, act === "vocab" ? "Vocab" : "Delete");
   if (act === "copy") copyText(t.word || oneLine(t.row.q));
   if (act === "edit" && t.row) openEditPopup(t.row);
   if (act === "vocab" && t.row) {
