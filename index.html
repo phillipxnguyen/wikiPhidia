@@ -1719,7 +1719,8 @@ window.onYouTubeIframeAPIReady = function(){
   .yt-menu{position:absolute;right:0;bottom:calc(100% + 6px);z-index:5;display:flex;flex-direction:column;width:max-content;min-width:100%;padding:4px;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow-md);text-align:left;}
   .yt-menu[hidden]{display:none;}
   .yt-menu button{width:100%;padding:8px 12px;border:0;border-radius:6px;background:none;color:var(--text);font-size:14px;line-height:20px;font-weight:400;text-align:left;}
-  .yt-menu button.on{font-weight:700;color:var(--accent);}
+  .yt-menu button.sub{color:var(--new-color);}
+  .yt-menu button.on{font-weight:700;}
   @media (hover:hover){.yt-menu button:hover{background:var(--surface-2);}}
   #ytDialog.loading :is(#ytTrack, .yt-btns > button, .yt-tr > button){background-image:linear-gradient(90deg, transparent 25%, color-mix(in srgb, var(--accent) 22%, transparent) 50%, transparent 75%);background-size:200% 100%;animation:ytShimmer 1.2s linear infinite;}
   #ytDialog.loading #ytWithTranslation{background-image:linear-gradient(90deg, transparent 25%, rgba(255,255,255,.4) 50%, transparent 75%);}
@@ -16720,9 +16721,9 @@ function syncYouTubeTrackNote() {
   const langs = [ "vi", "en" ].filter(l => l !== base(track));
   const ytName = t => String(t.name || t.lang || "");
   const subs = langs.map(l => [ l, ytPairTrack(d.tracks.filter(t => base(t) === l), track) ]).filter(([, t]) => t).sort((a, b) => ytName(a[1]).localeCompare(ytName(b[1])));
-  const opts = subs.map(([l, t]) => [ "t:" + d.tracks.indexOf(t), escapeHtml(String(t.name || name(l))) + " subtitles", l ]).concat(langs.slice().reverse().map(l => [ "auto:" + l, "Translate automatically → " + name(l), l ]));
+  const opts = subs.map(([l, t]) => [ "t:" + d.tracks.indexOf(t), escapeHtml(String(t.name || name(l))), l, "sub" ]).concat(langs.slice().reverse().map(l => [ "auto:" + l, "Translate automatically → " + name(l), l ]));
   const on = (opts.find(o => o[2] === prefer) || opts[0])[0];
-  document.getElementById("ytTransMenu").innerHTML = opts.map(([v, label]) => `<button role="menuitem" data-trans="${v}"${v === on ? ' class="on"' : ""}>${label}</button>`).join("");
+  document.getElementById("ytTransMenu").innerHTML = opts.map(([v, label, , kind]) => `<button role="menuitem" data-trans="${v}" class="${[ kind, v === on ? "on" : "" ].filter(Boolean).join(" ")}">${label}</button>`).join("");
   document.getElementById("ytDialogText").textContent = "Make a lesson from this video's subtitles.";
 }
 
