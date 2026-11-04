@@ -12986,6 +12986,16 @@ function openLesson(lesson) {
     Object.assign(r, normalizeCard(c));
     return r;
   });
+  const playable = url => !!extractYouTubeId(url || "") || /(^|\.)(tiktok|douyin)\.com\//i.test((url || "").replace(/^https?:\/\//i, ""));
+  if (!isVirtualId(lesson.id) && !playable(lesson.mediaUrl) && rows.some(r => r.time != null)) {
+    rows.forEach(r => r.time = null);
+    lesson.cards = rows.map(r => Object.assign({}, lesson.cards.find(c => c.uid === r.uid) || {}, normalizeCard(r), {
+      time: null
+    }));
+    lesson.updatedAt = Date.now();
+    dbPut("lessons", lesson).catch(() => {});
+    queueMicrotask(() => showToast("No video in this lesson: its cards are now Speaking cards"));
+  }
   importHistory = Array.isArray(lesson.importHistory) ? lesson.importHistory.slice() : [];
   vocabExtras = lesson.extraWords ? normalizeExtras(lesson.extraWords) : null;
   studyLang = VALID_STUDY_LANGS.includes(lesson.studyLang) ? lesson.studyLang : "auto";
