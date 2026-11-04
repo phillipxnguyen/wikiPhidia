@@ -1713,18 +1713,21 @@ window.onYouTubeIframeAPIReady = function(){
   @media (hover:hover){.dialog-x:hover{background:var(--danger-soft);color:var(--danger);}}
   .yt-row{display:grid;grid-template-columns:96px minmax(0, 1fr);align-items:center;gap:8px;margin-top:10px;font-size:14px;line-height:20px;color:var(--text-2);text-align:left;}
   .yt-row select{width:100%;min-width:0;}
-  .yt-only{display:block;width:100%;margin-top:16px;}
-  .yt-with{margin-top:14px;text-align:left;}
-  .yt-with > span{display:block;margin-bottom:6px;font-size:13px;line-height:20px;color:var(--text-2);}
-  .yt-chips{display:flex;flex-wrap:wrap;gap:8px;}
-  .yt-chips button{flex:1 1 auto;white-space:nowrap;}
-  .yt-chips button.sub span{background:var(--blend);-webkit-background-clip:text;background-clip:text;color:transparent;}
-  #ytDialog.loading :is(#ytTrack, .yt-only){background-image:linear-gradient(90deg, transparent 25%, color-mix(in srgb, var(--accent) 22%, transparent) 50%, transparent 75%);background-size:200% 100%;animation:ytShimmer 1.2s linear infinite;}
-  #ytDialog.loading .yt-chips button{background-image:linear-gradient(90deg, transparent 25%, rgba(255,255,255,.4) 50%, transparent 75%);}
+  .yt-btns{display:grid;grid-template-columns:minmax(0, 1fr) minmax(0, 1fr);gap:8px;margin-top:16px;}
+  .yt-btns button{width:100%;white-space:nowrap;}
+  .yt-tr{position:relative;}
+  .yt-menu{position:absolute;right:0;bottom:calc(100% + 6px);z-index:5;display:flex;flex-direction:column;width:max-content;min-width:100%;padding:4px;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow-md);text-align:left;}
+  .yt-menu[hidden]{display:none;}
+  .yt-menu button{width:100%;padding:8px 12px;border:0;border-radius:6px;background:none;color:var(--text);font-size:14px;line-height:20px;font-weight:400;text-align:left;}
+  .yt-menu button.sub span{background:var(--blend);-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .yt-menu button.on{font-weight:700;}
+  @media (hover:hover){.yt-menu button:hover{background:var(--surface-2);}}
+  #ytDialog.loading :is(#ytTrack, .yt-btns > button, .yt-tr > button){background-image:linear-gradient(90deg, transparent 25%, color-mix(in srgb, var(--accent) 22%, transparent) 50%, transparent 75%);background-size:200% 100%;animation:ytShimmer 1.2s linear infinite;}
+  #ytDialog.loading #ytWithTranslation{background-image:linear-gradient(90deg, transparent 25%, rgba(255,255,255,.4) 50%, transparent 75%);}
   #ytDialog.loading .emoji{animation:ytBob 1s ease-in-out infinite;}
   @keyframes ytShimmer{to{background-position:-200% 0;}}
   @keyframes ytBob{0%, 100%{transform:translateY(0);}50%{transform:translateY(-6px);}}
-  @media (prefers-reduced-motion: reduce){#ytDialog.loading :is(#ytTrack, .yt-only, .yt-chips button, .emoji){animation:none;}}
+  @media (prefers-reduced-motion: reduce){#ytDialog.loading :is(#ytTrack, .yt-btns > button, .yt-tr > button, .emoji){animation:none;}}
   .lesson-item.importing{pointer-events:none;animation:importBlink 1.2s ease-in-out infinite;}
   @keyframes importBlink{0%, 100%{opacity:1;filter:blur(0);}50%{opacity:.35;filter:blur(2px);}}
   @media (prefers-reduced-motion: reduce){.lesson-item.importing{animation:none;opacity:.6;}}
@@ -2516,8 +2519,7 @@ window.onYouTubeIframeAPIReady = function(){
     <h2 id="ytDialogTitle">YouTube subtitles</h2>
     <p id="ytDialogText">Getting the subtitles…</p>
     <label class="yt-row">Learn <select id="ytTrack" aria-label="Language to learn" disabled></select></label>
-    <button id="ytOnlySubs" class="yt-only" disabled>Subtitles only</button>
-    <div class="yt-with"><span>With translation</span><div id="ytTransMenu" class="yt-chips"></div></div>
+    <div class="yt-btns"><button id="ytOnlySubs" disabled>Subtitles only</button><div class="yt-tr"><button id="ytWithTranslation" class="primary" aria-haspopup="menu" aria-expanded="false" disabled>With translation ▾</button><div id="ytTransMenu" class="yt-menu" role="menu" hidden></div></div></div>
   </div>
 </div>
 
@@ -16629,6 +16631,7 @@ function dialogOpen() {
 
 function chooseYouTubeImport(how) {
   document.getElementById("ytDialog").hidden = true;
+  document.getElementById("ytTransMenu").hidden = true;
   if (!ytImport) return;
   if (how === null) return finishYouTubeImport("Import cancelled");
   const d = ytImport.data;
@@ -16638,6 +16641,9 @@ function chooseYouTubeImport(how) {
   const translate = how !== "none";
   const pair = how.startsWith("t:") ? d.tracks[Number(how.slice(2))] : null;
   const target = pair ? String(pair.lang).split("-")[0] : how.startsWith("auto:") ? how.slice(5) : track.target;
+  if (translate) try {
+    localStorage.setItem("flashcards.ytTarget", JSON.stringify(target));
+  } catch (e) {}
   const paired = pair ? alignTrack(track.lines || [], pair.lines) : [];
   if (translate && track.target !== target) byTime.clear();
   importFromYouTube({
@@ -16701,6 +16707,7 @@ function receiveYouTubeTracks(d) {
   document.getElementById("ytDialog").classList.remove("loading");
   syncYouTubeTrackNote();
   document.getElementById("ytOnlySubs").disabled = false;
+  document.getElementById("ytWithTranslation").disabled = false;
 }
 
 function syncYouTubeTrackNote() {
@@ -16709,12 +16716,14 @@ function syncYouTubeTrackNote() {
   const pick = Number(document.getElementById("ytTrack").value);
   const track = d.tracks[pick] || d.tracks[d.best] || d.tracks[0];
   const base = t => String(t && t.lang || "").split("-")[0];
+  const prefer = readLocal("flashcards.ytTarget");
   const name = l => l === "vi" ? "Vietnamese" : "English";
   const langs = [ "vi", "en" ].filter(l => l !== base(track));
   const ytName = t => String(t.name || t.lang || "");
   const subs = langs.map(l => [ l, ytPairTrack(d.tracks.filter(t => base(t) === l), track) ]).filter(([, t]) => t).sort((a, b) => ytName(a[1]).localeCompare(ytName(b[1])));
-  const opts = subs.map(([l, t]) => [ "t:" + d.tracks.indexOf(t), `<span>${escapeHtml(String(t.name || name(l)))}</span>`, "sub" ]).concat(langs.slice().reverse().map(l => [ "auto:" + l, "Auto → " + name(l), "" ]));
-  document.getElementById("ytTransMenu").innerHTML = opts.map(([v, label, kind]) => `<button data-trans="${v}"${kind ? ` class="${kind}"` : ""} title="${v.startsWith("auto:") ? "Translate automatically" : "Use the video's own subtitles"}">${label}</button>`).join("");
+  const opts = subs.map(([l, t]) => [ "t:" + d.tracks.indexOf(t), `<span>${escapeHtml(String(t.name || name(l)))}</span>`, l, "sub" ]).concat(langs.slice().reverse().map(l => [ "auto:" + l, "Translate automatically → " + name(l), l ]));
+  const on = (opts.find(o => o[2] === prefer) || [])[0];
+  document.getElementById("ytTransMenu").innerHTML = opts.map(([v, label, , kind]) => `<button role="menuitem" data-trans="${v}" class="${[ kind, v === on ? "on" : "" ].filter(Boolean).join(" ")}">${label}</button>`).join("");
   document.getElementById("ytDialogText").textContent = "Make a lesson from this video's subtitles.";
 }
 
@@ -16724,11 +16733,20 @@ document.getElementById("ytDialogClose").onclick = () => chooseYouTubeImport(nul
 
 document.getElementById("ytOnlySubs").onclick = () => chooseYouTubeImport("none");
 
+document.getElementById("ytWithTranslation").onclick = e => {
+  const menu = document.getElementById("ytTransMenu");
+  menu.hidden = !menu.hidden;
+  e.currentTarget.setAttribute("aria-expanded", String(!menu.hidden));
+};
+
 document.getElementById("ytTransMenu").onclick = e => {
   const b = e.target.closest("[data-trans]");
   if (b) chooseYouTubeImport(b.dataset.trans);
 };
 
+document.getElementById("ytDialog").addEventListener("click", e => {
+  if (!e.target.closest(".yt-tr")) document.getElementById("ytTransMenu").hidden = true;
+});
 
 function placeImportTile(list) {
   if (!ytImport) return;
@@ -29134,7 +29152,7 @@ document.addEventListener("keydown", e => {
     return;
   }
   if (!document.getElementById("ytDialog").hidden) {
-    if (e.key === "Escape") chooseYouTubeImport(null);
+    if (e.key === "Escape") document.getElementById("ytTransMenu").hidden ? chooseYouTubeImport(null) : document.getElementById("ytTransMenu").hidden = true;
     return;
   }
   if (!document.getElementById("addPopup").hidden) return;
