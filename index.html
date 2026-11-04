@@ -15299,7 +15299,11 @@ function toolDelete(x) {
   if (!x.home.lesson) return x.row ? deleteRow(x.row.id) : deleteVocabEntry(x.word);
   pushDeleteUndo("Deleted — " + truncate(x.text, 30)).others = toolBackup([ x.home ]);
   if (x.row) x.home.lesson.cards = x.home.lesson.cards.filter(c => c !== x.row); else {
-    dropWordEverywhere(toolCardsOf(x.home), x.word.key);
+    const card = x.word.card, next = rewrittenVocabNotes(card, x.word, null, null);
+    if (!next) return;
+    card.notes = next.notes;
+    card.notesHtml = next.notesHtml;
+    if (card.vocab) delete card.vocab[x.word.key];
   }
   toolSave(x.home);
   toolRefresh();
@@ -18142,7 +18146,6 @@ function updateVocabEntry(item, termRaw, meaningRaw) {
     row.vocab[newKey] = row.vocab[item.key];
     delete row.vocab[item.key];
   }
-  dropWordEverywhere(vocabSource(), item.key, term, meaning);
   renameVocabSessionKey(item.key, newKey);
   scheduleAutoSave();
   render();
@@ -18151,21 +18154,6 @@ function updateVocabEntry(item, termRaw, meaningRaw) {
 
 function vocabSoundOn() {
   return vocabTtsOn || vocabPendingKey !== null || loopingRowId !== null && loopingRowId === vocabShownRowId;
-}
-
-function dropWordEverywhere(cards, key, term = null, meaning = null) {
-  const newKey = term == null ? null : normalizeVocabText(term);
-  cards.forEach(c => vocabEntriesOf(c).filter(e => e.key === key).forEach(e => {
-    const next = rewrittenVocabNotes(c, Object.assign({
-      card: c
-    }, e), term, meaning);
-    if (!next) return;
-    c.notes = next.notes;
-    c.notesHtml = next.notesHtml;
-    if (!c.vocab || newKey === key) return;
-    if (newKey && c.vocab[key] && !c.vocab[newKey]) c.vocab[newKey] = c.vocab[key];
-    delete c.vocab[key];
-  }));
 }
 
 function deleteVocabEntry(item, part) {
@@ -18182,7 +18170,6 @@ function deleteVocabEntry(item, part) {
   row.notes = next.notes;
   row.notesHtml = next.notesHtml;
   if (row.vocab) delete row.vocab[item.key];
-  dropWordEverywhere(vocabSource(), item.key);
   if (vocabSession) {
     if (vocabSession.queue[0] === item.key) vocabSession.flipped = false;
     dropVocabSessionKey(item.key);
@@ -18239,7 +18226,6 @@ function moveVocabToLesson(item, sorted) {
   extras.notes = next.notes;
   extras.notesHtml = next.notesHtml;
   if (extras.vocab) delete extras.vocab[item.key];
-  dropWordEverywhere(vocabSource().filter(c => c !== row), item.key);
   dedupeLibrary({
     card: row,
     key: null
