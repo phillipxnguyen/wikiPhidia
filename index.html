@@ -19937,6 +19937,22 @@ document.getElementById("todayTrack").addEventListener("click", e => {
 
 const BOOK_PARTS = [ [ "vocab", "📖", "Vocabulary", "어휘", "生词" ], [ "text", "📜", "Text", "본문", "课文" ], [ "grammar", "📐", "Grammar", "문법", "注释" ], [ "speak", "💬", "Speaking", "말하기", "口语" ], [ "listen", "🎧", "Listening", "듣기", "听力" ], [ "read", "📰", "Reading", "읽기", "阅读" ], [ "write", "✍️", "Writing", "쓰기", "写作" ], [ "practice", "✏️", "Exercises", "연습", "练习" ], [ "hanzi", "🀄", "Characters", "한자", "汉字" ], [ "apply", "🤝", "Activities", "활용", "运用" ], [ "culture", "🏮", "Culture", "문화", "文化" ], [ "saying", "🪭", "Saying", "속담", "俗语" ] ];
 
+const BOOK_UI = {
+  en: {unit: "Unit {n}", stage: "Stage {n}", learned: "{a} of {b} learned", notAdded: "not added yet", unitSoon: "This unit is not added yet.", archive: "🗄 {n} in the archive · <b>Restore</b>", read: "read", unread: "not read yet", items: "{n} items", fresh: "{n} new", due: "{n} due", toReview: "{n} to review", readGo: "📄 Read", cont: "▶ Continue", library: "‹ Library", book: "Book", added: "{a} of {b} units added", shown: "Meanings shown", hidden: "Meanings hidden", memo: "🃏 Memorize with flashcards", next: "Next: {x} ›", back: "‹ Back to Unit {n}", soonBook: "Not added yet: send this book (PDF) and its units will appear here."},
+  zh: {unit: "第{n}课", stage: "第{n}阶段", learned: "已学 {a}/{b}", notAdded: "尚未添加", unitSoon: "本课尚未添加。", archive: "🗄 回收站 {n} 项 · <b>恢复</b>", read: "已读", unread: "未读", items: "{n} 项", fresh: "新 {n}", due: "复习 {n}", toReview: "待复习 {n}", readGo: "📄 阅读", cont: "▶ 继续", library: "‹ 书库", book: "教材", added: "已添加 {a}/{b} 课", shown: "显示释义", hidden: "隐藏释义", memo: "🃏 用卡片记忆", next: "下一部分：{x} ›", back: "‹ 返回第{n}课", soonBook: "尚未添加：发送本书的 PDF 后，各课会出现在这里。"},
+  ko: {unit: "제{n}과", stage: "{n}단계", learned: "{b}개 중 {a}개 학습", notAdded: "아직 추가되지 않음", unitSoon: "이 과는 아직 추가되지 않았습니다.", archive: "🗄 보관함 {n}개 · <b>복원</b>", read: "읽음", unread: "안 읽음", items: "{n}개", fresh: "새 {n}", due: "복습 {n}", toReview: "복습할 {n}개", readGo: "📄 읽기", cont: "▶ 계속", library: "‹ 서재", book: "교재", added: "{b}과 중 {a}과 추가", shown: "뜻 보이기", hidden: "뜻 숨기기", memo: "🃏 카드로 외우기", next: "다음: {x} ›", back: "‹ 제{n}과로 돌아가기", soonBook: "아직 추가되지 않음: 이 책의 PDF를 보내면 각 과가 여기에 나타납니다."}
+};
+
+function bt(book, key, v = {}) {
+  const lang = book && book.lang === "zh-CN" ? "zh" : book && book.lang === "ko" ? "ko" : "en";
+  return BOOK_UI[lang][key].replace(/\{(\w+)\}/g, (m, k) => v[k] != null ? v[k] : m);
+}
+
+function bookPartLabel(book, part) {
+  const p = BOOK_PARTS.find(x => x[0] === part);
+  return p ? book && book.lang !== "en" ? bookPartNative(book, p) : p[2] : part;
+}
+
 function bookStageColor(book, stage) {
   return book.lang === "ko" ? BOOK_STAGES[stage % BOOK_STAGES.length] : book.colors[0];
 }
@@ -24081,7 +24097,7 @@ A 연락을 드리려던 참이었는데, 연락을 주셨네요. / B 그러셨�
   series: "HSK Standard Course",
   title: "HSK 标准教程",
   level: "HSK " + n,
-  ko: "HSK Standard Course",
+  ko: "汉语水平考试标准教程",
   short: "HSK" + n,
   mark: String(n),
   colors: [ [ "#d7263d", "#e8590c", "#f08c00", "#2b8a3e", "#1864ab", "#5f3dc4" ][n - 1], "#ffd43b" ],
@@ -24478,7 +24494,7 @@ function bookRoadHtml(book, units, current) {
   for (let s = 0; s * 5 < units.length; s++) {
     const color = bookStageColor(book, s);
     const list = units.slice(s * 5, s * 5 + 5);
-    html += `<div class="road-stage" style="top:${y}px;--c:${color}"><b>Stage ${s + 1}</b><span>Unit ${list[0].n}–${list[list.length - 1].n}</span></div>`;
+    html += `<div class="road-stage" style="top:${y}px;--c:${color}"><b>${bt(book, "stage", {n: s + 1})}</b><span>${list[0].n}–${list[list.length - 1].n}</span></div>`;
     y += ROAD_HEAD;
     let d = prev ? `M${prev.x} ${prev.y}` : "";
     list.forEach(u => {
@@ -24494,7 +24510,7 @@ function bookRoadHtml(book, units, current) {
       const pct = c && c.total ? Math.round(c.done / c.total * 100) : 0;
       const full = c && c.total && c.done >= c.total;
       const cls = [ "road-stop", has ? "" : "soon", full ? "full" : "", u.n === current ? "here" : "", u.n === bookUnitShown ? "picked" : "" ].filter(Boolean).join(" ");
-      const tip = has ? `Unit ${u.n} · ${u.ko} — ${c.done} of ${c.total} learned` : `Unit ${u.n} · ${u.ko} — not added yet`;
+      const tip = `${bt(book, "unit", {n: u.n})} · ${u.ko} — ` + (has ? bt(book, "learned", {a: c.done, b: c.total}) : bt(book, "notAdded"));
       html += `<button class="${cls}" data-unit="${u.n}" style="left:${p.x - 36}px;top:${p.y - 36}px;--c:${color};--p:${pct}" title="${escapeAttr(tip)}" aria-label="${escapeAttr(tip)}"><span class="rs-in">${full ? "✓" : u.n}</span>${c && c.due ? `<em>${badgeCount(c.due)}</em>` : ""}</button>`;
       html += `<div class="road-label ${off > 0 ? "left" : "right"}" style="${off > 0 ? `left:${p.x - 48 - 112}px` : `left:${p.x + 48}px`};top:${p.y - 22}px"><b>${escapeHtml(u.ko)}</b><span>${escapeHtml(u.vi)}</span></div>`;
       y += ROAD_ROW;
@@ -24507,20 +24523,20 @@ function bookRoadHtml(book, units, current) {
 function bookUnitHtml(book, unit) {
   const color = bookStageColor(book, Math.floor((unit.n - 1) / 5));
   const has = Object.keys(unit.parts).length > 0;
-  const head = `<div class="bu-head" style="--c:${color}"><span class="bu-num">Unit ${unit.n}</span><b>${escapeHtml(unit.ko)}</b><span>${escapeHtml(unit.vi)}</span><div class="bu-gram">${unit.grammar.map(g => `<i>${escapeHtml(g)}</i>`).join("")}</div></div>`;
-  if (!has) return head + '<p class="bu-soon">This unit is not added yet.</p>';
+  const head = `<div class="bu-head" style="--c:${color}"><span class="bu-num">${bt(book, "unit", {n: unit.n})}</span><b>${escapeHtml(unit.ko)}</b><span>${escapeHtml(unit.vi)}</span><div class="bu-gram">${unit.grammar.map(g => `<i>${escapeHtml(g)}</i>`).join("")}</div></div>`;
+  if (!has) return head + `<p class="bu-soon">${bt(book, "unitSoon")}</p>`;
   const c = bookUnitCounts(book, unit);
   const next = bookNextPart(book, unit);
   const rows = BOOK_PARTS.filter(([p]) => unit.parts[p]).map(entry => {
-    const [p, icon, name] = entry, ko = bookPartNative(book, entry);
+    const [p, icon] = entry, name = bookPartLabel(book, p);
     const n = bookPartCounts(book, unit, p);
     const later = Math.max(0, n.total - n.fresh - n.due - n.done);
     const bar = (cls, v) => v ? `<span class="${cls}" style="flex-grow:${v}"></span>` : "";
     const gone = bookArchived(book, unit, p), g = gone.cards.length + gone.words.length;
     const read = bookRead.has(bookReadKey(book, unit.n, p));
-    return `${g ? `<button class="bu-archive" data-restore="${p}" title="Bring the deleted items of this part back, with their progress reset">🗄 ${g} in the archive · <b>Restore</b></button>` : ""}<div class="bu-part${n.total && n.done >= n.total ? " full" : ""}" data-page="${p}" role="button" tabindex="0" title="Read the page of the book"><span class="bu-icon">${icon}</span><span class="bu-name"><b>${name}</b><span>${ko} · ${read ? "read" : "not read yet"} · ${n.total} items</span></span><span class="bu-counts">${n.fresh ? `<span class="today-new">${n.fresh} new</span>` : ""}${n.due ? `<span class="today-due">${n.due} due</span>` : ""}${!n.fresh && !n.due ? `<span class="bu-ok">${n.done ? "✓ " + n.done : "—"}</span>` : ""}</span><span class="lesson-tile-bar">${bar("new", n.fresh)}${bar("due", n.due)}${bar("later", later)}${bar("done", n.done)}</span><button class="bu-cards" data-part="${p}" title="Memorize with flashcards" aria-label="Flashcards for ${escapeAttr(name)}">🃏</button></div>`;
+    return `${g ? `<button class="bu-archive" data-restore="${p}" >${bt(book, "archive", {n: g})}</button>` : ""}<div class="bu-part${n.total && n.done >= n.total ? " full" : ""}" data-page="${p}" role="button" tabindex="0"><span class="bu-icon">${icon}</span><span class="bu-name"><b>${name}</b><span>${bt(book, read ? "read" : "unread")} · ${bt(book, "items", {n: n.total})}</span></span><span class="bu-counts">${n.fresh ? `<span class="today-new">${bt(book, "fresh", {n: n.fresh})}</span>` : ""}${n.due ? `<span class="today-due">${bt(book, "due", {n: n.due})}</span>` : ""}${!n.fresh && !n.due ? `<span class="bu-ok">${n.done ? "✓ " + n.done : "—"}</span>` : ""}</span><span class="lesson-tile-bar">${bar("new", n.fresh)}${bar("due", n.due)}${bar("later", later)}${bar("done", n.done)}</span><button class="bu-cards" data-part="${p}" aria-label="🃏 ${escapeAttr(name)}">🃏</button></div>`;
   }).join("");
-  return head + `<div class="bu-sum"><span><b>${c.done}</b> of ${c.total} learned</span>${c.due ? `<span class="today-due">${c.due} to review</span>` : ""}</div>` + (next ? `<button class="bu-go" ${bookGoAttr(book, unit.n, next)}>${bookGoLabel(book, unit.n, next)}</button>` : "") + `<div class="bu-parts">${rows}</div>`;
+  return head + `<div class="bu-sum"><span>${bt(book, "learned", {a: `<b>${c.done}</b>`, b: c.total})}</span>${c.due ? `<span class="today-due">${bt(book, "toReview", {n: c.due})}</span>` : ""}</div>` + (next ? `<button class="bu-go" ${bookGoAttr(book, unit.n, next)}>${bookGoLabel(book, unit.n, next)}</button>` : "") + `<div class="bu-parts">${rows}</div>`;
 }
 
 function bookSayHtml(text) {
@@ -24602,8 +24618,8 @@ function bookPageHtml(book, unit, part) {
   });
   body += shut();
   const n = bookPartCounts(book, unit, part);
-  const tabs = parts.map(([p, icon, name]) => `<button class="bp-tab${p === part ? " on" : ""}" data-page="${p}" aria-pressed="${p === part}"><span aria-hidden="true">${icon}</span>${escapeHtml(name)}${bookRead.has(bookReadKey(book, unit.n, p)) && p !== part ? '<i aria-label="read">✓</i>' : ""}</button>`).join("");
-  return `<div class="bp-top" style="--c:${color}"><button class="bp-back" data-pageback="1">‹ Unit ${unit.n} · ${escapeHtml(unit.ko)}</button><button class="bp-gloss${bookGloss ? " on" : ""}" data-gloss="1" aria-pressed="${bookGloss}" title="Show or hide the meanings">${bookGloss ? "Meanings shown" : "Meanings hidden"}</button></div><div class="bp-tabs">${tabs}</div><article class="bp-sheet${bookGloss ? "" : " nogloss"}" style="--c:${color}"><header class="bp-banner"><span class="bp-num">Unit ${unit.n}</span><b>${escapeHtml(bookPartNative(book, meta))}</b><span>${escapeHtml(meta[2])} · ${escapeHtml(unit.ko)}</span></header><div class="bp-body">${body}</div></article><div class="bp-foot"><button class="bp-cards" data-part="${part}">🃏 Memorize with flashcards<span>${n.total} items${n.due ? ` · ${n.due} due` : ""}</span></button>${next ? `<button class="bp-next" data-page="${next[0]}">Next: ${escapeHtml(next[2])} ›</button>` : `<button class="bp-next" data-pageback="1">‹ Back to Unit ${unit.n}</button>`}</div>`;
+  const tabs = parts.map(([p, icon, name]) => `<button class="bp-tab${p === part ? " on" : ""}" data-page="${p}" aria-pressed="${p === part}"><span aria-hidden="true">${icon}</span>${escapeHtml(bookPartLabel(book, p))}${bookRead.has(bookReadKey(book, unit.n, p)) && p !== part ? '<i aria-label="read">✓</i>' : ""}</button>`).join("");
+  return `<div class="bp-top" style="--c:${color}"><button class="bp-back" data-pageback="1">‹ ${bt(book, "unit", {n: unit.n})} · ${escapeHtml(unit.ko)}</button><button class="bp-gloss${bookGloss ? " on" : ""}" data-gloss="1" aria-pressed="${bookGloss}">${bt(book, bookGloss ? "shown" : "hidden")}</button></div><div class="bp-tabs">${tabs}</div><article class="bp-sheet${bookGloss ? "" : " nogloss"}" style="--c:${color}"><header class="bp-banner"><span class="bp-num">${bt(book, "unit", {n: unit.n})}</span><b>${escapeHtml(bookPartNative(book, meta))}</b><span>${escapeHtml(unit.ko)}</span></header><div class="bp-body">${body}</div></article><div class="bp-foot"><button class="bp-cards" data-part="${part}">${bt(book, "memo")}<span>${bt(book, "items", {n: n.total})}${n.due ? ` · ${bt(book, "due", {n: n.due})}` : ""}</span></button>${next ? `<button class="bp-next" data-page="${next[0]}">${bt(book, "next", {x: escapeHtml(bookPartLabel(book, next[0]))})}</button>` : `<button class="bp-next" data-pageback="1">${bt(book, "back", {n: unit.n})}</button>`}</div>`;
 }
 
 function openBookPage(n, part) {
@@ -24624,7 +24640,7 @@ function bookGoAttr(book, n, part) {
 }
 
 function bookGoLabel(book, n, part) {
-  return (bookRead.has(bookReadKey(book, n, part)) ? "▶ " : "📄 Read · ") + escapeHtml(bookPartName(part));
+  return (bookRead.has(bookReadKey(book, n, part)) ? "▶ " : bt(book, "readGo") + " · ") + escapeHtml(bookPartLabel(book, part));
 }
 
 function renderBooks() {
@@ -24643,7 +24659,7 @@ function renderBooks() {
   }
   const units = bookParsed(book);
   if (!units.length) {
-    document.getElementById("booksHead").innerHTML = `<div class="book-hero" style="--c1:${book.colors[0]};--c2:${book.colors[1]}">${bookCoverHtml(book, true)}<div class="bh-main"><button class="bh-back" data-back="1">‹ Library</button><span class="bh-kicker">Book</span><b class="bh-title">${escapeHtml(book.title)} · ${escapeHtml(book.level)}</b><span class="bh-ko">${escapeHtml(book.ko)}</span><span class="bh-stats">Not added yet: send this book (PDF) and its units will appear here.</span></div></div>`;
+    document.getElementById("booksHead").innerHTML = `<div class="book-hero" style="--c1:${book.colors[0]};--c2:${book.colors[1]}">${bookCoverHtml(book, true)}<div class="bh-main"><button class="bh-back" data-back="1">${bt(book, "library")}</button><span class="bh-kicker">${bt(book, "book")}</span><b class="bh-title">${escapeHtml(book.title)} · ${escapeHtml(book.level)}</b><span class="bh-ko">${escapeHtml(book.ko)}</span><span class="bh-stats">${bt(book, "soonBook")}</span></div></div>`;
     view.classList.add("lib");
     return;
   }
@@ -24664,7 +24680,7 @@ function renderBooks() {
   });
   const cu = units[current - 1], next = bookNextPart(book, cu);
   const pct = all.total ? Math.round(all.done / all.total * 100) : 0;
-  document.getElementById("booksHead").innerHTML = `<div class="book-hero" style="--c1:${book.colors[0]};--c2:${book.colors[1]}">${bookCoverHtml(book, true)}<div class="bh-main"><button class="bh-back" data-back="1">‹ Library</button><span class="bh-kicker">Book</span><b class="bh-title">${escapeHtml(book.title)} · ${escapeHtml(book.level)}</b><span class="bh-ko">${escapeHtml(book.ko)}</span><div class="bh-bar"><i style="width:${pct}%"></i></div><span class="bh-stats"><b>${all.done}</b> of ${all.total} learned · ${units.filter(u => Object.keys(u.parts).length).length} of ${units.length} units added${all.due ? ` · <span class="today-due">${all.due} to review</span>` : ""}</span>${next ? `<button class="bh-go" data-unit="${current}" ${bookGoAttr(book, current, next)}>${bookRead.has(bookReadKey(book, current, next)) ? "▶ Continue" : "📄 Read"} · Unit ${current} · ${escapeHtml(bookPartName(next))}</button>` : ""}</div></div>`;
+  document.getElementById("booksHead").innerHTML = `<div class="book-hero" style="--c1:${book.colors[0]};--c2:${book.colors[1]}">${bookCoverHtml(book, true)}<div class="bh-main"><button class="bh-back" data-back="1">${bt(book, "library")}</button><span class="bh-kicker">${bt(book, "book")}</span><b class="bh-title">${escapeHtml(book.title)} · ${escapeHtml(book.level)}</b><span class="bh-ko">${escapeHtml(book.ko)}</span><div class="bh-bar"><i style="width:${pct}%"></i></div><span class="bh-stats">${bt(book, "learned", {a: `<b>${all.done}</b>`, b: all.total})} · ${bt(book, "added", {a: units.filter(u => Object.keys(u.parts).length).length, b: units.length})}${all.due ? ` · <span class="today-due">${bt(book, "toReview", {n: all.due})}</span>` : ""}</span>${next ? `<button class="bh-go" data-unit="${current}" ${bookGoAttr(book, current, next)}>${bt(book, bookRead.has(bookReadKey(book, current, next)) ? "cont" : "readGo")} · ${bt(book, "unit", {n: current})} · ${escapeHtml(bookPartLabel(book, next))}</button>` : ""}</div></div>`;
   document.getElementById("booksRoad").innerHTML = bookRoadHtml(book, units, current);
   document.getElementById("booksUnit").innerHTML = bookUnitHtml(book, units[bookUnitShown - 1]);
 }
@@ -24686,7 +24702,7 @@ async function openBookPart(n, part) {
   taskRun = {
     key: "b:" + id,
     lessonId: id,
-    title: `${book.short} · Unit ${n} · ${bookPartName(part)}`,
+    title: `${book.short} · ${bt(book, "unit", {n: n})} · ${bookPartLabel(book, part)}`,
     remDue: null,
     remFresh: null,
     rem: null,
