@@ -82,7 +82,9 @@ Only YouTube gives a lesson video times; any other link changes nothing, so a le
 
 **Lesson order in the sidebar.** Lessons are listed newest first: a lesson with new words not seen yet at the top, then every lesson in the order you last opened it (the one you opened last first), then the ones never opened, newest first; nothing is pushed to the end for being opened recently.
 
-**Same size before and after.** On the Speaking paper a card is exactly as tall before its answer is shown as after: the answer's lines are already there, hidden, with ··· on the first, and showing it only makes the writing appear. **Words first:** when every card left in a lesson waits for its words, the end screen says so (*Words first · 3 cards wait for their words: learn them in Vocabulary*) with a Go to Vocabulary button, instead of All caught up.
+**Word lines never creep inwards.** If `word: meaning` lines end up nested one inside the other in a card's notes (each new line pushed further in), they are shown and saved as one flat list; a sub-list of ordinary notes under a line is kept as you wrote it.
+
+**Same size before and after.** On the Speaking paper a card is exactly as tall before its answer is shown as after: the answer's lines are already there, hidden, with ··· on the first, and showing it only makes the writing appear. **Words first:** when every card left in a lesson waits for its words, the end screen says so (in ☰ Full and on the Speaking paper alike) (*Words first · 3 cards wait for their words: learn them in Vocabulary*) with a Go to Vocabulary button, instead of All caught up.
 
 **Editing in Speaking.** A card is edited in Speaking in the same popup as in the other modes (beside where you clicked), with its stroke order and dictionary in the popup; the Speaking sheet itself shows only the card and its notes, and is just as tall as they are.
 

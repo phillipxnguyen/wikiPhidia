@@ -6374,8 +6374,27 @@ document.getElementById("qaTime").addEventListener("input", e => {
   if (text !== box.value) box.value = text;
 });
 
+function flatVocabLists(html) {
+  if (!html || !/<li[\s>][\s\S]*<[uo]l/i.test(html)) return html;
+  const box = document.createElement("div");
+  box.innerHTML = html;
+  let moved = true;
+  while (moved) {
+    moved = false;
+    box.querySelectorAll("li > ul, li > ol").forEach(sub => {
+      const li = sub.parentElement;
+      const items = [ ...sub.children ];
+      if (!items.length || !items.every(x => x.tagName === "LI" && parseVocabLine(ownLiText(x)))) return;
+      li.after(...items);
+      sub.remove();
+      moved = true;
+    });
+  }
+  return box.innerHTML;
+}
+
 function cardNotesHtml(row) {
-  const html = notesEditorHtml(row);
+  const html = flatVocabLists(notesEditorHtml(row));
   return html && plainTextOf(html, "\n").trim() ? `<div class="card-notes">${blockNotesHtml(html)}</div>` : "";
 }
 
@@ -6521,7 +6540,7 @@ function showSessionCompletePanel() {
   const due = isAllLessons() ? mixCandidates(true).map(([ r ]) => r) : modeScopeRows(modeKey()).filter(r => cardReady(r, "Table", now));
   const more = heldMore(due, isAllLessons() ? mixCandidates().map(([ r ]) => r) : limitRows(due), r => srsOf(r, "Table"));
   const held = more.total;
-  const waiting = isAllLessons() ? 0 : modeScopeRows(modeKey()).filter(cardWaiting).length;
+  const waiting = isAllLessons() ? 0 : modeScopeRows(isVideoLesson() ? "Listen" : "Table").filter(cardWaiting).length;
   let text = finishText(held, studiedToday(rows, false), next, "card", modeScopeRows(modeKey()).filter(r => !cardWaiting(r)).map(r => srsOf(r, "Table")));
   if (waiting && text.emoji === "🎉" && !held) text = {
     emoji: "字",
@@ -9270,7 +9289,7 @@ function commitActiveEdit(keep) {
     if (isVocabItem(li)) takenKeys.add(normalizeVocabText(noteItemTerm(li))); else if (NOTE_VOCAB_ITEM_RE.test(ownLiTextNodes(li).map(n => n.nodeValue).join("")) && !noteItemIsDuplicate(li, takenKeys)) boldVocabItem(li);
   });
   if (!keep && activeEdit.editNotes.textContent.trim() && !activeEdit.editNotes.querySelector("*")) activeEdit.editNotes.innerHTML = "<div>" + activeEdit.editNotes.innerHTML + "</div>";
-  const notesNow = editorHtml(activeEdit.editNotes);
+  const notesNow = flatVocabLists(editorHtml(activeEdit.editNotes));
   const newNotes = plainTextOf(notesNow, "\n");
   const newNotesHtml = plainTextOf(notesNow, "\n").trim() ? sanitizeHtml(notesNow) : "";
   if ((newQ !== activeEdit.originalQ || newA !== activeEdit.originalA) && findDuplicateCard(newQ, newA, activeEdit.row.time, activeEdit.row)) {
