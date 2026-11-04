@@ -641,8 +641,6 @@ window.onYouTubeIframeAPIReady = function(){
     .shell .vocab-list-row[data-key] > *{padding:13px 16px 13px 0;}
     .shell .vocab-list-row[data-key] > :first-child{padding-left:16px;}
     .shell .single-card-body{padding:24px 16px;}
-    .shell .single-card-field{padding:14px 10px;}
-    .shell .single-card-field .cell{font-size:18px;line-height:22px;padding:2px 6px;}
     .shell .single-card-body.listen-batch{padding:0;}
     .shell #cardTable:not(.notebook) .card-notes{padding:0 16px 14px 16px;}
   }
@@ -1205,11 +1203,6 @@ window.onYouTubeIframeAPIReady = function(){
   .single-card-body.row-playing{box-shadow:0 0 0 4px var(--accent-soft), var(--shadow-sm);}
   .single-card-body:not(.edit-row){display:flex;flex-direction:column;gap:14px;}
   .single-card-body.edit-row{padding:10px 12px;}
-  .single-card-field{
-    position:relative;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
-    min-height:72px;border-radius:10px;padding:18px 18px;
-  }
   .single-card-body.listen-batch{padding:0;background:none;border:0;box-shadow:none;}
   .single-card-body.listen-batch:not(.edit-row){gap:0;}
   .card-notes{font-size:14px;line-height:18px;color:var(--text);overflow-wrap:anywhere;}
@@ -1223,12 +1216,6 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-list-meaning .card-notes{margin-top:4px;}
   #cardTable.notebook .card-notes{padding:6px 4px 0;font-size:20px;line-height:28px;}
   @media (prefers-reduced-motion: reduce){.listen-cover i, .listen-slot .media-video{animation:none !important;}}
-  .single-card-q{background:var(--q-bg);}
-  .single-card-a{background:var(--a-bg);}
-  .single-card-field .cell{font-size:20px;line-height:25px;font-weight:400;text-align:left;padding:2px 16px;border-radius:8px;}
-  .single-card-q .cell.shown{color:var(--text);}
-  .single-card-a .cell.shown{color:var(--a-text);}
-  .single-card-field .cell.hidden{color:var(--text);}
   .single-card-body.ielts-card{background:none;border:0;box-shadow:none;padding:0;}
   :root{--blend:linear-gradient(90deg, var(--mode-blue), var(--new-color));}
   .blend-text{background:var(--blend);-webkit-background-clip:text;background-clip:text;color:transparent;}
@@ -6935,13 +6922,6 @@ function cardWords(row) {
   return lessonVocabItems(vocabSource()).filter(i => termInText(i.term, text));
 }
 
-function singleCardFieldsHtml(row) {
-  const qField = `<div class="single-card-field single-card-q"><div class="cell ${row.qHidden ? "hidden" : "shown"}" data-field="q">${qCellContent(row)}</div></div>`;
-  const aField = `<div class="single-card-field single-card-a"><div class="cell ${row.aHidden ? "hidden" : "shown"}" data-field="a">${aCellContent(row)}</div></div>`;
-  if (!hasAnswer(row)) return qField;
-  return qField + aField;
-}
-
 let ieltsHintId = null;
 
 function ieltsHintNext(row) {
@@ -7084,7 +7064,7 @@ function renderSingleCard(visibleRows) {
   bodyEl.classList.toggle("row-playing", !isListenMode() && loopingRowId === row.id);
   bodyEl.classList.toggle("ielts-card", groupViewStyle === "ielts");
   bodyEl.classList.toggle("listen-batch", isListenMode());
-  bodyEl.innerHTML = groupViewStyle === "ielts" ? ieltsPaperHtml(row) : isListenMode() ? listenPairsHtml(batch) : singleCardFieldsHtml(row);
+  bodyEl.innerHTML = groupViewStyle === "ielts" ? ieltsPaperHtml(row) : listenPairsHtml(batch);
   if (isListenMode() && firstShow) bodyEl.scrollTop = 0;
   if (groupViewStyle === "ielts") {
     visibleRows.slice(0, 2).forEach(preloadCardDict);
@@ -10966,7 +10946,7 @@ function showNextUnderSwipe() {
     const body = document.getElementById("singleCardBody");
     if (next) {
       Array.from(body.children).forEach(el => el.style.display = "none");
-      body.insertAdjacentHTML("beforeend", groupViewStyle === "ielts" ? ieltsPaperHtml(next, 1) : isListenMode() ? listenPairsHtml(nextBatch) : singleCardFieldsHtml(next));
+      body.insertAdjacentHTML("beforeend", groupViewStyle === "ielts" ? ieltsPaperHtml(next, 1) : listenPairsHtml(nextBatch));
       if (isListenMode() && deckOn() && next.qHidden) {
         const box = mediaBox();
         const was = box.classList.contains("covered");
