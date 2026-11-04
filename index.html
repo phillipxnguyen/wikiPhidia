@@ -11021,8 +11021,10 @@ function detectLang(text) {
   if (/[\u3040-\u30FF]/.test(text)) return "ja-JP";
   if (/[\u4E00-\u9FFF]/.test(text)) return "zh-CN";
   if (/[\uAC00-\uD7A3]/.test(text)) return "ko-KR";
-  if (/[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(text)) return "vi-VN";
-  return "en-US";
+  const vi = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i;
+  if (!vi.test(text)) return "en-US";
+  const words = text.match(/\p{L}+/gu) || [];
+  return words.filter(w => vi.test(w)).length * 4 >= words.length ? "vi-VN" : "en-US";
 }
 
 function resolveSpeechLang(text) {
@@ -18237,7 +18239,9 @@ function handleVocabKey(e) {
   }
   if (e.code === "KeyW" && !e.shiftKey) {
     const pickedKey = vocabPickedKey();
-    const item = pickedKey ? lessonVocabItems(vocabSource()).find(i => i.key === pickedKey) : vocabView === "card" ? currentVocabItem() : null;
+    const all = lessonVocabItems(vocabSource());
+    const item = pickedKey ? all.find(i => i.key === pickedKey) : vocabView === "card" ? currentVocabItem() : all.length === 1 ? all[0] : null;
+    if (!item) return e.preventDefault(), showToast("Point at a word (or select it), then press W");
     if (!canMoveToLesson(item)) return cantMoveToLesson(item);
     e.preventDefault();
     moveVocabToLesson(item);
@@ -28450,9 +28454,10 @@ document.addEventListener("keydown", e => {
   if (letter && e.code === "KeyW") {
     if (activeEdit) return;
     const {scope: scope, picked: picked} = studyPick();
-    const row = picked || (groupViewStyle === "ielts" && groupState ? scope[0] : null);
-    if (!row || cardInVideoLesson(row)) return;
+    const row = picked || (groupState || scope.length === 1 ? scope[0] : null);
     e.preventDefault();
+    if (!row) return showToast("Point at a card (or select it), then press W");
+    if (cardInVideoLesson(row)) return showToast("A video sentence stays in its lesson");
     if (!canMoveToVocab(row)) return showToast((row.a || "").trim() ? "A question answered in its own language is studied here, with Speaking" : "This card is studied here, with Speaking");
     moveCardToVocab(row);
     return;
