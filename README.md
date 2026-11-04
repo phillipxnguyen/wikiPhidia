@@ -86,7 +86,7 @@ Only YouTube gives a lesson video times; any other link changes nothing, so a le
 
 **A card never marks itself.** On a Vocabulary flashcard whose word is a whole sentence (`That may have caused it.`), the sentence is not shaded as its own word (the full stop or other punctuation no longer hides that it is the same text); only the other words inside it show, as lookups.
 
-**Text sizes.** Every card's question, answer and notes outside the big flashcards are 2 px larger than they were: questions and answers 22 px (20 px on a phone) in the editors, ☰ Full, ☰ List and on the Speaking paper, notes 20 px (18 px on a phone), and the Listening card's notes 20 px; the big Listening sentence and Vocabulary's flashcards stay 28 px (24 px on a phone).
+**Text sizes.** Every card's question, answer and notes outside the big flashcards are 2 px larger than they were: questions and answers 22 px (20 px on a phone) in the editors, ☰ Full, ☰ List and on the Speaking paper, notes 20 px (18 px on a phone); the Listening study card is left exactly as it was (its sentence 28 px, 24 px on a phone, its notes 18 px), and so are Vocabulary's flashcards.
 
 **Tidy up a lesson.** ⌘⇧F (or 🔁 Find & replace / 👯 Duplicates in ⚙️ Settings) opens a small window for the open lesson, in Lessons and Vocabulary alike: Find & replace changes a text everywhere in the lesson (cards, answers, notes and words, with Match case; a word keeps its progress when its spelling changes), with a live count and Undo as usual; Duplicates lists the cards (in Vocabulary, the words) that read the same once case, spaces and punctuation are set aside, each with ✕ to delete it and Keep one to keep the one with the most progress and delete the rest (deleted ones go to the archive like any card).
 
