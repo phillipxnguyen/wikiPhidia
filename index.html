@@ -1709,6 +1709,8 @@ window.onYouTubeIframeAPIReady = function(){
   .session-complete-sub{font-size:14px;color:var(--text);margin-top:6px;animation:fade-up .5s ease .2s both;}
   #ytDialog .cloud-row button{white-space:nowrap;}
   #ytDialog .paused-card{position:relative;}
+  .yt-trans{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:14px;line-height:20px;color:var(--text-2);}
+  .yt-trans select{flex:1;min-width:0;}
   .dialog-x{position:absolute;top:8px;right:8px;width:44px;height:44px;min-height:0;padding:0;border-radius:22px;font-size:22px;line-height:44px;}
   @media (hover:hover){.dialog-x:hover{background:var(--danger-soft);color:var(--danger);}}
   #ytTrack{display:block;width:100%;margin-bottom:10px;}
@@ -2209,7 +2211,12 @@ window.onYouTubeIframeAPIReady = function(){
   html.sel-on .words-fab{bottom:calc(189px + env(safe-area-inset-bottom));}
   .fresh-lesson .words-fab{background:var(--surface);}
   @media (hover:hover){.words-fab:hover, .fresh-lesson .words-fab:hover{background:var(--surface-2);filter:none;}}
-  .word-box{width:min(640px, 100%);gap:12px;}
+  #wordPop{padding:32px;}
+  .word-box{width:100%;max-width:1400px;height:100%;max-height:none;gap:12px;overflow:hidden;}
+  .wl-main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0, 3fr) minmax(0, 2fr);gap:16px;}
+  .wl-words, .wl-detail{min-height:0;overflow:auto;overscroll-behavior:contain;}
+  .wl-words{display:flex;flex-direction:column;gap:12px;}
+  @media (max-width:760px){#wordPop{padding:12px;}.word-box{padding:12px;}.wl-main{grid-template-columns:minmax(0, 1fr);grid-template-rows:minmax(0, 1fr) minmax(0, 1fr);gap:12px;}}
   .wl-head{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:16px;line-height:24px;}
   .wl-sum{display:flex;flex-wrap:wrap;gap:10px;font-size:14px;line-height:20px;color:var(--text-2);}
   .wl-s2{color:var(--new-color);}
@@ -2222,7 +2229,7 @@ window.onYouTubeIframeAPIReady = function(){
   .wl-w.s2{color:var(--new-color);background:color-mix(in srgb, var(--new-color) 10%, var(--surface));}
   .wl-w.s1{color:var(--due-color);background:color-mix(in srgb, var(--due-color) 10%, var(--surface));}
   .wl-w.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset;}
-  .wl-detail{display:flex;flex-direction:column;padding:10px 12px;border-radius:12px;background:var(--surface-2);}
+  .wl-detail{padding:10px 12px;border-radius:12px;background:var(--surface-2);}
   .wl-dhead{display:flex;align-items:baseline;flex-wrap:wrap;gap:8px;padding-bottom:6px;font-size:18px;line-height:26px;}
   .wl-dhead span{font-size:13px;line-height:20px;font-weight:700;color:var(--accent);}
   .wl-dhead i{font-style:normal;font-size:15px;line-height:22px;color:var(--text-2);}
@@ -2231,7 +2238,6 @@ window.onYouTubeIframeAPIReady = function(){
   @media (hover:hover){.wl-sent:hover{background:var(--accent-soft);}}
   .wl-w.row-selected{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent) inset;}
   .wl-close{flex:none;width:36px;height:36px;margin:-6px -6px -6px 0;padding:0;font-size:16px;line-height:20px;}
-  .wl-head .wl-sum{margin-left:auto;}
   html.words-open .sel-bar{z-index:1450;}
   html.words-open.sel-on #wordPop{padding-bottom:calc(var(--sel-h, 116px) + 8px);}
   .wl-sent mark{padding:0 2px;border-radius:4px;background:var(--mark-bg);color:#20242b;}
@@ -2503,6 +2509,7 @@ window.onYouTubeIframeAPIReady = function(){
     <select id="ytTrack" aria-label="Subtitles language" disabled>
       <option value="-1">Auto-detect</option>
     </select>
+    <label class="yt-trans">Translation <select id="ytTrans" aria-label="Translation" disabled></select></label>
     <div class="cloud-row">
       <button id="ytOnlySubs" disabled>Subtitles only</button>
       <button id="ytWithTranslation" class="primary" disabled>With translation</button>
@@ -15419,8 +15426,9 @@ function wordPopHtml() {
   const words = lessonWords(), states = wordStates();
   const st = w => (states.get(w.w) || {}).v || 0;
   const count = v => words.filter(w => st(w) === v).length;
-  const head = `<div class="wl-head"><b>Words</b><span class="wl-sum"><span class="wl-s2">✅ ${count(2)}</span><span class="wl-s1">📖 ${count(1)}</span><span>🆕 ${count(0)}</span><span>/ ${words.length}</span></span><button class="wl-close" data-wclose aria-label="Close" title="Close">✕</button></div>`;
+  const head = `<div class="wl-head"><span class="wl-sum"><span class="wl-s2" title="Done in Vocabulary">✅ ${count(2)} known</span><span class="wl-s1" title="In Vocabulary, still being learnt">📖 ${count(1)} learning</span><span title="Not in Vocabulary yet">🆕 ${count(0)} new</span><span>${countOf(words.length, "word")}</span></span><button class="wl-close" data-wclose aria-label="Close" title="Close">✕</button></div>`;
   if (wordPick && !words.some(w => w.w === wordPick)) wordPick = null;
+  if (!wordPick && words.length) wordPick = words[0].w;
   if (!words.length) return head + '<p class="tool-empty">No words in this lesson yet.</p>';
   const sel = (kind, id) => wordSel && wordSel.kind === kind && wordSel.id === id ? " row-selected" : "";
   const chip = w => `<span class="wl-w s${st(w)}${wordPick === w.w ? " on" : ""}${sel("w", w.w)}" data-w="${escapeAttr(w.w)}">${escapeHtml(w.text)}<i>${w.n}</i></span>`;
@@ -15431,8 +15439,8 @@ function wordPopHtml() {
     return these.length ? `<div class="wl-band"><span class="wl-label">${label}</span><div class="wl-chips">${these.map(chip).join("")}</div></div>` : "";
   }).join("");
   const pick = wordPick && words.find(w => w.w === wordPick), meaning = pick && (states.get(pick.w) || {}).meaning;
-  const detail = pick ? `<div class="wl-detail"><div class="wl-dhead"><b>${escapeHtml(pick.text)}</b><span>${pick.n}×</span>${meaning ? `<i>${escapeHtml(meaning)}</i>` : ""}</div>${pick.rows.map(r => `<div class="wl-sent${sel("s", r.id)}" data-id="${r.id}">${wordMarked(r.q, pick.w)}</div>`).join("")}</div>` : "";
-  return head + detail + bands;
+  const detail = pick ? `<div class="wl-dhead"><b>${escapeHtml(pick.text)}</b><span>${pick.n}×</span>${meaning ? `<i>${escapeHtml(meaning)}</i>` : ""}</div>${pick.rows.map(r => `<div class="wl-sent${sel("s", r.id)}" data-id="${r.id}">${wordMarked(r.q, pick.w)}</div>`).join("")}` : "";
+  return head + `<div class="wl-main"><div class="wl-words">${bands}</div><div class="wl-detail">${detail}</div></div>`;
 }
 
 function openWords() {
@@ -15440,11 +15448,14 @@ function openWords() {
   commitActiveEdit();
   wordSeg = wordSegmenter();
   const pop = document.getElementById("wordPop"), box = pop.querySelector(".tool-box");
-  const top = pop.hidden ? 0 : box.scrollTop;
+  const keep = el => pop.hidden || !box.querySelector(el) ? 0 : box.querySelector(el).scrollTop;
+  const top = keep(".wl-words"), side = keep(".wl-detail"), was = box.dataset.pick;
   pop.hidden = false;
   document.documentElement.classList.add("words-open");
   box.innerHTML = wordPopHtml();
-  box.scrollTop = top;
+  box.dataset.pick = wordPick || "";
+  if (box.querySelector(".wl-words")) box.querySelector(".wl-words").scrollTop = top;
+  if (box.querySelector(".wl-detail")) box.querySelector(".wl-detail").scrollTop = was === box.dataset.pick ? side : 0;
   updateSelBar();
 }
 
@@ -15518,13 +15529,12 @@ document.getElementById("wordPop").addEventListener("click", e => {
   if (e.target.closest("[data-wclose]")) return closeWords();
   const w = e.target.closest("[data-w]"), s = e.target.closest(".wl-sent");
   if (w) {
-    wordPick = wordPick === w.dataset.w && !isTouch() ? null : w.dataset.w;
+    wordPick = w.dataset.w;
     wordSel = isTouch() ? {
       kind: "w",
       id: w.dataset.w
     } : null;
     openWords();
-    if (wordPick) document.querySelector("#wordPop .tool-box").scrollTop = 0;
     return;
   }
   if (!s) {
@@ -16612,13 +16622,19 @@ function chooseYouTubeImport(translate) {
   const pick = Number(document.getElementById("ytTrack").value);
   const track = d.tracks[pick] || d.tracks[d.best] || d.tracks[0];
   const byTime = new Map((Array.isArray(track.translated) ? track.translated : []).map(e => [ e.t, e.s ]));
-  const pair = translate ? ytPairTrack(d.tracks, track) : null;
+  const how = document.getElementById("ytTrans").value || "";
+  const pair = translate && how.startsWith("t:") ? d.tracks[Number(how.slice(2))] : null;
+  const target = pair ? String(pair.lang).split("-")[0] : how.startsWith("auto:") ? how.slice(5) : track.target;
+  if (translate) try {
+    localStorage.setItem("flashcards.ytTarget", JSON.stringify(target));
+  } catch (e) {}
   const paired = pair ? alignTrack(track.lines || [], pair.lines) : [];
+  if (translate && track.target !== target) byTime.clear();
   importFromYouTube({
     id: d.id,
     title: d.title,
     lang: track.lang,
-    target: track.target,
+    target: target,
     lines: (Array.isArray(track.lines) ? track.lines : []).map((e, i) => ({
       t: e.t,
       q: e.s,
@@ -16627,11 +16643,11 @@ function chooseYouTubeImport(translate) {
   }, translate);
 }
 
-function ytPairTrack(tracks, track) {
+function ytPairTrack(tracks, track, prefer) {
   const base = t => String(t && t.lang || "").split("-")[0];
   const human = t => !/auto|tự động|自动|自動|자동/i.test(String(t.name || ""));
   const pool = (tracks || []).filter(t => t !== track && base(t) !== base(track) && Array.isArray(t.lines) && t.lines.length);
-  for (const l of [ "vi", "en" ]) {
+  for (const l of [ prefer, "vi", "en" ].filter(Boolean)) {
     const list = pool.filter(t => base(t) === l);
     const pick = list.find(human) || list[0];
     if (pick) return pick;
@@ -16682,8 +16698,17 @@ function syncYouTubeTrackNote() {
   if (!d) return;
   const pick = Number(document.getElementById("ytTrack").value);
   const track = d.tracks[pick] || d.tracks[d.best] || d.tracks[0];
-  const pair = ytPairTrack(d.tracks, track);
-  document.getElementById("ytDialogText").textContent = "Make a lesson from this video's subtitles." + (pair ? ` With translation, its own ${pair.name || pair.lang} subtitles are used, matched by time.` : "");
+  const base = t => String(t && t.lang || "").split("-")[0];
+  const prefer = readLocal("flashcards.ytTarget");
+  const others = d.tracks.map((t, i) => [ t, i ]).filter(([t]) => t !== track && base(t) !== base(track) && Array.isArray(t.lines) && t.lines.length);
+  const pair = ytPairTrack(d.tracks, track, prefer);
+  const autos = [ "vi", "en" ].filter(l => l !== base(track));
+  const how = pair ? "t:" + d.tracks.indexOf(pair) : "auto:" + (autos.includes(prefer) ? prefer : autos.includes(track.target) ? track.target : autos[0]);
+  const sel = document.getElementById("ytTrans");
+  sel.innerHTML = others.map(([t, i]) => `<option value="t:${i}">${escapeHtml(String(t.name || t.lang))} subtitles</option>`).join("") + autos.map(l => `<option value="auto:${l}">Translate automatically to ${l === "vi" ? "Vietnamese" : "English"}</option>`).join("");
+  sel.value = how;
+  sel.disabled = false;
+  document.getElementById("ytDialogText").textContent = "Make a lesson from this video's subtitles.";
 }
 
 document.getElementById("ytTrack").addEventListener("change", syncYouTubeTrackNote);
