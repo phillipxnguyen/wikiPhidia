@@ -1557,6 +1557,9 @@ window.onYouTubeIframeAPIReady = function(){
   .ielts-paper .cell{padding:0;font-size:inherit;color:inherit;text-align:left;border-radius:0;}
   .ielts-paper .paper-lines, .ielts-paper .paper-prompt, .ielts-paper .cell.shown.paper-lines:hover, .ielts-paper .cell.hidden.paper-prompt:hover{font-size:20px;line-height:var(--line);background-image:linear-gradient(to bottom, transparent calc(var(--line) - 1px), var(--paper-rule) calc(var(--line) - 1px));background-size:100% var(--line);}
   .ielts-paper .paper-prompt{min-height:calc(var(--line) * 5);color:var(--paper-ink-2);font-style:normal;}
+  .ielts-paper .paper-veil{position:relative;color:transparent !important;cursor:pointer;}
+  .ielts-paper .paper-veil *{color:transparent !important;background:none !important;}
+  .ielts-paper .paper-veil::before{content:"···";position:absolute;left:0;top:0;color:var(--paper-ink-2);}
   .ielts-paper .paper-lines{user-select:text;cursor:pointer;}
   html:not(.touch) .cell.shown, html:not(.touch) .vocab-card.flipped .vocab-ctx, html:not(.touch) .vocab-list-row[data-key] > *{-webkit-user-select:text;user-select:text;}
   .paper-body{display:grid;grid-template-columns:minmax(0, 1fr);column-gap:24px;}
@@ -6518,17 +6521,24 @@ function showSessionCompletePanel() {
   const due = isAllLessons() ? mixCandidates(true).map(([ r ]) => r) : modeScopeRows(modeKey()).filter(r => cardReady(r, "Table", now));
   const more = heldMore(due, isAllLessons() ? mixCandidates().map(([ r ]) => r) : limitRows(due), r => srsOf(r, "Table"));
   const held = more.total;
-  const text = finishText(held, studiedToday(rows, false), next, "card", modeScopeRows(modeKey()).filter(r => !cardWaiting(r)).map(r => srsOf(r, "Table")));
+  const waiting = isAllLessons() ? 0 : modeScopeRows(modeKey()).filter(cardWaiting).length;
+  let text = finishText(held, studiedToday(rows, false), next, "card", modeScopeRows(modeKey()).filter(r => !cardWaiting(r)).map(r => srsOf(r, "Table")));
+  if (waiting && text.emoji === "🎉" && !held) text = {
+    emoji: "字",
+    title: "Words first",
+    sub: `${waiting} card${waiting === 1 ? " waits" : "s wait"} for ${waiting === 1 ? "its" : "their"} words: learn them in Vocabulary`
+  };
   panel.querySelector(".emoji").textContent = text.emoji;
   panel.querySelector(".session-complete-title").textContent = text.title;
   panel.querySelector(".session-complete-sub").textContent = text.sub;
   const moreBtn = panel.querySelector(".more-today");
-  moreBtn.hidden = !held;
+  moreBtn.hidden = !held && text.emoji !== "字";
   Object.assign(moreBtn.dataset, {
     fresh: more.fresh,
-    review: more.review
+    review: more.review,
+    vocab: text.emoji === "字" ? "1" : ""
   });
-  moreBtn.textContent = `Study ${more.fresh + more.review} more today`;
+  moreBtn.textContent = text.emoji === "字" ? "Go to Vocabulary" : `Study ${more.fresh + more.review} more today`;
   const showing = panel.dataset.shown === String(currentLessonId);
   panel.style.display = "block";
   if (showing) {
@@ -6911,7 +6921,7 @@ function ieltsHints(row) {
 function ieltsPaperHtml(row, ahead = 0) {
   const words = row.aHidden ? [] : cardWords(row);
   const hints = row.aHidden && ieltsHintId === row.id ? ieltsHints(row) : [];
-  const answer = row.aHidden ? hints.length ? '<div class="cell hidden paper-prompt paper-hint" data-field="a"><ol>' + hints.map(m => `<li>${escapeHtml(m)}</li>`).join("") + "</ol></div>" : '<div class="cell hidden paper-prompt" data-field="a">···</div>' : `<div class="cell shown paper-lines" data-field="a">${aCellContent(row)}</div>`;
+  const answer = row.aHidden ? hints.length ? '<div class="cell hidden paper-prompt paper-hint" data-field="a"><ol>' + hints.map(m => `<li>${escapeHtml(m)}</li>`).join("") + "</ol></div>" : `<div class="cell hidden paper-lines paper-veil" data-field="a">${aCellContent(row)}</div>` : `<div class="cell shown paper-lines" data-field="a">${aCellContent(row)}</div>`;
   const own = row.aHidden || words.length ? "" : cardNotesHtml(row);
   const list = words.length ? "<ol>" + words.map((i, n) => `<li><span class="pn">${n + 1}.</span><b>${escapeHtml(i.term)}</b>${i.meaning ? " — " + escapeHtml(i.meaning) : ""}</li>`).join("") + "</ol>" : own;
   const notes = list ? `<aside class="paper-notes">${list}</aside>` : "";
@@ -8552,7 +8562,7 @@ function handleCardAreaClick(e) {
       return;
     }
   }
-  if (e.target.classList.contains("paper-prompt")) {
+  if (e.target.closest(".paper-prompt, .paper-veil")) {
     revealAction();
     return;
   }
@@ -14589,6 +14599,7 @@ function studyMoreToday(fresh, review) {
 
 document.addEventListener("click", e => {
   const btn = e.target.closest(".more-today");
+  if (btn && btn.dataset.vocab) return document.getElementById("btnAppMode").click();
   if (btn) studyMoreToday(Number(btn.dataset.fresh) || 0, Number(btn.dataset.review) || 0);
 });
 
