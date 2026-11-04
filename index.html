@@ -1681,8 +1681,8 @@ window.onYouTubeIframeAPIReady = function(){
   .swipe-ghost.delete{color:var(--text);border-color:currentColor;}
   .swipe-ghost.to-vocab{color:#1e9466;border-color:currentColor;}
   .swipe-ghost.to-lesson{color:var(--lesson-color);border-color:currentColor;}
-  .swipe-ghost.angel{display:block;overflow:visible;padding:12px 16px;font-weight:400;border:1px solid var(--border);background:var(--surface-2);color:var(--text-2);font-size:16px;line-height:24px;text-align:left;-webkit-text-stroke:0;filter:grayscale(1);box-shadow:0 12px 28px rgba(10,14,22,.2);}
-  .swipe-ghost.angel .ag-text{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:6;overflow:hidden;}
+  .swipe-ghost.angel{display:block;overflow:visible;padding:0;border:0;background:none;box-shadow:none;-webkit-text-stroke:0;font-weight:inherit;filter:grayscale(1);}
+  .swipe-ghost.angel > :not(.wl-wing){pointer-events:none;background:var(--surface);border-radius:var(--radius);box-shadow:0 12px 28px rgba(10,14,22,.18);}
   @media (prefers-reduced-motion: reduce){html .wl-wing{animation:none;}}
   .session-complete{
     display:none;
@@ -2238,7 +2238,7 @@ window.onYouTubeIframeAPIReady = function(){
   .wl-detail{padding:var(--dp);border-radius:12px;background:var(--surface-2);}
   .wl-dhead{position:relative;display:flex;flex-direction:column;gap:2px;padding:0 0 var(--dp);}
   .wl-dhead b{position:relative;align-self:flex-start;}
-  .wl-dhead em{position:absolute;top:-2px;left:100%;margin-left:2px;min-width:20px;height:20px;box-sizing:border-box;padding:0 6px;border-radius:10px;background:var(--accent);color:#fff;font-style:normal;font-size:11px;line-height:20px;font-weight:800;text-align:center;}
+  .wl-dhead em{position:absolute;top:-4px;left:100%;margin-left:6px;min-width:20px;height:20px;box-sizing:border-box;padding:0 6px;border-radius:10px;background:var(--accent);color:#fff;font-style:normal;font-size:11px;line-height:20px;font-weight:800;text-align:center;}
   .wl-dhead b{font-size:26px;line-height:34px;}
   .wl-dhead i{font-style:normal;font-size:var(--fs);line-height:var(--lh);color:var(--text);}
   .wl-sent{margin:0 calc(0px - var(--dp));padding:10px var(--dp);border-top:1px solid var(--border);font-size:var(--fs);line-height:var(--lh);cursor:pointer;-webkit-user-select:none;user-select:none;}
@@ -2252,7 +2252,7 @@ window.onYouTubeIframeAPIReady = function(){
   .wl-ghost{overflow:visible;border:1px solid var(--border);background:var(--surface-2);color:var(--text-2);filter:grayscale(1);}
   .wl-ghost i:not(.wl-wing), .wl-ghost mark{color:inherit;background:none;}
   .wl-ghost.wl-sent{border-radius:12px;}
-  .wl-wing{position:absolute;top:50%;width:28px;height:28px;margin-top:-14px;font-style:normal;font-size:24px;line-height:28px;text-align:center;filter:grayscale(1) drop-shadow(0 1px 2px rgba(10,14,22,.45));animation:wingFlap .28s ease-in-out infinite alternate;}
+  .wl-wing{--w:var(--wing, 44px);position:absolute;top:50%;width:var(--w);height:var(--w);margin-top:calc(var(--w) / -2);font-style:normal;font-size:calc(var(--w) - 6px);line-height:var(--w);text-align:center;filter:grayscale(1) drop-shadow(0 1px 2px rgba(10,14,22,.45));animation:wingFlap .28s ease-in-out infinite alternate;}
   .wl-wing.l{right:100%;margin-right:2px;--flip:-1;}
   .wl-wing.r{left:100%;margin-left:2px;--flip:1;}
   @keyframes wingFlap{from{transform:scaleX(var(--flip)) rotate(-12deg);}to{transform:scaleX(var(--flip)) rotate(22deg);}}
@@ -10869,10 +10869,8 @@ function swipe(parts, dir, update, next, label = dir > 0 ? "Good" : "Again") {
     ghost.classList.remove("good", "again", "waiting");
     ghost.classList.add("angel");
     ghost.textContent = "";
-    const text = document.createElement("span");
-    text.className = "ag-text";
-    text.textContent = parts.filter(Boolean).map(el => el.innerText || el.textContent || "").join("  ").replace(/\s+/g, " ").trim().slice(0, 400);
-    ghost.appendChild(text);
+    ghost.style.paddingTop = "";
+    snapshotInto(ghost, parts);
     angelFly(ghost, from);
   } else if (ghost) {
     ghost.classList.remove("good", "again", "waiting");
@@ -15374,7 +15372,7 @@ function toolDupGroups() {
   return [ ...groups.values() ].filter(g => g.length > 1);
 }
 
-let wordPick = null, wordSeg = null, wordSel = null, wordHover = null, wordTap = null;
+let wordAnchor = null, wordPick = null, wordSeg = null, wordSel = null, wordHover = null, wordTap = null;
 
 const HIDDEN_WORDS_KEY = "flashcards.hiddenWords";
 
@@ -15523,7 +15521,11 @@ function openWords() {
   document.documentElement.classList.add("words-open");
   box.innerHTML = wordPopHtml();
   box.dataset.pick = wordPick || "";
-  if (box.querySelector(".wl-words")) box.querySelector(".wl-words").scrollTop = top;
+  const list = box.querySelector(".wl-words");
+  if (list) list.scrollTop = top;
+  const anchor = wordAnchor && list && list.querySelector(`[data-w="${CSS.escape(wordAnchor.w)}"]`);
+  if (anchor) list.scrollTop += Math.round(anchor.getBoundingClientRect().top - wordAnchor.y);
+  wordAnchor = null;
   if (box.querySelector(".wl-detail")) {
     box.querySelector(".wl-detail").scrollTop = was === box.dataset.pick ? side : 0;
     if (was !== box.dataset.pick) box.querySelector(".wl-detail").classList.add("enter");
@@ -15555,7 +15557,40 @@ function wordTarget() {
   } : null;
 }
 
+function snapshotInto(ghost, parts) {
+  const g = ghost.getBoundingClientRect();
+  parts.filter(el => el && el.getClientRects().length).forEach(el => {
+    const r = el.getBoundingClientRect();
+    let node, left = r.left, width = r.width;
+    if (el.tagName === "TR") {
+      const table = el.closest("table"), tr = table.getBoundingClientRect();
+      node = table.cloneNode(false);
+      const cols = table.querySelector("colgroup");
+      if (cols) node.appendChild(cols.cloneNode(true));
+      const body = document.createElement("tbody");
+      body.appendChild(el.cloneNode(true));
+      node.appendChild(body);
+      left = tr.left;
+      width = tr.width;
+    } else node = el.cloneNode(true);
+    node.querySelectorAll("iframe, video, audio").forEach(x => x.remove());
+    node.removeAttribute("hidden");
+    Object.assign(node.style, {
+      position: "absolute",
+      left: Math.round(left - g.left) + "px",
+      top: Math.round(r.top - g.top) + "px",
+      width: Math.round(width) + "px",
+      height: Math.round(r.height) + "px",
+      margin: "0",
+      transform: "none"
+    });
+    ghost.appendChild(node);
+  });
+}
+
 function angelFly(ghost, from = "none") {
+  const h = ghost.getBoundingClientRect().height;
+  ghost.style.setProperty("--wing", Math.round(Math.min(96, Math.max(44, h * .5)) / 2) * 2 + "px");
   ghost.insertAdjacentHTML("beforeend", '<i class="wl-wing l" aria-hidden="true">🪽</i><i class="wl-wing r" aria-hidden="true">🪽</i>');
   const base = from === "none" ? "" : from + " ";
   ghost.animate([ {
@@ -15667,6 +15702,10 @@ document.getElementById("wordPop").addEventListener("click", e => {
   if (e.target.closest("[data-wclose]")) return closeWords();
   const w = e.target.closest("[data-w]"), s = e.target.closest(".wl-sent");
   if (w) {
+    wordAnchor = {
+      w: w.dataset.w,
+      y: w.getBoundingClientRect().top
+    };
     wordPick = wordPick === w.dataset.w ? null : w.dataset.w;
     wordSel = isTouch() && wordPick ? {
       kind: "w",
