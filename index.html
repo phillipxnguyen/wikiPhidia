@@ -1681,6 +1681,9 @@ window.onYouTubeIframeAPIReady = function(){
   .swipe-ghost.delete{color:var(--text);border-color:currentColor;}
   .swipe-ghost.to-vocab{color:#1e9466;border-color:currentColor;}
   .swipe-ghost.to-lesson{color:var(--lesson-color);border-color:currentColor;}
+  .swipe-ghost.angel{display:block;overflow:visible;padding:12px 16px;font-weight:400;border:1px solid var(--border);background:var(--surface-2);color:var(--text-2);font-size:16px;line-height:24px;text-align:left;-webkit-text-stroke:0;filter:grayscale(1);box-shadow:0 12px 28px rgba(10,14,22,.2);}
+  .swipe-ghost.angel .ag-text{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:6;overflow:hidden;}
+  @media (prefers-reduced-motion: reduce){html .wl-wing{animation:none;}}
   .session-complete{
     display:none;
     position:relative;
@@ -10862,7 +10865,16 @@ function swipe(parts, dir, update, next, label = dir > 0 ? "Good" : "Again") {
   const from = dragGhost && dragGhost.style.transform || "none";
   dragGhost = null;
   if (dictUnderSwipe(parts)) hideDictOverlay();
-  if (ghost) {
+  if (ghost && label === "Delete") {
+    ghost.classList.remove("good", "again", "waiting");
+    ghost.classList.add("angel");
+    ghost.textContent = "";
+    const text = document.createElement("span");
+    text.className = "ag-text";
+    text.textContent = parts.filter(Boolean).map(el => el.innerText || el.textContent || "").join("  ").replace(/\s+/g, " ").trim().slice(0, 400);
+    ghost.appendChild(text);
+    angelFly(ghost, from);
+  } else if (ghost) {
     ghost.classList.remove("good", "again", "waiting");
     ghost.classList.add(label === "Delete" ? "delete" : label === "Vocab" ? "to-vocab" : label === "Lesson" ? "to-lesson" : label === "Waiting" ? "waiting" : dir > 0 ? "good" : "again");
     ghost.textContent = label === "Delete" ? "✕" : label === "Vocab" || label === "Lesson" ? "字" : label === "Waiting" ? "⏳ Waiting" : gradeMark(dir < 0);
@@ -15543,6 +15555,30 @@ function wordTarget() {
   } : null;
 }
 
+function angelFly(ghost, from = "none") {
+  ghost.insertAdjacentHTML("beforeend", '<i class="wl-wing l" aria-hidden="true">🪽</i><i class="wl-wing r" aria-hidden="true">🪽</i>');
+  const base = from === "none" ? "" : from + " ";
+  ghost.animate([ {
+    transform: from,
+    opacity: 1
+  }, {
+    transform: base + "translateY(-10px) scale(1.03)",
+    opacity: 1,
+    offset: .2
+  }, {
+    transform: base + "translate(-12px, -30vh) rotate(-3deg) scale(.9)",
+    opacity: .8,
+    offset: .65
+  }, {
+    transform: base + "translate(8px, -55vh) rotate(2deg) scale(.75)",
+    opacity: 0
+  } ], {
+    duration: 1100,
+    easing: "ease-in",
+    fill: "forwards"
+  }).finished.then(() => ghost.remove(), () => ghost.remove());
+}
+
 function wordFly(el, label) {
   if (reducedMotion()) return;
   const r = el.getBoundingClientRect();
@@ -15574,7 +15610,6 @@ function wordFly(el, label) {
   const ghost = el.cloneNode(true);
   ghost.classList.remove("on", "row-selected");
   ghost.classList.add("wl-ghost");
-  ghost.insertAdjacentHTML("beforeend", '<i class="wl-wing l" aria-hidden="true">🪽</i><i class="wl-wing r" aria-hidden="true">🪽</i>');
   Object.assign(ghost.style, {
     left: Math.round(r.left) + "px",
     top: Math.round(r.top) + "px",
@@ -15583,25 +15618,7 @@ function wordFly(el, label) {
   });
   document.getElementById("wordPop").appendChild(ghost);
   el.style.visibility = "hidden";
-  ghost.animate([ {
-    transform: "none",
-    opacity: 1
-  }, {
-    transform: "translateY(-10px) scale(1.03)",
-    opacity: 1,
-    offset: .2
-  }, {
-    transform: "translate(-12px, -30vh) rotate(-3deg) scale(.9)",
-    opacity: .8,
-    offset: .65
-  }, {
-    transform: "translate(8px, -55vh) rotate(2deg) scale(.75)",
-    opacity: 0
-  } ], {
-    duration: 1100,
-    easing: "ease-in",
-    fill: "forwards"
-  }).finished.then(() => ghost.remove(), () => ghost.remove());
+  angelFly(ghost);
 }
 
 function wordAct(act) {
