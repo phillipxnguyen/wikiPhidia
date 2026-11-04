@@ -84,7 +84,7 @@ Only YouTube gives a lesson video times; any other link changes nothing, so a le
 
 **Editing in Speaking.** A card is edited in Speaking in the same popup as in the other modes (beside where you clicked), with its stroke order and dictionary in the popup; the Speaking sheet itself shows only the card and its notes, and is just as tall as they are.
 
-**Which language a text is in.** A sentence counts as Vietnamese only when at least a quarter of its words carry Vietnamese marks, so an English question with one Vietnamese word slipped in (`Really? Tôi thought…`) is still English, and with a Vietnamese answer it is a translation card that goes to Vocabulary. **W moves at once:** while studying, or when a lesson has a single card, W moves the card showing (Lessons to Vocabulary, or a word back to Lessons) without having to point at it first; when the app cannot tell which one, it says to point at a card or select it.
+**Which language a text is in.** A text with any Vietnamese mark counts as Vietnamese, so a question and its answer are two languages (a translation card, for Vocabulary) only if the question has no Vietnamese word slipped in. **W moves at once:** while studying, or when a lesson has a single card, W moves the card showing (Lessons to Vocabulary, or a word back to Lessons) without having to point at it first; when the app cannot tell which one, it says to point at a card or select it.
 
 **No video, no Listening.** Video times are only useful with the video: a lesson whose cards have times but which has no YouTube, TikTok or Douyin video (only, say, a NotebookLM or other link) turns its cards into Speaking cards the next time it opens (their times dropped, everything else kept), with a message saying so, and is studied in Speaking.
 
