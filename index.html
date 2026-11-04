@@ -3001,6 +3001,19 @@ function restoreFrom(fromStack, toStack, verb) {
   const countsBefore = resetMagic ? currentCounts() : null;
   const oppositeEntry = takeSnapshot(entry.label, entry.expiresAt);
   toStack.push(oppositeEntry);
+  if (entry.others) {
+    oppositeEntry.others = entry.others.map(o => ({
+      id: o.id,
+      json: JSON.stringify(library.find(l => l.id === o.id) || null)
+    }));
+    entry.others.forEach(o => {
+      const l = JSON.parse(o.json);
+      if (!l) return;
+      upsertLibrary(l);
+      dbPut("lessons", l).catch(() => {});
+    });
+    renderLessonList();
+  }
   if (toStack.length > 50) toStack.shift();
   if (entry.reviewCount != null && localReviewKeys.length > entry.reviewCount) {
     const keys = new Set(localReviewKeys.splice(entry.reviewCount));
@@ -15141,6 +15154,13 @@ function toolSave(home) {
   dbPut("lessons", home.lesson).catch(() => {});
 }
 
+function toolBackup(homes) {
+  return homes.filter(h => h.lesson).map(h => ({
+    id: h.lesson.id,
+    json: JSON.stringify(h.lesson)
+  }));
+}
+
 function toolRefresh() {
   doneWordCache = null;
   if (currentLessonId) {
@@ -15193,10 +15213,9 @@ function toolReplaceAll(find, to, cased) {
   const re = toolRegex(find, cased);
   const n = toolCount(re);
   if (!n) return 0;
-  if (currentLessonId && !isVirtualLesson()) pushUndo(`Replaced “${find}”`);
-  toolHomes().forEach(h => {
-    const hit = toolCardsOf(h).filter(c => toolHitsIn(c, re));
-    if (!hit.length) return;
+  const homes = toolHomes().map(h => [ h, toolCardsOf(h).filter(c => toolHitsIn(c, re)) ]).filter(([, hit]) => hit.length);
+  pushUndo(`Replaced “${find}”`).others = toolBackup(homes.map(([h]) => h));
+  homes.forEach(([h, hit]) => {
     hit.forEach(c => replaceInCard(c, re, to));
     toolSave(h);
   });
@@ -15255,6 +15274,7 @@ function closeTools() {
 
 function toolDelete(x) {
   if (!x.home.lesson) return x.row ? deleteRow(x.row.id) : deleteVocabEntry(x.word);
+  pushDeleteUndo("Deleted — " + truncate(x.text, 30)).others = toolBackup([ x.home ]);
   if (x.row) x.home.lesson.cards = x.home.lesson.cards.filter(c => c !== x.row); else {
     const card = x.word.card, next = rewrittenVocabNotes(card, x.word, null, null);
     if (!next) return;
