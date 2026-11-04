@@ -19704,11 +19704,17 @@ async function taskAdvance() {
 
 function markTaskDone(run) {
   if (!run || !run.key || todayPlan.done[run.key]) return;
-  if (autoSaveDebounceTimer) saveCurrentLesson();
-  const t = todayTasks().find(x => x.key === run.key);
-  if (!t || (t.plan ? t.remDue + t.remFresh : t.left ? t.left.fresh + t.left.due : 0) > 0) return;
   todayPlan.done[run.key] = true;
   saveToday();
+}
+
+function taskComesBack(run) {
+  const l = library.find(x => x.id === run.lessonId), now = Date.now(), soon = [];
+  if (!l) return 0;
+  const add = st => st.lastGrade === GRADE_AGAIN && st.due > now && soon.push(st.due);
+  if (run.onC !== false) l.cards.forEach(c => !cardWaiting(c) && add(srsOf(c)));
+  if (run.onV !== false) lessonVocabItems(lessonCardsWithExtras(l)).forEach(i => add(vocabStateOf(i)));
+  return soon.length ? Math.min(...soon) : 0;
 }
 
 function taskRefillDue(run) {
@@ -19736,8 +19742,10 @@ async function finishTask(run) {
     await openBooks();
     return showToast("Done for now ✓");
   }
-  markTaskDone(run);
-  taskJustDone = run.key;
+  flushAutoSave();
+  const back = taskComesBack(run);
+  if (!back) markTaskDone(run);
+  taskJustDone = back ? null : run.key;
   const keep = {
     run: Object.assign({}, run, {
       queue: [],
@@ -19751,6 +19759,7 @@ async function finishTask(run) {
   };
   await openToday();
   taskResume = keep.undo.length ? keep : null;
+  if (back) return showToast(`Done for now ✓ Cards marked Again come back in ${Math.max(1, Math.ceil((back - Date.now()) / 6e4))} min`);
   return celebrateTaskDone();
 }
 
