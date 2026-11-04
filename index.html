@@ -15526,7 +15526,11 @@ function openWords() {
   const list = box.querySelector(".wl-words");
   if (list) list.scrollTop = top;
   const anchor = wordAnchor && list && list.querySelector(`[data-w="${CSS.escape(wordAnchor.w)}"]`);
-  if (anchor) list.scrollTop += Math.round(anchor.getBoundingClientRect().top - wordAnchor.y);
+  if (anchor) {
+    list.scrollTop += Math.round(anchor.getBoundingClientRect().top - wordAnchor.y);
+    const a = anchor.getBoundingClientRect(), l = list.getBoundingClientRect();
+    if (a.top < l.top || a.bottom > l.bottom) list.scrollTop += Math.round(a.top - l.top - (l.height - a.height) / 2);
+  }
   wordAnchor = null;
   if (box.querySelector(".wl-detail")) {
     box.querySelector(".wl-detail").scrollTop = was === box.dataset.pick ? side : 0;
