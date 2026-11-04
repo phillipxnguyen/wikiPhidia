@@ -16482,17 +16482,51 @@ function chooseYouTubeImport(translate) {
   const pick = Number(document.getElementById("ytTrack").value);
   const track = d.tracks[pick] || d.tracks[d.best] || d.tracks[0];
   const byTime = new Map((Array.isArray(track.translated) ? track.translated : []).map(e => [ e.t, e.s ]));
+  const pair = translate ? ytPairTrack(d.tracks, track) : null;
+  const paired = pair ? alignTrack(track.lines || [], pair.lines) : [];
   importFromYouTube({
     id: d.id,
     title: d.title,
     lang: track.lang,
     target: track.target,
-    lines: (Array.isArray(track.lines) ? track.lines : []).map(e => ({
+    lines: (Array.isArray(track.lines) ? track.lines : []).map((e, i) => ({
       t: e.t,
       q: e.s,
-      a: byTime.get(e.t) && byTime.get(e.t) !== e.s ? byTime.get(e.t) : ""
+      a: paired[i] || (byTime.get(e.t) && byTime.get(e.t) !== e.s ? byTime.get(e.t) : "")
     }))
   }, translate);
+}
+
+function ytPairTrack(tracks, track) {
+  const base = t => String(t && t.lang || "").split("-")[0];
+  const human = t => !/auto|tự động|自动|自動|자동/i.test(String(t.name || ""));
+  const pool = (tracks || []).filter(t => t !== track && base(t) !== base(track) && Array.isArray(t.lines) && t.lines.length);
+  for (const l of [ "vi", "en" ]) {
+    const list = pool.filter(t => base(t) === l);
+    const pick = list.find(human) || list[0];
+    if (pick) return pick;
+  }
+  return null;
+}
+
+function alignTrack(lines, other) {
+  const end = (list, i) => i + 1 < list.length ? Math.min(list[i + 1].t, list[i].t + 10) : list[i].t + 5;
+  const out = lines.map(() => []);
+  let from = 0;
+  other.forEach((o, j) => {
+    const a = o.t, b = Math.max(end(other, j), a + .5);
+    while (from < lines.length - 1 && end(lines, from) <= a) from++;
+    let best = -1, most = 0;
+    for (let i = Math.max(0, from - 1); i < lines.length && lines[i].t < b; i++) {
+      const over = Math.min(b, end(lines, i)) - Math.max(a, lines[i].t);
+      if (over > most) {
+        most = over;
+        best = i;
+      }
+    }
+    if (best >= 0) out[best].push(o.s);
+  });
+  return out.map(x => x.join(" ").replace(/\s+/g, " ").trim());
 }
 
 function receiveYouTubeTracks(d) {
@@ -16508,10 +16542,21 @@ function receiveYouTubeTracks(d) {
   select.innerHTML = names.length === 1 ? `<option value="0">${escapeHtml(names[0])}</option>` : `<option value="-1">Auto-detect${names[d.best] ? " (" + escapeHtml(names[d.best]) + ")" : ""}</option>` + names.map((n, i) => `<option value="${i}">${escapeHtml(n)}</option>`).join("");
   select.disabled = names.length < 2;
   document.getElementById("ytDialog").classList.remove("loading");
-  document.getElementById("ytDialogText").textContent = "Make a lesson from this video's subtitles.";
+  syncYouTubeTrackNote();
   document.getElementById("ytOnlySubs").disabled = false;
   document.getElementById("ytWithTranslation").disabled = false;
 }
+
+function syncYouTubeTrackNote() {
+  const d = ytImport && ytImport.data;
+  if (!d) return;
+  const pick = Number(document.getElementById("ytTrack").value);
+  const track = d.tracks[pick] || d.tracks[d.best] || d.tracks[0];
+  const pair = ytPairTrack(d.tracks, track);
+  document.getElementById("ytDialogText").textContent = "Make a lesson from this video's subtitles." + (pair ? ` With translation, its own ${pair.name || pair.lang} subtitles are used, matched by time.` : "");
+}
+
+document.getElementById("ytTrack").addEventListener("change", syncYouTubeTrackNote);
 
 document.getElementById("ytOnlySubs").onclick = () => chooseYouTubeImport(false);
 

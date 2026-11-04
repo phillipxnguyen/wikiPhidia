@@ -656,7 +656,7 @@ textarea[hidden], .sent-view[hidden]{display:none;}
     if (tip) tip.remove(), tip = null;
   }, { passive: true, capture: true });
 
-  let ytBtn = null, ytWait = null, ytWaitTimer = 0;
+  let ytBtn = null, ytWait = null, ytWaitTimer = 0, ytShown = null;
   const ytVideo = () => /(^|\.)youtube\.com$/.test(location.hostname) && (new URL(location.href).searchParams.get("v") || (location.pathname.match(/\/(?:shorts|live)\/([\w-]{11})/) || [])[1]);
   function ytLabel(state, text) {
     if (!ytBtn) return;
@@ -694,7 +694,7 @@ textarea[hidden], .sent-view[hidden]{display:none;}
       ytWait = ytVideo();
       ytLabel("busy");
       clearTimeout(ytWaitTimer);
-      ytWaitTimer = setTimeout(() => ytFinish(false, "Not finished yet: open wikiPhidia to finish the lesson"), 6e5);
+      ytWaitTimer = setTimeout(() => ytFinish(false, "wikiPhidia didn't answer: open it and try again"), 12e4);
       chrome.runtime.sendMessage({ type: "youtube" });
     });
     wrap.appendChild(ytBtn);
@@ -722,8 +722,21 @@ textarea[hidden], .sent-view[hidden]{display:none;}
     if (changes.app) app = Object.assign({ lessons: [], words: [] }, changes.app.newValue || {});
     if (changes.pending) pending = changes.pending.newValue || [];
     if (changes.picks) picks = changes.picks.newValue || {};
-    const done = changes.ytDone && changes.ytDone.newValue;
+    const done = changes.ytDone && changes.ytDone.newValue, taken = changes.ytPending && !changes.ytPending.newValue && changes.ytPending.oldValue;
     if (done && ytWait && done.id === ytWait) ytFinish(done.ok, done.text);
+    if (taken && ytWait && taken.id === ytWait) {
+      ytWait = null;
+      ytLabel("done", "Opened in wikiPhidia");
+      clearTimeout(ytWaitTimer);
+      ytWaitTimer = setTimeout(() => ytLabel("idle"), 4e3);
+      ytShown = taken.id;
+    }
+    if (done && !ytWait && done.id === ytShown) {
+      ytShown = null;
+      ytLabel("done", done.ok ? done.text : "Not made: " + done.text);
+      clearTimeout(ytWaitTimer);
+      ytWaitTimer = setTimeout(() => ytLabel("idle"), 3e3);
+    }
     if (changes.settings || changes.app || changes.pending) rescan();
     if (changes.settings) syncYouTube();
     if (changes.settings && !on()) {
