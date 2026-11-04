@@ -10063,6 +10063,22 @@ function dueScoreCompare(mode) {
   };
 }
 
+function shuffleReviewSlots(list, reviewed) {
+  const at = [], items = [];
+  list.forEach((x, i) => {
+    if (!reviewed(x)) return;
+    at.push(i);
+    items.push(x);
+  });
+  for (let i = items.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [ items[i], items[j] ] = [ items[j], items[i] ];
+  }
+  const out = list.slice();
+  at.forEach((i, k) => out[i] = items[k]);
+  return out;
+}
+
 function reshuffleCardOrder() {
   rows.forEach(r => {
     r.shuffleKeyTable = Math.random();
@@ -10458,7 +10474,7 @@ function gradeLabel(isAgain) {
 }
 
 function applyGrade(r, isAgain, mode, now) {
-  r.shuffleKeyTable = Math.random();
+  reshuffleCardOrder();
   const grade = isAgain ? GRADE_AGAIN : GRADE_GOOD;
   const st = srsOf(r, mode);
   const fresh = !st.reps;
@@ -18159,7 +18175,8 @@ function gradeVocabItems(items, isAgain, label) {
   });
   const ready = s.pending.filter(p => p.readyAt <= now).map(p => p.key);
   s.pending = s.pending.filter(p => p.readyAt > now);
-  s.queue = ready.concat(s.queue);
+  const states = new Map(lessonVocabItems(vocabSource()).map(i => [ i.key, vocabStateOf(i) ]));
+  s.queue = ready.concat(shuffleReviewSlots(s.queue, k => !!(states.get(k) || {}).reps));
   s.flipped = false;
   closeVocabList();
   scheduleAutoSave();
@@ -19406,6 +19423,12 @@ async function taskAdvance() {
   if (run.current && taskPickAgain(run.current)) {
     run.current.tries++;
     run.queue.push(run.current);
+  }
+  const tl = library.find(x => x.id === run.lessonId);
+  if (tl && run.current) {
+    const words = new Map(lessonVocabItems(lessonCardsWithExtras(tl)).map(i => [ i.key, i ]));
+    const cards = new Map(tl.cards.map(c => [ c.uid, c ]));
+    run.queue = shuffleReviewSlots(run.queue, p => p.tries === 0 && (p.k === "v" ? !!(words.get(p.id) && vocabStateOf(words.get(p.id)).reps) : !!(cards.get(p.id) && srsOf(cards.get(p.id)).reps)));
   }
   let next = run.queue.findIndex(taskShowable);
   if (next < 0 && taskBringBack(run)) next = run.queue.findIndex(taskShowable);

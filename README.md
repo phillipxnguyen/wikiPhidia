@@ -84,6 +84,8 @@ Only YouTube gives a lesson video times; any other link changes nothing, so a le
 
 **Editing in Speaking.** A card is edited in Speaking in the same popup as in the other modes (beside where you clicked), with its stroke order and dictionary in the popup; the Speaking sheet itself shows only the card and its notes, and is just as tall as they are.
 
+**Order: new in order, the rest shuffled every time.** New cards and words always come in the lesson's order. Due and Done ones never follow a set order: after every card or word you grade (in a mode, in Vocabulary and in a task alike), the reviews still waiting are shuffled again, so no two days go the same way; the usual rules still hold around this (a card you just answered Again comes back first once it is ready, cards of the same sentence are kept apart, and new cards keep their places).
+
 **Which language a text is in.** A text with any Vietnamese mark counts as Vietnamese, so a question and its answer are two languages (a translation card, for Vocabulary) only if the question has no Vietnamese word slipped in. **W moves at once:** while studying, or when a lesson has a single card, W moves the card showing (Lessons to Vocabulary, or a word back to Lessons) without having to point at it first; when the app cannot tell which one, it says to point at a card or select it.
 
 **No video, no Listening.** Video times are only useful with the video: a lesson whose cards have times but which has no YouTube, TikTok or Douyin video (only, say, a NotebookLM or other link) turns its cards into Speaking cards the next time it opens (their times dropped, everything else kept), with a message saying so, and is studied in Speaking.
