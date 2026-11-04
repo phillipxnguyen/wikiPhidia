@@ -16947,9 +16947,18 @@ function vocabContext(item) {
 function lookupOthers(html, item) {
   const tmp = document.createElement("div");
   tmp.innerHTML = lookupHtml(html, item.card);
-  const own = foldVocab(item.term);
+  const bare = t => foldVocab(t || "").replace(/[\p{P}\s]+/gu, "");
+  const own = bare(item.term);
   tmp.querySelectorAll("mark.vocab-hit, mark.vocab-own").forEach(m => {
-    if (markTerms(m).includes(own) || m.parentElement.closest("mark")) m.replaceWith(...m.childNodes);
+    if (m.parentElement.closest("mark")) return m.replaceWith(...m.childNodes);
+    const list = k => (m.dataset[k] || "").split("\n").filter(Boolean);
+    const terms = list("terms").filter(t => bare(t) !== own), mine = list("own").filter(t => bare(t) !== own);
+    if (!m.dataset.terms && !m.dataset.own && bare(m.textContent) === own || !terms.length && !mine.length && (m.dataset.terms || m.dataset.own)) return m.replaceWith(...m.childNodes);
+    if (terms.length) m.dataset.terms = terms.join("\n"); else delete m.dataset.terms;
+    if (mine.length) m.dataset.own = mine.join("\n"); else delete m.dataset.own;
+    m.classList.toggle("vocab-hit", !!terms.length);
+    m.classList.toggle("vocab-own", !!mine.length);
+    m.classList.toggle("vocab-stack", terms.length + mine.length > 1);
   });
   return tmp.innerHTML;
 }
