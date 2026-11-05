@@ -2248,10 +2248,13 @@ window.onYouTubeIframeAPIReady = function(){
   .wl-close:active, html.pixel .wl-close:active{background:color-mix(in srgb, var(--text) 14%, transparent);color:var(--text);}
   @media (hover:hover){.wl-close:hover, html.pixel .wl-close:hover{background:color-mix(in srgb, var(--text) 14%, transparent);color:var(--text);}}
   @media (min-width:761px){.word-box:has(.wl-main.picked) .wl-close{top:calc(var(--wp) + 8px);right:calc(var(--wp) + 8px);}}
-  .wl-wing{--w:var(--wing, 44px);position:absolute;top:50%;width:var(--w);height:var(--w);margin-top:calc(var(--w) / -2);font-style:normal;font-size:calc(var(--w) - 6px);line-height:var(--w);text-align:center;filter:grayscale(1) drop-shadow(0 1px 2px rgba(10,14,22,.45));animation:wingFlap .28s ease-in-out infinite alternate;}
-  .wl-wing.l{right:100%;margin-right:2px;--flip:-1;}
-  .wl-wing.r{left:100%;margin-left:2px;--flip:1;}
-  @keyframes wingFlap{from{transform:scaleX(var(--flip)) rotate(-12deg);}to{transform:scaleX(var(--flip)) rotate(22deg);}}
+  .wl-wing{--w:var(--wing, 44px);position:absolute;top:50%;width:var(--w);height:var(--w);margin-top:calc(var(--w) / -2);font-style:normal;font-size:var(--w);line-height:var(--w);text-align:center;filter:grayscale(1) drop-shadow(0 1px 2px rgba(10,14,22,.35));}
+  .wl-wing > b{display:block;font-weight:400;}
+  .wl-wing.l{right:100%;margin-right:calc(var(--w) / -5);transform-origin:100% 60%;animation:wingL .5s ease-in-out infinite alternate;}
+  .wl-wing.l > b{transform:scaleX(-1);}
+  .wl-wing.r{left:100%;margin-left:calc(var(--w) / -5);transform-origin:0 60%;animation:wingR .5s ease-in-out infinite alternate;}
+  @keyframes wingL{from{transform:rotate(16deg);}to{transform:rotate(-14deg);}}
+  @keyframes wingR{from{transform:rotate(-16deg);}to{transform:rotate(14deg);}}
   .wl-main.picked .wl-words > .wl-band:first-child{margin-right:0;}
   .wl-main.picked .wl-dhead{padding-right:40px;}
   .wl-detail.enter{animation:wlIn .18s ease-out;}
@@ -2613,7 +2616,6 @@ window.onYouTubeIframeAPIReady = function(){
   </div>
 </section>
 
-
 <section id="viewToday" hidden>
   <div id="todayGoal" class="panel today-goal"></div>
   <div class="today-board">
@@ -2751,8 +2753,6 @@ window.onYouTubeIframeAPIReady = function(){
   <div class="toolbar">
     <div class="segmented" role="group" aria-label="Study mode">
       <button id="fullModeBtn" aria-label="Study" title="Study">☰</button>
-      <button id="listenModeBtn" style="display:none;" aria-label="Listening">🎧</button>
-      <button id="ieltsModeBtn" style="display:none;" aria-label="Speaking">🗒️</button>
     </div>
     <span id="studyFlag" class="flag-set toolbar-flag" role="button" tabindex="0" aria-label="Back to the list" title="Back to the list" hidden></span>
     <div class="toolbar-right">
@@ -3266,8 +3266,6 @@ function showToast(message) {
 const MODES = [ "Table", "Listen", "Write" ];
 
 const DAY_MS = 24 * 60 * 60 * 1e3;
-
-
 
 const STUDY_RULES_KEY = "flashcards.studyRules";
 
@@ -9658,7 +9656,6 @@ function buildEditBoxInner(row) {
   return `\n    <div class="edit-qa">\n      <div>\n        <div id="editQ" class="rich-editor${row.time == null ? "" : " yt-ph"}" contenteditable="true"${row.time == null ? ' data-placeholder="/Question, then the Answer below"' : ""} aria-label="Card">${row.time == null ? mergedCardEditHtml(row) : getEditInitialHtml(row.q, row.qHtml, row.id)}</div>\n      </div>\n      <div hidden>\n        <div id="editA" class="rich-editor" contenteditable="true">${getEditInitialHtml(row.a, row.aHtml, row.id)}</div>\n      </div>\n    </div>\n    <div class="notes-clip"><div id="editNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes">${notesEditorHtml(row)}</div></div>\n    <div class="edit-actions">\n      <button id="editSave" class="primary">Save</button>\n    </div>\n    <div id="editDict"></div>\n  `;
 }
 
-
 document.addEventListener("click", e => {
   const chip = e.target.closest("[data-add-card]");
   if (!chip) return;
@@ -9752,7 +9749,6 @@ function saveQuickAdd() {
 document.getElementById("qaSave").onclick = saveQuickAdd;
 
 [ "qaQ", "qaA" ].forEach(id => enterSaves(document.getElementById(id), saveQuickAdd, true));
-
 
 function popupEnterSaves(e) {
   if (e.key !== "Enter" || e.shiftKey || e.isComposing || e.keyCode === 229 || e.metaKey || e.ctrlKey || e.altKey) return false;
@@ -10270,19 +10266,10 @@ function lessonStudyMode() {
 }
 
 function syncModeButtonHighlights() {
-  const fullBtn = document.getElementById("fullModeBtn");
-  const listenBtn = document.getElementById("listenModeBtn");
-  const ieltsBtn = document.getElementById("ieltsModeBtn");
-  if (!fullBtn || !listenBtn || !ieltsBtn) return;
-  const mode = lessonStudyMode(), flag = document.getElementById("studyFlag");
-  listenBtn.style.display = "none";
-  ieltsBtn.style.display = "none";
-  fullBtn.closest(".segmented").hidden = isAllLessons() || !!groupState || !mode;
+  const fullBtn = document.getElementById("fullModeBtn"), flag = document.getElementById("studyFlag");
+  fullBtn.closest(".segmented").hidden = isAllLessons() || !!groupState || !lessonStudyMode();
   flag.hidden = !isAllLessons() && !groupState;
   flag.classList.toggle("flag-back", !!groupState && !isAllLessons());
-  fullBtn.classList.remove("active");
-  listenBtn.classList.toggle("active", !!groupState && groupViewStyle === "listen");
-  ieltsBtn.classList.toggle("active", !!groupState && groupViewStyle === "ielts");
 }
 
 function updateGroupUI() {
@@ -10391,7 +10378,6 @@ let mixAwaitCue = false;
 let mixCueTimer = 0;
 
 let mixCueSince = 0;
-
 
 function preloadVideo(url) {
   const id = extractYouTubeId(url);
@@ -10566,10 +10552,6 @@ document.getElementById("studyFlag").onclick = e => e.currentTarget.classList.co
 document.getElementById("studyFlag").onkeydown = e => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), e.stopPropagation(), e.currentTarget.click());
 
 document.getElementById("btnPlaySequence").addEventListener("click", () => setTimeout(noteWorkHush, 0));
-
-document.getElementById("listenModeBtn").onclick = () => goToReviewMode("listen");
-
-document.getElementById("ieltsModeBtn").onclick = () => goToReviewMode("ielts");
 
 function ensureGroupSlot(state, i) {
   while (state.groups.length <= i) state.groups.push([]);
@@ -14197,7 +14179,6 @@ function escapeAttr(s) {
   return escapeHtml(s).replace(/"/g, "&quot;");
 }
 
-
 function lessonCountsFor(lesson) {
   return appMode === "vocab" ? vocabCounts(lessonVocabItems(lessonCardsWithExtras(lesson))) : lessonCounts(lesson);
 }
@@ -14311,7 +14292,6 @@ function watchThumbWords(list) {
 }
 
 const RECENT_KEY = "flashcards.recentLessons";
-
 
 function recentLessonIds() {
   const ids = readLocal(RECENT_KEY);
@@ -15597,8 +15577,8 @@ function wordTarget() {
 
 function angelFly(ghost, from = "none") {
   const h = ghost.getBoundingClientRect().height;
-  ghost.style.setProperty("--wing", Math.round(Math.min(96, Math.max(44, h * .5)) / 2) * 2 + "px");
-  ghost.insertAdjacentHTML("beforeend", '<i class="wl-wing l" aria-hidden="true">🪽</i><i class="wl-wing r" aria-hidden="true">🪽</i>');
+  ghost.style.setProperty("--wing", Math.round(Math.min(64, Math.max(36, h * .6)) / 10) * 10 + "px");
+  ghost.insertAdjacentHTML("beforeend", '<i class="wl-wing l" aria-hidden="true"><b>🪽</b></i><i class="wl-wing r" aria-hidden="true"><b>🪽</b></i>');
   const base = from === "none" ? "" : from + " ";
   ghost.animate([ {
     transform: from,
@@ -16037,7 +16017,6 @@ document.getElementById("lessonList").addEventListener("click", e => {
   const item = e.target.closest(".lesson-item:not([data-today-pad])");
   if (item) switchToLesson(item.dataset.lessonId);
 });
-
 
 document.getElementById("lessonList").addEventListener("mouseover", e => {
   if (isTouch()) return;
@@ -20854,7 +20833,6 @@ document.getElementById("todayTrack").addEventListener("click", e => {
   trackPicked = trackPicked === day.dataset.day ? null : day.dataset.day;
   renderToday();
 });
-
 
 const BOOK_PARTS = [ [ "vocab", "📖", "Vocabulary", "어휘", "生词" ], [ "text", "📜", "Text", "본문", "课文" ], [ "grammar", "📐", "Grammar", "문법", "注释" ], [ "speak", "💬", "Speaking", "말하기", "口语" ], [ "listen", "🎧", "Listening", "듣기", "听力" ], [ "read", "📰", "Reading", "읽기", "阅读" ], [ "write", "✍️", "Writing", "쓰기", "写作" ], [ "practice", "✏️", "Exercises", "연습", "练习" ], [ "hanzi", "🀄", "Characters", "한자", "汉字" ], [ "apply", "🤝", "Activities", "활용", "运用" ], [ "culture", "🏮", "Culture", "문화", "文化" ], [ "saying", "🪭", "Saying", "속담", "俗语" ] ];
 
