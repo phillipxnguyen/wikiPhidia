@@ -2245,12 +2245,12 @@ window.onYouTubeIframeAPIReady = function(){
   .wl-close:active, html.pixel .wl-close:active{background:color-mix(in srgb, var(--text) 14%, transparent);color:var(--text);}
   @media (hover:hover){.wl-close:hover, html.pixel .wl-close:hover{background:color-mix(in srgb, var(--text) 14%, transparent);color:var(--text);}}
   @media (min-width:761px){.word-box:has(.wl-main.picked) .wl-close{top:calc(var(--wp) + 8px);right:calc(var(--wp) + 8px);}}
-  .wl-wing{--w:var(--wing, 44px);position:absolute;top:50%;width:var(--w);height:var(--w);margin-top:calc(var(--w) / -2);font-style:normal;filter:drop-shadow(0 0 3px color-mix(in srgb, var(--due-color) 60%, transparent)) drop-shadow(0 0 10px color-mix(in srgb, var(--due-color) 40%, transparent));}
+  .wl-wing{--w:var(--wing, 44px);position:absolute;top:var(--wing-y, 50%);width:var(--w);height:var(--w);margin-top:calc(var(--w) / -2);font-style:normal;filter:drop-shadow(0 0 3px color-mix(in srgb, var(--due-color) 60%, transparent)) drop-shadow(0 0 10px color-mix(in srgb, var(--due-color) 40%, transparent));}
   .wl-wing > b{display:block;width:100%;height:100%;background:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'><path d='M2 20C8 9 26 6 46 12C43 18 40 20 36 21C38 25 35 28 31 28C32 32 28 35 24 34C24 38 19 40 15 38C10 37 5 33 2 28Z' fill='%23fff8e8' stroke='%23d9a441' stroke-width='2' stroke-linejoin='round'/><path d='M10 21C19 18 28 17 38 15M10 26C17 25 24 25 31 25M9 30C14 31 19 31 23 31' fill='none' stroke='%23d9a441' stroke-width='1.5' stroke-linecap='round'/></svg>") center / contain no-repeat;}
   .wl-wing.l{right:100%;margin-right:-2px;transform-origin:100% 50%;animation:wingL .5s ease-in-out infinite alternate;}
   .wl-wing.l > b{transform:scaleX(-1);}
   .wl-wing.r{left:100%;margin-left:-2px;transform-origin:0 50%;animation:wingR .5s ease-in-out infinite alternate;}
-  .wl-halo{position:absolute;left:50%;bottom:100%;width:var(--halo-w, 44px);height:var(--halo-h, 14px);margin:0 0 8px calc(var(--halo-w, 44px) / -2);box-sizing:border-box;border:3px solid #e6b54a;border-radius:50%;box-shadow:0 0 6px color-mix(in srgb, var(--due-color) 70%, transparent), inset 0 0 4px color-mix(in srgb, var(--due-color) 60%, transparent), 0 0 14px color-mix(in srgb, var(--due-color) 40%, transparent);animation:haloBob 1s ease-in-out infinite alternate;}
+  .wl-halo{position:absolute;left:50%;bottom:calc(100% - var(--halo-top, 0px));width:var(--halo-w, 44px);height:var(--halo-h, 14px);margin:0 0 8px calc(var(--halo-w, 44px) / -2);box-sizing:border-box;border:3px solid #e6b54a;border-radius:50%;box-shadow:0 0 6px color-mix(in srgb, var(--due-color) 70%, transparent), inset 0 0 4px color-mix(in srgb, var(--due-color) 60%, transparent), 0 0 14px color-mix(in srgb, var(--due-color) 40%, transparent);animation:haloBob 1s ease-in-out infinite alternate;}
   @keyframes haloBob{from{transform:translateY(0);}to{transform:translateY(-4px);}}
   @keyframes wingL{from{transform:rotate(15deg);}to{transform:rotate(-15deg);}}
   @keyframes wingR{from{transform:rotate(-15deg);}to{transform:rotate(15deg);}}
@@ -15578,6 +15578,9 @@ function angelFly(ghost, from = "none") {
   const h = ghost.getBoundingClientRect().height;
   const wing = Math.round(Math.min(64, Math.max(36, h * .6)) / 10) * 10;
   ghost.style.setProperty("--wing", wing + "px");
+  if (ghost.style.paddingTop) ghost.style.setProperty("--wing-y", parseInt(ghost.style.paddingTop) + 25 + "px");
+  const above = Math.round(wing * .3) + 16, gTop = ghost.getBoundingClientRect().top;
+  if (gTop < above) ghost.style.setProperty("--halo-top", Math.round(above - gTop) + "px");
   ghost.style.setProperty("--halo-w", wing + "px");
   ghost.style.setProperty("--halo-h", Math.round(wing * .3) + "px");
   ghost.insertAdjacentHTML("beforeend", '<i class="wl-halo" aria-hidden="true"></i><i class="wl-wing l" aria-hidden="true"><b></b></i><i class="wl-wing r" aria-hidden="true"><b></b></i>');
@@ -15597,7 +15600,7 @@ function angelFly(ghost, from = "none") {
     transform: base + "translate(8px, -55vh) rotate(2deg) scale(.75)",
     opacity: 0
   } ], {
-    duration: 1100,
+    duration: 750,
     easing: "ease-in",
     fill: "forwards"
   }).finished.then(() => ghost.remove(), () => ghost.remove());
