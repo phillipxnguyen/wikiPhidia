@@ -398,9 +398,9 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-card.settled .vocab-card-inner{transform:none;transition:none;transform-style:flat;}
   .vocab-card.settled .vocab-back{transform:none;}
   .vocab-card:not(.settled) .vocab-back{overflow:hidden;}
-  ::-webkit-scrollbar{width:8px;height:8px;}
-  ::-webkit-scrollbar-track, ::-webkit-scrollbar-corner{background:transparent;}
-  ::-webkit-scrollbar-thumb{border:2px solid transparent;border-radius:4px;background:color-mix(in srgb, currentColor 30%, transparent) padding-box;}
+  :not(.b2-body)::-webkit-scrollbar{width:8px;height:8px;}
+  :not(.b2-body)::-webkit-scrollbar-track, :not(.b2-body)::-webkit-scrollbar-corner{background:transparent;}
+  :not(.b2-body)::-webkit-scrollbar-thumb{border:2px solid transparent;border-radius:4px;background:color-mix(in srgb, currentColor 30%, transparent) padding-box;}
   :is(#singleCardBody.listen-batch, .vocab-back){scrollbar-width:none;}
   :is(#singleCardBody.listen-batch, .vocab-back)::-webkit-scrollbar{display:none;}
   @property --edge-t{syntax:"<length>";inherits:false;initial-value:0px;}
@@ -2435,20 +2435,15 @@ window.onYouTubeIframeAPIReady = function(){
   @media (hover:hover){.b2-ctl:hover{filter:brightness(.97);}}
   @media (max-width:600px){.b2-acts{flex-wrap:nowrap;gap:6px;}.b2-ctl{min-width:48px;padding:0 10px;}.b2-ctl.show, .b2-ctl.again, .b2-ctl.good{min-width:0;flex:1;}}
   @media (hover:hover){.b2-btn:hover, .b2-close:hover{filter:brightness(1.12);}}
-  .b2-reveal{display:flex;flex-direction:column;align-items:center;gap:24px;align-self:stretch;text-align:left;}
-  .b2-counts{display:flex;align-items:center;gap:8px;margin:0 auto;padding-right:56px;padding-left:56px;font-size:15px;line-height:20px;font-weight:700;}
-  .b2-counts b{display:inline-flex;align-items:center;gap:4px;height:32px;padding:0 12px;border-radius:16px;}
-  .b2-counts b.on{box-shadow:inset 0 0 0 2px currentColor;background:color-mix(in srgb, #ffffff 60%, transparent);}
-  .b2-counts .new{color:#1f8a4c;}
-  .b2-counts .due{color:#c46a00;}
-  .b2-counts .done{color:#4b5563;}
-  .b2-term{max-width:100%;font-size:72px;line-height:80px;font-weight:800;color:var(--b2-hi);overflow-wrap:anywhere;}
-  .b2-meaning{font-size:32px;line-height:40px;font-weight:600;}
-  .b2-lines{display:flex;flex-direction:column;align-items:flex-start;gap:16px;width:fit-content;max-width:100%;margin:24px 0 0;padding:0;list-style:none;font-size:28px;line-height:40px;text-align:left;opacity:.92;}
-  @media (max-width:600px){.b2-term{font-size:44px;line-height:52px;}.b2-meaning{font-size:22px;line-height:30px;}.b2-lines{gap:10px;margin-top:16px;font-size:20px;line-height:30px;}}
-  .b2-lines mark.b2-pick{padding:0 2px;border-radius:4px;background:var(--b2-hi);color:var(--b2-on-hi);}
-  .b2-lines mark.vocab-hit{background:none;color:#3f8f1a;cursor:pointer;}
-  .b2-lines mark.vocab-own{background:none;color:#2563c9;cursor:pointer;}
+  .b2-reveal{display:flex;flex-direction:column;align-items:center;gap:16px;align-self:stretch;text-align:left;}
+  .b2-counts{display:flex;justify-content:center;margin:0 auto;padding:0 56px;}
+  .b2-reveal .vocab-ctx, .b2-reveal .vocab-meaning{box-sizing:border-box;width:fit-content;max-width:100%;margin:0;font-size:28px;line-height:35px;text-align:left;}
+  .b2-reveal .vocab-ctx mark:not(.vocab-hit, .vocab-own){display:inline;padding:0 1px;margin:0;border-radius:4px;line-height:inherit;color:inherit;font-size:inherit;}
+  .b2-lines{display:flex;flex-direction:column;align-items:flex-start;gap:16px;width:fit-content;max-width:100%;margin:0;padding:0;list-style:none;}
+  .b2-ts{display:inline-flex;align-items:center;vertical-align:4px;height:24px;margin-right:10px;padding:0 8px;border:0;border-radius:12px;background:color-mix(in srgb, var(--b2-ink) 10%, transparent);color:color-mix(in srgb, var(--b2-ink) 70%, transparent);font-size:13px;line-height:16px;font-weight:600;font-variant-numeric:tabular-nums;cursor:pointer;}
+  @media (hover:hover){.b2-ts:hover{background:color-mix(in srgb, var(--b2-ink) 18%, transparent);}}
+  .b2-mark{font-size:22px;line-height:28px;font-weight:700;}
+  @media (max-width:600px){.b2-reveal .vocab-ctx, .b2-reveal .vocab-meaning{font-size:24px;line-height:30px;}}
   html.blind-on .sel-bar{z-index:1650;left:0;}
   html.blind-on .swipe-ghost{z-index:1700;}
   .screen-cut{position:fixed;inset:0;z-index:940;overflow:hidden;pointer-events:none;}
@@ -3371,6 +3366,20 @@ async function blindPlay() {
   paintBlindLive();
 }
 
+async function blindPlayOne(n) {
+  const b = blind, line = b && b.lines[n];
+  if (!line) return;
+  blindStop();
+  const token = b.token;
+  b.playing = true;
+  b.at = n;
+  paintBlindLive();
+  await blindPlayLine(line, token);
+  if (!blind || b.token !== token) return;
+  b.playing = false;
+  paintBlindLive();
+}
+
 function blindPlayer(id) {
   const b = blind;
   if (b.player && b.playerId === id && b.playerReady) return Promise.resolve(b.player);
@@ -3556,34 +3565,6 @@ function blindEdit() {
   openEditPopup(line.row);
 }
 
-function blindLineHtml(line, item) {
-  const span = findTermIn(line.text, item.term);
-  const box = document.createElement("div");
-  box.innerHTML = highlightVocabInHtml(escapeHtml(line.text), line.row ? line.row.id : null);
-  if (!span) return box.innerHTML;
-  const walk = document.createTreeWalker(box, NodeFilter.SHOW_TEXT), nodes = [];
-  while (walk.nextNode()) nodes.push(walk.currentNode);
-  let at = 0;
-  nodes.forEach(n => {
-    const from = at, to = at + n.nodeValue.length;
-    at = to;
-    const a = Math.max(span[0], from), z = Math.min(span[1], to);
-    if (a >= z) return;
-    const host = n.parentElement.closest("mark");
-    if (host && host.textContent === n.nodeValue && a === from && z === to) {
-      host.className = "b2-pick";
-      return;
-    }
-    const mid = n.splitText(a - from);
-    mid.splitText(z - a);
-    const mk = document.createElement("mark");
-    mk.className = "b2-pick";
-    mid.replaceWith(mk);
-    mk.appendChild(mid);
-  });
-  return box.innerHTML;
-}
-
 function blindArt(scene) {
   if (scene === "radio") return '<div class="b2-radio"><div class="b2-grille"></div><div class="b2-dial"><i></i></div><div class="b2-eq"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>';
   if (scene === "call") return '<div class="b2-call"><div class="b2-avatar"><i></i></div><div class="b2-callbtns"><i class="no"><b>📞</b></i><i class="yes"><b>📞</b></i></div></div>';
@@ -3613,10 +3594,20 @@ function paintBlind() {
   }
   const item = b.item;
   box.className = "blind2 scene-" + b.scene + (b.shown ? " shown" : "");
-  const reveal = `<div class="b2-reveal"><b class="b2-term">${escapeHtml(item.term)}</b><span class="b2-meaning">${escapeHtml(item.meaning || "")}</span><ol class="b2-lines">${b.lines.filter(l => l.row).map(l => `<li data-id="${l.row.id}">${blindLineHtml(l, item)}</li>`).join("")}</ol></div>`;
-  const ctl = '<button class="b2-ctl" data-b2="undo" aria-label="Undo" title="Undo (⌘Z)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 15a7 7 0 0 0 -14 0"/><path d="M3.5 12l3 3.5l3 -3.5"/></svg></button><button class="b2-ctl" data-b2="redo" aria-label="Redo" title="Redo (⌘⇧Z)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 15a7 7 0 0 1 14 0"/><path d="M14.5 12l3 3.5l3 -3.5"/></svg></button><button class="b2-ctl b2-sound" data-b2="sound" aria-label="Play or stop the sentences" title="Play or stop (R plays from the start)"></button>';
-  const acts = ctl + (b.shown ? '<button class="b2-ctl again" data-b2="again" title="Again (←)">Again</button><button class="b2-ctl good" data-b2="good" title="Good (→)">Good</button>' : '<button class="b2-ctl show" data-b2="show" title="Show (Space)">Show</button>');
+  const shownLines = b.lines.filter(l => l.row);
+  const reveal = `<div class="b2-reveal"><ol class="b2-lines">${(shownLines.length ? shownLines : [ {
+    row: null,
+    text: item.term
+  } ]).map(l => `<li class="vocab-ctx"${l.row ? ` data-id="${l.row.id}"` : ""}>${l.row && l.row.time != null ? `<button type="button" class="b2-ts" data-b2="line" data-n="${b.lines.indexOf(l)}" title="Hear this line">${fmtTime(l.row.time)}</button>` : ""}${lookupOthers(vocabSentenceHtml(l.text, item.term, l.row || item.card), item)}</li>`).join("")}</ol>${item.meaning ? `<div class="vocab-meaning word">${escapeHtml(item.meaning)}</div>` : ""}</div>`;
+  const ctl = '<button class="b2-ctl" data-b2="undo" aria-label="Undo" title="Undo (⌘Z)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 15a7 7 0 0 0 -14 0"/><path d="M3.5 12l3 3.5l3 -3.5"/></svg></button><button class="b2-ctl" data-b2="redo" aria-label="Redo" title="Redo (⌘⇧Z)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 15a7 7 0 0 1 14 0"/><path d="M14.5 12l3 3.5l3 -3.5"/></svg></button>' + (b.shown ? '<button class="b2-ctl b2-sound" data-b2="sound" aria-label="Play or stop the sentences" title="Play or stop (R plays from the start)"></button>' : `<button class="b2-ctl show" data-b2="show" aria-label="Show" title="Show (Space)">${FLIP_ICON}</button>`);
+  const acts = ctl + '<button class="b2-ctl again b2-mark" data-b2="again" aria-label="Again" title="Again (←)">✕</button><button class="b2-ctl good b2-mark" data-b2="good" aria-label="Good" title="Good (→)">✓</button>';
   box.innerHTML = `<div class="b2-stage"><div class="b2-head">${blindCountsHtml(item)}<button class="b2-close" data-b2="close" aria-label="Close" title="Close (Esc)">✕</button></div><div class="b2-body">${b.shown ? reveal : `<div class="b2-art">${blindArt(b.scene)}</div>`}</div><div class="b2-acts">${acts}</div></div>`;
+  if (b.shown) {
+    const rv = box.querySelector(".b2-reveal");
+    fitReadings(rv);
+    fitHighlights(rv);
+    queueLookupFit(rv);
+  }
   paintBlindLive();
   updateSelBar();
 }
@@ -3632,7 +3623,7 @@ function blindCountsHtml(item) {
     if (!st.reps) c.new++; else if (isDoneState(st)) c.done++; else if (st.due <= now) c.due++;
   });
   const st = vocabStateOf(item), on = !st.reps ? "new" : isDoneState(st) ? "done" : "due";
-  return `<div class="b2-counts"><b class="new${on === "new" ? " on" : ""}" title="New">🆕 ${c.new}</b><b class="due${on === "due" ? " on" : ""}" title="Due">⏳ ${c.due}</b><b class="done${on === "done" ? " on" : ""}" title="Done">✅ ${c.done}</b></div>`;
+  return '<div class="b2-counts toolbar-counts"><div class="progress-badges">' + [ [ "new", "🆕", "New — never studied yet" ], [ "due", "⏳", "Due — ready to review now" ], [ "done", "✅", "Done — " + doneStreak() + " Good in a row" ] ].map(([ k, i, t ]) => `<span class="progress-badge ${k}${on === k ? " active" : ""}" title="${t}"><i>${i}</i><b>${c[k]}</b></span>`).join("") + "</div></div>";
 }
 
 function blindTime(f) {
@@ -4382,6 +4373,7 @@ document.getElementById("blind2").addEventListener("click", e => {
   if (!btn) return;
   const act = btn.dataset.b2;
   if (act === "undo" || act === "redo") return blindUndo(act === "redo");
+  if (act === "line") return blindPlayOne(Number(btn.dataset.n));
   if (act === "sound") return blindSound();
   if (act === "close") closeBlind(); else if (act === "show") blindShow(); else if (act === "again") blindGrade(true); else if (act === "good") blindGrade(false);
 });
@@ -10117,7 +10109,7 @@ function hoverUnit(el) {
   return el ? el.closest(".cell.shown") : null;
 }
 
-const PINYIN_SEL = "#blind2 .b2-lines li, #blind2 .b2-term, .wl-sent, .card-notes li, .card-notes > div, .vocab-word-notes li, .vocab-word-notes > div, .paper-notes li, .rich-editor li, .rich-editor > div, .rich-editor, .vocab-list-meaning > span, .vocab-list-meaning, .vocab-add-field b, .vocab-back :is(.vocab-ctx, .vocab-meaning), .heat-card span";
+const PINYIN_SEL = "#blind2 .b2-lines li, .wl-sent, .card-notes li, .card-notes > div, .vocab-word-notes li, .vocab-word-notes > div, .paper-notes li, .rich-editor li, .rich-editor > div, .rich-editor, .vocab-list-meaning > span, .vocab-list-meaning, .vocab-add-field b, .vocab-back :is(.vocab-ctx, .vocab-meaning), .heat-card span";
 
 function pinyinRow(el) {
   const holder = el.closest("[data-id]");
