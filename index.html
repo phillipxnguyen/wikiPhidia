@@ -2301,8 +2301,16 @@ window.onYouTubeIframeAPIReady = function(){
   html.blind-on .edit-popup{z-index:1700;}
   .b2-btn{height:48px;padding:0 24px;border:0;border-radius:24px;background:color-mix(in srgb, var(--b2-ink) 16%, transparent);color:var(--b2-ink);font-size:16px;line-height:20px;font-weight:700;cursor:pointer;}
   .b2-btn.primary{background:var(--b2-hi);color:var(--b2-on-hi);}
-  .b2-btn.again{background:#e5484d;color:#fff;}
-  .b2-btn.good{background:#2f9e6b;color:#fff;}
+  .b2-acts{gap:8px;}
+  .b2-ctl{display:inline-flex;align-items:center;justify-content:center;min-width:64px;height:48px;box-sizing:border-box;padding:0 16px;border:1px solid color-mix(in srgb, var(--b2-ink) 14%, transparent);border-radius:12px;background:color-mix(in srgb, #ffffff 72%, transparent);color:var(--b2-ink);font-size:15px;line-height:20px;font-weight:600;cursor:pointer;}
+  .b2-ctl svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+  .b2-sound svg{fill:currentColor;stroke:none;}
+  .b2-sound.on{background:var(--b2-hi);color:var(--b2-on-hi);border-color:transparent;}
+  .b2-ctl.show{min-width:96px;}
+  .b2-ctl.again{min-width:96px;background:var(--danger-soft);color:var(--danger);border-color:transparent;}
+  .b2-ctl.good{min-width:96px;background:var(--a-bg);color:var(--a-label);border-color:transparent;}
+  @media (hover:hover){.b2-ctl:hover{filter:brightness(.97);}}
+  @media (max-width:600px){.b2-acts{flex-wrap:nowrap;gap:6px;}.b2-ctl{min-width:48px;padding:0 10px;}.b2-ctl.show, .b2-ctl.again, .b2-ctl.good{min-width:0;flex:1;}}
   @media (hover:hover){.b2-btn:hover, .b2-close:hover{filter:brightness(1.12);}}
   .b2-reveal{display:flex;flex-direction:column;align-items:center;gap:8px;align-self:stretch;text-align:center;animation:b2In .4s ease-out;}
   .b2-term{font-size:44px;line-height:52px;font-weight:800;color:var(--b2-hi);overflow-wrap:anywhere;}
@@ -3423,7 +3431,8 @@ function paintBlind() {
   box.className = "blind2 scene-" + b.scene + (b.shown ? " shown" : "");
   const dots = b.lines.map((l, i) => `<i data-n="${i}"></i>`).join("");
   const reveal = b.shown ? `<div class="b2-reveal"><b class="b2-term">${escapeHtml(item.term)}</b><span class="b2-meaning">${escapeHtml(item.meaning || "")}</span><ol class="b2-lines">${b.lines.filter(l => l.row).map(l => `<li>${blindMarked(l.text, item.term)}</li>`).join("")}</ol></div>` : "";
-  const acts = b.shown ? '<button class="b2-btn again" data-b2="again">Again</button><button class="b2-btn good" data-b2="good">Good</button>' : '<button class="b2-btn" data-b2="replay">↻ Replay</button><button class="b2-btn primary" data-b2="show">Show</button>';
+  const ctl = '<button class="b2-ctl" data-b2="undo" aria-label="Undo" title="Undo (⌘Z)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 15a7 7 0 0 0 -14 0"/><path d="M3.5 12l3 3.5l3 -3.5"/></svg></button><button class="b2-ctl" data-b2="redo" aria-label="Redo" title="Redo (⌘⇧Z)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 15a7 7 0 0 1 14 0"/><path d="M14.5 12l3 3.5l3 -3.5"/></svg></button><button class="b2-ctl b2-sound" data-b2="sound" aria-label="Play or stop the sentences" title="Play or stop (R plays from the start)"></button>';
+  const acts = ctl + (b.shown ? '<button class="b2-ctl again" data-b2="again" title="Again (←)">Again</button><button class="b2-ctl good" data-b2="good" title="Good (→)">Good</button>' : '<button class="b2-ctl show" data-b2="show" title="Show (Space)">Show</button>');
   box.innerHTML = `<div class="b2-stage"><div class="b2-head"><button class="b2-close" data-b2="close" aria-label="Close" title="Close (Esc)">✕</button></div><div class="b2-art">${blindArt(b.scene)}</div><div class="b2-dots">${dots}</div><div class="b2-time"><i></i></div>${reveal}<div class="b2-acts">${acts}</div></div>`;
   paintBlindLive();
 }
@@ -3433,9 +3442,25 @@ function blindTime(f) {
   if (bar) bar.style.width = Math.round(Math.max(0, Math.min(1, f)) * 100) + "%";
 }
 
+const B2_PLAY = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z"/></svg>', B2_STOP = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2"/></svg>';
+
+function blindSound() {
+  if (!blind || !blind.item) return;
+  if (blind.playing) {
+    blindStop();
+    paintBlindLive();
+  } else blindPlay();
+}
+
 function paintBlindLive() {
   const b = blind, box = document.getElementById("blind2");
   if (!b || !b.item) return;
+  const snd = box.querySelector(".b2-sound");
+  if (snd) {
+    const html = b.playing ? B2_STOP : B2_PLAY;
+    if (snd.innerHTML !== html) snd.innerHTML = html;
+    snd.classList.toggle("on", b.playing);
+  }
   if (!b.playing) blindTime(b.at >= b.lines.length ? 1 : 0);
   box.classList.toggle("playing", b.playing);
   box.querySelectorAll(".b2-dots i, .b2-bubble").forEach(el => {
@@ -3884,7 +3909,9 @@ document.getElementById("blind2").addEventListener("click", e => {
   const btn = e.target.closest("[data-b2]");
   if (!btn) return;
   const act = btn.dataset.b2;
-  if (act === "close") closeBlind(); else if (act === "show") blindShow(); else if (act === "replay") blindPlay(); else if (act === "again") blindGrade(true); else if (act === "good") blindGrade(false);
+  if (act === "undo" || act === "redo") return blindUndo(act === "redo");
+  if (act === "sound") return blindSound();
+  if (act === "close") closeBlind(); else if (act === "show") blindShow(); else if (act === "again") blindGrade(true); else if (act === "good") blindGrade(false);
 });
 
 window.addEventListener("keydown", e => {
@@ -3906,7 +3933,7 @@ window.addEventListener("keydown", e => {
     closeBlind();
   } else if (k === " " || k === "Enter") {
     e.preventDefault();
-    if (blind.item && !blind.shown) blindShow(); else if (blind.item) blindPlay(); else closeBlind();
+    if (blind.item && !blind.shown) blindShow(); else if (blind.item) blindSound(); else closeBlind();
   } else if (k === "ArrowLeft" || k === "ArrowRight") {
     e.preventDefault();
     blindGrade(k === "ArrowLeft");
