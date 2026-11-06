@@ -2222,6 +2222,15 @@ window.onYouTubeIframeAPIReady = function(){
   .w-row .w-pin, .w-row .w-tr{font-size:13px;line-height:18px;text-shadow:none;}
   .w-t{flex:none;width:44px;font-size:12px;line-height:26px;font-weight:600;font-variant-numeric:tabular-nums;color:#b4bbe0;}
   .w-row.on{background:rgba(255,255,255,.14);box-shadow:inset 3px 0 #ffd36e;}
+  .w-pill svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+  .w-pill{display:inline-flex;align-items:center;justify-content:center;}
+  .w-rate{text-align:center;text-align-last:center;width:76px;}
+  .w-cap[hidden]{display:none;}
+  .w-video .w-cap{position:absolute;left:16px;right:16px;bottom:56px;inset-block-start:auto;width:auto;height:auto;min-height:0;z-index:1;pointer-events:none;background:rgba(0,0,0,.6);}
+  .w-t{position:relative;display:inline-flex;align-items:center;justify-content:center;align-self:flex-start;box-sizing:border-box;width:auto;min-width:48px;height:24px;margin-top:1px;padding:0 8px;border-radius:12px;background:rgba(255,255,255,.12);line-height:24px !important;}
+  .w-ring{position:absolute;inset:-1px;width:calc(100% + 2px);height:calc(100% + 2px);overflow:visible;pointer-events:none;opacity:0;}
+  .w-ring rect{width:calc(100% - 2px);height:calc(100% - 2px);fill:none;stroke:#ffd36e;stroke-width:2;stroke-dasharray:100;stroke-dashoffset:100;transition:stroke-dashoffset .2s linear;}
+  .w-row.on .w-ring{opacity:1;}
   .w-row.on .w-t{color:#ffd36e;}
   @media (hover:hover){.w-row:hover{background:rgba(255,255,255,.06);}}
   @media (max-width:820px){.watch-pop, .watch-pop.with-list{grid-template-columns:minmax(0, 1fr);padding:8px;gap:8px;}.w-listbox{height:50vh;}.w-list{inset:52px 0 0;}.w-cap{min-height:72px;}.w-text{font-size:22px;line-height:32px;}.w-pin, .w-tr{font-size:15px;line-height:22px;}.w-barbox{justify-content:flex-start;overflow-x:auto;}.w-bar{flex-wrap:nowrap;gap:4px;width:auto;}.w-gap, .w-push{display:none;}.w-pill, .w-go{min-width:36px;padding:0 8px;}}
@@ -3483,9 +3492,24 @@ function watchChinese() {
   return watch.lines.some(r => /[㐀-鿿]/.test(r.q));
 }
 
-function watchLineHtml(r) {
+function watchLineHtml(r, inList) {
   const p = watch.prefs, pin = p.pin && watchChinese() ? getPinyin(r.q) : "", tr = p.tr ? watchTranslation(r) : "";
-  return (pin ? `<div class="w-pin">${escapeHtml(pin)}</div>` : "") + (p.text ? `<div class="w-text">${highlightVocabInHtml(r.qHtml || escapeHtml(r.q), r.id)}</div>` : "") + (tr ? `<div class="w-tr">${escapeHtml(tr)}</div>` : "");
+  return (pin ? `<div class="w-pin">${escapeHtml(pin)}</div>` : "") + (p.text || inList ? `<div class="w-text">${highlightVocabInHtml(r.qHtml || escapeHtml(r.q), r.id)}</div>` : "") + (tr ? `<div class="w-tr">${escapeHtml(tr)}</div>` : "");
+}
+
+const W_ICONS = {
+  prev: '<path d="M12 5l-5 5 5 5"/>',
+  repeat: '<path d="M15 10a5 5 0 1 1-1.5-3.5M15 4v3h-3"/>',
+  next: '<path d="M8 5l5 5-5 5"/>',
+  text: '<rect x="3" y="5" width="14" height="10" rx="2"/><path d="M6 11h4M12 11h2M6 8h8"/>',
+  pin: '<path d="M6 7h8M10 7v8M6.5 4.5l7-1"/>',
+  tr: '<circle cx="10" cy="10" r="7"/><path d="M3 10h14M10 3c2 2 3 4.5 3 7s-1 5-3 7c-2-2-3-4.5-3-7s1-5 3-7z"/>',
+  list: '<path d="M7 6h10M7 10h10M7 14h10M3.5 6h.5M3.5 10h.5M3.5 14h.5"/>',
+  auto: '<path d="M7 5v10M13 5v10"/>'
+};
+
+function wIcon(k) {
+  return `<svg viewBox="0 0 20 20" aria-hidden="true">${W_ICONS[k]}</svg>`;
 }
 
 function theaterScene(name) {
@@ -3593,6 +3617,8 @@ function watchTick() {
     watch.at = i;
     paintWatchLine(true);
   }
+  const ring = document.querySelector("#watchPop .w-row.on .w-ring rect"), next = L[i + 1];
+  if (ring && L[i]) ring.style.strokeDashoffset = String(Math.round(100 - Math.max(0, Math.min(1, (t - L[i].time) / ((next ? next.time : L[i].time + 8) - L[i].time || 1))) * 100));
 }
 
 function watchSeek(i) {
@@ -3619,22 +3645,28 @@ function watchToggle() {
 
 function paintWatch() {
   const p = watch.prefs, box = document.getElementById("watchPop");
-  const pill = (k, label, title) => `<button type="button" class="w-pill${p[k] ? " on" : ""}" data-w="${k}" aria-pressed="${!!p[k]}" title="${title}">${label}</button>`;
+  const pill = (k, title) => `<button type="button" class="w-pill${p[k] ? " on" : ""}" data-w="${k}" aria-pressed="${!!p[k]}" aria-label="${title}" title="${title}">${wIcon(k)}</button>`;
+  const step = (k, title) => `<button type="button" class="w-pill" data-w="${k}" aria-label="${title}" title="${title}">${wIcon(k)}</button>`;
   const study = lessonStudyMode() ? '<button type="button" class="w-go" data-w="study" title="Study the sentences">💬 Study</button>' : "";
   const words = blindCanOpen() || lessonVocabItems(vocabSource()).some(i => !vocabViewOnly(i)) ? '<button type="button" class="w-go" data-w="words" title="Study the words">字 Words</button>' : "";
   const acts = `${study}${words}<button type="button" class="w-go ghost" data-w="lookup" title="Every word of this lesson">Words list</button>`;
-  const bar = `<div class="w-bar"><button type="button" class="w-pill" data-w="prev" title="Previous line (←)">‹</button><button type="button" class="w-pill" data-w="repeat" title="This line again (R)">↻</button><button type="button" class="w-pill" data-w="next" title="Next line (→)">›</button><span class="w-gap"></span>${pill("text", "Aa", "The sentence")}${watchChinese() ? pill("pin", "Pīn", "Pinyin") : ""}${pill("tr", "文A", "The translation")}${pill("list", "☰", "All the lines")}${pill("auto", "⏸", "Pause after each line")}<select class="w-rate" aria-label="Speed">${[ .75, 1, 1.25 ].map(r => `<option value="${r}"${r === p.rate ? " selected" : ""}>${r}×</option>`).join("")}</select>${p.list ? "" : '<span class="w-push"></span>' + acts}</div>`;
-  const list = `<div class="w-acts">${acts}</div><div class="w-list">${watch.lines.map((r, i) => `<div class="w-row" data-i="${i}"><span class="w-t">${fmtTime(r.time)}</span><div>${watchLineHtml(r)}</div></div>`).join("")}</div>`;
+  const bar = `<div class="w-bar">${step("prev", "Previous line (A or ←)")}${step("repeat", "This line again (S)")}${step("next", "Next line (D or →)")}<span class="w-gap"></span>${pill("text", "The sentence under the video")}${watchChinese() ? pill("pin", "Pinyin") : ""}${pill("tr", "The translation")}${pill("list", "All the lines")}${pill("auto", "Pause after each line")}<span class="w-gap"></span><select class="w-rate" aria-label="Speed" title="Speed">${[ .5, .75, .9, 1, 1.1, 1.25, 1.5, 1.75, 2 ].map(r => `<option value="${r}"${r === p.rate ? " selected" : ""}>${r}×</option>`).join("")}</select>${p.list ? "" : '<span class="w-push"></span>' + acts}</div>`;
+  const list = `<div class="w-acts">${acts}</div><div class="w-list">${watch.lines.map((r, i) => `<div class="w-row" data-i="${i}"><span class="w-t">${fmtTime(r.time)}<svg class="w-ring" aria-hidden="true"><rect x="1" y="1" rx="11" pathLength="100"/></svg></span><div>${watchLineHtml(r, true)}</div></div>`).join("")}</div>`;
   box.className = "watch-pop" + (p.list ? " with-list" : "");
   box.querySelector(".w-barbox").innerHTML = bar;
   box.querySelector(".w-listbox").innerHTML = p.list ? list : "";
+  const cap = box.querySelector(".w-cap"), vid = box.querySelector(".w-video");
+  if (!p.list && cap.parentElement !== vid) vid.appendChild(cap); else if (p.list && cap.parentElement === vid) vid.after(cap);
   paintWatchLine(true);
 }
 
 function paintWatchLine(scroll) {
   const box = document.getElementById("watchPop"), r = watch.lines[watch.at];
   const cap = box.querySelector(".w-cap");
-  if (cap) cap.innerHTML = r ? watchLineHtml(r) : "";
+  if (cap) {
+    cap.innerHTML = r ? watchLineHtml(r) : "";
+    cap.hidden = !cap.innerHTML;
+  }
   box.querySelectorAll(".w-row").forEach(el => el.classList.toggle("on", Number(el.dataset.i) === watch.at));
   const on = box.querySelector(".w-row.on"), list = box.querySelector(".w-list");
   if (scroll && on && list) list.scrollTo({
@@ -3678,7 +3710,7 @@ window.addEventListener("keydown", e => {
   if (!watch || blind || e.metaKey || e.ctrlKey || e.altKey || !document.getElementById("editPopup").hidden || wordsOpen()) return;
   if (e.target.closest && e.target.closest("input, textarea, select, [contenteditable]")) return;
   const k = e.key;
-  if (k === " ") watchToggle(); else if (k === "ArrowLeft") watchSeek(Math.max(0, watch.at - 1)); else if (k === "ArrowRight") watchSeek(Math.min(watch.lines.length - 1, watch.at + 1)); else if (e.code === "KeyR") watchSeek(Math.max(0, watch.at)); else if (e.code === "KeyE" && watch.lines[watch.at]) openEditPopup(watch.lines[watch.at]); else return;
+  if (k === " ") watchToggle(); else if (k === "ArrowLeft" || e.code === "KeyA") watchSeek(Math.max(0, watch.at - 1)); else if (k === "ArrowRight" || e.code === "KeyD") watchSeek(Math.min(watch.lines.length - 1, watch.at + 1)); else if (e.code === "KeyS" || e.code === "KeyR") watchSeek(Math.max(0, watch.at)); else if (e.code === "KeyE" && watch.lines[watch.at]) openEditPopup(watch.lines[watch.at]); else return;
   e.preventDefault();
   e.stopImmediatePropagation();
 }, true);
