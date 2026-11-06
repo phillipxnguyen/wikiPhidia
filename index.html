@@ -2215,6 +2215,34 @@ window.onYouTubeIframeAPIReady = function(){
   .fresh-lesson .words-fab{background:var(--surface);}
   @media (hover:hover){.words-fab:hover, .fresh-lesson .words-fab:hover{background:var(--surface-2);filter:none;}}
   .blind-fab{top:-66px;}
+  .watch-fab{top:-132px;}
+  html.watch-on{overflow:hidden;}
+  .watch-pop{position:fixed;inset:0;z-index:1600;display:grid;grid-template-columns:minmax(0, 1fr);gap:16px;box-sizing:border-box;padding:16px;background:#0f1115;color:#e9ecf1;}
+  .watch-pop.with-list{grid-template-columns:minmax(0, 1fr) 400px;}
+  .watch-pop[hidden]{display:none;}
+  .w-main{display:flex;flex-direction:column;gap:12px;min-height:0;}
+  .w-video{position:relative;width:100%;aspect-ratio:16 / 9;max-height:calc(100vh - 250px);margin:0 auto;overflow:hidden;border-radius:16px;background:#000;}
+  .w-video > *{position:absolute;inset:0;width:100%;height:100%;}
+  .w-cap{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:88px;text-align:center;}
+  .w-pin{font-size:18px;line-height:24px;color:#f2b94b;}
+  .w-text{font-size:28px;line-height:40px;font-weight:600;}
+  .w-tr{font-size:18px;line-height:26px;color:#aab3c2;}
+  .w-barbox{display:flex;justify-content:center;}
+  .w-bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;padding:6px;border-radius:24px;background:#1b1f27;}
+  .w-gap{width:8px;}
+  .w-pill, .w-close{flex:none;min-width:40px;height:36px;padding:0 12px;white-space:nowrap;border:0;border-radius:18px;background:transparent;color:#aab3c2;font-size:15px;line-height:20px;font-weight:700;cursor:pointer;}
+  .w-pill.on{background:#2d3442;color:#ffffff;}
+  @media (hover:hover){.w-pill:hover, .w-close:hover{background:#262c37;color:#ffffff;}}
+  .w-rate{height:36px;padding:0 8px;border:0;border-radius:18px;background:#262c37;color:#e9ecf1;font-size:14px;line-height:20px;}
+  .w-listbox{min-height:0;}
+  .w-list{height:100%;overflow:auto;border-radius:16px;background:#151922;}
+  .w-row{display:flex;gap:12px;padding:12px 16px;border-bottom:1px solid #1f2430;cursor:pointer;}
+  .w-row .w-text{font-size:18px;line-height:28px;}
+  .w-row .w-pin, .w-row .w-tr{font-size:14px;line-height:20px;}
+  .w-t{flex:none;width:44px;font-size:12px;line-height:28px;color:#6d7686;font-variant-numeric:tabular-nums;}
+  .w-row.on{background:#1f2633;box-shadow:inset 4px 0 #f2b94b;}
+  @media (hover:hover){.w-row:hover{background:#1a1f2a;}}
+  @media (max-width:820px){.watch-pop, .watch-pop.with-list{grid-template-columns:minmax(0, 1fr);grid-template-rows:auto minmax(0, 1fr);padding:calc(8px + env(safe-area-inset-top)) 8px calc(8px + env(safe-area-inset-bottom));gap:8px;}.w-video{border-radius:12px;max-height:none;}.w-cap{min-height:72px;}.w-text{font-size:22px;line-height:32px;}.w-pin, .w-tr{font-size:15px;line-height:22px;}.w-barbox{justify-content:flex-start;overflow-x:auto;}.w-bar{flex-wrap:nowrap;gap:4px;padding:4px;}.w-gap{display:none;}.w-pill, .w-close{min-width:36px;padding:0 8px;}}
   html.focus-on .ielts-paper{border:0;border-radius:24px;background:color-mix(in srgb, var(--surface) 76%, transparent);-webkit-backdrop-filter:blur(16px) saturate(1.4);backdrop-filter:blur(16px) saturate(1.4);box-shadow:0 20px 50px rgba(10,20,40,.14), inset 0 0 0 1px color-mix(in srgb, var(--border) 60%, transparent);}
   html.focus-on .ielts-paper::before{display:none;}
   html.focus-on .ielts-paper :is(.paper-lines, .paper-prompt, .cell.shown.paper-lines:hover, .cell.hidden.paper-prompt:hover){background-image:none;}
@@ -2690,6 +2718,7 @@ window.onYouTubeIframeAPIReady = function(){
 <div id="toolPop" class="tool-pop" hidden role="dialog" aria-label="Tidy up"><div class="tool-box"></div></div>
 <div id="wordPop" class="tool-pop" hidden role="dialog" aria-label="Words"><div class="tool-box word-box"></div></div>
 <div id="blind2" class="blind2" hidden role="dialog" aria-label="Podcast"></div>
+<div id="watchPop" class="watch-pop" hidden role="dialog" aria-label="Watch"></div>
 <span id="focusClock" class="focus-clock" title="Time studied today: it runs only while you study. Drag it anywhere"><i class="fc-dial" aria-hidden="true"><b></b><em></em></i><span class="fc-time">0:00</span></span>
 
 <div id="spot" class="spot" hidden role="dialog" aria-modal="true" aria-label="Search or Ask">
@@ -2990,6 +3019,7 @@ window.onYouTubeIframeAPIReady = function(){
   </div>
   <div id="studyCard">
   <div class="fab-dock">
+    <button id="listWatch" class="add-fab words-fab watch-fab" title="Watch" aria-label="Watch" hidden><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="4" width="14" height="10" rx="2"/><path d="M9 7.5v3l2.5-1.5zM7 17h6"/></svg></button>
     <button id="listBlind" class="add-fab words-fab blind-fab" title="Podcast" aria-label="Podcast" hidden><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 8c2 3 4 4 7 4s5-1 7-4M6 11l-1 2M10 12v2M14 11l1 2"/></svg></button>
     <button id="listWords" class="add-fab words-fab" data-words title="Words in this lesson" aria-label="Words in this lesson" hidden><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5h14M3 10h10M3 15h6"/></svg></button>
     <button id="listAddCard" class="add-fab" data-add-card title="Add a card" aria-label="Add a card" hidden><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14"/></svg></button>
@@ -3486,6 +3516,224 @@ function paintBlindLive() {
   });
 }
 
+const WATCH_KEY = "flashcards.watch";
+
+let watch = null;
+
+function watchPrefs() {
+  let p = {};
+  try {
+    p = JSON.parse(localStorage.getItem(WATCH_KEY)) || {};
+  } catch (e) {}
+  return Object.assign({
+    text: true,
+    pin: true,
+    tr: true,
+    list: true,
+    auto: false,
+    rate: 1
+  }, p);
+}
+
+function saveWatchPrefs() {
+  try {
+    localStorage.setItem(WATCH_KEY, JSON.stringify(watch.prefs));
+  } catch (e) {}
+}
+
+function watchLines() {
+  return rows.filter(r => r.uid !== EXTRA_UID && r.time != null && (r.q || "").trim()).sort((a, b) => a.time - b.time);
+}
+
+function watchCanOpen() {
+  return appMode !== "vocab" && !!currentLessonId && !isVirtualLesson() && watchLines().some(r => cardClip(r));
+}
+
+function watchTranslation(r) {
+  const q = detectLang(r.q || "").split("-")[0];
+  return plainTextOf(r.notesHtml || escapeHtml(r.notes || "").replace(/\n/g, "<br>"), "\n").split("\n").map(x => x.trim()).filter(x => x && !/[:：]/.test(x) && detectLang(x).split("-")[0] !== q).join(" ");
+}
+
+function watchChinese() {
+  return watch.lines.some(r => /[㐀-鿿]/.test(r.q));
+}
+
+function watchLineHtml(r) {
+  const p = watch.prefs, pin = p.pin && watchChinese() ? getPinyin(r.q) : "", tr = p.tr ? watchTranslation(r) : "";
+  return (pin ? `<div class="w-pin">${escapeHtml(pin)}</div>` : "") + (p.text ? `<div class="w-text">${highlightVocabInHtml(r.qHtml || escapeHtml(r.q), r.id)}</div>` : "") + (tr ? `<div class="w-tr">${escapeHtml(tr)}</div>` : "");
+}
+
+function openWatch() {
+  if (!watchCanOpen()) return;
+  commitActiveEdit();
+  haltAllPlayback();
+  speechSynthesis.cancel();
+  const lines = watchLines(), clip = cardClip(lines.find(r => cardClip(r)));
+  watch = {
+    lines: lines,
+    prefs: watchPrefs(),
+    at: 0,
+    player: null,
+    timer: 0,
+    pausedAt: -1,
+    videoId: clip.id
+  };
+  const box = document.getElementById("watchPop");
+  box.hidden = false;
+  document.documentElement.classList.add("watch-on");
+  box.innerHTML = '<div class="w-main"><div class="w-video"><div></div></div><div class="w-cap"></div><div class="w-barbox"></div></div><div class="w-listbox"></div>';
+  paintWatch();
+  const slot = box.querySelector(".w-video > div");
+  if (window.YT && window.YT.Player) watch.player = new YT.Player(slot, {
+    width: "100%",
+    height: "100%",
+    videoId: clip.id,
+    playerVars: {
+      start: Math.floor(lines[0].time),
+      autoplay: 1,
+      controls: 1,
+      rel: 0,
+      playsinline: 1,
+      iv_load_policy: 3,
+      cc_load_policy: 0
+    },
+    events: {
+      onReady: e => {
+        try {
+          e.target.setPlaybackRate(watch.prefs.rate);
+        } catch (err) {}
+      }
+    }
+  });
+  watch.timer = setInterval(watchTick, 200);
+}
+
+function closeWatch() {
+  if (!watch) return;
+  clearInterval(watch.timer);
+  if (watch.player) {
+    try {
+      watch.player.destroy();
+    } catch (e) {}
+  }
+  watch = null;
+  const box = document.getElementById("watchPop");
+  box.hidden = true;
+  box.innerHTML = "";
+  document.documentElement.classList.remove("watch-on");
+  render();
+}
+
+function watchTime() {
+  try {
+    return watch.player && watch.player.getCurrentTime ? watch.player.getCurrentTime() : 0;
+  } catch (e) {
+    return 0;
+  }
+}
+
+function watchTick() {
+  if (!watch) return;
+  const t = watchTime(), L = watch.lines;
+  let i = 0;
+  for (let k = 0; k < L.length; k++) if (L[k].time <= t + .15) i = k; else break;
+  if (watch.prefs.auto && watch.at >= 0 && i > watch.at && watch.pausedAt !== watch.at) {
+    watch.pausedAt = watch.at;
+    try {
+      watch.player.pauseVideo();
+    } catch (e) {}
+    return;
+  }
+  if (i !== watch.at) {
+    watch.at = i;
+    paintWatchLine(true);
+  }
+}
+
+function watchSeek(i) {
+  if (!watch || !watch.lines[i]) return;
+  watch.at = i;
+  watch.pausedAt = -1;
+  paintWatchLine(true);
+  try {
+    watch.player.seekTo(watch.lines[i].time, true);
+    watch.player.playVideo();
+  } catch (e) {}
+}
+
+function watchToggle() {
+  if (!watch || !watch.player) return;
+  try {
+    const playing = watch.player.getPlayerState() === YT.PlayerState.PLAYING;
+    if (playing) watch.player.pauseVideo(); else {
+      if (watch.prefs.auto && watch.pausedAt === watch.at && watch.lines[watch.at + 1]) return watchSeek(watch.at + 1);
+      watch.player.playVideo();
+    }
+  } catch (e) {}
+}
+
+function paintWatch() {
+  const p = watch.prefs, box = document.getElementById("watchPop");
+  const pill = (k, label, title) => `<button type="button" class="w-pill${p[k] ? " on" : ""}" data-w="${k}" aria-pressed="${!!p[k]}" title="${title}">${label}</button>`;
+  const bar = `<div class="w-bar"><button type="button" class="w-pill" data-w="prev" title="Previous line (←)">‹</button><button type="button" class="w-pill" data-w="repeat" title="Play this line again (R)">↻</button><button type="button" class="w-pill" data-w="next" title="Next line (→)">›</button><span class="w-gap"></span>${pill("text", "Aa", "The sentence")}${watchChinese() ? pill("pin", "Pīn", "Pinyin") : ""}${pill("tr", "文A", "The translation")}${pill("list", "☰", "All the lines")}${pill("auto", "⏸", "Pause after each line")}<select class="w-rate" aria-label="Speed">${[ .75, 1, 1.25 ].map(r => `<option value="${r}"${r === p.rate ? " selected" : ""}>${r}×</option>`).join("")}</select><button type="button" class="w-close" data-w="close" aria-label="Close" title="Close (Esc)">✕</button></div>`;
+  const list = `<div class="w-list">${watch.lines.map((r, i) => `<div class="w-row" data-i="${i}"><span class="w-t">${fmtTime(r.time)}</span><div>${watchLineHtml(r)}</div></div>`).join("")}</div>`;
+  box.className = "watch-pop" + (p.list ? " with-list" : "");
+  box.querySelector(".w-barbox").innerHTML = bar;
+  box.querySelector(".w-listbox").innerHTML = p.list ? list : "";
+  paintWatchLine(true);
+}
+
+function paintWatchLine(scroll) {
+  const box = document.getElementById("watchPop"), r = watch.lines[watch.at];
+  const cap = box.querySelector(".w-cap");
+  if (cap) cap.innerHTML = r ? watchLineHtml(r) : "";
+  box.querySelectorAll(".w-row").forEach(el => el.classList.toggle("on", Number(el.dataset.i) === watch.at));
+  const on = box.querySelector(".w-row.on"), list = box.querySelector(".w-list");
+  if (scroll && on && list) list.scrollTo({
+    top: Math.round(on.offsetTop - list.clientHeight / 2 + on.offsetHeight / 2),
+    behavior: reducedMotion() ? "auto" : "smooth"
+  });
+}
+
+function fmtTime(t) {
+  const s = Math.floor(t || 0);
+  return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+}
+
+document.getElementById("watchPop").addEventListener("click", e => {
+  if (!watch) return;
+  const b = e.target.closest("[data-w]"), row = e.target.closest(".w-row");
+  if (row) return watchSeek(Number(row.dataset.i));
+  if (!b) return;
+  const k = b.dataset.w;
+  if (k === "close") return closeWatch();
+  if (k === "prev") return watchSeek(Math.max(0, watch.at - 1));
+  if (k === "next") return watchSeek(Math.min(watch.lines.length - 1, watch.at + 1));
+  if (k === "repeat") return watchSeek(Math.max(0, watch.at));
+  watch.prefs[k] = !watch.prefs[k];
+  saveWatchPrefs();
+  paintWatch();
+});
+
+document.getElementById("watchPop").addEventListener("change", e => {
+  if (!watch || !e.target.matches(".w-rate")) return;
+  watch.prefs.rate = Number(e.target.value);
+  saveWatchPrefs();
+  try {
+    watch.player.setPlaybackRate(watch.prefs.rate);
+  } catch (err) {}
+});
+
+window.addEventListener("keydown", e => {
+  if (!watch || e.metaKey || e.ctrlKey || e.altKey || e.target.closest && e.target.closest("select")) return;
+  e.stopImmediatePropagation();
+  const k = e.key;
+  if (k === "Escape") closeWatch(); else if (k === " ") watchToggle(); else if (k === "ArrowLeft") watchSeek(Math.max(0, watch.at - 1)); else if (k === "ArrowRight") watchSeek(Math.min(watch.lines.length - 1, watch.at + 1)); else if (e.code === "KeyR") watchSeek(Math.max(0, watch.at)); else return;
+  e.preventDefault();
+}, true);
+
+document.getElementById("listWatch").addEventListener("click", openWatch);
+
 const STUDY_TIME_KEY = "flashcards.studyTime";
 
 let studyTime = (() => {
@@ -3505,8 +3753,12 @@ let studyTime = (() => {
 
 function studyingNow() {
   if (document.visibilityState !== "visible" || tabPaused) return false;
-  const inStudy = !!blind || !!taskRun || currentView === "study" && !!groupState || currentView === "vocab" && vocabView === "card";
-  return inStudy && (Date.now() - studyActiveAt < 90000 || !!(blind && blind.playing));
+  const inStudy = !!blind || !!watch || !!taskRun || currentView === "study" && !!groupState || currentView === "vocab" && vocabView === "card";
+  let watching = false;
+  try {
+    watching = !!(watch && watch.player && watch.player.getPlayerState && watch.player.getPlayerState() === 1);
+  } catch (e) {}
+  return inStudy && (Date.now() - studyActiveAt < 90000 || !!(blind && blind.playing) || watching);
 }
 
 function studyClockText(sec) {
@@ -7787,6 +8039,7 @@ function renderStudy() {
   const panel = document.getElementById("sessionCompletePanel");
   document.getElementById("listAddCard").hidden = !!groupState || isVirtualLesson() || !rows.length;
   document.getElementById("listBlind").hidden = !blindCanOpen();
+  document.getElementById("listWatch").hidden = !watchCanOpen();
   document.getElementById("listWords").hidden = document.getElementById("listAddCard").hidden;
 
   if (leaveEmptiedLesson("study", rows.length)) return;
