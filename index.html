@@ -2316,6 +2316,7 @@ window.onYouTubeIframeAPIReady = function(){
   .w-row[data-st="new"] .w-t{box-shadow:inset 0 0 0 2px #7cb8ff;}
   .w-row[data-st="due"] .w-t{box-shadow:inset 0 0 0 2px #ffb35c;}
   .w-row[data-st="done"] .w-t{box-shadow:inset 0 0 0 2px #6fd18f;}
+  .w-empty{padding:24px 16px;font-size:15px;line-height:22px;color:#dfe4ff;text-align:center;}
   @media (max-width:820px){.w-bar{flex-wrap:wrap;justify-content:center;gap:6px;border-radius:16px;}.w-bar .w-push{display:none;}.w-counts{width:100%;justify-content:center;}.w-grade{flex:1;min-width:0;}}
   .w-capline[hidden]{display:none;}
   .w-video .w-capline .w-text{color:#ffffff;text-shadow:0 0 6px rgba(0,0,0,.9), 0 2px 4px rgba(0,0,0,.9), 0 0 16px rgba(0,0,0,.6);}
@@ -3931,22 +3932,47 @@ function paintWatch() {
   const chev = d => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${d}"/></svg>`;
   const nav = `<button type="button" class="w-nav" data-w="next" aria-label="Next line" title="Next line (D or →)">${chev("M9 5l7 7-7 7")}</button><button type="button" class="w-nav" data-w="again" aria-label="This line again" title="This line again (S)">${chev("M19 12a7 7 0 1 1-2.05-4.95M19 4v4h-4")}</button><button type="button" class="w-nav" data-w="prev" aria-label="Previous line" title="Previous line (A or ←)">${chev("M15 5l-7 7 7 7")}</button>`;
   const ctl = `<button type="button" class="w-ap${p.auto ? " on" : ""}" data-w="auto" role="switch" aria-checked="${!!p.auto}" title="Pause at the end of every line (Q)"><i></i><b>AP</b></button><span class="w-grip" title="Drag to move the subtitles up or down">${chev("M7 10l5-5 5 5M7 14l5 5 5-5")}</span>`;
-  const list = `${words}<div class="w-list">${watch.lines.map((r, i) => `<div class="w-row" data-i="${i}"><span class="w-t">${fmtTime(r.time)}<svg class="w-ring" aria-hidden="true"><path pathLength="100"/></svg></span><div>${watchLineHtml(r, true)}</div></div>`).join("")}</div>`;
+  watchQueueSync();
   box.className = "watch-pop with-list" + (p.pin && watchChinese() ? " pinned" : "");
   watch.countSig = "";
   const pill = (k, title, label) => `<button type="button" class="w-pill${p[k] ? " on" : ""}" data-w="${k}" aria-pressed="${!!p[k]}" title="${title}">${label}</button>`;
   box.querySelector(".w-barbox").innerHTML = `<div class="w-bar"><span class="w-counts"></span><span class="w-push"></span><button type="button" class="w-grade again" data-w="gagain" title="Again (←)">Again</button><button type="button" class="w-grade good" data-w="ggood" title="Good (→)">Good</button><span class="w-push"></span>${watchChinese() ? pill("pin", "Pinyin", "拼") : ""}${watch.lines.some(r => watchTranslation(r)) ? pill("tr", "The translation", "Aa") : ""}<select class="w-rate" aria-label="Speed" title="Speed">${[ .5, .75, .9, 1, 1.1, 1.25, 1.5, 1.75, 2 ].map(r => `<option value="${r}"${r === p.rate ? " selected" : ""}>${r}×</option>`).join("")}</select></div>`;
   box.querySelector(".w-capl").innerHTML = nav;
   box.querySelector(".w-capctl").innerHTML = ctl;
-  box.querySelector(".w-listbox").innerHTML = list;
-  box.querySelectorAll(".w-t").forEach(t => {
+  box.querySelector(".w-listbox").dataset.wtop = words;
+  paintWatchList();
+  placeWatchCap();
+  paintWatchCounts();
+  paintWatchLine(true);
+}
+
+function watchQueueSync() {
+  const now = Date.now(), ready = limitRows(watch.lines.filter(r => cardReady(r, "Listen", now))), ids = new Set(ready.map(r => r.id));
+  const before = (watch.queue || []).join(",");
+  if (!watch.queue) watch.queue = ready.slice().sort(byVideoTime).map(r => r.id); else {
+    watch.queue = watch.queue.filter(id => ids.has(id));
+    ready.slice().sort(byVideoTime).forEach(r => !watch.queue.includes(r.id) && watch.queue.push(r.id));
+  }
+  return watch.queue.join(",") !== before;
+}
+
+function paintWatchList() {
+  const box = document.getElementById("watchPop"), lb = box.querySelector(".w-listbox"), idx = new Map(watch.lines.map((r, i) => [ r.id, i ]));
+  const items = watch.queue.filter(id => idx.has(id)).map(id => {
+    const i = idx.get(id), r = watch.lines[i];
+    return `<div class="w-row" data-i="${i}" data-id="${r.id}"><span class="w-t">${fmtTime(r.time)}<svg class="w-ring" aria-hidden="true"><path pathLength="100"/></svg></span><div>${watchLineHtml(r, true)}</div></div>`;
+  }).join("");
+  const keep = lb.querySelector(".w-list") ? lb.querySelector(".w-list").scrollTop : 0;
+  lb.innerHTML = `${lb.dataset.wtop || ""}<div class="w-list">${items || '<div class="w-empty">Nothing left to study in this video today. It still plays; what you answered Again comes back here when it is due.</div>'}</div>`;
+  lb.querySelector(".w-list").scrollTop = keep;
+  lb.querySelectorAll(".w-t").forEach(t => {
     const w = t.offsetWidth + 2, h = t.offsetHeight + 2, r = h / 2 - 1, svg = t.querySelector(".w-ring");
     svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
     svg.querySelector("path").setAttribute("d", `M ${w / 2} 1 H ${w - 1 - r} A ${r} ${r} 0 0 1 ${w - 1 - r} ${h - 1} H ${1 + r} A ${r} ${r} 0 0 1 ${1 + r} 1 Z`);
   });
-  placeWatchCap();
+  watch.countSig = "";
   paintWatchCounts();
-  paintWatchLine(true);
+  lb.querySelectorAll(".w-row").forEach(el => el.classList.toggle("on", Number(el.dataset.i) === watch.at));
 }
 
 function paintWatchCounts() {
@@ -3966,6 +3992,7 @@ function paintWatchCounts() {
     if (b) n[b]++;
     return b || "later";
   });
+  if (watchQueueSync()) return paintWatchList();
   const sig = marks.join(",");
   if (sig === watch.countSig) return;
   watch.countSig = sig;
@@ -3984,7 +4011,6 @@ function watchGrade(isAgain) {
   scheduleAutoSave();
   flushAutoSave();
   renderLessonList();
-  paintWatchCounts();
   const vid = document.querySelector("#watchPop .w-video");
   if (vid && !reducedMotion()) {
     const st2 = document.createElement("div");
@@ -4007,7 +4033,38 @@ function watchGrade(isAgain) {
       fill: "forwards"
     }).finished.then(() => st2.remove(), () => st2.remove());
   }
-  if (isAgain) watchSeek(watch.at); else if (watch.lines[watch.at + 1]) watchSeek(watch.at + 1);
+  const q = watch.queue, pos = q.indexOf(r.id), nextId = pos < 0 ? q[0] : q[pos + 1] != null ? q[pos + 1] : q.find(id => id !== r.id);
+  const rowEl = document.querySelector(`#watchPop .w-row[data-id="${r.id}"]`);
+  if (pos >= 0) q.splice(pos, 1);
+  const after = () => {
+    paintWatchList();
+    const ni = watch.lines.findIndex(x => x.id === nextId);
+    if (ni >= 0) watchSeek(ni);
+  };
+  if (rowEl && !reducedMotion()) {
+    const h = rowEl.offsetHeight;
+    rowEl.style.overflow = "hidden";
+    rowEl.animate([ {
+      transform: "none",
+      opacity: 1,
+      height: h + "px"
+    }, {
+      transform: `translateX(${isAgain ? -110 : 110}%) rotate(${isAgain ? -4 : 4}deg)`,
+      opacity: 0,
+      height: h + "px",
+      offset: .7
+    }, {
+      transform: `translateX(${isAgain ? -110 : 110}%)`,
+      opacity: 0,
+      height: "0px",
+      paddingTop: "0px",
+      paddingBottom: "0px"
+    } ], {
+      duration: 520,
+      easing: "ease-in",
+      fill: "forwards"
+    }).finished.then(after, after);
+  } else after();
 }
 
 function placeWatchCap() {
