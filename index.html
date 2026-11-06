@@ -497,10 +497,13 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-card .vocab-back{transform:none;}
   .vocab-card:not(.flipped) .vocab-back, .vocab-card.flipped .vocab-front{visibility:hidden;}
   .vocab-card .vocab-front > .vocab-term, .vocab-card .vocab-back > .vocab-back-main{box-sizing:border-box;max-width:min(760px, 100%);}
-  .vocab-card .vocab-front > .vocab-term{font-size:40px;line-height:48px;font-weight:700;text-align:center;}
+  .vocab-card .vocab-front > .vocab-term{font-size:56px;line-height:64px;font-weight:700;text-align:center;}
+  .vocab-card .vocab-back > .vocab-back-main :is(.vocab-ctx:not(:has(.rd)), .vocab-meaning){font-size:32px;line-height:40px;}
+  @media (max-width:600px){.vocab-card .vocab-back > .vocab-back-main :is(.vocab-ctx:not(:has(.rd)), .vocab-meaning){font-size:24px;line-height:30px;}}
   .vocab-card .vocab-front > .vocab-term.word{font-weight:700;}
   .vocab-card[data-look] .vocab-back > .vocab-back-main{width:auto;align-self:center;}
-  .vocab-card[data-look] :is(.vocab-front > .vocab-term, .vocab-back > .vocab-back-main)::before{display:block;white-space:pre;}
+  .vocab-card[data-look] :is(.vocab-front > .vocab-term, .vocab-back > .vocab-back-main)::before{display:block;white-space:normal;}
+  .vocab-card[data-look="telegram"] .rd{text-transform:none;letter-spacing:0;}
   .vocab-card[data-look="news"] :is(.vocab-front > .vocab-term, .vocab-back > .vocab-back-main){width:min(720px, 100%);padding:16px 24px 24px;background:#fbf8f1;color:#1d1b18;font-family:Georgia, "Times New Roman", "Songti SC", "STSong", serif;box-shadow:0 8px 24px rgba(60,40,10,.12);text-align:left;}
   .vocab-card[data-look="news"] :is(.vocab-front > .vocab-term, .vocab-back > .vocab-back-main)::before{content:attr(data-tag);margin:0 0 12px;padding-bottom:8px;border-bottom:3px double #1d1b18;font-size:13px;line-height:16px;letter-spacing:2px;text-transform:uppercase;text-align:center;font-weight:700;}
   .vocab-card[data-look="news"] .vocab-front > .vocab-term{font-size:48px;line-height:56px;font-weight:800;}
@@ -689,6 +692,12 @@ window.onYouTubeIframeAPIReady = function(){
   .media-video{transition:box-shadow .18s ease-out;}
   .touch-bar{position:fixed;left:0;right:0;bottom:0;z-index:950;display:flex;justify-content:center;gap:8px;padding:5px 12px calc(6px + env(safe-area-inset-bottom));background:var(--surface);border-top:1px solid var(--border);box-shadow:0 -4px 16px rgba(20,30,50,.06);}
   @media (min-width:821px){.touch-bar{left:268px;}}
+  html.focus-on .touch-bar{left:0;padding-top:8px;padding-bottom:calc(16px + env(safe-area-inset-bottom));background:transparent;border-top:0;box-shadow:none;}
+  html.focus-on .touch-bar button{background:color-mix(in srgb, #ffffff 72%, transparent);border:1px solid color-mix(in srgb, var(--text) 12%, transparent);border-radius:12px;}
+  html.focus-on .touch-bar .tb-again{background:var(--danger-soft);}
+  html.focus-on .touch-bar .tb-good{background:var(--a-bg);}
+  @media (min-width:821px){html.focus-on .touch-bar{gap:12px;}html.focus-on .touch-bar button{flex:0 0 auto;min-width:64px;padding:0 20px;}html.focus-on .touch-bar :is(.tb-again, .tb-good, #tbShow){min-width:96px;}}
+  html.focus-on:has(#touchBar:not([hidden])) .focus-clock:not([style*="top"]){top:calc(16px + env(safe-area-inset-top));bottom:auto;}
   .sel-bar{position:fixed;left:0;right:0;bottom:var(--tb-h, 62px);z-index:951;display:flex;justify-content:center;padding-bottom:6px;pointer-events:none;}
   .sel-bar[hidden]{display:none;}
   @media (min-width:821px){.sel-bar{left:268px;}}
@@ -4194,6 +4203,8 @@ function syncFocus() {
   if (on === root.classList.contains("focus-on")) return;
   if (on) pickFocusScene();
   root.classList.toggle("focus-on", on);
+  updateTouchBar();
+  fitVocabCards();
 }
 
 [ "viewStudy", "viewVocab" ].forEach(id => new MutationObserver(syncFocus).observe(document.getElementById(id), {
@@ -10416,7 +10427,8 @@ window.addEventListener("resize", () => sizeTouchBar(document.getElementById("to
 function updateTouchBar() {
   const bar = document.getElementById("touchBar");
   const vocab = currentView === "vocab";
-  bar.hidden = !isTouch() || (vocab ? document.getElementById("vocabToolbar").hidden : currentView !== "study" || !rows.length);
+  const flat = vocab && vocabView === "card" && document.documentElement.classList.contains("focus-on");
+  bar.hidden = !isTouch() && !flat || (vocab ? document.getElementById("vocabToolbar").hidden : currentView !== "study" || !rows.length);
   if (!bar.hidden) sizeTouchBar(bar);
   fitDeck();
   queueMicrotask(updateSelBar);
