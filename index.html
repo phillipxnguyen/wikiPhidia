@@ -2258,6 +2258,9 @@ window.onYouTubeIframeAPIReady = function(){
   .w-main{display:flex;flex-direction:column;justify-content:center;gap:12px;min-width:0;}
   .w-video{position:relative;width:100%;aspect-ratio:16 / 9;overflow:hidden;border-radius:16px;background:#000;box-shadow:0 16px 40px rgba(0,0,0,.35);}
   .w-video > *{position:absolute;inset:0;width:100%;height:100%;}
+  .w-video > iframe{inset:auto;left:0;top:-64px;height:calc(100% + 128px);pointer-events:none;}
+  .w-video > .w-shield{z-index:1;cursor:pointer;}
+  @media (max-width:820px){.w-video > iframe{top:-40px;height:calc(100% + 80px);}}
   .w-cap{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:96px;padding:12px 16px;text-align:center;border-radius:16px;background:rgba(11,13,24,.45);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);}
   .w-text{font-size:28px;line-height:40px;font-weight:700;text-shadow:0 1px 2px rgba(0,0,0,.4);}
   .w-tr{font-size:18px;line-height:26px;color:#cfd6ff;}
@@ -2289,7 +2292,7 @@ window.onYouTubeIframeAPIReady = function(){
   .w-pill{display:inline-flex;align-items:center;justify-content:center;}
   .w-rate{text-align:center;text-align-last:center;width:68px;}
   .w-cap[hidden]{display:none;}
-  .w-video .w-cap{position:absolute;left:0;right:0;top:auto;bottom:6%;width:auto;height:auto;min-height:0;z-index:1;display:flex;flex-direction:row;align-items:center;gap:12px;padding:0 16px;border-radius:0;background:none;-webkit-backdrop-filter:none;backdrop-filter:none;pointer-events:none;}
+  .w-video .w-cap{position:absolute;left:16px;right:16px;top:auto;bottom:6%;width:auto;height:auto;min-height:0;z-index:2;display:flex;flex-direction:row;align-items:center;gap:12px;padding:8px 12px;border-radius:16px;background:rgba(0,0,0,.6);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);pointer-events:none;}
   .w-video .w-cap[style*="top"]{bottom:auto;}
   .w-capl, .watch-pop .w-capctl{flex:none;display:flex;flex-direction:column;align-items:center;gap:12px;pointer-events:auto;}
   .w-nav{display:flex;align-items:center;justify-content:center;width:40px;height:40px;padding:0;border:0;border-radius:20px;background:none;color:rgba(255,255,255,.85);cursor:pointer;filter:drop-shadow(0 1px 2px rgba(0,0,0,.8));}
@@ -2308,6 +2311,10 @@ window.onYouTubeIframeAPIReady = function(){
   .w-push{flex:1;}
   .w-counts{display:flex;align-items:center;gap:12px;padding:0 8px;font-size:15px;line-height:20px;}
   .w-counts b{font-weight:700;color:#ffffff;}
+  @media (hover:hover) and (pointer:fine){.w-grade{display:none;}}
+  .watch-pop.blurred :is(.w-capline, .w-row) :is(.w-text, .w-tr){filter:blur(6px);transition:filter .2s;}
+  .watch-pop.blurred .w-row:hover :is(.w-text, .w-tr){filter:none;}
+  .watch-pop.blurred .w-video:hover .w-capline :is(.w-text, .w-tr){filter:none;}
   .w-grade{flex:none;min-width:96px;height:40px;padding:0 20px;border:0;border-radius:12px;font-size:15px;line-height:20px;font-weight:700;cursor:pointer;}
   .w-grade.again{background:#ffe1df;color:#c0392b;}
   .w-grade.good{background:#dcf5e4;color:#1f8a4c;}
@@ -3694,6 +3701,8 @@ function watchPrefs() {
     tr: true,
     auto: false,
     capY: null,
+    blur: false,
+    loop: false,
     rate: 1
   }, p, {
     pin: true,
@@ -3808,7 +3817,7 @@ function openWatch() {
   box.hidden = false;
   box.style.setProperty("--scene", theaterScene(watch.scene));
   box.dataset.scene = watch.scene;
-  box.innerHTML = '<div class="w-main"><div class="w-video"><div></div><div class="w-cap"><div class="w-capl"></div><div class="w-capline"></div><div class="w-capctl"></div></div></div><div class="w-barbox"></div></div><div class="w-listbox"></div>';
+  box.innerHTML = '<div class="w-main"><div class="w-video"><div></div><div class="w-shield"></div><div class="w-cap"><div class="w-capl"></div><div class="w-capline"></div><div class="w-capctl"></div></div></div><div class="w-barbox"></div></div><div class="w-listbox"></div>';
   paintWatch();
   placeTheater();
   requestAnimationFrame(placeTheater);
@@ -3881,6 +3890,13 @@ function watchTick() {
   }
   let i = 0;
   for (let k = 0; k < L.length; k++) if (L[k].time <= t + .15) i = k; else break;
+  if (i > watch.at && watch.prefs.loop && L[watch.at]) {
+    watchArm(watch.at);
+    try {
+      watch.player.seekTo(L[watch.at].time, true);
+    } catch (e) {}
+    return;
+  }
   if (watch.prefs.auto && watch.at >= 0 && i > watch.at && watch.pausedAt !== watch.at) {
     watch.pausedAt = watch.at;
     try {
@@ -3940,10 +3956,10 @@ function paintWatch() {
   const nav = `<button type="button" class="w-nav" data-w="next" aria-label="Next line" title="Next line (D or →)">${chev("M9 5l7 7-7 7")}</button><button type="button" class="w-nav" data-w="again" aria-label="This line again" title="This line again (S)">${chev("M19 12a7 7 0 1 1-2.05-4.95M19 4v4h-4")}</button><button type="button" class="w-nav" data-w="prev" aria-label="Previous line" title="Previous line (A or ←)">${chev("M15 5l-7 7 7 7")}</button>`;
   const ctl = `<button type="button" class="w-ap${p.auto ? " on" : ""}" data-w="auto" role="switch" aria-checked="${!!p.auto}" title="Pause at the end of every line (Q)"><i></i><b>AP</b></button><span class="w-grip" title="Drag to move the subtitles up or down">${chev("M7 10l5-5 5 5M7 14l5 5 5-5")}</span>`;
   watchQueueSync();
-  box.className = "watch-pop with-list" + (p.pin && watchChinese() ? " pinned" : "");
+  box.className = "watch-pop with-list" + (p.pin && watchChinese() ? " pinned" : "") + (p.blur ? " blurred" : "");
   watch.countSig = "";
   const pill = (k, title, label) => `<button type="button" class="w-pill${p[k] ? " on" : ""}" data-w="${k}" aria-pressed="${!!p[k]}" title="${title}">${label}</button>`;
-  box.querySelector(".w-barbox").innerHTML = `<div class="w-bar"><span class="w-counts"></span><span class="w-push"></span><button type="button" class="w-grade again" data-w="gagain" title="Again (←)">Again</button><button type="button" class="w-grade good" data-w="ggood" title="Good (→)">Good</button><span class="w-push"></span>${watchChinese() ? pill("pin", "Pinyin", "拼") : ""}${watch.lines.some(r => watchTranslation(r)) ? pill("tr", "The translation", "Aa") : ""}<select class="w-rate" aria-label="Speed" title="Speed">${[ .5, .75, .9, 1, 1.1, 1.25, 1.5, 1.75, 2 ].map(r => `<option value="${r}"${r === p.rate ? " selected" : ""}>${r}×</option>`).join("")}</select></div>`;
+  box.querySelector(".w-barbox").innerHTML = `<div class="w-bar"><span class="w-counts"></span><span class="w-push"></span><button type="button" class="w-grade again" data-w="gagain" title="Again (←)">Again</button><button type="button" class="w-grade good" data-w="ggood" title="Good (→)">Good</button><span class="w-push"></span>${pill("loop", "Loop the line being said", '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 9V8a3 3 0 0 1 3-3h8M13 3l2 2-2 2M16 11v1a3 3 0 0 1-3 3H5M7 17l-2-2 2-2"/></svg>')}${pill("blur", "Blur the writing until you point at it", '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 10s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/><path d="M4 16L16 4"/></svg>')}${watchChinese() ? pill("pin", "Pinyin", "拼") : ""}${watch.lines.some(r => watchTranslation(r)) ? pill("tr", "The translation", "Aa") : ""}<select class="w-rate" aria-label="Speed" title="Speed">${[ .5, .75, .9, 1, 1.1, 1.25, 1.5, 1.75, 2 ].map(r => `<option value="${r}"${r === p.rate ? " selected" : ""}>${r}×</option>`).join("")}</select></div>`;
   box.querySelector(".w-capl").innerHTML = nav;
   box.querySelector(".w-capctl").innerHTML = ctl;
   box.querySelector(".w-listbox").dataset.wtop = words;
@@ -3956,10 +3972,18 @@ function paintWatch() {
 function watchQueueSync() {
   const now = Date.now(), ready = limitRows(watch.lines.filter(r => cardReady(r, "Listen", now))), ids = new Set(ready.map(r => r.id));
   const before = (watch.queue || []).join(",");
+  const timeOf = new Map(watch.lines.map(r => [ r.id, r.time ]));
   if (!watch.queue) watch.queue = ready.slice().sort(byVideoTime).map(r => r.id); else {
     watch.queue = watch.queue.filter(id => ids.has(id));
-    ready.slice().sort(byVideoTime).forEach(r => !watch.queue.includes(r.id) && watch.queue.push(r.id));
+    ready.slice().sort(byVideoTime).forEach(r => {
+      if (watch.queue.includes(r.id)) return;
+      if (watch.again && watch.again.has(r.id) && !watch.undone) return watch.queue.push(r.id);
+      const at = watch.queue.findIndex(id => (timeOf.get(id) || 0) > r.time && !(watch.again && watch.again.has(id)));
+      if (at < 0) watch.queue.push(r.id); else watch.queue.splice(at, 0, r.id);
+      if (watch.again) watch.again.delete(r.id);
+    });
   }
+  watch.undone = false;
   return watch.queue.join(",") !== before;
 }
 
@@ -3988,6 +4012,7 @@ function paintWatchCounts() {
   if (watch.lines.some(r => !rows.includes(r))) {
     watch.lines = watchLines();
     watch.sig = watchSig();
+    watch.undone = true;
     return paintWatch();
   }
   const now = Date.now(), n = {
@@ -4043,6 +4068,8 @@ function watchGrade(isAgain) {
   const q = watch.queue, pos = q.indexOf(r.id), nextId = pos < 0 ? q[0] : q[pos + 1] != null ? q[pos + 1] : q.find(id => id !== r.id);
   const rowEl = document.querySelector(`#watchPop .w-row[data-id="${r.id}"]`);
   if (pos >= 0) q.splice(pos, 1);
+  if (!watch.again) watch.again = new Set;
+  if (isAgain) watch.again.add(r.id); else watch.again.delete(r.id);
   const after = () => {
     paintWatchList();
     const ni = watch.lines.findIndex(x => x.id === nextId);
@@ -4144,6 +4171,7 @@ document.getElementById("watchPop").addEventListener("click", e => {
   if (!watch) return;
   const b = e.target.closest("[data-w]"), row = e.target.closest(".w-row");
   if (row) return watchSeek(Number(row.dataset.i));
+  if (e.target.closest(".w-shield")) return watchToggle();
   if (!b) return;
   const k = b.dataset.w;
   if (k === "words") return document.getElementById("wordsModeBtn").click();
@@ -4190,7 +4218,8 @@ window.addEventListener("keydown", e => {
   if (!watch || blind || e.metaKey || e.ctrlKey || e.altKey || !document.getElementById("editPopup").hidden || wordsOpen()) return;
   if (e.target.closest && e.target.closest("input, textarea, select, [contenteditable]")) return;
   const k = e.key;
-  if (k === " ") watchToggle(); else if (k === "ArrowLeft") watchGrade(true); else if (k === "ArrowRight") watchGrade(false); else if (e.code === "KeyA") watchSeek(Math.max(0, watch.at - 1)); else if (e.code === "KeyD") watchSeek(Math.min(watch.lines.length - 1, watch.at + 1)); else if (e.code === "KeyS" || e.code === "KeyR") watchSeek(Math.max(0, watch.at)); else if (e.code === "KeyQ") {
+  const g = gradeKey(e);
+  if (k === " ") watchToggle(); else if (g) watchGrade(g === "again"); else if (e.code === "KeyA") watchSeek(Math.max(0, watch.at - 1)); else if (e.code === "KeyD") watchSeek(Math.min(watch.lines.length - 1, watch.at + 1)); else if (e.code === "KeyS" || e.code === "KeyR") watchSeek(Math.max(0, watch.at)); else if (e.code === "KeyQ") {
     watch.prefs.auto = !watch.prefs.auto;
     saveWatchPrefs();
     paintWatch();
@@ -4494,7 +4523,10 @@ window.addEventListener("keydown", e => {
       return;
     }
     closeBlind();
-  } else if (k === " " || k === "Enter") {
+  } else if (k === "Enter") {
+    e.preventDefault();
+    if (!blind.item) closeBlind(); else if (!blind.shown && !e.shiftKey) blindShow(); else blindGrade(e.shiftKey);
+  } else if (k === " ") {
     e.preventDefault();
     if (blind.item && !blind.shown) blindShow(); else if (blind.item) blindSound(); else closeBlind();
   } else if (k === "ArrowLeft" || k === "ArrowRight") {
