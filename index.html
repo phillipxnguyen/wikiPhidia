@@ -2222,7 +2222,8 @@ window.onYouTubeIframeAPIReady = function(){
   .w-t{flex:none;width:44px;font-size:12px;line-height:26px;font-weight:600;font-variant-numeric:tabular-nums;color:#b4bbe0;}
   .w-row.on{background:rgba(255,255,255,.14);box-shadow:inset 3px 0 #ffd36e;}
   .watch-pop .w-text .wr{display:inline-flex;flex-direction:column;align-items:center;margin:0 2px;vertical-align:bottom;}
-  .watch-pop .w-text .wr i{font-style:normal;font-size:.42em;line-height:1.4;font-weight:600;color:#ffd36e;white-space:nowrap;}
+  .watch-pop .w-text .wr i{font-style:normal;font-size:.42em;line-height:1.4;font-weight:600;color:#ffd36e;white-space:nowrap-webkit-user-select:none;user-select:none;}
+  .watch-pop .w-row.row-selected{box-shadow:inset 0 0 0 2px rgba(255,255,255,.7);}
   .watch-pop .w-text .wr b{font-weight:inherit;}
   .watch-pop mark.vocab-hit{color:#a6e08a;}
   .watch-pop mark.vocab-own{color:#d0d5de;}
@@ -2339,7 +2340,11 @@ window.onYouTubeIframeAPIReady = function(){
   .b2-term{max-width:100%;font-size:44px;line-height:52px;font-weight:800;color:var(--b2-hi);overflow-wrap:anywhere;}
   .b2-meaning{font-size:24px;line-height:32px;font-weight:600;}
   .b2-lines{display:flex;flex-direction:column;align-items:flex-start;gap:8px;width:fit-content;max-width:100%;margin:12px 0 0;padding:0;list-style:none;font-size:20px;line-height:30px;text-align:left;opacity:.92;}
-  .b2-lines mark{padding:0 2px;border-radius:4px;background:var(--b2-hi);color:var(--b2-on-hi);}
+  .b2-lines mark.b2-pick{padding:0 2px;border-radius:4px;background:var(--b2-hi);color:var(--b2-on-hi);}
+  .b2-lines mark.vocab-hit, .b2-lines mark.vocab-own{background:none;color:inherit;text-decoration:underline;text-decoration-color:color-mix(in srgb, var(--b2-hi) 70%, transparent);text-decoration-thickness:2px;text-underline-offset:4px;cursor:pointer;}
+  html.blind-on .sel-bar{z-index:1650;left:0;}
+  html.blind-on .swipe-ghost{z-index:1700;}
+  html.blind-on.sel-on .b2-body{padding-bottom:56px;}
   .b2-done{display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;}
   .b2-done b{font-size:28px;line-height:36px;}
   .b2-done p{margin:0 0 8px;font-size:16px;line-height:24px;opacity:.8;}
@@ -3166,6 +3171,7 @@ function blindShut() {
   blind = null;
   document.getElementById("blind2").hidden = true;
   document.documentElement.classList.remove("blind-on");
+  updateSelBar();
 }
 
 function closeBlind() {
@@ -3392,6 +3398,7 @@ function blindGrade(isAgain) {
   if (!b || !b.item) return;
   blindStop();
   const item = b.item, now = Date.now(), grade = isAgain ? GRADE_AGAIN : GRADE_GOOD;
+  blindFly(isAgain ? -1 : 1);
   pushUndo((isAgain ? "Again" : "Good") + " — " + item.term);
   const st = vocabStateOf(item), fresh = !st.reps;
   scheduleReview(st, grade, now);
@@ -3434,10 +3441,32 @@ function blindEdit() {
   openEditPopup(line.row);
 }
 
-function blindMarked(text, term) {
-  const span = findTermIn(text, term);
-  if (!span) return escapeHtml(text);
-  return escapeHtml(text.slice(0, span[0])) + "<mark>" + escapeHtml(text.slice(span[0], span[1])) + "</mark>" + escapeHtml(text.slice(span[1]));
+function blindLineHtml(line, item) {
+  const span = findTermIn(line.text, item.term);
+  const box = document.createElement("div");
+  box.innerHTML = highlightVocabInHtml(escapeHtml(line.text), line.row ? line.row.id : null);
+  if (!span) return box.innerHTML;
+  const walk = document.createTreeWalker(box, NodeFilter.SHOW_TEXT), nodes = [];
+  while (walk.nextNode()) nodes.push(walk.currentNode);
+  let at = 0;
+  nodes.forEach(n => {
+    const from = at, to = at + n.nodeValue.length;
+    at = to;
+    const a = Math.max(span[0], from), z = Math.min(span[1], to);
+    if (a >= z) return;
+    const host = n.parentElement.closest("mark");
+    if (host && host.textContent === n.nodeValue && a === from && z === to) {
+      host.className = "b2-pick";
+      return;
+    }
+    const mid = n.splitText(a - from);
+    mid.splitText(z - a);
+    const mk = document.createElement("mark");
+    mk.className = "b2-pick";
+    mid.replaceWith(mk);
+    mk.appendChild(mid);
+  });
+  return box.innerHTML;
 }
 
 function blindArt(scene) {
@@ -3465,16 +3494,17 @@ function paintBlind() {
   if (!b.item) {
     box.className = "blind2 scene-night";
     box.innerHTML = '<div class="b2-stage"><button class="b2-close" data-b2="close" aria-label="Close" title="Close (Esc)">✕</button><div class="b2-done"><b>All heard for now</b><p>No word of this lesson is waiting to be heard. Come back when one is due.</p><button class="b2-btn primary" data-b2="close">Close</button></div></div>';
-    return;
+    return updateSelBar();
   }
   const item = b.item;
   box.className = "blind2 scene-" + b.scene + (b.shown ? " shown" : "");
   const dots = b.lines.map((l, i) => `<i data-n="${i}"></i>`).join("");
-  const reveal = `<div class="b2-reveal${b.shown ? "" : " veiled"}" aria-hidden="${!b.shown}"><b class="b2-term">${escapeHtml(item.term)}</b><span class="b2-meaning">${escapeHtml(item.meaning || "")}</span><ol class="b2-lines">${b.lines.filter(l => l.row).map(l => `<li>${blindMarked(l.text, item.term)}</li>`).join("")}</ol></div>`;
+  const reveal = `<div class="b2-reveal${b.shown ? "" : " veiled"}" aria-hidden="${!b.shown}"><b class="b2-term">${escapeHtml(item.term)}</b><span class="b2-meaning">${escapeHtml(item.meaning || "")}</span><ol class="b2-lines">${b.lines.filter(l => l.row).map(l => `<li data-id="${l.row.id}">${blindLineHtml(l, item)}</li>`).join("")}</ol></div>`;
   const ctl = '<button class="b2-ctl" data-b2="undo" aria-label="Undo" title="Undo (⌘Z)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 15a7 7 0 0 0 -14 0"/><path d="M3.5 12l3 3.5l3 -3.5"/></svg></button><button class="b2-ctl" data-b2="redo" aria-label="Redo" title="Redo (⌘⇧Z)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 15a7 7 0 0 1 14 0"/><path d="M14.5 12l3 3.5l3 -3.5"/></svg></button><button class="b2-ctl b2-sound" data-b2="sound" aria-label="Play or stop the sentences" title="Play or stop (R plays from the start)"></button>';
   const acts = ctl + (b.shown ? '<button class="b2-ctl again" data-b2="again" title="Again (←)">Again</button><button class="b2-ctl good" data-b2="good" title="Good (→)">Good</button>' : '<button class="b2-ctl show" data-b2="show" title="Show (Space)">Show</button>');
   box.innerHTML = `<div class="b2-stage"><div class="b2-head"><button class="b2-close" data-b2="close" aria-label="Close" title="Close (Esc)">✕</button></div><div class="b2-body"><div class="b2-art">${blindArt(b.scene)}</div><div class="b2-dots">${dots}</div><div class="b2-time"><i></i></div>${reveal}</div><div class="b2-acts">${acts}</div></div>`;
   paintBlindLive();
+  updateSelBar();
 }
 
 function blindTime(f) {
@@ -3800,8 +3830,8 @@ function paintWatch() {
   const words = blindCanOpen() || lessonVocabItems(vocabSource()).some(i => !vocabViewOnly(i)) ? '<button type="button" class="w-go" data-w="words" title="Study the words">字 Words</button>' : "";
   const acts = `${study}${words}<button type="button" class="w-go ghost" data-w="lookup" title="Every word of this lesson">Words list</button>`;
   const bar = `<div class="w-bar">${step("prev", "Previous line (A or ←)")}${step("repeat", "This line again (S)")}${step("next", "Next line (D or →)")}<span class="w-gap"></span>${pill("text", "The sentence under the video")}${watchChinese() ? pill("pin", "Pinyin") : ""}${watch.lines.some(r => watchTranslation(r)) ? pill("tr", "The translation") : ""}${pill("list", "All the lines")}${pill("auto", "Pause after each line")}${pill("blur", "Blur the writing until you point at it")}${pill("loop", "Loop the line being said")}<span class="w-gap"></span><select class="w-rate" aria-label="Speed" title="Speed">${[ .5, .75, .9, 1, 1.1, 1.25, 1.5, 1.75, 2 ].map(r => `<option value="${r}"${r === p.rate ? " selected" : ""}>${r}×</option>`).join("")}</select>${p.list ? "" : '<span class="w-push"></span>' + acts}</div>`;
-  const list = `<div class="w-acts">${acts}</div><div class="w-list">${watch.lines.map((r, i) => `<div class="w-row" data-i="${i}"><span class="w-side"><span class="w-t">${fmtTime(r.time)}<svg class="w-ring" aria-hidden="true"><path pathLength="100"/></svg></span><button type="button" class="w-edit" data-w="edit" data-i="${i}" aria-label="Edit this line" title="Edit this line (E)">${wIcon("edit")}</button></span><div>${watchLineHtml(r, true)}</div></div>`).join("")}</div>`;
-  box.className = "watch-pop" + (p.list ? " with-list" : "") + (p.blur ? " blurred" : "");
+  const list = `<div class="w-acts">${acts}</div><div class="w-list">${watch.lines.map((r, i) => `<div class="w-row${r.id === selectedRowId ? " row-selected" : ""}" data-i="${i}" data-id="${r.id}"><span class="w-side"><span class="w-t">${fmtTime(r.time)}<svg class="w-ring" aria-hidden="true"><path pathLength="100"/></svg></span><button type="button" class="w-edit" data-w="edit" data-i="${i}" aria-label="Edit this line" title="Edit this line (E)">${wIcon("edit")}</button></span><div>${watchLineHtml(r, true)}</div></div>`).join("")}</div>`;
+  box.className = "watch-pop" + (p.list ? " with-list" : "") + (p.blur ? " blurred" : "") + (p.pin && watchChinese() ? " pinned" : "");
   box.querySelector(".w-barbox").innerHTML = bar;
   box.querySelector(".w-listbox").innerHTML = p.list ? list : "";
   box.querySelectorAll(".w-t").forEach(t => {
@@ -3819,6 +3849,7 @@ function paintWatchLine(scroll) {
   const cap = box.querySelector(".w-cap");
   if (cap) {
     cap.innerHTML = r ? watchLineHtml(r) : "";
+    if (r) cap.dataset.id = r.id; else delete cap.dataset.id;
     cap.hidden = !cap.innerHTML;
   }
   box.querySelectorAll(".w-row").forEach(el => el.classList.toggle("on", Number(el.dataset.i) === watch.at));
@@ -3840,14 +3871,30 @@ document.getElementById("watchPop").addEventListener("click", e => {
   const k = b && b.dataset.w;
   if (k === "edit") return openEditPopup(watch.lines[Number(b.dataset.i)]);
   const mk = e.target.closest("mark.vocab-hit, mark.vocab-own");
-  if (mk) {
+  if (mk && getSelection().isCollapsed) {
     try {
       watch.player.pauseVideo();
     } catch (err) {}
     hideTooltip();
     return watchLookup(mk);
   }
-  if (row) return watchSeek(Number(row.dataset.i));
+  if (row && !getSelection().isCollapsed) return;
+  if (row) {
+    const id = Number(row.dataset.id);
+    if (isTouch()) {
+      const twice = watch.tap && watch.tap.id === id && Date.now() - watch.tap.at < 400;
+      watch.tap = {
+        id: id,
+        at: Date.now()
+      };
+      if (twice) {
+        watch.tap = null;
+        return openEditPopup(watch.lines[Number(row.dataset.i)]);
+      }
+      selectWatchRow(id);
+    }
+    return watchSeek(Number(row.dataset.i));
+  }
   if (!b) return;
   if (k === "study") return document.getElementById("fullModeBtn").click();
   if (k === "words") return document.getElementById("wordsModeBtn").click();
@@ -3861,21 +3908,46 @@ document.getElementById("watchPop").addEventListener("click", e => {
 });
 
 function watchLookup(mk) {
-  const matches = markMatches(mk, null);
-  if (matches.length) return showVocabPopup(matches, mk.getBoundingClientRect());
-  const rowEl = mk.closest(".w-row"), row = rowEl ? watch.lines[Number(rowEl.dataset.i)] : watch.lines[watch.at];
-  const key = normalizeVocabText((mk.dataset.own || "").split("\n")[0]);
+  const holder = mk.closest("[data-id]"), row = holder && rows.find(r => r.id === Number(holder.dataset.id));
+  markLookup(mk, row);
+}
+
+function markLookup(mk, row) {
+  if (mk.classList.contains("vocab-hit")) {
+    const matches = markMatches(mk, row ? row.id : null);
+    if (matches.length) showVocabPopup(matches, mk.getBoundingClientRect());
+    return;
+  }
+  const key = normalizeVocabText((mk.dataset.own || mk.textContent).split("\n")[0]);
   const item = lessonVocabItems(vocabSource()).find(i => i.tkey === key && i.card === row) || lessonVocabItems(vocabSource()).find(i => i.tkey === key);
-  if (item && row) showWordView(row, item.term, item.meaning, mk.getBoundingClientRect());
+  if (!item) return;
+  if (isTouch()) showWordView(row || item.card, item.term, item.meaning, mk.getBoundingClientRect()); else showVocabAddPopup(row || item.card, item.term, mk.getBoundingClientRect(), item);
+}
+
+function selectWatchRow(id) {
+  selectedRowId = selectedRowId === id ? null : id;
+  document.querySelectorAll("#watchPop .w-row[data-id]").forEach(el => el.classList.toggle("row-selected", Number(el.dataset.id) === selectedRowId));
+  updateSelBar();
+}
+
+function watchPointed() {
+  const id = pickedRowId();
+  return watch && (watch.lines.find(r => r.id === id) || null);
 }
 
 document.getElementById("watchPop").addEventListener("mouseover", e => {
   if (!watch || isTouch()) return;
+  const holder = e.target.closest && e.target.closest(".w-row[data-id], .w-cap[data-id]");
+  hoveredRowId = holder ? Number(holder.dataset.id) : null;
   const mk = e.target.closest && e.target.closest("mark.vocab-hit, mark.vocab-own");
   if (mk && mk !== watch.hoverMark) {
     watch.hoverMark = mk;
     watchTip(mk);
   }
+});
+
+document.getElementById("watchPop").addEventListener("mouseleave", () => {
+  hoveredRowId = null;
 });
 
 document.getElementById("watchPop").addEventListener("mouseout", e => {
@@ -3885,6 +3957,10 @@ document.getElementById("watchPop").addEventListener("mouseout", e => {
 });
 
 function watchTip(mk) {
+  markTip(mk);
+}
+
+function markTip(mk) {
   const bases = [ ...mk.querySelectorAll(".wr b") ], text = (bases.length ? bases.map(b => b.textContent).join("") : mk.textContent).trim();
   const key = normalizeVocabText((mk.dataset.own || "").split("\n")[0] || text);
   const here = lessonVocabItems(vocabSource()).find(i => i.tkey === key), k = here ? null : knownWord(text);
@@ -3905,7 +3981,11 @@ window.addEventListener("keydown", e => {
   if (!watch || blind || e.metaKey || e.ctrlKey || e.altKey || !document.getElementById("editPopup").hidden || wordsOpen()) return;
   if (e.target.closest && e.target.closest("input, textarea, select, [contenteditable]")) return;
   const k = e.key;
-  if (k === " ") watchToggle(); else if (k === "ArrowLeft" || e.code === "KeyA") watchSeek(Math.max(0, watch.at - 1)); else if (k === "ArrowRight" || e.code === "KeyD") watchSeek(Math.min(watch.lines.length - 1, watch.at + 1)); else if (e.code === "KeyS" || e.code === "KeyR") watchSeek(Math.max(0, watch.at)); else if (e.code === "KeyE" && watch.lines[watch.at]) openEditPopup(watch.lines[watch.at]); else return;
+  const pointed = watchPointed();
+  if (k === " ") watchToggle(); else if (k === "ArrowLeft" || e.code === "KeyA") watchSeek(Math.max(0, watch.at - 1)); else if (k === "ArrowRight" || e.code === "KeyD") watchSeek(Math.min(watch.lines.length - 1, watch.at + 1)); else if (e.code === "KeyS" || e.code === "KeyR") watchSeek(Math.max(0, watch.at)); else if (e.code === "KeyE" && (pointed || watch.lines[watch.at])) openEditPopup(pointed || watch.lines[watch.at]); else if (e.code === "KeyW" && !e.shiftKey) showToast("A video sentence stays in its lesson"); else if ((k === "Delete" || k === "Backspace") && pointed && !e.repeat) {
+    clearRowSelection();
+    deleteRow(pointed.id);
+  } else return;
   e.preventDefault();
   e.stopImmediatePropagation();
 }, true);
@@ -4086,6 +4166,14 @@ document.getElementById("blind2").addEventListener("pointermove", e => {
 }));
 
 document.getElementById("blind2").addEventListener("click", e => {
+  const mk = e.target.closest && e.target.closest(".b2-lines mark.vocab-hit, .b2-lines mark.vocab-own");
+  if (mk && getSelection().isCollapsed) {
+    const li = mk.closest("[data-id]");
+    hideTooltip();
+    blindStop();
+    paintBlindLive();
+    return markLookup(mk, li && rows.find(r => r.id === Number(li.dataset.id)));
+  }
   const btn = e.target.closest("[data-b2]");
   if (!btn) return;
   const act = btn.dataset.b2;
@@ -4094,22 +4182,78 @@ document.getElementById("blind2").addEventListener("click", e => {
   if (act === "close") closeBlind(); else if (act === "show") blindShow(); else if (act === "again") blindGrade(true); else if (act === "good") blindGrade(false);
 });
 
+document.getElementById("blind2").addEventListener("mouseover", e => {
+  if (!blind || isTouch()) return;
+  const mk = e.target.closest && e.target.closest(".b2-lines mark.vocab-hit, .b2-lines mark.vocab-own");
+  if (mk && mk !== blind.hoverMark) {
+    blind.hoverMark = mk;
+    markTip(mk);
+  }
+});
+
+document.getElementById("blind2").addEventListener("mouseout", e => {
+  if (!blind || !blind.hoverMark || e.relatedTarget && blind.hoverMark.contains(e.relatedTarget)) return;
+  if (hoverTooltip && hoverTooltip.anchor === blind.hoverMark) hideTooltip();
+  blind.hoverMark = null;
+});
+
+function blindFly(dir, label) {
+  const body = document.querySelector("#blind2 .b2-body");
+  if (body && !reducedMotion()) swipe([ body ], dir, () => {}, false, label);
+}
+
+function blindAct(act) {
+  const b = blind, item = b && b.item;
+  if (!item) return;
+  if (act === "copy") return copyText(oneLine((b.lines.find(l => l.row) || {}).text || "") || oneLine(item.term));
+  if (act === "vocab") return canMoveToLesson(item) ? (blindShut(), moveVocabToLesson(item)) : cantMoveToLesson(item);
+  if (act !== "delete") return;
+  blindStop();
+  blindFly(-1, "Delete");
+  if (item.key.startsWith("w:")) {
+    pushUndo("Hidden — " + item.term).hiddenWords = JSON.stringify(readLocal(HIDDEN_WORDS_KEY) || {});
+    if (hideWord(item.key.slice(2)) === 3) showToast(`“${item.term}” is hidden in every lesson now`);
+  } else deleteVocabEntry(item, null);
+  b.last = item.key;
+  b.hist.push(item.key);
+  renderLessonList();
+  blindNext();
+}
+
 window.addEventListener("keydown", e => {
   if (!blind || !document.getElementById("editPopup").hidden) return;
+  if (vocabAddPopup && vocabAddPopup.contains(e.target)) return;
   if ((e.metaKey || e.ctrlKey) && !e.altKey && (e.code === "KeyZ" || e.code === "KeyY")) {
     e.preventDefault();
     e.stopImmediatePropagation();
     return blindUndo(e.code === "KeyY" || e.shiftKey);
   }
-  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  if ((e.metaKey || e.ctrlKey) && !e.altKey && e.code === "KeyC") {
+    if (String(getSelection())) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    return blindAct("copy");
+  }
+  if (e.metaKey || e.ctrlKey || e.altKey || e.key === "Shift") return;
   e.stopImmediatePropagation();
   if (e.repeat) return;
   const k = e.key;
-  if (e.code === "KeyE") {
+  if (k === "Delete" || k === "Backspace") {
+    e.preventDefault();
+    blindAct("delete");
+  } else if (e.code === "KeyW" && !e.shiftKey) {
+    e.preventDefault();
+    blindAct("vocab");
+  } else if (e.code === "KeyE") {
     e.preventDefault();
     blindEdit();
   } else if (k === "Escape") {
     e.preventDefault();
+    if (vocabAddPopup || vocabPopupEl && vocabPopupEl.style.display !== "none") {
+      hideVocabPopup();
+      hideVocabAddPopup();
+      return;
+    }
     closeBlind();
   } else if (k === " " || k === "Enter") {
     e.preventDefault();
@@ -6877,7 +7021,7 @@ function moveOneCardToVocab(row) {
 }
 
 function cardLineEl(id) {
-  return document.querySelector(`#tbody tr[data-id="${id}"]`);
+  return document.querySelector(`#tbody tr[data-id="${id}"]`) || document.querySelector(`#watchPop .w-row[data-id="${id}"]`);
 }
 
 function deleteRow(id) {
@@ -9763,7 +9907,7 @@ function hoverUnit(el) {
   return el ? el.closest(".cell.shown") : null;
 }
 
-const PINYIN_SEL = ".wl-sent, .card-notes li, .card-notes > div, .vocab-word-notes li, .vocab-word-notes > div, .paper-notes li, .rich-editor li, .rich-editor > div, .rich-editor, .vocab-list-meaning > span, .vocab-list-meaning, .vocab-add-field b, .vocab-back :is(.vocab-ctx, .vocab-meaning), .heat-card span";
+const PINYIN_SEL = ".watch-pop:not(.pinned) .w-text, #blind2 .b2-lines li, #blind2 .b2-term, .wl-sent, .card-notes li, .card-notes > div, .vocab-word-notes li, .vocab-word-notes > div, .paper-notes li, .rich-editor li, .rich-editor > div, .rich-editor, .vocab-list-meaning > span, .vocab-list-meaning, .vocab-add-field b, .vocab-back :is(.vocab-ctx, .vocab-meaning), .heat-card span";
 
 function pinyinRow(el) {
   const holder = el.closest("[data-id]");
@@ -9808,7 +9952,7 @@ function cjkAtPoint(x, y, el) {
 }
 
 document.addEventListener("mousemove", e => {
-  if (isTouch() || !(e.target instanceof Element) || e.target.closest(".cell.shown, .vocab-list-term, .vocab-popup")) return;
+  if (isTouch() || !(e.target instanceof Element) || e.target.closest(".cell.shown, .vocab-list-term, .vocab-popup, #watchPop mark, #blind2 mark")) return;
   const tip = hoverTooltip;
   const showing = tip && tip.style.display === "block" && tip.anchor && tip.anchor.closest && tip.anchor.closest(PINYIN_SEL);
   const el = e.target.closest(PINYIN_SEL);
@@ -10048,13 +10192,16 @@ function selectRow(id) {
 function clearRowSelection() {
   if (selectedRowId === null) return;
   selectedRowId = null;
-  document.querySelectorAll("#tbody tr.row-selected").forEach(el => el.classList.remove("row-selected"));
+  document.querySelectorAll("#tbody tr.row-selected, #watchPop .w-row.row-selected").forEach(el => el.classList.remove("row-selected"));
   hideTooltip();
   updateSelBar();
 }
 
 function selectionTarget() {
   if (!isTouch()) return null;
+  if (blind) return blind.item ? {
+    item: blind.item
+  } : null;
   if (wordsOpen()) return wordTarget();
   if (currentView === "vocab") {
     if (vocabView === "card") {
@@ -10096,11 +10243,12 @@ function studyCopyAction() {
 function updateSelBar() {
   const bar = document.getElementById("selBar");
   const touchBar = document.getElementById("touchBar");
-  const target = touchBar.hidden ? null : selectionTarget();
+  const target = touchBar.hidden && !blind ? null : selectionTarget();
   bar.hidden = !target;
   document.documentElement.classList.toggle("sel-on", !!target);
   if (!target) return fitDeck();
-  bar.style.setProperty("--tb-h", touchBar.offsetHeight + "px");
+  const acts = blind && document.querySelector("#blind2 .b2-acts");
+  bar.style.setProperty("--tb-h", (acts ? Math.round(window.innerHeight - acts.getBoundingClientRect().top + 4) : touchBar.offsetHeight) + "px");
   const back = !!target.item && canMoveToLesson(target.item);
   const vocabBtn = document.getElementById("selVocab");
   vocabBtn.hidden = back ? false : !target.row || target.rows.length !== 1 || !canMoveToVocab(target.row) || cardInVideoLesson(target.row);
@@ -10113,6 +10261,7 @@ function updateSelBar() {
 document.getElementById("selCopy").onclick = e => {
   e.currentTarget.blur();
   if (!selectionTarget()) return;
+  if (blind) return blindAct("copy");
   if (wordsOpen()) return wordAct("copy");
   if (currentView === "vocab") vocabCopyAction(); else studyCopyAction();
 };
@@ -10120,6 +10269,7 @@ document.getElementById("selCopy").onclick = e => {
 document.getElementById("selDelete").onclick = e => {
   e.currentTarget.blur();
   if (!selectionTarget()) return;
+  if (blind) return blindAct("delete");
   if (wordsOpen()) return wordAct("delete");
   if (currentView === "vocab") vocabDeleteAction(); else deleteAction();
 };
@@ -10127,6 +10277,7 @@ document.getElementById("selDelete").onclick = e => {
 document.getElementById("selVocab").onclick = e => {
   e.currentTarget.blur();
   const target = selectionTarget();
+  if (blind) return blindAct("vocab");
   if (wordsOpen()) return wordAct("vocab");
   if (target && target.item) return moveVocabToLesson(target.item);
   if (!target || !target.row) return;
@@ -10140,7 +10291,7 @@ document.addEventListener("click", e => {
   if (isTouch() && tipHost && !tipHost.contains(e.target)) hideTooltip();
   if (selectedRowId === null) return;
   if (e.target.closest("#tbAgain, #tbGood, #selBar")) return;
-  const tr = e.target.closest("#tbody tr[data-id]");
+  const tr = e.target.closest("#tbody tr[data-id], #watchPop .w-row[data-id]");
   if (tr && Number(tr.dataset.id) === selectedRowId) return;
   clearRowSelection();
 }, true);
@@ -27258,14 +27409,15 @@ window.addEventListener("scroll", () => {
 function selectionHit() {
   const sel = window.getSelection();
   if (!sel || !sel.rangeCount) return null;
-  const range = sel.getRangeAt(0);
-  const text = range.cloneContents().textContent.replace(/\s+/g, " ").trim();
+  const range = sel.getRangeAt(0), frag = range.cloneContents();
+  frag.querySelectorAll(".wr > i").forEach(n => n.remove());
+  const text = frag.textContent.replace(/\s+/g, " ").trim();
   if (!text) return null;
   const node = range.commonAncestorContainer;
   const el = node.nodeType === 1 ? node : node.parentElement;
   if (!el || el.closest("[contenteditable=true], textarea, input")) return null;
   let row = null;
-  const cell = el.closest("#viewStudy .cell, #viewStudy .paper-lines");
+  const cell = el.closest("#viewStudy .cell, #viewStudy .paper-lines, #watchPop .w-text, #blind2 .b2-lines li");
   if (cell) {
     const holder = cell.closest("[data-id]");
     row = holder && rows.find(r => r.id === Number(holder.dataset.id));
