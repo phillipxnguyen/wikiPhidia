@@ -2229,8 +2229,6 @@ window.onYouTubeIframeAPIReady = function(){
   .w-row .w-text .wr i{font-size:.55em;}
   .watch-pop.blurred :is(.w-cap, .w-row) :is(.w-text, .w-tr){filter:blur(6px);transition:filter .2s;}
   .watch-pop.blurred :is(.w-cap, .w-row):hover :is(.w-text, .w-tr){filter:none;}
-  .w-rep{gap:2px;}
-  .w-rep b{font-size:12px;line-height:16px;}
   .w-row{position:relative;}
   .w-side{flex:none;display:flex;flex-direction:column;align-items:center;gap:6px;}
   .w-edit{display:inline-flex;align-items:center;justify-content:center;visibility:hidden;width:32px;height:32px;padding:0;border:0;border-radius:16px;background:rgba(255,255,255,.16);color:#ffffff;cursor:pointer;}
@@ -2305,7 +2303,7 @@ window.onYouTubeIframeAPIReady = function(){
   .b2-stage{display:flex;flex-direction:column;align-items:center;gap:16px;width:min(640px, 100%);height:100%;margin:0 auto;}
   .b2-body{flex:1;min-height:0;width:100%;display:flex;flex-direction:column;align-items:center;gap:16px;overflow:auto;overscroll-behavior:contain;}
   .b2-body > :first-child{margin-top:auto;}
-  .b2-body > :last-child{margin-bottom:auto;}
+  .b2-body > :last-child, .b2-body > .b2-time:has(+ .veiled){margin-bottom:auto;}
   .b2-art{flex:none;}
   .b2-art > *{zoom:.6;}
   @media (max-height:800px){.b2-art > *{zoom:.5;}}
@@ -2336,7 +2334,7 @@ window.onYouTubeIframeAPIReady = function(){
   @media (max-width:600px){.b2-acts{flex-wrap:nowrap;gap:6px;}.b2-ctl{min-width:48px;padding:0 10px;}.b2-ctl.show, .b2-ctl.again, .b2-ctl.good{min-width:0;flex:1;}}
   @media (hover:hover){.b2-btn:hover, .b2-close:hover{filter:brightness(1.12);}}
   .b2-reveal{display:flex;flex-direction:column;align-items:center;gap:4px;align-self:stretch;text-align:left;}
-  .b2-reveal.veiled{visibility:hidden;}
+  .b2-reveal.veiled{display:none;}
   .b2-term{max-width:100%;font-size:44px;line-height:52px;font-weight:800;color:var(--b2-hi);overflow-wrap:anywhere;}
   .b2-meaning{font-size:24px;line-height:32px;font-weight:600;}
   .b2-lines{display:flex;flex-direction:column;align-items:flex-start;gap:8px;width:fit-content;max-width:100%;margin:12px 0 0;padding:0;list-style:none;font-size:20px;line-height:30px;text-align:left;opacity:.92;}
@@ -3444,7 +3442,7 @@ function blindMarked(text, term) {
 function blindArt(scene) {
   if (scene === "radio") return '<div class="b2-radio"><div class="b2-grille"></div><div class="b2-dial"><i></i></div><div class="b2-eq"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>';
   if (scene === "call") return '<div class="b2-call"><div class="b2-avatar"><i></i></div><div class="b2-callbtns"><i class="no"><b>📞</b></i><i class="yes"><b>📞</b></i></div></div>';
-  if (scene === "voice") return '<div class="b2-voice">' + blind.lines.map((l, i) => `<div class="b2-bubble${i % 2 ? " them" : ""}" data-n="${i}"><i class="b2-play">▶</i><span class="b2-wave"></span></div>`).join("") + "</div>";
+  if (scene === "voice") return '<div class="b2-voice">' + [ 0, 1, 2, 3 ].map(i => `<div class="b2-bubble${i % 2 ? " them" : ""}" data-b="${i}"><i class="b2-play">▶</i><span class="b2-wave"></span></div>`).join("") + "</div>";
   if (scene === "tape") return '<div class="b2-tape"><div class="b2-label"><i></i><i></i></div><div class="b2-reels"><i></i><i></i></div></div>';
   if (scene === "vinyl") return '<div class="b2-vinyl"><div class="b2-disc"><i></i></div><div class="b2-arm"></div></div>';
   if (scene === "walkie") return '<div class="b2-walkie"><div class="b2-antenna"></div><div class="b2-wbody"><i class="b2-led"></i><div class="b2-wgrille"></div></div></div>';
@@ -3504,11 +3502,12 @@ function paintBlindLive() {
   }
   if (!b.playing) blindTime(b.at >= b.lines.length ? 1 : 0);
   box.classList.toggle("playing", b.playing);
-  box.querySelectorAll(".b2-dots i, .b2-bubble").forEach(el => {
+  box.querySelectorAll(".b2-dots i").forEach(el => {
     const n = Number(el.dataset.n);
     el.classList.toggle("on", b.playing && n === b.at);
     el.classList.toggle("heard", n < b.at || !b.playing && b.at >= b.lines.length);
   });
+  box.querySelectorAll(".b2-bubble").forEach(el => el.classList.toggle("on", b.playing && Number(el.dataset.b) === b.at % 4));
 }
 
 const WATCH_KEY = "flashcards.watch";
@@ -3534,7 +3533,7 @@ function watchPrefs() {
     list: true,
     auto: false,
     blur: false,
-    rep: 1,
+    loop: false,
     rate: 1
   }, p);
 }
@@ -3614,7 +3613,8 @@ const W_ICONS = {
   list: '<path d="M7 6h10M7 10h10M7 14h10M3.5 6h.5M3.5 10h.5M3.5 14h.5"/>',
   auto: '<path d="M7 5v10M13 5v10"/>',
   blur: '<path d="M3 10s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/><path d="M4 16L16 4"/>',
-  edit: '<path d="M4 16l1-4 8-8 3 3-8 8z"/>'
+  edit: '<path d="M4 16l1-4 8-8 3 3-8 8z"/>',
+  loop: '<path d="M4 9V8a3 3 0 0 1 3-3h8M13 3l2 2-2 2M16 11v1a3 3 0 0 1-3 3H5M7 17l-2-2 2-2"/>'
 };
 
 function wIcon(k) {
@@ -3654,7 +3654,6 @@ function openWatch() {
     player: null,
     timer: 0,
     pausedAt: -1,
-    repLeft: 0,
     sig: watchSig(),
     scene: names[Math.floor(Math.random() * names.length)]
   };
@@ -3732,8 +3731,7 @@ function watchTick() {
   }
   let i = 0;
   for (let k = 0; k < L.length; k++) if (L[k].time <= t + .15) i = k; else break;
-  if (i > watch.at && watch.repLeft > 0 && L[watch.at]) {
-    watch.repLeft--;
+  if (i > watch.at && watch.prefs.loop && L[watch.at]) {
     watchArm(watch.at);
     try {
       watch.player.seekTo(L[watch.at].time, true);
@@ -3749,7 +3747,6 @@ function watchTick() {
   }
   if (i !== watch.at) {
     watch.at = i;
-    watch.repLeft = (watch.prefs.rep || 1) - 1;
     paintWatchLine(true);
   }
   const ring = document.querySelector("#watchPop .w-row.on .w-ring path"), next = L[i + 1];
@@ -3763,7 +3760,6 @@ function watchSeek(i) {
   if (!watch || !watch.lines[i]) return;
   watch.at = i;
   watch.pausedAt = -1;
-  watch.repLeft = (watch.prefs.rep || 1) - 1;
   paintWatchLine(true);
   watchArm(i);
   try {
@@ -3801,7 +3797,7 @@ function paintWatch() {
   const study = lessonStudyMode() ? '<button type="button" class="w-go" data-w="study" title="Study the sentences">💬 Study</button>' : "";
   const words = blindCanOpen() || lessonVocabItems(vocabSource()).some(i => !vocabViewOnly(i)) ? '<button type="button" class="w-go" data-w="words" title="Study the words">字 Words</button>' : "";
   const acts = `${study}${words}<button type="button" class="w-go ghost" data-w="lookup" title="Every word of this lesson">Words list</button>`;
-  const bar = `<div class="w-bar">${step("prev", "Previous line (A or ←)")}${step("repeat", "This line again (S)")}${step("next", "Next line (D or →)")}<span class="w-gap"></span>${pill("text", "The sentence under the video")}${watchChinese() ? pill("pin", "Pinyin") : ""}${pill("tr", "The translation")}${pill("list", "All the lines")}${pill("auto", "Pause after each line")}${pill("blur", "Blur the writing until you point at it")}<button type="button" class="w-pill w-rep${p.rep > 1 ? " on" : ""}" data-w="rep" aria-label="Play each line ${p.rep} times" title="Play each line ${p.rep} time${p.rep > 1 ? "s" : ""} (click for 1, 2 or 3)">${wIcon("repeat")}<b>${p.rep}×</b></button><span class="w-gap"></span><select class="w-rate" aria-label="Speed" title="Speed">${[ .5, .75, .9, 1, 1.1, 1.25, 1.5, 1.75, 2 ].map(r => `<option value="${r}"${r === p.rate ? " selected" : ""}>${r}×</option>`).join("")}</select>${p.list ? "" : '<span class="w-push"></span>' + acts}</div>`;
+  const bar = `<div class="w-bar">${step("prev", "Previous line (A or ←)")}${step("repeat", "This line again (S)")}${step("next", "Next line (D or →)")}<span class="w-gap"></span>${pill("text", "The sentence under the video")}${watchChinese() ? pill("pin", "Pinyin") : ""}${watch.lines.some(r => watchTranslation(r)) ? pill("tr", "The translation") : ""}${pill("list", "All the lines")}${pill("auto", "Pause after each line")}${pill("blur", "Blur the writing until you point at it")}${pill("loop", "Loop the line being said")}<span class="w-gap"></span><select class="w-rate" aria-label="Speed" title="Speed">${[ .5, .75, .9, 1, 1.1, 1.25, 1.5, 1.75, 2 ].map(r => `<option value="${r}"${r === p.rate ? " selected" : ""}>${r}×</option>`).join("")}</select>${p.list ? "" : '<span class="w-push"></span>' + acts}</div>`;
   const list = `<div class="w-acts">${acts}</div><div class="w-list">${watch.lines.map((r, i) => `<div class="w-row" data-i="${i}"><span class="w-side"><span class="w-t">${fmtTime(r.time)}<svg class="w-ring" aria-hidden="true"><path pathLength="100"/></svg></span><button type="button" class="w-edit" data-w="edit" data-i="${i}" aria-label="Edit this line" title="Edit this line (E)">${wIcon("edit")}</button></span><div>${watchLineHtml(r, true)}</div></div>`).join("")}</div>`;
   box.className = "watch-pop" + (p.list ? " with-list" : "") + (p.blur ? " blurred" : "");
   box.querySelector(".w-barbox").innerHTML = bar;
@@ -3846,15 +3842,11 @@ document.getElementById("watchPop").addEventListener("click", e => {
     try {
       watch.player.pauseVideo();
     } catch (err) {}
+    hideTooltip();
     return watchLookup(mk);
   }
   if (row) return watchSeek(Number(row.dataset.i));
   if (!b) return;
-  if (k === "rep") {
-    watch.prefs.rep = watch.prefs.rep % 3 + 1;
-    saveWatchPrefs();
-    return paintWatch();
-  }
   if (k === "study") return document.getElementById("fullModeBtn").click();
   if (k === "words") return document.getElementById("wordsModeBtn").click();
   if (k === "lookup") return openWords();
@@ -3880,14 +3872,23 @@ document.getElementById("watchPop").addEventListener("mouseover", e => {
   const mk = e.target.closest && e.target.closest("mark.vocab-hit, mark.vocab-own");
   if (mk && mk !== watch.hoverMark) {
     watch.hoverMark = mk;
-    watchLookup(mk);
+    watchTip(mk);
   }
 });
 
 document.getElementById("watchPop").addEventListener("mouseout", e => {
   if (!watch || !watch.hoverMark || e.relatedTarget && watch.hoverMark.contains(e.relatedTarget)) return;
+  if (hoverTooltip && hoverTooltip.anchor === watch.hoverMark) hideTooltip();
   watch.hoverMark = null;
 });
+
+function watchTip(mk) {
+  const bases = [ ...mk.querySelectorAll(".wr b") ], text = (bases.length ? bases.map(b => b.textContent).join("") : mk.textContent).trim();
+  const key = normalizeVocabText((mk.dataset.own || "").split("\n")[0] || text);
+  const here = lessonVocabItems(vocabSource()).find(i => i.tkey === key), k = here ? null : knownWord(text);
+  if (!here && !k) return;
+  showLookupTip(mk, here ? here.term : text, here ? here.meaning : k.meaning, here ? "" : k.lesson);
+}
 
 document.getElementById("watchPop").addEventListener("change", e => {
   if (!watch || !e.target.matches(".w-rate")) return;
