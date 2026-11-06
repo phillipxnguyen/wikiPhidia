@@ -11,7 +11,7 @@ The whole app is one file, `index.html`. There is no build step and nothing to i
 There is no Lessons side and Vocabulary side to switch between any more: the sidebar lists every lesson together, video lessons, Speaking lessons and lessons of words alike (a lesson shows what it is), and opening one opens it the way it is studied, and each mode keeps its own way of studying: you see or hear, recall it yourself, Show, and grade it; no exercises to type into or answers to pick. A lesson has at most three buttons, in the row under it (where the single ☰ used to be), each shown only when the lesson can use it:
 
 - **💬 Study the sentences**: the lesson's own study mode, chosen by the app (Listening for a video lesson, Speaking for questions and answers).
-- **🎧 Study the words**: Podcast, the lesson's words by ear, in any lesson that has words (its words with a meaning; in a video lesson also every word of its lines), right inside the lesson.
+- **字 Study the words**, right inside the lesson, in any lesson that has words: in a lesson from YouTube it is Podcast (the words by ear, from the video's own sound); in a lesson you made yourself (Speaking, or words you typed or looked up) it is the flashcards, of that lesson's words, and the flag above them leads back to the lesson.
 - **📺 Watch**: the video with all its lines (in a lesson with a video).
 
 The whole app keeps one colour, its blue: nothing turns green for words any more, in a lesson of words, a task or anywhere else (where an older line below still speaks of Vocabulary's green, it is now that same blue). The list itself (☰ Full) is where you read, look up and edit. The 字 beside the app's name leads back to Today. Today, its tasks, the daily limits and everything you have studied stay as they were.
