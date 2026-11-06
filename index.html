@@ -2463,7 +2463,7 @@ window.onYouTubeIframeAPIReady = function(){
   .cut-tint.good{background:rgba(31,157,85,.22);}
   .cut-tint.again{background:rgba(214,69,69,.22);}
   .cut-tint.lift{background:rgba(37,99,201,.18);}
-  .cut-slash{position:absolute;z-index:4;height:4px;border-radius:2px;background:#ffffff;box-shadow:0 0 12px 4px rgba(255,255,255,.9), 0 0 32px 8px rgba(255,220,120,.6);pointer-events:none;}
+  .cut-slash{position:absolute;z-index:4;height:8px;margin-top:-2px;border-radius:4px;background:#ffffff;box-shadow:0 0 0 2px rgba(214,69,69,.9), 0 0 16px 6px rgba(255,255,255,.95), 0 0 48px 16px rgba(214,69,69,.55);pointer-events:none;}
   html.blind-on.sel-on .b2-body{padding-bottom:56px;}
   .b2-done{display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;}
   .b2-done b{font-size:28px;line-height:36px;}
@@ -12616,8 +12616,8 @@ function playCut(layer, kind, mark) {
     }, {
       clipPath: "inset(0 0 0 0)"
     } ], {
-      duration: 170,
-      easing: "ease-in",
+      duration: 260,
+      easing: "cubic-bezier(.3,0,.2,1)",
       fill: "forwards"
     });
     const top = layer, bottom = layer.cloneNode(true);
@@ -12629,16 +12629,22 @@ function playCut(layer, kind, mark) {
       transform: "none",
       opacity: 1
     }, {
+      transform: "none",
+      opacity: 1,
+      offset: .22
+    }, {
       transform: to,
       opacity: 0
     } ], {
-      duration: 680,
-      delay: 170,
+      duration: 1100,
+      delay: 200,
       easing: "cubic-bezier(.5,0,.9,.4)",
       fill: "forwards"
     }).finished.then(() => done(el), () => done(el));
-    fall(top, "translate(-6vw, -22vh) rotate(-7deg)");
-    fall(bottom, "translate(6vw, 34vh) rotate(9deg)");
+    top.style.filter = "drop-shadow(0 6px 10px rgba(0,0,0,.35))";
+    bottom.style.filter = "drop-shadow(0 -6px 10px rgba(0,0,0,.35))";
+    fall(top, "translate(-10vw, -30vh) rotate(-9deg)");
+    fall(bottom, "translate(10vw, 45vh) rotate(12deg)");
     return;
   }
   stamp(mark);
@@ -19736,33 +19742,40 @@ const CARD_LOOKS = [ "sign", "cup", "note", "sand", "plane", "balloon", "board",
 
 let lastCardLook = "";
 
-const TYPE_LATIN = [ "Playfair Display", "Lobster", "Pacifico", "Dancing Script", "Merriweather", "Roboto Slab", "Patrick Hand", "Pangolin", "Itim", "Mali", "Charm", "Bungee", "Cormorant Garamond", "Josefin Sans", "Comfortaa", "Lexend", "Oswald", "Montserrat", "Nunito", "Quicksand", "Lora", "Bitter", "Alegreya", "Space Mono", "Baloo 2", "Chakra Petch", "Sriracha", "Pattaya", "Prata", "Bangers", "Saira Stencil One", "Arima", "Grandstander", "Coiny", "Philosopher", "Signika", "Exo 2", "Vollkorn", "Bellota", "Big Shoulders Display" ];
+const TYPE_LATIN = [ "Playfair Display", "Merriweather", "Roboto Slab", "Patrick Hand", "Mali", "Josefin Sans", "Comfortaa", "Lexend", "Oswald", "Montserrat", "Nunito", "Quicksand", "Lora", "Bitter", "Alegreya", "Baloo 2", "Prata", "Arima", "Philosopher", "Signika", "Exo 2", "Vollkorn", "Raleway", "Work Sans", "Source Serif 4", "Crimson Pro", "Literata", "Manrope", "Be Vietnam Pro", "Inter" ];
 
-const TYPE_LOCAL = [ "Georgia", "Courier New", "Avenir Next", "Trebuchet MS", "Palatino", "Gill Sans", "Futura", "Optima", "Didot", "Baskerville", "American Typewriter", "Chalkboard SE", "Marker Felt", "Noteworthy", "Snell Roundhand" ];
+const TYPE_LOCAL = [ "Georgia", "Avenir Next", "Trebuchet MS", "Palatino", "Gill Sans", "Futura", "Optima", "Baskerville", "Verdana", "Helvetica Neue" ];
+
+const TYPE_CJK = {
+  zh: [ "Noto Sans SC", "Noto Serif SC", "ZCOOL XiaoWei", "LXGW WenKai TC" ],
+  ko: [ "Noto Sans KR", "Noto Serif KR", "Nanum Gothic", "Nanum Myeongjo", "Gowun Dodum", "Gowun Batang", "IBM Plex Sans KR" ],
+  ja: [ "Noto Sans JP", "Noto Serif JP", "M PLUS Rounded 1c", "Zen Maru Gothic", "Zen Kaku Gothic New", "Sawarabi Mincho" ]
+};
 
 const TYPE_INKS = [ "#1d2433", "#7a2e0e", "#0f5c3a", "#173f8a", "#8a1c4a", "#4a3a12", "#0b5563", "#5b2a86", "#9a3412", "#1f2937", "#3f6212", "#9f1239" ];
 
 function cardType(el, item) {
   const pick = list => list[Math.floor(Math.random() * list.length)], phone = matchMedia("(max-width:600px)").matches;
   const text = (item.term || "") + (item.meaning || "");
-  const cjk = /[\u3400-\u9fff]/.test(item.term || "") ? STUDY_FONT_LANGS[0][3] : /[\uac00-\ud7af]/.test(item.term || "") ? STUDY_FONT_LANGS[1][3] : /[\u3040-\u30ff]/.test(item.term || "") ? STUDY_FONT_LANGS[2][3] : null;
+  const all = text + " " + ((item.card && item.card.q) || "");
+  const cjk = /[\u3040-\u30ff]/.test(all) ? TYPE_CJK.ja : /[\uac00-\ud7af]/.test(all) ? TYPE_CJK.ko : /[\u3400-\u9fff]/.test(all) ? TYPE_CJK.zh : null;
   const font = () => {
-    if (cjk && Math.random() < .75) {
-      const f = pick(cjk);
-      loadStudyFont(f);
-      return `"${f}", ${UI_FONT}`;
+    let latin;
+    if (Math.random() < .3) latin = pick(TYPE_LOCAL); else {
+      latin = pick(TYPE_LATIN);
+      loadStudyFont(latin);
     }
-    if (Math.random() < .3) return `"${pick(TYPE_LOCAL)}", ${UI_FONT}`;
-    const f = pick(TYPE_LATIN);
+    if (!cjk) return `"${latin}", ${UI_FONT}`;
+    const f = pick(cjk);
     loadStudyFont(f);
-    return `"${f}", ${UI_FONT}`;
+    return `"${latin}", "${f}", ${UI_FONT}`;
   };
   const latin = !cjk && !/[\u0400-\u04ff\u0600-\u06ff]/.test(text);
   const big = el.dataset.look === "poster" ? phone ? [ 48, 56, 64 ] : [ 80, 96, 112, 128 ] : phone ? [ 28, 32, 36, 40 ] : [ 40, 48, 56, 64, 72 ];
   const tz = pick(big);
   const set = (k, v) => el.style.setProperty(k, v);
   set("--tf", font());
-  set("--tw", pick([ "300", "400", "400", "700", "900" ]));
+  set("--tw", pick([ "400", "500", "600", "700", "800" ]));
   set("--ts", Math.random() < .25 ? "italic" : "normal");
   set("--tt", latin && Math.random() < .25 ? "uppercase" : "none");
   set("--tk", pick([ "0px", "0px", "1px", "2px", "4px", "-1px" ]));
@@ -19773,7 +19786,7 @@ function cardType(el, item) {
   const bz = pick(phone ? [ 20, 22, 24, 26 ] : [ 28, 32, 36, 40, 48 ]), mz = pick(phone ? [ 18, 20, 22, 26 ] : [ 22, 26, 30, 36, 44 ]);
   const align = pick([ "left", "center", "center", "left" ]);
   set("--bf", font());
-  set("--bw", pick([ "300", "400", "400", "600", "800" ]));
+  set("--bw", pick([ "400", "400", "500", "600" ]));
   set("--bs", Math.random() < .2 ? "italic" : "normal");
   set("--bz", bz + "px");
   set("--bl", bz + Math.round(bz / 3) + "px");
