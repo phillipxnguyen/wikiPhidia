@@ -3311,7 +3311,9 @@ async function blindPlayLine(line, token) {
       } catch (e) {
         return blindSpeak(line.text, token);
       }
-      const limit = performance.now() + (line.clip.end - line.clip.start + 10) * 1000;
+      const limit = performance.now() + (line.clip.end - line.clip.start + 10) * 1000, settle = performance.now() + 3000;
+      let seeked = false;
+      blindTime(0);
       await new Promise(resolve => {
         const tick = () => {
           if (!blind || b.token !== token) return resolve();
@@ -3319,6 +3321,12 @@ async function blindPlayLine(line, token) {
           try {
             t = p.getCurrentTime();
           } catch (e) {}
+          if (!seeked && (t < line.clip.start - 1 || t > line.clip.end + 1) && performance.now() < settle) {
+            blindTime(0);
+            b.timer = setTimeout(tick, 100);
+            return;
+          }
+          seeked = true;
           blindTime((t - line.clip.start) / (line.clip.end - line.clip.start || 1));
           if (t >= line.clip.end || performance.now() > limit) {
             try {
@@ -3351,6 +3359,7 @@ function blindSpeak(text, token) {
       resolve();
     };
     const guard = setTimeout(end, 4000 + clean.length * 400), t0 = performance.now(), span = 800 + clean.length * 160 / b.rate;
+    blindTime(0);
     const tick = () => {
       if (!blind || b.token !== token) return;
       blindTime((performance.now() - t0) / span);
@@ -3732,8 +3741,7 @@ function watchTick() {
   const ring = document.querySelector("#watchPop .w-row.on .w-ring path"), next = L[i + 1];
   if (ring && L[i]) {
     const done = Math.round(Math.max(0, Math.min(1, (t - L[i].time) / ((next ? next.time : L[i].time + 8) - L[i].time || 1))) * 100);
-    ring.style.strokeDasharray = `${100 - done} 100`;
-    ring.style.strokeDashoffset = String(-done);
+    setDash(ring, done);
   }
 }
 
@@ -6266,9 +6274,20 @@ function paintRing(el, p) {
   }
   const done = Math.max(0, Math.min(1, p)) * 100;
   const run = svg.querySelector(".ring-run");
-  run.style.strokeDasharray = `${(100 - done).toFixed(2)} 100`;
-  run.style.strokeDashoffset = (-done).toFixed(2);
+  setDash(run, done);
   run.classList.toggle("on", done < 100);
+}
+
+function setDash(path, done) {
+  const prev = Number(path.dataset.done || 0), jump = Math.abs(done - prev) > 20;
+  if (jump) path.style.transition = "none";
+  path.style.strokeDasharray = `${(100 - done).toFixed(2)} 100`;
+  path.style.strokeDashoffset = (-done).toFixed(2);
+  path.dataset.done = done;
+  if (jump) {
+    path.getBoundingClientRect();
+    path.style.transition = "";
+  }
 }
 
 function dropRing(el) {
