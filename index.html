@@ -3095,6 +3095,7 @@ function blindAutoItems() {
 
 function blindItems() {
   const now = Date.now();
+  if (blind && blind.only) return vocabStateOf(blind.only).due <= now ? [ blind.only ] : [];
   const all = lessonVocabItems(vocabSource()).filter(i => !vocabViewOnly(i)).concat(blindAutoItems());
   return orderStudy(limitVocab(all.filter(i => vocabStateOf(i).due <= now)), i => !vocabStateOf(i).reps);
 }
@@ -3133,8 +3134,8 @@ function blindCanOpen() {
   return !!currentLessonId && (!isVirtualLesson() || bankOpen()) && !(l && bookHidden(l) && !(taskRun && taskRun.book)) && rows.some(r => r.uid !== EXTRA_UID && (r.q || "").trim());
 }
 
-function openBlind() {
-  if (!blindCanOpen()) return;
+function openBlind(only) {
+  if (!only && !blindCanOpen()) return;
   commitActiveEdit();
   if (currentView === "vocab") commitVocabEdit();
   haltAllPlayback();
@@ -3150,6 +3151,7 @@ function openBlind() {
     playing: false,
     scene: null,
     last: null,
+    only: only || null,
     hist: [],
     rate: 1,
     player: null,
@@ -3161,8 +3163,7 @@ function openBlind() {
   blindNext();
 }
 
-function closeBlind() {
-  if (!blind) return;
+function blindShut() {
   blindStop();
   if (blind.player) {
     try {
@@ -3174,6 +3175,15 @@ function closeBlind() {
   blind = null;
   document.getElementById("blind2").hidden = true;
   document.documentElement.classList.remove("blind-on");
+}
+
+function closeBlind() {
+  if (!blind) return;
+  if (blind.only) {
+    blindShut();
+    return taskRun && taskRun.book ? openBooks() : openToday();
+  }
+  blindShut();
   if (currentView === "vocab") renderVocab(); else if (currentView === "bank") renderBank(); else render();
   renderLessonList();
 }
@@ -3421,6 +3431,10 @@ function blindGrade(isAgain) {
   renderLessonList();
   b.last = item.key;
   b.hist.push(item.key);
+  if (b.only) {
+    blindShut();
+    return renderVocab();
+  }
   blindNext();
 }
 
@@ -21378,7 +21392,9 @@ function taskShowPick(run, pick) {
   vocabView = "card";
   run.opening = false;
   if (currentView !== "vocab") showView("vocab"); else renderVocab();
-  return !!currentVocabItem();
+  const item = currentVocabItem();
+  if (item && !run.peeking) openBlind(item);
+  return !!item;
 }
 
 function taskPeek() {
