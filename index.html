@@ -2207,7 +2207,7 @@ window.onYouTubeIframeAPIReady = function(){
   .w-push{flex:1;}
   .w-acts{display:flex;gap:6px;height:40px;}
   .w-acts .w-go{flex:1;height:40px;}
-  .w-pill, .w-go{flex:none;min-width:40px;height:36px;padding:0 12px;border:0;border-radius:18px;background:transparent;color:#dfe4ff;font-size:15px;line-height:20px;font-weight:700;white-space:nowrap;cursor:pointer;}
+  .w-pill, .w-go{flex:none;min-width:36px;height:36px;padding:0 8px;border:0;border-radius:18px;background:transparent;color:#dfe4ff;font-size:15px;line-height:20px;font-weight:700;white-space:nowrap;cursor:pointer;}
   .w-pill.on{background:rgba(255,255,255,.18);color:#ffffff;}
   .w-go{background:#ffffff;color:#1b1d33;}
   .w-go.ghost{background:rgba(11,13,24,.55);color:#ffffff;}
@@ -2221,11 +2221,12 @@ window.onYouTubeIframeAPIReady = function(){
   .w-row .w-tr{font-size:13px;line-height:18px;text-shadow:none;}
   .w-t{flex:none;width:44px;font-size:12px;line-height:26px;font-weight:600;font-variant-numeric:tabular-nums;color:#b4bbe0;}
   .w-row.on{background:rgba(255,255,255,.14);box-shadow:inset 3px 0 #ffd36e;}
-  .watch-pop .w-text ruby{ruby-position:over;}
+  .watch-pop .w-text .wr{display:inline-flex;flex-direction:column;align-items:center;margin:0 2px;vertical-align:bottom;}
+  .watch-pop .w-text .wr i{font-style:normal;font-size:.42em;line-height:1.4;font-weight:600;color:#ffd36e;white-space:nowrap;}
+  .watch-pop .w-text .wr b{font-weight:inherit;}
   .watch-pop mark.vocab-hit{color:#a6e08a;}
   .watch-pop mark.vocab-own{color:#d0d5de;}
-  .watch-pop .w-text rt{font-size:.5em;line-height:1.2;font-weight:600;color:#ffd36e;letter-spacing:0;}
-  .w-row .w-text rt{font-size:.6em;}
+  .w-row .w-text .wr i{font-size:.55em;}
   .watch-pop.blurred :is(.w-cap, .w-row) :is(.w-text, .w-tr){filter:blur(6px);transition:filter .2s;}
   .watch-pop.blurred :is(.w-cap, .w-row):hover :is(.w-text, .w-tr){filter:none;}
   .w-rep{gap:2px;}
@@ -2239,7 +2240,7 @@ window.onYouTubeIframeAPIReady = function(){
   @media (min-width:821px){.main:has(#viewStudy.theater:not([hidden])){padding-bottom:16px;}.watch-pop{min-height:calc(100vh - var(--wt, 160px) - 16px);margin-bottom:0;}.w-main{min-height:100%;}.w-main > .w-cap{flex:1;}}
   .w-pill svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
   .w-pill{display:inline-flex;align-items:center;justify-content:center;}
-  .w-rate{text-align:center;text-align-last:center;width:76px;}
+  .w-rate{text-align:center;text-align-last:center;width:68px;}
   .w-cap[hidden]{display:none;}
   .w-video .w-cap{position:absolute;left:16px;right:16px;bottom:56px;inset-block-start:auto;width:auto;height:auto;min-height:0;z-index:1;pointer-events:none;background:rgba(0,0,0,.6);}
   .w-t{position:relative;display:inline-flex;align-items:center;justify-content:center;align-self:flex-start;box-sizing:border-box;width:auto;min-width:48px;height:24px;margin-top:1px;padding:0 8px;border-radius:12px;background:rgba(255,255,255,.12);line-height:24px !important;}
@@ -3560,12 +3561,15 @@ function watchRuby(html) {
     } catch (e) {}
     const frag = document.createDocumentFragment();
     chars.forEach((ch, i) => {
-      if (!han.test(ch)) return frag.appendChild(document.createTextNode(ch));
-      const ruby = document.createElement("ruby"), rt = document.createElement("rt");
-      ruby.textContent = ch;
-      rt.textContent = py.length === chars.length ? py[i] : "";
-      ruby.appendChild(rt);
-      frag.appendChild(ruby);
+      if (/\s/.test(ch)) return frag.appendChild(document.createTextNode(ch));
+      const last = frag.lastChild;
+      if (!han.test(ch) && last && last.className === "wr") return last.lastChild.append(ch);
+      const cell = document.createElement("span"), top = document.createElement("i"), base = document.createElement("b");
+      cell.className = "wr";
+      top.textContent = han.test(ch) && py.length === chars.length ? py[i] : "\u00a0";
+      base.textContent = ch;
+      cell.append(top, base);
+      frag.appendChild(cell);
     });
     n.replaceWith(frag);
   });
