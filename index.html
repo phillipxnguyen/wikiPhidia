@@ -86,9 +86,8 @@ window.onYouTubeIframeAPIReady = function(){
     --popup-text:#e7ecf3;
     --popup-muted:#aeb9c7;
     --mark-bg:#ffd76b;
-    --vocab-bg:#dff0cf;
-    --vocab-bg-hover:#cde5b6;
-    --vocab-text:#2f5a14;
+    --vocab-ink:#1e8a4c;
+    --vocab-own-ink:#7a5ab8;
     --stroke-outline:#d8dee6;
     --shadow-sm:0 1px 2px rgba(20,30,50,.06);
     --shadow-md:0 6px 20px rgba(20,30,50,.10);
@@ -130,9 +129,8 @@ window.onYouTubeIframeAPIReady = function(){
       --a-text:#8fdcb2;
       --a-label:#5ec893;
       --popup-bg:#0b0f15;
-      --vocab-bg:#3a4a2e;
-      --vocab-bg-hover:#4a5e3a;
-      --vocab-text:#d7f0b8;
+      --vocab-ink:#6fd69a;
+      --vocab-own-ink:#b9a0f0;
       --stroke-outline:#3a4452;
       --shadow-sm:0 1px 2px rgba(0,0,0,.3);
       --shadow-md:0 8px 24px rgba(0,0,0,.45);
@@ -171,9 +169,8 @@ window.onYouTubeIframeAPIReady = function(){
     --a-text:#8fdcb2;
     --a-label:#5ec893;
     --popup-bg:#0b0f15;
-    --vocab-bg:#3a4a2e;
-    --vocab-bg-hover:#4a5e3a;
-    --vocab-text:#d7f0b8;
+    --vocab-ink:#6fd69a;
+    --vocab-own-ink:#b9a0f0;
     --stroke-outline:#3a4452;
     --shadow-sm:0 1px 2px rgba(0,0,0,.3);
     --shadow-md:0 8px 24px rgba(0,0,0,.45);
@@ -972,14 +969,10 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-edit-ctx{padding:0 14px;font-size:22px;line-height:30px;color:var(--text);-webkit-user-select:text;user-select:text;cursor:text;}
   .rich-editor.yt-ph:empty::before{content:"";display:inline-block;width:28px;height:20px;vertical-align:-3px;background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2028%2020%22%3E%3Crect%20width%3D%2228%22%20height%3D%2220%22%20rx%3D%225%22%20fill%3D%22%23FF0000%22%2F%3E%3Cpath%20d%3D%22M11%205.5v9l8-4.5z%22%20fill%3D%22%23fff%22%2F%3E%3C%2Fsvg%3E") center / 28px 20px no-repeat;opacity:.45;}
   #qaQ.yt-ph:placeholder-shown{background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2028%2020%22%3E%3Crect%20width%3D%2228%22%20height%3D%2220%22%20rx%3D%225%22%20fill%3D%22%23FF0000%22%2F%3E%3Cpath%20d%3D%22M11%205.5v9l8-4.5z%22%20fill%3D%22%23fff%22%2F%3E%3C%2Fsvg%3E");background-repeat:no-repeat;background-size:28px 20px;background-position:12px center;}
-  :is(.rich-editor, .cell, .vocab-ctx, .vocab-edit-ctx, .wl-sent) mark.vocab-own{background:color-mix(in srgb, var(--text) 22%, transparent);color:inherit;}
+  :is(.rich-editor, .cell, .vocab-ctx, .vocab-edit-ctx, .wl-sent) mark.vocab-own{background:none;color:var(--vocab-own-ink);}
   @media (hover:hover){:is(.rich-editor, .cell, .vocab-ctx, .vocab-edit-ctx, .wl-sent) mark.vocab-own{cursor:pointer;}}
-  :is(.rich-editor, .cell, .vocab-ctx, .vocab-edit-ctx, .wl-sent) mark.vocab-hit{background:var(--vocab-bg);color:var(--vocab-text);cursor:pointer;}
-  :is(.rich-editor, .cell, .vocab-ctx, .vocab-edit-ctx, .wl-sent) mark.vocab-stack{background:linear-gradient(color-mix(in srgb, var(--text) 16%, transparent), color-mix(in srgb, var(--text) 16%, transparent)), var(--vocab-bg);}
-  :is(.rich-editor, .cell, .vocab-ctx, .vocab-edit-ctx, .wl-sent) mark.vocab-own.vocab-stack:not(.vocab-hit){background:color-mix(in srgb, var(--text) 36%, transparent);}
-  :is(.rich-editor, .cell, .vocab-ctx, .vocab-edit-ctx, .wl-sent) mark.vs{border-top-left-radius:4px;border-bottom-left-radius:4px;padding-left:1px;}
-  :is(.rich-editor, .cell, .vocab-ctx, .vocab-edit-ctx, .wl-sent) mark.ve{border-top-right-radius:4px;border-bottom-right-radius:4px;padding-right:1px;}
-  :is(.rich-editor, .cell, .vocab-ctx, .vocab-edit-ctx, .wl-sent) mark.vocab-hover{background:var(--vocab-bg-hover);}
+  :is(.rich-editor, .cell, .vocab-ctx, .vocab-edit-ctx, .wl-sent) mark.vocab-hit{background:none;color:var(--vocab-ink);cursor:pointer;}
+          :is(.rich-editor, .cell, .vocab-ctx, .vocab-edit-ctx, .wl-sent) mark.vocab-hover{text-decoration:underline;text-underline-offset:3px;}
   .rich-editor ul, .vocab-popup ul{margin:2px 0;padding-left:20px;}
   .rich-editor :is(ul, ol){padding-left:24px;}
   .rich-editor li, .vocab-popup li{margin:2px 0;}
@@ -5608,7 +5601,7 @@ function knownWord(term) {
   const key = normalizeVocabText(term);
   if (!key) return null;
   for (const l of library) {
-    if (isVirtualId(l.id)) continue;
+    if (isVirtualId(l.id) || bookHidden(l)) continue;
     const item = lessonVocabItems(readerCards(l)).find(i => i.tkey === key);
     if (item) return {
       lesson: l.name || "Untitled lesson",
@@ -7699,7 +7692,7 @@ function showSessionCompletePanel() {
   if (waiting && text.emoji === "🎉" && !held) text = {
     emoji: "字",
     title: "Words first",
-    sub: `${waiting} card${waiting === 1 ? " waits" : "s wait"} for ${waiting === 1 ? "its" : "their"} words: learn them in Vocabulary`
+    sub: `${waiting} card${waiting === 1 ? " waits" : "s wait"} for ${waiting === 1 ? "its" : "their"} words: study them first`
   };
   panel.querySelector(".emoji").textContent = text.emoji;
   panel.querySelector(".emoji").classList.toggle("blend-text", text.emoji === "字");
@@ -7712,7 +7705,7 @@ function showSessionCompletePanel() {
     review: more.review,
     vocab: text.emoji === "字" ? "1" : ""
   });
-  moreBtn.textContent = text.emoji === "字" ? "Go to Vocabulary" : `Study ${more.fresh + more.review} more today`;
+  moreBtn.textContent = text.emoji === "字" ? "Study the words" : `Study ${more.fresh + more.review} more today`;
   const showing = panel.dataset.shown === String(currentLessonId);
   panel.style.display = "block";
   if (showing) {
@@ -9064,7 +9057,7 @@ function vocabCardEntries() {
     });
   };
   if (isVirtualLesson()) rows.forEach(c => add(c, library.find(l => l.id === c.srcLessonId) || null)); else if (!library.some(l => l.id === currentLessonId)) vocabSource().forEach(c => add(c, null));
-  sortedLibrary().forEach(l => (l.id === currentLessonId ? vocabSource() : lessonCardsWithExtras(l)).forEach(c => add(c, l)));
+  sortedLibrary().filter(l => l.id === currentLessonId || !bookHidden(l)).forEach(l => (l.id === currentLessonId ? vocabSource() : lessonCardsWithExtras(l)).forEach(c => add(c, l)));
   return entries;
 }
 
@@ -15817,7 +15810,7 @@ function studyMoreToday(fresh, review) {
 
 document.addEventListener("click", e => {
   const btn = e.target.closest(".more-today");
-  if (btn && btn.dataset.vocab) return document.getElementById("btnAppMode").click();
+  if (btn && btn.dataset.vocab) return document.getElementById("wordsModeBtn").click();
   if (btn) studyMoreToday(Number(btn.dataset.fresh) || 0, Number(btn.dataset.review) || 0);
 });
 
@@ -16507,7 +16500,7 @@ function wordStates() {
       meaning: i.meaning || was && was.meaning || ""
     });
   };
-  library.filter(l => !isVirtualId(l.id) && l.id !== currentLessonId).forEach(l => lessonVocabItems(lessonCardsWithExtras(l)).forEach(add));
+  library.filter(l => !isVirtualId(l.id) && l.id !== currentLessonId && !bookHidden(l)).forEach(l => lessonVocabItems(lessonCardsWithExtras(l)).forEach(add));
   lessonVocabItems(vocabSource()).forEach(add);
   return m;
 }
@@ -18111,7 +18104,7 @@ function readerState() {
     words: isVocabOnlyLesson(l)
   }));
   const words = [];
-  library.filter(l => !isVirtualId(l.id)).forEach(l => lessonVocabItems(readerCards(l)).forEach(i => words.push({
+  library.filter(l => !isVirtualId(l.id) && !bookHidden(l)).forEach(l => lessonVocabItems(readerCards(l)).forEach(i => words.push({
     term: i.term,
     meaning: i.meaning,
     lesson: l.name || "Untitled lesson"
@@ -18160,7 +18153,7 @@ function readerTarget(w, made) {
 
 function readerAdd(list) {
   const known = new Map;
-  library.filter(l => !isVirtualId(l.id)).forEach(l => lessonVocabItems(readerCards(l)).forEach(i => known.set(i.key, l.name || "Untitled lesson")));
+  library.filter(l => !isVirtualId(l.id) && !bookHidden(l)).forEach(l => lessonVocabItems(readerCards(l)).forEach(i => known.set(i.key, l.name || "Untitled lesson")));
   const added = [], skipped = [], made = new Set, groups = new Map;
   (Array.isArray(list) ? list : []).forEach(w => {
     if (!w || typeof w !== "object") return;
@@ -20326,7 +20319,7 @@ document.getElementById("btnAppMode").onclick = () => {
 function allVocabCards() {
   if (currentLessonId === VOCAB_ALL_ID) return rows;
   const cards = [];
-  sortedLibrary().forEach(l => {
+  sortedLibrary().filter(l => l.id === currentLessonId || !bookHidden(l)).forEach(l => {
     const src = l.id === currentLessonId ? vocabSource() : lessonCardsWithExtras(l);
     src.forEach(c => cards.push(c));
   });

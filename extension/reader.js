@@ -113,7 +113,7 @@ textarea[hidden], .sent-view[hidden]{display:none;}
   };
 
   const hlStyle = document.createElement("style");
-  hlStyle.textContent = "wkp-hl{all:unset;display:inline;border-radius:3px;cursor:help;background:rgba(30,148,102,.18);}wkp-hl[data-state=pending]{background:rgba(120,130,150,.2);}";
+  hlStyle.textContent = "wkp-hl{all:unset;display:inline;cursor:help;color:#2fbf71 !important;}wkp-hl[data-state=pending]{color:#9b86e8 !important;}";
 
   function rebuildKnown() {
     known = new Map();
