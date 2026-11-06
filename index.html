@@ -2306,10 +2306,9 @@ window.onYouTubeIframeAPIReady = function(){
   .b2-body > :first-child{margin-top:auto;}
   .b2-body > :last-child{margin-bottom:auto;}
   .b2-art{flex:none;}
-  .b2-art > *{zoom:.85;}
-  .blind2.shown .b2-art > *{zoom:.55;}
-  @media (max-height:800px){.b2-art > *{zoom:.7;}.blind2.shown .b2-art > *{zoom:.45;}}
-  @media (max-height:640px){.b2-art > *{zoom:.55;}.blind2.shown .b2-art > *{zoom:.35;}}
+  .b2-art > *{zoom:.6;}
+  @media (max-height:800px){.b2-art > *{zoom:.5;}}
+  @media (max-height:640px){.b2-art > *{zoom:.4;}}
   .b2-head{flex:none;align-self:stretch;display:flex;align-items:center;justify-content:space-between;gap:12px;}
   .b2-close{flex:none;width:40px;height:40px;margin-left:auto;padding:0;border:0;border-radius:20px;background:color-mix(in srgb, var(--b2-ink) 14%, transparent);color:var(--b2-ink);font-size:18px;line-height:20px;cursor:pointer;}
   .b2-art{display:flex;justify-content:center;width:100%;}
@@ -2335,7 +2334,8 @@ window.onYouTubeIframeAPIReady = function(){
   @media (hover:hover){.b2-ctl:hover{filter:brightness(.97);}}
   @media (max-width:600px){.b2-acts{flex-wrap:nowrap;gap:6px;}.b2-ctl{min-width:48px;padding:0 10px;}.b2-ctl.show, .b2-ctl.again, .b2-ctl.good{min-width:0;flex:1;}}
   @media (hover:hover){.b2-btn:hover, .b2-close:hover{filter:brightness(1.12);}}
-  .b2-reveal{display:flex;flex-direction:column;align-items:center;gap:4px;align-self:stretch;text-align:left;animation:b2In .4s ease-out;}
+  .b2-reveal{display:flex;flex-direction:column;align-items:center;gap:4px;align-self:stretch;text-align:left;}
+  .b2-reveal.veiled{visibility:hidden;}
   .b2-term{max-width:100%;font-size:44px;line-height:52px;font-weight:800;color:var(--b2-hi);overflow-wrap:anywhere;}
   .b2-meaning{font-size:24px;line-height:32px;font-weight:600;}
   .b2-lines{display:flex;flex-direction:column;align-items:flex-start;gap:8px;width:fit-content;max-width:100%;margin:12px 0 0;padding:0;list-style:none;font-size:20px;line-height:30px;text-align:left;opacity:.92;}
@@ -2343,7 +2343,6 @@ window.onYouTubeIframeAPIReady = function(){
   .b2-done{display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;}
   .b2-done b{font-size:28px;line-height:36px;}
   .b2-done p{margin:0 0 8px;font-size:16px;line-height:24px;opacity:.8;}
-  @keyframes b2In{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:none;}}
   .blind2.scene-radio{--b2-bg:linear-gradient(160deg, #fff6ea, #ffe3c4);--b2-ink:#4a2c17;--b2-hi:#e07b20;--b2-on-hi:#ffffff;}
   .b2-radio{display:grid;grid-template-columns:minmax(0, 1fr) 96px;grid-template-rows:minmax(0, 1fr) 32px;gap:12px;width:320px;max-width:100%;height:180px;box-sizing:border-box;padding:20px;border-radius:24px;background:linear-gradient(#8a5a33, #6b4426);box-shadow:inset 0 -6px 0 rgba(0,0,0,.25), 0 20px 40px rgba(0,0,0,.4);}
   .b2-grille{grid-row:1 / 3;border-radius:14px;background:radial-gradient(circle, #2b1d14 2px, transparent 3px) 0 0 / 10px 10px, #c49a6c;}
@@ -3453,7 +3452,7 @@ function paintBlind() {
   const item = b.item;
   box.className = "blind2 scene-" + b.scene + (b.shown ? " shown" : "");
   const dots = b.lines.map((l, i) => `<i data-n="${i}"></i>`).join("");
-  const reveal = b.shown ? `<div class="b2-reveal"><b class="b2-term">${escapeHtml(item.term)}</b><span class="b2-meaning">${escapeHtml(item.meaning || "")}</span><ol class="b2-lines">${b.lines.filter(l => l.row).map(l => `<li>${blindMarked(l.text, item.term)}</li>`).join("")}</ol></div>` : "";
+  const reveal = `<div class="b2-reveal${b.shown ? "" : " veiled"}" aria-hidden="${!b.shown}"><b class="b2-term">${escapeHtml(item.term)}</b><span class="b2-meaning">${escapeHtml(item.meaning || "")}</span><ol class="b2-lines">${b.lines.filter(l => l.row).map(l => `<li>${blindMarked(l.text, item.term)}</li>`).join("")}</ol></div>`;
   const ctl = '<button class="b2-ctl" data-b2="undo" aria-label="Undo" title="Undo (⌘Z)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 15a7 7 0 0 0 -14 0"/><path d="M3.5 12l3 3.5l3 -3.5"/></svg></button><button class="b2-ctl" data-b2="redo" aria-label="Redo" title="Redo (⌘⇧Z)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 15a7 7 0 0 1 14 0"/><path d="M14.5 12l3 3.5l3 -3.5"/></svg></button><button class="b2-ctl b2-sound" data-b2="sound" aria-label="Play or stop the sentences" title="Play or stop (R plays from the start)"></button>';
   const acts = ctl + (b.shown ? '<button class="b2-ctl again" data-b2="again" title="Again (←)">Again</button><button class="b2-ctl good" data-b2="good" title="Good (→)">Good</button>' : '<button class="b2-ctl show" data-b2="show" title="Show (Space)">Show</button>');
   box.innerHTML = `<div class="b2-stage"><div class="b2-head"><button class="b2-close" data-b2="close" aria-label="Close" title="Close (Esc)">✕</button></div><div class="b2-body"><div class="b2-art">${blindArt(b.scene)}</div><div class="b2-dots">${dots}</div><div class="b2-time"><i></i></div>${reveal}</div><div class="b2-acts">${acts}</div></div>`;
