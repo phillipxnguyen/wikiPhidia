@@ -6,6 +6,16 @@ The app is called **Flashcard**, and its icon is a white 字 on a blue rounded s
 
 The whole app is one file, `index.html`. There is no build step and nothing to install: open it in a browser, or host it anywhere that serves static files. On a phone it can be added to the home screen and runs full screen.
 
+## One way to study
+
+There is no Lessons side and Vocabulary side any more: the sidebar lists every lesson together (video lessons, Speaking lessons and lessons of words alike), and opening one opens it the way it is studied. A lesson has at most three buttons, in the row under it (where the single ☰ used to be), each shown only when the lesson can use it:
+
+- **💬 Study the sentences**: the lesson's own study mode, chosen by the app (Listening for a video lesson, Speaking for questions and answers).
+- **🎧 Study the words**: Podcast, the lesson's words by ear (in a lesson with a video, and in a lesson of words).
+- **📺 Watch**: the video with all its lines (in a lesson with a video).
+
+The list itself (☰ Full) is where you read, look up and edit. The 字 beside the app's name opens the **Word bank**, the words of all your lessons together, with Podcast for every word due. Today, its tasks, the daily limits and everything you have studied stay as they were.
+
 ## Search or Ask
 
 The box at the top of the sidebar (**Search or Ask**) opens one search for everything, like Spotlight on a Mac: click it, or press **⌘/** (Ctrl / on Windows, the **/ ?** key) or **/** anywhere. A large rounded field drops in high on the screen, like Spotlight, frosted over the page, with the results in a second frosted panel under it. Type part of a word you half remember and it finds it even with a letter wrong or missing (*scren* finds *screen*), with or without accents (*kiem tra* finds *kiểm tra*), in any of your lessons:
@@ -126,7 +136,7 @@ Only YouTube gives a lesson video times; any other link changes nothing, so a le
 
 **No more flipping cards.** In a Vocabulary lesson the button that used to start the flashcards (☰ in its toolbar) now opens Podcast for that lesson. In a task too, each word is heard in Podcast instead of a flashcard: it opens on its own for that one word, in a new scene and one of its three ways, and as soon as you grade it the task goes on to its next card or word; closing it (Esc or ✕) leaves the task, as the task's ✕ does.
 
-**Word bank (Vocabulary).** Switching to Vocabulary (the 字 beside the app's name) opens the Word bank: one page for the words of all your lessons together, with nothing to make or type. It says how many words your lessons hold and from how many lessons, and has two buttons: 🎧 **Podcast**, which plays every word due now from every lesson in one go (as below, by the same rules, each grade kept in the lesson the word comes from), and **All the words**, the Words list of all the lessons together. The lessons themselves are still in the sidebar, where any of them opens as before. Books stay out of it while the Library is off.
+**Word bank (Vocabulary).** The 字 beside the app's name opens the Word bank: one page for the words of all your lessons together, with nothing to make or type. It says how many words your lessons hold and from how many lessons, and has two buttons: 🎧 **Podcast**, which plays every word due now from every lesson in one go (as below, by the same rules, each grade kept in the lesson the word comes from), and **All the words**, the Words list of all the lessons together. The lessons themselves are still in the sidebar, where any of them opens as before. Books stay out of it while the Library is off.
 
 **Watch (try-out).** In a lesson with a video, a third round button (a little screen, above the Podcast one) opens Watch, laid out like Language Reactor over the whole screen, dark, with nothing else around: the video large, under it the line being said in big writing (with its pinyin for Chinese and its translation when the lesson has one), a bar of switches, and beside it (under it on a phone) every line of the video with its time, the one being said lit and kept in the middle as the video plays; a click or tap on a line plays the video from there. The bar: ‹ ↻ › (previous line, this line again, next line; also ←, R and →), Aa (the sentence), Pīn (pinyin, Chinese only), 文A (the translation) and ☰ (the list), each on or off and remembered, ⏸ (stop at the end of each line; Space then goes on with the next) and the speed (0.75×, 1× or 1.25×); Space plays or pauses, Esc or ✕ closes it. Words you have are coloured as everywhere. It is for watching and reading; studying stays in Listening, Speaking and Podcast. On a phone it stacks: the video, the line, the bar (scrolling sideways) and the list.
 
