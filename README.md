@@ -14,7 +14,7 @@ There is no Lessons side and Vocabulary side to switch between any more: the sid
 - **字 Study the words**, right inside the lesson, in any lesson that has words: in a lesson from YouTube it is Podcast (the words by ear, from the video's own sound); in a lesson you made yourself (Speaking, or words you typed or looked up) it is the flashcards, of that lesson's words, and the flag above them leads back to the lesson.
 - **📺 Watch**: the video with all its lines (in a lesson with a video).
 
-The whole app keeps one colour, its blue: nothing turns green for words any more, in a lesson of words, a task or anywhere else (where an older line below still speaks of Vocabulary's green, it is now that same blue). The list itself (☰ Full) is where you read, look up and edit. The 字 beside the app's name leads back to Today. Today, its tasks, the daily limits and everything you have studied stay as they were.
+The whole app keeps one colour, its blue: nothing turns green for words any more, in a lesson of words, a task or anywhere else (where an older line below still speaks of Vocabulary's green, it is now that same blue). The list itself (☰ Full) is where you read, look up and edit. In a lesson from YouTube on a wide screen (1100 px or more) it is laid out like a YouTube page, without going into focus mode: the lines in a column of their own on the left, as tall as the screen and scrolling on their own, and on the right the lesson's name, its link, the video large and its bar with the buttons under it; on a narrower screen and on a phone everything stays one column. The 字 beside the app's name leads back to Today. Today, its tasks, the daily limits and everything you have studied stay as they were.
 
 ## Search or Ask
 
