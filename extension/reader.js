@@ -113,7 +113,7 @@ textarea[hidden], .sent-view[hidden]{display:none;}
   };
 
   const hlStyle = document.createElement("style");
-  hlStyle.textContent = "wkp-hl{all:unset;display:inline;cursor:help;color:#2fbf71 !important;}wkp-hl[data-state=pending]{color:#9b86e8 !important;}";
+  hlStyle.textContent = "wkp-hl{all:unset;display:inline;cursor:help;color:#1e9466 !important;}wkp-hl[data-state=pending]{color:#8a919e !important;}";
 
   function rebuildKnown() {
     known = new Map();
