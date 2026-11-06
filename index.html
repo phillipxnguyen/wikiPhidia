@@ -2449,6 +2449,23 @@ window.onYouTubeIframeAPIReady = function(){
   .playing .b2-sclock i{animation:b2Spin 6s linear infinite;}
   .b2-radio{position:relative;}
   .b2-radio::before{content:"";position:absolute;right:40px;bottom:100%;width:4px;height:56px;border-radius:2px;background:#c49a6c;transform-origin:50% 100%;transform:rotate(20deg);}
+  .b2-choices{display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:12px;width:100%;}
+  .b2-choice{display:flex;align-items:center;gap:12px;min-height:56px;box-sizing:border-box;padding:8px 16px;border:0;border-radius:16px;background:color-mix(in srgb, var(--b2-ink) 12%, transparent);color:var(--b2-ink);font-size:20px;line-height:28px;font-weight:700;text-align:left;cursor:pointer;transition:background-color .2s, opacity .2s;}
+  .b2-choice i{flex:none;width:28px;height:28px;border-radius:14px;background:color-mix(in srgb, var(--b2-ink) 18%, transparent);font-style:normal;font-size:14px;line-height:28px;text-align:center;}
+  .b2-choice.right{background:#2f9e6b;color:#fff;}
+  .b2-choice.wrong{background:#e5484d;color:#fff;}
+  .b2-choice.off{opacity:.4;}
+  .b2-choice:disabled{cursor:default;}
+  @media (hover:hover){.b2-choice:not(:disabled):hover{background:color-mix(in srgb, var(--b2-ink) 20%, transparent);}}
+  .b2-clozebox{display:flex;flex-direction:column;align-items:center;gap:16px;width:100%;}
+  .b2-cloze{margin:0;font-size:22px;line-height:36px;text-align:center;}
+  .b2-cloze mark{padding:0 2px;border-radius:4px;background:var(--b2-hi);color:var(--b2-on-hi);}
+  .b2-blank{display:inline-block;width:64px;height:28px;margin:0 4px;vertical-align:-6px;border-bottom:3px solid var(--b2-hi);}
+  .b2-input{width:240px;max-width:100%;height:48px;box-sizing:border-box;padding:0 16px;border:0;border-radius:24px;background:color-mix(in srgb, var(--b2-ink) 12%, transparent);color:var(--b2-ink);font-size:20px;line-height:24px;font-weight:700;text-align:center;outline:none;box-shadow:inset 0 0 0 2px color-mix(in srgb, var(--b2-hi) 60%, transparent);}
+  .b2-typed{font-size:20px;line-height:28px;font-weight:800;}
+  .b2-typed.right{color:#2f9e6b;}
+  .b2-typed.wrong{color:#e5484d;}
+  @media (max-width:600px){.b2-choices{grid-template-columns:minmax(0, 1fr);}}
   @media (prefers-reduced-motion: reduce){.blind2 *{animation:none !important;}}
   #wordPop{padding:32px;}
   .word-box{--wp:16px;--fs:19px;--lh:30px;--dp:16px;width:100%;max-width:1400px;height:100%;max-height:none;padding:var(--wp);gap:0;overflow:hidden;}
@@ -3172,11 +3189,65 @@ function blindNext() {
   b.at = 0;
   if (!item) return paintBlind();
   b.lines = blindLines(item);
+  blindPickKind(list);
   const names = BLIND_SCENES.filter(n => n !== b.scene);
   b.scene = names[Math.floor(Math.random() * names.length)];
   b.rate = [ .9, 1, 1.1 ][Math.floor(Math.random() * 3)];
   paintBlind();
   blindPlay();
+}
+
+function blindPickKind(list) {
+  const b = blind, item = b.item;
+  const others = [ ...new Set(list.map(i => i.term).concat(blindAutoItems().map(i => i.term))) ].filter(t => normalizeVocabText(t) !== normalizeVocabText(item.term) && t.length <= Math.max(12, item.term.length * 2));
+  const clozeLine = b.lines.find(l => l.row && findTermIn(l.text, item.term));
+  const kinds = [ "blind" ];
+  if (others.length >= 3) kinds.push("choice");
+  if (clozeLine && item.term.length <= 24) kinds.push("cloze");
+  const pool = kinds.length > 1 ? kinds.filter(k => k !== b.kind) : kinds;
+  b.kind = pool[Math.floor(Math.random() * pool.length)];
+  b.picked = null;
+  b.typed = null;
+  b.options = b.kind === "choice" ? blindShuffle([ item.term ].concat(blindShuffle(others).slice(0, 3))) : [];
+  b.cloze = b.kind === "cloze" ? clozeLine : null;
+}
+
+function blindPick(i) {
+  const b = blind;
+  if (!b || b.kind !== "choice" || b.shown || !b.options[i]) return;
+  b.picked = i;
+  b.shown = true;
+  paintBlind();
+}
+
+function blindCheck() {
+  const b = blind, input = document.querySelector("#blind2 .b2-input");
+  if (!b || b.kind !== "cloze" || b.shown || !input) return;
+  b.typed = input.value.trim();
+  b.shown = true;
+  paintBlind();
+}
+
+function blindRight() {
+  const b = blind;
+  if (b.kind === "choice") return b.picked !== null && b.options[b.picked] === b.item.term;
+  if (b.kind === "cloze") return !!b.typed && normalizeVocabText(b.typed) === normalizeVocabText(b.item.term);
+  return null;
+}
+
+function blindTask() {
+  const b = blind, item = b.item;
+  if (b.kind === "choice") return '<div class="b2-choices">' + b.options.map((t, i) => {
+    const cls = !b.shown ? "" : t === item.term ? " right" : i === b.picked ? " wrong" : " off";
+    return `<button type="button" class="b2-choice${cls}" data-b2="pick" data-i="${i}"${b.shown ? " disabled" : ""}><i>${i + 1}</i>${escapeHtml(t)}</button>`;
+  }).join("") + "</div>";
+  if (b.kind === "cloze") {
+    const span = findTermIn(b.cloze.text, item.term), t = b.cloze.text;
+    const blank = b.shown ? `<mark>${escapeHtml(t.slice(span[0], span[1]))}</mark>` : '<span class="b2-blank"></span>';
+    const typed = b.shown ? `<div class="b2-typed ${blindRight() ? "right" : "wrong"}">${blindRight() ? "✓" : "✗"} ${escapeHtml(b.typed || "—")}</div>` : '<input class="b2-input" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="The missing word">';
+    return `<div class="b2-clozebox"><p class="b2-cloze">${escapeHtml(t.slice(0, span[0]))}${blank}${escapeHtml(t.slice(span[1]))}</p>${typed}</div>`;
+  }
+  return "";
 }
 
 function blindStop() {
@@ -3365,6 +3436,7 @@ function blindUndo(isRedo) {
   b.shown = false;
   b.at = 0;
   b.lines = blindLines(item);
+  blindPickKind(blindItems());
   paintBlind();
   blindPlay();
 }
@@ -3413,9 +3485,12 @@ function paintBlind() {
   box.className = "blind2 scene-" + b.scene + (b.shown ? " shown" : "");
   const dots = b.lines.map((l, i) => `<i data-n="${i}"></i>`).join("");
   const reveal = b.shown ? `<div class="b2-reveal"><b class="b2-term">${escapeHtml(item.term)}</b><span class="b2-meaning">${escapeHtml(item.meaning || "")}</span><ol class="b2-lines">${b.lines.filter(l => l.row).map(l => `<li>${blindMarked(l.text, item.term)}</li>`).join("")}</ol></div>` : "";
-  const acts = b.shown ? '<button class="b2-btn again" data-b2="again">Again</button><button class="b2-btn good" data-b2="good">Good</button>' : '<button class="b2-btn" data-b2="replay">↻ Replay</button><button class="b2-btn primary" data-b2="show">Show</button>';
-  box.innerHTML = `<div class="b2-stage"><div class="b2-head"><button class="b2-close" data-b2="close" aria-label="Close" title="Close (Esc)">✕</button></div><div class="b2-art">${blindArt(b.scene)}</div><div class="b2-dots">${dots}</div><div class="b2-time"><i></i></div>${reveal}<div class="b2-acts">${acts}</div></div>`;
+  const main = b.kind === "cloze" ? '<button class="b2-btn primary" data-b2="check">Check</button>' : '<button class="b2-btn primary" data-b2="show">Show</button>';
+  const acts = b.shown ? '<button class="b2-btn again" data-b2="again">Again</button><button class="b2-btn good" data-b2="good">Good</button>' : '<button class="b2-btn" data-b2="replay">↻ Replay</button>' + main;
+  box.innerHTML = `<div class="b2-stage"><div class="b2-head"><button class="b2-close" data-b2="close" aria-label="Close" title="Close (Esc)">✕</button></div><div class="b2-art">${blindArt(b.scene)}</div><div class="b2-dots">${dots}</div><div class="b2-time"><i></i></div>${blindTask()}${reveal}<div class="b2-acts">${acts}</div></div>`;
   paintBlindLive();
+  const input = box.querySelector(".b2-input");
+  if (input && !isTouch()) input.focus();
 }
 
 function blindTime(f) {
@@ -3598,6 +3673,8 @@ document.getElementById("blind2").addEventListener("click", e => {
   const btn = e.target.closest("[data-b2]");
   if (!btn) return;
   const act = btn.dataset.b2;
+  if (act === "pick") return blindPick(Number(btn.dataset.i));
+  if (act === "check") return blindCheck();
   if (act === "close") closeBlind(); else if (act === "show") blindShow(); else if (act === "replay") blindPlay(); else if (act === "again") blindGrade(true); else if (act === "good") blindGrade(false);
 });
 
@@ -3610,9 +3687,19 @@ window.addEventListener("keydown", e => {
   }
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   e.stopImmediatePropagation();
+  if (e.target.closest && e.target.closest(".b2-input")) {
+    if (e.key === "Enter" && !e.isComposing) {
+      e.preventDefault();
+      blindCheck();
+    } else if (e.key === "Escape") e.target.blur();
+    return;
+  }
   if (e.repeat) return;
   const k = e.key;
-  if (e.code === "KeyE") {
+  if (blind.kind === "choice" && !blind.shown && /^[1-4]$/.test(k)) {
+    e.preventDefault();
+    blindPick(Number(k) - 1);
+  } else if (e.code === "KeyE") {
     e.preventDefault();
     blindEdit();
   } else if (k === "Escape") {
@@ -3620,7 +3707,7 @@ window.addEventListener("keydown", e => {
     closeBlind();
   } else if (k === " " || k === "Enter") {
     e.preventDefault();
-    if (blind.item && !blind.shown) blindShow(); else if (blind.item) blindPlay(); else closeBlind();
+    if (blind.item && !blind.shown) blind.kind === "cloze" ? blindCheck() : blindShow(); else if (blind.item) blindPlay(); else closeBlind();
   } else if (k === "ArrowLeft" || k === "ArrowRight") {
     e.preventDefault();
     blindGrade(k === "ArrowLeft");
@@ -19958,7 +20045,7 @@ function syncVocabToggle() {
   document.getElementById("vocabFlag").classList.toggle("flag-back", vocabView !== "list" && !document.getElementById("vocabToolbar").classList.contains("study-only"));
 }
 
-document.getElementById("vocabViewToggle").onclick = () => setVocabView("card");
+document.getElementById("vocabViewToggle").onclick = () => blindCanOpen() ? openBlind() : setVocabView("card");
 document.getElementById("vocabFlag").onclick = e => e.currentTarget.classList.contains("flag-back") && setVocabView("list");
 document.getElementById("vocabFlag").onkeydown = e => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), e.stopPropagation(), e.currentTarget.click());
 
