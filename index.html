@@ -3311,8 +3311,8 @@ async function blindPlayLine(line, token) {
       } catch (e) {
         return blindSpeak(line.text, token);
       }
-      const limit = performance.now() + (line.clip.end - line.clip.start + 10) * 1000, settle = performance.now() + 3000;
-      let seeked = false;
+      const limit = performance.now() + (line.clip.end - line.clip.start + 10) * 1000;
+      let armed = false, kick = performance.now() + 600;
       blindTime(0);
       await new Promise(resolve => {
         const tick = () => {
@@ -3321,12 +3321,21 @@ async function blindPlayLine(line, token) {
           try {
             t = p.getCurrentTime();
           } catch (e) {}
-          if (!seeked && (t < line.clip.start - 1 || t > line.clip.end + 1) && performance.now() < settle) {
+          if (!armed && !clipArm(t, line.clip.start, line.clip.end) && performance.now() < limit) {
             blindTime(0);
+            if (performance.now() > kick) {
+              kick = performance.now() + 600;
+              try {
+                if (p.getPlayerState() !== YT.PlayerState.BUFFERING) {
+                  p.seekTo(line.clip.start, true);
+                  p.playVideo();
+                }
+              } catch (e) {}
+            }
             b.timer = setTimeout(tick, 100);
             return;
           }
-          seeked = true;
+          armed = true;
           blindTime((t - line.clip.start) / (line.clip.end - line.clip.start || 1));
           if (t >= line.clip.end || performance.now() > limit) {
             try {
@@ -3717,10 +3726,15 @@ function watchTime() {
 function watchTick() {
   if (!watch) return;
   const t = watchTime(), L = watch.lines;
+  if (watch.arm) {
+    if (!clipArm(t, watch.arm.start, watch.arm.end) && performance.now() < watch.arm.until) return;
+    watch.arm = null;
+  }
   let i = 0;
   for (let k = 0; k < L.length; k++) if (L[k].time <= t + .15) i = k; else break;
   if (i > watch.at && watch.repLeft > 0 && L[watch.at]) {
     watch.repLeft--;
+    watchArm(watch.at);
     try {
       watch.player.seekTo(L[watch.at].time, true);
     } catch (e) {}
@@ -3751,10 +3765,22 @@ function watchSeek(i) {
   watch.pausedAt = -1;
   watch.repLeft = (watch.prefs.rep || 1) - 1;
   paintWatchLine(true);
+  watchArm(i);
   try {
     watch.player.seekTo(watch.lines[i].time, true);
     watch.player.playVideo();
   } catch (e) {}
+}
+
+function watchArm(i) {
+  const L = watch.lines, next = L[i + 1];
+  watch.arm = {
+    start: L[i].time,
+    end: next ? next.time : L[i].time + 8,
+    until: performance.now() + 3000
+  };
+  const ring = document.querySelector("#watchPop .w-row.on .w-ring path");
+  if (ring) setDash(ring, 0);
 }
 
 function watchToggle() {
@@ -6126,11 +6152,15 @@ function watchStall() {
   }, 600);
 }
 
+function clipArm(t, start, end) {
+  return typeof t === "number" && !isNaN(t) && t >= start - 1 && t < end;
+}
+
 function segmentReached(start, end, jump) {
   const t = ytPlayer.getCurrentTime();
   if (typeof t !== "number" || isNaN(t)) return false;
   if (!segmentArmed) {
-    if (t >= start - 1 && t < end) segmentArmed = true;
+    if (clipArm(t, start, end)) segmentArmed = true;
     return false;
   }
   if (jump && t >= end - .12 * sequenceSpeed && ytVolume === 100) fadeVolume(0, 100);
