@@ -2913,9 +2913,22 @@ function blindShuffle(list) {
   return a;
 }
 
+function blindAutoItems() {
+  wordSeg = wordSegmenter();
+  const have = new Set(lessonVocabItems(vocabSource()).map(i => normalizeVocabText(i.term))), states = wordStates();
+  const lines = rows.filter(r => r.uid !== EXTRA_UID && (r.q || "").trim()).length, common = Math.max(5, Math.round(lines / 4));
+  return lessonWords().filter(w => w.rows.length && w.rows.length <= common && !(/^[a-z]{1,2}$/i.test(w.w)) && !have.has(w.w) && (states.get(w.w) || {}).v !== 2).map(w => ({
+    card: w.rows[0],
+    key: "w:" + w.w,
+    term: w.text,
+    meaning: (states.get(w.w) || {}).meaning || ""
+  }));
+}
+
 function blindItems() {
   const now = Date.now();
-  return orderStudy(limitVocab(lessonVocabItems(vocabSource()).filter(i => !vocabViewOnly(i) && vocabStateOf(i).due <= now)), i => !vocabStateOf(i).reps);
+  const all = lessonVocabItems(vocabSource()).filter(i => !vocabViewOnly(i)).concat(blindAutoItems());
+  return orderStudy(limitVocab(all.filter(i => vocabStateOf(i).due <= now)), i => !vocabStateOf(i).reps);
 }
 
 function blindLines(item) {
@@ -2943,7 +2956,8 @@ function blindLines(item) {
 }
 
 function blindCanOpen() {
-  return !!currentLessonId && !isVirtualLesson() && lessonVocabItems(vocabSource()).some(i => !vocabViewOnly(i));
+  const l = currentLessonId && library.find(x => x.id === currentLessonId);
+  return !!currentLessonId && !isVirtualLesson() && !(l && l.book && !(taskRun && taskRun.book)) && rows.some(r => r.uid !== EXTRA_UID && (r.q || "").trim());
 }
 
 function openBlind() {
@@ -7353,8 +7367,9 @@ function renderStudy() {
   const table = document.getElementById("cardTable");
   const panel = document.getElementById("sessionCompletePanel");
   document.getElementById("listAddCard").hidden = !!groupState || isVirtualLesson() || !rows.length;
+  document.getElementById("listBlind").hidden = !blindCanOpen();
   document.getElementById("listWords").hidden = document.getElementById("listAddCard").hidden;
-  document.getElementById("listBlind").hidden = document.getElementById("listWords").hidden || !blindCanOpen();
+
   if (leaveEmptiedLesson("study", rows.length)) return;
   if (rows.length === 0 || quickAddInline()) {
     document.getElementById("viewStudy").classList.remove("focus-study");
@@ -19949,7 +19964,7 @@ function todayTasks() {
     const p = plan.lessons[l.id];
     return !p || p.extra ? 9 : p.carry || p.overdue ? 0 : p.due ? 1 : 2;
   };
-  library.filter(l => !isVirtualId(l.id)).sort((a, b) => rank(a) - rank(b)).forEach(l => {
+  library.filter(l => !isVirtualId(l.id) && !l.book).sort((a, b) => rank(a) - rank(b)).forEach(l => {
     const key = "l:" + l.id;
     const p = plan.lessons[l.id];
     const left = leftBoth(l);
@@ -20025,7 +20040,7 @@ const MIN_NEW = .5, MIN_DUE = .25;
 
 function libraryLangs() {
   const cache = new Map, count = new Map;
-  library.filter(l => !isVirtualId(l.id)).forEach(l => {
+  library.filter(l => !isVirtualId(l.id) && !l.book).forEach(l => {
     const lang = todayLangOf(l.id, cache);
     if (LANG_NAMES[lang]) count.set(lang, (count.get(lang) || 0) + l.cards.length + 1);
   });
@@ -20044,7 +20059,7 @@ function dueForecast(n) {
     const k = Math.floor((Math.max(st.due || 0, start) - start) / 864e5);
     if (k < n) out[k]++;
   };
-  library.filter(l => !isVirtualId(l.id)).forEach(l => {
+  library.filter(l => !isVirtualId(l.id) && !l.book).forEach(l => {
     const mode = countMode(l.cards);
     l.cards.forEach(c => cardInMode(c, mode) && add(srsOf(c)));
     lessonVocabItems(lessonCardsWithExtras(l)).forEach(i => !vocabViewOnly(i) && add(vocabStateOf(i)));
@@ -20148,7 +20163,7 @@ function buildPlan() {
     const lang = todayLangOf(l.id, cache);
     return langs.length > 0 && (!lang || langs.some(x => x.split("-")[0] === lang.split("-")[0]));
   };
-  library.filter(l => !isVirtualId(l.id) && inLangs(l)).forEach(l => {
+  library.filter(l => !isVirtualId(l.id) && !l.book && inLangs(l)).forEach(l => {
     const kind = lessonSkill(l);
     const lc = P[kind].on ? leftToday(l, "cards") : NO_LEFT, lv = P.vocab.on ? leftToday(l, "vocab") : NO_LEFT;
     const fresh = lc.fresh + lv.fresh, due = lc.due + lv.due;
@@ -20334,7 +20349,7 @@ function lessonNameOf(id) {
 
 function dueByDay(endKey) {
   const start = todayStart(), out = new Map, end = keyDate(endKey).getTime();
-  library.filter(l => !isVirtualId(l.id)).forEach(l => {
+  library.filter(l => !isVirtualId(l.id) && !l.book).forEach(l => {
     const mode = countMode(l.cards);
     const add = st => {
       if (!st || !st.reps || (st.due || 0) >= end) return;
@@ -20623,7 +20638,7 @@ function renderToday() {
   box.innerHTML = (main.length ? "" : planLangs().length ? '<p class="today-empty">Nothing to study today. Add a task of your own below.</p>' : '<p class="today-empty">No language picked: light a flag above to plan your lessons. Your own tasks still go here.</p>') + main.map(todayTaskHtml).join("") + extraHtml;
   const pick = document.getElementById("todayAddLesson");
   const was = pick.value;
-  pick.innerHTML = '<option value="">No lesson</option>' + sortedLibrary().filter(l => !isVirtualId(l.id)).map(l => `<option value="${escapeAttr(l.id)}">${escapeHtml(l.name || "Untitled lesson")}</option>`).join("");
+  pick.innerHTML = '<option value="">No lesson</option>' + sortedLibrary().filter(l => !isVirtualId(l.id) && !l.book).map(l => `<option value="${escapeAttr(l.id)}">${escapeHtml(l.name || "Untitled lesson")}</option>`).join("");
   pick.value = was;
   syncTodayAddLesson();
 }
@@ -26172,7 +26187,7 @@ function openAllLessons(only) {
   discardIfEmptyDraft();
   flushAutoSave();
   const picks = [];
-  library.filter(l => only.ids.has(l.id)).forEach(l => l.cards.forEach(c => picks.push({
+  library.filter(l => only.ids.has(l.id) && (!l.book || taskRun && taskRun.book)).forEach(l => l.cards.forEach(c => picks.push({
     card: c,
     lesson: l
   })));
@@ -26199,7 +26214,7 @@ function openAllVocabulary(only) {
   discardIfEmptyDraft();
   flushAutoSave();
   const picks = [];
-  sortedLibrary().filter(l => only.ids.has(l.id)).forEach(l => lessonCardsWithExtras(l).forEach(c => {
+  sortedLibrary().filter(l => only.ids.has(l.id) && (!l.book || taskRun && taskRun.book)).forEach(l => lessonCardsWithExtras(l).forEach(c => {
     if (vocabEntriesOf(c).length) picks.push({
       card: c,
       lesson: l
@@ -26674,7 +26689,7 @@ function spotResults(raw) {
   const take = (list, n) => list.filter(x => x.score > 0).sort((a, b) => b.score - a.score).slice(0, n);
   if (q) {
     const words = [], cards = [], lessons = [], seen = new Set;
-    library.filter(l => !isVirtualId(l.id)).forEach(l => {
+    library.filter(l => !isVirtualId(l.id) && !l.book).forEach(l => {
       lessons.push({ kind: "lesson", lesson: l, score: spotScore(q, l.name || "") });
       lessonVocabItems(lessonCardsWithExtras(l)).forEach(item => {
         const id = l.id + "|" + item.key;
