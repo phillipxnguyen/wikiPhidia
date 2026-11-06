@@ -144,6 +144,7 @@ Hàm chính: `studyingNow`, `placeStudyClock`, `STUDY_TIME_KEY`, `#focusClock`.
 | MOVE-3 | `0cb743b` | Dấu đặc, phủ màu, dừng một chút trước khi bay |
 | MOVE-4 | `71aff22` | Nhát chém dày, viền đỏ, chậm hơn |
 | MOVE-5 | `f4c55cc` | Good/Again nhanh hơn |
+| MOVE-6 | `7ea384e` | Good/Again/Delete nhanh hơn nữa (khoảng 0,35 giây; Delete dưới 1 giây) |
 
 Hàm chính: `swipe`, `ghostFor`, `angelFly`, `cutLayer`, `playCut`.
 
