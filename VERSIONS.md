@@ -1,0 +1,176 @@
+# Mục lục phiên bản
+
+Mỗi phần của app có một **mã**. Mỗi phiên bản của phần đó có mã riêng, gắn với một commit trong lịch sử git; code của phiên bản ấy nằm nguyên trong commit đó. Muốn lấy lại phiên bản nào thì gọi mã của nó, ví dụ: "lấy lại FLASH-1", "dùng POD-5 nhưng giữ phím của POD-9", "so sánh THEATER-4 với THEATER-12".
+
+- **V1** = `961cf80` (5/11): bản cuối cùng **trước 2.0**. Mọi mã có đuôi `-1` là phần đó ở V1, trừ những phần chỉ có từ 2.0 trở đi (Podcast, theater, focus, đồng hồ, hiệu ứng toàn màn hình): với các phần này, `-1` là bản đầu tiên của chúng.
+- **Hiện tại** = commit mới nhất trên `main`.
+
+Cột "Hàm chính" là tên hàm hoặc hằng trong `index.html`. Tên không đổi giữa các phiên bản, trừ khi có ghi chú.
+
+---
+
+## Học câu (Lessons)
+
+### LISTEN: Listening (thẻ nghe câu video)
+| Mã | Commit | Là gì |
+|---|---|---|
+| LISTEN-1 | `961cf80` | Bản V1: thẻ nghe, phát clip, Show, Again/Good, list transcript và popup chi tiết |
+| LISTEN-2 | `901658b` | Bỏ nút vào mode; câu video không còn tính New/Due |
+| LISTEN-3 | `fc25c6d` | Câu video tính lại New/Due/Done (học ở theater); thẻ cũ chỉ còn trong task |
+
+Hàm chính: `isListenMode`, `listenBatch`, `startSequenceLoop`, `stopSequenceLoop`, `startLoop`, `toggleLoopForRow`, `segmentReached`, `seamTo`, `render`, `gradeCard`, `applyGrade`, `cardInMode`, `modeScopeRows`, `lessonStudyMode`.
+
+### SPEAK: Speaking (tờ đề)
+| Mã | Commit | Là gì |
+|---|---|---|
+| SPEAK-1 | `961cf80` | Tờ đề có gáy và dòng kẻ, Hint rồi Show |
+| SPEAK-2 | `407f09e` | Trong focus: tờ mờ kính, không gáy, không dòng kẻ |
+
+Hàm chính: `ieltsHints`, `ieltsHintNext`, `revealAction`, `render` (nhánh `groupViewStyle === "ielts"`).
+
+### FULL: ☰ Full / ☰ List (danh sách thẻ)
+| Mã | Commit | Là gì |
+|---|---|---|
+| FULL-1 | `961cf80` | Danh sách thẻ, sửa trong popup, vuốt xoá có bóng thiên thần |
+
+Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `selectRow`, `clearRowSelection`, `updateSelBar`.
+
+### THEATER: Màn hình YouTube
+| Mã | Commit | Là gì |
+|---|---|---|
+| THEATER-1 | `519f494` | Bản thử kiểu Language Reactor: dòng dưới video, thanh công tắc |
+| THEATER-2 | `c029ea3` | Bố cục như trang YouTube: list bên trái, video bên phải |
+| THEATER-3 | `8ca564e` | Sân khấu pixel-art |
+| THEATER-4 | `919c4b2` | Sân khấu kiểu thường: phong cảnh dịu, khung mờ kính |
+| THEATER-5 | `798a262` | Thanh chỉ có icon; A S D; dải tốc độ đầy đủ; vòng trên mốc thời gian |
+| THEATER-6 | `391466a` | Sửa trong popup, pinyin từng chữ, hover từ, ✎ mỗi dòng, blur, lặp 1/2/3 |
+| THEATER-7 | `8aeddd0` | Nút dịch chỉ khi có bản dịch; Loop bật/tắt; thẻ hover nhỏ |
+| THEATER-8 | `ec87315` | Đủ rule mode học: lookup, E/Delete/W/⌘C, chọn câu trên điện thoại |
+| THEATER-9 | `931a9a1` | Chỉ để xem: không toolbar, thanh phụ đề kéo được, AP |
+| THEATER-10 | `d7529d5` | Phụ đề kiểu LR: không nền; ‹ ↻ › bên trái; AP và ↕ bên phải |
+| THEATER-11 | `fc25c6d` | Có lại thanh học: New/Due/Done, Again/Good |
+| THEATER-12 | `6c036a1` | List là bài học: chỉ câu cần học, chấm xong bay ra |
+| THEATER-13 | `a577e49` | Che giao diện YouTube, nền phụ đề, Loop/Blur, Enter chấm, undo về chỗ cũ |
+| THEATER-14 | `231e50f` | Mỗi câu là thẻ (lookup, E/Delete/⌘C, Shift); điện thoại chấm bằng thanh đáy |
+
+Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchArm`, `watchGrade`, `watchToggle`, `watchRuby`, `watchLineHtml`, `watchTranslation`, `placeWatchCap`, `watchPrefs`, `theaterScene`, `THEATER_SCENES`.
+
+---
+
+## Học từ (Vocabulary)
+
+### FLASH: Flashcard
+| Mã | Commit | Là gì |
+|---|---|---|
+| FLASH-1 | `961cf80` | Thẻ lật 3D hai mặt (V1) |
+| FLASH-2 | `16a2b79` | Không khung, không lật; 15 kiểu trình bày có chữ trang trí (báo, note, chat…) |
+| FLASH-3 | `149e839` | Chữ to hơn; nút ở đáy màn hình cả trên máy tính |
+| FLASH-4 | `e229a04` | Không chữ trang trí; mặt trước là đồ vật vẽ (biển, cốc, bóng bay…); font ngẫu nhiên khoảng 55 kiểu |
+| FLASH-5 | `71aff22` | Chỉ font dễ đọc; font riêng cho chữ Latin và chữ châu Á |
+
+Hàm chính: `buildVocabCard`, `fillVocabCard`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
+
+### POD: Podcast (nghe từ)
+| Mã | Commit | Là gì |
+|---|---|---|
+| POD-1 | `bb624f3` | "Listen blind": nghe mù các câu của từ, mỗi lần một cảnh |
+| POD-2 | `226deff` | Tên Podcast, 16 cảnh |
+| POD-3 | `c4a564e` | Vuốt và phím mũi tên để chấm, undo/redo, E sửa, thanh thời gian |
+| POD-4 | `2d9fe9f` | Dùng nút học chung: undo, redo, ▶/■, Show, Again/Good |
+| POD-5 | `7b9b5c1` | Trang 3 phần: ✕ trên, nút cố định dưới, cảnh và đáp án ở giữa |
+| POD-6 | `5960a85` | Mặt trước và mặt sau như nhau (chỗ đáp án giữ sẵn), không chuyển động khi Show |
+| POD-7 | `ec87315` | Đủ rule: lookup, Delete/W/⌘C, Shift thêm từ, thanh chọn trên điện thoại |
+| POD-8 | `21fa119` | Mặt trước chỉ có cảnh (to); mặt sau chỉ có chữ (to); tiến độ thành vòng trên nút âm thanh |
+| POD-9 | `ea6c79f` | New/Due/Done trên đỉnh; nguyên câu YouTube; giãn khoảng cách |
+| POD-10 | `d9ce2a9` | Mặt sau giống flashcard: 28px, highlight vàng, mốc thời gian mỗi câu |
+| POD-11 | `0cb743b` | Từ và nghĩa cùng một dòng; mỗi câu một khối có nền |
+| POD-12 | `b59ff4f` | Từ to và nghĩa to; câu không nền; highlight màu cảnh, căn khít chữ |
+
+Hàm chính: `openBlind`, `closeBlind`, `blindItems`, `blindAutoItems`, `blindLines`, `blindNext`, `paintBlind`, `paintBlindLive`, `blindPlay`, `blindPlayOne`, `blindPlayLine`, `blindPlayer`, `blindSpeak`, `blindGrade`, `blindUndo`, `blindEdit`, `blindAct`, `blindFly`, `blindArt`, `blindSceneFor`, `blindCountsHtml`, `blindTime`, `BLIND_SCENES`.
+
+### WORDS: Words list (từ theo tần suất)
+| Mã | Commit | Là gì |
+|---|---|---|
+| WORDS-1 | `961cf80` | Cửa sổ Words: dải tần suất, câu của từ, xoá/ẩn từ, bóng thiên thần |
+
+Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `wordFly`.
+
+---
+
+## Chung
+
+### TODAY: Today và task
+| Mã | Commit | Là gì |
+|---|---|---|
+| TODAY-1 | `961cf80` | Task mỗi bài, khoá, tiên bay tới ô tick (V1) |
+| TODAY-2 | `83c560f` | Từ trong task học bằng Podcast |
+| TODAY-3 | `e981763` | Trong focus: không khung, không thanh tên task |
+
+Hàm chính: `todayTasks`, `todayTaskCounts`, `taskQueue`, `startTaskSide`, `taskAdvance`, `leftToday`, `limitStudy`, `limitRows`.
+
+### LAYOUT: Sidebar và cách mở bài
+| Mã | Commit | Là gì |
+|---|---|---|
+| LAYOUT-1 | `961cf80` | Hai bên Lessons / Vocabulary riêng, màu xanh dương và xanh lá (V1) |
+| LAYOUT-2 | `ba6d9ec` | "One way to study": một sidebar, mỗi bài mở theo cách học của nó |
+| LAYOUT-3 | `df9253c` | Bỏ Word bank, sidebar một list |
+| LAYOUT-4 | `f5796be` | Một màu ở mọi nơi |
+
+Hàm chính: `switchToLesson`, `setAppMode`, `syncModeButtonHighlights`, `openWordCards`, `bookHidden`.
+
+### FOCUS: Chế độ focus (toàn màn hình khi học)
+| Mã | Commit | Là gì |
+|---|---|---|
+| FOCUS-1 | `db44c63` | Ẩn sidebar, cảnh dịu đổi mỗi lần chấm |
+| FOCUS-2 | `970a1f2` | Khung ôm nội dung, nằm giữa màn hình |
+| FOCUS-3 | `e981763` | Một ✕ chung ở góc phải trên; thanh công cụ ở mép trên |
+| FOCUS-4 | `16a2b79` | 18 cảnh, không cảnh tím |
+
+Hàm chính: `syncFocus`, `pickFocusScene`, `FOCUS_SCENES`, nút `#focusExit`.
+
+### CLOCK: Đồng hồ học
+| Mã | Commit | Là gì |
+|---|---|---|
+| CLOCK-1 | `06f8d2c` | Đồng hồ chỉ chạy khi học, lưu theo ngày |
+| CLOCK-2 | `4d8c3a8` | Một đồng hồ mờ kính nổi, kéo đi được, nhớ chỗ |
+
+Hàm chính: `studyingNow`, `placeStudyClock`, `STUDY_TIME_KEY`, `#focusClock`.
+
+### MOVE: Hiệu ứng chấm và xoá
+| Mã | Commit | Là gì |
+|---|---|---|
+| MOVE-1 | `961cf80` | Thẻ bay với nhãn Good/Again; Delete là bóng ✕ có cánh thiên thần bay lên (V1) |
+| MOVE-2 | `21fa119` | Toàn màn hình: hất phải/trái kèm dấu, Delete chém đôi |
+| MOVE-3 | `0cb743b` | Dấu đặc, phủ màu, dừng một chút trước khi bay |
+| MOVE-4 | `71aff22` | Nhát chém dày, viền đỏ, chậm hơn |
+| MOVE-5 | `f4c55cc` | Good/Again nhanh hơn |
+
+Hàm chính: `swipe`, `ghostFor`, `angelFly`, `cutLayer`, `playCut`.
+
+### RING: Vòng âm thanh trên nút
+| Mã | Commit | Là gì |
+|---|---|---|
+| RING-1 | `961cf80` | Vòng rút dần (V1) |
+| RING-2 | `78e6a57` | Vòng đầy dần từ giữa cạnh trên |
+| RING-3 | `47a9a4e` | Rút dần như V1 nhưng trượt mượt |
+| RING-4 | `ea6c79f` | Vòng mới tạo thì đầy ngay, không chạy ngược |
+
+Hàm chính: `paintRing`, `dropRing`, `setDash`.
+
+### LOOKUP: Từ đã có trong câu
+| Mã | Commit | Là gì |
+|---|---|---|
+| LOOKUP-1 | `961cf80` | Tô nền (V1) |
+| LOOKUP-2 | `51f8b07` | Chỉ tô màu chữ: xanh lá cho từ của thẻ khác, tím cho từ của thẻ này |
+| LOOKUP-3 | `16a2b79` | Xanh lá đậm hơn và xanh dương, không tím |
+
+Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
+
+---
+
+## Cách dùng
+
+- **Lấy lại nguyên một phần:** "lấy lại FLASH-1". Tôi lấy đúng các hàm, CSS và HTML của phần đó từ commit tương ứng, ghép vào bản hiện tại, giữ nguyên các phần khác.
+- **Trộn:** "POD-12 nhưng mặt sau như POD-8".
+- **Chỉ xem:** "cho xem THEATER-10". Tôi mô tả lại hoặc chụp ảnh đúng phiên bản đó, không sửa gì.
+- Mỗi lần sửa xong một phần, tôi thêm một dòng mới vào bảng của phần đó, kèm commit, để mã luôn chỉ đúng chỗ.
