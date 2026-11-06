@@ -1121,8 +1121,8 @@ window.onYouTubeIframeAPIReady = function(){
   .exam-sheet .sound-ring{--ring:var(--sheet-edge);}
   .sound-ring path{fill:none;stroke-width:2;}
   .sound-ring .ring-track{stroke:color-mix(in srgb, var(--ring) 38%, #fff);}
-  .sound-ring .ring-run{stroke:var(--ring);stroke-linecap:round;opacity:0;}
-  .sound-ring .ring-run.on{opacity:1;transition:opacity .4s ease;}
+  .sound-ring .ring-run{stroke:var(--ring);stroke-linecap:round;opacity:0;transition:stroke-dasharray .25s linear, stroke-dashoffset .25s linear;}
+  .sound-ring .ring-run.on{opacity:1;transition:opacity .4s ease, stroke-dasharray .25s linear, stroke-dashoffset .25s linear;}
   .sound-wait{animation:zap-jolt .6s steps(1) infinite;}
   @keyframes zap-jolt{0%{transform:translate(1px, 0);}20%{transform:none;}50%{transform:translate(-1px, 0);}70%{transform:none;}}
   .zap{position:absolute;overflow:visible;pointer-events:none;z-index:2;will-change:transform;}
@@ -2245,7 +2245,7 @@ window.onYouTubeIframeAPIReady = function(){
   .w-video .w-cap{position:absolute;left:16px;right:16px;bottom:56px;inset-block-start:auto;width:auto;height:auto;min-height:0;z-index:1;pointer-events:none;background:rgba(0,0,0,.6);}
   .w-t{position:relative;display:inline-flex;align-items:center;justify-content:center;align-self:flex-start;box-sizing:border-box;width:auto;min-width:48px;height:24px;margin-top:1px;padding:0 8px;border-radius:12px;background:rgba(255,255,255,.12);line-height:24px !important;}
   .w-ring{position:absolute;inset:-1px;width:calc(100% + 2px);height:calc(100% + 2px);overflow:visible;pointer-events:none;opacity:0;}
-  .w-ring path{fill:none;stroke:#ffd36e;stroke-width:2;stroke-dasharray:100;stroke-dashoffset:100;transition:stroke-dashoffset .2s linear;}
+  .w-ring path{fill:none;stroke:#ffd36e;stroke-width:2;stroke-dasharray:100 100;stroke-dashoffset:0;transition:stroke-dasharray .25s linear, stroke-dashoffset .25s linear;}
   .w-row.on .w-ring{opacity:1;}
   .w-row.on .w-t{color:#ffd36e;}
   @media (hover:hover){.w-row:hover{background:rgba(255,255,255,.06);}}
@@ -3730,7 +3730,11 @@ function watchTick() {
     paintWatchLine(true);
   }
   const ring = document.querySelector("#watchPop .w-row.on .w-ring path"), next = L[i + 1];
-  if (ring && L[i]) ring.style.strokeDashoffset = String(Math.round(100 - Math.max(0, Math.min(1, (t - L[i].time) / ((next ? next.time : L[i].time + 8) - L[i].time || 1))) * 100));
+  if (ring && L[i]) {
+    const done = Math.round(Math.max(0, Math.min(1, (t - L[i].time) / ((next ? next.time : L[i].time + 8) - L[i].time || 1))) * 100);
+    ring.style.strokeDasharray = `${100 - done} 100`;
+    ring.style.strokeDashoffset = String(-done);
+  }
 }
 
 function watchSeek(i) {
@@ -6262,9 +6266,9 @@ function paintRing(el, p) {
   }
   const done = Math.max(0, Math.min(1, p)) * 100;
   const run = svg.querySelector(".ring-run");
-  run.style.strokeDasharray = `${done.toFixed(2)} 100`;
-  run.style.strokeDashoffset = "0";
-  run.classList.toggle("on", done > 0);
+  run.style.strokeDasharray = `${(100 - done).toFixed(2)} 100`;
+  run.style.strokeDashoffset = (-done).toFixed(2);
+  run.classList.toggle("on", done < 100);
 }
 
 function dropRing(el) {
@@ -6298,7 +6302,7 @@ function soundProgressLoop() {
     }
     const exam = testAudioProgress();
     const all = [];
-    const add = (el, p) => el && all.push([ el, el.classList.contains("sound-wait") ? 0 : p, el.classList.contains("sound-wait") ]);
+    const add = (el, p) => el && all.push([ el, el.classList.contains("sound-wait") ? 1 : p, el.classList.contains("sound-wait") ]);
     document.querySelectorAll(".loop-time[data-id]").forEach(el => add(el, el.classList.contains("looping") && Number(el.dataset.id) === loopingRowId ? video : null));
     [ "btnPlaySequence", "vocabSpeak" ].forEach(id => {
       const el = document.getElementById(id);
