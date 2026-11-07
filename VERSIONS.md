@@ -106,8 +106,9 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 | DATA-1 | `961cf80` | Thẻ có Q và A; thẻ dịch chuyển sang Vocabulary; dán bài tự dịch câu thành từ vựng (V1) |
 | DATA-2 | `c87d38e` | Chỉ học chính ngôn ngữ: A là bản dịch thì vào notes; câu kèm bản dịch giữ làm thẻ câu; bỏ tự dịch câu khi dán |
 | DATA-3 | `28401a5` | Bỏ hẳn code thẻ dịch: câu dán kèm bản dịch vào notes ngay khi tạo; gộp một lần mỗi máy; bỏ gộp khi nạp/lưu, hộp thoại chuyển sang Vocabulary, bộ thẻ dịch |
+| DATA-4 | `876d8af` | Chỉ còn Q và notes: mọi A (cả câu trả lời mẫu Speaking) vào notes, một lần mỗi máy; bỏ ô Answer; mọi mode: mặt trước Q, Show ra notes |
 
-Hàm chính: `newRow` (bản dịch vào notes khi tạo), `foldTranslation` + `FOLDED_KEY` (chỉ chạy một lần mỗi máy, có thể xoá sau), `wordLike`, `belongsInVocab`, `isTranslationCard` (cho dòng `từ: nghĩa`), `autoSortLibrary`.
+Hàm chính: `newRow` (bản dịch vào notes khi tạo), `foldAnswer` + `keepsAnswer` + `FOLDED_KEY` (chỉ chạy một lần mỗi máy, có thể xoá sau), `wordLike`, `belongsInVocab`, `isTranslationCard` (cho dòng `từ: nghĩa`), `autoSortLibrary`.
 
 ### BAR: Thanh công cụ khi học
 | Mã | Commit | Là gì |
