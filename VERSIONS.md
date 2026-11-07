@@ -165,6 +165,7 @@ Hàm chính: `todayTasks`, `todayTaskCounts`, `taskQueue`, `startTaskSide`, `tas
 | LAYOUT-4 | `f5796be` | Một màu ở mọi nơi |
 | LAYOUT-5 | `f42c79a` | Khôi phục hai bên như LAYOUT-1: logo chuyển Lessons / Vocabulary, màu xanh lá, list bài riêng; ☰ flashcard và 🎧 Podcast trong Vocabulary; bỏ nút 字 trong bài và trên theater |
 | LAYOUT-6 | `d0a1d9b` | Nút vào mode thành nút tròn xếp dọc (Speaking, theater, Podcast / flashcard, Podcast), bỏ ☰ trên thanh công cụ |
+| LAYOUT-7 | `dac6f98` | Nút tròn không bao giờ đè thanh công cụ: xếp từ dưới thanh xuống, nằm ở đáy màn khi đủ chỗ |
 
 Hàm chính: `switchToLesson`, `setAppMode`, `syncModeButtonHighlights`, `lessonInMode`, `lessonShown`, `bookHidden`.
 
