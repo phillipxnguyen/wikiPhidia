@@ -936,8 +936,9 @@ window.onYouTubeIframeAPIReady = function(){
   .toolbar #listTrans[hidden]{display:none;}
   #listTrans svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;}
   #listTrans.active{background:var(--accent);color:var(--on-accent, #ffffff);border-color:var(--accent);}
-  .row-tr{margin-top:4px;font-size:16px;line-height:24px;color:var(--text-2);}
-  .row-tr:empty{display:none;}
+  .card-notes .row-tr{color:var(--a-text);}
+  .card-notes .row-tr:empty{display:none;}
+  .card-notes.tr-only:has(.row-tr:empty){display:none;}
   #btnPlaySequence, #vocabSpeak{position:relative;}
   #btnPlaySequence:focus:not(:focus-visible), #vocabSpeak:focus:not(:focus-visible), .loop-time:focus:not(:focus-visible), .exam-play:focus:not(:focus-visible){outline:none;}
   #btnPlaySequence:focus-visible, #vocabSpeak:focus-visible, .exam-play:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
@@ -8442,9 +8443,10 @@ function buildRowTr(r) {
   tr.dataset.id = r.id;
   if (loopingRowId === r.id) tr.classList.add("row-playing");
   if (selectedRowId === r.id) tr.classList.add("row-selected");
+  const q = `<div class="cell ${r.qHidden ? "hidden" : "shown"}" data-field="q">${qCellContent(r)}</div>`;
   const trLine = listTrOn && !groupState && !hasAnswer(r) ? `<div class="row-tr" data-id="${r.id}">${escapeHtml(rowTr(r))}</div>` : "";
-  const q = `<div class="cell ${r.qHidden ? "hidden" : "shown"}" data-field="q">${qCellContent(r)}</div>` + trLine;
-  const notes = !r.aHidden && !r.qHidden ? cardNotesHtml(r) : "";
+  const own = !r.aHidden && !r.qHidden ? cardNotesHtml(r) : "";
+  const notes = !trLine ? own : own ? own.replace('<div class="card-notes">', '<div class="card-notes">' + trLine) : `<div class="card-notes tr-only">${trLine}</div>`;
   const a = `<div class="cell ${r.aHidden ? "hidden" : "shown"}" data-field="a">${aCellContent(r)}</div>`;
   tr.innerHTML = document.getElementById("cardTable").classList.contains("no-answer-col") ? `<td class="q-col" colspan="2">${q}${hasAnswer(r) ? a : ""}${notes}</td>` : r.time == null && !hasAnswer(r) ? `<td class="q-col"></td><td class="a-col one-only">${q}${notes}</td>` : `<td class="q-col">${q}</td><td class="a-col">${a}${notes}</td>`;
   dictPreloadObserver.observe(tr);
