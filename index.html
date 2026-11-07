@@ -2310,6 +2310,9 @@ window.onYouTubeIframeAPIReady = function(){
   .w-video > *{position:absolute;inset:0;width:100%;height:100%;}
   .w-video > iframe{inset:auto;left:0;top:-64px;height:calc(100% + 128px);pointer-events:none;}
   .w-video > .w-shield{z-index:1;cursor:pointer;}
+  .w-video > .w-paused{z-index:1;inset:auto;left:50%;top:50%;display:none;align-items:center;justify-content:center;width:96px;height:96px;margin:-48px 0 0 -48px;border-radius:48px;background:rgba(0,0,0,.55);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);pointer-events:none;}
+  .w-video > .w-paused svg{width:40px;height:40px;margin-left:4px;fill:#ffffff;}
+  .watch-pop.paused .w-video > .w-paused{display:flex;}
   @media (max-width:820px){.w-video > iframe{top:-40px;height:calc(100% + 80px);}}
   .w-cap{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:96px;padding:12px 16px;text-align:center;border-radius:16px;background:rgba(11,13,24,.45);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);}
   .w-text{font-size:28px;line-height:40px;font-weight:700;text-shadow:0 1px 2px rgba(0,0,0,.4);}
@@ -3969,7 +3972,7 @@ function openWatch() {
   box.hidden = false;
   box.style.setProperty("--scene", theaterScene(watch.scene));
   box.dataset.scene = watch.scene;
-  box.innerHTML = '<div class="toolbar vocab-toolbar w-topbar"><span class="flag-set toolbar-flag"></span><div class="toolbar-counts w-counts"></div><div class="toolbar-right w-tools"></div></div><div class="w-main"><div class="w-video"><div></div><div class="w-shield"></div><div class="w-cap"><div class="w-capl"></div><div class="w-capline"></div><div class="w-capctl"></div></div></div><div class="w-barbox"></div></div><div class="w-listbox"></div>';
+  box.innerHTML = '<div class="toolbar vocab-toolbar w-topbar"><span class="flag-set toolbar-flag"></span><div class="toolbar-counts w-counts"></div><div class="toolbar-right w-tools"></div></div><div class="w-main"><div class="w-video"><div></div><div class="w-shield"></div><div class="w-paused" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z"/></svg></div><div class="w-cap"><div class="w-capl"></div><div class="w-capline"></div><div class="w-capctl"></div></div></div><div class="w-barbox"></div></div><div class="w-listbox"></div>';
   paintWatch();
   placeTheater();
   requestAnimationFrame(placeTheater);
@@ -3996,9 +3999,14 @@ function openWatch() {
           e.target.setPlaybackRate(watch.prefs.rate);
         } catch (err) {}
       },
-      onStateChange: () => updateTouchBar()
+      onStateChange: e => {
+        const on = e.data === YT.PlayerState.PLAYING || e.data === YT.PlayerState.BUFFERING;
+        document.getElementById("watchPop").classList.toggle("paused", !on);
+        updateTouchBar();
+      }
     }
   });
+  box.classList.add("paused");
   watch.timer = setInterval(watchTick, 200);
 }
 
