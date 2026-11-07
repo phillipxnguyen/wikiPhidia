@@ -152,6 +152,7 @@ Hàm chính: `switchToLesson`, `setAppMode`, `syncModeButtonHighlights`, `openWo
 | FOCUS-2 | `970a1f2` | Khung ôm nội dung, nằm giữa màn hình |
 | FOCUS-3 | `e981763` | Một ✕ chung ở góc phải trên; thanh công cụ ở mép trên |
 | FOCUS-4 | `16a2b79` | 18 cảnh, không cảnh tím |
+| FOCUS-5 | `3921081` | Bấm lá cờ không còn thoát mode; chỉ thoát bằng ✕ |
 
 Hàm chính: `syncFocus`, `pickFocusScene`, `FOCUS_SCENES`, nút `#focusExit`.
 
@@ -192,6 +193,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-1 | `961cf80` | Tô nền (V1) |
 | LOOKUP-2 | `51f8b07` | Chỉ tô màu chữ: xanh lá cho từ của thẻ khác, tím cho từ của thẻ này |
 | LOOKUP-3 | `16a2b79` | Xanh lá đậm hơn và xanh dương, không tím |
+| LOOKUP-4 | `3921081` | Rê chuột lên lookup không còn gạch chân |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
