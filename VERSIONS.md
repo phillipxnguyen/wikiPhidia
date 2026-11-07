@@ -136,6 +136,7 @@ Hàm chính: `updateTouchBar`, `sizeTouchBar`, `#tbSound`, `#tbMore`, `tools-ope
 | TODAY-1 | `961cf80` | Task mỗi bài, khoá, tiên bay tới ô tick (V1) |
 | TODAY-2 | `83c560f` | Từ trong task học bằng Podcast |
 | TODAY-3 | `e981763` | Trong focus: không khung, không thanh tên task |
+| TODAY-4 | `f42c79a` | Từ trong task: ngẫu nhiên flashcard hoặc Podcast |
 
 Hàm chính: `todayTasks`, `todayTaskCounts`, `taskQueue`, `startTaskSide`, `taskAdvance`, `leftToday`, `limitStudy`, `limitRows`.
 
@@ -146,8 +147,9 @@ Hàm chính: `todayTasks`, `todayTaskCounts`, `taskQueue`, `startTaskSide`, `tas
 | LAYOUT-2 | `ba6d9ec` | "One way to study": một sidebar, mỗi bài mở theo cách học của nó |
 | LAYOUT-3 | `df9253c` | Bỏ Word bank, sidebar một list |
 | LAYOUT-4 | `f5796be` | Một màu ở mọi nơi |
+| LAYOUT-5 | `f42c79a` | Khôi phục hai bên như LAYOUT-1: logo chuyển Lessons / Vocabulary, màu xanh lá, list bài riêng; ☰ flashcard và 🎧 Podcast trong Vocabulary; bỏ nút 字 trong bài và trên theater |
 
-Hàm chính: `switchToLesson`, `setAppMode`, `syncModeButtonHighlights`, `openWordCards`, `bookHidden`.
+Hàm chính: `switchToLesson`, `setAppMode`, `syncModeButtonHighlights`, `lessonInMode`, `lessonShown`, `bookHidden`.
 
 ### FOCUS: Chế độ focus (toàn màn hình khi học)
 | Mã | Commit | Là gì |
