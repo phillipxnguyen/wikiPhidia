@@ -62,8 +62,9 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-20 | `e360770` | Máy tính như YouTube: công tắc lên thanh trên, video to hết cỡ, list cao bằng video, căn giữa |
 | THEATER-21 | `0f925e0` | Công tắc thành biểu tượng; cabin học như thường: mặt trước máy đọc bản dịch, Show phát câu YouTube, chấm để sang câu |
 | THEATER-22 | `128179a` | Tốc độ dùng chung danh sách của app: 1x, 1.25x, 1.5x, 1.75x, 2x |
+| THEATER-23 | `e66c962` | Đủ rule mode học: Delete/⌘C cho câu đang học, thanh chép/xoá luôn có trên điện thoại, xoá xong sang câu kế |
 
-Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `cabinSay`, `cabinReveal`, `watchTranslation`, `placeWatchCap`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
+Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `cabinSay`, `cabinReveal`, `watchTranslation`, `placeWatchCap`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
 ---
 
