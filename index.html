@@ -2281,7 +2281,8 @@ window.onYouTubeIframeAPIReady = function(){
   html.focus-on .watch-pop .w-topbar{position:fixed;z-index:2;top:16px;left:max(72px, calc(50% - 450px));right:max(72px, calc(50% - 450px));width:auto;margin:0;padding:0;}
   html.focus-on .w-main{justify-content:flex-start;--vw:min(100%, calc((100vh - 168px) * 16 / 9));--vw:min(100%, calc((100dvh - 168px) * 16 / 9));}
   html.focus-on .w-video{flex:none;}
-  @media (min-width:821px){html.focus-on :is(.w-video, .w-barbox){width:var(--vw);align-self:center;}}
+  .w-topbar .w-tools{display:none;}
+  @media (min-width:821px){html.focus-on .watch-pop.with-list{grid-template-columns:min(calc(100% - 332px), calc((100vh - 88px) * 16 / 9)) minmax(320px, 1fr);grid-template-columns:min(calc(100% - 332px), calc((100dvh - 88px) * 16 / 9)) minmax(320px, 1fr);}html.focus-on .watch-pop{grid-template-rows:auto;align-content:center;}html.focus-on .w-barbox{display:none;}html.focus-on .w-topbar .w-tools{display:flex;align-items:center;gap:4px;}}
   html.focus-on :is(.w-list, .w-bar){background:color-mix(in srgb, var(--surface) 76%, transparent);-webkit-backdrop-filter:blur(16px) saturate(1.4);backdrop-filter:blur(16px) saturate(1.4);}
   html.focus-on .w-row{border-bottom-color:color-mix(in srgb, var(--text) 10%, transparent);}
   html.focus-on .w-row.on{background:color-mix(in srgb, var(--accent) 12%, transparent);box-shadow:inset 3px 0 var(--accent);}
@@ -3926,7 +3927,7 @@ function openWatch() {
   box.hidden = false;
   box.style.setProperty("--scene", theaterScene(watch.scene));
   box.dataset.scene = watch.scene;
-  box.innerHTML = '<div class="toolbar vocab-toolbar w-topbar"><span class="flag-set toolbar-flag"></span><div class="toolbar-counts w-counts"></div></div><div class="w-main"><div class="w-video"><div></div><div class="w-shield"></div><div class="w-cap"><div class="w-capl"></div><div class="w-capline"></div><div class="w-capctl"></div></div></div><div class="w-barbox"></div></div><div class="w-listbox"></div>';
+  box.innerHTML = '<div class="toolbar vocab-toolbar w-topbar"><span class="flag-set toolbar-flag"></span><div class="toolbar-counts w-counts"></div><div class="toolbar-right w-tools"></div></div><div class="w-main"><div class="w-video"><div></div><div class="w-shield"></div><div class="w-cap"><div class="w-capl"></div><div class="w-capline"></div><div class="w-capctl"></div></div></div><div class="w-barbox"></div></div><div class="w-listbox"></div>';
   paintWatch();
   placeTheater();
   requestAnimationFrame(placeTheater);
@@ -4113,7 +4114,9 @@ function paintWatch() {
   if (p.trans || p.cabin) mtFill(watch.lines);
   watch.countSig = "";
   const pill = (k, title, label) => `<button type="button" class="w-pill${p[k] ? " on" : ""}" data-w="${k}" aria-pressed="${!!p[k]}" title="${title}">${label}</button>`;
-  box.querySelector(".w-barbox").innerHTML = `<div class="w-bar"><span class="w-push"></span>${pill("auto", "Pause at the end of every line (Q)", "AP")}${pill("loop", "Loop the line being said", '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 9V8a3 3 0 0 1 3-3h8M13 3l2 2-2 2M16 11v1a3 3 0 0 1-3 3H5M7 17l-2-2 2-2"/></svg>')}${pill("blur", "Blur the writing until you point at it", '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 10s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/><path d="M4 16L16 4"/></svg>')}${watchChinese() ? pill("pin", "Pinyin", "拼") : ""}${pill("trans", "The translation (the lesson's own, or a machine translation when the line has none)", "Aa")}${pill("cabin", "Interpreting: hear the line in translation, say it yourself, then V (or a click on it) shows and plays the original", '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5h8v6H7l-3 2v-2H3zM12 8h5v6h-1v2l-3-2h-1"/></svg>')}<select class="w-rate" aria-label="Speed" title="Speed">${[ .5, .75, .9, 1, 1.1, 1.25, 1.5, 1.75, 2 ].map(r => `<option value="${r}"${r === p.rate ? " selected" : ""}>${r}×</option>`).join("")}</select></div>`;
+  const tools = `${pill("auto", "Pause at the end of every line (Q)", "AP")}${pill("loop", "Loop the line being said", '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 9V8a3 3 0 0 1 3-3h8M13 3l2 2-2 2M16 11v1a3 3 0 0 1-3 3H5M7 17l-2-2 2-2"/></svg>')}${pill("blur", "Blur the writing until you point at it", '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 10s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/><path d="M4 16L16 4"/></svg>')}${watchChinese() ? pill("pin", "Pinyin", "拼") : ""}${pill("trans", "The translation (the lesson's own, or a machine translation when the line has none)", "Aa")}${pill("cabin", "Interpreting: hear the line in translation, say it yourself, then V (or a click on it) shows and plays the original", '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5h8v6H7l-3 2v-2H3zM12 8h5v6h-1v2l-3-2h-1"/></svg>')}<select class="w-rate" aria-label="Speed" title="Speed">${[ .5, .75, .9, 1, 1.1, 1.25, 1.5, 1.75, 2 ].map(r => `<option value="${r}"${r === p.rate ? " selected" : ""}>${r}×</option>`).join("")}</select>`;
+  box.querySelector(".w-barbox").innerHTML = `<div class="w-bar"><span class="w-push"></span>${tools}</div>`;
+  box.querySelector(".w-topbar .w-tools").innerHTML = tools;
   box.querySelector(".w-capl").innerHTML = nav;
   box.querySelector(".w-capctl").innerHTML = ctl;
   paintWatchList();
