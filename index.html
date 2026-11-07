@@ -5182,7 +5182,7 @@ function makeUid() {
 function newRow(q, a, time) {
   q = cleanPunct(cleanText(q));
   a = cleanPunct(cleanText(a));
-  const note = q && a && !wordLike(q) && detectLang(q).split("-")[0] !== detectLang(a).split("-")[0] ? a : "";
+  const note = a && !(time == null && keepsAnswer(q, a)) ? a : "";
   if (note) a = "";
   return {
     id: nextId++,
@@ -7820,7 +7820,10 @@ const ENTRY_HIDDEN = {
 };
 
 function entryHidden(row) {
-  if (row && groupViewStyle === "ielts" && !hasAnswer(row)) return { q: false, a: false };
+  if (row && groupViewStyle === "ielts" && !hasAnswer(row)) return {
+    q: false,
+    a: !!(row.notes || "").trim()
+  };
   return ENTRY_HIDDEN[groupViewStyle === "ielts" ? "Ielts" : modeKey()];
 }
 
@@ -8202,9 +8205,9 @@ function syncAddLook() {
   if (kind) box.dataset.kind = kind; else delete box.dataset.kind;
   document.getElementById("qaTime").hidden = kind !== "listen";
   const merged = appMode !== "vocab" && lessonAddKind() === "speak";
-  document.getElementById("qaA").hidden = kind === "listen" || merged;
+  document.getElementById("qaA").hidden = true;
   document.getElementById("qaQ").classList.toggle("yt-ph", kind === "listen");
-  document.getElementById("qaQ").placeholder = kind === "listen" ? " " : merged ? "/Question, then the Answer below" : kind ? "Question" : "";
+  document.getElementById("qaQ").placeholder = kind === "listen" ? " " : kind ? "Sentence" : "";
   document.getElementById("qaQ").setAttribute("aria-label", appMode === "vocab" ? "Question" : "Card");
   document.getElementById("qaA").placeholder = kind ? "Answer" : "";
   if (kind) document.getElementById("qaNotes").dataset.placeholder = "Notes"; else delete document.getElementById("qaNotes").dataset.placeholder;
@@ -9600,18 +9603,22 @@ function wordKey(term, meaning) {
   return normalizeVocabText(term) + (m ? "\u0001" + m : "");
 }
 
-const FOLDED_KEY = "flashcards.foldedTranslations";
+const FOLDED_KEY = "flashcards.foldedAnswers";
 
-function foldTranslation(c) {
+function foldAnswer(c) {
   const q = (c.q || "").trim(), a = (c.a || "").trim();
-  if (!q || !a || detectLang(q).split("-")[0] === detectLang(a).split("-")[0]) return false;
-  const add = wordLike(q) ? `<ul><li><b>${escapeHtml(q)}</b>: ${escapeHtml(a)}</li></ul>` : `<div>${c.aHtml || escapeHtml(a)}</div>`;
+  if (!a) return false;
+  const add = q && wordLike(q) && detectLang(q).split("-")[0] !== detectLang(a).split("-")[0] ? `<ul><li><b>${escapeHtml(q)}</b>: ${escapeHtml(a)}</li></ul>` : `<div>${c.aHtml || escapeHtml(a)}</div>`;
   c.notesHtml = add + (c.notesHtml || "");
   c.notes = plainTextOf(c.notesHtml, "\n");
   c.a = "";
   c.aHtml = "";
   translationMemo.delete(c);
   return true;
+}
+
+function keepsAnswer(q, a) {
+  return !!q && !!a && wordLike(q) && detectLang(q).split("-")[0] !== detectLang(a).split("-")[0];
 }
 
 function withWordKeys(card) {
@@ -11248,7 +11255,12 @@ function commitActiveEdit(keep) {
     });
     return;
   }
-  const row = activeEdit.row, answered = !(activeEdit.openedA != null ? activeEdit.openedA : activeEdit.originalA).trim() && !!newA.trim();
+  const row = activeEdit.row;
+  if ((row.a || "").trim() && !(row.time == null && keepsAnswer(row.q.trim(), row.a.trim()))) {
+    foldAnswer(row);
+    withWordKeys(row);
+    scheduleAutoSave();
+  }
   hideDictOverlay();
   activeEdit = null;
   closeEditPopup();
@@ -11461,7 +11473,7 @@ window.addEventListener("blur", () => {
 });
 
 function buildEditBoxInner(row) {
-  return `\n    <div class="edit-qa">\n      <div>\n        <div id="editQ" class="rich-editor${row.time == null ? "" : " yt-ph"}" contenteditable="true"${row.time == null ? ' data-placeholder="/Question, then the Answer below"' : ""} aria-label="Card">${row.time == null ? mergedCardEditHtml(row) : getEditInitialHtml(row.q, row.qHtml, row.id)}</div>\n      </div>\n      <div hidden>\n        <div id="editA" class="rich-editor" contenteditable="true">${getEditInitialHtml(row.a, row.aHtml, row.id)}</div>\n      </div>\n    </div>\n    <div class="notes-clip"><div id="editNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes">${notesEditorHtml(row)}</div></div>\n    <div class="edit-actions">\n      <button id="editSave" class="primary">Save</button>\n    </div>\n    <div id="editDict"></div>\n  `;
+  return `\n    <div class="edit-qa">\n      <div>\n        <div id="editQ" class="rich-editor${row.time == null ? "" : " yt-ph"}" contenteditable="true"${row.time == null ? ' data-placeholder="Sentence"' : ""} aria-label="Card">${row.time == null ? mergedCardEditHtml(row) : getEditInitialHtml(row.q, row.qHtml, row.id)}</div>\n      </div>\n      <div hidden>\n        <div id="editA" class="rich-editor" contenteditable="true">${getEditInitialHtml(row.a, row.aHtml, row.id)}</div>\n      </div>\n    </div>\n    <div class="notes-clip"><div id="editNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes">${notesEditorHtml(row)}</div></div>\n    <div class="edit-actions">\n      <button id="editSave" class="primary">Save</button>\n    </div>\n    <div id="editDict"></div>\n  `;
 }
 
 document.addEventListener("click", e => {
@@ -19124,7 +19136,7 @@ async function initApp() {
     let converted = false;
     l.cards.forEach(c => {
       if (joinOldTranslation(c)) converted = true;
-      if (!foldedOnce && foldTranslation(c)) {
+      if (!foldedOnce && c.time == null && keepsAnswer((c.q || "").trim(), (c.a || "").trim()) ? false : !foldedOnce && foldAnswer(c)) {
         withWordKeys(c);
         l.updatedAt = Date.now();
         converted = true;
