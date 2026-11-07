@@ -56,8 +56,9 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-14 | `231e50f` | Mỗi câu là thẻ (lookup, E/Delete/⌘C, Shift); điện thoại chấm bằng thanh đáy |
 | THEATER-15 | `ef5c3e9` | AP xuống thanh dưới; pinyin một dòng riêng trên câu; công tắc bật tô đặc, hover chỉ viền |
 | THEATER-16 | `d0a1d9b` | Trang bài YouTube lại là list dưới video to; theater thành mode học trong focus (nút tròn), thanh trên chung, khung sáng |
+| THEATER-17 | `5c96a13` | Dịch máy khi câu chưa có bản dịch (Aa, mặc định tắt); chế độ dịch cabin: hiện bản dịch, che câu gốc, V để mở |
 
-Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchTranslation`, `placeWatchCap`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
+Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `watchTranslation`, `placeWatchCap`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
 ---
 
