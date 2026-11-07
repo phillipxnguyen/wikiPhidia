@@ -2412,6 +2412,7 @@ window.onYouTubeIframeAPIReady = function(){
   @media (max-width:600px){.b2-art > *{zoom:.8;}}
   .b2-head{flex:none;align-self:stretch;height:40px;}
   .blind2 .focus-exit{display:block;}
+  @media (max-width:820px){html.focus-on:not(.blind-on) .focus-exit, .blind2 .focus-exit{display:none;}html.focus-on .toolbar-flag, .blind2 .toolbar-flag{cursor:pointer;pointer-events:auto;}}
   .blind2 .b2-bar{position:fixed;z-index:2;top:16px;left:max(72px, calc(50% - 450px));right:max(72px, calc(50% - 450px));width:auto;margin:0;padding:0;}
   @media (max-width:820px){.b2-head{height:96px;}.blind2 .b2-bar{top:calc(68px + env(safe-area-inset-top));left:12px;right:12px;}}
   .b2-art{display:flex;justify-content:center;width:100%;}
@@ -22442,6 +22443,13 @@ document.getElementById("focusExit").onclick = e => {
   if (currentView === "vocab") return vocabView === "list" ? setVocabView("list") : vocabBack();
   goToReviewMode("full");
 };
+
+document.addEventListener("click", e => {
+  const flag = e.target.closest && e.target.closest(".toolbar-flag");
+  if (!flag || !matchMedia("(max-width:820px)").matches) return;
+  if (blind && flag.closest("#blind2")) return closeBlind();
+  if (document.documentElement.classList.contains("focus-on")) document.getElementById("focusExit").click();
+});
 
 document.getElementById("lessonList").addEventListener("click", e => {
   const row = e.target.closest(".today-pad [data-pad]");
