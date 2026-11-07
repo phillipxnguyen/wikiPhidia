@@ -112,6 +112,7 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 | DATA-5 | `3f33aa9` | Bỏ bước chuyển đổi một lần và mọi code xử lý dữ liệu A cũ; ô nghĩa chỉ còn cho từ bên Vocabulary |
 | DATA-6 | `4fe949e` | A giữ lại như trước, viết trong một ô: dòng `/câu hỏi` rồi các dòng trả lời; chỉ bản dịch vào notes (khi dán hoặc khi gõ trong ô sửa) |
 | DATA-7 | `1d418a1` | Không học dịch ở đâu cả: bỏ ⇄ (nghĩa trước), Translate to khi nhập, phần Translation trong Tests; câu và câu trả lời vẫn lưu như trước, không có code gộp |
+| DATA-8 | `d8ccbdb` | Chỉ một ô `/Q, rồi A` + Notes ở mọi chỗ nhập: bỏ ô Answer của ＋ và ô Meaning của trình sửa từ Vocabulary; không có code gộp |
 
 Hàm chính: `newRow` (bản dịch vào notes khi tạo), `foldAnswer` + `keepsAnswer` (dòng thêm dưới câu khi sửa thẻ hoặc khi dán thì vào notes), `wordLike`, `belongsInVocab`, `isTranslationCard` (cho dòng `từ: nghĩa`), `autoSortLibrary`.
 
