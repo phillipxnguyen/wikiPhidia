@@ -518,6 +518,14 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-card[data-ex="cloze"] .vocab-front > .vocab-term{max-width:min(900px, 100%);font-size:var(--bz);line-height:var(--bl);text-transform:none;letter-spacing:0;}
   .ielts-paper .paper-key{font-size:40px;line-height:48px;font-weight:700;text-align:center;}
   .cloze-gap{display:inline-block;width:calc(var(--gap) * 1ch);height:1em;margin:0 4px;vertical-align:-4px;border-bottom:4px solid currentColor;opacity:.7;}
+  .cloze-word{visibility:hidden;}
+  .cloze-more{display:none;}
+  .vocab-card.fill.flipped .cloze-gap{width:auto;height:auto;margin:0;padding:0 2px;vertical-align:baseline;border-bottom:0;border-radius:4px;background:var(--word-mark);opacity:1;}
+  .vocab-card.fill.flipped .cloze-word{visibility:visible;}
+  .vocab-card.fill.flipped .cloze-more{display:block;margin-top:16px;font-size:.6em;font-size:round(.6em, 1px);line-height:1.4;line-height:round(1.4em, 1px);font-weight:600;}
+  .vocab-card.fill.flipped .cloze-notes{margin-top:8px;font-weight:400;opacity:.8;}
+  .vocab-card.fill.flipped .vocab-front, .vocab-card.fill.settled .vocab-front{visibility:visible;}
+  .vocab-card.fill.flipped .vocab-back{visibility:hidden;}
   .vocab-card[data-look] .vocab-front .rd{text-transform:none;letter-spacing:0;}
   .vocab-card[data-look] .vocab-back > .vocab-back-main{font-family:var(--bf);align-items:var(--bai);text-align:var(--ba);flex-direction:var(--bd);color:var(--bc);transform:rotate(var(--br));}
   .vocab-card[data-look] .vocab-back > .vocab-back-main .vocab-ctx{color:var(--bc);font-weight:var(--bw);font-style:var(--bs);text-align:var(--ba);}
@@ -19777,8 +19785,13 @@ function fillVocabCard(el, item) {
     const text = otherGap ? el.dataset.other : sentence, span = otherGap || gap;
     const n = Math.max(3, Math.min(16, span[1] - span[0]));
     const [ before, after ] = ex === "chunk" ? clozeChunk(text, span) : [ text.slice(0, span[0]), text.slice(span[1]) ];
-    el.querySelector(".vocab-term").innerHTML = `<span>${escapeHtml(before)}<span class="cloze-gap" style="--gap:${n}"></span>${escapeHtml(after)}</span>`;
-  } else el.querySelector(".vocab-term").innerHTML = `<span>${escapeHtml(item.term)}</span>`;
+    const notes = wordNotesOf(item);
+    el.querySelector(".vocab-term").innerHTML = `<span>${escapeHtml(before)}<span class="cloze-gap" style="--gap:${n}"><span class="cloze-word">${escapeHtml(text.slice(span[0], span[1]))}</span></span>${escapeHtml(after)}</span>` + (item.meaning ? `<span class="cloze-more">${escapeHtml(item.meaning)}</span>` : "") + (notes ? `<span class="cloze-more cloze-notes">${brLines(notes)}</span>` : "");
+    el.classList.add("fill");
+  } else {
+    el.querySelector(".vocab-term").innerHTML = `<span>${escapeHtml(item.term)}</span>`;
+    el.classList.remove("fill");
+  }
   el.querySelector(".vocab-term").classList.toggle("word", !viewOnly && !wholeSentenceCard(item, vocabContext(item).sentence));
   const main = el.querySelector(".vocab-back-main");
   const html = vocabBackInner(item) + (otherGap ? `<div class="vocab-ctx small">${lookupOthers(vocabSentenceHtml(el.dataset.other, item.term, item.card), item)}</div>` : "");
