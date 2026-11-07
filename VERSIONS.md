@@ -58,6 +58,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-16 | `d0a1d9b` | Trang bài YouTube lại là list dưới video to; theater thành mode học trong focus (nút tròn), thanh trên chung, khung sáng |
 | THEATER-17 | `5c96a13` | Dịch máy khi câu chưa có bản dịch (Aa, mặc định tắt); chế độ dịch cabin: hiện bản dịch, che câu gốc, V để mở |
 | THEATER-18 | `914c1a6` | Dịch cabin bằng tai: máy đọc bản dịch (không hiện chữ), V mở và phát câu gốc |
+| THEATER-19 | `adac075` | Video co theo chiều cao cửa sổ, thanh dưới luôn thấy |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `cabinSay`, `cabinReveal`, `watchTranslation`, `placeWatchCap`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
@@ -174,6 +175,7 @@ Hàm chính: `switchToLesson`, `setAppMode`, `syncModeButtonHighlights`, `lesson
 | FOCUS-4 | `16a2b79` | 18 cảnh, không cảnh tím |
 | FOCUS-5 | `3921081` | Bấm lá cờ không còn thoát mode; chỉ thoát bằng ✕ |
 | FOCUS-6 | `1a9077c` | Điện thoại: chạm cờ để thoát, không có ✕ (máy tính giữ ✕) |
+| FOCUS-7 | `adac075` | Điện thoại: thanh trên sát mép, không chừa chỗ cho ✕ |
 
 Hàm chính: `syncFocus`, `pickFocusScene`, `FOCUS_SCENES`, nút `#focusExit`.
 
