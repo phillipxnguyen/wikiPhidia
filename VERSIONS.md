@@ -75,8 +75,9 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `paintWatch
 | FLASH-7 | `a467d7c` | 4 kiểu mặt trước ngẫu nhiên: chỉ từ (tự đặt câu), câu khoét từ, cụm từ kết hợp khoét từ, câu bài khác khoét từ |
 | FLASH-8 | `345b333` | Thẻ có chỗ trống không đổi mặt: Show điền từ vào chỗ trống và thêm nghĩa, notes ngay dưới |
 | FLASH-9 | `4fbb485` | Không nhảy khi Show: chỗ trống rộng đúng bằng từ, chỗ của nghĩa giữ sẵn (ẩn) |
+| FLASH-10 | `2334974` | Bỏ kiểu cụm từ (cắt câu, …): câu luôn hiện đủ |
 
-Hàm chính: `buildVocabCard`, `fillVocabCard`, `clozeChunk`, `otherLessonSentence`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
+Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
 ### POD: Podcast (nghe từ)
 | Mã | Commit | Là gì |
@@ -97,6 +98,7 @@ Hàm chính: `buildVocabCard`, `fillVocabCard`, `clozeChunk`, `otherLessonSenten
 | POD-14 | `af6d193` | Bỏ bước chọn: một cách học cho mọi từ (Show, Good/Again, 🗑 xoá); hình động lại, chấm tròn và thanh thời lượng; task học mọi từ bằng Podcast |
 | POD-15 | `bb0fca5` | Thanh trên như mọi mode (cờ, New/Due/Done, ✕ chung) |
 | POD-16 | `d0a1d9b` | Podcast có cả bên Lessons; bỏ nút 🗑 (Delete và ✕ của thanh chọn vẫn xoá) |
+| POD-17 | `2334974` | Hình động nhẹ, chậm, không nháy (bỏ nháy sao, đèn, TV nhiễu, ▶) |
 
 Hàm chính: `openBlind`, `closeBlind`, `blindItems`, `blindAutoItems`, `blindLines`, `blindNext`, `paintBlind`, `paintBlindLive`, `blindPlay`, `blindPlayOne`, `blindPlayLine`, `blindPlayer`, `blindSpeak`, `blindGrade`, `blindUndo`, `blindEdit`, `blindAct`, `blindFly`, `blindArt`, `blindSceneFor`, `blindCountsHtml`, `blindTime`, `BLIND_SCENES`.
 
