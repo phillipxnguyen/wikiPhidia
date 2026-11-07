@@ -60,6 +60,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-18 | `914c1a6` | Dịch cabin bằng tai: máy đọc bản dịch (không hiện chữ), V mở và phát câu gốc |
 | THEATER-19 | `adac075` | Video co theo chiều cao cửa sổ, thanh dưới luôn thấy |
 | THEATER-20 | `e360770` | Máy tính như YouTube: công tắc lên thanh trên, video to hết cỡ, list cao bằng video, căn giữa |
+| THEATER-21 | `0f925e0` | Công tắc thành biểu tượng; cabin học như thường: mặt trước máy đọc bản dịch, Show phát câu YouTube, chấm để sang câu |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `cabinSay`, `cabinReveal`, `watchTranslation`, `placeWatchCap`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
