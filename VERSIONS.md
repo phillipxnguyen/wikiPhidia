@@ -73,6 +73,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `paintWatch
 | FLASH-5 | `71aff22` | Chỉ font dễ đọc; font riêng cho chữ Latin và chữ châu Á |
 | FLASH-6 | `a73c2d6` | Khoảng một nửa số lần, mặt trước là câu của từ với từ đó bị khoét thành chỗ trống |
 | FLASH-7 | `a467d7c` | 4 kiểu mặt trước ngẫu nhiên: chỉ từ (tự đặt câu), câu khoét từ, cụm từ kết hợp khoét từ, câu bài khác khoét từ |
+| FLASH-8 | `345b333` | Thẻ có chỗ trống không đổi mặt: Show điền từ vào chỗ trống và thêm nghĩa, notes ngay dưới |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `clozeChunk`, `otherLessonSentence`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
