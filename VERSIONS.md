@@ -161,6 +161,7 @@ Hàm chính: `switchToLesson`, `setAppMode`, `syncModeButtonHighlights`, `lesson
 | FOCUS-3 | `e981763` | Một ✕ chung ở góc phải trên; thanh công cụ ở mép trên |
 | FOCUS-4 | `16a2b79` | 18 cảnh, không cảnh tím |
 | FOCUS-5 | `3921081` | Bấm lá cờ không còn thoát mode; chỉ thoát bằng ✕ |
+| FOCUS-6 | `1a9077c` | Điện thoại: chạm cờ để thoát, không có ✕ (máy tính giữ ✕) |
 
 Hàm chính: `syncFocus`, `pickFocusScene`, `FOCUS_SCENES`, nút `#focusExit`.
 
