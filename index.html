@@ -4030,6 +4030,14 @@ function watchTick() {
   }
 }
 
+function watchDelete(r) {
+  if (!watch || !r) return;
+  const current = r === watch.lines[watch.at];
+  clearRowSelection();
+  deleteRow(r.id);
+  if (current) setTimeout(() => watch && watch.lines[Math.min(watch.at, watch.lines.length - 1)] && watchSeek(Math.min(watch.at, watch.lines.length - 1)), 60);
+}
+
 function watchSeek(i, play) {
   if (!watch || !watch.lines[i]) return;
   const cabin = watch.prefs.cabin && !play;
@@ -4435,8 +4443,16 @@ document.getElementById("watchPop").addEventListener("change", e => {
 });
 
 window.addEventListener("keydown", e => {
-  if (!watch || blind || e.metaKey || e.ctrlKey || e.altKey || !document.getElementById("editPopup").hidden || wordsOpen()) return;
+  if (!watch || blind || !document.getElementById("editPopup").hidden || wordsOpen()) return;
   if (e.target.closest && e.target.closest("input, textarea, select, [contenteditable]")) return;
+  if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.code === "KeyC" && getSelection().isCollapsed) {
+    const r = watchPointed() || watch.lines[watch.at];
+    if (!r) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    return copyText(oneLine(r.q));
+  }
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
   const k = e.key;
   if (k === "Escape") {
     e.preventDefault();
@@ -4444,9 +4460,8 @@ window.addEventListener("keydown", e => {
     return leaveTheater();
   }
   const g = gradeKey(e), pointed = watchPointed();
-  if (k === " ") watchToggle(); else if (g) watchGrade(g === "again"); else if (e.code === "KeyE" && !e.shiftKey && (pointed || watch.lines[watch.at])) openEditPopup(pointed || watch.lines[watch.at]); else if (e.code === "KeyW" && !e.shiftKey) showToast("A video sentence stays in its lesson"); else if ((k === "Delete" || k === "Backspace") && pointed && !e.repeat) {
-    clearRowSelection();
-    deleteRow(pointed.id);
+  if (k === " ") watchToggle(); else if (g) watchGrade(g === "again"); else if (e.code === "KeyE" && !e.shiftKey && (pointed || watch.lines[watch.at])) openEditPopup(pointed || watch.lines[watch.at]); else if (e.code === "KeyW" && !e.shiftKey) showToast("A video sentence stays in its lesson"); else if ((k === "Delete" || k === "Backspace") && (pointed || watch.lines[watch.at]) && !e.repeat) {
+    watchDelete(pointed || watch.lines[watch.at]);
   } else if (e.code === "KeyV" && watch.prefs.cabin) cabinReveal(); else if (e.code === "KeyA") watchSeek(Math.max(0, watch.at - 1)); else if (e.code === "KeyD") watchSeek(Math.min(watch.lines.length - 1, watch.at + 1)); else if (e.code === "KeyS" || e.code === "KeyR") watchSeek(Math.max(0, watch.at)); else if (e.code === "KeyQ") {
     watch.prefs.auto = !watch.prefs.auto;
     saveWatchPrefs();
@@ -10596,6 +10611,13 @@ function selectionTarget() {
   }
   if (currentView !== "study") return null;
   const {scope: scope, picked: picked} = studyPick();
+  if (watch) {
+    const r = picked || watch.lines[watch.at];
+    return r ? {
+      row: r,
+      rows: [ r ]
+    } : null;
+  }
   if (!groupState && !picked) return null;
   if (picked) return {
     row: picked,
@@ -10649,6 +10671,7 @@ document.getElementById("selDelete").onclick = e => {
   if (!selectionTarget()) return;
   if (blind) return blindAct("delete");
   if (wordsOpen()) return wordAct("delete");
+  if (watch && currentView === "study") return watchDelete(selectionTarget().row);
   if (currentView === "vocab") vocabDeleteAction(); else deleteAction();
 };
 
