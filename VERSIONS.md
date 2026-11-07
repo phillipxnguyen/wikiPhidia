@@ -122,6 +122,7 @@ Hàm chính: `newRow` (bản dịch vào notes khi tạo), `foldAnswer` + `keeps
 | BAR-2 | `e981763` | Trong focus: thanh trên cố định ở mép trên, một ✕ chung |
 | BAR-3 | `2a6b0d1` | Bản A: trên chỉ có số đếm và ✕; một thanh đáy cả trên máy tính (↶ ↷ 🔊 Show ✕ ✓ ⋯); ⋯ mở các công tắc khác; bỏ dấu giữ chỗ |
 | BAR-4 | `1d418a1` | Bỏ nút ⋯; thanh trên luôn hiện đủ |
+| BAR-5 | `2b33b9c` | Bỏ thanh A: không còn hàng nút đáy và nút 🔊 riêng trên máy tính; thanh trên cố định như BAR-2 |
 
 Hàm chính: `updateTouchBar`, `sizeTouchBar`, `#tbSound`, `#tbMore`, `tools-open`.
 
@@ -159,6 +160,7 @@ Hàm chính: `syncFocus`, `pickFocusScene`, `FOCUS_SCENES`, nút `#focusExit`.
 |---|---|---|
 | CLOCK-1 | `06f8d2c` | Đồng hồ chỉ chạy khi học, lưu theo ngày |
 | CLOCK-2 | `4d8c3a8` | Một đồng hồ mờ kính nổi, kéo đi được, nhớ chỗ |
+| CLOCK-3 | `2b33b9c` | Gỡ hẳn đồng hồ học (về như V1) |
 
 Hàm chính: `studyingNow`, `placeStudyClock`, `STUDY_TIME_KEY`, `#focusClock`.
 
