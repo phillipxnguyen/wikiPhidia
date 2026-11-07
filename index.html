@@ -503,6 +503,8 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-card .vocab-front{overflow:visible;}
   .vocab-card[data-look] .vocab-front > .vocab-term{position:relative;box-sizing:border-box;font-family:var(--tf);font-weight:var(--tw);font-style:var(--ts);text-transform:var(--tt);letter-spacing:var(--tk);font-size:var(--tz);line-height:var(--tl);}
   .vocab-card[data-look] .vocab-front > .vocab-term.word{font-weight:var(--tw);}
+  .vocab-card[data-ex="cloze"] .vocab-front > .vocab-term{max-width:min(900px, 100%);font-size:var(--bz);line-height:var(--bl);text-transform:none;letter-spacing:0;}
+  .cloze-gap{display:inline-block;width:calc(var(--gap) * 1ch);height:1em;margin:0 4px;vertical-align:-4px;border-bottom:4px solid currentColor;opacity:.7;}
   .vocab-card[data-look] .vocab-front .rd{text-transform:none;letter-spacing:0;}
   .vocab-card[data-look] .vocab-back > .vocab-back-main{font-family:var(--bf);align-items:var(--bai);text-align:var(--ba);flex-direction:var(--bd);color:var(--bc);transform:rotate(var(--br));}
   .vocab-card[data-look] .vocab-back > .vocab-back-main .vocab-ctx{color:var(--bc);font-weight:var(--bw);font-style:var(--bs);text-align:var(--ba);}
@@ -19913,16 +19915,23 @@ function cardType(el, item) {
 
 function fillVocabCard(el, item) {
   const viewOnly = vocabViewOnly(item);
+  const sentence = vocabContext(item).sentence || "", gap = !viewOnly && vocabFront !== "a" && sentence && !wholeSentenceCard(item, sentence) ? findTermIn(sentence, item.term) : null;
   if (el.dataset.lookKey !== item.key) {
-    const look = CARD_LOOKS.filter(x => x !== lastCardLook)[Math.floor(Math.random() * (CARD_LOOKS.length - 1))];
+    const cloze = !!gap && Math.random() < .5;
+    const pool = cloze ? [ "plain", "quote", "board", "note", "frame" ] : CARD_LOOKS;
+    const look = pool.filter(x => x !== lastCardLook)[Math.floor(Math.random() * (pool.length - 1))];
     lastCardLook = look;
     el.dataset.lookKey = item.key;
     el.dataset.look = look;
+    el.dataset.ex = cloze ? "cloze" : "word";
     cardType(el, item);
   }
   el.classList.toggle("view-only", viewOnly);
   el.classList.toggle("answer-first", vocabFront === "a" && !viewOnly);
-  el.querySelector(".vocab-term").innerHTML = `<span>${escapeHtml(vocabFront === "a" && !viewOnly ? item.meaning : item.term)}</span>`;
+  if (el.dataset.ex === "cloze" && gap) {
+    const n = Math.max(3, Math.min(16, gap[1] - gap[0]));
+    el.querySelector(".vocab-term").innerHTML = `<span>${escapeHtml(sentence.slice(0, gap[0]))}<span class="cloze-gap" style="--gap:${n}"></span>${escapeHtml(sentence.slice(gap[1]))}</span>`;
+  } else el.querySelector(".vocab-term").innerHTML = `<span>${escapeHtml(vocabFront === "a" && !viewOnly ? item.meaning : item.term)}</span>`;
   el.querySelector(".vocab-term").classList.toggle("word", !viewOnly && !wholeSentenceCard(item, vocabContext(item).sentence));
   const main = el.querySelector(".vocab-back-main");
   const html = vocabBackInner(item);
