@@ -4761,7 +4761,7 @@ function takeSnapshot(label, expiresAt) {
     pinned: pinnedCardId,
     shown: lastShownCardId,
     listenKept: JSON.stringify(listenBatchKept),
-    ielts: [ ieltsAnswered ],
+    ielts: [ ieltsAnswered, ieltsHintId ],
     vocabSnapshot: JSON.stringify(vocabSession),
     limits: JSON.stringify(studyLimits),
     limitsExtra: JSON.stringify(limitsExtra),
@@ -4932,7 +4932,7 @@ function restoreFrom(fromStack, toStack, verb) {
   pinnedCardId = entry.pinned != null ? entry.pinned : null;
   lastShownCardId = entry.shown !== undefined ? entry.shown : pinnedCardId;
   if (entry.listenKept) listenBatchKept = JSON.parse(entry.listenKept);
-  if (entry.ielts) [ ieltsAnswered ] = entry.ielts;
+  if (entry.ielts) [ ieltsAnswered, ieltsHintId ] = entry.ielts;
   if (entry.limits) {
     studyLimits = JSON.parse(entry.limits);
     if (entry.limitsExtra) limitsExtra = JSON.parse(entry.limitsExtra);
@@ -5183,7 +5183,7 @@ function makeUid() {
 function newRow(q, a, time) {
   q = cleanPunct(cleanText(q));
   a = cleanPunct(cleanText(a));
-  const note = a && !(time == null && keepsAnswer(q, a)) ? a : "";
+  const note = q && a && !wordLike(q) && detectLang(q).split("-")[0] !== detectLang(a).split("-")[0] ? a : "";
   if (note) a = "";
   return {
     id: nextId++,
@@ -8206,9 +8206,9 @@ function syncAddLook() {
   if (kind) box.dataset.kind = kind; else delete box.dataset.kind;
   document.getElementById("qaTime").hidden = kind !== "listen";
   const merged = appMode !== "vocab" && lessonAddKind() === "speak";
-  document.getElementById("qaA").hidden = appMode !== "vocab";
+  document.getElementById("qaA").hidden = kind === "listen" || merged;
   document.getElementById("qaQ").classList.toggle("yt-ph", kind === "listen");
-  document.getElementById("qaQ").placeholder = kind === "listen" ? " " : kind ? "Sentence" : "";
+  document.getElementById("qaQ").placeholder = kind === "listen" ? " " : merged ? "/Question, then the Answer below" : kind ? "Question" : "";
   document.getElementById("qaQ").setAttribute("aria-label", appMode === "vocab" ? "Question" : "Card");
   document.getElementById("qaA").placeholder = kind ? "Answer" : "";
   if (kind) document.getElementById("qaNotes").dataset.placeholder = "Notes"; else delete document.getElementById("qaNotes").dataset.placeholder;
@@ -8807,11 +8807,33 @@ function ieltsFrontHtml(row) {
   return `<div class="cell shown paper-lines" data-field="q">${qCellContent(row)}</div>`;
 }
 
-function ieltsPaperHtml(row) {
-  const list = row.aHidden ? "" : cardNotesHtml(row);
+let ieltsHintId = null;
+
+function ieltsHintNext(row) {
+  return !!row && row.aHidden && ieltsHintId !== row.id && ieltsHints(row).length > 0;
+}
+
+function ieltsHints(row) {
+  const text = (row.a || "").normalize("NFC");
+  return cardWords(row).filter(i => (i.meaning || "").trim()).map(i => {
+    const span = findTermIn(text, i.term);
+    return {
+      meaning: i.meaning,
+      at: span ? span[0] : Infinity
+    };
+  }).sort((x, y) => x.at - y.at).map(h => h.meaning);
+}
+
+function ieltsPaperHtml(row, ahead = 0) {
+  const words = row.aHidden ? [] : cardWords(row);
+  const hints = row.aHidden ? ieltsHints(row) : [], veiled = ieltsHintId !== row.id;
+  const answer = row.aHidden ? hints.length ? `<div class="cell hidden paper-prompt paper-hint${veiled ? " paper-veil" : ""}" data-field="a"><ol>` + hints.map(m => `<li>${escapeHtml(m)}</li>`).join("") + "</ol></div>" : `<div class="cell hidden paper-lines paper-veil" data-field="a">${aCellContent(row)}</div>` : `<div class="cell shown paper-lines" data-field="a">${aCellContent(row)}</div>`;
+  const own = row.aHidden || words.length ? "" : cardNotesHtml(row);
+  const list = words.length ? "<ol>" + words.map((i, n) => `<li><span class="pn">${n + 1}.</span><b>${escapeHtml(i.term)}</b>${i.meaning ? " — " + escapeHtml(i.meaning) : ""}</li>`).join("") + "</ol>" : own;
   const notes = list ? `<aside class="paper-notes">${list}</aside>` : "";
-  const front = row.aHidden ? ieltsFrontHtml(row) : `<div class="cell shown paper-lines" data-field="q">${qCellContent(row)}</div>`;
-  return `<article class="ielts-paper top-rings${notes ? " with-notes" : ""}"><div class="paper-body"><div class="paper-main"><div class="paper-answer">${front}</div></div>${notes}</div></article>`;
+  const extras = "";
+  if (!hasAnswer(row)) return `<article class="ielts-paper top-rings${notes ? " with-notes" : ""}"><div class="paper-body"><div class="paper-main"><div class="paper-answer">${row.aHidden ? ieltsFrontHtml(row) : `<div class="cell shown paper-lines" data-field="q">${qCellContent(row)}</div>`}</div></div>${notes}</div>` + extras + "</article>";
+  return `<article class="ielts-paper${notes ? " with-notes" : ""}">` + '<div class="paper-body"><div class="paper-main">' + `<div class="paper-question"><div class="cell shown" data-field="q">${qCellContent(row)}</div></div>` + `<div class="paper-answer">${answer}</div>` + `</div>${notes}</div>` + extras + "</article>";
 }
 
 let listenSlotRaf = 0;
@@ -9634,9 +9656,6 @@ function foldAnswer(c) {
   return true;
 }
 
-function keepsAnswer(q, a) {
-  return !!q && !!a && wordLike(q) && detectLang(q).split("-")[0] !== detectLang(a).split("-")[0];
-}
 
 function withWordKeys(card) {
   if (!card.vocab) return card;
@@ -10727,6 +10746,7 @@ function updateTouchBar() {
     if (focus) showBtn.hidden = true;
   } else if (groupState && groupViewStyle === "ielts") {
     const current = getCurrentSingleCardRow();
+    if (ieltsHintNext(current)) showLabel = "Hint";
     showBtn.disabled = !!current && !current.aHidden;
   }
   setTbContent(showBtn, "", showLabel);
@@ -11272,7 +11292,7 @@ function commitActiveEdit(keep) {
     return;
   }
   const row = activeEdit.row;
-  if ((row.a || "").trim() && !(row.time == null && keepsAnswer(row.q.trim(), row.a.trim()))) {
+  if (isTranslationCard(row) && !wordLike(row.q)) {
     foldAnswer(row);
     withWordKeys(row);
     scheduleAutoSave();
@@ -11489,7 +11509,7 @@ window.addEventListener("blur", () => {
 });
 
 function buildEditBoxInner(row) {
-  return `\n    <div class="edit-qa">\n      <div>\n        <div id="editQ" class="rich-editor${row.time == null ? "" : " yt-ph"}" contenteditable="true"${row.time == null ? ' data-placeholder="Sentence"' : ""} aria-label="Card">${row.time == null ? mergedCardEditHtml(row) : getEditInitialHtml(row.q, row.qHtml, row.id)}</div>\n      </div>\n      <div hidden>\n        <div id="editA" class="rich-editor" contenteditable="true">${getEditInitialHtml(row.a, row.aHtml, row.id)}</div>\n      </div>\n    </div>\n    <div class="notes-clip"><div id="editNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes">${notesEditorHtml(row)}</div></div>\n    <div class="edit-actions">\n      <button id="editSave" class="primary">Save</button>\n    </div>\n    <div id="editDict"></div>\n  `;
+  return `\n    <div class="edit-qa">\n      <div>\n        <div id="editQ" class="rich-editor${row.time == null ? "" : " yt-ph"}" contenteditable="true"${row.time == null ? ' data-placeholder="/Question, then the Answer below"' : ""} aria-label="Card">${row.time == null ? mergedCardEditHtml(row) : getEditInitialHtml(row.q, row.qHtml, row.id)}</div>\n      </div>\n      <div hidden>\n        <div id="editA" class="rich-editor" contenteditable="true">${getEditInitialHtml(row.a, row.aHtml, row.id)}</div>\n      </div>\n    </div>\n    <div class="notes-clip"><div id="editNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes">${notesEditorHtml(row)}</div></div>\n    <div class="edit-actions">\n      <button id="editSave" class="primary">Save</button>\n    </div>\n    <div id="editDict"></div>\n  `;
 }
 
 document.addEventListener("click", e => {
@@ -12461,6 +12481,7 @@ function gradeCard(row, isAgain) {
   const waits = applyGrade(row, isAgain, mode, Date.now());
   if (groupViewStyle === "ielts") {
     ieltsAnswered++;
+    ieltsHintId = null;
   }
   scheduleAutoSave();
   flushAutoSave();
@@ -31461,7 +31482,10 @@ function revealAction() {
     if (!current) return;
     scrollToPinned(studyAreaTop());
     current.qHidden = false;
-    current.aHidden = false;
+    if (ieltsHintNext(current)) ieltsHintId = current.id; else {
+      current.aHidden = false;
+      ieltsHintId = null;
+    }
     render();
     return;
   }
