@@ -90,8 +90,9 @@ Hàm chính: `buildVocabCard`, `fillVocabCard`, `vocabBackInner`, `flipVocab`, `
 | POD-11 | `0cb743b` | Từ và nghĩa cùng một dòng; mỗi câu một khối có nền |
 | POD-12 | `b59ff4f` | Từ to và nghĩa to; câu không nền; highlight màu cảnh, căn khít chữ |
 | POD-13 | `ef5c3e9` | Chọn trước, học sau: từ tự tìm chưa chọn hiện ngay, ✕ xoá / ✓ học, 🧺 đếm; 字 mở Podcast ở mọi bài; pinyin một dòng riêng |
+| POD-14 | `af6d193` | Bỏ bước chọn: một cách học cho mọi từ (Show, Good/Again, 🗑 xoá); hình động lại, chấm tròn và thanh thời lượng; task học mọi từ bằng Podcast |
 
-Hàm chính: `openBlind`, `closeBlind`, `blindItems`, `blindAutoItems`, `blindLines`, `blindNext`, `paintBlind`, `paintBlindLive`, `blindPlay`, `blindPlayOne`, `blindPlayLine`, `blindPlayer`, `blindSpeak`, `blindGrade`, `blindUndo`, `blindEdit`, `blindAct`, `blindFly`, `blindArt`, `blindSceneFor`, `blindCountsHtml`, `blindPicking`, `blindTime`, `BLIND_SCENES`.
+Hàm chính: `openBlind`, `closeBlind`, `blindItems`, `blindAutoItems`, `blindLines`, `blindNext`, `paintBlind`, `paintBlindLive`, `blindPlay`, `blindPlayOne`, `blindPlayLine`, `blindPlayer`, `blindSpeak`, `blindGrade`, `blindUndo`, `blindEdit`, `blindAct`, `blindFly`, `blindArt`, `blindSceneFor`, `blindCountsHtml`, `blindTime`, `BLIND_SCENES`.
 
 ### WORDS: Words list (từ theo tần suất)
 | Mã | Commit | Là gì |
