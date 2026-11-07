@@ -436,8 +436,7 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-editor{display:flex;flex-direction:column;gap:10px;padding:16px;margin-bottom:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);}
   .vocab-list .vocab-editor{margin:4px 0;box-shadow:none;}
   .vocab-editor textarea{width:100%;font-size:16px;}
-  #vocabEditTerm, #vocabEditMeaning, #qaQ, #qaA{border-left:4px solid var(--lesson-accent);}
-  #vocabEditMeaning, #qaA{border-left-color:var(--a-label);}
+  #vocabEditTerm, #qaQ{border-left:4px solid var(--lesson-accent);}
   #vocabEditNotes, #qaNotes{font-size:16px;}
   .quick-add{margin-bottom:12px;box-shadow:none;}
   .quick-add, #addForm{--kind:var(--accent);}
@@ -2937,7 +2936,6 @@ window.onYouTubeIframeAPIReady = function(){
     <button id="btnSingleCard" class="add-single" aria-label="Add a single card">＋</button>
     <div id="quickAdd" class="vocab-editor quick-add" hidden>
       <div class="qa-row"><input id="qaTime" class="qa-time" type="text" inputmode="numeric" autocomplete="off" placeholder="00:00" maxlength="8" aria-label="Video time" hidden><textarea id="qaQ" class="autofit" rows="1" autocomplete="off" aria-label="Question"></textarea></div>
-      <textarea id="qaA" class="autofit" rows="1" autocomplete="off" aria-label="Answer"></textarea>
       <div class="notes-clip"><div id="qaNotes" class="rich-editor" contenteditable="true" aria-label="Notes"></div></div>
       <div class="vocab-editor-actions"><button id="qaSave" class="primary">Save</button></div>
     </div>
@@ -8032,11 +8030,11 @@ function splitMergedPlain(text) {
 }
 
 function quickAddQA() {
-  const raw = document.getElementById("qaQ").value, a = document.getElementById("qaA").value;
-  return appMode !== "vocab" && lessonAddKind() === "speak" ? splitMergedPlain(raw) : {
+  const raw = document.getElementById("qaQ").value;
+  return lessonAddKind() === "listen" ? {
     q: raw,
-    a: a
-  };
+    a: ""
+  } : splitMergedPlain(raw);
 }
 
 function quickAddKind() {
@@ -8060,16 +8058,14 @@ function syncAddLook() {
   document.getElementById("addForm").dataset.kind = lessonAddKind();
   if (kind) box.dataset.kind = kind; else delete box.dataset.kind;
   document.getElementById("qaTime").hidden = kind !== "listen";
-  const merged = appMode !== "vocab" && lessonAddKind() === "speak";
-  document.getElementById("qaA").hidden = kind === "listen" || merged;
+  const merged = lessonAddKind() !== "listen";
   document.getElementById("qaQ").classList.toggle("yt-ph", kind === "listen");
-  document.getElementById("qaQ").placeholder = kind === "listen" ? " " : merged ? "/Question, then the Answer below" : kind ? "Question" : "";
+  document.getElementById("qaQ").placeholder = kind === "listen" ? " " : merged ? appMode === "vocab" ? "/Word, then its meaning below" : "/Question, then the Answer below" : kind ? "Question" : "";
   document.getElementById("qaQ").setAttribute("aria-label", appMode === "vocab" ? "Question" : "Card");
-  document.getElementById("qaA").placeholder = kind ? "Answer" : "";
   if (kind) document.getElementById("qaNotes").dataset.placeholder = "Notes"; else delete document.getElementById("qaNotes").dataset.placeholder;
 }
 
-[ "qaQ", "qaA", "qaNotes" ].forEach(id => document.getElementById(id).addEventListener("input", syncAddLook));
+[ "qaQ", "qaNotes" ].forEach(id => document.getElementById(id).addEventListener("input", syncAddLook));
 
 document.getElementById("qaTime").addEventListener("input", e => {
   const box = e.target;
@@ -11351,7 +11347,6 @@ document.getElementById("btnSingleCard").onclick = e => {
   timeBox.dataset.at = at == null ? "" : at;
   syncAddLook();
   fitTextarea(document.getElementById("qaQ"));
-  fitTextarea(document.getElementById("qaA"));
   document.getElementById("qaQ").focus();
 };
 
@@ -11366,10 +11361,11 @@ function closeQuickAdd(quiet) {
 }
 
 function saveQuickAdd() {
-  const q = document.getElementById("qaQ"), a = document.getElementById("qaA"), notes = document.getElementById("qaNotes");
+  const q = document.getElementById("qaQ"), notes = document.getElementById("qaNotes");
   if (!q.value.trim() || !currentLessonId || isVirtualLesson()) return q.focus();
   if (appMode === "vocab") {
-    if (!saveVocabEditor(null, q.value, a.value, editorHtml(notes), true)) return q.focus();
+    const qa = quickAddQA();
+    if (!saveVocabEditor(null, qa.q, qa.a, editorHtml(notes), true)) return q.focus();
     recordImport(1, "word");
     renderVocab();
   } else {
@@ -11412,10 +11408,9 @@ function saveQuickAdd() {
       render();
     }
   }
-  q.value = a.value = "";
+  q.value = "";
   notes.innerHTML = "";
   fitTextarea(q);
-  fitTextarea(a);
   renderImportInfo();
   renderLessonList();
   if (quickAddInline() && !lessonIsBlank()) return closeQuickAdd();
@@ -11424,7 +11419,7 @@ function saveQuickAdd() {
 
 document.getElementById("qaSave").onclick = saveQuickAdd;
 
-[ "qaQ", "qaA" ].forEach(id => enterSaves(document.getElementById(id), saveQuickAdd, true));
+enterSaves(document.getElementById("qaQ"), saveQuickAdd, true);
 
 function popupEnterSaves(e) {
   if (e.key !== "Enter" || e.shiftKey || e.isComposing || e.keyCode === 229 || e.metaKey || e.ctrlKey || e.altKey) return false;
@@ -14834,7 +14829,7 @@ function openLesson(lesson) {
     dbPut("lessons", lesson).catch(() => {});
   }
   stopAllSound();
-  [ "qaQ", "qaA" ].forEach(id => document.getElementById(id).value = "");
+  document.getElementById("qaQ").value = "";
   document.getElementById("qaNotes").innerHTML = "";
   closeQuickAdd(true);
   resetStudyState();
@@ -19932,8 +19927,16 @@ document.addEventListener("click", e => {
   if (ownItem) showWordView(ownItem.card, ownItem.term, ownItem.meaning, own.getBoundingClientRect());
 });
 
+function vocabEditValues() {
+  const el = document.getElementById("vocabEditTerm"), parts = splitMergedPlain(el ? el.value : "");
+  return {
+    term: parts.q,
+    meaning: parts.a
+  };
+}
+
 function vocabEditorHtml(item) {
-  return '<div class="vocab-editor">' + vocabEditCtxHtml(item) + `<textarea id="vocabEditTerm" class="autofit oneline" rows="1" autocomplete="off" aria-label="Question">${escapeHtml(item.term)}</textarea>` + `<textarea id="vocabEditMeaning" class="autofit oneline" rows="1" autocomplete="off" aria-label="Answer">${escapeHtml(item.meaning)}</textarea>` + `<div class="notes-clip"><div id="vocabEditNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes" aria-label="Notes">${wordNotesOf(item)}</div></div>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
+  return '<div class="vocab-editor">' + vocabEditCtxHtml(item) + `<textarea id="vocabEditTerm" class="autofit" rows="1" autocomplete="off" aria-label="Word" placeholder="/Word, then its meaning below">${escapeHtml(item.meaning ? "/" + item.term + "\n" + item.meaning : item.term)}</textarea>` + `<div class="notes-clip"><div id="vocabEditNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes" aria-label="Notes">${wordNotesOf(item)}</div></div>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
 }
 
 const VOCAB_FLIP_MS = 450;
@@ -20125,9 +20128,7 @@ function wireVocabEditor(items) {
   const fresh = syncVocabEditPopup(items);
   const term = document.getElementById("vocabEditTerm");
   if (!term || term.closest("#editPopup") && !fresh) return;
-  const meaning = document.getElementById("vocabEditMeaning");
   fitTextarea(term);
-  fitTextarea(meaning);
   const item = items.find(i => i.key === vocabEditingKey);
   const notes = document.getElementById("vocabEditNotes");
   notes.querySelectorAll("li").forEach(li => {
@@ -20145,25 +20146,26 @@ function wireVocabEditor(items) {
     const key = vocabEditingKey;
     vocabEditingKey = null;
     const now = lessonVocabItems(vocabSource()).find(i => i.key === key) || item;
-    if (!saveVocabEditor(now, term.value, meaning.value, editorHtml(notes), true)) {
+    const v = vocabEditValues();
+    if (!saveVocabEditor(now, v.term, v.meaning, editorHtml(notes), true)) {
       vocabEditingKey = key;
       return;
     }
     renderVocab();
   };
   document.getElementById("vocabEditSave").onclick = save;
-  [ term, meaning, notes ].forEach(input => {
+  [ term, notes ].forEach(input => {
     input.addEventListener("keydown", e => {
       e.stopPropagation();
       if (e.isComposing || e.keyCode === 229) return;
-      if (e.key === "Enter" && !e.shiftKey) {
+      if (e.key === "Enter" && !e.shiftKey && input !== notes) {
         e.preventDefault();
         save();
       }
     });
     enterSaves(input, () => {
       if (input.isConnected) save();
-    }, input === notes);
+    }, true);
   });
   if (!term.closest("#editPopup")) followInView(() => vocabEditingKey ? document.querySelector(".vocab-editor:not(.quick-add)") : null);
 }
@@ -20248,12 +20250,12 @@ function addExtraWord(termRaw, meaningRaw, explicit) {
 function commitVocabEdit() {
   if (!vocabEditingKey) return false;
   const term = document.getElementById("vocabEditTerm");
-  const meaning = document.getElementById("vocabEditMeaning");
   const notes = document.getElementById("vocabEditNotes");
   const item = lessonVocabItems(vocabSource()).find(i => i.key === vocabEditingKey);
   const isNew = vocabEditingKey === NEW_WORD_KEY;
   vocabEditingKey = null;
-  if (term && meaning && (isNew || item)) saveVocabEditor(isNew ? null : item, term.value, meaning.value, notes ? editorHtml(notes) : "", false);
+  const v = vocabEditValues();
+  if (term && (isNew || item)) saveVocabEditor(isNew ? null : item, v.term, v.meaning, notes ? editorHtml(notes) : "", false);
   return true;
 }
 
@@ -20308,15 +20310,15 @@ let vocabKeptBlank = null;
 
 function keepVocabEdit() {
   if (!vocabEditingKey || vocabEditingKey === NEW_WORD_KEY) return;
-  const term = document.getElementById("vocabEditTerm"), meaning = document.getElementById("vocabEditMeaning"), notes = document.getElementById("vocabEditNotes");
+  const term = document.getElementById("vocabEditTerm"), notes = document.getElementById("vocabEditNotes"), v = vocabEditValues();
   const item = lessonVocabItems(vocabSource()).find(i => i.key === vocabEditingKey);
-  const text = term && cleanPunct(term.value).replace(/\s+/g, " ").trim();
+  const text = term && cleanPunct(v.term).replace(/\s+/g, " ").trim();
   if (!item || !text) return;
-  const key = wordKey(text, cleanPunct(meaning ? meaning.value : item.meaning));
+  const key = wordKey(text, cleanPunct(v.meaning));
   if (key !== item.key && lessonVocabItems(vocabSource()).some(i => i.key === key)) return;
   const blank = !item.meaning || vocabKeptBlank === item.key;
   vocabEditingKey = null;
-  const saved = saveVocabEditor(item, term.value, meaning.value, notes ? editorHtml(notes) : "", false, true);
+  const saved = saveVocabEditor(item, v.term, v.meaning, notes ? editorHtml(notes) : "", false, true);
   vocabEditingKey = saved ? key : item.key;
   if (saved) {
     vocabKeptBlank = blank ? key : null;
@@ -27783,7 +27785,7 @@ document.addEventListener("keydown", e => {
     });
     return;
   }
-  const field = e.target.closest && e.target.closest("#qaQ, #qaA");
+  const field = e.target.closest && e.target.closest("#qaQ");
   if (!field || appMode === "vocab") return;
   const text = field.value.slice(field.selectionStart, field.selectionEnd).replace(/\s+/g, " ").trim();
   if (!text || text === field.value.trim()) return;
