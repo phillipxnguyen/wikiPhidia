@@ -34,6 +34,7 @@ Hàm chính: `ieltsPaperHtml`, `ieltsFrontHtml`, `sentenceEx`, `sentenceKeyWord`
 | Mã | Commit | Là gì |
 |---|---|---|
 | FULL-1 | `961cf80` | Danh sách thẻ, sửa trong popup, vuốt xoá có bóng thiên thần |
+| FULL-2 | `c18533e` | 🌐 hiện bản dịch dưới mỗi câu chưa có câu trả lời (của notes hoặc máy dịch) |
 
 Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `selectRow`, `clearRowSelection`, `updateSelBar`.
 
@@ -63,8 +64,9 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-21 | `0f925e0` | Công tắc thành biểu tượng; cabin học như thường: mặt trước máy đọc bản dịch, Show phát câu YouTube, chấm để sang câu |
 | THEATER-22 | `128179a` | Tốc độ dùng chung danh sách của app: 1x, 1.25x, 1.5x, 1.75x, 2x |
 | THEATER-23 | `e66c962` | Đủ rule mode học: Delete/⌘C cho câu đang học, thanh chép/xoá luôn có trên điện thoại, xoá xong sang câu kế |
+| THEATER-24 | `c18533e` | Bản dịch tải sẵn khi mở bài, bật là hiện ngay |
 
-Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `cabinSay`, `cabinReveal`, `watchTranslation`, `placeWatchCap`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
+Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `placeWatchCap`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
 ---
 
