@@ -25,8 +25,9 @@ Hàm chính: `isListenMode`, `listenBatch`, `startSequenceLoop`, `stopSequenceLo
 |---|---|---|
 | SPEAK-1 | `961cf80` | Tờ đề có gáy và dòng kẻ, Hint rồi Show |
 | SPEAK-2 | `407f09e` | Trong focus: tờ mờ kính, không gáy, không dòng kẻ |
+| SPEAK-3 | `3f33aa9` | Chỉ câu + notes; bỏ Hint; mặt trước tự đổi: câu khoét một từ hoặc chỉ từ khoá để nhớ cả câu |
 
-Hàm chính: `ieltsHints`, `ieltsHintNext`, `revealAction`, `render` (nhánh `groupViewStyle === "ielts"`).
+Hàm chính: `ieltsPaperHtml`, `ieltsFrontHtml`, `sentenceEx`, `sentenceKeyWord`, `entryHidden`, `revealAction`, `render` (nhánh `groupViewStyle === "ielts"`). Bản cũ có `ieltsHints`, `ieltsHintNext` (đến SPEAK-2).
 
 ### FULL: ☰ Full / ☰ List (danh sách thẻ)
 | Mã | Commit | Là gì |
@@ -107,8 +108,9 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 | DATA-2 | `c87d38e` | Chỉ học chính ngôn ngữ: A là bản dịch thì vào notes; câu kèm bản dịch giữ làm thẻ câu; bỏ tự dịch câu khi dán |
 | DATA-3 | `28401a5` | Bỏ hẳn code thẻ dịch: câu dán kèm bản dịch vào notes ngay khi tạo; gộp một lần mỗi máy; bỏ gộp khi nạp/lưu, hộp thoại chuyển sang Vocabulary, bộ thẻ dịch |
 | DATA-4 | `876d8af` | Chỉ còn Q và notes: mọi A (cả câu trả lời mẫu Speaking) vào notes, một lần mỗi máy; bỏ ô Answer; mọi mode: mặt trước Q, Show ra notes |
+| DATA-5 | `3f33aa9` | Bỏ bước chuyển đổi một lần và mọi code xử lý dữ liệu A cũ; ô nghĩa chỉ còn cho từ bên Vocabulary |
 
-Hàm chính: `newRow` (bản dịch vào notes khi tạo), `foldAnswer` + `keepsAnswer` + `FOLDED_KEY` (chỉ chạy một lần mỗi máy, có thể xoá sau), `wordLike`, `belongsInVocab`, `isTranslationCard` (cho dòng `từ: nghĩa`), `autoSortLibrary`.
+Hàm chính: `newRow` (bản dịch vào notes khi tạo), `foldAnswer` + `keepsAnswer` (dòng thêm dưới câu khi sửa thẻ hoặc khi dán thì vào notes), `wordLike`, `belongsInVocab`, `isTranslationCard` (cho dòng `từ: nghĩa`), `autoSortLibrary`.
 
 ### BAR: Thanh công cụ khi học
 | Mã | Commit | Là gì |
