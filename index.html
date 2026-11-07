@@ -332,7 +332,6 @@ window.onYouTubeIframeAPIReady = function(){
   .flag-set{display:flex;--cw:32px;--ch:24px;}
   .toolbar-flag{margin-right:auto;align-items:center;gap:8px;}
   .toolbar-flag[hidden]{display:none;}
-  .toolbar-flag.flag-back{cursor:pointer;pointer-events:auto;}
   .vocab-toolbar > .toolbar-flag{order:-1;margin-right:calc(var(--btn-gap) - var(--tb-gap));}
   #viewStudy .toolbar > .toolbar-flag{order:-1;margin-right:calc(var(--btn-gap) - var(--tb-gap));}
   .toolbar-flag .flag-unit{width:calc(var(--cw) + (var(--n) - 1) * 8px);height:calc(var(--ch) + (var(--n) - 1) * 4px);}
@@ -1029,7 +1028,6 @@ window.onYouTubeIframeAPIReady = function(){
   :is(.rich-editor, .cell, .vocab-ctx, .vocab-edit-ctx, .wl-sent) mark.vocab-own{background:none;color:var(--vocab-own-ink);}
   @media (hover:hover){:is(.rich-editor, .cell, .vocab-ctx, .vocab-edit-ctx, .wl-sent) mark.vocab-own{cursor:pointer;}}
   :is(.rich-editor, .cell, .vocab-ctx, .vocab-edit-ctx, .wl-sent) mark.vocab-hit{background:none;color:var(--vocab-ink);cursor:pointer;}
-          :is(.rich-editor, .cell, .vocab-ctx, .vocab-edit-ctx, .wl-sent) mark.vocab-hover{text-decoration:underline;text-underline-offset:3px;}
   .rich-editor ul, .vocab-popup ul{margin:2px 0;padding-left:20px;}
   .rich-editor :is(ul, ol){padding-left:24px;}
   .rich-editor li, .vocab-popup li{margin:2px 0;}
@@ -3034,7 +3032,7 @@ window.onYouTubeIframeAPIReady = function(){
     <div class="segmented" role="group" aria-label="Vocabulary options">
       <button id="vocabViewToggle" aria-label="Study the words" title="Study the words: Podcast for a video lesson, flashcards otherwise">字</button>
     </div>
-    <span id="vocabFlag" class="flag-set toolbar-flag" role="button" tabindex="0" aria-label="Back to the list" title="Back to the list" hidden></span>
+    <span id="vocabFlag" class="flag-set toolbar-flag" hidden></span>
     <div class="toolbar-right">
       <button id="vocabSpeak" aria-label="Play the sentence">🔊</button>
       <select id="vocabSpeed" aria-label="Playback speed" hidden></select>
@@ -3101,7 +3099,7 @@ window.onYouTubeIframeAPIReady = function(){
       <button id="fullModeBtn" aria-label="Study the sentences" title="Study the sentences">💬</button>
       <button id="wordsModeBtn" class="sep-before" aria-label="Study the words" title="Study the words: Podcast for a video lesson, flashcards otherwise">字</button>
     </div>
-    <span id="studyFlag" class="flag-set toolbar-flag" role="button" tabindex="0" aria-label="Back to the list" title="Back to the list" hidden></span>
+    <span id="studyFlag" class="flag-set toolbar-flag" hidden></span>
     <div class="toolbar-right">
       <button id="btnPlaySequence" aria-label="Play"></button>
       <select id="playbackSpeed" style="visibility:hidden;">
@@ -11925,7 +11923,6 @@ function syncModeButtonHighlights() {
   fullBtn.closest(".segmented").hidden = isAllLessons() || !!groupState || fullBtn.hidden && wordsBtn.hidden;
   syncTheater();
   flag.hidden = !isAllLessons() && !groupState;
-  flag.classList.toggle("flag-back", !!groupState && !isAllLessons());
 }
 
 function updateGroupUI() {
@@ -12202,9 +12199,7 @@ document.getElementById("fullModeBtn").onclick = () => {
   if (mode) goToReviewMode(mode);
 };
 
-document.getElementById("studyFlag").onclick = e => e.currentTarget.classList.contains("flag-back") && goToReviewMode("full");
 
-document.getElementById("studyFlag").onkeydown = e => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), e.stopPropagation(), e.currentTarget.click());
 
 document.getElementById("btnPlaySequence").addEventListener("click", () => setTimeout(noteWorkHush, 0));
 
@@ -19964,7 +19959,6 @@ function renderVocab() {
   fitTextarea(title);
   document.getElementById("vocabToolbar").hidden = !items.length;
   document.getElementById("vocabToolbar").style.display = "";
-  syncVocabToggle();
   const stage = document.getElementById("vocabStage");
   const list = document.getElementById("vocabList");
   const badges = document.getElementById("vocabBadges");
@@ -20026,7 +20020,6 @@ function renderVocab() {
   const anyDue = !!currentVocabItem() || items.some(i => vocabStateOf(i).due <= now);
   document.getElementById("vocabFlag").hidden = currentLessonId !== VOCAB_ALL_ID && vocabView === "list";
   document.getElementById("vocabViewToggle").hidden = studyOnly || vocabView !== "list" || !anyDue;
-  syncVocabToggle();
   if (vocabView === "list") {
     badges.innerHTML = anyDue ? badgesHtml(c.fresh, c.due, c.done, { new: c.fresh > 0, due: c.due > 0, done: c.done > 0 }) : "";
     stage.innerHTML = "";
@@ -20871,13 +20864,9 @@ function setVocabView(view) {
   renderVocab();
 }
 
-function syncVocabToggle() {
-  document.getElementById("vocabFlag").classList.toggle("flag-back", vocabView !== "list" && !document.getElementById("vocabToolbar").classList.contains("study-only"));
-}
 
 document.getElementById("vocabViewToggle").onclick = () => blindCanOpen() ? openBlind() : setVocabView("card");
-document.getElementById("vocabFlag").onclick = e => {
-  if (!e.currentTarget.classList.contains("flag-back")) return;
+function vocabBack() {
   const l = library.find(x => x.id === currentLessonId);
   if (l && !isVocabOnlyLesson(l)) {
     commitVocabEdit();
@@ -20885,8 +20874,7 @@ document.getElementById("vocabFlag").onclick = e => {
     return showView("study");
   }
   setVocabView("list");
-};
-document.getElementById("vocabFlag").onkeydown = e => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), e.stopPropagation(), e.currentTarget.click());
+}
 
 setInterval(() => {
   if (currentView !== "vocab" || tabPaused || vocabEditingKey || !vocabSession || currentVocabItem() || taskRun) return;
@@ -22385,10 +22373,7 @@ document.getElementById("taskClose").onclick = () => taskRun && taskRun.book ? o
 document.getElementById("focusExit").onclick = e => {
   e.currentTarget.blur();
   if (taskRun) return document.getElementById("taskClose").click();
-  if (currentView === "vocab") {
-    const flag = document.getElementById("vocabFlag");
-    return flag.classList.contains("flag-back") ? flag.click() : setVocabView("list");
-  }
+  if (currentView === "vocab") return vocabView === "list" ? setVocabView("list") : vocabBack();
   goToReviewMode("full");
 };
 
@@ -27818,19 +27803,6 @@ document.addEventListener("keydown", e => {
   });
 }, true);
 
-const hoverQuery = window.matchMedia("(hover: hover)");
-
-document.addEventListener("mouseover", e => {
-  if (!hoverQuery.matches) return;
-  const mark = e.target.closest && e.target.closest(":is(.rich-editor, .cell, .vocab-ctx, .vocab-edit-ctx, .wl-sent) mark.vocab-hit");
-  document.querySelectorAll("mark.vocab-hover").forEach(m => m.classList.remove("vocab-hover"));
-  if (!mark) return;
-  const keys = markTerms(mark);
-  mark.closest(".rich-editor, .cell, .vocab-ctx, .vocab-edit-ctx, .wl-sent").querySelectorAll("mark.vocab-hit").forEach(m => {
-    if (markTerms(m).some(k => keys.includes(k))) m.classList.add("vocab-hover");
-  });
-});
-
 function fitTextarea(el) {
   if (!el || !el.offsetParent) return;
   el.style.height = "auto";
@@ -27901,15 +27873,16 @@ function isTypingInField() {
 
 function cycleMode() {
   if (currentView === "vocab") {
-    const t = document.getElementById(vocabView === "list" ? "vocabViewToggle" : "vocabFlag");
-    if (t.hidden || t.id === "vocabFlag" && !t.classList.contains("flag-back")) return false;
+    if (vocabView !== "list") return vocabBack(), true;
+    const t = document.getElementById("vocabViewToggle");
+    if (t.hidden) return false;
     t.click();
     return true;
   }
-  const flag = document.getElementById("studyFlag"), full = document.getElementById("fullModeBtn");
-  const t = groupState ? flag.classList.contains("flag-back") && flag : !full.closest(".segmented").hidden && full;
-  if (!t) return false;
-  t.click();
+  if (groupState && !isAllLessons()) return goToReviewMode("full"), true;
+  const full = document.getElementById("fullModeBtn");
+  if (full.closest(".segmented").hidden) return false;
+  full.click();
   return true;
 }
 
