@@ -7153,8 +7153,13 @@ function isTranslationCard(row) {
   return v;
 }
 
+function wordLike(q) {
+  q = (q || "").trim();
+  return !!q && !/[.!?。！？]$/.test(q) && q.split(/\s+/).length <= 4 && q.length <= 24 && !q.includes("\n");
+}
+
 function belongsInVocab(row) {
-  return row.time == null && isTranslationCard(row);
+  return row.time == null && isTranslationCard(row) && wordLike(row.q);
 }
 
 function isTranslationDeck(cards) {
@@ -9643,6 +9648,18 @@ function normalizeVocabText(s) {
 function wordKey(term, meaning) {
   const m = normalizeVocabText((meaning || "").replace(/\s+/g, " ").trim());
   return normalizeVocabText(term) + (m ? "\u0001" + m : "");
+}
+
+function foldTranslation(c) {
+  const q = (c.q || "").trim(), a = (c.a || "").trim();
+  if (!q || !a || detectLang(q).split("-")[0] === detectLang(a).split("-")[0]) return false;
+  const add = wordLike(q) ? `<ul><li><b>${escapeHtml(q)}</b>: ${escapeHtml(a)}</li></ul>` : `<div>${c.aHtml || escapeHtml(a)}</div>`;
+  c.notesHtml = add + (c.notesHtml || "");
+  c.notes = plainTextOf(c.notesHtml, "\n");
+  c.a = "";
+  c.aHtml = "";
+  translationMemo.delete(c);
+  return true;
 }
 
 function withWordKeys(card) {
@@ -13638,38 +13655,6 @@ function appendWordItems(card, pairs) {
   stampNewVocab(card, before);
 }
 
-function sentenceWordsFrom(cards) {
-  const toTranslate = [], seen = new Set;
-  const fits = t => t && !seen.has(normalizeVocabText(t)) && !existingVocab(t);
-  cards.forEach(c => {
-    const q = (c.q || "").replace(/\s+/g, " ").trim(), a = (c.a || "").replace(/\s+/g, " ").trim();
-    if (a && !/[.!?。！？]\s+\S/.test(a)) return;
-    splitIntoSentences(a || q).forEach(sen => {
-      if (!fits(sen.text)) return;
-      seen.add(normalizeVocabText(sen.text));
-      toTranslate.push(sen.text);
-    });
-  });
-  return toTranslate;
-}
-
-async function addSentenceWords(cards, onStatus) {
-  const lessonId = currentLessonId;
-  const toTranslate = sentenceWordsFrom(cards);
-  if (!toTranslate.length) return 0;
-  if (toTranslate.length && onStatus) onStatus(`Translating ${countOf(toTranslate.length, "sentence")} for Vocabulary…`);
-  const vi = toTranslate.filter(t => detectLang(t) === "vi-VN"), other = toTranslate.filter(t => detectLang(t) !== "vi-VN");
-  const [viOut, otherOut] = await Promise.all([ vi.length ? translateBatch(vi, "en") : [], other.length ? translateBatch(other, "vi") : [] ]);
-  if (currentLessonId !== lessonId) return 0;
-  const found = vi.map((t, i) => [ t, viOut[i] ]).concat(other.map((t, i) => [ t, otherOut[i] ])).filter(([t, m]) => m && m.trim() && !existingVocab(t));
-  if (!found.length) return 0;
-  pushUndo("Added " + countOf(found.length, "card") + " from sentences");
-  addWordsToLesson(found, cards);
-  render();
-  renderLessonList();
-  return found.length;
-}
-
 function lessonIsBlank() {
   return !!currentLessonId && !isVirtualLesson() && vocabEditingKey !== NEW_WORD_KEY && !rows.some(r => (r.q || "").trim() || (r.a || "").trim()) && !lessonVocabItems(vocabSource()).length;
 }
@@ -14156,10 +14141,6 @@ document.getElementById("importBtn").onclick = () => {
       document.getElementById("importText").value = "";
       renderLessonList();
     }
-  } else if (plan.newRows.length && !isVideoLesson()) {
-    addSentenceWords(plan.newRows, setImportStatus).then(n => {
-      if (n) setImportStatus(msg + ` Added ${countOf(n, "card")} to Vocabulary from the sentences.`);
-    });
   }
   if (analysis.title && !plan.newRows.length && !plan.fills.size) scheduleAutoSave();
   render();
@@ -14225,11 +14206,6 @@ function renderImportPreview() {
   if (counts.duplicate || counts.wordDup) summary.push(`<span class="ip-status dup">❐ ${(counts.duplicate || 0) + (counts.wordDup || 0)} duplicate</span>`);
   if (counts.empty || counts.invalid) summary.push(`<span class="ip-status skip">⚠️ ${(counts.empty || 0) + (counts.invalid || 0)} skipped</span>`);
   if (counts.heading) summary.push(`<span class="ip-status dup">➖ ${counts.heading} heading${counts.heading === 1 ? "" : "s"}</span>`);
-  if (!counts.word && !counts.wordDup && !isVideoLesson()) {
-    const fromSentences = sentenceWordsFrom(analysis.entries.filter((_, i) => plan.outcomes[i] && plan.outcomes[i].kind === "new"));
-    const n = fromSentences.length;
-    if (n) summary.push(`<span class="ip-status new" title="No word list found: the sentences themselves become Vocabulary cards, translated">🔤 ${n} from sentences</span>`);
-  }
   summary.push(`<span>Delimiter: <b>${delimName}</b>${analysis.delim !== currentDelim() ? " (auto-detected)" : ""}</span>`);
   if (analysis.title) summary.push(`<span>Title: <b>${escapeHtml(analysis.title)}</b></span>`);
   if (analysis.mediaUrl) summary.push(`<span>Video link: <b>${escapeHtml(truncate(analysis.mediaUrl, 48))}</b></span>`);
@@ -14388,7 +14364,7 @@ function normalizeCard(c) {
   const qHtml = c.qHtml ? cleanPunctHtml(sanitizeHtml(String(c.qHtml), "br")) : "";
   const aHtml = c.aHtml ? cleanPunctHtml(sanitizeHtml(String(c.aHtml), "br")) : "";
   const notesHtml = c.notesHtml ? sanitizeHtml(String(c.notesHtml)) : "";
-  return withWordKeys({
+  const card = {
     uid: typeof c.uid === "string" && c.uid ? c.uid : makeUid(),
     q: qHtml ? cleanPunct(plainTextOf(qHtml, "\n")) : cleanPunct(cleanText(c.q)),
     a: aHtml ? cleanPunct(plainTextOf(aHtml, "\n")) : cleanPunct(cleanText(c.a)),
@@ -14401,7 +14377,9 @@ function normalizeCard(c) {
     vocab: normalizeVocabSrs(c.vocab),
     merged: !!c.merged,
     kept: !!c.kept
-  });
+  };
+  foldTranslation(card);
+  return withWordKeys(card);
 }
 
 function legacyStudyLang(data) {
@@ -14753,7 +14731,7 @@ function autoSortLibrary() {
   }) : null;
   let liveTouched = false;
   homes.forEach(home => {
-    const toWords = home.cards.filter(c => c && c.uid !== EXTRA_UID && c !== editing && c.time == null && (c.q || "").trim() && (c.a || "").trim() && isTranslationCard(c));
+    const toWords = home.cards.filter(c => c && c.uid !== EXTRA_UID && c !== editing && c.time == null && (c.q || "").trim() && (c.a || "").trim() && belongsInVocab(c));
     const holders = home.cards.filter(c => c && c !== editing).concat(home.extras ? [ home.extras ] : []);
     const toCards = [];
     holders.forEach(card => vocabEntriesOf(card).forEach(e => {
@@ -14971,6 +14949,7 @@ function saveCurrentLesson() {
   if (isVirtualLesson()) return saveVirtualLesson();
   const sorted = autoSortLibrary();
   if (dedupeLibrary() || sorted) afterDedupe();
+  rows.forEach(r => r.uid !== EXTRA_UID && foldTranslation(r) && withWordKeys(r));
   const data = serializeCurrentLesson();
   upsertLibrary(data);
   updateLessonListItem(data);
@@ -19178,6 +19157,10 @@ async function initApp() {
     let converted = false;
     l.cards.forEach(c => {
       if (joinOldTranslation(c)) converted = true;
+      if (foldTranslation(c)) {
+        withWordKeys(c);
+        converted = true;
+      }
       if (c.srs && MODES.some(m => c.srs[m] && typeof c.srs[m].streak !== "number")) {
         c.srs = normalizeSrs(c.srs);
         converted = true;
