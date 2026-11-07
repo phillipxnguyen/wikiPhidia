@@ -19599,6 +19599,36 @@ function lookupOthers(html, item) {
   return tmp.innerHTML;
 }
 
+function clozeChunk(text, span) {
+  const cjk = /[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]/.test(text.slice(span[0], span[1]));
+  const stop = /[。！？!?.,，、；;：:\n]/;
+  let a = span[0], b = span[1];
+  if (cjk) {
+    for (let k = 0; k < 4 && a > 0 && !stop.test(text[a - 1]); k++) a--;
+    for (let k = 0; k < 4 && b < text.length && !stop.test(text[b]); k++) b++;
+  } else {
+    const left = text.slice(0, a).trim().split(/\s+/).filter(Boolean), right = text.slice(b).trim().split(/\s+/).filter(Boolean);
+    const l = left.slice(-2).join(" "), r = right.slice(0, 2).join(" ");
+    return [ (left.length > 2 ? "… " : "") + (l ? l + " " : ""), (r ? " " + r : "") + (right.length > 2 ? " …" : "") ];
+  }
+  return [ (a > 0 ? "…" : "") + text.slice(a, span[0]), text.slice(span[1], b) + (b < text.length ? "…" : "") ];
+}
+
+function otherLessonSentence(item) {
+  const home = item.card.srcLessonId || currentLessonId, found = [];
+  library.forEach(l => {
+    if (l.id === home || isVirtualId(l.id) || bookHidden(l)) return;
+    l.cards.forEach(c => {
+      if (found.length >= 30 || c.uid === EXTRA_UID) return;
+      splitIntoSentences(c.q || "").forEach(x => {
+        const t = (x.text || "").trim();
+        if (t && t.length <= 120 && findTermIn(t, item.term)) found.push(t);
+      });
+    });
+  });
+  return found.length ? found[Math.floor(Math.random() * found.length)] : "";
+}
+
 function wholeSentenceCard(item, sentence) {
   const bare = t => foldVocab(t || "").replace(/[\p{P}\s]+/gu, "");
   const term = bare(item.term), line = bare(sentence);
@@ -19727,23 +19757,31 @@ function fillVocabCard(el, item) {
   const viewOnly = vocabViewOnly(item);
   const sentence = vocabContext(item).sentence || "", gap = !viewOnly && sentence && !wholeSentenceCard(item, sentence) ? findTermIn(sentence, item.term) : null;
   if (el.dataset.lookKey !== item.key) {
-    const cloze = !!gap && Math.random() < .5;
+    const other = viewOnly ? "" : otherLessonSentence(item);
+    const kinds = [ "word" ];
+    if (gap) kinds.push("cloze", "chunk");
+    if (other) kinds.push("other");
+    const ex = kinds[Math.floor(Math.random() * kinds.length)], cloze = ex !== "word";
+    el.dataset.other = ex === "other" ? other : "";
     const pool = cloze ? [ "plain", "quote", "board", "note", "frame" ] : CARD_LOOKS;
     const look = pool.filter(x => x !== lastCardLook)[Math.floor(Math.random() * (pool.length - 1))];
     lastCardLook = look;
     el.dataset.lookKey = item.key;
     el.dataset.look = look;
-    el.dataset.ex = cloze ? "cloze" : "word";
+    el.dataset.ex = ex;
     cardType(el, item);
   }
   el.classList.toggle("view-only", viewOnly);
-  if (el.dataset.ex === "cloze" && gap) {
-    const n = Math.max(3, Math.min(16, gap[1] - gap[0]));
-    el.querySelector(".vocab-term").innerHTML = `<span>${escapeHtml(sentence.slice(0, gap[0]))}<span class="cloze-gap" style="--gap:${n}"></span>${escapeHtml(sentence.slice(gap[1]))}</span>`;
+  const ex = el.dataset.ex, otherGap = ex === "other" && el.dataset.other ? findTermIn(el.dataset.other, item.term) : null;
+  if (ex === "cloze" && gap || ex === "chunk" && gap || otherGap) {
+    const text = otherGap ? el.dataset.other : sentence, span = otherGap || gap;
+    const n = Math.max(3, Math.min(16, span[1] - span[0]));
+    const [ before, after ] = ex === "chunk" ? clozeChunk(text, span) : [ text.slice(0, span[0]), text.slice(span[1]) ];
+    el.querySelector(".vocab-term").innerHTML = `<span>${escapeHtml(before)}<span class="cloze-gap" style="--gap:${n}"></span>${escapeHtml(after)}</span>`;
   } else el.querySelector(".vocab-term").innerHTML = `<span>${escapeHtml(item.term)}</span>`;
   el.querySelector(".vocab-term").classList.toggle("word", !viewOnly && !wholeSentenceCard(item, vocabContext(item).sentence));
   const main = el.querySelector(".vocab-back-main");
-  const html = vocabBackInner(item);
+  const html = vocabBackInner(item) + (otherGap ? `<div class="vocab-ctx small">${lookupOthers(vocabSentenceHtml(el.dataset.other, item.term, item.card), item)}</div>` : "");
   if (main.dataset.html === html) return;
   main.dataset.html = html;
   main.innerHTML = html;
