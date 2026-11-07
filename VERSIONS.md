@@ -55,8 +55,9 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-13 | `a577e49` | Che giao diện YouTube, nền phụ đề, Loop/Blur, Enter chấm, undo về chỗ cũ |
 | THEATER-14 | `231e50f` | Mỗi câu là thẻ (lookup, E/Delete/⌘C, Shift); điện thoại chấm bằng thanh đáy |
 | THEATER-15 | `ef5c3e9` | AP xuống thanh dưới; pinyin một dòng riêng trên câu; công tắc bật tô đặc, hover chỉ viền |
+| THEATER-16 | `d0a1d9b` | Trang bài YouTube lại là list dưới video to; theater thành mode học trong focus (nút tròn), thanh trên chung, khung sáng |
 
-Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchTranslation`, `placeWatchCap`, `watchPrefs`, `theaterScene`, `THEATER_SCENES`.
+Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchTranslation`, `placeWatchCap`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
 ---
 
@@ -92,6 +93,7 @@ Hàm chính: `buildVocabCard`, `fillVocabCard`, `vocabBackInner`, `flipVocab`, `
 | POD-13 | `ef5c3e9` | Chọn trước, học sau: từ tự tìm chưa chọn hiện ngay, ✕ xoá / ✓ học, 🧺 đếm; 字 mở Podcast ở mọi bài; pinyin một dòng riêng |
 | POD-14 | `af6d193` | Bỏ bước chọn: một cách học cho mọi từ (Show, Good/Again, 🗑 xoá); hình động lại, chấm tròn và thanh thời lượng; task học mọi từ bằng Podcast |
 | POD-15 | `bb0fca5` | Thanh trên như mọi mode (cờ, New/Due/Done, ✕ chung) |
+| POD-16 | `d0a1d9b` | Podcast có cả bên Lessons; bỏ nút 🗑 (Delete và ✕ của thanh chọn vẫn xoá) |
 
 Hàm chính: `openBlind`, `closeBlind`, `blindItems`, `blindAutoItems`, `blindLines`, `blindNext`, `paintBlind`, `paintBlindLive`, `blindPlay`, `blindPlayOne`, `blindPlayLine`, `blindPlayer`, `blindSpeak`, `blindGrade`, `blindUndo`, `blindEdit`, `blindAct`, `blindFly`, `blindArt`, `blindSceneFor`, `blindCountsHtml`, `blindTime`, `BLIND_SCENES`.
 
@@ -150,6 +152,7 @@ Hàm chính: `todayTasks`, `todayTaskCounts`, `taskQueue`, `startTaskSide`, `tas
 | LAYOUT-3 | `df9253c` | Bỏ Word bank, sidebar một list |
 | LAYOUT-4 | `f5796be` | Một màu ở mọi nơi |
 | LAYOUT-5 | `f42c79a` | Khôi phục hai bên như LAYOUT-1: logo chuyển Lessons / Vocabulary, màu xanh lá, list bài riêng; ☰ flashcard và 🎧 Podcast trong Vocabulary; bỏ nút 字 trong bài và trên theater |
+| LAYOUT-6 | `d0a1d9b` | Nút vào mode thành nút tròn xếp dọc (Speaking, theater, Podcast / flashcard, Podcast), bỏ ☰ trên thanh công cụ |
 
 Hàm chính: `switchToLesson`, `setAppMode`, `syncModeButtonHighlights`, `lessonInMode`, `lessonShown`, `bookHidden`.
 
