@@ -72,8 +72,9 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `paintWatch
 | FLASH-4 | `e229a04` | Không chữ trang trí; mặt trước là đồ vật vẽ (biển, cốc, bóng bay…); font ngẫu nhiên khoảng 55 kiểu |
 | FLASH-5 | `71aff22` | Chỉ font dễ đọc; font riêng cho chữ Latin và chữ châu Á |
 | FLASH-6 | `a73c2d6` | Khoảng một nửa số lần, mặt trước là câu của từ với từ đó bị khoét thành chỗ trống |
+| FLASH-7 | `a467d7c` | 4 kiểu mặt trước ngẫu nhiên: chỉ từ (tự đặt câu), câu khoét từ, cụm từ kết hợp khoét từ, câu bài khác khoét từ |
 
-Hàm chính: `buildVocabCard`, `fillVocabCard`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
+Hàm chính: `buildVocabCard`, `fillVocabCard`, `clozeChunk`, `otherLessonSentence`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
 ### POD: Podcast (nghe từ)
 | Mã | Commit | Là gì |
