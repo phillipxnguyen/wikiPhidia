@@ -54,8 +54,9 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-12 | `6c036a1` | List là bài học: chỉ câu cần học, chấm xong bay ra |
 | THEATER-13 | `a577e49` | Che giao diện YouTube, nền phụ đề, Loop/Blur, Enter chấm, undo về chỗ cũ |
 | THEATER-14 | `231e50f` | Mỗi câu là thẻ (lookup, E/Delete/⌘C, Shift); điện thoại chấm bằng thanh đáy |
+| THEATER-15 | `ef5c3e9` | AP xuống thanh dưới; pinyin một dòng riêng trên câu; công tắc bật tô đặc, hover chỉ viền |
 
-Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchArm`, `watchGrade`, `watchToggle`, `watchRuby`, `watchLineHtml`, `watchTranslation`, `placeWatchCap`, `watchPrefs`, `theaterScene`, `THEATER_SCENES`.
+Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchTranslation`, `placeWatchCap`, `watchPrefs`, `theaterScene`, `THEATER_SCENES`.
 
 ---
 
@@ -88,8 +89,9 @@ Hàm chính: `buildVocabCard`, `fillVocabCard`, `vocabBackInner`, `flipVocab`, `
 | POD-10 | `d9ce2a9` | Mặt sau giống flashcard: 28px, highlight vàng, mốc thời gian mỗi câu |
 | POD-11 | `0cb743b` | Từ và nghĩa cùng một dòng; mỗi câu một khối có nền |
 | POD-12 | `b59ff4f` | Từ to và nghĩa to; câu không nền; highlight màu cảnh, căn khít chữ |
+| POD-13 | `ef5c3e9` | Chọn trước, học sau: từ tự tìm chưa chọn hiện ngay, ✕ xoá / ✓ học, 🧺 đếm; 字 mở Podcast ở mọi bài; pinyin một dòng riêng |
 
-Hàm chính: `openBlind`, `closeBlind`, `blindItems`, `blindAutoItems`, `blindLines`, `blindNext`, `paintBlind`, `paintBlindLive`, `blindPlay`, `blindPlayOne`, `blindPlayLine`, `blindPlayer`, `blindSpeak`, `blindGrade`, `blindUndo`, `blindEdit`, `blindAct`, `blindFly`, `blindArt`, `blindSceneFor`, `blindCountsHtml`, `blindTime`, `BLIND_SCENES`.
+Hàm chính: `openBlind`, `closeBlind`, `blindItems`, `blindAutoItems`, `blindLines`, `blindNext`, `paintBlind`, `paintBlindLive`, `blindPlay`, `blindPlayOne`, `blindPlayLine`, `blindPlayer`, `blindSpeak`, `blindGrade`, `blindUndo`, `blindEdit`, `blindAct`, `blindFly`, `blindArt`, `blindSceneFor`, `blindCountsHtml`, `blindPicking`, `blindTime`, `BLIND_SCENES`.
 
 ### WORDS: Words list (từ theo tần suất)
 | Mã | Commit | Là gì |
