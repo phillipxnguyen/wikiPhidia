@@ -932,6 +932,12 @@ window.onYouTubeIframeAPIReady = function(){
   @media (hover:hover){.segmented button:hover{background:color-mix(in srgb, var(--accent) 10%, var(--surface));color:var(--text);}.segmented button.sp-vocab:hover{background:transparent;color:#1e9466;}.segmented button.sp-vocab.to-lesson:hover{color:var(--lesson-color);}}
   .segmented button.active{background:var(--surface);color:var(--text);box-shadow:var(--shadow-sm);}
   #btnPlaySequence{visibility:hidden;width:48px;}
+  .toolbar #listTrans{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;width:48px;height:var(--tb-h);padding:0;}
+  .toolbar #listTrans[hidden]{display:none;}
+  #listTrans svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;}
+  #listTrans.active{background:var(--accent);color:var(--on-accent, #ffffff);border-color:var(--accent);}
+  .row-tr{margin-top:4px;font-size:16px;line-height:24px;color:var(--text-2);}
+  .row-tr:empty{display:none;}
   #btnPlaySequence, #vocabSpeak{position:relative;}
   #btnPlaySequence:focus:not(:focus-visible), #vocabSpeak:focus:not(:focus-visible), .loop-time:focus:not(:focus-visible), .exam-play:focus:not(:focus-visible){outline:none;}
   #btnPlaySequence:focus-visible, #vocabSpeak:focus-visible, .exam-play:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
@@ -3192,6 +3198,7 @@ window.onYouTubeIframeAPIReady = function(){
     </div>
     <span id="studyFlag" class="flag-set toolbar-flag" hidden></span>
     <div class="toolbar-right">
+      <button id="listTrans" class="list-trans" aria-label="Translations" aria-pressed="false" title="Show each sentence's translation (its own, or a machine translation)"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M3 10h14M10 3c2.6 2.6 2.6 11.4 0 14M10 3c-2.6 2.6-2.6 11.4 0 14"/></svg></button>
       <button id="btnPlaySequence" aria-label="Play"></button>
       <select id="playbackSpeed" style="visibility:hidden;">
         <option value="1">1x</option>
@@ -3847,6 +3854,26 @@ function machineTr(text) {
   return mtRead()[text] || "";
 }
 
+const LIST_TR_KEY = "flashcards.listTr";
+
+let listTrOn = readLocal(LIST_TR_KEY) === true;
+
+function rowTr(r) {
+  return hasAnswer(r) ? "" : watchTranslation(r) || machineTr(oneLine(r.q));
+}
+
+function paintListTr() {
+  document.querySelectorAll("#tbody .row-tr[data-id]").forEach(el => {
+    const r = rows.find(x => x.id === Number(el.dataset.id)), t = r ? rowTr(r) : "";
+    if (el.textContent !== t) el.textContent = t;
+  });
+}
+
+function preloadTranslations() {
+  if (!currentLessonId || isVirtualLesson() || appMode === "vocab") return;
+  mtFill(rows.filter(r => r.uid !== EXTRA_UID && (r.q || "").trim() && !hasAnswer(r)));
+}
+
 async function mtFill(lines) {
   const need = [ ...new Set(lines.filter(r => !watchTranslation(r)).map(r => oneLine(r.q)).filter(t => t && !machineTr(t) && !mtPending.has(t))) ];
   if (!need.length || !navigator.onLine) return;
@@ -3863,15 +3890,27 @@ async function mtFill(lines) {
     try {
       localStorage.setItem(MT_KEY, JSON.stringify(st));
     } catch (e) {}
-    if (!watch) return need.slice(i + 8).forEach(t => mtPending.delete(t));
-    paintWatchList();
-    paintWatchLine(false);
+    if (watch) {
+      paintWatchList();
+      paintWatchLine(false);
+    }
+    if (listTrOn) paintListTr();
   }
 }
 
 function watchLineTr(r) {
   return watchTranslation(r) || machineTr(oneLine(r.q));
 }
+
+document.getElementById("listTrans").onclick = e => {
+  listTrOn = !listTrOn;
+  try {
+    localStorage.setItem(LIST_TR_KEY, JSON.stringify(listTrOn));
+  } catch (err) {}
+  e.currentTarget.blur();
+  render();
+  if (listTrOn) preloadTranslations();
+};
 
 function watchLineHtml(r, inList) {
   const p = watch.prefs, pin = p.pin && watchChinese(), tr = p.trans && !p.cabin ? watchLineTr(r) : "";
@@ -8403,7 +8442,8 @@ function buildRowTr(r) {
   tr.dataset.id = r.id;
   if (loopingRowId === r.id) tr.classList.add("row-playing");
   if (selectedRowId === r.id) tr.classList.add("row-selected");
-  const q = `<div class="cell ${r.qHidden ? "hidden" : "shown"}" data-field="q">${qCellContent(r)}</div>`;
+  const trLine = listTrOn && !groupState && !hasAnswer(r) ? `<div class="row-tr" data-id="${r.id}">${escapeHtml(rowTr(r))}</div>` : "";
+  const q = `<div class="cell ${r.qHidden ? "hidden" : "shown"}" data-field="q">${qCellContent(r)}</div>` + trLine;
   const notes = !r.aHidden && !r.qHidden ? cardNotesHtml(r) : "";
   const a = `<div class="cell ${r.aHidden ? "hidden" : "shown"}" data-field="a">${aCellContent(r)}</div>`;
   tr.innerHTML = document.getElementById("cardTable").classList.contains("no-answer-col") ? `<td class="q-col" colspan="2">${q}${hasAnswer(r) ? a : ""}${notes}</td>` : r.time == null && !hasAnswer(r) ? `<td class="q-col"></td><td class="a-col one-only">${q}${notes}</td>` : `<td class="q-col">${q}</td><td class="a-col">${a}${notes}</td>`;
@@ -12144,6 +12184,10 @@ function syncModeButtonHighlights() {
   const fullBtn = document.getElementById("fullModeBtn"), flag = document.getElementById("studyFlag");
   const off = isAllLessons() || !!groupState || isVirtualLesson();
   fullBtn.hidden = off || !lessonStudyMode();
+  const lt = document.getElementById("listTrans");
+  lt.hidden = off || appMode === "vocab" || !rows.some(r => r.uid !== EXTRA_UID && (r.q || "").trim() && !hasAnswer(r));
+  lt.classList.toggle("active", listTrOn);
+  lt.setAttribute("aria-pressed", String(listTrOn));
   document.getElementById("listWatch").hidden = off || !watchCanOpen();
   document.getElementById("listBlind").hidden = off || !blindCanOpen();
   syncTheater();
@@ -15111,6 +15155,7 @@ function openLesson(lesson) {
   refreshSaveReminders();
   if (virtual) return;
   if (cards !== lesson.cards) scheduleAutoSave();
+  setTimeout(() => currentLessonId === lesson.id && preloadTranslations(), 1500);
   try {
     localStorage.setItem("flashcards.lastLesson", lesson.id);
   } catch (e) {}
