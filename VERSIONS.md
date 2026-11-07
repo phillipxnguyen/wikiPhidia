@@ -67,6 +67,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `paintWatch
 | FLASH-3 | `149e839` | Chữ to hơn; nút ở đáy màn hình cả trên máy tính |
 | FLASH-4 | `e229a04` | Không chữ trang trí; mặt trước là đồ vật vẽ (biển, cốc, bóng bay…); font ngẫu nhiên khoảng 55 kiểu |
 | FLASH-5 | `71aff22` | Chỉ font dễ đọc; font riêng cho chữ Latin và chữ châu Á |
+| FLASH-6 | `a73c2d6` | Khoảng một nửa số lần, mặt trước là câu của từ với từ đó bị khoét thành chỗ trống |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
@@ -98,6 +99,23 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 ---
 
 ## Chung
+
+### DATA: Dữ liệu thẻ (Q/A)
+| Mã | Commit | Là gì |
+|---|---|---|
+| DATA-1 | `961cf80` | Thẻ có Q và A; thẻ dịch chuyển sang Vocabulary; dán bài tự dịch câu thành từ vựng (V1) |
+| DATA-2 | `c87d38e` | Chỉ học chính ngôn ngữ: A là bản dịch thì vào notes; câu kèm bản dịch giữ làm thẻ câu; bỏ tự dịch câu khi dán |
+
+Hàm chính: `foldTranslation`, `wordLike`, `belongsInVocab`, `isTranslationCard`, `normalizeCard`, `autoSortLibrary`.
+
+### BAR: Thanh công cụ khi học
+| Mã | Commit | Là gì |
+|---|---|---|
+| BAR-1 | `961cf80` | Thanh trên đầy đủ (cờ, mode, số đếm, âm thanh, tốc độ); thanh đáy chỉ trên điện thoại (V1) |
+| BAR-2 | `e981763` | Trong focus: thanh trên cố định ở mép trên, một ✕ chung |
+| BAR-3 | `2a6b0d1` | Bản A: trên chỉ có số đếm và ✕; một thanh đáy cả trên máy tính (↶ ↷ 🔊 Show ✕ ✓ ⋯); ⋯ mở các công tắc khác; bỏ dấu giữ chỗ |
+
+Hàm chính: `updateTouchBar`, `sizeTouchBar`, `#tbSound`, `#tbMore`, `tools-open`.
 
 ### TODAY: Today và task
 | Mã | Commit | Là gì |
