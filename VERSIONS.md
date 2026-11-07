@@ -67,6 +67,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-23 | `e66c962` | Đủ rule mode học: Delete/⌘C cho câu đang học, thanh chép/xoá luôn có trên điện thoại, xoá xong sang câu kế |
 | THEATER-24 | `c18533e` | Bản dịch tải sẵn khi mở bài, bật là hiện ngay |
 | THEATER-25 | `da9358e` | Che nút ▶ mặc định của YouTube khi dừng bằng nút ▶ của app |
+| THEATER-26 | `e91ef83` | Bỏ nút che; sang câu kế chỉ phát tiếp, không tua lại khi video đã đứng đúng chỗ (không tải lại) |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `placeWatchCap`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
