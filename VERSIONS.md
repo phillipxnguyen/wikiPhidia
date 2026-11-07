@@ -91,6 +91,7 @@ Hàm chính: `buildVocabCard`, `fillVocabCard`, `vocabBackInner`, `flipVocab`, `
 | POD-12 | `b59ff4f` | Từ to và nghĩa to; câu không nền; highlight màu cảnh, căn khít chữ |
 | POD-13 | `ef5c3e9` | Chọn trước, học sau: từ tự tìm chưa chọn hiện ngay, ✕ xoá / ✓ học, 🧺 đếm; 字 mở Podcast ở mọi bài; pinyin một dòng riêng |
 | POD-14 | `af6d193` | Bỏ bước chọn: một cách học cho mọi từ (Show, Good/Again, 🗑 xoá); hình động lại, chấm tròn và thanh thời lượng; task học mọi từ bằng Podcast |
+| POD-15 | `bb0fca5` | Thanh trên như mọi mode (cờ, New/Due/Done, ✕ chung) |
 
 Hàm chính: `openBlind`, `closeBlind`, `blindItems`, `blindAutoItems`, `blindLines`, `blindNext`, `paintBlind`, `paintBlindLive`, `blindPlay`, `blindPlayOne`, `blindPlayLine`, `blindPlayer`, `blindSpeak`, `blindGrade`, `blindUndo`, `blindEdit`, `blindAct`, `blindFly`, `blindArt`, `blindSceneFor`, `blindCountsHtml`, `blindTime`, `BLIND_SCENES`.
 
@@ -127,6 +128,7 @@ Hàm chính: `newRow` (bản dịch vào notes khi tạo), `foldAnswer` + `keeps
 | BAR-3 | `2a6b0d1` | Bản A: trên chỉ có số đếm và ✕; một thanh đáy cả trên máy tính (↶ ↷ 🔊 Show ✕ ✓ ⋯); ⋯ mở các công tắc khác; bỏ dấu giữ chỗ |
 | BAR-4 | `1d418a1` | Bỏ nút ⋯; thanh trên luôn hiện đủ |
 | BAR-5 | `2b33b9c` | Bỏ thanh A: không còn hàng nút đáy và nút 🔊 riêng trên máy tính; thanh trên cố định như BAR-2 |
+| BAR-6 | `bb0fca5` | Podcast dùng đúng thanh trên chung: cờ, New/Due/Done, ✕ |
 
 Hàm chính: `updateTouchBar`, `sizeTouchBar`, `#tbSound`, `#tbMore`, `tools-open`.
 
