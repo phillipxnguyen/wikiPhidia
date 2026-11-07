@@ -2343,6 +2343,11 @@ window.onYouTubeIframeAPIReady = function(){
   .w-bar{display:flex;align-items:center;gap:8px;width:100%;box-sizing:border-box;padding:8px;border-radius:24px;background:rgba(11,13,24,.45);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);}
   .w-push{flex:1;}
   .watch-pop.blurred :is(.w-capline, .w-row) :is(.w-py, .w-text, .w-tr){filter:blur(6px);transition:filter .2s;}
+  .watch-pop.cabin :is(.w-capline, .w-row) :is(.w-py, .w-text){filter:blur(8px);transition:filter .2s;}
+  .watch-pop.cabin :is(.w-capline, .w-row) .w-tr{filter:none;}
+  .watch-pop.cabin .w-capline{pointer-events:auto;cursor:pointer;}
+  .watch-pop.cabin .w-capline.reveal :is(.w-py, .w-text){filter:none;}
+  @media (hover:hover){.watch-pop.cabin .w-row:hover :is(.w-py, .w-text){filter:none;}}
   .watch-pop.blurred .w-row:hover :is(.w-py, .w-text, .w-tr){filter:none;}
   .watch-pop.blurred .w-video:hover .w-capline :is(.w-py, .w-text, .w-tr){filter:none;}
   .w-video .cut-stamp{z-index:3;width:120px;height:120px;border-radius:60px;font-size:64px;line-height:64px;}
@@ -3770,15 +3775,15 @@ function watchPrefs() {
   } catch (e) {}
   return Object.assign({
     pin: true,
-    tr: true,
+    trans: false,
     auto: false,
     capY: null,
     blur: false,
     loop: false,
+    cabin: false,
     rate: 1
   }, p, {
-    pin: true,
-    tr: true
+    pin: true
   });
 }
 
@@ -3823,8 +3828,49 @@ function pinyinLine(text) {
   }
 }
 
+const MT_KEY = "flashcards.machineTr", MT_MAX = 4000;
+
+let mtStore = null;
+
+const mtPending = new Set;
+
+function mtRead() {
+  if (!mtStore) mtStore = readLocal(MT_KEY) || {};
+  return mtStore;
+}
+
+function machineTr(text) {
+  return mtRead()[text] || "";
+}
+
+async function mtFill(lines) {
+  const need = [ ...new Set(lines.filter(r => !watchTranslation(r)).map(r => oneLine(r.q)).filter(t => t && !machineTr(t) && !mtPending.has(t))) ];
+  if (!need.length || !navigator.onLine) return;
+  need.forEach(t => mtPending.add(t));
+  const to = detectLang(need[0]) === "vi-VN" ? "en" : "vi";
+  for (let i = 0; i < need.length; i += 8) {
+    const part = need.slice(i, i + 8), res = await translateBatch(part, to), st = mtRead();
+    part.forEach((t, k) => {
+      mtPending.delete(t);
+      if (res[k] && res[k] !== t) st[t] = res[k];
+    });
+    const keys = Object.keys(st);
+    if (keys.length > MT_MAX) keys.slice(0, keys.length - MT_MAX).forEach(k => delete st[k]);
+    try {
+      localStorage.setItem(MT_KEY, JSON.stringify(st));
+    } catch (e) {}
+    if (!watch) return need.slice(i + 8).forEach(t => mtPending.delete(t));
+    paintWatchList();
+    paintWatchLine(false);
+  }
+}
+
+function watchLineTr(r) {
+  return watchTranslation(r) || machineTr(oneLine(r.q));
+}
+
 function watchLineHtml(r, inList) {
-  const p = watch.prefs, pin = p.pin && watchChinese(), tr = p.tr ? watchTranslation(r) : "";
+  const p = watch.prefs, pin = p.pin && watchChinese(), tr = p.trans || p.cabin ? watchLineTr(r) : "";
   const text = highlightVocabInHtml(r.qHtml || escapeHtml(r.q), r.id);
   const py = pin ? pinyinLine(oneLine(r.q)) : "";
   return (py ? `<div class="w-py">${escapeHtml(py)}</div>` : "") + `<div class="w-text">${text}</div>` + (tr ? `<div class="w-tr">${escapeHtml(tr)}</div>` : "");
@@ -3961,7 +4007,7 @@ function watchTick() {
     } catch (e) {}
     return;
   }
-  if (watch.prefs.auto && watch.at >= 0 && i > watch.at && watch.pausedAt !== watch.at) {
+  if ((watch.prefs.auto || watch.prefs.cabin) && watch.at >= 0 && i > watch.at && watch.pausedAt !== watch.at) {
     watch.pausedAt = watch.at;
     try {
       watch.player.pauseVideo();
@@ -4007,7 +4053,7 @@ function watchToggle() {
   try {
     const playing = watch.player.getPlayerState() === YT.PlayerState.PLAYING;
     if (playing) watch.player.pauseVideo(); else {
-      if (watch.prefs.auto && watch.pausedAt === watch.at && watch.lines[watch.at + 1]) return watchSeek(watch.at + 1);
+      if ((watch.prefs.auto || watch.prefs.cabin) && watch.pausedAt === watch.at && watch.lines[watch.at + 1]) return watchSeek(watch.at + 1);
       watch.player.playVideo();
     }
   } catch (e) {}
@@ -4020,10 +4066,11 @@ function paintWatch() {
   const ctl = `<span class="w-grip" title="Drag to move the subtitles up or down">${chev("M7 10l5-5 5 5M7 14l5 5 5-5")}</span>`;
   watchQueueSync();
   box.querySelector(".w-topbar .toolbar-flag").innerHTML = document.getElementById("studyFlag").innerHTML;
-  box.className = "watch-pop with-list" + (p.pin && watchChinese() ? " pinned" : "") + (p.blur ? " blurred" : "");
+  box.className = "watch-pop with-list" + (p.pin && watchChinese() ? " pinned" : "") + (p.blur ? " blurred" : "") + (p.cabin ? " cabin" : "");
+  if (p.trans || p.cabin) mtFill(watch.lines);
   watch.countSig = "";
   const pill = (k, title, label) => `<button type="button" class="w-pill${p[k] ? " on" : ""}" data-w="${k}" aria-pressed="${!!p[k]}" title="${title}">${label}</button>`;
-  box.querySelector(".w-barbox").innerHTML = `<div class="w-bar"><span class="w-push"></span>${pill("auto", "Pause at the end of every line (Q)", "AP")}${pill("loop", "Loop the line being said", '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 9V8a3 3 0 0 1 3-3h8M13 3l2 2-2 2M16 11v1a3 3 0 0 1-3 3H5M7 17l-2-2 2-2"/></svg>')}${pill("blur", "Blur the writing until you point at it", '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 10s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/><path d="M4 16L16 4"/></svg>')}${watchChinese() ? pill("pin", "Pinyin", "拼") : ""}${watch.lines.some(r => watchTranslation(r)) ? pill("tr", "The translation", "Aa") : ""}<select class="w-rate" aria-label="Speed" title="Speed">${[ .5, .75, .9, 1, 1.1, 1.25, 1.5, 1.75, 2 ].map(r => `<option value="${r}"${r === p.rate ? " selected" : ""}>${r}×</option>`).join("")}</select></div>`;
+  box.querySelector(".w-barbox").innerHTML = `<div class="w-bar"><span class="w-push"></span>${pill("auto", "Pause at the end of every line (Q)", "AP")}${pill("loop", "Loop the line being said", '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 9V8a3 3 0 0 1 3-3h8M13 3l2 2-2 2M16 11v1a3 3 0 0 1-3 3H5M7 17l-2-2 2-2"/></svg>')}${pill("blur", "Blur the writing until you point at it", '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 10s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/><path d="M4 16L16 4"/></svg>')}${watchChinese() ? pill("pin", "Pinyin", "拼") : ""}${pill("trans", "The translation (the lesson's own, or a machine translation when the line has none)", "Aa")}${pill("cabin", "Interpreting: read the translation, say the line yourself, then V (or a click on it) shows the original", '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5h8v6H7l-3 2v-2H3zM12 8h5v6h-1v2l-3-2h-1"/></svg>')}<select class="w-rate" aria-label="Speed" title="Speed">${[ .5, .75, .9, 1, 1.1, 1.25, 1.5, 1.75, 2 ].map(r => `<option value="${r}"${r === p.rate ? " selected" : ""}>${r}×</option>`).join("")}</select></div>`;
   box.querySelector(".w-capl").innerHTML = nav;
   box.querySelector(".w-capctl").innerHTML = ctl;
   paintWatchList();
@@ -4245,6 +4292,8 @@ function paintWatchLine(scroll) {
   const box = document.getElementById("watchPop"), r = watch.lines[watch.at];
   const line = box.querySelector(".w-capline");
   if (line) {
+    if (line.dataset.at !== String(watch.at)) line.classList.remove("reveal");
+    line.dataset.at = watch.at;
     line.innerHTML = r ? watchLineHtml(r) : "";
     line.hidden = !line.innerHTML;
   }
@@ -4291,6 +4340,7 @@ document.getElementById("watchPop").addEventListener("click", e => {
     }
     return watchSeek(Number(row.dataset.i));
   }
+  if (watch.prefs.cabin && e.target.closest(".w-capline")) return e.target.closest(".w-capline").classList.toggle("reveal");
   if (e.target.closest(".w-shield")) return watchToggle();
   if (!b) return;
   const k = b.dataset.w;
@@ -4346,6 +4396,9 @@ window.addEventListener("keydown", e => {
   if (k === " ") watchToggle(); else if (g) watchGrade(g === "again"); else if (e.code === "KeyE" && !e.shiftKey && (pointed || watch.lines[watch.at])) openEditPopup(pointed || watch.lines[watch.at]); else if (e.code === "KeyW" && !e.shiftKey) showToast("A video sentence stays in its lesson"); else if ((k === "Delete" || k === "Backspace") && pointed && !e.repeat) {
     clearRowSelection();
     deleteRow(pointed.id);
+  } else if (e.code === "KeyV" && watch.prefs.cabin) {
+    const line = document.querySelector("#watchPop .w-capline");
+    if (line) line.classList.toggle("reveal");
   } else if (e.code === "KeyA") watchSeek(Math.max(0, watch.at - 1)); else if (e.code === "KeyD") watchSeek(Math.min(watch.lines.length - 1, watch.at + 1)); else if (e.code === "KeyS" || e.code === "KeyR") watchSeek(Math.max(0, watch.at)); else if (e.code === "KeyQ") {
     watch.prefs.auto = !watch.prefs.auto;
     saveWatchPrefs();
