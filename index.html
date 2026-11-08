@@ -932,6 +932,7 @@ window.onYouTubeIframeAPIReady = function(){
   @media (hover:hover){.segmented button:hover{background:color-mix(in srgb, var(--accent) 10%, var(--surface));color:var(--text);}.segmented button.sp-vocab:hover{background:transparent;color:#1e9466;}.segmented button.sp-vocab.to-lesson:hover{color:var(--lesson-color);}}
   .segmented button.active{background:var(--surface);color:var(--text);box-shadow:var(--shadow-sm);}
   #btnPlaySequence{visibility:hidden;width:48px;}
+  #viewStudy:not(.focus-study) .toolbar :is(#btnPlaySequence, #playbackSpeed){display:none;}
   .toolbar #listTrans{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;width:48px;height:var(--tb-h);padding:0;}
   .toolbar #listTrans[hidden]{display:none;}
   #listTrans svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;}
@@ -1211,14 +1212,6 @@ window.onYouTubeIframeAPIReady = function(){
   .sound-ring .ring-track{stroke:color-mix(in srgb, var(--ring) 38%, #fff);}
   .sound-ring .ring-run{stroke:var(--ring);stroke-linecap:round;opacity:0;transition:stroke-dasharray .25s linear, stroke-dashoffset .25s linear;}
   .sound-ring .ring-run.on{opacity:1;transition:opacity .4s ease, stroke-dasharray .25s linear, stroke-dashoffset .25s linear;}
-  .sound-wait{animation:zap-jolt .6s steps(1) infinite;}
-  @keyframes zap-jolt{0%{transform:translate(1px, 0);}20%{transform:none;}50%{transform:translate(-1px, 0);}70%{transform:none;}}
-  .zap{position:absolute;overflow:visible;pointer-events:none;z-index:2;will-change:transform;}
-  .zap path{fill:none;stroke-linecap:round;stroke-linejoin:miter;}
-  .zap .glow{stroke:var(--accent);stroke-width:6;opacity:.45;filter:url(#zapBlur);}
-  .zap .arc{stroke:color-mix(in srgb, var(--accent) 65%, #fff);stroke-width:2;}
-  .zap .core{stroke:#fff;stroke-width:1;}
-  @media (prefers-reduced-motion: reduce){.sound-wait{animation:none;}}
   .loop-time.disabled{opacity:.4;background:var(--surface-3);color:var(--text-2);}
   .toolbar-counts{flex:none;margin:0 auto;font-size:14px;color:var(--text);pointer-events:auto;}
   .toolbar-counts[hidden]{display:none;}
@@ -7061,73 +7054,8 @@ new MutationObserver(records => {
 
 addEventListener("resize", queueFitBadges);
 
-let zapTimer = 0;
-
-function syncZap() {
-  if (!document.querySelector(".sound-wait")) return;
-  if (!zapTimer) zapTimer = setInterval(drawZaps, 100);
-  if (!soundFrame) soundFrame = requestAnimationFrame(soundProgressLoop);
-}
-
-function jagged(a, b, spread, depth) {
-  if (!depth) return [ a, b ];
-  const m = [ (a[0] + b[0]) / 2 + (Math.random() - .5) * spread, (a[1] + b[1]) / 2 + (Math.random() - .5) * spread ];
-  return jagged(a, m, spread / 2, depth - 1).concat(jagged(m, b, spread / 2, depth - 1).slice(1));
-}
-
-function zapBolts(w, h, pad) {
-  const around = 2 * (w + h);
-  const at = t => {
-    t = (t % around + around) % around;
-    if (t < w) return [ pad + t, pad ];
-    if (t < w + h) return [ pad + w, pad + t - w ];
-    if (t < 2 * w + h) return [ pad + 2 * w + h - t, pad + h ];
-    return [ pad, pad + around - t ];
-  };
-  const d = pts => "M" + pts.map(p => p[0].toFixed(1) + " " + p[1].toFixed(1)).join("L");
-  const out = [];
-  for (let n = 2 + Math.floor(Math.random() * 3); n > 0; n--) {
-    const t = Math.random() * around, len = around * (.15 + Math.random() * .3);
-    const steps = Math.max(3, Math.round(len / 12));
-    const main = [];
-    for (let k = 0; k < steps; k++) main.push(...jagged(at(t + len * k / steps), at(t + len * (k + 1) / steps), 5, 2).slice(k ? 1 : 0));
-    out.push(d(main));
-    for (let b = Math.floor(Math.random() * 3); b > 0; b--) {
-      const from = main[1 + Math.floor(Math.random() * (main.length - 2))];
-      const cx = pad + w / 2, cy = pad + h / 2, k = 6 + Math.random() * 8;
-      const dx = from[0] - cx, dy = from[1] - cy, r = Math.hypot(dx, dy) || 1;
-      out.push(d(jagged(from, [ from[0] + dx / r * k + (Math.random() - .5) * k, from[1] + dy / r * k + (Math.random() - .5) * k ], k / 2, 2)));
-    }
-  }
-  return out;
-}
-
-function drawZaps() {
-  document.querySelectorAll(".zap").forEach(z => z.parentElement && z.parentElement.classList.contains("sound-wait") || z.remove());
-  const els = [ ...document.querySelectorAll(".sound-wait") ].filter(e => e.offsetParent);
-  if (!els.length) {
-    clearInterval(zapTimer);
-    zapTimer = 0;
-    return;
-  }
-  if (reducedMotion()) return;
-  if (!document.getElementById("zapBlur")) document.body.insertAdjacentHTML("beforeend", '<svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="zapBlur" filterUnits="userSpaceOnUse" x="-100" y="-100" width="1000" height="1000"><feGaussianBlur stdDeviation="2"/></filter></svg>');
-  els.forEach(el => {
-    const pad = 16, w = el.offsetWidth, h = el.offsetHeight;
-    let svg = el.querySelector(":scope > .zap");
-    if (!svg) {
-      svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-      svg.setAttribute("class", "zap");
-      svg.setAttribute("aria-hidden", "true");
-      el.appendChild(svg);
-    }
-    svg.setAttribute("width", w + pad * 2);
-    svg.setAttribute("height", h + pad * 2);
-    svg.style.left = -(pad + el.clientLeft) + "px";
-    svg.style.top = -(pad + el.clientTop) + "px";
-    svg.style.opacity = Math.random() < .2 ? "0" : String(Math.round(70 + Math.random() * 30) / 100);
-    svg.innerHTML = zapBolts(w, h, pad).map(p => `<path class="glow" d="${p}"/><path class="arc" d="${p}"/><path class="core" d="${p}"/>`).join("");
-  });
+function kickSoundLoop() {
+  if (document.querySelector(".sound-wait") && !soundFrame) soundFrame = requestAnimationFrame(soundProgressLoop);
 }
 
 function syncRowBadges() {
@@ -7136,7 +7064,7 @@ function syncRowBadges() {
     el.classList.toggle("looping", id === loopingRowId && soundHeard);
     el.classList.toggle("sound-wait", id === loopingRowId && !soundHeard);
   });
-  syncZap();
+  kickSoundLoop();
 }
 
 function stopLoop() {
@@ -8121,7 +8049,7 @@ function setSequenceBtnState(btn, on, enabled, waiting = false) {
   const before = btn.classList.contains("active") + ":" + btn.disabled;
   btn.classList.toggle("active", on);
   btn.classList.toggle("sound-wait", waiting);
-  syncZap();
+  kickSoundLoop();
   btn.disabled = !enabled;
   if (before !== btn.classList.contains("active") + ":" + btn.disabled) updateTouchBar();
 }
@@ -21047,7 +20975,7 @@ function syncVocabSound() {
   btn.innerHTML = playFace(vocabShownIsVideo ? on ? YT_PAUSE_ICON : YT_ICON : on ? "⏸" : "🔊");
   btn.classList.toggle("active", on);
   btn.classList.toggle("sound-wait", vocabSoundOn() && !soundHeard);
-  syncZap();
+  kickSoundLoop();
   if (currentView === "vocab") updateTouchBar();
 }
 
