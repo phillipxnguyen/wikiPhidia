@@ -70,8 +70,9 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-26 | `e91ef83` | Bỏ nút che; sang câu kế chỉ phát tiếp, không tua lại khi video đã đứng đúng chỗ (không tải lại) |
 | THEATER-27 | `5be7a60` | Dùng lại trình phát đã tải của trang bài (chuyển vào không tải lại), nhảy câu phát ngay như list |
 | THEATER-28 | `8849ce4` | Giao diện tối kiểu trang học video: hàng nút dưới video (công tắc, ◀ ▶ ▶|, lặp), câu dưới hàng nút, list tối bên phải |
+| THEATER-29 | `abc1ae4` | Vừa một màn hình, nút gọn không chồng, list không nền, bấm công tắc tức thì (không vẽ lại list) |
 
-Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
+Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
 ---
 
@@ -188,6 +189,7 @@ Hàm chính: `switchToLesson`, `setAppMode`, `syncModeButtonHighlights`, `lesson
 | FOCUS-5 | `3921081` | Bấm lá cờ không còn thoát mode; chỉ thoát bằng ✕ |
 | FOCUS-6 | `1a9077c` | Điện thoại: chạm cờ để thoát, không có ✕ (máy tính giữ ✕) |
 | FOCUS-7 | `adac075` | Điện thoại: thanh trên sát mép, không chừa chỗ cho ✕ |
+| FOCUS-8 | `abc1ae4` | Thanh trên cân hai bên: cờ cách mép trái bằng ✕ cách mép phải |
 
 Hàm chính: `syncFocus`, `pickFocusScene`, `FOCUS_SCENES`, nút `#focusExit`.
 
