@@ -80,6 +80,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-33 | `12512ba` | Câu đang phát luôn có trong list (câu chưa tới hạn hiện mờ); điện thoại không có list |
 | THEATER-34 | `4c0bd1b` | Điện thoại: chỉ một hàng công tắc, phát/Show/chấm ở thanh đáy chung |
 | THEATER-35 | `ac7eddc` | Chữ trên video to hơn, ô cỡ chữ 100/125/150% |
+| THEATER-36 | `3f267a2` | Space = S = nút ▶: Show / dừng / phát lại câu, không tự sang câu; bỏ nút ↻; giãn dòng đồng nhất |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
