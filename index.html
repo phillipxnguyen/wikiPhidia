@@ -3974,8 +3974,24 @@ function openWatch() {
   placeTheater();
   requestAnimationFrame(placeTheater);
   setTimeout(placeTheater, 400);
-  const slot = box.querySelector(".w-video > div");
-  if (window.YT && window.YT.Player) watch.player = new YT.Player(slot, {
+  const slot = box.querySelector(".w-video > div"), shared = document.getElementById("mediaIframe");
+  let same = false;
+  try {
+    same = !!(slot.parentNode.moveBefore && ytPlayer && ytReady && ytHasVideo && shared && shared.tagName === "IFRAME" && ytPlayer.getVideoData().video_id === clip.id);
+  } catch (e) {}
+  if (same) {
+    try {
+      slot.parentNode.moveBefore(shared, slot);
+      slot.remove();
+      watch.player = ytPlayer;
+      watch.shared = true;
+      ytPlayer.setPlaybackRate(watch.prefs.rate);
+    } catch (e) {
+      watch.shared = false;
+    }
+  }
+  if (!watch.shared && !slot.isConnected) box.querySelector(".w-video").prepend(slot);
+  if (!watch.shared && window.YT && window.YT.Player) watch.player = new YT.Player(slot, {
     width: "100%",
     height: "100%",
     videoId: clip.id,
@@ -4005,7 +4021,14 @@ function openWatch() {
 function closeWatch() {
   if (!watch) return;
   clearInterval(watch.timer);
-  if (watch.player) {
+  if (watch.shared) {
+    const home = document.getElementById("mediaVideo"), shared = document.getElementById("mediaIframe");
+    try {
+      if (home && shared) home.moveBefore(shared, home.firstChild);
+      ytPlayer.pauseVideo();
+      ytPlayer.setPlaybackRate(sequenceSpeed);
+    } catch (e) {}
+  } else if (watch.player) {
     try {
       watch.player.destroy();
     } catch (e) {}
@@ -4038,6 +4061,16 @@ function watchTime() {
 function watchTick() {
   if (!watch) return;
   if (++watch.ticks % 5 === 0) paintWatchCounts();
+  if (watch.shared) {
+    let state = null;
+    try {
+      state = watch.player.getPlayerState();
+    } catch (e) {}
+    if (state !== watch.state) {
+      watch.state = state;
+      updateTouchBar();
+    }
+  }
   const t = watchTime(), L = watch.lines;
   if (watch.arm) {
     if (!clipArm(t, watch.arm.start, watch.arm.end) && performance.now() < watch.arm.until) return;
