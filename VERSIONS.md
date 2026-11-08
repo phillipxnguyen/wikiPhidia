@@ -37,6 +37,7 @@ Hàm chính: `ieltsPaperHtml`, `ieltsFrontHtml`, `sentenceEx`, `sentenceKeyWord`
 | FULL-2 | `c18533e` | 🌐 hiện bản dịch dưới mỗi câu chưa có câu trả lời (của notes hoặc máy dịch) |
 | FULL-3 | `cd20830` | Bản dịch là dòng đầu của notes, cùng kiểu chữ, màu xanh câu trả lời |
 | FULL-4 | `128c757` | Bản dịch thẳng lề câu, cách đều 8px trên dưới |
+| FULL-5 | `0ab30de` | Thanh của list bỏ nút phát YouTube và tốc độ, chỉ còn đếm và 🌐 |
 
 Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `selectRow`, `clearRowSelection`, `updateSelBar`.
 
@@ -224,6 +225,7 @@ Hàm chính: `swipe`, `ghostFor`, `angelFly`, `cutLayer`, `playCut`.
 | RING-2 | `78e6a57` | Vòng đầy dần từ giữa cạnh trên |
 | RING-3 | `47a9a4e` | Rút dần như V1 nhưng trượt mượt |
 | RING-4 | `ea6c79f` | Vòng mới tạo thì đầy ngay, không chạy ngược |
+| RING-5 | `0ab30de` | Bỏ tia sét giật khi chờ tiếng ở mọi mode |
 
 Hàm chính: `paintRing`, `dropRing`, `setDash`.
 
