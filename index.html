@@ -1688,6 +1688,10 @@ window.onYouTubeIframeAPIReady = function(){
   .od-term{padding:2px 10px;border:1px solid var(--od-line);border-radius:12px;background:var(--od-bg);color:var(--text);font:inherit;font-size:14px;line-height:20px;cursor:pointer;transition:border-color .15s, color .15s;}
   @media (hover:hover){.od-card:not(.od-have):not(.od-added) :is(.od-term, .od-main):hover{color:var(--accent);border-color:var(--accent);}}
   .od-have .od-term, .od-added .od-term, .od-have .od-main, .od-added .od-main{cursor:default;}
+  .od-ex{display:flex;flex-direction:column;gap:6px;margin-top:4px;padding-top:10px;border-top:1px dashed var(--od-line);}
+  .od-ex-h{font-size:11px;line-height:14px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--od-soft);}
+  .od-ex p{margin:0;font-size:15px;line-height:22px;color:var(--text);}
+  .od-ex mark{padding:0 2px;border-radius:4px;background:color-mix(in srgb, var(--accent) 14%, transparent);color:inherit;font-weight:700;}
   .od-skel{display:flex;flex-direction:column;gap:8px;}
   .od-skel i{display:block;height:14px;border-radius:7px;background:linear-gradient(90deg, var(--od-line) 25%, color-mix(in srgb, var(--text) 4%, transparent) 50%, var(--od-line) 75%) 0 0 / 200% 100%;animation:odShimmer 1.2s linear infinite;}
   .od-skel i:first-child{width:46%;height:18px;}
@@ -3343,14 +3347,12 @@ function blindLines(item) {
       } : null
     });
   });
-  const world = worldSentences(item) || [];
-  if (!world.length) fetchWorld(item);
-  if (world.length) lines.push({
+  [ worldPick(item), worldPick(item) ].filter((t, k, a) => t && a.indexOf(t) === k).forEach(t => lines.push({
     row: null,
     world: true,
-    text: world[Math.floor(Math.random() * world.length)].t,
+    text: t,
     clip: null
-  });
+  }));
   return lines.length ? blindShuffle(lines) : [ {
     row: null,
     text: item.term,
@@ -11066,7 +11068,16 @@ function ownDictCardHtml(lang, w, have) {
   } ] : []) : [];
   const body = !e ? '<div class="od-skel"><i></i><i></i></div>' : `<button type="button" class="od-main" data-m="${escapeAttr(e.m)}" title="Add with this meaning">${escapeHtml(e.m)}</button>` + groups.map(g => `<div class="od-group">${g.pos ? `<span class="od-pos">${escapeHtml(g.pos)}</span>` : ""}<div class="od-terms">${g.terms.map(t => `<button type="button" class="od-term" data-m="${escapeAttr(t)}" title="Add with this meaning">${escapeHtml(t)}</button>`).join("")}</div></div>`).join("");
   const act = have ? '<span class="od-done">✓ In your words</span>' : '<button type="button" class="od-add"><span>＋</span> Add</button>';
-  return `<article class="od-card${have ? " od-have" : ""}" data-w="${escapeAttr(w)}"><header class="od-top"><div class="od-word"><b>${escapeHtml(w)}</b><button type="button" class="od-say" aria-label="Listen" title="Listen">${OD_SPEAK}</button></div>${act}</header>${py ? `<div class="od-py">${py}</div>` : ""}<div class="od-body">${body}</div></article>`;
+  const wi = ownDictShown ? {
+    term: w,
+    tkey: normalizeVocabText(w),
+    card: ownDictShown.row || {}
+  } : null, we = wi && worldRead()[worldKeyOf(wi)], examples = we && we.list ? we.list.slice(0, 2) : [];
+  const exHtml = examples.length ? `<div class="od-ex"><span class="od-ex-h">In the world</span>${examples.map(x => {
+    const sp = findTermIn(x.t, w);
+    return `<p>${sp ? escapeHtml(x.t.slice(0, sp[0])) + "<mark>" + escapeHtml(x.t.slice(sp[0], sp[1])) + "</mark>" + escapeHtml(x.t.slice(sp[1])) : escapeHtml(x.t)}</p>`;
+  }).join("")}</div>` : "";
+  return `<article class="od-card${have ? " od-have" : ""}" data-w="${escapeAttr(w)}"><header class="od-top"><div class="od-word"><b>${escapeHtml(w)}</b><button type="button" class="od-say" aria-label="Listen" title="Listen">${OD_SPEAK}</button></div>${act}</header>${py ? `<div class="od-py">${py}</div>` : ""}<div class="od-body">${body}</div>${exHtml}</article>`;
 }
 
 let ownDictShown = null;
@@ -11096,7 +11107,22 @@ function showOwnDict(text, row, onAdd) {
   const head = `<div class="od-head"><div class="od-sent">${ownDictSentenceHtml(text, fresh)}</div><div class="od-sum"><b>${fresh.length}</b> new ${fresh.length === 1 ? "word" : "words"}${old.length ? ` · ${old.length} already yours` : ""}</div></div>`;
   const known = old.length ? `<details class="od-known"><summary>Already in your words · ${old.length}</summary>${old.map(w => ownDictCardHtml(lang, w, true)).join("")}</details>` : "";
   box.innerHTML = `<div class="own-dict">${head}<div class="od-list">${fresh.map(w => ownDictCardHtml(lang, w, false)).join("") || '<p class="od-empty">Every word of this sentence is already yours.</p>'}</div>${known}</div>`;
-  const shown = ownDictShown;
+  const shown = ownDictShown, redraw = w => {
+    if (ownDictShown !== shown) return;
+    const el = box.querySelector(`.od-card[data-w="${CSS.escape(w)}"]`);
+    if (!el) return;
+    const added = el.classList.contains("od-added");
+    el.outerHTML = ownDictCardHtml(lang, w, el.classList.contains("od-have"));
+    if (added) markOwnDictAdded(box.querySelector(`.od-card[data-w="${CSS.escape(w)}"]`));
+  };
+  fresh.forEach(w => {
+    const wi = {
+      term: w,
+      tkey: normalizeVocabText(w),
+      card: row || {}
+    };
+    if (!worldSentences(wi)) fetchWorld(wi).then(() => redraw(w));
+  });
   fresh.concat(old).forEach(w => {
     const e = ownDictEntry(lang, w);
     if (e && e.groups) return;
@@ -19860,7 +19886,7 @@ function lookupOthers(html, item) {
   return tmp.innerHTML;
 }
 
-const WORLD_KEY = "flashcards.worldSentences", WORLD_TTL = 14 * 864e5, WORLD_KEEP = 12, WORLD_MAX = 600;
+const WORLD_KEY = "flashcards.worldSentences", WORLD_TTL = 14 * 864e5, WORLD_KEEP = 40, WORLD_MAX = 300;
 
 const WORLD_ISO3 = {
   zh: "cmn",
@@ -19940,10 +19966,10 @@ async function worldGet(url) {
   }
 }
 
-async function worldFromTatoeba(term, lang) {
+async function worldFromTatoeba(term, lang, page) {
   const iso = WORLD_ISO3[lang];
   if (!iso) return null;
-  const data = await worldGet(`https://tatoeba.org/en/api_v0/search?from=${iso}&query=${encodeURIComponent('"' + term + '"')}&sort=random`);
+  const data = await worldGet(`https://tatoeba.org/en/api_v0/search?from=${iso}&query=${encodeURIComponent('"' + term + '"')}&sort=random${page > 1 ? "&page=" + page : ""}`);
   if (!data) return null;
   return (Array.isArray(data.results) ? data.results : []).map(r => ({
     t: String(r.text || "").trim(),
@@ -19951,9 +19977,9 @@ async function worldFromTatoeba(term, lang) {
   }));
 }
 
-async function worldFromWikipedia(term, lang) {
+async function worldFromWikipedia(term, lang, page) {
   const host = lang === "zh" ? "zh" : lang;
-  const data = await worldGet(`https://${host}.wikipedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrsearch=${encodeURIComponent('"' + term + '"')}&gsrlimit=10&prop=extracts&explaintext=1&exintro=1&exlimit=10&exsentences=10${lang === "zh" ? "&variant=zh-cn&uselang=zh-cn" : ""}`);
+  const data = await worldGet(`https://${host}.wikipedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrsearch=${encodeURIComponent('"' + term + '"')}&gsrlimit=10${page > 1 ? "&gsroffset=" + (page - 1) * 10 : ""}&prop=extracts&explaintext=1&exintro=1&exlimit=10&exsentences=10${lang === "zh" ? "&variant=zh-cn&uselang=zh-cn" : ""}`);
   if (!data) return null;
   const pages = data.query && data.query.pages ? Object.values(data.query.pages) : [];
   const out = [];
@@ -19964,25 +19990,38 @@ async function worldFromWikipedia(term, lang) {
   return out;
 }
 
-function fetchWorld(item) {
-  const key = worldKeyOf(item);
-  if (worldSentences(item) || worldPending.has(key) || !navigator.onLine) return worldPending.get(key) || Promise.resolve();
-  const lang = worldLangOf(item), term = item.term.trim();
-  const job = Promise.all([ worldFromTatoeba(term, lang), worldFromWikipedia(term, lang) ]).then(([ a, b ]) => {
+function fetchWorld(item, more) {
+  const key = worldKeyOf(item), store = worldRead(), have = store[key];
+  if (!more && worldSentences(item) || worldPending.has(key) || !navigator.onLine || more && have && have.end) return worldPending.get(key) || Promise.resolve();
+  const lang = worldLangOf(item), term = item.term.trim(), page = more && have ? (have.page || 1) + 1 : 1;
+  const job = Promise.all([ worldFromTatoeba(term, lang, page), worldFromWikipedia(term, lang, page) ]).then(([ a, b ]) => {
     if (!a && !b) return;
-    a = a || [];
-    b = b || [];
-    const seen = new Set(rows.map(r => normalizeVocabText(r.q || ""))), list = [];
-    blindShuffle(a).concat(blindShuffle(b)).forEach(x => {
+    const old = more && have ? have : {
+      list: [],
+      used: []
+    };
+    const seen = new Set(rows.map(r => normalizeVocabText(r.q || "")).concat(old.list.map(x => normalizeVocabText(x.t)))), add = [];
+    blindShuffle(a || []).concat(blindShuffle(b || [])).forEach(x => {
       const k = normalizeVocabText(x.t);
       if (!x.t || seen.has(k) || !worldFits(x.t, term, lang)) return;
       seen.add(k);
-      list.push(x);
+      add.push(x);
     });
-    const pick = blindShuffle(list).slice(0, WORLD_KEEP), store = worldRead();
+    let list = old.list.map((x, i) => ({
+      x: x,
+      used: (old.used || []).includes(i)
+    }));
+    list = list.filter(o => !o.used).concat(list.filter(o => o.used));
+    list = add.map(x => ({
+      x: x,
+      used: false
+    })).concat(list).slice(0, WORLD_KEEP);
     store[key] = {
       at: Date.now(),
-      list: pick
+      page: page,
+      end: !add.length,
+      list: list.map(o => o.x),
+      used: list.map((o, i) => o.used ? i : -1).filter(i => i >= 0)
     };
     const keys = Object.keys(store);
     if (keys.length > WORLD_MAX) keys.sort((x, y) => store[x].at - store[y].at).slice(0, keys.length - WORLD_MAX).forEach(k => delete store[k]);
@@ -19992,6 +20031,35 @@ function fetchWorld(item) {
   }).finally(() => worldPending.delete(key));
   worldPending.set(key, job);
   return job;
+}
+
+function otherAvailable(item) {
+  const e = worldRead()[worldKeyOf(item)];
+  if (e && e.list && e.list.length) return true;
+  fetchWorld(item);
+  const home = item.card.srcLessonId || currentLessonId;
+  return library.some(l => l.id !== home && !isVirtualId(l.id) && !bookHidden(l) && l.cards.some(c => c.uid !== EXTRA_UID && c.q && findTermIn(c.q, item.term)));
+}
+
+function worldPick(item) {
+  const key = worldKeyOf(item), e = worldRead()[key];
+  if (!e || !e.list || !e.list.length) {
+    fetchWorld(item);
+    return "";
+  }
+  e.used = e.used || [];
+  let pool = e.list.map((x, i) => i).filter(i => !e.used.includes(i));
+  if (!pool.length) {
+    e.used = [];
+    pool = e.list.map((x, i) => i);
+  }
+  const i = pool[Math.floor(Math.random() * pool.length)];
+  e.used.push(i);
+  try {
+    localStorage.setItem(WORLD_KEY, JSON.stringify(worldRead()));
+  } catch (err) {}
+  if (pool.length <= 4 && !e.end) fetchWorld(item, true);
+  return e.list[i].t;
 }
 
 async function worldPrefetch(items) {
@@ -20013,9 +20081,9 @@ function otherLessonSentence(item) {
       });
     });
   });
-  (worldSentences(item) || []).forEach(x => found.push(x.t));
-  if (!worldSentences(item)) fetchWorld(item);
-  return found.length ? found[Math.floor(Math.random() * found.length)] : "";
+  const world = Math.random() < .75 ? worldPick(item) : "";
+  if (world) return world;
+  return found.length ? found[Math.floor(Math.random() * found.length)] : worldPick(item);
 }
 
 function wholeSentenceCard(item, sentence) {
@@ -20146,11 +20214,13 @@ function fillVocabCard(el, item) {
   const viewOnly = vocabViewOnly(item);
   const sentence = vocabContext(item).sentence || "", gap = !viewOnly && sentence && !wholeSentenceCard(item, sentence) ? findTermIn(sentence, item.term) : null;
   if (el.dataset.lookKey !== item.key) {
-    const other = viewOnly ? "" : otherLessonSentence(item);
     const kinds = [ "word" ];
     if (gap) kinds.push("cloze");
-    if (other) kinds.push("other");
-    const ex = kinds[Math.floor(Math.random() * kinds.length)], cloze = ex !== "word";
+    if (!viewOnly && otherAvailable(item)) kinds.push("other", "other");
+    let ex = kinds[Math.floor(Math.random() * kinds.length)];
+    const other = ex === "other" ? otherLessonSentence(item) : "";
+    if (ex === "other" && !other) ex = gap ? "cloze" : "word";
+    const cloze = ex !== "word";
     el.dataset.other = ex === "other" ? other : "";
     const pool = cloze ? [ "plain", "quote", "board", "note", "frame" ] : CARD_LOOKS;
     const look = pool.filter(x => x !== lastCardLook)[Math.floor(Math.random() * (pool.length - 1))];
