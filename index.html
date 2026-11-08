@@ -2322,6 +2322,8 @@ window.onYouTubeIframeAPIReady = function(){
   .w-row .w-tr{font-size:13px;line-height:20px;color:inherit;}
   .w-row.on{background:#262626;color:#ffffff;box-shadow:inset 3px 0 #e8c46a;}
   .w-row.on .w-py{color:#e8c46a;}
+  .w-row.extra.on{background:#1c1c1c;color:#bdbdbd;box-shadow:inset 3px 0 #6b6b6b;}
+  .w-row.extra.on .w-py{color:#a08a55;}
   .w-row.row-selected{box-shadow:inset 3px 0 #ffffff;}
   @media (hover:hover){.w-row:not(.on):hover{background:rgba(255,255,255,.04);}}
   .w-t{position:relative;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;min-width:48px;height:24px;margin-right:8px;padding:0 8px;vertical-align:1px;border-radius:12px;color:var(--tw-dim);font-size:12px;line-height:24px;font-weight:600;font-variant-numeric:tabular-nums;}
@@ -2348,7 +2350,7 @@ window.onYouTubeIframeAPIReady = function(){
   .watch-pop.cabin .w-capline.reveal :is(.w-py, .w-text){filter:none;}
   @media (hover:hover){.watch-pop.cabin .w-row:hover :is(.w-py, .w-text){filter:none;}}
   @media (min-width:821px){.watch-pop.with-list{grid-template-columns:min(calc(100% - 396px), calc((100vh - 136px) * 16 / 9)) minmax(380px, 1fr);grid-template-columns:min(calc(100% - 396px), calc((100dvh - 136px) * 16 / 9)) minmax(380px, 1fr);align-content:safe center;overflow:auto;}}
-  @media (max-width:820px){.watch-pop, .watch-pop.with-list{grid-template-columns:minmax(0, 1fr);grid-template-rows:auto minmax(0, 1fr);gap:8px;padding:calc(60px + env(safe-area-inset-top)) 12px calc(12px + env(safe-area-inset-bottom));}.watch-pop .w-topbar{top:calc(12px + env(safe-area-inset-top));left:12px;right:12px;}.w-ctl{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 8px;}.w-ctl-c{order:-1;width:100%;justify-content:center;}.w-ctl-r{justify-content:center;}.w-cap{position:static;padding:8px 0 0;}.w-cap .w-capline{padding:0;background:none;-webkit-backdrop-filter:none;backdrop-filter:none;}.w-text{font-size:18px;line-height:26px;}}
+  @media (max-width:820px){.watch-pop .w-listbox{display:none;}.watch-pop, .watch-pop.with-list{grid-template-columns:minmax(0, 1fr);grid-template-rows:auto;align-content:center;gap:8px;padding:calc(60px + env(safe-area-inset-top)) 12px calc(12px + env(safe-area-inset-bottom));}.watch-pop .w-topbar{top:calc(12px + env(safe-area-inset-top));left:12px;right:12px;}.w-ctl{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 8px;}.w-ctl-c{order:-1;width:100%;justify-content:center;}.w-ctl-r{justify-content:center;}.w-cap{position:static;padding:8px 0 0;}.w-cap .w-capline{padding:0;background:none;-webkit-backdrop-filter:none;backdrop-filter:none;}.w-text{font-size:18px;line-height:26px;}}
   html.focus-on .ielts-paper{border:0;border-radius:24px;background:color-mix(in srgb, var(--surface) 76%, transparent);-webkit-backdrop-filter:blur(16px) saturate(1.4);backdrop-filter:blur(16px) saturate(1.4);box-shadow:0 20px 50px rgba(10,20,40,.14), inset 0 0 0 1px color-mix(in srgb, var(--border) 60%, transparent);}
   html.focus-on .ielts-paper::before{display:none;}
   html.focus-on .ielts-paper :is(.paper-lines, .paper-prompt, .cell.shown.paper-lines:hover, .cell.hidden.paper-prompt:hover){background-image:none;}
@@ -4236,7 +4238,13 @@ function watchQueueSync() {
 function paintWatchList() {
   const box = document.getElementById("watchPop"), lb = box.querySelector(".w-listbox"), idx = new Map(watch.lines.map((r, i) => [ r.id, i ]));
   if (!watch.rowHtml) watch.rowHtml = new Map;
-  const items = watch.queue.filter(id => idx.has(id)).map(id => {
+  const ids = watch.queue.filter(id => idx.has(id)), cur = watch.lines[watch.at];
+  watch.extraId = cur && !ids.includes(cur.id) ? cur.id : null;
+  if (watch.extraId != null) {
+    const pos = ids.findIndex(id => watch.lines[idx.get(id)].time > cur.time);
+    if (pos < 0) ids.push(cur.id); else ids.splice(pos, 0, cur.id);
+  }
+  const items = ids.map(id => {
     const i = idx.get(id), r = watch.lines[i];
     let html = watch.rowHtml.get(r.id);
     if (html === undefined) {
@@ -4244,7 +4252,7 @@ function paintWatchList() {
       watch.rowHtml.set(r.id, html);
     }
     const ts = `<span class="w-t">${fmtTime(r.time)}<svg class="w-ring" aria-hidden="true"><path pathLength="100"/></svg></span>`;
-    return `<div class="w-row" data-i="${i}" data-id="${r.id}">${html.includes('<div class="w-py">') ? html.replace('<div class="w-py">', '<div class="w-py">' + ts) : html.replace('<div class="w-text">', '<div class="w-text">' + ts)}</div>`;
+    return `<div class="w-row${r.id === watch.extraId ? " extra" : ""}" data-i="${i}" data-id="${r.id}">${html.includes('<div class="w-py">') ? html.replace('<div class="w-py">', '<div class="w-py">' + ts) : html.replace('<div class="w-text">', '<div class="w-text">' + ts)}</div>`;
   }).join("");
   const keep = lb.querySelector(".w-list") ? lb.querySelector(".w-list").scrollTop : 0;
   lb.innerHTML = `<div class="w-list">${items || '<div class="w-empty">Nothing left to study in this video today. It still plays; what you answered Again comes back here when it is due.</div>'}</div>`;
@@ -4389,6 +4397,8 @@ function paintWatchLine(scroll) {
     line.innerHTML = r ? watchLineHtml(r) : "";
     line.hidden = !line.innerHTML;
   }
+  const cur = watch.lines[watch.at];
+  if (cur && box.querySelector(".w-list") && (!box.querySelector(`.w-row[data-i="${watch.at}"]`) || watch.extraId != null && watch.extraId !== cur.id)) return paintWatchList();
   box.querySelectorAll(".w-row.on").forEach(el => el.classList.remove("on"));
   const on = box.querySelector(`.w-row[data-i="${watch.at}"]`), list = box.querySelector(".w-list");
   if (on) {
