@@ -147,8 +147,9 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 |---|---|---|
 | DICT-1 | `961cf80` | Trang từ điển ngoài nhúng vào (chinesedictionary.mobi, Bing) |
 | DICT-2 | `b554aef` | Từ điển riêng: từ của câu, pinyin, nghĩa Google, bỏ từ thông dụng và sọt rác, ＋ thêm vào notes |
+| DICT-3 | `7ead1be` | Thiết kế lại: câu ở đầu (gạch chân từ mới, bấm nhảy tới), thẻ từ: pinyin màu thanh điệu, 🔊, nghĩa theo loại từ, nút Add, khung chờ nhấp nháy |
 
-Hàm chính: `showOwnDict`, `ownDictWords`, `ownDictFetch`, `ownDictPrefetch`, `addWordToEditNotes`, `hideOwnDict`.
+Hàm chính: `showOwnDict`, `ownDictCardHtml`, `ownDictLookup`, `ownDictWords`, `ownDictFetch`, `ownDictPrefetch`, `addWordToEditNotes`, `hideOwnDict`.
 
 ### DATA: Dữ liệu thẻ (Q/A)
 | Mã | Commit | Là gì |
