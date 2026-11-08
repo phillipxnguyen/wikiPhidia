@@ -4559,6 +4559,7 @@ document.getElementById("watchPop").addEventListener("click", e => {
   if (e.target.closest(".w-shield")) return isTouch() && innerWidth <= 820 ? watchControls(!document.getElementById("watchPop").classList.contains("ctl-on")) : watchToggle();
   if (e.target.closest(".w-ctl")) watchControls(true);
   if (!b) return;
+  if (b.matches("button")) b.blur();
   const k = b.dataset.w;
   if (k === "play") return watchToggle();
   if (k === "prev") return watchSeek(Math.max(0, watch.at - 1));
@@ -4609,6 +4610,7 @@ document.getElementById("watchPop").addEventListener("change", e => {
   if (!watch || !e.target.matches(".w-rate")) return;
   watch.prefs.rate = Number(e.target.value);
   saveWatchPrefs();
+  e.target.blur();
   try {
     watch.player.setPlaybackRate(watch.prefs.rate);
   } catch (err) {}
@@ -12093,6 +12095,17 @@ function openEditPopup(row) {
   wireEditBox(box, row);
   placeEditPopup();
   editPopupFromTop();
+  const q = !isTouch() && box.querySelector("#editQ");
+  if (q) {
+    q.focus({
+      preventScroll: true
+    });
+    const range = document.createRange();
+    range.selectNodeContents(q);
+    range.collapse(false);
+    getSelection().removeAllRanges();
+    getSelection().addRange(range);
+  }
 }
 
 function editPopupFromTop() {
