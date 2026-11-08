@@ -158,6 +158,7 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 | DICT-3 | `7ead1be` | Thiết kế lại: câu ở đầu (gạch chân từ mới, bấm nhảy tới), thẻ từ: pinyin màu thanh điệu, 🔊, nghĩa theo loại từ, nút Add, khung chờ nhấp nháy |
 | DICT-4 | `682fb3a` | Hai câu ví dụ “In the world” dưới mỗi từ mới |
 | DICT-5 | `31c7331` | Lọc mảnh chỉ gồm từ thường (你有), Delete xoá từ gợi ý, Shift lưu từ đang trỏ |
+| DICT-6 | `be77efc` | Từ đã có ở bất kỳ bài nào không đề xuất lại; trong câu tô xanh lá (đã có), thẻ nền xanh nhạt |
 
 Hàm chính: `showOwnDict`, `ownDictCardHtml`, `ownDictLookup`, `ownDictWords`, `ownDictFetch`, `ownDictPrefetch`, `addWordToEditNotes`, `hideOwnDict`.
 
