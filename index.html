@@ -4773,7 +4773,7 @@ function blindAct(act) {
   blindFly(-1, "Delete");
   if (item.key.startsWith("w:")) {
     pushUndo("Hidden — " + item.term).hiddenWords = JSON.stringify(readLocal(HIDDEN_WORDS_KEY) || {});
-    if (hideWord(item.key.slice(2)) === 3) showToast(`“${item.term}” is hidden in every lesson now`);
+    hideWord(item.key.slice(2));
   } else {
     const was = JSON.stringify(readLocal(HIDDEN_WORDS_KEY) || {}), top = undoStack[undoStack.length - 1];
     deleteVocabEntry(item, null);
@@ -6748,7 +6748,20 @@ function openReadCard(found) {
       save();
     }
   });
-  meaningEl.focus();
+  const outerKeys = e => {
+    if (readCard !== card) return window.removeEventListener("keydown", outerKeys, true);
+    if (e.isComposing || e.keyCode === 229 || e.target.closest && e.target.closest("input, textarea, select, [contenteditable]:not([contenteditable=false])")) return;
+    if (e.key === "Escape") {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      return closeReadCard();
+    }
+    if (!popupEnterSaves(e)) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    save();
+  };
+  window.addEventListener("keydown", outerKeys, true);
 }
 
 document.getElementById("pdfView").addEventListener("mouseup", () => setTimeout(() => {
@@ -11224,7 +11237,7 @@ function ownDictDelete(card) {
   if (!card || !ownDictShown || card.classList.contains("od-have") || card.classList.contains("od-gone")) return;
   const w = card.dataset.w;
   pushUndo("Hidden — " + w).hiddenWords = JSON.stringify(readLocal(HIDDEN_WORDS_KEY) || {});
-  if (hideWord(normalizeVocabText(w)) === 3) showToast(`“${w}” is hidden in every lesson now`);
+  hideWord(normalizeVocabText(w));
   if (ownDictHover === card) ownDictHover = null;
   card.classList.add("od-gone");
   const jump = document.querySelector(`#editPopup .od-jump[data-w="${CSS.escape(w)}"]`);
@@ -11282,7 +11295,7 @@ function hideOwnDict() {
 
 function hiddenWordsFor(lang) {
   const st = hiddenStore(), counts = st.counts[lang] || {};
-  return Object.keys(counts).filter(w => counts[w] >= 3);
+  return Object.keys(counts).filter(w => counts[w] >= 1);
 }
 
 function ownDictSay(w) {
@@ -11750,6 +11763,18 @@ document.addEventListener("paste", e => {
   document.execCommand("insertText", false, e.clipboardData.getData("text/plain"));
 }, true);
 
+document.addEventListener("paste", e => {
+  const ta = document.getElementById("importText");
+  if (!ta || !ta.offsetParent || e.target.closest && e.target.closest("input, textarea, select, [contenteditable]:not([contenteditable=false])")) return;
+  const text = e.clipboardData.getData("text/plain");
+  if (!text) return;
+  e.preventDefault();
+  ta.value += (ta.value && !ta.value.endsWith("\n") ? "\n" : "") + text;
+  ta.dispatchEvent(new Event("input", {
+    bubbles: true
+  }));
+});
+
 function markNotesClip(box) {
   const walker = document.createTreeWalker(box, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT, {
     acceptNode: n => (n.nodeType === Node.TEXT_NODE ? n.nodeValue.trim() : /^(BR|IMG|LI)$/.test(n.nodeName)) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP
@@ -11871,7 +11896,6 @@ document.getElementById("btnSingleCard").onclick = e => {
   timeBox.dataset.at = at == null ? "" : at;
   syncAddLook();
   fitTextarea(document.getElementById("qaQ"));
-  document.getElementById("qaQ").focus();
 };
 
 function closeQuickAdd(quiet) {
@@ -11938,7 +11962,6 @@ function saveQuickAdd() {
   renderImportInfo();
   renderLessonList();
   if (quickAddInline() && !lessonIsBlank()) return closeQuickAdd();
-  q.focus();
 }
 
 document.getElementById("qaSave").onclick = saveQuickAdd;
@@ -12110,17 +12133,6 @@ function openEditPopup(row) {
   wireEditBox(box, row);
   placeEditPopup();
   editPopupFromTop();
-  const q = !isTouch() && box.querySelector("#editQ");
-  if (q) {
-    q.focus({
-      preventScroll: true
-    });
-    const range = document.createRange();
-    range.selectNodeContents(q);
-    range.collapse(false);
-    getSelection().removeAllRanges();
-    getSelection().addRange(range);
-  }
 }
 
 function editPopupFromTop() {
@@ -16621,7 +16633,6 @@ function renderAddView() {
   document.getElementById("addForm").hidden = !!blocked;
   renderImportInfo();
   renderImportPreview();
-  if (!blocked) document.getElementById("importText").focus();
 }
 
 function fillAddTarget() {
@@ -16967,7 +16978,6 @@ document.getElementById("streakChip").onclick = () => {
   pop.style.left = Math.round(Math.max(8, Math.min(r.left, window.innerWidth - pop.offsetWidth - 8))) + "px";
   pop.style.top = Math.round(r.bottom + 8) + "px";
   paintStudyRules();
-  document.getElementById("limitFresh").focus();
 };
 
 function paintStudyRules() {
@@ -17572,13 +17582,13 @@ function hiddenStore() {
 
 function hiddenWords() {
   const st = hiddenStore(), counts = st.counts[wordLang()] || {};
-  return new Set(Object.keys(counts).filter(w => counts[w] >= 3).concat(st.lessons[currentLessonId] || []));
+  return new Set(Object.keys(counts).filter(w => counts[w] >= 1).concat(st.lessons[currentLessonId] || []));
 }
 
 function hideWord(w) {
   const st = hiddenStore(), lang = wordLang();
   st.counts[lang] = st.counts[lang] || {};
-  st.counts[lang][w] = (st.counts[lang][w] || 0) + 1;
+  st.counts[lang][w] = 3;
   st.lessons[currentLessonId] = [ ...new Set((st.lessons[currentLessonId] || []).concat(w)) ];
   try {
     localStorage.setItem(HIDDEN_WORDS_KEY, JSON.stringify(st));
@@ -17865,7 +17875,7 @@ function wordAct(act) {
   if (act === "delete") {
     if (t.word) {
       pushUndo("Hidden — " + t.word).hiddenWords = JSON.stringify(readLocal(HIDDEN_WORDS_KEY) || {});
-      if (hideWord(t.word) === 3) showToast(`“${t.word}” is hidden in every lesson now`);
+      hideWord(t.word);
       if (wordPick === t.word) wordPick = null;
     } else deleteRow(t.row.id);
   }
@@ -18004,8 +18014,6 @@ function openTools(tab) {
   pop.hidden = false;
   toolGroups = toolTab === "dups" ? toolDupGroups() : [];
   pop.querySelector(".tool-box").innerHTML = toolPopHtml(toolTab);
-  const f = document.getElementById("toolFind");
-  if (f) f.focus();
 }
 
 function closeTools() {
@@ -28395,12 +28403,20 @@ function showVocabAddPopup(row, term, rect, editing, onSave, meaning) {
   popup.style.left = Math.round(Math.max(8, Math.min(rect.left, window.innerWidth - box.width - 8))) + "px";
   popup.style.top = Math.round(Math.max(8, top)) + "px";
   vocabAddPopupScrollY = window.scrollY;
-  input.focus();
-  const caret = document.createRange();
-  caret.selectNodeContents(input);
-  caret.collapse(false);
-  getSelection().removeAllRanges();
-  getSelection().addRange(caret);
+  const outerKeys = e => {
+    if (vocabAddPopup !== popup) return window.removeEventListener("keydown", outerKeys, true);
+    if (e.isComposing || e.keyCode === 229 || e.target.closest && e.target.closest("input, textarea, select, [contenteditable]:not([contenteditable=false])")) return;
+    if (e.key === "Escape") {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      return hideVocabAddPopup();
+    }
+    if (!popupEnterSaves(e)) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    commit();
+  };
+  window.addEventListener("keydown", outerKeys, true);
   input.addEventListener("paste", e => {
     e.preventDefault();
     document.execCommand("insertText", false, e.clipboardData.getData("text/plain").replace(/\s*[\r\n]+\s*/g, " "));
@@ -28939,7 +28955,6 @@ function openAddPopup() {
   document.getElementById("addPopTitle").textContent = name;
   placeAddForm("popup");
   document.getElementById("addPopup").hidden = false;
-  document.getElementById("importText").focus();
 }
 
 function closeAddPopup() {
