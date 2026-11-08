@@ -102,6 +102,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-9 | `4fbb485` | Không nhảy khi Show: chỗ trống rộng đúng bằng từ, chỗ của nghĩa giữ sẵn (ẩn) |
 | FLASH-10 | `2334974` | Bỏ kiểu cụm từ (cắt câu, …): câu luôn hiện đủ |
 | FLASH-11 | `298b2dd` | Câu từ thế giới (Tatoeba, Wikipedia) cho mặt trước khoét từ, lấy trực tuyến từng từ, giữ ít trong trình duyệt |
+| FLASH-12 | `682fb3a` | Câu thế giới không giới hạn: mỗi lần một câu chưa gặp, hết thì lấy trang tiếp; mặt trước câu thế giới ra nhiều hơn |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
@@ -127,6 +128,7 @@ Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWor
 | POD-17 | `2334974` | Hình động nhẹ, chậm, không nháy (bỏ nháy sao, đèn, TV nhiễu, ▶) |
 | POD-18 | `298b2dd` | Thêm một câu từ thế giới vào các câu được đọc |
 | POD-19 | `128c757` | Mốc thời gian nằm đầu dòng chữ ở mặt sau |
+| POD-20 | `682fb3a` | Hai câu thế giới khác nhau mỗi lần |
 
 Hàm chính: `openBlind`, `closeBlind`, `blindItems`, `blindAutoItems`, `blindLines`, `blindNext`, `paintBlind`, `paintBlindLive`, `blindPlay`, `blindPlayOne`, `blindPlayLine`, `blindPlayer`, `blindSpeak`, `blindGrade`, `blindUndo`, `blindEdit`, `blindAct`, `blindFly`, `blindArt`, `blindSceneFor`, `blindCountsHtml`, `withLeadTime`, `blindTime`, `BLIND_SCENES`.
 
@@ -148,6 +150,7 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 | DICT-1 | `961cf80` | Trang từ điển ngoài nhúng vào (chinesedictionary.mobi, Bing) |
 | DICT-2 | `b554aef` | Từ điển riêng: từ của câu, pinyin, nghĩa Google, bỏ từ thông dụng và sọt rác, ＋ thêm vào notes |
 | DICT-3 | `7ead1be` | Thiết kế lại: câu ở đầu (gạch chân từ mới, bấm nhảy tới), thẻ từ: pinyin màu thanh điệu, 🔊, nghĩa theo loại từ, nút Add, khung chờ nhấp nháy |
+| DICT-4 | `682fb3a` | Hai câu ví dụ “In the world” dưới mỗi từ mới |
 
 Hàm chính: `showOwnDict`, `ownDictCardHtml`, `ownDictLookup`, `ownDictWords`, `ownDictFetch`, `ownDictPrefetch`, `addWordToEditNotes`, `hideOwnDict`.
 
