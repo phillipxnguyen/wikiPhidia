@@ -36,6 +36,7 @@ Hàm chính: `ieltsPaperHtml`, `ieltsFrontHtml`, `sentenceEx`, `sentenceKeyWord`
 | FULL-1 | `961cf80` | Danh sách thẻ, sửa trong popup, vuốt xoá có bóng thiên thần |
 | FULL-2 | `c18533e` | 🌐 hiện bản dịch dưới mỗi câu chưa có câu trả lời (của notes hoặc máy dịch) |
 | FULL-3 | `cd20830` | Bản dịch là dòng đầu của notes, cùng kiểu chữ, màu xanh câu trả lời |
+| FULL-4 | `128c757` | Bản dịch thẳng lề câu, cách đều 8px trên dưới |
 
 Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `selectRow`, `clearRowSelection`, `updateSelBar`.
 
@@ -71,6 +72,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-27 | `5be7a60` | Dùng lại trình phát đã tải của trang bài (chuyển vào không tải lại), nhảy câu phát ngay như list |
 | THEATER-28 | `8849ce4` | Giao diện tối kiểu trang học video: hàng nút dưới video (công tắc, ◀ ▶ ▶|, lặp), câu dưới hàng nút, list tối bên phải |
 | THEATER-29 | `abc1ae4` | Vừa một màn hình, nút gọn không chồng, list không nền, bấm công tắc tức thì (không vẽ lại list) |
+| THEATER-30 | `128c757` | Mốc thời gian nằm đầu dòng chữ, chữ chảy xuống dưới (như list) |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
@@ -116,8 +118,9 @@ Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWor
 | POD-16 | `d0a1d9b` | Podcast có cả bên Lessons; bỏ nút 🗑 (Delete và ✕ của thanh chọn vẫn xoá) |
 | POD-17 | `2334974` | Hình động nhẹ, chậm, không nháy (bỏ nháy sao, đèn, TV nhiễu, ▶) |
 | POD-18 | `298b2dd` | Thêm một câu từ thế giới vào các câu được đọc |
+| POD-19 | `128c757` | Mốc thời gian nằm đầu dòng chữ ở mặt sau |
 
-Hàm chính: `openBlind`, `closeBlind`, `blindItems`, `blindAutoItems`, `blindLines`, `blindNext`, `paintBlind`, `paintBlindLive`, `blindPlay`, `blindPlayOne`, `blindPlayLine`, `blindPlayer`, `blindSpeak`, `blindGrade`, `blindUndo`, `blindEdit`, `blindAct`, `blindFly`, `blindArt`, `blindSceneFor`, `blindCountsHtml`, `blindTime`, `BLIND_SCENES`.
+Hàm chính: `openBlind`, `closeBlind`, `blindItems`, `blindAutoItems`, `blindLines`, `blindNext`, `paintBlind`, `paintBlindLive`, `blindPlay`, `blindPlayOne`, `blindPlayLine`, `blindPlayer`, `blindSpeak`, `blindGrade`, `blindUndo`, `blindEdit`, `blindAct`, `blindFly`, `blindArt`, `blindSceneFor`, `blindCountsHtml`, `withLeadTime`, `blindTime`, `BLIND_SCENES`.
 
 ### WORDS: Words list (từ theo tần suất)
 | Mã | Commit | Là gì |
