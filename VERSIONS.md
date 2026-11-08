@@ -78,6 +78,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-31 | `da72c88` | Câu dưới hàng nút hiện đủ, không thanh cuộn; cabin làm mờ video tới khi Show (như Listening cũ) |
 | THEATER-32 | `de95b47` | Câu lại nằm trên video; công tắc logic với nhau; list chữ đều, câu đang phát rõ, mốc ở dòng pinyin, bỏ nền vàng |
 | THEATER-33 | `12512ba` | Câu đang phát luôn có trong list (câu chưa tới hạn hiện mờ); điện thoại không có list |
+| THEATER-34 | `4c0bd1b` | Điện thoại: chỉ một hàng công tắc, phát/Show/chấm ở thanh đáy chung |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
