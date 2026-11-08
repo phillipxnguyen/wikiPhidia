@@ -1653,7 +1653,7 @@ window.onYouTubeIframeAPIReady = function(){
   .od-head{position:sticky;top:0;z-index:1;display:flex;flex-direction:column;gap:8px;padding:16px 20px 12px;border-bottom:1px solid var(--od-line);background:color-mix(in srgb, var(--od-bg) 92%, transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);}
   .od-sent{font-size:17px;line-height:28px;color:var(--text);}
   .od-jump{padding:0 1px;border:0;border-radius:4px;background:none;color:inherit;font:inherit;line-height:inherit;text-decoration:underline;text-decoration-color:color-mix(in srgb, var(--accent) 55%, transparent);text-decoration-thickness:2px;text-underline-offset:5px;cursor:pointer;}
-  .od-jump.od-got{text-decoration-color:var(--a-label);}
+  .od-jump.od-got{text-decoration-color:var(--a-label);background:color-mix(in srgb, var(--a-label) 12%, transparent);}
   @media (hover:hover){.od-jump:hover{background:color-mix(in srgb, var(--accent) 10%, transparent);}}
   .od-sum{font-size:12px;line-height:16px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--od-soft);}
   .od-sum b{color:var(--accent);}
@@ -1704,7 +1704,8 @@ window.onYouTubeIframeAPIReady = function(){
   .od-known{margin:0 16px 20px;border-top:1px solid var(--od-line);}
   .od-known summary{padding:12px 4px;font-size:12px;line-height:16px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--od-soft);cursor:pointer;}
   .od-known .od-card{margin-top:8px;}
-  .od-have{opacity:.6;}
+  .od-have{background:color-mix(in srgb, var(--a-label) 6%, var(--od-bg));border-color:color-mix(in srgb, var(--a-label) 30%, transparent);}
+  .od-have .od-body, .od-have .od-py, .od-have .od-ex{opacity:.7;}
   .od-empty{margin:0;padding:24px 4px;font-size:15px;line-height:22px;text-align:center;color:var(--od-soft);}
   @media (prefers-reduced-motion: reduce){.od-card, .od-add, .od-skel i, .od-card.od-flash{animation:none;transition:none;}}
   @media (max-width:600px){.od-head{padding:12px 16px 10px;}.od-list{padding:12px;gap:10px;}.od-card{padding:14px;}.od-word b{font-size:24px;line-height:32px;}}
@@ -11141,19 +11142,31 @@ function ownDictCardHtml(lang, w, have) {
 
 let ownDictShown = null;
 
-function ownDictSentenceHtml(text, words) {
+function ownDictSentenceHtml(text, words, known) {
   let html = escapeHtml(text);
-  [ ...words ].sort((a, b) => b.length - a.length).forEach(w => {
+  const got = new Set(known || []);
+  [ ...words, ...got ].sort((a, b) => b.length - a.length).forEach(w => {
     html = html.split(escapeHtml(w)).join(`\u0001${escapeAttr(w)}\u0002${escapeHtml(w)}\u0003`);
   });
-  return html.replace(/\u0001([^\u0002]*)\u0002([^\u0003]*)\u0003/g, '<button type="button" class="od-jump" data-w="$1">$2</button>');
+  return html.replace(/\u0001([^\u0002]*)\u0002([^\u0003]*)\u0003/g, (m, w, t) => `<button type="button" class="od-jump${got.has(w.replace(/&quot;/g, '"').replace(/&amp;/g, "&")) ? " od-got" : ""}" data-w="${w}">${t}</button>`);
+}
+
+function ownDictKnownKeys() {
+  const keys = new Set(lessonVocabItems(vocabSource()).map(i => i.tkey).concat([ ...wordStates().keys() ]));
+  library.forEach(l => {
+    if (l.id === currentLessonId || isVirtualId(l.id) || bookHidden(l)) return;
+    try {
+      lessonVocabItems(readerCards(l)).forEach(i => keys.add(i.tkey));
+    } catch (e) {}
+  });
+  return keys;
 }
 
 function showOwnDict(text, row, onAdd) {
   const box = document.querySelector("#editPopup .le-dict");
   if (!box) return;
   const {lang: lang, words: words} = ownDictWords(text, row);
-  const trash = new Set(hiddenWordsFor(lang).concat((hiddenStore().lessons[currentLessonId] || []).map(normalizeVocabText))), have = new Set(lessonVocabItems(vocabSource()).map(i => i.tkey).concat([ ...wordStates().keys() ]));
+  const trash = new Set(hiddenWordsFor(lang).concat((hiddenStore().lessons[currentLessonId] || []).map(normalizeVocabText))), have = ownDictKnownKeys();
   const list = words.filter(w => !trash.has(normalizeVocabText(w)));
   const fresh = list.filter(w => !have.has(normalizeVocabText(w))), old = list.filter(w => have.has(normalizeVocabText(w)));
   ownDictShown = {
@@ -11163,7 +11176,7 @@ function showOwnDict(text, row, onAdd) {
     text: text
   };
   box.classList.add("on");
-  const head = `<div class="od-head"><div class="od-sent">${ownDictSentenceHtml(text, fresh)}</div><div class="od-sum"><b>${fresh.length}</b> new ${fresh.length === 1 ? "word" : "words"}${old.length ? ` · ${old.length} already yours` : ""}</div></div>`;
+  const head = `<div class="od-head"><div class="od-sent">${ownDictSentenceHtml(text, fresh, old)}</div><div class="od-sum"><b>${fresh.length}</b> new ${fresh.length === 1 ? "word" : "words"}${old.length ? ` · ${old.length} already yours` : ""}</div></div>`;
   const known = old.length ? `<details class="od-known"><summary>Already in your words · ${old.length}</summary>${old.map(w => ownDictCardHtml(lang, w, true)).join("")}</details>` : "";
   box.innerHTML = `<div class="own-dict">${head}<div class="od-list">${fresh.map(w => ownDictCardHtml(lang, w, false)).join("") || '<p class="od-empty">Every word of this sentence is already yours.</p>'}</div>${known}</div>`;
   const shown = ownDictShown, redraw = w => {
@@ -11286,6 +11299,8 @@ document.getElementById("editPopup").addEventListener("click", e => {
   const jump = e.target.closest(".od-jump");
   if (jump) {
     const card = document.querySelector(`#editPopup .od-card[data-w="${CSS.escape(jump.dataset.w)}"]`);
+    const fold = card && card.closest("details");
+    if (fold) fold.open = true;
     if (card) {
       card.scrollIntoView({
         block: "nearest",
