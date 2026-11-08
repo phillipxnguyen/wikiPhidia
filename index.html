@@ -2310,6 +2310,7 @@ window.onYouTubeIframeAPIReady = function(){
   .w-cap .w-text{font-size:26px;line-height:36px;}
   .w-cap .w-py{font-size:17px;line-height:24px;}
   .w-cap .w-tr{font-size:18px;line-height:26px;}
+  .w-capline > :is(.w-py, .w-text, .w-tr){margin:0;}
   .watch-pop[data-size="125"] .w-cap .w-text{font-size:32px;line-height:44px;}
   .watch-pop[data-size="125"] .w-cap .w-py{font-size:20px;line-height:28px;}
   .watch-pop[data-size="125"] .w-cap .w-tr{font-size:22px;line-height:30px;}
@@ -2328,8 +2329,9 @@ window.onYouTubeIframeAPIReady = function(){
   .w-list{position:absolute;inset:0;overflow:auto;overscroll-behavior:contain;border-radius:12px;}
   .w-row{position:relative;display:block;padding:16px;border-bottom:1px solid var(--tw-line);color:var(--tw-dim);cursor:pointer;}
   .w-row .w-text{font-size:16px;line-height:24px;font-weight:400;color:inherit;}
-  .w-row .w-py{font-size:13px;line-height:24px;font-weight:400;color:#b8a066;}
-  .w-row .w-tr{font-size:13px;line-height:20px;color:inherit;}
+  .w-row .w-py{font-size:14px;line-height:20px;font-weight:400;color:#b8a066;}
+  .w-row .w-tr{font-size:14px;line-height:20px;color:inherit;}
+  .w-row > :is(.w-py, .w-text, .w-tr) + :is(.w-text, .w-tr){margin-top:4px;}
   .w-row.on{background:#262626;color:#ffffff;box-shadow:inset 3px 0 #e8c46a;}
   .w-row.on .w-py{color:#e8c46a;}
   .w-row.extra.on{background:#1c1c1c;color:#bdbdbd;box-shadow:inset 3px 0 #6b6b6b;}
@@ -4169,7 +4171,7 @@ function watchToggle() {
   try {
     const playing = watch.player.getPlayerState() === YT.PlayerState.PLAYING;
     if (playing) watch.player.pauseVideo(); else {
-      if ((watch.prefs.auto || watch.prefs.cabin) && watch.pausedAt === watch.at && watch.lines[watch.at + 1]) return watchSeek(watch.at + 1);
+      if (watch.pausedAt === watch.at && watch.lines[watch.at]) return watchSeek(watch.at, true);
       watch.player.playVideo();
     }
   } catch (e) {}
@@ -4208,8 +4210,7 @@ function watchPrefChanged(k) {
 function paintWatch() {
   const p = watch.prefs, box = document.getElementById("watchPop");
   const chev = d => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${d}"/></svg>`;
-  const nav = `<button type="button" class="w-nav" data-w="prev" aria-label="Previous line" title="Previous line (A)">${chev("M15 5l-7 7 7 7")}</button><button type="button" class="w-play" data-w="play" aria-label="Play or pause" title="Play or pause (Space)">${WATCH_PLAY}</button><button type="button" class="w-nav" data-w="next" aria-label="Next line" title="Next line (D)">${chev("M9 5l7 7-7 7")}</button>`;
-  const again = `<button type="button" class="w-nav" data-w="again" aria-label="This line again" title="This line again (S)">${chev("M19 12a7 7 0 1 1-2.05-4.95M19 4v4h-4")}</button>`;
+  const nav = `<button type="button" class="w-nav" data-w="prev" aria-label="Previous line" title="Previous line (A)">${chev("M15 5l-7 7 7 7")}</button><button type="button" class="w-play" data-w="play" aria-label="Play or pause" title="Show, play or pause; at the end of the line, play it again (Space or S)">${WATCH_PLAY}</button><button type="button" class="w-nav" data-w="next" aria-label="Next line" title="Next line (D)">${chev("M9 5l7 7-7 7")}</button>`;
   watchQueueSync();
   watch.rowHtml = null;
   box.querySelector(".w-topbar .toolbar-flag").innerHTML = document.getElementById("studyFlag").innerHTML;
@@ -4222,7 +4223,6 @@ function paintWatch() {
   box.querySelector(".w-ctl-l").innerHTML = tools;
   syncWatchPills();
   box.querySelector(".w-ctl-c").innerHTML = nav;
-  box.querySelector(".w-ctl-r").innerHTML = again;
   watch.state = undefined;
   paintWatchList();
   paintWatchCounts();
@@ -4471,7 +4471,6 @@ document.getElementById("watchPop").addEventListener("click", e => {
   if (k === "play") return watchToggle();
   if (k === "prev") return watchSeek(Math.max(0, watch.at - 1));
   if (k === "next") return watchSeek(Math.min(watch.lines.length - 1, watch.at + 1));
-  if (k === "again") return watchSeek(Math.max(0, watch.at));
   if (k === "gagain" || k === "ggood") return watchGrade(k === "gagain");
   watch.prefs[k] = !watch.prefs[k];
   saveWatchPrefs();
@@ -4535,7 +4534,7 @@ window.addEventListener("keydown", e => {
   const g = gradeKey(e), pointed = watchPointed();
   if (k === " ") watchToggle(); else if (g) watchGrade(g === "again"); else if (e.code === "KeyE" && !e.shiftKey && (pointed || watch.lines[watch.at])) openEditPopup(pointed || watch.lines[watch.at]); else if (e.code === "KeyW" && !e.shiftKey) showToast("A video sentence stays in its lesson"); else if ((k === "Delete" || k === "Backspace") && (pointed || watch.lines[watch.at]) && !e.repeat) {
     watchDelete(pointed || watch.lines[watch.at]);
-  } else if (e.code === "KeyV" && watch.prefs.cabin) cabinReveal(); else if (e.code === "KeyA") watchSeek(Math.max(0, watch.at - 1)); else if (e.code === "KeyD") watchSeek(Math.min(watch.lines.length - 1, watch.at + 1)); else if (e.code === "KeyS" || e.code === "KeyR") watchSeek(Math.max(0, watch.at)); else if (e.code === "KeyQ") {
+  } else if (e.code === "KeyV" && watch.prefs.cabin) cabinReveal(); else if (e.code === "KeyA") watchSeek(Math.max(0, watch.at - 1)); else if (e.code === "KeyD") watchSeek(Math.min(watch.lines.length - 1, watch.at + 1)); else if (e.code === "KeyS" || e.code === "KeyR") watchToggle(); else if (e.code === "KeyQ") {
     watch.prefs.auto = !watch.prefs.auto;
     saveWatchPrefs();
     paintWatch();
