@@ -4053,11 +4053,20 @@ function openWatch() {
         try {
           e.target.setPlaybackRate(watch.prefs.rate);
         } catch (err) {}
+        watchStart();
       },
       onStateChange: () => updateTouchBar()
     }
   });
   watch.timer = setInterval(watchTick, 200);
+  if (watch.shared) watchStart();
+}
+
+function watchStart() {
+  if (!watch || watch.started) return;
+  watch.started = true;
+  const q = watch.queue || [], i = q.length ? watch.lines.findIndex(x => x.id === q[0]) : 0;
+  watchSeek(Math.max(0, i));
 }
 
 function closeWatch() {
@@ -4180,6 +4189,7 @@ function watchRestoreAt(id, back) {
 function watchSeek(i, play) {
   if (!watch || !watch.lines[i]) return;
   const cabin = watch.prefs.cabin && !play;
+  videoActionSeq++;
   watch.at = i;
   watch.pausedAt = cabin ? i : -1;
   paintWatchLine(true);
@@ -4250,6 +4260,7 @@ function watchToggle() {
     const playing = watch.player.getPlayerState() === YT.PlayerState.PLAYING;
     if (playing) watch.player.pauseVideo(); else {
       if (watch.pausedAt === watch.at && watch.lines[watch.at]) return watchSeek(watch.at, true);
+      videoActionSeq++;
       watch.player.playVideo();
     }
   } catch (e) {}
