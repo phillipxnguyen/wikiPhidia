@@ -74,6 +74,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-28 | `8849ce4` | Giao diện tối kiểu trang học video: hàng nút dưới video (công tắc, ◀ ▶ ▶|, lặp), câu dưới hàng nút, list tối bên phải |
 | THEATER-29 | `abc1ae4` | Vừa một màn hình, nút gọn không chồng, list không nền, bấm công tắc tức thì (không vẽ lại list) |
 | THEATER-30 | `128c757` | Mốc thời gian nằm đầu dòng chữ, chữ chảy xuống dưới (như list) |
+| THEATER-31 | `da72c88` | Câu dưới hàng nút hiện đủ, không thanh cuộn; cabin làm mờ video tới khi Show (như Listening cũ) |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
