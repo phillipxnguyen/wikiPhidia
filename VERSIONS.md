@@ -141,6 +141,15 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 
 ## Chung
 
+
+### DICT: Từ điển riêng trong ô sửa thẻ
+| Mã | Commit | Là gì |
+|---|---|---|
+| DICT-1 | `961cf80` | Trang từ điển ngoài nhúng vào (chinesedictionary.mobi, Bing) |
+| DICT-2 | `b554aef` | Từ điển riêng: từ của câu, pinyin, nghĩa Google, bỏ từ thông dụng và sọt rác, ＋ thêm vào notes |
+
+Hàm chính: `showOwnDict`, `ownDictWords`, `ownDictFetch`, `ownDictPrefetch`, `addWordToEditNotes`, `hideOwnDict`.
+
 ### DATA: Dữ liệu thẻ (Q/A)
 | Mã | Commit | Là gì |
 |---|---|---|
