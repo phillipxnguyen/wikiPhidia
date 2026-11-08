@@ -160,6 +160,7 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 | DICT-5 | `31c7331` | Lọc mảnh chỉ gồm từ thường (你有), Delete xoá từ gợi ý, Shift lưu từ đang trỏ |
 | DICT-6 | `be77efc` | Từ đã có ở bất kỳ bài nào không đề xuất lại; trong câu tô xanh lá (đã có), thẻ nền xanh nhạt |
 | DICT-7 | `3d5d9b9` | Xoá một lần là mất hẳn ở mọi bài, không đề xuất lại (bỏ luật 3 lần); không ô nào tự đặt con trỏ khi mở |
+| DICT-8 | `b9932c5` | Delete/Shift liên tục không cần nhúc nhích chuột (mọi list); từ vừa Add chuyển xuống Already yours |
 
 Hàm chính: `showOwnDict`, `ownDictCardHtml`, `ownDictLookup`, `ownDictWords`, `ownDictFetch`, `ownDictPrefetch`, `addWordToEditNotes`, `hideOwnDict`.
 
