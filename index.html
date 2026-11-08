@@ -1649,12 +1649,24 @@ window.onYouTubeIframeAPIReady = function(){
   #editPopup .vocab-editor{margin:0;padding:0;border:0;box-shadow:none;background:none;}
   .le-box #editDict{display:none;}
   .le-dict{position:relative;height:0;overflow:hidden;}
-  .le-dict > .dict-frame{position:absolute;top:0;left:0;box-sizing:border-box;}
+  .own-dict{position:absolute;inset:0;overflow:auto;overscroll-behavior:contain;box-sizing:border-box;padding:4px 0;border-radius:inherit;background:var(--surface);}
+  .od-item{display:flex;flex-direction:column;gap:4px;padding:10px 16px;border-bottom:1px solid var(--border);}
+  .od-head{display:flex;align-items:baseline;gap:8px;}
+  .od-head b{font-size:20px;line-height:28px;font-weight:700;color:var(--text);}
+  .od-head i{flex:1;min-width:0;font-style:normal;font-size:14px;line-height:20px;color:var(--text-2);}
+  .od-add{flex:none;align-self:center;width:32px;height:32px;margin-left:auto;padding:0;border:1px solid var(--border);border-radius:16px;background:var(--surface);color:var(--accent);font-size:18px;line-height:20px;cursor:pointer;}
+  @media (hover:hover){.od-add:hover{background:var(--accent);color:#ffffff;border-color:var(--accent);}}
+  .od-tag{margin-left:auto;align-self:center;font-size:14px;line-height:20px;color:var(--a-label);}
+  .od-mean{display:flex;flex-wrap:wrap;gap:4px 8px;}
+  .od-mean button{padding:0;border:0;background:none;font:inherit;font-size:15px;line-height:22px;color:var(--text-2);cursor:pointer;text-align:left;}
+  .od-mean .od-pick{color:var(--a-text);font-weight:600;}
+  @media (hover:hover){.od-item:not(.od-have) .od-mean button:hover{text-decoration:underline;}}
+  .od-wait{font-size:15px;line-height:22px;color:var(--text-2);}
+  .od-have{opacity:.5;}
+  .od-have .od-mean button{cursor:default;}
+  .od-empty{margin:0;padding:16px;font-size:15px;line-height:22px;color:var(--text-2);}
   .le-dict.on{margin-top:10px;height:var(--dict-h, 360px);}
-  .dict-frame{overflow:hidden;container-type:size;}
-  .dict-frame > iframe{display:block;width:100%;height:100%;border:0;}
   @container (max-width:699px){
-    .dict-frame > iframe.dict-zoom{width:160%;height:160%;transform:scale(.625);transform-origin:0 0;}
   }
   .le-tabs{display:none;}
   html.touch .le-box{max-height:min(760px, calc(100dvh - 80px));}
@@ -1666,7 +1678,6 @@ window.onYouTubeIframeAPIReady = function(){
   html.touch .le-box[data-tab="dict"]:has(> .le-dict.on) > .le-content{display:none;}
   html.touch .le-box:has(> .le-dict.on) > .le-dict.on{flex:1 1 0;height:auto;min-height:0;margin-top:0;}
   html.touch .le-box[data-tab="edit"]:has(> .le-dict.on) > .le-dict.on{position:absolute;left:12px;right:12px;top:56px;bottom:10px;visibility:hidden;pointer-events:none;}
-  html.touch #editPopup .dict-frame > iframe.dict-zoom{width:100%;height:100%;transform:none;}
   @media (min-width:1000px){
     html:not(.touch) .le-box:has(> .le-dict.on){flex-direction:row;width:min(900px, calc(100vw - 32px));height:min(640px, calc(100dvh - 32px));max-height:none;overflow:hidden;padding:0;}
     html:not(.touch) .le-box:has(> .le-dict.on) > .le-content{flex:1 1 0;min-width:0;overflow-y:auto;overscroll-behavior:contain;padding:10px 12px;}
@@ -10871,114 +10882,178 @@ document.querySelector(".sidebar").addEventListener("click", e => {
 
 let activeEdit = null;
 
-const dictOverlayLayer = document.createElement("div");
-
-dictOverlayLayer.className = "dict-layer";
-
-dictOverlayLayer.style.cssText = "position:absolute;top:0;left:0;width:0;height:0;overflow:visible;z-index:900;pointer-events:none;";
-
-document.body.appendChild(dictOverlayLayer);
-
-const dictIframeCache = new Map;
-
-let activeDictOverlay = null;
-
-function dictFrame(url) {
-  const frame = document.createElement("div");
-  frame.className = "dict-frame";
-  const iframe = document.createElement("iframe");
-  if (url.startsWith("https://www.bing.com/")) iframe.className = "dict-zoom";
-  iframe.dataset.src = url;
-  if (iframe.className === "dict-zoom") iframe.addEventListener("load", () => iframe.dataset.size = dictFrameSize(iframe));
-  frame.appendChild(iframe);
-  return frame;
-}
-
-function startDictFrame(frame) {
-  const iframe = frame.querySelector("iframe");
-  void iframe.offsetWidth;
-  iframe.src = iframe.dataset.src;
-}
-
-function dictFrameSize(iframe) {
-  return iframe.clientWidth + "x" + iframe.clientHeight;
-}
-
-function fitDictFrame(frame) {
-  requestAnimationFrame(() => {
-    const iframe = frame.querySelector("iframe");
-    if (!iframe || !iframe.dataset.size || !iframe.clientHeight || iframe.dataset.size === dictFrameSize(iframe)) return;
-    delete iframe.dataset.size;
-    iframe.src = iframe.src;
-  });
-}
-
-let overlayDictSize = null;
-
-function getDictIframe(url) {
-  let iframe = dictIframeCache.get(url);
-  if (!iframe) {
-    iframe = dictFrame(url);
-    const size = overlayDictSize || {
-      width: wholePx(Math.min(720, document.querySelector(".main-inner").clientWidth || 720)),
-      height: 360
-    };
-    iframe.style.cssText = `position:fixed;top:0;left:0;box-sizing:border-box;width:${size.width}px;height:${size.height}px;opacity:0;border:1px solid var(--border);border-radius:10px;pointer-events:none;`;
-    dictOverlayLayer.appendChild(iframe);
-    startDictFrame(iframe);
-    dictIframeCache.set(url, iframe);
-  }
-  return iframe;
-}
-
-function popupDictSlot() {
-  const pop = document.getElementById("editPopup");
-  const dict = pop.querySelector(".le-dict"), box = pop.querySelector(".le-box");
-  const on = dict.classList.contains("on");
-  if (!on) dict.classList.add("on");
-  const slot = {
-    width: dict.clientWidth,
-    height: dict.clientHeight,
-    side: getComputedStyle(box).flexDirection === "row",
-    radius: getComputedStyle(dict).borderTopLeftRadius
-  };
-  if (!on) dict.classList.remove("on");
-  return slot;
-}
-
-function fitPopupDictFrame(frame, slot) {
-  Object.assign(frame.style, {
-    width: slot.width + "px",
-    height: slot.height + "px",
-    border: slot.side ? "0" : "1px solid var(--border)",
-    borderRadius: slot.side ? `${slot.radius} 0 0 ${slot.radius}` : "10px"
-  });
-}
-
-const popupDictCache = new Map;
-
-function getPopupDictIframe(url) {
-  let frame = popupDictCache.get(url);
-  if (!frame) {
-    frame = dictFrame(url);
-    frame.style.cssText = "opacity:0;pointer-events:none;";
-    fitPopupDictFrame(frame, popupDictSlot());
-    document.querySelector("#editPopup .le-dict").appendChild(frame);
-    startDictFrame(frame);
-    popupDictCache.set(url, frame);
-  }
-  return frame;
-}
-
-function followPopupDict() {
-  const shown = activeDictOverlay;
-  if (!shown || !shown.inline) return;
-  fitPopupDictFrame(shown.iframe, popupDictSlot());
-  shown.rafId = requestAnimationFrame(followPopupDict);
-}
-
 function editsInPopup() {
   return isListenMode();
+}
+
+const OWN_DICT_KEY = "flashcards.ownDict", OWN_DICT_MAX = 6000;
+
+const OWN_STOP = {
+  zh: "的 了 是 在 我 你 他 她 它 们 我们 你们 他们 这 那 和 也 都 就 吗 呢 吧 啊 不 有 很 一 个 着 过 得 地 会 要 说 去 来 到 上 下 里 还 又 把 被 让 给 对 从 没 没有 什么 这个 那个 一个 自己 就是 还是 可以 因为 所以 但是 如果 已经",
+  en: "the a an to of and or in on at is are was were be been being i you he she it we they this that these those for with as by from not no do does did have has had my your his her its our their me him them us so but if then than there here what which who whom when where why how all any some just very can could will would shall should may might must",
+  ko: "이 그 저 것 수 등 및 더 또 은 는 이 가 을 를 에 의 도 로 으로 와 과",
+  ja: "の に は を が と で も た て だ です ます する いる ある こと これ それ あれ この その"
+};
+
+let ownDictStore = null;
+
+const ownDictPending = new Map;
+
+function ownDictRead() {
+  if (!ownDictStore) ownDictStore = readLocal(OWN_DICT_KEY) || {};
+  return ownDictStore;
+}
+
+function ownDictSave() {
+  const st = ownDictRead(), keys = Object.keys(st);
+  if (keys.length > OWN_DICT_MAX) keys.slice(0, keys.length - OWN_DICT_MAX).forEach(k => delete st[k]);
+  try {
+    localStorage.setItem(OWN_DICT_KEY, JSON.stringify(st));
+  } catch (e) {}
+}
+
+function ownDictLang(text, row) {
+  const script = cjkScriptFor(text, row);
+  if (script === "zh" || script === "ja") return script;
+  if (/[가-힣]/.test(text)) return "ko";
+  return detectLang(text).split("-")[0];
+}
+
+function ownDictWords(text, row) {
+  const lang = ownDictLang(text, row), stop = new Set((OWN_STOP[lang] || "").split(" "));
+  let parts = [];
+  try {
+    for (const x of new Intl.Segmenter(lang === "zh" ? "zh" : lang, {
+      granularity: "word"
+    }).segment(text)) if (x.isWordLike) parts.push(x.segment);
+  } catch (e) {
+    parts = text.split(/[^\p{L}\p{M}'’-]+/u);
+  }
+  const seen = new Set, out = [];
+  parts.forEach(w => {
+    w = w.trim();
+    const key = normalizeVocabText(w);
+    if (!w || seen.has(key) || /^\d+$/.test(w) || stop.has(w.toLowerCase()) || lang !== "zh" && lang !== "ja" && w.length < 2) return;
+    seen.add(key);
+    out.push(w);
+  });
+  return {
+    lang: lang,
+    words: out
+  };
+}
+
+function ownDictEntry(lang, w) {
+  return ownDictRead()[lang + "|" + normalizeVocabText(w)] || null;
+}
+
+function ownDictFetch(lang, w) {
+  const key = lang + "|" + normalizeVocabText(w);
+  if (ownDictRead()[key]) return Promise.resolve(ownDictRead()[key]);
+  if (ownDictPending.has(key)) return ownDictPending.get(key);
+  const to = lang === "vi" ? "en" : "vi";
+  const job = translateWithAlts(w, to).then(r => {
+    const entry = {
+      m: r.text || "",
+      alts: (r.alts || []).filter(a => a && a.toLowerCase() !== (r.text || "").toLowerCase()).slice(0, 5)
+    };
+    if (entry.m) {
+      ownDictRead()[key] = entry;
+      ownDictSave();
+    }
+    return entry;
+  }, () => ({
+    m: "",
+    alts: []
+  })).finally(() => ownDictPending.delete(key));
+  ownDictPending.set(key, job);
+  return job;
+}
+
+function ownDictPrefetch(text, row) {
+  if (!text || !navigator.onLine) return;
+  const {lang: lang, words: words} = ownDictWords(text, row);
+  words.slice(0, 24).forEach(w => ownDictFetch(lang, w));
+}
+
+function ownDictReading(lang, w) {
+  return lang === "zh" && typeof pinyinPro !== "undefined" ? pinyinPro.pinyin(w) : "";
+}
+
+function ownDictItemHtml(lang, w, have) {
+  const e = ownDictEntry(lang, w), py = ownDictReading(lang, w);
+  const mean = e ? `<span class="od-mean"><button type="button" class="od-pick" data-m="${escapeAttr(e.m)}">${escapeHtml(e.m)}</button>${e.alts.map(a => `<button type="button" class="od-alt" data-m="${escapeAttr(a)}">${escapeHtml(a)}</button>`).join("")}</span>` : '<span class="od-mean od-wait">…</span>';
+  return `<div class="od-item${have ? " od-have" : ""}" data-w="${escapeAttr(w)}"><div class="od-head"><b>${escapeHtml(w)}</b>${py ? `<i>${escapeHtml(py)}</i>` : ""}${have ? '<span class="od-tag">✓</span>' : '<button type="button" class="od-add" aria-label="Add this word" title="Add this word with its first meaning">＋</button>'}</div>${mean}</div>`;
+}
+
+let ownDictShown = null;
+
+function showOwnDict(text, row, onAdd) {
+  const box = document.querySelector("#editPopup .le-dict");
+  if (!box) return;
+  hideDictOverlay();
+  const {lang: lang, words: words} = ownDictWords(text, row);
+  const trash = new Set(hiddenWordsFor(lang)), have = new Set(lessonVocabItems(vocabSource()).map(i => i.tkey).concat([ ...wordStates().keys() ]));
+  const list = words.filter(w => !trash.has(normalizeVocabText(w)));
+  const fresh = list.filter(w => !have.has(normalizeVocabText(w))), old = list.filter(w => have.has(normalizeVocabText(w)));
+  ownDictShown = {
+    lang: lang,
+    row: row,
+    onAdd: onAdd,
+    text: text
+  };
+  box.classList.add("on");
+  box.innerHTML = `<div class="own-dict">${fresh.concat(old).map(w => ownDictItemHtml(lang, w, have.has(normalizeVocabText(w)))).join("") || '<p class="od-empty">No new words in this sentence.</p>'}</div>`;
+  const shown = ownDictShown;
+  fresh.concat(old).forEach(w => {
+    if (ownDictEntry(lang, w)) return;
+    ownDictFetch(lang, w).then(() => {
+      if (ownDictShown !== shown) return;
+      const el = box.querySelector(`.od-item[data-w="${CSS.escape(w)}"]`);
+      if (el) el.outerHTML = ownDictItemHtml(lang, w, el.classList.contains("od-have"));
+    });
+  });
+}
+
+function hideOwnDict() {
+  const box = document.querySelector("#editPopup .le-dict");
+  ownDictShown = null;
+  if (!box || !box.querySelector(".own-dict")) return;
+  box.classList.remove("on");
+  box.querySelector(".own-dict").remove();
+}
+
+function hiddenWordsFor(lang) {
+  const st = hiddenStore(), counts = st.counts[lang] || {};
+  return Object.keys(counts).filter(w => counts[w] >= 3);
+}
+
+document.getElementById("editPopup").addEventListener("click", e => {
+  const item = e.target.closest && e.target.closest(".own-dict .od-item:not(.od-have)");
+  if (!item || !ownDictShown) return;
+  const b = e.target.closest(".od-add, .od-pick, .od-alt");
+  if (!b) return;
+  const w = item.dataset.w, entry = ownDictEntry(ownDictShown.lang, w), meaning = b.dataset.m != null ? b.dataset.m : entry ? entry.m : "";
+  ownDictShown.onAdd(w, meaning);
+  item.classList.add("od-have");
+  const add = item.querySelector(".od-add");
+  if (add) add.outerHTML = '<span class="od-tag">✓</span>';
+});
+
+function addWordToEditNotes(notes, term, meaning) {
+  if (!notes) return;
+  let list = notes.querySelector("ul.notes-list") || [ ...notes.querySelectorAll("ul") ].pop();
+  if (!list) {
+    list = document.createElement("ul");
+    list.className = "notes-list";
+    notes.appendChild(list);
+  }
+  const li = document.createElement("li");
+  li.innerHTML = "<b>" + escapeHtml(term) + "</b>: " + escapeHtml(meaning || "");
+  list.appendChild(li);
+  notes.dispatchEvent(new Event("input", {
+    bubbles: true
+  }));
 }
 
 function cardDictUrl(row) {
@@ -10988,8 +11063,7 @@ function cardDictUrl(row) {
 }
 
 function preloadCardDict(row) {
-  const url = row && cardDictUrl(row);
-  if (url) (editsInPopup() ? getPopupDictIframe : getDictIframe)(url);
+  if (row) ownDictPrefetch(plainTextOf(row.qHtml || textHtml(row.q || ""), "\n"), row);
 }
 
 const dictPreloadObserver = new IntersectionObserver(entries => {
@@ -11005,78 +11079,8 @@ const dictPreloadObserver = new IntersectionObserver(entries => {
   rootMargin: "400px 0px"
 });
 
-function positionDictOverlay() {
-  if (!activeDictOverlay || activeDictOverlay.inline) return;
-  const rect = activeDictOverlay.placeholder.getBoundingClientRect();
-  const iframe = activeDictOverlay.iframe;
-  iframe.style.top = Math.round(rect.top + window.scrollY) + "px";
-  iframe.style.left = Math.round(rect.left + window.scrollX) + "px";
-  iframe.style.width = Math.round(rect.width) + "px";
-  iframe.style.height = Math.round(rect.height) + "px";
-  if (rect.width && rect.height) overlayDictSize = {
-    width: Math.round(rect.width),
-    height: Math.round(rect.height)
-  };
-  activeDictOverlay.rafId = requestAnimationFrame(positionDictOverlay);
-}
-
 function hideDictOverlay() {
-  if (!activeDictOverlay) return;
-  if (activeDictOverlay.inline) {
-    cancelAnimationFrame(activeDictOverlay.rafId);
-    document.querySelector("#editPopup .le-dict").classList.remove("on");
-    Object.assign(activeDictOverlay.iframe.style, {
-      opacity: "0",
-      pointerEvents: "none"
-    });
-    activeDictOverlay = null;
-    return;
-  }
-  cancelAnimationFrame(activeDictOverlay.rafId);
-  Object.assign(activeDictOverlay.iframe.style, {
-    position: "fixed",
-    top: "0",
-    left: "0",
-    opacity: "0",
-    pointerEvents: "none"
-  });
-  activeDictOverlay = null;
-}
-
-function showDictOverlay(placeholder, url) {
-  if (activeDictOverlay && activeDictOverlay.inline && activeDictOverlay.placeholder === placeholder && activeDictOverlay.url === url) return;
-  hideDictOverlay();
-  if (placeholder.closest(".le-box")) {
-    const inline = getPopupDictIframe(url);
-    document.querySelector("#editPopup .le-dict").classList.add("on");
-    Object.assign(inline.style, {
-      opacity: "1",
-      pointerEvents: "auto"
-    });
-    activeDictOverlay = {
-      iframe: inline,
-      placeholder: placeholder,
-      url: url,
-      inline: true,
-      rafId: null
-    };
-    followPopupDict();
-    fitDictFrame(inline);
-    return;
-  }
-  const iframe = getDictIframe(url);
-  Object.assign(iframe.style, {
-    position: "absolute",
-    opacity: "1",
-    pointerEvents: "auto"
-  });
-  activeDictOverlay = {
-    iframe: iframe,
-    placeholder: placeholder,
-    rafId: null
-  };
-  positionDictOverlay();
-  fitDictFrame(iframe);
+  hideOwnDict();
 }
 
 function findDuplicateCard(q, a, time, except) {
@@ -11545,8 +11549,7 @@ document.addEventListener("click", e => {
 function reclaimKeyboardFocus() {
   setTimeout(() => {
     const active = document.activeElement;
-    const stillFocusedOwnDictIframe = activeDictOverlay && activeDictOverlay.iframe.contains(active);
-    if (active && active.tagName === "IFRAME" && !stillFocusedOwnDictIframe) {
+    if (active && active.tagName === "IFRAME") {
       document.body.tabIndex = -1;
       document.body.focus();
       window.focus();
@@ -11555,10 +11558,7 @@ function reclaimKeyboardFocus() {
 }
 
 window.addEventListener("blur", () => {
-  const active = document.activeElement;
-  const focusedOwnDictIframe = !!(activeEdit && activeDictOverlay && activeDictOverlay.iframe.contains(active));
-  if (focusedOwnDictIframe) loopWorkRow(activeEdit.row);
-  if (activeEdit && !focusedOwnDictIframe) commitActiveEdit(true);
+  if (activeEdit) commitActiveEdit(true);
   clearRowSelection();
   hideTooltip();
   reclaimKeyboardFocus();
@@ -11863,14 +11863,14 @@ function wireEditBox(host, row) {
   };
   let dictDebounce = null;
   function refreshDict() {
-    const url = dictUrlFor(plainTextOf(editSrc.innerHTML, "\n"), row);
-    if (!url) {
+    const text = splitMergedPlain(plainTextOf(editSrc.innerHTML, "\n")).q.trim() || plainTextOf(editSrc.innerHTML, "\n").trim();
+    if (!text) {
       editDict.classList.remove("has-dict");
-      if (activeDictOverlay && activeDictOverlay.placeholder === editDict) hideDictOverlay();
+      hideOwnDict();
       return;
     }
     editDict.classList.add("has-dict");
-    showDictOverlay(editDict, url);
+    showOwnDict(text, row, (term, meaning) => addWordToEditNotes(editNotes, term, meaning));
   }
   function updateEditDict() {
     clearTimeout(dictDebounce);
@@ -12720,26 +12720,6 @@ function gradeMark(isAgain) {
   return currentView === "vocab" ? isAgain ? "✕" : "✓" : isAgain ? "Again" : "Good";
 }
 
-function dictUnderSwipe(parts) {
-  const ov = activeDictOverlay;
-  if (!ov || !parts.some(el => el && el.contains(ov.placeholder))) return null;
-  cancelAnimationFrame(ov.rafId);
-  Object.assign(ov.iframe.style, {
-    opacity: "0",
-    pointerEvents: "none"
-  });
-  return ov;
-}
-
-function restoreDict(ov) {
-  if (!ov || activeDictOverlay !== ov) return;
-  Object.assign(ov.iframe.style, {
-    opacity: "1",
-    pointerEvents: "auto"
-  });
-  positionDictOverlay();
-}
-
 function cutLayer(parts) {
   const shown = parts.filter(el => el && el.isConnected && el.getBoundingClientRect().height > 1);
   const host = shown[0] && shown[0].closest("#viewVocab, #viewStudy");
@@ -12867,7 +12847,6 @@ function swipe(parts, dir, update, next, label = dir > 0 ? "Good" : "Again") {
   if (motion && !dragGhost && document.documentElement.classList.contains("focus-on")) {
     const layer = cutLayer(parts);
     if (layer) {
-      if (dictUnderSwipe(parts)) hideDictOverlay();
       if (next) holdPageTo(window.scrollY + window.innerHeight);
       const settle = next ? null : keepViewAnchor();
       update();
@@ -12881,7 +12860,6 @@ function swipe(parts, dir, update, next, label = dir > 0 ? "Good" : "Again") {
   const ghost = dragGhost || (motion ? ghostFor(parts) : null);
   const from = dragGhost && dragGhost.style.transform || "none";
   dragGhost = null;
-  if (dictUnderSwipe(parts)) hideDictOverlay();
   if (ghost && label === "Delete") {
     ghost.classList.remove("good", "again", "waiting");
     ghost.classList.add("delete", "angel");
@@ -13018,7 +12996,6 @@ function dragMove(clientX, clientY) {
     hideTooltip();
     if (drag.waits === undefined) drag.waits = !drag.vocab && gradeWaits(studyPickRow());
     drag.restore = taskRun && taskModeChanges() && taskPeek() || (drag.vocab ? hideUnderSwipe(drag.parts) : showNextUnderSwipe());
-    drag.dict = drag.vocab ? null : dictUnderSwipe(drag.parts);
   }
   drag.dx = dx;
   const again = dx < 0;
@@ -13129,7 +13106,6 @@ function endDrag(e) {
       gradeAction(d.dx < 0);
     }
   }
-  restoreDict(d.dict);
   if (commit) {
     if (!dragGhost) return;
     dragGhost = null;
@@ -20497,8 +20473,7 @@ function vocabDictUrl(item) {
 }
 
 function preloadVocabDict(item) {
-  const url = item && vocabDictUrl(item);
-  if (url) getPopupDictIframe(url);
+  if (item) ownDictPrefetch(vocabDictText(item), vocabContext(item).card);
 }
 
 function syncVocabEditPopup(items) {
@@ -20523,8 +20498,7 @@ function syncVocabEditPopup(items) {
     dict.before(stroke);
     drawStrokeOrder(stroke, text, cjkScriptFor(text, card) === "ja");
   }
-  const url = vocabDictUrl(item);
-  if (url) showDictOverlay(dict, url);
+  showOwnDict(text, card, (term, meaning) => addVocabToRow(card, term, meaning));
   placeEditPopup();
   editPopupFromTop();
   return true;

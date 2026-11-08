@@ -409,7 +409,7 @@ The **wikiPhidia** browser extension (in the [`extension`](extension) folder, wi
 
 - Pinyin on hover for Chinese
 - Stroke-order animations: in Listening each shown sentence gets a line showing how to write its characters, animated when the card is shown; tap a character to draw it again.
-- A dictionary in the card editor (and, outside the editor, at the foot of the Speaking paper; Listening and the flashcards have it only in the editor), in every language: chinesedictionary.mobi for Chinese; Bing Translator into English for Korean, Japanese and Vietnamese, and into Vietnamese for English.
+- **The app's own dictionary, in the card editor of every mode** (the list, Speaking, the theater, Podcast, the flashcards, a word's editor), in place of the outside dictionary pages it used to embed. It lists the words of the sentence being edited, each with its pinyin (Chinese) and its meanings fetched online (the main one in green, a few others beside it), and keeps them in this browser so they come at once the next time; sentences about to be edited are looked up in advance. Punctuation, numbers and very common words (的, 了, 是… or the, a, to…) are left out, words in the bin (deleted three times or more, which are never suggested again) are left out too, and words you already have come last, greyed with a ✓. ＋ adds a word with its main meaning, and a click on another meaning adds it with that one, as a word: meaning line in the card's notes, at once, with no box to fill in; Shift on a selection still makes any word by hand, bin words included. On a phone the dictionary is the editor's Dictionary tab.
 - Reading aloud with the browser's own voices
 - Study languages: Chinese (Simplified and Traditional), Korean, Japanese, English, Vietnamese
 
