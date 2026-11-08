@@ -1669,6 +1669,10 @@ window.onYouTubeIframeAPIReady = function(){
   .od-say{flex:none;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border:0;border-radius:16px;background:color-mix(in srgb, var(--text) 6%, transparent);color:var(--od-soft);cursor:pointer;}
   .od-say svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
   @media (hover:hover){.od-say:hover{background:var(--accent);color:#ffffff;}}
+  .od-acts{flex:none;display:inline-flex;align-items:center;gap:8px;}
+  .od-del{flex:none;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border:0;border-radius:16px;background:color-mix(in srgb, var(--text) 6%, transparent);color:var(--od-soft);font-size:14px;line-height:20px;cursor:pointer;transition:opacity .15s;}
+  @media (hover:hover){.od-del{opacity:0;}.od-card:hover .od-del, .od-del:focus-visible{opacity:1;}.od-del:hover{background:var(--danger);color:#ffffff;}}
+  .od-card.od-gone{opacity:0;transform:scale(.97);transition:opacity .2s, transform .2s;pointer-events:none;}
   .od-add{flex:none;display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 16px;border:0;border-radius:18px;background:var(--accent);color:#ffffff;font-size:14px;line-height:20px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px color-mix(in srgb, var(--accent) 30%, transparent);transition:transform .15s, box-shadow .15s;}
   .od-add span{font-size:18px;line-height:20px;}
   @media (hover:hover){.od-add:hover{transform:translateY(-1px);box-shadow:0 6px 16px color-mix(in srgb, var(--accent) 40%, transparent);}}
@@ -5045,6 +5049,7 @@ function restoreFrom(fromStack, toStack, verb) {
       localStorage.setItem(HIDDEN_WORDS_KEY, entry.hiddenWords);
     } catch (e) {}
     if (wordsOpen()) openWords();
+    if (ownDictShown) showOwnDict(ownDictShown.text, ownDictShown.row, ownDictShown.onAdd);
   }
   if (entry.others) {
     oppositeEntry.others = entry.others.map(o => ({
@@ -10970,7 +10975,7 @@ function ownDictWords(text, row) {
   parts.forEach(w => {
     w = w.trim();
     const key = normalizeVocabText(w);
-    if (!w || seen.has(key) || /^\d+$/.test(w) || stop.has(w.toLowerCase()) || lang !== "zh" && lang !== "ja" && w.length < 2) return;
+    if (!w || seen.has(key) || /^\d+$/.test(w) || stop.has(w.toLowerCase()) || lang !== "zh" && lang !== "ja" && w.length < 2 || (lang === "zh" || lang === "ja") && [ ...w ].every(c => stop.has(c))) return;
     seen.add(key);
     out.push(w);
   });
@@ -11067,7 +11072,7 @@ function ownDictCardHtml(lang, w, have) {
     terms: e.alts
   } ] : []) : [];
   const body = !e ? '<div class="od-skel"><i></i><i></i></div>' : `<button type="button" class="od-main" data-m="${escapeAttr(e.m)}" title="Add with this meaning">${escapeHtml(e.m)}</button>` + groups.map(g => `<div class="od-group">${g.pos ? `<span class="od-pos">${escapeHtml(g.pos)}</span>` : ""}<div class="od-terms">${g.terms.map(t => `<button type="button" class="od-term" data-m="${escapeAttr(t)}" title="Add with this meaning">${escapeHtml(t)}</button>`).join("")}</div></div>`).join("");
-  const act = have ? '<span class="od-done">✓ In your words</span>' : '<button type="button" class="od-add"><span>＋</span> Add</button>';
+  const act = have ? '<span class="od-done">✓ In your words</span>' : '<span class="od-acts"><button type="button" class="od-del" aria-label="Delete" title="Delete">✕</button><button type="button" class="od-add"><span>＋</span> Add</button></span>';
   const wi = ownDictShown ? {
     term: w,
     tkey: normalizeVocabText(w),
@@ -11094,7 +11099,7 @@ function showOwnDict(text, row, onAdd) {
   const box = document.querySelector("#editPopup .le-dict");
   if (!box) return;
   const {lang: lang, words: words} = ownDictWords(text, row);
-  const trash = new Set(hiddenWordsFor(lang)), have = new Set(lessonVocabItems(vocabSource()).map(i => i.tkey).concat([ ...wordStates().keys() ]));
+  const trash = new Set(hiddenWordsFor(lang).concat((hiddenStore().lessons[currentLessonId] || []).map(normalizeVocabText))), have = new Set(lessonVocabItems(vocabSource()).map(i => i.tkey).concat([ ...wordStates().keys() ]));
   const list = words.filter(w => !trash.has(normalizeVocabText(w)));
   const fresh = list.filter(w => !have.has(normalizeVocabText(w))), old = list.filter(w => have.has(normalizeVocabText(w)));
   ownDictShown = {
@@ -11146,6 +11151,60 @@ function markOwnDictAdded(card) {
   if (jump) jump.classList.add("od-got");
 }
 
+let ownDictHover = null;
+
+function ownDictDelete(card) {
+  if (!card || !ownDictShown || card.classList.contains("od-have") || card.classList.contains("od-gone")) return;
+  const w = card.dataset.w;
+  pushUndo("Hidden — " + w).hiddenWords = JSON.stringify(readLocal(HIDDEN_WORDS_KEY) || {});
+  if (hideWord(normalizeVocabText(w)) === 3) showToast(`“${w}” is hidden in every lesson now`);
+  if (ownDictHover === card) ownDictHover = null;
+  card.classList.add("od-gone");
+  const jump = document.querySelector(`#editPopup .od-jump[data-w="${CSS.escape(w)}"]`);
+  if (jump) jump.replaceWith(document.createTextNode(jump.textContent));
+  const sum = document.querySelector("#editPopup .od-sum b");
+  if (sum) {
+    const n = Math.max(0, +sum.textContent - 1);
+    sum.textContent = n;
+    if (sum.nextSibling) sum.nextSibling.textContent = sum.nextSibling.textContent.replace(/^ new words?/, n === 1 ? " new word" : " new words");
+  }
+  setTimeout(() => card.remove(), reducedMotion() ? 0 : 200);
+}
+
+let ownDictShift = false;
+
+document.getElementById("editPopup").addEventListener("mousemove", e => {
+  ownDictHover = e.target.closest ? e.target.closest(".own-dict .od-card:not(.od-have):not(.od-gone)") : null;
+});
+
+document.getElementById("editPopup").addEventListener("input", () => {
+  ownDictHover = null;
+});
+
+document.getElementById("editPopup").addEventListener("mouseleave", () => {
+  ownDictHover = null;
+});
+
+window.addEventListener("keydown", e => {
+  ownDictShift = e.key === "Shift" && !e.repeat && !e.metaKey && !e.ctrlKey && !e.altKey && !!ownDictShown && !!ownDictHover;
+  if (!ownDictShown || !ownDictHover || !ownDictHover.isConnected || e.key !== "Delete" && e.key !== "Backspace" || e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
+  e.preventDefault();
+  e.stopImmediatePropagation();
+  ownDictDelete(ownDictHover);
+}, true);
+
+window.addEventListener("keyup", e => {
+  if (e.key !== "Shift" || !ownDictShift) return;
+  ownDictShift = false;
+  const card = ownDictHover;
+  if (!ownDictShown || !card || !card.isConnected || card.classList.contains("od-added")) return;
+  e.preventDefault();
+  e.stopImmediatePropagation();
+  const entry = ownDictEntry(ownDictShown.lang, card.dataset.w);
+  ownDictShown.onAdd(card.dataset.w, entry ? entry.m : "");
+  markOwnDictAdded(card);
+}, true);
+
 function hideOwnDict() {
   const box = document.querySelector("#editPopup .le-dict");
   ownDictShown = null;
@@ -11187,6 +11246,7 @@ document.getElementById("editPopup").addEventListener("click", e => {
   const card = e.target.closest(".own-dict .od-card");
   if (!card) return;
   if (e.target.closest(".od-say")) return ownDictSay(card.dataset.w);
+  if (e.target.closest(".od-del")) return ownDictDelete(card);
   if (card.classList.contains("od-have") || card.classList.contains("od-added")) return;
   const b = e.target.closest(".od-add, .od-main, .od-term");
   if (!b) return;
