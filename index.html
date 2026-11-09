@@ -19840,7 +19840,7 @@ function cardType(el, item) {
   set("--tz", tz + "px");
   set("--tl", tz + 8 + "px");
   set("--tc", pick(TYPE_INKS));
-  const bz = pick(phone ? [ 20, 22, 24, 26 ] : [ 28, 32, 36, 40, 48 ]), mz = pick(phone ? [ 18, 20, 22, 26 ] : [ 22, 26, 30, 36, 44 ]);
+  const bz = pick(phone ? [ 22, 24, 26 ] : [ 32, 36, 40 ]), mz = pick(phone ? [ 18, 20, 22, 26 ] : [ 22, 26, 30, 36, 44 ]);
   const align = pick([ "left", "center", "center", "left" ]);
   set("--bf", font());
   set("--bw", pick([ "400", "400", "500", "600" ]));
@@ -20050,7 +20050,7 @@ function fitVocabCards() {
     fit = Math.min(fit, room);
   }
   fit = Math.max(taskRun ? VOCAB_CARD_MIN : min, fit);
-  cards.forEach(el => el.style.setProperty("--fit-h", Math.min(wholePx(fit), wholePx(Math.max(VOCAB_CARD_MIN, vocabCardNeed(el)), true)) + "px"));
+  cards.forEach(el => el.style.setProperty("--fit-h", (el.classList.contains("fill") ? wholePx(fit) : Math.min(wholePx(fit), wholePx(Math.max(VOCAB_CARD_MIN, vocabCardNeed(el)), true))) + "px"));
   cards.forEach(fitFillText);
 }
 
@@ -20061,7 +20061,8 @@ function fitFillText(card) {
   if (!card.classList.contains("fill")) return;
   const cs = getComputedStyle(front), room = front.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
   let size = Math.round(parseFloat(getComputedStyle(term).fontSize));
-  while (term.scrollHeight > room && size > 16) {
+  const floor = matchMedia("(max-width:600px)").matches ? 20 : 24;
+  while (term.scrollHeight > room && size > floor) {
     size -= 2;
     term.style.fontSize = size + "px";
     term.style.lineHeight = Math.round(size * 1.35) + "px";
