@@ -27,6 +27,7 @@ Hàm chính: `isListenMode`, `listenBatch`, `startSequenceLoop`, `stopSequenceLo
 | SPEAK-2 | `407f09e` | Trong focus: tờ mờ kính, không gáy, không dòng kẻ |
 | SPEAK-3 | `3f33aa9` | Chỉ câu + notes; bỏ Hint; mặt trước tự đổi: câu khoét một từ hoặc chỉ từ khoá để nhớ cả câu |
 | SPEAK-4 | `4fe949e` | Hiển thị như SPEAK-2 (câu hỏi, Hint, Show câu trả lời); dạng khoét từ / từ khoá chỉ cho câu đơn không có `/câu hỏi` |
+| SPEAK-5 | `f9e5447` | Chỗ trống rộng đúng bằng từ, Show chỉ hiện từ vào chỗ trống, không gì xê dịch |
 
 Hàm chính: `ieltsPaperHtml`, `ieltsFrontHtml`, `sentenceEx`, `sentenceKeyWord`, `entryHidden`, `revealAction`, `render` (nhánh `groupViewStyle === "ielts"`). Cùng `ieltsHints`, `ieltsHintNext`, `ieltsHintId` (Hint).
 
@@ -110,6 +111,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-10 | `2334974` | Bỏ kiểu cụm từ (cắt câu, …): câu luôn hiện đủ |
 | FLASH-11 | `298b2dd` | Câu từ thế giới (Tatoeba, Wikipedia) cho mặt trước khoét từ, lấy trực tuyến từng từ, giữ ít trong trình duyệt |
 | FLASH-12 | `682fb3a` | Câu thế giới không giới hạn: mỗi lần một câu chưa gặp, hết thì lấy trang tiếp; mặt trước câu thế giới ra nhiều hơn |
+| FLASH-13 | `f9e5447` | Câu thế giới tương tác như câu thường (tra từ, bôi đen, Shift tạo từ kèm câu đó); cỡ chữ bằng câu khoét từ |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
@@ -162,6 +164,7 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 | DICT-6 | `be77efc` | Từ đã có ở bất kỳ bài nào không đề xuất lại; trong câu tô xanh lá (đã có), thẻ nền xanh nhạt |
 | DICT-7 | `3d5d9b9` | Xoá một lần là mất hẳn ở mọi bài, không đề xuất lại (bỏ luật 3 lần); không ô nào tự đặt con trỏ khi mở |
 | DICT-8 | `b9932c5` | Delete/Shift liên tục không cần nhúc nhích chuột (mọi list); từ vừa Add chuyển xuống Already yours |
+| DICT-9 | `f9e5447` | Khung sửa từ bỏ câu phía trên, dùng câu thế giới khi đang hiện; Save bên phải ở mọi khung sửa |
 
 Hàm chính: `showOwnDict`, `ownDictCardHtml`, `ownDictLookup`, `ownDictWords`, `ownDictFetch`, `ownDictPrefetch`, `addWordToEditNotes`, `hideOwnDict`.
 
@@ -176,6 +179,7 @@ Hàm chính: `showOwnDict`, `ownDictCardHtml`, `ownDictLookup`, `ownDictWords`, 
 | DATA-6 | `4fe949e` | A giữ lại như trước, viết trong một ô: dòng `/câu hỏi` rồi các dòng trả lời; chỉ bản dịch vào notes (khi dán hoặc khi gõ trong ô sửa) |
 | DATA-7 | `1d418a1` | Không học dịch ở đâu cả: bỏ ⇄ (nghĩa trước), Translate to khi nhập, phần Translation trong Tests; câu và câu trả lời vẫn lưu như trước, không có code gộp |
 | DATA-8 | `d8ccbdb` | Chỉ một ô `/Q, rồi A` + Notes ở mọi chỗ nhập: bỏ ô Answer của ＋ và ô Meaning của trình sửa từ Vocabulary; không có code gộp |
+| DATA-9 | `f9e5447` | Dán bài không tự tạo từ: dòng `từ: nghĩa`, bullet, bản dịch, tiêu đề nằm nguyên trong notes của thẻ gần nhất |
 
 Hàm chính: `newRow` (bản dịch vào notes khi tạo), `foldAnswer` + `keepsAnswer` (dòng thêm dưới câu khi sửa thẻ hoặc khi dán thì vào notes), `wordLike`, `belongsInVocab`, `isTranslationCard` (cho dòng `từ: nghĩa`), `autoSortLibrary`.
 
