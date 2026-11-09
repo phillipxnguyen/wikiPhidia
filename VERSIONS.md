@@ -126,6 +126,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-25 | `097877f` | Show: câu thế giới đi kèm câu gốc của từ; nút loa đọc đúng các câu đang hiện |
 | FLASH-26 | `2694b69` | Câu gốc YouTube phát clip thật sau câu thế giới (lỗi thì đọc), có mốc giờ bấm nghe lại; ô sửa có đủ câu gốc |
 | FLASH-27 | `2f9ce91` | Khoảng cách đều giữa từ, câu, câu gốc, notes (theo cỡ chữ thẻ) |
+| FLASH-28 | `a3e9ca1` | Hàng nút kiểu Podcast cả trên máy tính; thẻ nghe Show không còn khoảng trống; click ra ngoài khung sửa từ là lưu |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
@@ -192,6 +193,7 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 | DICT-16 | `6fe4717` | Lại ba dòng cân đối: từ + 🔊, pinyin, nghĩa (từ dài không đẩy 🔊 xuống) |
 | DICT-17 | `032d080` | Delete/Shift tức thì: lấy thẻ dưới chuột lúc bấm (cả sau khi cuộn), thẻ đi ngay |
 | DICT-18 | `eec36a0` | Ô sửa thẻ: từ điển đọc mọi câu đang hiện; câu đầu từ điển không còn lặp chữ |
+| DICT-19 | `a3e9ca1` | Từ tiếng Anh khác đuôi (passports/passport) chỉ hiện một lần |
 
 Hàm chính: `showOwnDict`, `ownDictCardHtml`, `ownDictLookup`, `ownDictWords`, `ownDictFetch`, `ownDictPrefetch`, `addWordToEditNotes`, `hideOwnDict`.
 
