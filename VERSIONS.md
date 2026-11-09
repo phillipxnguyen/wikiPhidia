@@ -138,6 +138,7 @@ Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWor
 | POD-18 | `298b2dd` | Thêm một câu từ thế giới vào các câu được đọc |
 | POD-19 | `128c757` | Mốc thời gian nằm đầu dòng chữ ở mặt sau |
 | POD-20 | `682fb3a` | Hai câu thế giới khác nhau mỗi lần |
+| POD-21 | `6521eb2` | Chỉ còn ở Vocabulary; mặt trước đọc từ (giọng tự nhiên nhất có), Show mới phát các câu; bỏ chấm tròn |
 
 Hàm chính: `openBlind`, `closeBlind`, `blindItems`, `blindAutoItems`, `blindLines`, `blindNext`, `paintBlind`, `paintBlindLive`, `blindPlay`, `blindPlayOne`, `blindPlayLine`, `blindPlayer`, `blindSpeak`, `blindGrade`, `blindUndo`, `blindEdit`, `blindAct`, `blindFly`, `blindArt`, `blindSceneFor`, `blindCountsHtml`, `withLeadTime`, `blindTime`, `BLIND_SCENES`.
 
