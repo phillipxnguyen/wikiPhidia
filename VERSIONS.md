@@ -119,6 +119,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-18 | `69bd6b4` | Bỏ thanh cuộn xanh bên thẻ và kiểu trình bày có dấu ngoặc kép |
 | FLASH-19 | `d2ecc93` | Bỏ mọi khung/đồ vật (biển, cốc, giấy note, bảng…), không nghiêng: chữ trên nền màu như Podcast |
 | FLASH-20 | `7a65374` | Mặt trước "nghe": cảnh động của Podcast + đọc riêng từ (khoảng 1/3 thẻ); Show như thường, cùng chỗ |
+| FLASH-21 | `3d664c3` | Notes không lặp câu ví dụ đã lưu; chữ tự thu nhỏ cho vừa màn, thẻ không cuộn |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
