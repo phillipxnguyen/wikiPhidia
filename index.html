@@ -19834,7 +19834,7 @@ function fillVocabCard(el, item) {
     const text = otherGap ? el.dataset.other : sentence, span = otherGap || gap;
     const n = Math.max(3, Math.min(16, span[1] - span[0]));
     const [ before, after ] = [ text.slice(0, span[0]), text.slice(span[1]) ];
-    const notes = wordNotesOf(item);
+    const noted = noteSentence(item), notes = noted ? noted.rest.replace(/^(\s|<br\s*\/?>|<div>\s*<\/div>)+/i, "") : wordNotesOf(item);
     const sent = `<span${el.dataset.listen ? ' class="vc-sent"' : ""}>${lookupOthers(escapeHtml(before), item)}<span class="cloze-gap" style="--gap:${n}"><span class="cloze-word">${escapeHtml(text.slice(span[0], span[1]))}</span></span>${lookupOthers(escapeHtml(after), item)}</span>`;
     el.querySelector(".vocab-term").innerHTML = (el.dataset.listen ? `<span class="vc-stack"><span class="vc-art" aria-hidden="true">${sceneArt(el.dataset.scene)}</span>${sent}</span>` : sent) + (notes ? `<span class="cloze-more cloze-notes">${brLines(notes)}</span>` : "");
     const py = pinyinLine(item.term);
@@ -19996,6 +19996,21 @@ function fitVocabCards() {
   }
   fit = Math.max(taskRun ? VOCAB_CARD_MIN : min, fit);
   cards.forEach(el => el.style.setProperty("--fit-h", Math.min(wholePx(fit), wholePx(Math.max(VOCAB_CARD_MIN, vocabCardNeed(el)), true)) + "px"));
+  cards.forEach(fitFillText);
+}
+
+function fitFillText(card) {
+  const term = card.querySelector(".vocab-front > .vocab-term"), front = card.querySelector(".vocab-front");
+  if (!term || !front) return;
+  term.style.fontSize = term.style.lineHeight = "";
+  if (!card.classList.contains("fill")) return;
+  const cs = getComputedStyle(front), room = front.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+  let size = Math.round(parseFloat(getComputedStyle(term).fontSize));
+  while (term.scrollHeight > room && size > 16) {
+    size -= 2;
+    term.style.fontSize = size + "px";
+    term.style.lineHeight = Math.round(size * 1.35) + "px";
+  }
 }
 
 window.addEventListener("resize", fitVocabCards);
