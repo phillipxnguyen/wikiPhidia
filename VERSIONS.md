@@ -120,6 +120,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-19 | `d2ecc93` | Bỏ mọi khung/đồ vật (biển, cốc, giấy note, bảng…), không nghiêng: chữ trên nền màu như Podcast |
 | FLASH-20 | `7a65374` | Mặt trước "nghe": cảnh động của Podcast + đọc riêng từ (khoảng 1/3 thẻ); Show như thường, cùng chỗ |
 | FLASH-21 | `3d664c3` | Notes không lặp câu ví dụ đã lưu; chữ tự thu nhỏ cho vừa màn, thẻ không cuộn |
+| FLASH-22 | `eec36a0` | Pinyin câu khi Show (như Podcast); rê chuột ra pinyin, tra từ trên câu; thẻ vừa khít màn, trang không cuộn |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
@@ -185,6 +186,7 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 | DICT-15 | `c7d0edf` | Bấm từ đỏ (đã xoá) là mở ô học lại; bỏ con trỏ dấu ? ở mọi chỗ |
 | DICT-16 | `6fe4717` | Lại ba dòng cân đối: từ + 🔊, pinyin, nghĩa (từ dài không đẩy 🔊 xuống) |
 | DICT-17 | `032d080` | Delete/Shift tức thì: lấy thẻ dưới chuột lúc bấm (cả sau khi cuộn), thẻ đi ngay |
+| DICT-18 | `eec36a0` | Ô sửa thẻ: từ điển đọc mọi câu đang hiện; câu đầu từ điển không còn lặp chữ |
 
 Hàm chính: `showOwnDict`, `ownDictCardHtml`, `ownDictLookup`, `ownDictWords`, `ownDictFetch`, `ownDictPrefetch`, `addWordToEditNotes`, `hideOwnDict`.
 
