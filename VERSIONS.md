@@ -123,6 +123,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-22 | `eec36a0` | Pinyin câu khi Show (như Podcast); rê chuột ra pinyin, tra từ trên câu; thẻ vừa khít màn, trang không cuộn |
 | FLASH-23 | `28ea965` | Câu + notes một khối căn giữa, thẳng lề trái (từ chính vẫn căn giữa); bỏ gạch ngang; khoảng cách đều |
 | FLASH-24 | `0d97ce3` | Mặt trước chỉ có câu, căn giữa; không giữ chỗ cho mặt sau nữa |
+| FLASH-25 | `097877f` | Show: câu thế giới đi kèm câu gốc của từ; nút loa đọc đúng các câu đang hiện |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
