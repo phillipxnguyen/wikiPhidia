@@ -112,6 +112,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-11 | `298b2dd` | Câu từ thế giới (Tatoeba, Wikipedia) cho mặt trước khoét từ, lấy trực tuyến từng từ, giữ ít trong trình duyệt |
 | FLASH-12 | `682fb3a` | Câu thế giới không giới hạn: mỗi lần một câu chưa gặp, hết thì lấy trang tiếp; mặt trước câu thế giới ra nhiều hơn |
 | FLASH-13 | `f9e5447` | Câu thế giới tương tác như câu thường (tra từ, bôi đen, Shift tạo từ kèm câu đó); cỡ chữ bằng câu khoét từ |
+| FLASH-14 | `e63c4d7` | Câu thế giới đúng kiểu chữ của bài (giản thể hoặc phồn thể, không lẫn) |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
@@ -170,6 +171,7 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 | DICT-10 | `d7cebf9` | Bỏ mục gập Already in your words: hiện đủ mọi từ (trừ từ đã xoá), chưa tạo trước rồi đã tạo, theo thứ tự câu |
 | DICT-11 | `6dd45a6` | Từ đã có gọn một dòng; bỏ In the world; từ đã xoá nền đỏ trong câu, bôi đen + Shift để học lại (tạo tay luôn bỏ ẩn) |
 | DICT-12 | `a717735` | Bỏ dòng đếm từ; giữ câu ví dụ thế giới dưới mỗi từ, chỉ bỏ nhãn In the world |
+| DICT-13 | `e63c4d7` | Từ đã có hai dòng: từ + pinyin, rồi nghĩa |
 
 Hàm chính: `showOwnDict`, `ownDictCardHtml`, `ownDictLookup`, `ownDictWords`, `ownDictFetch`, `ownDictPrefetch`, `addWordToEditNotes`, `hideOwnDict`.
 
