@@ -115,6 +115,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-14 | `e63c4d7` | Câu thế giới đúng kiểu chữ của bài (giản thể hoặc phồn thể, không lẫn) |
 | FLASH-15 | `0be97d4` | Câu thế giới ngắn, dễ trước (trừ điểm số, ngoặc, ngày tháng); thiếu câu ngắn thì lục thêm trang |
 | FLASH-16 | `aa2c3d6` | Một kiểu mặt trước: câu khoét từ từ kho chung (câu gốc, bài khác, Tatoeba, Wikipedia, ví dụ Google); bỏ kiểu chỉ từ; notes khối riêng khi Show |
+| FLASH-17 | `032d080` | Show: từ làm chữ chính (pinyin trên đỉnh, nghĩa dưới) trên câu, như Podcast; chỗ giữ sẵn, không nhảy |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
@@ -177,6 +178,7 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 | DICT-14 | `31984d2` | Thẻ từ mới cũng hai dòng: từ + pinyin + 🔊, rồi nghĩa |
 | DICT-15 | `c7d0edf` | Bấm từ đỏ (đã xoá) là mở ô học lại; bỏ con trỏ dấu ? ở mọi chỗ |
 | DICT-16 | `6fe4717` | Lại ba dòng cân đối: từ + 🔊, pinyin, nghĩa (từ dài không đẩy 🔊 xuống) |
+| DICT-17 | `032d080` | Delete/Shift tức thì: lấy thẻ dưới chuột lúc bấm (cả sau khi cuộn), thẻ đi ngay |
 
 Hàm chính: `showOwnDict`, `ownDictCardHtml`, `ownDictLookup`, `ownDictWords`, `ownDictFetch`, `ownDictPrefetch`, `addWordToEditNotes`, `hideOwnDict`.
 
