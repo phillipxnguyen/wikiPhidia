@@ -528,6 +528,10 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-card.fill.flipped .cloze-gap{box-shadow:none;background:var(--word-mark);}
   .vocab-card.fill.flipped :is(.cloze-word, .cloze-more){visibility:visible;}
   .cloze-more{display:none;}
+  .vocab-card.fill .cloze-head{display:flex;flex-direction:column;align-items:center;gap:4px;margin:0 0 24px;font-size:inherit;line-height:inherit;font-weight:inherit;font-style:normal;}
+  .vocab-card.fill .cloze-py{font-size:.5em;font-size:round(.5em, 1px);line-height:1.4;line-height:round(1.4em, 1px);font-weight:600;opacity:.7;}
+  .vocab-card.fill .cloze-main{font-size:2em;font-size:round(2em, 1px);line-height:1.2;line-height:round(1.2em, 1px);font-weight:800;color:var(--accent);}
+  .vocab-card.fill .cloze-mean{font-size:.75em;font-size:round(.75em, 1px);line-height:1.4;line-height:round(1.4em, 1px);font-weight:700;}
   .vocab-card.fill.flipped .vocab-front, .vocab-card.fill.settled .vocab-front{visibility:visible;}
   .vocab-card.fill.flipped .vocab-back{visibility:hidden;}
   .vocab-card[data-look] .vocab-front .rd{text-transform:none;letter-spacing:0;}
@@ -11267,43 +11271,47 @@ function ownDictDelete(card) {
   card.classList.add("od-gone");
   const jump = document.querySelector(`#editPopup .od-jump[data-w="${CSS.escape(w)}"]`);
   if (jump) jump.outerHTML = `<span class="od-off">${escapeHtml(jump.textContent)}</span>`;
-  setTimeout(() => {
-    card.remove();
-      rehover();
-  }, reducedMotion() ? 0 : 200);
+  card.remove();
 }
 
 function ownDictSettle(card) {
   if (!card || !ownDictShown || !card.closest(".od-list") || card.classList.contains("od-have")) return;
   const w = card.dataset.w, lang = ownDictShown.lang;
   if (ownDictHover === card) ownDictHover = null;
-  card.classList.add("od-gone");
-  setTimeout(() => {
-    const box = document.querySelector("#editPopup .own-dict");
-    card.remove();
-    if (!box) return;
-    const list = box.querySelector(".od-list"), order = ownDictShown.order || [], at = order.indexOf(w);
-    const next = [ ...list.querySelectorAll(".od-card.od-have") ].find(c => order.indexOf(c.dataset.w) > at);
-    if (next) next.insertAdjacentHTML("beforebegin", ownDictCardHtml(lang, w, true)); else list.insertAdjacentHTML("beforeend", ownDictCardHtml(lang, w, true));
-      rehover();
-  }, reducedMotion() ? 0 : 200);
+  const box = document.querySelector("#editPopup .own-dict");
+  card.remove();
+  if (!box) return;
+  const list = box.querySelector(".od-list"), order = ownDictShown.order || [], at = order.indexOf(w);
+  const next = [ ...list.querySelectorAll(".od-card.od-have") ].find(c => order.indexOf(c.dataset.w) > at);
+  if (next) next.insertAdjacentHTML("beforebegin", ownDictCardHtml(lang, w, true)); else list.insertAdjacentHTML("beforeend", ownDictCardHtml(lang, w, true));
 }
 
 let ownDictShift = false;
 
-document.getElementById("editPopup").addEventListener("mousemove", e => {
-  ownDictHover = e.target.closest ? e.target.closest(".own-dict .od-card:not(.od-have):not(.od-gone)") : null;
+let ownDictTyped = false;
+
+document.getElementById("editPopup").addEventListener("mousemove", () => {
+  ownDictTyped = false;
 });
 
-document.getElementById("editPopup").addEventListener("input", () => {
-  ownDictHover = null;
+document.getElementById("editPopup").addEventListener("wheel", () => {
+  ownDictTyped = false;
+}, {
+  passive: true
 });
 
-document.getElementById("editPopup").addEventListener("mouseleave", () => {
-  ownDictHover = null;
+document.getElementById("editPopup").addEventListener("keydown", e => {
+  if (isTypingInField() && !e.metaKey && !e.ctrlKey && (e.key.length === 1 || e.key === "Enter")) ownDictTyped = true;
 });
+
+function ownDictPointed() {
+  if (ownDictTyped || lastMouse.x < 0) return null;
+  const el = document.elementFromPoint(lastMouse.x, lastMouse.y);
+  return el && el.closest ? el.closest("#editPopup .own-dict .od-card:not(.od-have):not(.od-gone)") : null;
+}
 
 window.addEventListener("keydown", e => {
+  if (ownDictShown && (e.key === "Shift" || e.key === "Delete" || e.key === "Backspace")) ownDictHover = ownDictPointed();
   ownDictShift = e.key === "Shift" && !e.repeat && !e.metaKey && !e.ctrlKey && !e.altKey && !!ownDictShown && !!ownDictHover;
   if (!ownDictShown || !ownDictHover || !ownDictHover.isConnected || e.key !== "Delete" && e.key !== "Backspace" || e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
   e.preventDefault();
@@ -11340,7 +11348,7 @@ window.addEventListener("keyup", e => {
   if (e.key !== "Shift" || !ownDictShift) return;
   if (!getSelection().isCollapsed) return;
   ownDictShift = false;
-  const card = ownDictHover;
+  const card = ownDictPointed() === ownDictHover ? ownDictHover : null;
   if (!ownDictShown || !card || !card.isConnected || card.classList.contains("od-added")) return;
   e.preventDefault();
   e.stopImmediatePropagation();
@@ -20582,7 +20590,9 @@ function fillVocabCard(el, item) {
     const n = Math.max(3, Math.min(16, span[1] - span[0]));
     const [ before, after ] = [ text.slice(0, span[0]), text.slice(span[1]) ];
     const notes = wordNotesOf(item);
-    el.querySelector(".vocab-term").innerHTML = `<span>${lookupOthers(escapeHtml(before), item)}<span class="cloze-gap" style="--gap:${n}"><span class="cloze-word">${escapeHtml(text.slice(span[0], span[1]))}</span></span>${lookupOthers(escapeHtml(after), item)}</span>` + (item.meaning ? `<span class="cloze-more">${escapeHtml(item.meaning)}</span>` : "") + (notes ? `<span class="cloze-more cloze-notes">${brLines(notes)}</span>` : "");
+    el.querySelector(".vocab-term").innerHTML = `<span>${lookupOthers(escapeHtml(before), item)}<span class="cloze-gap" style="--gap:${n}"><span class="cloze-word">${escapeHtml(text.slice(span[0], span[1]))}</span></span>${lookupOthers(escapeHtml(after), item)}</span>` + (notes ? `<span class="cloze-more cloze-notes">${brLines(notes)}</span>` : "");
+    const py = pinyinLine(item.term);
+    el.querySelector(".vocab-term").insertAdjacentHTML("afterbegin", `<span class="cloze-more cloze-head">${py ? `<span class="cloze-py">${escapeHtml(py)}</span>` : ""}<span class="cloze-main">${escapeHtml(item.term)}</span>${item.meaning ? `<span class="cloze-mean">${escapeHtml(item.meaning)}</span>` : ""}</span>`);
     el.classList.add("fill");
   } else {
     el.querySelector(".vocab-term").innerHTML = `<span>${escapeHtml(item.term)}</span>`;
