@@ -1694,17 +1694,18 @@ window.onYouTubeIframeAPIReady = function(){
   .od-term{padding:2px 10px;border:1px solid var(--od-line);border-radius:12px;background:var(--od-bg);color:var(--text);font:inherit;font-size:14px;line-height:20px;cursor:pointer;transition:border-color .15s, color .15s;}
   @media (hover:hover){.od-card:not(.od-have):not(.od-added) :is(.od-term, .od-main):hover{color:var(--accent);border-color:var(--accent);}}
   .od-have .od-term, .od-added .od-term, .od-have .od-main, .od-added .od-main{cursor:default;}
-  .od-ex{display:flex;flex-direction:column;gap:6px;margin-top:4px;padding-top:10px;border-top:1px dashed var(--od-line);}
-  .od-ex-h{font-size:11px;line-height:14px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--od-soft);}
-  .od-ex p{margin:0;font-size:15px;line-height:22px;color:var(--text);}
-  .od-ex mark{padding:0 2px;border-radius:4px;background:color-mix(in srgb, var(--accent) 14%, transparent);color:inherit;font-weight:700;}
   .od-skel{display:flex;flex-direction:column;gap:8px;}
   .od-skel i{display:block;height:14px;border-radius:7px;background:linear-gradient(90deg, var(--od-line) 25%, color-mix(in srgb, var(--text) 4%, transparent) 50%, var(--od-line) 75%) 0 0 / 200% 100%;animation:odShimmer 1.2s linear infinite;}
   .od-skel i:first-child{width:46%;height:18px;}
   .od-skel i:last-child{width:72%;}
   @keyframes odShimmer{to{background-position:-200% 0;}}
-  .od-have{background:color-mix(in srgb, var(--a-label) 6%, var(--od-bg));border-color:color-mix(in srgb, var(--a-label) 30%, transparent);}
-  .od-have .od-body, .od-have .od-py, .od-have .od-ex{opacity:.7;}
+  .od-card.od-have{flex-direction:row;flex-wrap:wrap;align-items:center;gap:4px 12px;padding:10px 12px 10px 16px;border-radius:12px;background:color-mix(in srgb, var(--a-label) 6%, var(--od-bg));border-color:color-mix(in srgb, var(--a-label) 30%, transparent);}
+  .od-hw{font-size:20px;line-height:28px;font-weight:700;color:var(--text);}
+  .od-have .od-py{font-size:14px;line-height:20px;}
+  .od-hm{flex:1 1 120px;min-width:0;font-size:15px;line-height:22px;color:var(--od-mean);}
+  .od-have .od-say{width:28px;height:28px;border-radius:14px;}
+  .od-have .od-done{font-size:16px;line-height:20px;}
+  .od-off{padding:0 1px;border-radius:4px;background:color-mix(in srgb, var(--danger) 18%, transparent);color:var(--danger);cursor:help;}
   @media (prefers-reduced-motion: reduce){.od-card, .od-add, .od-skel i, .od-card.od-flash{animation:none;transition:none;}}
   @media (max-width:600px){.od-head{padding:12px 16px 10px;}.od-list{padding:12px;gap:10px;}.od-card{padding:14px;}.od-word b{font-size:24px;line-height:32px;}}
   .le-dict.on{margin-top:10px;height:var(--dict-h, 360px);}
@@ -11167,28 +11168,20 @@ function ownDictCardHtml(lang, w, have) {
     terms: e.alts
   } ] : []) : [];
   const body = !e ? '<div class="od-skel"><i></i><i></i></div>' : `<button type="button" class="od-main" data-m="${escapeAttr(e.m)}" title="Add with this meaning">${escapeHtml(e.m)}</button>` + groups.map(g => `<div class="od-group">${g.pos ? `<span class="od-pos">${escapeHtml(g.pos)}</span>` : ""}<div class="od-terms">${g.terms.map(t => `<button type="button" class="od-term" data-m="${escapeAttr(t)}" title="Add with this meaning">${escapeHtml(t)}</button>`).join("")}</div></div>`).join("");
-  const act = have ? '<span class="od-done">✓ In your words</span>' : '<span class="od-acts"><button type="button" class="od-del" aria-label="Delete" title="Delete">✕</button><button type="button" class="od-add"><span>＋</span> Add</button></span>';
-  const wi = ownDictShown ? {
-    term: w,
-    tkey: normalizeVocabText(w),
-    card: ownDictShown.row || {}
-  } : null, we = wi && worldRead()[worldKeyOf(wi)], examples = we && we.list ? we.list.slice(0, 2) : [];
-  const exHtml = examples.length ? `<div class="od-ex"><span class="od-ex-h">In the world</span>${examples.map(x => {
-    const sp = findTermIn(x.t, w);
-    return `<p>${sp ? escapeHtml(x.t.slice(0, sp[0])) + "<mark>" + escapeHtml(x.t.slice(sp[0], sp[1])) + "</mark>" + escapeHtml(x.t.slice(sp[1])) : escapeHtml(x.t)}</p>`;
-  }).join("")}</div>` : "";
-  return `<article class="od-card${have ? " od-have" : ""}" data-w="${escapeAttr(w)}"><header class="od-top"><div class="od-word"><b>${escapeHtml(w)}</b><button type="button" class="od-say" aria-label="Listen" title="Listen">${OD_SPEAK}</button></div>${act}</header>${py ? `<div class="od-py">${py}</div>` : ""}<div class="od-body">${body}</div>${exHtml}</article>`;
+  const act = '<span class="od-acts"><button type="button" class="od-del" aria-label="Delete" title="Delete">✕</button><button type="button" class="od-add"><span>＋</span> Add</button></span>';
+  if (have) return `<article class="od-card od-have" data-w="${escapeAttr(w)}"><b class="od-hw">${escapeHtml(w)}</b>${py ? `<span class="od-py">${py}</span>` : ""}<span class="od-hm">${e ? escapeHtml(e.m) : ""}</span><button type="button" class="od-say" aria-label="Listen" title="Listen">${OD_SPEAK}</button><span class="od-done" title="In your words">✓</span></article>`;
+  return `<article class="od-card" data-w="${escapeAttr(w)}"><header class="od-top"><div class="od-word"><b>${escapeHtml(w)}</b><button type="button" class="od-say" aria-label="Listen" title="Listen">${OD_SPEAK}</button></div>${act}</header>${py ? `<div class="od-py">${py}</div>` : ""}<div class="od-body">${body}</div></article>`;
 }
 
 let ownDictShown = null;
 
-function ownDictSentenceHtml(text, words, known) {
+function ownDictSentenceHtml(text, words, known, deleted) {
   let html = escapeHtml(text);
-  const got = new Set(known || []);
-  [ ...words, ...got ].sort((a, b) => b.length - a.length).forEach(w => {
+  const got = new Set(known || []), gone = new Set(deleted || []), un = w => w.replace(/&quot;/g, '"').replace(/&amp;/g, "&");
+  [ ...words, ...got, ...gone ].sort((a, b) => b.length - a.length).forEach(w => {
     html = html.split(escapeHtml(w)).join(`\u0001${escapeAttr(w)}\u0002${escapeHtml(w)}\u0003`);
   });
-  return html.replace(/\u0001([^\u0002]*)\u0002([^\u0003]*)\u0003/g, (m, w, t) => `<button type="button" class="od-jump${got.has(w.replace(/&quot;/g, '"').replace(/&amp;/g, "&")) ? " od-got" : ""}" data-w="${w}">${t}</button>`);
+  return html.replace(/\u0001([^\u0002]*)\u0002([^\u0003]*)\u0003/g, (m, w, t) => gone.has(un(w)) ? `<span class="od-off" title="Deleted: select it and press Shift to learn it again">${t}</span>` : `<button type="button" class="od-jump${got.has(un(w)) ? " od-got" : ""}" data-w="${w}">${t}</button>`);
 }
 
 function ownDictKnownKeys() {
@@ -11208,7 +11201,7 @@ function showOwnDict(text, row, onAdd) {
   const {lang: lang, words: words} = ownDictWords(text, row);
   const trash = new Set(hiddenWordsFor(lang).concat((hiddenStore().lessons[currentLessonId] || []).map(normalizeVocabText))), have = ownDictKnownKeys();
   const list = words.filter(w => !trash.has(normalizeVocabText(w)));
-  const fresh = list.filter(w => !have.has(normalizeVocabText(w))), old = list.filter(w => have.has(normalizeVocabText(w)));
+  const fresh = list.filter(w => !have.has(normalizeVocabText(w))), old = list.filter(w => have.has(normalizeVocabText(w))), gone = words.filter(w => trash.has(normalizeVocabText(w)) && !have.has(normalizeVocabText(w)));
   ownDictShown = {
     lang: lang,
     row: row,
@@ -11217,7 +11210,7 @@ function showOwnDict(text, row, onAdd) {
     order: list
   };
   box.classList.add("on");
-  const head = `<div class="od-head"><div class="od-sent">${ownDictSentenceHtml(text, fresh, old)}</div><div class="od-sum"><b>${fresh.length}</b> new ${fresh.length === 1 ? "word" : "words"}${old.length ? ` · ${old.length} already yours` : ""}</div></div>`;
+  const head = `<div class="od-head"><div class="od-sent">${ownDictSentenceHtml(text, fresh, old, gone)}</div><div class="od-sum"><b>${fresh.length}</b> new ${fresh.length === 1 ? "word" : "words"}${old.length ? ` · ${old.length} already yours` : ""}</div></div>`;
   box.innerHTML = `<div class="own-dict">${head}<div class="od-list">${fresh.map(w => ownDictCardHtml(lang, w, false)).join("")}${old.map(w => ownDictCardHtml(lang, w, true)).join("")}</div></div>`;
   const shown = ownDictShown, redraw = w => {
     if (ownDictShown !== shown) return;
@@ -11227,25 +11220,10 @@ function showOwnDict(text, row, onAdd) {
     el.outerHTML = ownDictCardHtml(lang, w, el.classList.contains("od-have"));
     if (added) markOwnDictAdded(box.querySelector(`.od-card[data-w="${CSS.escape(w)}"]`));
   };
-  fresh.forEach(w => {
-    const wi = {
-      term: w,
-      tkey: normalizeVocabText(w),
-      card: row || {}
-    };
-    if (!worldSentences(wi)) fetchWorld(wi).then(() => redraw(w));
-  });
   fresh.concat(old).forEach(w => {
     const e = ownDictEntry(lang, w);
     if (e && e.groups) return;
-    ownDictFetch(lang, w).then(() => {
-      if (ownDictShown !== shown) return;
-      const el = box.querySelector(`.od-card[data-w="${CSS.escape(w)}"]`);
-      if (!el) return;
-      const added = el.classList.contains("od-added");
-      el.outerHTML = ownDictCardHtml(lang, w, el.classList.contains("od-have"));
-      if (added) markOwnDictAdded(box.querySelector(`.od-card[data-w="${CSS.escape(w)}"]`));
-    });
+    ownDictFetch(lang, w).then(() => redraw(w));
   });
 }
 
@@ -11268,7 +11246,7 @@ function ownDictDelete(card) {
   if (ownDictHover === card) ownDictHover = null;
   card.classList.add("od-gone");
   const jump = document.querySelector(`#editPopup .od-jump[data-w="${CSS.escape(w)}"]`);
-  if (jump) jump.replaceWith(document.createTextNode(jump.textContent));
+  if (jump) jump.outerHTML = `<span class="od-off" title="Deleted: select it and press Shift to learn it again">${escapeHtml(jump.textContent)}</span>`;
   ownDictSum();
   setTimeout(() => {
     card.remove();
@@ -11325,8 +11303,30 @@ window.addEventListener("keydown", e => {
   ownDictDelete(ownDictHover);
 }, true);
 
+document.addEventListener("keydown", e => {
+  if (e.key !== "Shift" || e.repeat || e.metaKey || e.ctrlKey || !ownDictShown) return;
+  const sel = getSelection(), node = sel && sel.rangeCount && !sel.isCollapsed && sel.anchorNode;
+  const el = node && (node.nodeType === 1 ? node : node.parentElement);
+  if (!el || !el.closest("#editPopup .od-sent")) return;
+  const text = sel.toString().replace(/\s+/g, " ").trim();
+  if (!text) return;
+  e.preventDefault();
+  e.stopImmediatePropagation();
+  ownDictShift = false;
+  const shown = ownDictShown, entry = ownDictEntry(shown.lang, text);
+  showVocabAddPopup(null, text, sel.getRangeAt(0).getBoundingClientRect(), null, (term, meaning) => {
+    if (ownDictShown !== shown) return;
+    shown.onAdd(term, meaning || (entry ? entry.m : ""));
+    unhideWords([ term ]);
+    showToast(`Added “${term}”`);
+    const off = [ ...document.querySelectorAll("#editPopup .od-off") ].find(x => normalizeVocabText(x.textContent) === normalizeVocabText(term));
+    if (off) off.outerHTML = `<button type="button" class="od-jump od-got" data-w="${escapeAttr(off.textContent)}">${escapeHtml(off.textContent)}</button>`;
+  }, entry ? entry.m : "");
+}, true);
+
 window.addEventListener("keyup", e => {
   if (e.key !== "Shift" || !ownDictShift) return;
+  if (!getSelection().isCollapsed) return;
   ownDictShift = false;
   const card = ownDictHover;
   if (!ownDictShown || !card || !card.isConnected || card.classList.contains("od-added")) return;
@@ -11893,7 +11893,7 @@ window.addEventListener("keydown", e => {
     }
     return;
   }
-  if (!pop.contains(e.target)) e.stopImmediatePropagation();
+  if (!pop.contains(e.target) && e.key !== "Shift") e.stopImmediatePropagation();
 }, true);
 
 document.addEventListener("click", e => {
@@ -17670,6 +17670,29 @@ function hiddenWords() {
   return new Set(Object.keys(counts).filter(w => counts[w] >= 1).concat(st.lessons[currentLessonId] || []));
 }
 
+function unhideWords(terms) {
+  const keys = new Set(terms.map(normalizeVocabText).filter(Boolean));
+  if (!keys.size) return;
+  const st = hiddenStore();
+  let changed = false;
+  Object.keys(st.counts).forEach(lang => Object.keys(st.counts[lang]).forEach(w => {
+    if (!keys.has(normalizeVocabText(w))) return;
+    delete st.counts[lang][w];
+    changed = true;
+  }));
+  Object.keys(st.lessons).forEach(id => {
+    const left = st.lessons[id].filter(w => !keys.has(normalizeVocabText(w)));
+    if (left.length !== st.lessons[id].length) {
+      st.lessons[id] = left;
+      changed = true;
+    }
+  });
+  if (!changed) return;
+  try {
+    localStorage.setItem(HIDDEN_WORDS_KEY, JSON.stringify(st));
+  } catch (e) {}
+}
+
 function hideWord(w) {
   const st = hiddenStore(), lang = wordLang();
   st.counts[lang] = st.counts[lang] || {};
@@ -19810,6 +19833,7 @@ function vocabKeysOf(card) {
 function stampNewVocab(card, before) {
   const fresh = vocabEntriesOf(card).filter(e => !before.has(e.key));
   if (!fresh.length) return;
+  unhideWords(fresh.map(e => e.term || ""));
   if (currentView === "study" && [ mixFocusId, pinnedCardId, lastShownCardId ].includes(card.id) && card.uid) {
     const keys = addedOnScreen.get(card.uid) || new Set;
     fresh.forEach(e => keys.add(e.key));
