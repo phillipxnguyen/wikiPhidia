@@ -113,6 +113,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-12 | `682fb3a` | Câu thế giới không giới hạn: mỗi lần một câu chưa gặp, hết thì lấy trang tiếp; mặt trước câu thế giới ra nhiều hơn |
 | FLASH-13 | `f9e5447` | Câu thế giới tương tác như câu thường (tra từ, bôi đen, Shift tạo từ kèm câu đó); cỡ chữ bằng câu khoét từ |
 | FLASH-14 | `e63c4d7` | Câu thế giới đúng kiểu chữ của bài (giản thể hoặc phồn thể, không lẫn) |
+| FLASH-15 | `0be97d4` | Câu thế giới ngắn, dễ trước (trừ điểm số, ngoặc, ngày tháng); thiếu câu ngắn thì lục thêm trang |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
