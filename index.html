@@ -524,12 +524,16 @@ window.onYouTubeIframeAPIReady = function(){
   .cloze-gap.blank-fill:not(.open) .cloze-word{visibility:hidden;}
   .cloze-gap.blank-fill.open{box-shadow:none;background:var(--word-mark);}
   .vocab-card.fill .cloze-more{display:block;visibility:hidden;margin-top:16px;font-size:.6em;font-size:round(.6em, 1px);line-height:1.4;line-height:round(1.4em, 1px);font-weight:600;}
-  .vocab-card.fill .cloze-notes{margin-top:16px;padding-top:12px;border-top:1px solid color-mix(in srgb, currentColor 18%, transparent);font-weight:400;font-size:.5em;font-size:round(.5em, 1px);line-height:1.5;line-height:round(1.5em, 1px);opacity:.8;}
+  .vocab-card.fill .cloze-notes{margin-top:24px;font-weight:400;font-size:.6em;font-size:round(.6em, 1px);line-height:1.5;line-height:round(1.5em, 1px);opacity:.8;}
   .vocab-card.fill.flipped .cloze-gap{box-shadow:none;background:var(--word-mark);}
   .vocab-card.fill.flipped :is(.cloze-word, .cloze-more){visibility:visible;}
   .cloze-more{display:none;}
   .vocab-card.fill :is(.cloze-spy, .cloze-py, .cloze-notes){font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;font-style:normal;}
   .vocab-card.fill .cloze-spy{margin:0 0 4px;font-size:.6em;font-size:round(.6em, 1px);line-height:1.4;line-height:round(1.4em, 1px);font-weight:600;}
+  .vocab-card.fill .cloze-body{display:block;box-sizing:border-box;width:fit-content;max-width:100%;margin:0 auto;text-align:left;}
+  .vocab-card.fill .cloze-body > span, .vocab-card.fill .vc-sent{display:block;}
+  .vocab-card.fill .vc-stack{display:grid;}
+  .vocab-card.fill .cloze-notes :is(ul, ol){margin:0;padding-left:1.2em;}
   .vc-stack{display:grid;}
   .vc-stack > *{grid-area:1 / 1;}
   .vc-art{display:flex;align-items:center;justify-content:center;font-size:16px;line-height:20px;font-style:normal;}
@@ -9727,7 +9731,7 @@ function hoverUnit(el) {
   return el ? el.closest(".cell.shown") : null;
 }
 
-const PINYIN_SEL = ".vocab-card.fill.flipped .vocab-front .vocab-term > span:not(.cloze-head), .vocab-card.fill.flipped .vc-sent, .vocab-card.fill.flipped .cloze-notes, .wl-sent, .card-notes li, .card-notes > div, .vocab-word-notes li, .vocab-word-notes > div, .paper-notes li, .rich-editor li, .rich-editor > div, .rich-editor, .vocab-list-meaning > span, .vocab-list-meaning, .vocab-add-field b, .vocab-back :is(.vocab-ctx, .vocab-meaning), .heat-card span";
+const PINYIN_SEL = ".vocab-card.fill.flipped .cloze-body > span:not(.cloze-notes):not(.vc-stack), .vocab-card.fill.flipped .vc-sent, .vocab-card.fill.flipped .cloze-notes, .wl-sent, .card-notes li, .card-notes > div, .vocab-word-notes li, .vocab-word-notes > div, .paper-notes li, .rich-editor li, .rich-editor > div, .rich-editor, .vocab-list-meaning > span, .vocab-list-meaning, .vocab-add-field b, .vocab-back :is(.vocab-ctx, .vocab-meaning), .heat-card span";
 
 function pinyinRow(el) {
   const holder = el.closest("[data-id]");
@@ -19846,7 +19850,7 @@ function fillVocabCard(el, item) {
     const noted = noteSentence(item), notes = noted ? noted.rest.replace(/^(\s|<br\s*\/?>|<div>\s*<\/div>)+/i, "") : wordNotesOf(item);
     const spy = cjkScriptFor(text, item.card) === "zh" ? pinyinLine(text) : "";
     const sent = `<span${el.dataset.listen ? ' class="vc-sent"' : ""}>${spy ? `<span class="cloze-more cloze-spy py-line">${escapeHtml(spy)}</span>` : ""}${lookupOthers(escapeHtml(before), item)}<span class="cloze-gap" style="--gap:${n}"><span class="cloze-word">${escapeHtml(text.slice(span[0], span[1]))}</span></span>${lookupOthers(escapeHtml(after), item)}</span>`;
-    el.querySelector(".vocab-term").innerHTML = (el.dataset.listen ? `<span class="vc-stack"><span class="vc-art" aria-hidden="true">${sceneArt(el.dataset.scene)}</span>${sent}</span>` : sent) + (notes ? `<span class="cloze-more cloze-notes">${brLines(notes)}</span>` : "");
+    el.querySelector(".vocab-term").innerHTML = `<span class="cloze-body">${el.dataset.listen ? `<span class="vc-stack"><span class="vc-art" aria-hidden="true">${sceneArt(el.dataset.scene)}</span>${sent}</span>` : sent}${notes ? `<span class="cloze-more cloze-notes">${brLines(notes)}</span>` : ""}</span>`;
     const py = pinyinLine(item.term);
     el.querySelector(".vocab-term").insertAdjacentHTML("afterbegin", `<span class="cloze-more cloze-head">${py ? `<span class="cloze-py">${escapeHtml(py)}</span>` : ""}<span class="cloze-main">${escapeHtml(item.term)}</span>${item.meaning ? `<span class="cloze-mean">${escapeHtml(item.meaning)}</span>` : ""}</span>`);
     el.classList.add("fill");
