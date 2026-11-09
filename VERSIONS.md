@@ -125,6 +125,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-24 | `0d97ce3` | Mặt trước chỉ có câu, căn giữa; không giữ chỗ cho mặt sau nữa |
 | FLASH-25 | `097877f` | Show: câu thế giới đi kèm câu gốc của từ; nút loa đọc đúng các câu đang hiện |
 | FLASH-26 | `2694b69` | Câu gốc YouTube phát clip thật sau câu thế giới (lỗi thì đọc), có mốc giờ bấm nghe lại; ô sửa có đủ câu gốc |
+| FLASH-27 | `2f9ce91` | Khoảng cách đều giữa từ, câu, câu gốc, notes (theo cỡ chữ thẻ) |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
