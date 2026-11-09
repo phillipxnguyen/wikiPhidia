@@ -174,6 +174,7 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 | DICT-13 | `e63c4d7` | Từ đã có hai dòng: từ + pinyin, rồi nghĩa |
 | DICT-14 | `31984d2` | Thẻ từ mới cũng hai dòng: từ + pinyin + 🔊, rồi nghĩa |
 | DICT-15 | `c7d0edf` | Bấm từ đỏ (đã xoá) là mở ô học lại; bỏ con trỏ dấu ? ở mọi chỗ |
+| DICT-16 | `6fe4717` | Lại ba dòng cân đối: từ + 🔊, pinyin, nghĩa (từ dài không đẩy 🔊 xuống) |
 
 Hàm chính: `showOwnDict`, `ownDictCardHtml`, `ownDictLookup`, `ownDictWords`, `ownDictFetch`, `ownDictPrefetch`, `addWordToEditNotes`, `hideOwnDict`.
 
