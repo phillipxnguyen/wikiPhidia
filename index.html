@@ -524,16 +524,15 @@ window.onYouTubeIframeAPIReady = function(){
   .cloze-gap.blank-fill:not(.open) .cloze-word{visibility:hidden;}
   .cloze-gap.blank-fill.open{box-shadow:none;background:var(--word-mark);}
   .vocab-card.fill .cloze-more{display:block;visibility:hidden;margin-top:16px;font-size:.6em;font-size:round(.6em, 1px);line-height:1.4;line-height:round(1.4em, 1px);font-weight:600;}
-  .vocab-card.fill .cloze-notes{margin-top:0;font-weight:400;font-size:.6em;font-size:round(.6em, 1px);line-height:1.5;line-height:round(1.5em, 1px);opacity:.8;}
+  .vocab-card.fill .cloze-notes{margin-top:0;font-weight:400;font-size:inherit;line-height:inherit;opacity:.85;}
   .vocab-card.fill.flipped .cloze-gap{box-shadow:none;background:var(--word-mark);}
   .vocab-card.fill.flipped :is(.cloze-word, .cloze-more){visibility:visible;}
   .cloze-more{display:none;}
   .vocab-card.fill :is(.cloze-spy, .cloze-py, .cloze-notes){font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;font-style:normal;}
   .vocab-card.fill .cloze-spy{margin:0 0 4px;font-size:.6em;font-size:round(.6em, 1px);line-height:1.4;line-height:round(1.4em, 1px);font-weight:600;}
   .vocab-card.fill:not(.flipped) :is(.cloze-head, .cloze-spy, .cloze-notes, .cloze-own){display:none;}
-  .vocab-card.fill .cloze-own{margin-top:0;font-size:.8em;font-size:round(.8em, 1px);line-height:1.5;line-height:round(1.5em, 1px);font-weight:inherit;}
-  .vocab-card.fill .cloze-own .py-line{font-size:.75em;font-size:round(.75em, 1px);}
-  .vocab-card.fill .cloze-notes .py-line{margin-bottom:2px;font-size:.9em;font-size:round(.9em, 1px);}
+  .vocab-card.fill .cloze-own{margin-top:0;font-size:inherit;line-height:inherit;font-weight:inherit;}
+  .vocab-card.fill :is(.cloze-own, .cloze-notes) .py-line{margin:0 0 4px;font-size:.6em;font-size:round(.6em, 1px);line-height:1.4;line-height:round(1.4em, 1px);font-weight:600;opacity:1;}
   .vocab-card.fill :is(.cloze-own, .cloze-notes) .py-line{font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;font-style:normal;}
   .own-ts{display:inline-flex;align-items:center;height:24px;margin-right:8px;padding:0 8px;vertical-align:4px;border:0;border-radius:12px;background:color-mix(in srgb, currentColor 12%, transparent);color:inherit;font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;font-size:13px;line-height:16px;font-weight:700;font-style:normal;cursor:pointer;}
   @media (hover:hover){.own-ts:hover{background:color-mix(in srgb, currentColor 20%, transparent);}}
@@ -548,7 +547,7 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-card.listen:not(.flipped) .vc-sent{visibility:hidden;}
   .vocab-card.listen.flipped .vc-art{display:none;}
   .vocab-card.fill .cloze-head{display:flex;flex-direction:column;align-items:center;gap:4px;margin:0 0 .8em;margin:0 0 round(.8em, 1px);font-size:inherit;line-height:inherit;font-weight:inherit;font-style:normal;}
-  .vocab-card.fill .cloze-py{font-size:.5em;font-size:round(.5em, 1px);line-height:1.4;line-height:round(1.4em, 1px);font-weight:600;opacity:.7;}
+  .vocab-card.fill .cloze-py{font-size:.6em;font-size:round(.6em, 1px);line-height:1.4;line-height:round(1.4em, 1px);font-weight:600;opacity:.7;}
   .vocab-card.fill .cloze-main{font-size:2em;font-size:round(2em, 1px);line-height:1.2;line-height:round(1.2em, 1px);font-weight:800;color:var(--accent);}
   .vocab-card.fill .cloze-mean{font-size:.75em;font-size:round(.75em, 1px);line-height:1.4;line-height:round(1.4em, 1px);font-weight:700;}
   .vocab-card.fill.flipped .vocab-front, .vocab-card.fill.settled .vocab-front{visibility:visible;}
@@ -19593,6 +19592,110 @@ async function worldFromTatoeba(term, lang, page) {
   }));
 }
 
+const WORLD_CORPUS_KEY = "flashcards.leipzigCorpora";
+
+async function worldLeipzigCorpus(lang) {
+  const iso = WORLD_ISO3[lang];
+  if (!iso) return "";
+  let all = readLocal(WORLD_CORPUS_KEY);
+  if (!Array.isArray(all)) {
+    const data = await worldGet("https://api.wortschatz-leipzig.de/ws/corpora/availableCorpora");
+    all = Array.isArray(data) ? data.map(c => [ c.corpusName || c.name || "", c.language || "" ]).filter(c => c[0]) : [];
+    if (all.length) try {
+      localStorage.setItem(WORLD_CORPUS_KEY, JSON.stringify(all));
+    } catch (e) {}
+  }
+  const codes = lang === "zh" ? [ "zho", "cmn" ] : [ iso ];
+  const mine = all.filter(c => codes.includes(c[1]) || codes.some(code => c[0].startsWith(code + "_")));
+  const pick = mine.filter(c => /news/.test(c[0])).sort((x, y) => y[0].localeCompare(x[0]))[0] || mine.sort((x, y) => y[0].localeCompare(x[0]))[0];
+  return pick ? pick[0] : "";
+}
+
+async function worldFromLeipzig(term, lang, page) {
+  const corpus = await worldLeipzigCorpus(lang);
+  if (!corpus) return null;
+  const data = await worldGet(`https://api.wortschatz-leipzig.de/ws/sentences/${encodeURIComponent(corpus)}/sentences/${encodeURIComponent(term)}?offset=${(page - 1) * 20}&limit=20`);
+  if (!data) return null;
+  return (data.sentences || []).map(x => ({
+    t: String(x.sentence || "").trim(),
+    src: "Leipzig"
+  }));
+}
+
+function worldStrip(html) {
+  const box = document.createElement("div");
+  box.innerHTML = String(html || "").replace(/<br\s*\/?>/gi, " ");
+  return box.textContent.replace(/\s+/g, " ").trim();
+}
+
+function worldSentencesIn(text, term) {
+  return splitIntoSentences(text).map(x => (x.text || "").trim()).filter(t => /[.!?。！？…]["”』」）)]?$/.test(t) && findTermIn(t, term));
+}
+
+async function worldFromWiktionary(term, lang) {
+  const data = await worldGet(`https://en.wiktionary.org/api/rest_v1/page/definition/${encodeURIComponent(term)}`);
+  if (!data) return null;
+  const out = [];
+  (data[lang] || []).forEach(pos => (pos.definitions || []).forEach(d => (d.examples || []).concat((d.parsedExamples || []).map(x => x.example)).forEach(ex => {
+    const t = worldStrip(ex);
+    if (t && (lang !== "zh" || !/[A-Za-z]{3}/.test(t))) out.push({
+      t: t,
+      src: "Wiktionary"
+    });
+  })));
+  return out;
+}
+
+async function worldFromWikiSite(site, term, lang, page) {
+  const host = (lang === "zh" ? "zh" : lang) + "." + site + ".org";
+  const data = await worldGet(`https://${host}/w/api.php?action=query&format=json&origin=*&list=search&srsearch=${encodeURIComponent('"' + term + '"')}&srlimit=20&srprop=snippet${page > 1 ? "&sroffset=" + (page - 1) * 20 : ""}${lang === "zh" ? lessonZhScript() === "zh-TW" ? "&variant=zh-tw" : "&variant=zh-cn" : ""}`);
+  if (!data || !data.query) return null;
+  const out = [];
+  (data.query.search || []).forEach(hit => worldSentencesIn(worldStrip(hit.snippet), term).filter(t => /^[\p{Lu}\p{Lo}"“'(（「]/u.test(t)).forEach(t => out.push({
+    t: t,
+    src: site
+  })));
+  return out;
+}
+
+async function worldFromFreeDictionary(term, lang) {
+  if (lang !== "en") return null;
+  const data = await worldGet(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(term)}`);
+  if (!Array.isArray(data)) return null;
+  const out = [];
+  data.forEach(e => (e.meanings || []).forEach(m => (m.definitions || []).forEach(d => d.example && out.push({
+    t: String(d.example).trim().replace(/^[a-z]/, c => c.toUpperCase()).replace(/([^.!?])$/, "$1."),
+    src: "Free Dictionary"
+  }))));
+  return out;
+}
+
+async function worldFromHackerNews(term, lang, page) {
+  if (lang !== "en") return null;
+  const data = await worldGet(`https://hn.algolia.com/api/v1/search?tags=comment&hitsPerPage=20&page=${page - 1}&query=${encodeURIComponent('"' + term + '"')}`);
+  if (!data) return null;
+  const out = [];
+  (data.hits || []).forEach(h => worldSentencesIn(worldStrip(h.comment_text), term).forEach(t => out.push({
+    t: t,
+    src: "Hacker News"
+  })));
+  return out;
+}
+
+async function worldFromReddit(term, lang) {
+  const data = await worldGet(`https://www.reddit.com/search.json?limit=25&raw_json=1&q=${encodeURIComponent('"' + term + '"')}`);
+  if (!data || !data.data) return null;
+  const out = [];
+  (data.data.children || []).forEach(c => {
+    const d = c && c.data || {};
+    [ d.title, d.selftext ].forEach(text => worldSentencesIn(worldStrip(text), term).forEach(t => out.push({
+      t: t,
+      src: "Reddit"
+    })));
+  });
+  return out;
+}
+
 async function worldFromGoogle(term, lang) {
   const sl = lang === "zh" ? lessonZhScript() : lang;
   const data = await worldGet(`https://translate.googleapis.com/translate_a/single?client=gtx&dj=1&dt=ex&sl=${encodeURIComponent(sl)}&tl=${lang === "vi" ? "en" : "vi"}&q=${encodeURIComponent(term)}`);
@@ -19636,8 +19739,10 @@ function fetchWorld(item, more) {
   const key = worldKeyOf(item), store = worldRead(), have = store[key];
   if (!more && worldSentences(item) || worldPending.has(key) || !navigator.onLine || more && have && have.end) return worldPending.get(key) || Promise.resolve();
   const lang = worldLangOf(item), term = item.term.trim(), page = more && have ? (have.page || 1) + 1 : 1;
-  const job = Promise.all([ worldFromTatoeba(term, lang, page), worldFromWikipedia(term, lang, page), page === 1 ? worldFromGoogle(term, lang) : null ]).then(async ([ a, b, g ]) => {
+  const job = Promise.all([ worldFromTatoeba(term, lang, page), worldFromWikipedia(term, lang, page), page === 1 ? worldFromGoogle(term, lang) : null, worldFromLeipzig(term, lang, page).catch(() => null), page === 1 ? worldFromWiktionary(term, lang).catch(() => null) : null, worldFromWikiSite("wikiquote", term, lang, page).catch(() => null), worldFromWikiSite("wikisource", term, lang, page).catch(() => null), worldFromWikiSite("wikinews", term, lang, page).catch(() => null), page === 1 ? worldFromFreeDictionary(term, lang).catch(() => null) : null, worldFromHackerNews(term, lang, page).catch(() => null), page === 1 ? worldFromReddit(term, lang).catch(() => null) : null ]).then(async ([ a, b, g, ...more ]) => {
     if (g && g.length) a = g.concat(a || []);
+    const extra = more.filter(Boolean).flat();
+    if (extra.length) b = (b || []).concat(extra);
     if (lang === "zh") {
       const target = lessonZhScript();
       await Promise.all([ ...a || [], ...b || [] ].filter(x => zhScriptOf(x.t) && zhScriptOf(x.t) !== target).slice(0, 16).map(x => translateText(x.t, target).then(r => {
