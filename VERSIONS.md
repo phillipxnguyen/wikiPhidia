@@ -165,6 +165,7 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 | DICT-7 | `3d5d9b9` | Xoá một lần là mất hẳn ở mọi bài, không đề xuất lại (bỏ luật 3 lần); không ô nào tự đặt con trỏ khi mở |
 | DICT-8 | `b9932c5` | Delete/Shift liên tục không cần nhúc nhích chuột (mọi list); từ vừa Add chuyển xuống Already yours |
 | DICT-9 | `f9e5447` | Khung sửa từ bỏ câu phía trên, dùng câu thế giới khi đang hiện; Save bên phải ở mọi khung sửa |
+| DICT-10 | `d7cebf9` | Bỏ mục gập Already in your words: hiện đủ mọi từ (trừ từ đã xoá), chưa tạo trước rồi đã tạo, theo thứ tự câu |
 
 Hàm chính: `showOwnDict`, `ownDictCardHtml`, `ownDictLookup`, `ownDictWords`, `ownDictFetch`, `ownDictPrefetch`, `addWordToEditNotes`, `hideOwnDict`.
 
