@@ -543,7 +543,8 @@ window.onYouTubeIframeAPIReady = function(){
   .vc-stack{display:grid;}
   .vc-stack > *{grid-area:1 / 1;}
   .vc-art{display:flex;align-items:center;justify-content:center;font-size:16px;line-height:20px;font-style:normal;}
-  .vocab-card.listen:not(.flipped) .vc-sent, .vocab-card.listen.flipped .vc-art{visibility:hidden;}
+  .vocab-card.listen:not(.flipped) .vc-sent{visibility:hidden;}
+  .vocab-card.listen.flipped .vc-art{display:none;}
   .vocab-card.fill .cloze-head{display:flex;flex-direction:column;align-items:center;gap:4px;margin:0 0 .8em;margin:0 0 round(.8em, 1px);font-size:inherit;line-height:inherit;font-weight:inherit;font-style:normal;}
   .vocab-card.fill .cloze-py{font-size:.5em;font-size:round(.5em, 1px);line-height:1.4;line-height:round(1.4em, 1px);font-weight:600;opacity:.7;}
   .vocab-card.fill .cloze-main{font-size:2em;font-size:round(2em, 1px);line-height:1.2;line-height:round(1.2em, 1px);font-weight:800;color:var(--accent);}
@@ -727,6 +728,9 @@ window.onYouTubeIframeAPIReady = function(){
   .touch-bar .tb-again{background:var(--danger-soft);color:var(--danger);border-color:transparent;}
   .touch-bar .tb-good{background:var(--a-bg);color:var(--a-label);border-color:transparent;}
   .touch-bar .tb-mark{font-size:22px;font-weight:700;line-height:28px;}
+  html:not(.touch) .touch-bar{gap:8px;}
+  html:not(.touch) .touch-bar button{flex:0 0 auto;min-width:64px;padding:0 16px;}
+  html:not(.touch) .touch-bar :is(.tb-again, .tb-good, #tbShow){min-width:96px;}
   .lesson-header{display:flex;align-items:center;gap:10px;margin:-11px 0 16px;}
   .lesson-name-input{
     flex:1;min-width:0;
@@ -10185,7 +10189,7 @@ window.addEventListener("resize", () => sizeTouchBar(document.getElementById("to
 function updateTouchBar() {
   const bar = document.getElementById("touchBar");
   const vocab = currentView === "vocab";
-  bar.hidden = !isTouch() || (vocab ? document.getElementById("vocabToolbar").hidden : currentView !== "study" || !rows.length);
+  bar.hidden = vocab ? !(isTouch() || vocabStudying && vocabView === "card") || document.getElementById("vocabToolbar").hidden : !isTouch() || currentView !== "study" || !rows.length;
   if (!bar.hidden) sizeTouchBar(bar);
   fitDeck();
   queueMicrotask(updateSelBar);
@@ -10347,9 +10351,14 @@ function ownDictWords(text, row) {
     seen.add(key);
     out.push(w);
   });
+  const lower = new Set(out.map(w => w.toLowerCase()));
+  const words = lang === "zh" || lang === "ja" || lang === "ko" ? out : out.filter(w => {
+    const l = w.toLowerCase();
+    return ![ l.replace(/ies$/, "y"), l.replace(/es$/, ""), l.replace(/s$/, ""), l.replace(/ed$/, ""), l.replace(/d$/, ""), l.replace(/ing$/, ""), l.replace(/ing$/, "e") ].some(b => b !== l && b.length > 1 && lower.has(b));
+  });
   return {
     lang: lang,
-    words: out
+    words: words
   };
 }
 
@@ -11215,6 +11224,25 @@ window.addEventListener("keydown", e => {
     return;
   }
   if (!pop.contains(e.target) && e.key !== "Shift") e.stopImmediatePropagation();
+}, true);
+
+document.addEventListener("pointerdown", e => {
+  const pop = document.getElementById("editPopup");
+  if (pop.hidden || !pop.dataset.vocab || !e.target.closest || pop.contains(e.target) || e.target.closest(".vocab-add-popup, .vocab-popup, .hover-tooltip, #toast, .toast")) return;
+  const save = document.getElementById("vocabEditSave");
+  if (!save) return;
+  e.preventDefault();
+  e.stopImmediatePropagation();
+  const swallow = ev => {
+    ev.preventDefault();
+    ev.stopImmediatePropagation();
+  };
+  document.addEventListener("click", swallow, {
+    capture: true,
+    once: true
+  });
+  setTimeout(() => document.removeEventListener("click", swallow, true), 400);
+  save.click();
 }, true);
 
 document.addEventListener("click", e => {
