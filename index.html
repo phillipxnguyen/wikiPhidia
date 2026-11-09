@@ -1657,8 +1657,6 @@ window.onYouTubeIframeAPIReady = function(){
   .od-jump{padding:0 1px;border:0;border-radius:4px;background:none;color:inherit;font:inherit;line-height:inherit;text-decoration:underline;text-decoration-color:color-mix(in srgb, var(--accent) 55%, transparent);text-decoration-thickness:2px;text-underline-offset:5px;cursor:pointer;}
   .od-jump.od-got{text-decoration-color:var(--a-label);background:color-mix(in srgb, var(--a-label) 12%, transparent);}
   @media (hover:hover){.od-jump:hover{background:color-mix(in srgb, var(--accent) 10%, transparent);}}
-  .od-sum{font-size:12px;line-height:16px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--od-soft);}
-  .od-sum b{color:var(--accent);}
   .od-list{display:flex;flex-direction:column;gap:12px;padding:16px 16px 20px;}
   .od-card{display:flex;flex-direction:column;gap:8px;padding:16px;border:1px solid var(--od-line);border-radius:16px;background:var(--od-card);transition:border-color .2s, box-shadow .2s, background-color .2s;}
   @media (hover:hover){.od-card:not(.od-have):hover{border-color:color-mix(in srgb, var(--accent) 35%, transparent);box-shadow:0 8px 24px color-mix(in srgb, var(--text) 8%, transparent);}}
@@ -1705,6 +1703,10 @@ window.onYouTubeIframeAPIReady = function(){
   .od-hm{flex:1 1 120px;min-width:0;font-size:15px;line-height:22px;color:var(--od-mean);}
   .od-have .od-say{width:28px;height:28px;border-radius:14px;}
   .od-have .od-done{font-size:16px;line-height:20px;}
+  .od-ex{display:flex;flex-direction:column;gap:6px;margin-top:4px;padding-top:10px;border-top:1px dashed var(--od-line);}
+  .od-have .od-ex{flex:1 1 100%;margin-top:2px;padding-top:8px;}
+  .od-ex p{margin:0;font-size:15px;line-height:22px;color:var(--text);}
+  .od-ex mark{padding:0 2px;border-radius:4px;background:color-mix(in srgb, var(--accent) 14%, transparent);color:inherit;font-weight:700;}
   .od-off{padding:0 1px;border-radius:4px;background:color-mix(in srgb, var(--danger) 18%, transparent);color:var(--danger);cursor:help;}
   @media (prefers-reduced-motion: reduce){.od-card, .od-add, .od-skel i, .od-card.od-flash{animation:none;transition:none;}}
   @media (max-width:600px){.od-head{padding:12px 16px 10px;}.od-list{padding:12px;gap:10px;}.od-card{padding:14px;}.od-word b{font-size:24px;line-height:32px;}}
@@ -11169,8 +11171,17 @@ function ownDictCardHtml(lang, w, have) {
   } ] : []) : [];
   const body = !e ? '<div class="od-skel"><i></i><i></i></div>' : `<button type="button" class="od-main" data-m="${escapeAttr(e.m)}" title="Add with this meaning">${escapeHtml(e.m)}</button>` + groups.map(g => `<div class="od-group">${g.pos ? `<span class="od-pos">${escapeHtml(g.pos)}</span>` : ""}<div class="od-terms">${g.terms.map(t => `<button type="button" class="od-term" data-m="${escapeAttr(t)}" title="Add with this meaning">${escapeHtml(t)}</button>`).join("")}</div></div>`).join("");
   const act = '<span class="od-acts"><button type="button" class="od-del" aria-label="Delete" title="Delete">✕</button><button type="button" class="od-add"><span>＋</span> Add</button></span>';
-  if (have) return `<article class="od-card od-have" data-w="${escapeAttr(w)}"><b class="od-hw">${escapeHtml(w)}</b>${py ? `<span class="od-py">${py}</span>` : ""}<span class="od-hm">${e ? escapeHtml(e.m) : ""}</span><button type="button" class="od-say" aria-label="Listen" title="Listen">${OD_SPEAK}</button><span class="od-done" title="In your words">✓</span></article>`;
-  return `<article class="od-card" data-w="${escapeAttr(w)}"><header class="od-top"><div class="od-word"><b>${escapeHtml(w)}</b><button type="button" class="od-say" aria-label="Listen" title="Listen">${OD_SPEAK}</button></div>${act}</header>${py ? `<div class="od-py">${py}</div>` : ""}<div class="od-body">${body}</div></article>`;
+  const wi = ownDictShown ? {
+    term: w,
+    tkey: normalizeVocabText(w),
+    card: ownDictShown.row || {}
+  } : null, we = wi && worldRead()[worldKeyOf(wi)], examples = we && we.list ? we.list.slice(0, 2) : [];
+  const exHtml = examples.length ? `<div class="od-ex">${examples.map(x => {
+    const sp = findTermIn(x.t, w);
+    return `<p>${sp ? escapeHtml(x.t.slice(0, sp[0])) + "<mark>" + escapeHtml(x.t.slice(sp[0], sp[1])) + "</mark>" + escapeHtml(x.t.slice(sp[1])) : escapeHtml(x.t)}</p>`;
+  }).join("")}</div>` : "";
+  if (have) return `<article class="od-card od-have" data-w="${escapeAttr(w)}"><b class="od-hw">${escapeHtml(w)}</b>${py ? `<span class="od-py">${py}</span>` : ""}<span class="od-hm">${e ? escapeHtml(e.m) : ""}</span><button type="button" class="od-say" aria-label="Listen" title="Listen">${OD_SPEAK}</button><span class="od-done" title="In your words">✓</span>${exHtml}</article>`;
+  return `<article class="od-card" data-w="${escapeAttr(w)}"><header class="od-top"><div class="od-word"><b>${escapeHtml(w)}</b><button type="button" class="od-say" aria-label="Listen" title="Listen">${OD_SPEAK}</button></div>${act}</header>${py ? `<div class="od-py">${py}</div>` : ""}<div class="od-body">${body}</div>${exHtml}</article>`;
 }
 
 let ownDictShown = null;
@@ -11210,7 +11221,7 @@ function showOwnDict(text, row, onAdd) {
     order: list
   };
   box.classList.add("on");
-  const head = `<div class="od-head"><div class="od-sent">${ownDictSentenceHtml(text, fresh, old, gone)}</div><div class="od-sum"><b>${fresh.length}</b> new ${fresh.length === 1 ? "word" : "words"}${old.length ? ` · ${old.length} already yours` : ""}</div></div>`;
+  const head = `<div class="od-head"><div class="od-sent">${ownDictSentenceHtml(text, fresh, old, gone)}</div></div>`;
   box.innerHTML = `<div class="own-dict">${head}<div class="od-list">${fresh.map(w => ownDictCardHtml(lang, w, false)).join("")}${old.map(w => ownDictCardHtml(lang, w, true)).join("")}</div></div>`;
   const shown = ownDictShown, redraw = w => {
     if (ownDictShown !== shown) return;
@@ -11221,6 +11232,12 @@ function showOwnDict(text, row, onAdd) {
     if (added) markOwnDictAdded(box.querySelector(`.od-card[data-w="${CSS.escape(w)}"]`));
   };
   fresh.concat(old).forEach(w => {
+    const wi = {
+      term: w,
+      tkey: normalizeVocabText(w),
+      card: row || {}
+    };
+    if (!worldSentences(wi)) fetchWorld(wi).then(() => redraw(w));
     const e = ownDictEntry(lang, w);
     if (e && e.groups) return;
     ownDictFetch(lang, w).then(() => redraw(w));
@@ -11247,20 +11264,10 @@ function ownDictDelete(card) {
   card.classList.add("od-gone");
   const jump = document.querySelector(`#editPopup .od-jump[data-w="${CSS.escape(w)}"]`);
   if (jump) jump.outerHTML = `<span class="od-off" title="Deleted: select it and press Shift to learn it again">${escapeHtml(jump.textContent)}</span>`;
-  ownDictSum();
   setTimeout(() => {
     card.remove();
-    ownDictSum();
-    rehover();
+      rehover();
   }, reducedMotion() ? 0 : 200);
-}
-
-function ownDictSum() {
-  const box = document.querySelector("#editPopup .own-dict");
-  if (!box) return;
-  const fresh = box.querySelectorAll(".od-list .od-card:not(.od-have):not(.od-gone)").length, old = box.querySelectorAll(".od-list .od-card.od-have").length;
-  const sum = box.querySelector(".od-sum");
-  if (sum) sum.innerHTML = `<b>${fresh}</b> new ${fresh === 1 ? "word" : "words"}${old ? ` · ${old} already yours` : ""}`;
 }
 
 function ownDictSettle(card) {
@@ -11268,7 +11275,6 @@ function ownDictSettle(card) {
   const w = card.dataset.w, lang = ownDictShown.lang;
   if (ownDictHover === card) ownDictHover = null;
   card.classList.add("od-gone");
-  ownDictSum();
   setTimeout(() => {
     const box = document.querySelector("#editPopup .own-dict");
     card.remove();
@@ -11276,8 +11282,7 @@ function ownDictSettle(card) {
     const list = box.querySelector(".od-list"), order = ownDictShown.order || [], at = order.indexOf(w);
     const next = [ ...list.querySelectorAll(".od-card.od-have") ].find(c => order.indexOf(c.dataset.w) > at);
     if (next) next.insertAdjacentHTML("beforebegin", ownDictCardHtml(lang, w, true)); else list.insertAdjacentHTML("beforeend", ownDictCardHtml(lang, w, true));
-    ownDictSum();
-    rehover();
+      rehover();
   }, reducedMotion() ? 0 : 200);
 }
 
