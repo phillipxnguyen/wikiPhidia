@@ -129,6 +129,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-28 | `a3e9ca1` | Hàng nút kiểu Podcast cả trên máy tính; thẻ nghe Show không còn khoảng trống; click ra ngoài khung sửa từ là lưu |
 | FLASH-29 | `f43aa2a` | Cảnh nào của thẻ nghe cũng có chuyển động (thêm sóng tin nhắn, đèn bộ đàm, sọc TV, micro) |
 | FLASH-30 | `0798d15` | Bỏ đèn sáng/tắt và sọc TV trôi; tin nhắn, bộ đàm, TV chỉ nhấp nhô nhẹ |
+| FLASH-31 | `86a52b8` | Cỡ chữ câu trung bình (32–40 px, phone 22–26); chỉ thu nhỏ khi thật sự không vừa màn, tối thiểu 24/20 px |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
