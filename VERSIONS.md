@@ -117,6 +117,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-16 | `aa2c3d6` | Một kiểu mặt trước: câu khoét từ từ kho chung (câu gốc, bài khác, Tatoeba, Wikipedia, ví dụ Google); bỏ kiểu chỉ từ; notes khối riêng khi Show |
 | FLASH-17 | `032d080` | Show: từ làm chữ chính (pinyin trên đỉnh, nghĩa dưới) trên câu, như Podcast; chỗ giữ sẵn, không nhảy |
 | FLASH-18 | `69bd6b4` | Bỏ thanh cuộn xanh bên thẻ và kiểu trình bày có dấu ngoặc kép |
+| FLASH-19 | `d2ecc93` | Bỏ mọi khung/đồ vật (biển, cốc, giấy note, bảng…), không nghiêng: chữ trên nền màu như Podcast |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
