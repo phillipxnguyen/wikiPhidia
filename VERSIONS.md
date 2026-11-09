@@ -148,6 +148,7 @@ Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWor
 | POD-21 | `6521eb2` | Chỉ còn ở Vocabulary; mặt trước đọc từ (giọng tự nhiên nhất có), Show mới phát các câu; bỏ chấm tròn |
 | POD-22 | `98ac5ec` | Luân phiên các giọng tốt (Natural của Edge…) cho mỗi từ, mỗi câu |
 | POD-23 | `7a65374` | Bỏ chế độ Podcast (nút 🎧, trong task); mặt trước của nó thành một kiểu flashcard |
+| POD-24 | `a171f78` | Dọn hết code chế độ Podcast cũ; chỉ giữ các cảnh động cho mặt trước nghe của flashcard |
 
 Hàm chính: `openBlind`, `closeBlind`, `blindItems`, `blindAutoItems`, `blindLines`, `blindNext`, `paintBlind`, `paintBlindLive`, `blindPlay`, `blindPlayOne`, `blindPlayLine`, `blindPlayer`, `blindSpeak`, `blindGrade`, `blindUndo`, `blindEdit`, `blindAct`, `blindFly`, `blindArt`, `blindSceneFor`, `blindCountsHtml`, `withLeadTime`, `blindTime`, `BLIND_SCENES`.
 
