@@ -528,6 +528,10 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-card.fill.flipped .cloze-gap{box-shadow:none;background:var(--word-mark);}
   .vocab-card.fill.flipped :is(.cloze-word, .cloze-more){visibility:visible;}
   .cloze-more{display:none;}
+  .vc-stack{display:grid;}
+  .vc-stack > *{grid-area:1 / 1;}
+  .vc-art{display:flex;align-items:center;justify-content:center;font-size:16px;line-height:20px;font-style:normal;}
+  .vocab-card.listen:not(.flipped) .vc-sent, .vocab-card.listen.flipped .vc-art{visibility:hidden;}
   .vocab-card.fill .cloze-head{display:flex;flex-direction:column;align-items:center;gap:4px;margin:0 0 24px;font-size:inherit;line-height:inherit;font-weight:inherit;font-style:normal;}
   .vocab-card.fill .cloze-py{font-size:.5em;font-size:round(.5em, 1px);line-height:1.4;line-height:round(1.4em, 1px);font-weight:600;opacity:.7;}
   .vocab-card.fill .cloze-main{font-size:2em;font-size:round(2em, 1px);line-height:1.2;line-height:round(1.2em, 1px);font-weight:800;color:var(--accent);}
@@ -3152,7 +3156,6 @@ window.onYouTubeIframeAPIReady = function(){
   <div id="vocabStage"></div>
   <div class="fab-dock">
     <button id="vocabViewToggle" class="add-fab words-fab" title="Flashcards" aria-label="Flashcards" hidden><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="5" y="3" width="10" height="14" rx="2"/><path d="M8 8h4M8 11h4"/></svg></button>
-    <button id="vocabPodcast" class="add-fab words-fab" title="Podcast: hear the words in their sentences" aria-label="Podcast" hidden><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 12v-2a6 6 0 0 1 12 0v2"/><rect x="3" y="11" width="3" height="5" rx="1.5"/><rect x="14" y="11" width="3" height="5" rx="1.5"/></svg></button>
     <button id="vocabWords" class="add-fab words-fab" data-words title="Words in this lesson" aria-label="Words in this lesson" hidden><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5h14M3 10h10M3 15h6"/></svg></button>
     <button id="vocabAddWord" class="add-fab" data-add-card title="Add a card" aria-label="Add a card" hidden><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14"/></svg></button>
   </div>
@@ -20534,6 +20537,9 @@ function fillVocabCard(el, item) {
     el.dataset.lookKey = item.key;
     el.dataset.look = look;
     el.dataset.ex = ex;
+    el.dataset.listen = ex !== "word" && "speechSynthesis" in window && Math.random() < 1 / 3 ? "1" : "";
+    el.dataset.scene = el.dataset.listen ? blindSceneFor(item, el.dataset.scene || null) : "";
+    delete el.dataset.said;
     cardType(el, item);
   }
   el.classList.toggle("view-only", viewOnly);
@@ -20543,11 +20549,14 @@ function fillVocabCard(el, item) {
     const n = Math.max(3, Math.min(16, span[1] - span[0]));
     const [ before, after ] = [ text.slice(0, span[0]), text.slice(span[1]) ];
     const notes = wordNotesOf(item);
-    el.querySelector(".vocab-term").innerHTML = `<span>${lookupOthers(escapeHtml(before), item)}<span class="cloze-gap" style="--gap:${n}"><span class="cloze-word">${escapeHtml(text.slice(span[0], span[1]))}</span></span>${lookupOthers(escapeHtml(after), item)}</span>` + (notes ? `<span class="cloze-more cloze-notes">${brLines(notes)}</span>` : "");
+    const sent = `<span${el.dataset.listen ? ' class="vc-sent"' : ""}>${lookupOthers(escapeHtml(before), item)}<span class="cloze-gap" style="--gap:${n}"><span class="cloze-word">${escapeHtml(text.slice(span[0], span[1]))}</span></span>${lookupOthers(escapeHtml(after), item)}</span>`;
+    el.querySelector(".vocab-term").innerHTML = (el.dataset.listen ? `<span class="vc-stack"><span class="vc-art" aria-hidden="true">${blindArt(el.dataset.scene)}</span>${sent}</span>` : sent) + (notes ? `<span class="cloze-more cloze-notes">${brLines(notes)}</span>` : "");
     const py = pinyinLine(item.term);
     el.querySelector(".vocab-term").insertAdjacentHTML("afterbegin", `<span class="cloze-more cloze-head">${py ? `<span class="cloze-py">${escapeHtml(py)}</span>` : ""}<span class="cloze-main">${escapeHtml(item.term)}</span>${item.meaning ? `<span class="cloze-mean">${escapeHtml(item.meaning)}</span>` : ""}</span>`);
     el.classList.add("fill");
+    el.classList.toggle("listen", !!el.dataset.listen);
   } else {
+    el.classList.remove("listen");
     el.querySelector(".vocab-term").innerHTML = `<span>${escapeHtml(item.term)}</span>`;
     el.classList.remove("fill");
   }
@@ -20746,6 +20755,10 @@ function showVocabDeck(stage, item) {
   });
   card.id = "vocabCard";
   fillVocabCard(card, item);
+  if (card.dataset.listen && !vocabSession.flipped && card.dataset.said !== item.key) {
+    card.dataset.said = item.key;
+    sayVocabWord(item);
+  }
   if (vocabVideoIdFor(item.card)) preloadVocabVideo(item); else if (next) preloadVocabVideo(next);
   [ item, next ].forEach(preloadVocabDict);
   if (vocabViewOnly(item) && !vocabSession.flipped) {
@@ -20889,7 +20902,6 @@ function renderVocab() {
   const anyDue = !!currentVocabItem() || items.some(i => vocabStateOf(i).due <= now);
   document.getElementById("vocabFlag").hidden = currentLessonId !== VOCAB_ALL_ID && vocabView === "list";
   document.getElementById("vocabViewToggle").hidden = studyOnly || vocabView !== "list" || !anyDue;
-  document.getElementById("vocabPodcast").hidden = studyOnly || vocabView !== "list" || !blindCanOpen();
   if (vocabView === "list") {
     badges.innerHTML = anyDue ? badgesHtml(c.fresh, c.due, c.done, { new: c.fresh > 0, due: c.due > 0, done: c.done > 0 }) : "";
     stage.innerHTML = "";
@@ -21618,8 +21630,20 @@ function playVocabSound(item, once) {
   syncVocabSound();
 }
 
+function sayVocabWord(item) {
+  stopVocabSound();
+  speechSynthesis.cancel();
+  const utter = trackSpeech(new SpeechSynthesisUtterance(cleanForSpeech(item.term)));
+  utter.lang = resolveSpeechLang(item.term);
+  const voice = rotateVoice(utter.lang);
+  if (voice) utter.voice = voice;
+  speechSynthesis.speak(utter);
+}
+
 function toggleVocabSound(item) {
   if (commitVocabEdit()) renderVocab();
+  const card = document.getElementById("vocabCard");
+  if (card && card.dataset.listen && !vocabSession.flipped) return sayVocabWord(item);
   if (vocabSoundOn() && soundHeard) stopVocabSound(); else playVocabSound(item, cardFrontShowing(null));
 }
 
@@ -21732,7 +21756,6 @@ function setVocabView(view) {
 
 
 document.getElementById("vocabViewToggle").onclick = () => setVocabView("card");
-document.getElementById("vocabPodcast").onclick = () => openBlind();
 document.getElementById("listWatch").onclick = () => {
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   theaterWanted = true;
@@ -23086,8 +23109,6 @@ function taskShowPick(run, pick) {
   run.opening = false;
   if (currentView !== "vocab") showView("vocab"); else renderVocab();
   const item = currentVocabItem();
-  if (pick.pod === undefined) pick.pod = Math.random() < .5;
-  if (item && !run.peeking && pick.pod) openBlind(item);
   return !!item;
 }
 
