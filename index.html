@@ -10173,7 +10173,7 @@ function mergedCardEditHtml(row) {
 }
 
 function splitMergedCardHtml(html) {
-  const lines = (html || "").replace(/<div[^>]*>/gi, "").replace(/<\/div>/gi, "<br>").split(/<br\s*\/?>/i);
+  const lines = (html || "").replace(/<div[^>]*>/gi, "").replace(/<\/div>/gi, "<br>").replace(/\n/g, "<br>").split(/<br\s*\/?>/i);
   while (lines.length && !plainTextOf(lines[lines.length - 1], "").trim()) lines.pop();
   while (lines.length && !plainTextOf(lines[0], "").trim()) lines.shift();
   if (!lines.length || !/^\s*\//.test(plainTextOf(lines[0], ""))) return {
@@ -11832,6 +11832,35 @@ document.addEventListener("paste", e => {
   ta.dispatchEvent(new Event("input", {
     bubbles: true
   }));
+});
+
+document.addEventListener("input", e => {
+  const el = e.target;
+  if (e.isComposing || !el.matches || !el.matches("#qaQ, #vocabEditTerm, #editQ:not(.yt-ph)")) return;
+  if (el.tagName === "TEXTAREA") {
+    const lines = el.value.split("\n");
+    if (lines.length < 2 || !lines[0].trim() || /^\s*\//.test(lines[0])) return;
+    const a = el.selectionStart, b = el.selectionEnd, lead = lines[0].length - lines[0].trimStart().length;
+    el.value = el.value.slice(0, lead) + "/" + el.value.slice(lead);
+    el.setSelectionRange(a + (a >= lead ? 1 : 0), b + (b >= lead ? 1 : 0));
+    return;
+  }
+  const text = el.innerText.replace(/\n+$/, ""), lines = text.split("\n");
+  if (lines.length < 2 || !lines[0].trim() || /^\s*\//.test(lines[0])) return;
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, {
+    acceptNode: n => n.nodeValue.trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP
+  }), node = walker.nextNode();
+  if (!node) return;
+  const sel = getSelection(), range = sel.rangeCount ? sel.getRangeAt(0) : null, at = range && range.startContainer === node ? range.startOffset : -1;
+  const lead = node.nodeValue.length - node.nodeValue.trimStart().length;
+  node.nodeValue = node.nodeValue.slice(0, lead) + "/" + node.nodeValue.slice(lead);
+  if (at >= 0) {
+    const r = document.createRange();
+    r.setStart(node, at + (at >= lead ? 1 : 0));
+    r.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(r);
+  }
 });
 
 function markNotesClip(box) {
