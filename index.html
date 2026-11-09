@@ -532,7 +532,9 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-card.fill .cloze-spy{margin:0 0 4px;font-size:.6em;font-size:round(.6em, 1px);line-height:1.4;line-height:round(1.4em, 1px);font-weight:600;}
   .vocab-card.fill:not(.flipped) :is(.cloze-head, .cloze-spy, .cloze-notes, .cloze-own){display:none;}
   .vocab-card.fill .cloze-own{margin-top:0;font-size:.8em;font-size:round(.8em, 1px);line-height:1.5;line-height:round(1.5em, 1px);font-weight:inherit;}
-  .vocab-card.fill .cloze-own .py-line{font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;font-style:normal;}
+  .vocab-card.fill .cloze-own .py-line{font-size:.75em;font-size:round(.75em, 1px);}
+  .vocab-card.fill .cloze-notes .py-line{margin-bottom:2px;font-size:.9em;font-size:round(.9em, 1px);}
+  .vocab-card.fill :is(.cloze-own, .cloze-notes) .py-line{font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;font-style:normal;}
   .own-ts{display:inline-flex;align-items:center;height:24px;margin-right:8px;padding:0 8px;vertical-align:4px;border:0;border-radius:12px;background:color-mix(in srgb, currentColor 12%, transparent);color:inherit;font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;font-size:13px;line-height:16px;font-weight:700;font-style:normal;cursor:pointer;}
   @media (hover:hover){.own-ts:hover{background:color-mix(in srgb, currentColor 20%, transparent);}}
   .vocab-card.fill .cloze-own mark{padding:0 2px;border-radius:4px;background:var(--word-mark);color:inherit;}
@@ -9744,7 +9746,7 @@ function hoverUnit(el) {
   return el ? el.closest(".cell.shown") : null;
 }
 
-const PINYIN_SEL = ".vocab-card.fill.flipped .cloze-body > span:not(.cloze-notes):not(.vc-stack):not(.cloze-own), .vocab-card.fill.flipped .cloze-own, .vocab-card.fill.flipped .vc-sent, .vocab-card.fill.flipped .cloze-notes, .wl-sent, .card-notes li, .card-notes > div, .vocab-word-notes li, .vocab-word-notes > div, .paper-notes li, .rich-editor li, .rich-editor > div, .rich-editor, .vocab-list-meaning > span, .vocab-list-meaning, .vocab-add-field b, .vocab-back :is(.vocab-ctx, .vocab-meaning), .heat-card span";
+const PINYIN_SEL = ".wl-sent, .card-notes li, .card-notes > div, .vocab-word-notes li, .vocab-word-notes > div, .paper-notes li, .rich-editor li, .rich-editor > div, .rich-editor, .vocab-list-meaning > span, .vocab-list-meaning, .vocab-add-field b, .vocab-back :is(.vocab-ctx, .vocab-meaning), .heat-card span";
 
 function pinyinRow(el) {
   const holder = el.closest("[data-id]");
@@ -19860,6 +19862,27 @@ function cardType(el, item) {
   set("--br", pick([ "-2deg", "0deg", "0deg", "0deg", "1deg" ]));
 }
 
+function notesWithPinyin(html, card) {
+  const box = document.createElement("div");
+  box.innerHTML = html;
+  const add = (el, text) => {
+    if (!/[\u3400-\u9fff]/.test(text) || cjkScriptFor(text, card) !== "zh") return;
+    const py = pinyinLine(text.trim());
+    if (py) el.insertAdjacentHTML("afterbegin", `<span class="py-line">${escapeHtml(py)}</span>`);
+  };
+  const blocks = [ ...box.querySelectorAll("li, div, p") ].filter(el => !el.querySelector("li, div, p"));
+  if (blocks.length) blocks.forEach(el => add(el, el.textContent)); else {
+    const parts = box.innerHTML.split(/<br\s*\/?>/i);
+    box.innerHTML = parts.map(part => {
+      const t = document.createElement("div");
+      t.innerHTML = part;
+      add(t, t.textContent);
+      return `<div>${t.innerHTML}</div>`;
+    }).join("");
+  }
+  return box.innerHTML;
+}
+
 function fillVocabCard(el, item) {
   const viewOnly = vocabViewOnly(item);
   const sentence = vocabContext(item).sentence || "", gap = !viewOnly && sentence && !wholeSentenceCard(item, sentence) ? findTermIn(sentence, item.term) : null;
@@ -19891,7 +19914,7 @@ function fillVocabCard(el, item) {
     const own = otherGap && sentence && sentence !== text ? sentence : "";
     const ownTs = own && item.card.time != null && vocabVideoIdFor(item.card) ? `<button type="button" class="own-ts" title="Play this line">${fmtTime(item.card.time)}</button>` : "";
     const ownHtml = own ? `<span class="cloze-more cloze-own">${ownTs}${lookupOthers(vocabSentenceHtml(own, item.term, item.card), item)}</span>` : "";
-    el.querySelector(".vocab-term").innerHTML = `<span class="cloze-body">${el.dataset.listen ? `<span class="vc-stack"><span class="vc-art" aria-hidden="true">${sceneArt(el.dataset.scene)}</span>${sent}</span>` : sent}${ownHtml}${notes ? `<span class="cloze-more cloze-notes">${brLines(notes)}</span>` : ""}</span>`;
+    el.querySelector(".vocab-term").innerHTML = `<span class="cloze-body">${el.dataset.listen ? `<span class="vc-stack"><span class="vc-art" aria-hidden="true">${sceneArt(el.dataset.scene)}</span>${sent}</span>` : sent}${ownHtml}${notes ? `<span class="cloze-more cloze-notes">${notesWithPinyin(brLines(notes), item.card)}</span>` : ""}</span>`;
     const py = pinyinLine(item.term);
     el.querySelector(".vocab-term").insertAdjacentHTML("afterbegin", `<span class="cloze-more cloze-head">${py ? `<span class="cloze-py">${escapeHtml(py)}</span>` : ""}<span class="cloze-main">${escapeHtml(item.term)}</span>${item.meaning ? `<span class="cloze-mean">${escapeHtml(item.meaning)}</span>` : ""}</span>`);
     el.classList.add("fill");
