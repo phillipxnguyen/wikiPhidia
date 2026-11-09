@@ -1697,14 +1697,16 @@ window.onYouTubeIframeAPIReady = function(){
   .od-skel i:first-child{width:46%;height:18px;}
   .od-skel i:last-child{width:72%;}
   @keyframes odShimmer{to{background-position:-200% 0;}}
-  .od-card.od-have{flex-direction:row;flex-wrap:wrap;align-items:center;gap:4px 12px;padding:10px 12px 10px 16px;border-radius:12px;background:color-mix(in srgb, var(--a-label) 6%, var(--od-bg));border-color:color-mix(in srgb, var(--a-label) 30%, transparent);}
+  .od-card.od-have{gap:4px;padding:12px 12px 12px 16px;border-radius:12px;background:color-mix(in srgb, var(--a-label) 6%, var(--od-bg));border-color:color-mix(in srgb, var(--a-label) 30%, transparent);}
   .od-hw{font-size:20px;line-height:28px;font-weight:700;color:var(--text);}
   .od-have .od-py{font-size:14px;line-height:20px;}
-  .od-hm{flex:1 1 120px;min-width:0;font-size:15px;line-height:22px;color:var(--od-mean);}
+  .od-hl{display:flex;align-items:center;gap:12px;min-width:0;}
+  .od-hl .od-done{margin-left:auto;}
+  .od-hm{font-size:15px;line-height:22px;font-weight:600;color:var(--od-mean);}
   .od-have .od-say{width:28px;height:28px;border-radius:14px;}
   .od-have .od-done{font-size:16px;line-height:20px;}
   .od-ex{display:flex;flex-direction:column;gap:6px;margin-top:4px;padding-top:10px;border-top:1px dashed var(--od-line);}
-  .od-have .od-ex{flex:1 1 100%;margin-top:2px;padding-top:8px;}
+  .od-have .od-ex{margin-top:4px;padding-top:8px;}
   .od-ex p{margin:0;font-size:15px;line-height:22px;color:var(--text);}
   .od-ex mark{padding:0 2px;border-radius:4px;background:color-mix(in srgb, var(--accent) 14%, transparent);color:inherit;font-weight:700;}
   .od-off{padding:0 1px;border-radius:4px;background:color-mix(in srgb, var(--danger) 18%, transparent);color:var(--danger);cursor:help;}
@@ -11180,7 +11182,7 @@ function ownDictCardHtml(lang, w, have) {
     const sp = findTermIn(x.t, w);
     return `<p>${sp ? escapeHtml(x.t.slice(0, sp[0])) + "<mark>" + escapeHtml(x.t.slice(sp[0], sp[1])) + "</mark>" + escapeHtml(x.t.slice(sp[1])) : escapeHtml(x.t)}</p>`;
   }).join("")}</div>` : "";
-  if (have) return `<article class="od-card od-have" data-w="${escapeAttr(w)}"><b class="od-hw">${escapeHtml(w)}</b>${py ? `<span class="od-py">${py}</span>` : ""}<span class="od-hm">${e ? escapeHtml(e.m) : ""}</span><button type="button" class="od-say" aria-label="Listen" title="Listen">${OD_SPEAK}</button><span class="od-done" title="In your words">✓</span>${exHtml}</article>`;
+  if (have) return `<article class="od-card od-have" data-w="${escapeAttr(w)}"><div class="od-hl"><b class="od-hw">${escapeHtml(w)}</b>${py ? `<span class="od-py">${py}</span>` : ""}<button type="button" class="od-say" aria-label="Listen" title="Listen">${OD_SPEAK}</button><span class="od-done" title="In your words">✓</span></div>${e ? `<div class="od-hm">${escapeHtml(e.m)}</div>` : ""}${exHtml}</article>`;
   return `<article class="od-card" data-w="${escapeAttr(w)}"><header class="od-top"><div class="od-word"><b>${escapeHtml(w)}</b><button type="button" class="od-say" aria-label="Listen" title="Listen">${OD_SPEAK}</button></div>${act}</header>${py ? `<div class="od-py">${py}</div>` : ""}<div class="od-body">${body}</div>${exHtml}</article>`;
 }
 
@@ -20241,7 +20243,7 @@ async function worldFromTatoeba(term, lang, page) {
 
 async function worldFromWikipedia(term, lang, page) {
   const host = lang === "zh" ? "zh" : lang;
-  const data = await worldGet(`https://${host}.wikipedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrsearch=${encodeURIComponent('"' + term + '"')}&gsrlimit=10${page > 1 ? "&gsroffset=" + (page - 1) * 10 : ""}&prop=extracts&explaintext=1&exintro=1&exlimit=10&exsentences=10${lang === "zh" ? "&variant=zh-cn&uselang=zh-cn" : ""}`);
+  const data = await worldGet(`https://${host}.wikipedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrsearch=${encodeURIComponent('"' + term + '"')}&gsrlimit=10${page > 1 ? "&gsroffset=" + (page - 1) * 10 : ""}&prop=extracts&explaintext=1&exintro=1&exlimit=10&exsentences=10${lang === "zh" ? lessonZhScript() === "zh-TW" ? "&variant=zh-tw&uselang=zh-tw" : "&variant=zh-cn&uselang=zh-cn" : ""}`);
   if (!data) return null;
   const pages = data.query && data.query.pages ? Object.values(data.query.pages) : [];
   const out = [];
@@ -20252,11 +20254,34 @@ async function worldFromWikipedia(term, lang, page) {
   return out;
 }
 
+const ZH_TRAD = "們個這來說時會對還麼為學國語開關見問題長門車東書愛電話們買賣貓鳥魚飯體歡謝讓聽寫讀時間現發動點過們錢頭裡後從應該",
+  ZH_SIMP = "们个这来说时会对还么为学国语开关见问题长门车东书爱电话们买卖猫鸟鱼饭体欢谢让听写读时间现发动点过们钱头里后从应该";
+
+function zhScriptOf(text) {
+  let t = 0, c = 0;
+  for (const ch of text || "") {
+    if (ZH_TRAD.includes(ch) && !ZH_SIMP.includes(ch)) t++; else if (ZH_SIMP.includes(ch) && !ZH_TRAD.includes(ch)) c++;
+  }
+  return t > c ? "zh-TW" : c > t ? "zh-CN" : "";
+}
+
+function lessonZhScript() {
+  if (studyLang === "zh-TW") return "zh-TW";
+  return zhScriptOf(rows.map(r => r.q || "").join("").slice(0, 4000)) || "zh-CN";
+}
+
 function fetchWorld(item, more) {
   const key = worldKeyOf(item), store = worldRead(), have = store[key];
   if (!more && worldSentences(item) || worldPending.has(key) || !navigator.onLine || more && have && have.end) return worldPending.get(key) || Promise.resolve();
   const lang = worldLangOf(item), term = item.term.trim(), page = more && have ? (have.page || 1) + 1 : 1;
-  const job = Promise.all([ worldFromTatoeba(term, lang, page), worldFromWikipedia(term, lang, page) ]).then(([ a, b ]) => {
+  const job = Promise.all([ worldFromTatoeba(term, lang, page), worldFromWikipedia(term, lang, page) ]).then(async ([ a, b ]) => {
+    if (lang === "zh") {
+      const target = lessonZhScript();
+      await Promise.all([ ...a || [], ...b || [] ].filter(x => zhScriptOf(x.t) && zhScriptOf(x.t) !== target).slice(0, 16).map(x => translateText(x.t, target).then(r => {
+        if (r.translated) x.t = r.translated;
+      }, () => {})));
+      [ a, b ] = [ a, b ].map(list => list && list.filter(x => zhScriptOf(x.t) !== (target === "zh-TW" ? "zh-CN" : "zh-TW")));
+    }
     if (!a && !b) return;
     const old = more && have ? have : {
       list: [],
