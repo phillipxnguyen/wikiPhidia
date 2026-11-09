@@ -3618,7 +3618,7 @@ function blindSpeak(text, token) {
     if (!clean) return resolve();
     const utter = trackSpeech(new SpeechSynthesisUtterance(clean));
     utter.lang = resolveSpeechLang(clean);
-    const voice = pickVoice(utter.lang);
+    const voice = rotateVoice(utter.lang);
     if (voice) utter.voice = voice;
     utter.rate = b.rate;
     const end = () => {
@@ -13560,6 +13560,23 @@ function loadTtsVoices() {
 loadTtsVoices();
 
 if ("onvoiceschanged" in speechSynthesis) speechSynthesis.onvoiceschanged = loadTtsVoices;
+
+function voicePool(lang) {
+  if (ttsVoices.length === 0) loadTtsVoices();
+  const prefix = lang.split("-")[0].toLowerCase(), same = ttsVoices.filter(v => v.lang.toLowerCase().startsWith(prefix));
+  for (const re of [ /natural|neural|online/i, /google|premium|enhanced/i ]) {
+    const good = same.filter(v => re.test(v.name));
+    if (good.length) return good;
+  }
+  return same;
+}
+
+let voiceTurn = 0;
+
+function rotateVoice(lang) {
+  const pool = voicePool(lang);
+  return pool.length ? pool[voiceTurn++ % pool.length] : null;
+}
 
 function pickVoice(lang) {
   if (ttsVoices.length === 0) loadTtsVoices();
