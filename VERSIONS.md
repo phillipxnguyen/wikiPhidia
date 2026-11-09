@@ -121,6 +121,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-20 | `7a65374` | Mặt trước "nghe": cảnh động của Podcast + đọc riêng từ (khoảng 1/3 thẻ); Show như thường, cùng chỗ |
 | FLASH-21 | `3d664c3` | Notes không lặp câu ví dụ đã lưu; chữ tự thu nhỏ cho vừa màn, thẻ không cuộn |
 | FLASH-22 | `eec36a0` | Pinyin câu khi Show (như Podcast); rê chuột ra pinyin, tra từ trên câu; thẻ vừa khít màn, trang không cuộn |
+| FLASH-23 | `28ea965` | Câu + notes một khối căn giữa, thẳng lề trái (từ chính vẫn căn giữa); bỏ gạch ngang; khoảng cách đều |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
