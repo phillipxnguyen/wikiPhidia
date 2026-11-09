@@ -524,7 +524,7 @@ window.onYouTubeIframeAPIReady = function(){
   .cloze-gap.blank-fill:not(.open) .cloze-word{visibility:hidden;}
   .cloze-gap.blank-fill.open{box-shadow:none;background:var(--word-mark);}
   .vocab-card.fill .cloze-more{display:block;visibility:hidden;margin-top:16px;font-size:.6em;font-size:round(.6em, 1px);line-height:1.4;line-height:round(1.4em, 1px);font-weight:600;}
-  .vocab-card.fill .cloze-notes{margin-top:8px;font-weight:400;opacity:.8;}
+  .vocab-card.fill .cloze-notes{margin-top:16px;padding-top:12px;border-top:1px solid color-mix(in srgb, currentColor 18%, transparent);font-weight:400;font-size:.5em;font-size:round(.5em, 1px);line-height:1.5;line-height:round(1.5em, 1px);opacity:.8;}
   .vocab-card.fill.flipped .cloze-gap{box-shadow:none;background:var(--word-mark);}
   .vocab-card.fill.flipped :is(.cloze-word, .cloze-more){visibility:visible;}
   .cloze-more{display:none;}
@@ -20284,6 +20284,16 @@ async function worldFromTatoeba(term, lang, page) {
   }));
 }
 
+async function worldFromGoogle(term, lang) {
+  const sl = lang === "zh" ? lessonZhScript() : lang;
+  const data = await worldGet(`https://translate.googleapis.com/translate_a/single?client=gtx&dj=1&dt=ex&sl=${encodeURIComponent(sl)}&tl=${lang === "vi" ? "en" : "vi"}&q=${encodeURIComponent(term)}`);
+  if (!data) return null;
+  return (data.examples && data.examples.example || []).map(x => ({
+    t: String(x.text || "").replace(/<[^>]+>/g, "").trim(),
+    src: "Google"
+  }));
+}
+
 async function worldFromWikipedia(term, lang, page) {
   const host = lang === "zh" ? "zh" : lang;
   const data = await worldGet(`https://${host}.wikipedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrsearch=${encodeURIComponent('"' + term + '"')}&gsrlimit=10${page > 1 ? "&gsroffset=" + (page - 1) * 10 : ""}&prop=extracts&explaintext=1&exintro=1&exlimit=10&exsentences=10${lang === "zh" ? lessonZhScript() === "zh-TW" ? "&variant=zh-tw&uselang=zh-tw" : "&variant=zh-cn&uselang=zh-cn" : ""}`);
@@ -20317,7 +20327,8 @@ function fetchWorld(item, more) {
   const key = worldKeyOf(item), store = worldRead(), have = store[key];
   if (!more && worldSentences(item) || worldPending.has(key) || !navigator.onLine || more && have && have.end) return worldPending.get(key) || Promise.resolve();
   const lang = worldLangOf(item), term = item.term.trim(), page = more && have ? (have.page || 1) + 1 : 1;
-  const job = Promise.all([ worldFromTatoeba(term, lang, page), worldFromWikipedia(term, lang, page) ]).then(async ([ a, b ]) => {
+  const job = Promise.all([ worldFromTatoeba(term, lang, page), worldFromWikipedia(term, lang, page), page === 1 ? worldFromGoogle(term, lang) : null ]).then(async ([ a, b, g ]) => {
+    if (g && g.length) a = g.concat(a || []);
     if (lang === "zh") {
       const target = lessonZhScript();
       await Promise.all([ ...a || [], ...b || [] ].filter(x => zhScriptOf(x.t) && zhScriptOf(x.t) !== target).slice(0, 16).map(x => translateText(x.t, target).then(r => {
@@ -20415,9 +20426,11 @@ function otherLessonSentence(item) {
       });
     });
   });
-  const world = Math.random() < .75 ? worldPick(item) : "";
-  if (world) return world;
-  return found.length ? found[Math.floor(Math.random() * found.length)] : worldPick(item);
+  const own = vocabContext(item).sentence, pool = found.length + (otherAvailable(item) ? 6 : 0) + (own ? 1 : 0);
+  const roll = Math.random() * pool;
+  if (own && roll < 1) return "";
+  if (found.length && roll < 1 + found.length) return found[Math.floor(Math.random() * found.length)];
+  return worldPick(item) || (found.length ? found[Math.floor(Math.random() * found.length)] : "");
 }
 
 function wholeSentenceCard(item, sentence) {
@@ -20548,14 +20561,12 @@ function fillVocabCard(el, item) {
   const viewOnly = vocabViewOnly(item);
   const sentence = vocabContext(item).sentence || "", gap = !viewOnly && sentence && !wholeSentenceCard(item, sentence) ? findTermIn(sentence, item.term) : null;
   if (el.dataset.lookKey !== item.key) {
-    const kinds = [ "word" ];
-    if (gap) kinds.push("cloze");
-    if (!viewOnly && otherAvailable(item)) kinds.push("other", "other");
-    let ex = kinds[Math.floor(Math.random() * kinds.length)];
-    const other = ex === "other" ? otherLessonSentence(item) : "";
-    if (ex === "other" && !other) ex = gap ? "cloze" : "word";
+    const other = viewOnly ? "" : otherLessonSentence(item);
+    if (!viewOnly && !other && !worldSentences(item)) fetchWorld(item);
+    const alt = other || gap || viewOnly ? other : worldPick(item);
+    let ex = alt ? "other" : gap ? "cloze" : "word";
     const cloze = ex !== "word";
-    el.dataset.other = ex === "other" ? other : "";
+    el.dataset.other = ex === "other" ? alt : "";
     const pool = cloze ? [ "plain", "quote", "board", "note", "frame" ] : CARD_LOOKS;
     const look = pool.filter(x => x !== lastCardLook)[Math.floor(Math.random() * (pool.length - 1))];
     lastCardLook = look;
