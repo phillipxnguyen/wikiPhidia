@@ -172,6 +172,7 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 | DICT-11 | `6dd45a6` | Từ đã có gọn một dòng; bỏ In the world; từ đã xoá nền đỏ trong câu, bôi đen + Shift để học lại (tạo tay luôn bỏ ẩn) |
 | DICT-12 | `a717735` | Bỏ dòng đếm từ; giữ câu ví dụ thế giới dưới mỗi từ, chỉ bỏ nhãn In the world |
 | DICT-13 | `e63c4d7` | Từ đã có hai dòng: từ + pinyin, rồi nghĩa |
+| DICT-14 | `31984d2` | Thẻ từ mới cũng hai dòng: từ + pinyin + 🔊, rồi nghĩa |
 
 Hàm chính: `showOwnDict`, `ownDictCardHtml`, `ownDictLookup`, `ownDictWords`, `ownDictFetch`, `ownDictPrefetch`, `addWordToEditNotes`, `hideOwnDict`.
 
