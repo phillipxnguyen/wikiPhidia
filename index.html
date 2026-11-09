@@ -20231,6 +20231,13 @@ function worldSentences(item) {
   return e && Date.now() - e.at < WORLD_TTL ? e.list : null;
 }
 
+function worldEase(text) {
+  const cjk = (text.match(/[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]/g) || []).length, size = cjk > text.length / 3 ? text.length : text.split(/\s+/).length * 2;
+  return size + (/\d/.test(text) ? 12 : 0) + (/[()（）《》「」“”"]/.test(text) ? 8 : 0);
+}
+
+const WORLD_EASY = 24;
+
 function worldFits(text, term, lang) {
   if (text.length < 6 || text.length > 160 || /[\n\r]/.test(text)) return false;
   const span = findTermIn(text, term);
@@ -20335,7 +20342,7 @@ function fetchWorld(item, more) {
       used: (old.used || []).includes(i)
     }));
     list = list.filter(o => !o.used).concat(list.filter(o => o.used));
-    list = add.map(x => ({
+    list = add.sort((x, y) => worldEase(x.t) - worldEase(y.t)).map(x => ({
       x: x,
       used: false
     })).concat(list).slice(0, WORLD_KEEP);
@@ -20351,7 +20358,10 @@ function fetchWorld(item, more) {
     try {
       localStorage.setItem(WORLD_KEY, JSON.stringify(store));
     } catch (e) {}
-  }).finally(() => worldPending.delete(key));
+    return store[key];
+  }).finally(() => worldPending.delete(key)).then(e => {
+    if (e && !e.end && e.page < 5 && e.list.filter((x, i) => !e.used.includes(i) && worldEase(x.t) <= WORLD_EASY).length < 4) return fetchWorld(item, true);
+  });
   worldPending.set(key, job);
   return job;
 }
@@ -20376,12 +20386,13 @@ function worldPick(item) {
     e.used = [];
     pool = e.list.map((x, i) => i);
   }
-  const i = pool[Math.floor(Math.random() * pool.length)];
+  const short = pool.filter(k => worldEase(e.list[k].t) <= WORLD_EASY), easy = short.length ? short : pool.slice().sort((a, b) => worldEase(e.list[a].t) - worldEase(e.list[b].t)).slice(0, 1);
+  const i = easy[Math.floor(Math.random() * easy.length)];
   e.used.push(i);
   try {
     localStorage.setItem(WORLD_KEY, JSON.stringify(worldRead()));
   } catch (err) {}
-  if (pool.length <= 4 && !e.end) fetchWorld(item, true);
+  if ((pool.length <= 4 || pool.filter(k => k !== i && worldEase(e.list[k].t) <= WORLD_EASY).length < 2) && !e.end) fetchWorld(item, true);
   return e.list[i].t;
 }
 
