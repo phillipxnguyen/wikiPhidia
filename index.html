@@ -533,6 +533,8 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-card.fill:not(.flipped) :is(.cloze-head, .cloze-spy, .cloze-notes, .cloze-own){display:none;}
   .vocab-card.fill .cloze-own{margin-top:24px;font-size:.8em;font-size:round(.8em, 1px);line-height:1.5;line-height:round(1.5em, 1px);font-weight:inherit;}
   .vocab-card.fill .cloze-own .py-line{font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;font-style:normal;}
+  .own-ts{display:inline-flex;align-items:center;height:24px;margin-right:8px;padding:0 8px;vertical-align:4px;border:0;border-radius:12px;background:color-mix(in srgb, currentColor 12%, transparent);color:inherit;font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;font-size:13px;line-height:16px;font-weight:700;font-style:normal;cursor:pointer;}
+  @media (hover:hover){.own-ts:hover{background:color-mix(in srgb, currentColor 20%, transparent);}}
   .vocab-card.fill .cloze-own mark{padding:0 2px;border-radius:4px;background:var(--word-mark);color:inherit;}
   .vocab-card.fill .cloze-body{display:block;box-sizing:border-box;width:fit-content;max-width:100%;margin:0 auto;text-align:left;}
   .vocab-card.fill .cloze-body > span, .vocab-card.fill .vc-sent{display:block;}
@@ -19740,6 +19742,7 @@ function buildVocabCard(item) {
   el.addEventListener("click", e => {
     const item = current();
     if (!item) return;
+    if (e.target.closest(".own-ts")) return playVocabSound(item, true, true);
     if (!vocabSession.flipped && !vocabViewOnly(item)) return flipVocab();
     const hit = lookupMark(e.target);
     if (hit && getSelection().isCollapsed) {
@@ -19855,7 +19858,8 @@ function fillVocabCard(el, item) {
     const spy = cjkScriptFor(text, item.card) === "zh" ? pinyinLine(text) : "";
     const sent = `<span${el.dataset.listen ? ' class="vc-sent"' : ""}>${spy ? `<span class="cloze-more cloze-spy py-line">${escapeHtml(spy)}</span>` : ""}${lookupOthers(escapeHtml(before), item)}<span class="cloze-gap" style="--gap:${n}"><span class="cloze-word">${escapeHtml(text.slice(span[0], span[1]))}</span></span>${lookupOthers(escapeHtml(after), item)}</span>`;
     const own = otherGap && sentence && sentence !== text ? sentence : "";
-    const ownHtml = own ? `<span class="cloze-more cloze-own">${lookupOthers(vocabSentenceHtml(own, item.term, item.card), item)}</span>` : "";
+    const ownTs = own && item.card.time != null && vocabVideoIdFor(item.card) ? `<button type="button" class="own-ts" title="Play this line">${fmtTime(item.card.time)}</button>` : "";
+    const ownHtml = own ? `<span class="cloze-more cloze-own">${ownTs}${lookupOthers(vocabSentenceHtml(own, item.term, item.card), item)}</span>` : "";
     el.querySelector(".vocab-term").innerHTML = `<span class="cloze-body">${el.dataset.listen ? `<span class="vc-stack"><span class="vc-art" aria-hidden="true">${sceneArt(el.dataset.scene)}</span>${sent}</span>` : sent}${ownHtml}${notes ? `<span class="cloze-more cloze-notes">${brLines(notes)}</span>` : ""}</span>`;
     const py = pinyinLine(item.term);
     el.querySelector(".vocab-term").insertAdjacentHTML("afterbegin", `<span class="cloze-more cloze-head">${py ? `<span class="cloze-py">${escapeHtml(py)}</span>` : ""}<span class="cloze-main">${escapeHtml(item.term)}</span>${item.meaning ? `<span class="cloze-mean">${escapeHtml(item.meaning)}</span>` : ""}</span>`);
@@ -20305,7 +20309,8 @@ function syncVocabEditPopup(items) {
   const {card: card} = vocabContext(item);
   const vc = document.getElementById("vocabCard"), world = vc && vc.dataset.lookKey === item.key && vc.dataset.ex === "other" && vc.dataset.other || "";
   const base = world || vocabDictText(item), lang = detectLang(base).split("-")[0];
-  const extra = plainTextOf(wordNotesOf(item), "\n").split("\n").map(t => t.trim()).filter(t => t && t !== base && detectLang(t).split("-")[0] === lang && !base.includes(t));
+  const ownLine = world ? vocabContext(item).sentence || "" : "";
+  const extra = [ ...new Set([ ownLine ].concat(plainTextOf(wordNotesOf(item), "\n").split("\n")).map(t => t.trim())) ].filter(t => t && t !== base && detectLang(t).split("-")[0] === lang && !base.includes(t));
   const text = [ base ].concat(extra).join("\n");
   pop.querySelector(".le-box").classList.remove("edit-row");
   pop.querySelector(".le-content").innerHTML = vocabEditorHtml(item) + '<div id="vocabEditDict"></div>';
@@ -20885,17 +20890,17 @@ function preloadVocabVideo(item) {
 
 let vocabOnce = false;
 
-function playVocabSound(item, once) {
+function playVocabSound(item, once, ownClip) {
   stopVocabSound();
   vocabOnce = !!once;
   if (!item) return;
   if (navigator.userActivation && !navigator.userActivation.hasBeenActive) {
-    afterFirstTouch(() => currentView === "vocab" && vocabShownRowId === item.card.id && playVocabSound(item, once));
+    afterFirstTouch(() => currentView === "vocab" && vocabShownRowId === item.card.id && playVocabSound(item, once, ownClip));
     return;
   }
   const row = item.card, vc = document.getElementById("vocabCard");
-  const shown = vc && vc.dataset.lookKey === item.key && vc.dataset.ex === "other" && vc.dataset.other || "";
-  const videoId = shown ? "" : vocabVideoIdFor(row);
+  const shown = !ownClip && vc && vc.dataset.lookKey === item.key && vc.dataset.ex === "other" && vc.dataset.other || "";
+  const videoId = shown || ytHasError && ownClip ? "" : vocabVideoIdFor(row);
   if (videoId) {
     if (row.srcLessonId && (vocabVideoId !== videoId || !ytHasVideo)) {
       vocabVideoId = videoId;
@@ -20911,11 +20916,7 @@ function playVocabSound(item, once) {
       clearTimeout(vocabAwaitCueTimer);
       vocabAwaitCueTimer = setTimeout(vocabCueDone, 4e3);
     }
-    if (ytHasError) {
-      showToast("This video can't be played");
-      stopVocabSound();
-      return;
-    }
+    if (ytHasError) return playVocabSound(item, once, false);
     beginSound();
     vocabPendingKey = item.key;
     startPendingVocabVideo();
@@ -20924,7 +20925,8 @@ function playVocabSound(item, once) {
   }
   const ctx = vocabContext(item);
   const own = ctx.sentence && findWordForm(ctx.sentence.normalize("NFC"), item.term) ? ctx.sentence : "";
-  const texts = shown ? [ shown ].concat(vocabSession && vocabSession.flipped && own && own !== shown ? [ own ] : []) : [ own || item.term ];
+  const clipAfter = !!shown && vocabSession && vocabSession.flipped && !!own && !ytHasError && !!vocabVideoIdFor(row);
+  const texts = shown ? [ shown ].concat(vocabSession && vocabSession.flipped && own && own !== shown && !clipAfter ? [ own ] : []) : [ own || item.term ];
   let at = 0;
   soundHeard = true;
   vocabTtsOn = true;
@@ -20940,6 +20942,7 @@ function playVocabSound(item, once) {
     if (voice) utter.voice = voice;
     utter.onend = () => setTimeout(() => {
       if (token !== vocabTtsToken) return;
+      if (clipAfter && at >= texts.length) return playVocabSound(item, vocabOnce, true);
       if (vocabOnce && at >= texts.length) {
         vocabTtsOn = false;
         return syncVocabSound();
