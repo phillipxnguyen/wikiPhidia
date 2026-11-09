@@ -87,6 +87,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-40 | `adcb8b7` | Điện thoại: chạm 2 lần vào câu trên video mở khung sửa |
 | THEATER-41 | `bf607d0` | Mở là tự phát câu đầu cần học (interpreting: đọc bản dịch); lệnh dừng trễ của trang bài không dừng theater nữa |
 | THEATER-42 | `a5ddea2` | Phím tắt: E mở sửa với con trỏ trong câu (Return lưu ngay); công tắc/tốc độ không giữ bàn phím nữa |
+| THEATER-43 | `b578a92` | Hàng công tắc căn giữa dưới video; ô cỡ chữ trên điện thoại không cắt chữ |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
