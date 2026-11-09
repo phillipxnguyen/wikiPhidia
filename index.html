@@ -1703,12 +1703,8 @@ window.onYouTubeIframeAPIReady = function(){
   .od-skel i:first-child{width:46%;height:18px;}
   .od-skel i:last-child{width:72%;}
   @keyframes odShimmer{to{background-position:-200% 0;}}
-  .od-known{margin:0 16px 20px;border-top:1px solid var(--od-line);}
-  .od-known summary{padding:12px 4px;font-size:12px;line-height:16px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--od-soft);cursor:pointer;}
-  .od-known .od-card{margin-top:8px;}
   .od-have{background:color-mix(in srgb, var(--a-label) 6%, var(--od-bg));border-color:color-mix(in srgb, var(--a-label) 30%, transparent);}
   .od-have .od-body, .od-have .od-py, .od-have .od-ex{opacity:.7;}
-  .od-empty{margin:0;padding:24px 4px;font-size:15px;line-height:22px;text-align:center;color:var(--od-soft);}
   @media (prefers-reduced-motion: reduce){.od-card, .od-add, .od-skel i, .od-card.od-flash{animation:none;transition:none;}}
   @media (max-width:600px){.od-head{padding:12px 16px 10px;}.od-list{padding:12px;gap:10px;}.od-card{padding:14px;}.od-word b{font-size:24px;line-height:32px;}}
   .le-dict.on{margin-top:10px;height:var(--dict-h, 360px);}
@@ -11223,12 +11219,12 @@ function showOwnDict(text, row, onAdd) {
     lang: lang,
     row: row,
     onAdd: onAdd,
-    text: text
+    text: text,
+    order: list
   };
   box.classList.add("on");
   const head = `<div class="od-head"><div class="od-sent">${ownDictSentenceHtml(text, fresh, old)}</div><div class="od-sum"><b>${fresh.length}</b> new ${fresh.length === 1 ? "word" : "words"}${old.length ? ` · ${old.length} already yours` : ""}</div></div>`;
-  const known = old.length ? `<details class="od-known"><summary>Already in your words · ${old.length}</summary>${old.map(w => ownDictCardHtml(lang, w, true)).join("")}</details>` : "";
-  box.innerHTML = `<div class="own-dict">${head}<div class="od-list">${fresh.map(w => ownDictCardHtml(lang, w, false)).join("") || '<p class="od-empty">Every word of this sentence is already yours.</p>'}</div>${known}</div>`;
+  box.innerHTML = `<div class="own-dict">${head}<div class="od-list">${fresh.map(w => ownDictCardHtml(lang, w, false)).join("")}${old.map(w => ownDictCardHtml(lang, w, true)).join("")}</div></div>`;
   const shown = ownDictShown, redraw = w => {
     if (ownDictShown !== shown) return;
     const el = box.querySelector(`.od-card[data-w="${CSS.escape(w)}"]`);
@@ -11290,16 +11286,13 @@ function ownDictDelete(card) {
 function ownDictSum() {
   const box = document.querySelector("#editPopup .own-dict");
   if (!box) return;
-  const fresh = box.querySelectorAll(".od-list .od-card:not(.od-gone)").length, known = box.querySelector(".od-known"), old = known ? known.querySelectorAll(".od-card").length : 0;
+  const fresh = box.querySelectorAll(".od-list .od-card:not(.od-have):not(.od-gone)").length, old = box.querySelectorAll(".od-list .od-card.od-have").length;
   const sum = box.querySelector(".od-sum");
   if (sum) sum.innerHTML = `<b>${fresh}</b> new ${fresh === 1 ? "word" : "words"}${old ? ` · ${old} already yours` : ""}`;
-  if (known) known.querySelector("summary").textContent = "Already in your words · " + old;
-  const list = box.querySelector(".od-list");
-  if (list && !list.querySelector(".od-card") && !list.querySelector(".od-empty")) list.innerHTML = '<p class="od-empty">Every word of this sentence is already yours.</p>';
 }
 
 function ownDictSettle(card) {
-  if (!card || !ownDictShown || !card.closest(".od-list")) return;
+  if (!card || !ownDictShown || !card.closest(".od-list") || card.classList.contains("od-have")) return;
   const w = card.dataset.w, lang = ownDictShown.lang;
   if (ownDictHover === card) ownDictHover = null;
   card.classList.add("od-gone");
@@ -11308,14 +11301,9 @@ function ownDictSettle(card) {
     const box = document.querySelector("#editPopup .own-dict");
     card.remove();
     if (!box) return;
-    let known = box.querySelector(".od-known");
-    if (!known) {
-      known = document.createElement("details");
-      known.className = "od-known";
-      known.innerHTML = "<summary></summary>";
-      box.appendChild(known);
-    }
-    known.querySelector("summary").insertAdjacentHTML("afterend", ownDictCardHtml(lang, w, true));
+    const list = box.querySelector(".od-list"), order = ownDictShown.order || [], at = order.indexOf(w);
+    const next = [ ...list.querySelectorAll(".od-card.od-have") ].find(c => order.indexOf(c.dataset.w) > at);
+    if (next) next.insertAdjacentHTML("beforebegin", ownDictCardHtml(lang, w, true)); else list.insertAdjacentHTML("beforeend", ownDictCardHtml(lang, w, true));
     ownDictSum();
     rehover();
   }, reducedMotion() ? 0 : 200);
@@ -11383,8 +11371,6 @@ document.getElementById("editPopup").addEventListener("click", e => {
   const jump = e.target.closest(".od-jump");
   if (jump) {
     const card = document.querySelector(`#editPopup .od-card[data-w="${CSS.escape(jump.dataset.w)}"]`);
-    const fold = card && card.closest("details");
-    if (fold) fold.open = true;
     if (card) {
       card.scrollIntoView({
         block: "nearest",
