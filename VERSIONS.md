@@ -118,6 +118,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-17 | `032d080` | Show: từ làm chữ chính (pinyin trên đỉnh, nghĩa dưới) trên câu, như Podcast; chỗ giữ sẵn, không nhảy |
 | FLASH-18 | `69bd6b4` | Bỏ thanh cuộn xanh bên thẻ và kiểu trình bày có dấu ngoặc kép |
 | FLASH-19 | `d2ecc93` | Bỏ mọi khung/đồ vật (biển, cốc, giấy note, bảng…), không nghiêng: chữ trên nền màu như Podcast |
+| FLASH-20 | `7a65374` | Mặt trước "nghe": cảnh động của Podcast + đọc riêng từ (khoảng 1/3 thẻ); Show như thường, cùng chỗ |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
@@ -146,6 +147,7 @@ Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWor
 | POD-20 | `682fb3a` | Hai câu thế giới khác nhau mỗi lần |
 | POD-21 | `6521eb2` | Chỉ còn ở Vocabulary; mặt trước đọc từ (giọng tự nhiên nhất có), Show mới phát các câu; bỏ chấm tròn |
 | POD-22 | `98ac5ec` | Luân phiên các giọng tốt (Natural của Edge…) cho mỗi từ, mỗi câu |
+| POD-23 | `7a65374` | Bỏ chế độ Podcast (nút 🎧, trong task); mặt trước của nó thành một kiểu flashcard |
 
 Hàm chính: `openBlind`, `closeBlind`, `blindItems`, `blindAutoItems`, `blindLines`, `blindNext`, `paintBlind`, `paintBlindLive`, `blindPlay`, `blindPlayOne`, `blindPlayLine`, `blindPlayer`, `blindSpeak`, `blindGrade`, `blindUndo`, `blindEdit`, `blindAct`, `blindFly`, `blindArt`, `blindSceneFor`, `blindCountsHtml`, `withLeadTime`, `blindTime`, `BLIND_SCENES`.
 
