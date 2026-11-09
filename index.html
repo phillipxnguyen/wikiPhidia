@@ -2659,10 +2659,6 @@ window.onYouTubeIframeAPIReady = function(){
   .b2-tree{left:52px;top:44px;width:88px;height:88px;border-radius:44px;background:#3f9b57;z-index:1;}
   .b2-trunk{left:90px;top:120px;width:12px;height:44px;border-radius:4px;background:#7a5230;z-index:1;}
   .b2-bench{left:160px;top:132px;width:80px;height:24px;box-sizing:border-box;border-top:8px solid #9a6b43;border-left:6px solid #7a5230;border-right:6px solid #7a5230;z-index:1;}
-  .b2-dots{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;max-width:100%;}
-  .b2-dots i{width:10px;height:10px;border-radius:5px;background:color-mix(in srgb, var(--b2-ink) 25%, transparent);transition:background-color .2s, transform .2s;}
-  .b2-dots i.heard{background:color-mix(in srgb, var(--b2-ink) 60%, transparent);}
-  .b2-dots i.on{background:var(--b2-hi);transform:scale(1.4);}
   .b2-time{flex:none;width:240px;max-width:100%;height:4px;border-radius:2px;background:color-mix(in srgb, var(--b2-ink) 18%, transparent);overflow:hidden;}
   .b2-time i{display:block;width:0;height:100%;border-radius:2px;background:var(--b2-hi);transition:width .15s linear;}
   .b2-dial i{animation:b2Dial 5s ease-in-out infinite alternate;}
@@ -3262,7 +3258,6 @@ window.onYouTubeIframeAPIReady = function(){
   <div class="fab-dock">
     <button id="fullModeBtn" class="add-fab words-fab" title="Speaking" aria-label="Speaking" hidden><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 5h12v8H9l-4 3v-3H4z"/></svg></button>
     <button id="listWatch" class="add-fab words-fab" title="Theater: study the video line by line" aria-label="Theater" hidden><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="4" width="14" height="10" rx="2"/><path d="M9 7.5v3l2.5-1.5zM7 17h6"/></svg></button>
-    <button id="listBlind" class="add-fab words-fab" title="Podcast: hear the words in their sentences" aria-label="Podcast" hidden><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 12v-2a6 6 0 0 1 12 0v2"/><rect x="3" y="11" width="3" height="5" rx="1.5"/><rect x="14" y="11" width="3" height="5" rx="1.5"/></svg></button>
     <button id="listWords" class="add-fab words-fab" data-words title="Words in this lesson" aria-label="Words in this lesson" hidden><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5h14M3 10h10M3 15h6"/></svg></button>
     <button id="listAddCard" class="add-fab" data-add-card title="Add a card" aria-label="Add a card" hidden><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14"/></svg></button>
   </div>
@@ -3483,17 +3478,20 @@ async function blindPlay() {
   const token = b.token;
   b.playing = true;
   paintBlindLive();
-  for (let k = 0; k < b.lines.length; k++) {
+  const seq = b.shown ? b.lines : [ {
+    text: b.item.term
+  } ];
+  for (let k = 0; k < seq.length; k++) {
     if (!blind || b.token !== token) return;
     b.at = k;
     paintBlindLive();
-    await blindPlayLine(b.lines[k], token);
+    await blindPlayLine(seq[k], token);
     if (!blind || b.token !== token) return;
     await new Promise(r => b.timer = setTimeout(r, 700));
   }
   if (!blind || b.token !== token) return;
   b.playing = false;
-  b.at = b.lines.length;
+  b.at = seq.length;
   paintBlindLive();
 }
 
@@ -3646,6 +3644,7 @@ function blindShow() {
   if (!b || !b.item || b.shown) return;
   b.shown = true;
   paintBlind();
+  blindPlay();
 }
 
 function blindGrade(isAgain) {
@@ -3736,7 +3735,7 @@ function paintBlind() {
   const reveal = `<div class="b2-reveal"><div class="b2-word"><b>${escapeHtml(item.term)}</b>${item.meaning ? `<span>${escapeHtml(item.meaning)}</span>` : ""}</div><ol class="b2-lines">${shownLines.map(l => !l.row ? `<li class="vocab-ctx"><span>${lookupOthers(vocabSentenceHtml(l.text, item.term, item.card), item)}</span></li>` : `<li class="vocab-ctx${l.row.id === b.selId ? " row-selected" : ""}" data-id="${l.row.id}"><span>${withLeadTime(lookupOthers(vocabSentenceHtml(l.text, item.term, l.row), item), l.row.time != null ? `<button type="button" class="b2-ts" data-b2="line" data-n="${b.lines.indexOf(l)}" title="Hear this line">${fmtTime(l.row.time)}</button>` : "")}</span></li>`).join("")}</ol></div>`;
   const ctl = '<button class="b2-ctl" data-b2="undo" aria-label="Undo" title="Undo (⌘Z)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 15a7 7 0 0 0 -14 0"/><path d="M3.5 12l3 3.5l3 -3.5"/></svg></button><button class="b2-ctl" data-b2="redo" aria-label="Redo" title="Redo (⌘⇧Z)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 15a7 7 0 0 1 14 0"/><path d="M14.5 12l3 3.5l3 -3.5"/></svg></button><button class="b2-ctl b2-sound" data-b2="sound" aria-label="Play or stop the sentences" title="Play or stop (R plays from the start)"></button>' + (b.shown ? "" : `<button class="b2-ctl show" data-b2="show" aria-label="Show" title="Show (Space)">${FLIP_ICON}</button>`);
   const acts = ctl + '<button class="b2-ctl again b2-mark" data-b2="again" aria-label="Again" title="Again (←)">✕</button><button class="b2-ctl good b2-mark" data-b2="good" aria-label="Good" title="Good (→)">✓</button>';
-  box.innerHTML = `<div class="b2-stage"><div class="b2-head">${blindCountsHtml(item)}<button class="focus-exit" data-b2="close" aria-label="Leave" title="Leave (Esc)">✕</button></div><div class="b2-body">${b.shown ? reveal : `<div class="b2-art">${blindArt(b.scene)}</div><div class="b2-dots">${b.lines.map((l, i) => `<i data-n="${i}"></i>`).join("")}</div><div class="b2-time"><i></i></div>`}</div><div class="b2-acts">${acts}</div></div>`;
+  box.innerHTML = `<div class="b2-stage"><div class="b2-head">${blindCountsHtml(item)}<button class="focus-exit" data-b2="close" aria-label="Leave" title="Leave (Esc)">✕</button></div><div class="b2-body">${b.shown ? reveal : `<div class="b2-art">${blindArt(b.scene)}</div><div class="b2-time"><i></i></div>`}</div><div class="b2-acts">${acts}</div></div>`;
   if (b.shown) {
     const rv = box.querySelector(".b2-reveal");
     fitReadings(rv);
@@ -3801,11 +3800,6 @@ function paintBlindLive() {
   if (!b.playing) blindTime(0);
   box.classList.toggle("playing", b.playing);
   box.querySelectorAll(".b2-bubble").forEach(el => el.classList.toggle("on", b.playing && Number(el.dataset.b) === b.at % 2));
-  box.querySelectorAll(".b2-dots i").forEach(el => {
-    const n = Number(el.dataset.n);
-    el.classList.toggle("on", b.playing && n === b.at);
-    el.classList.toggle("heard", n < b.at);
-  });
 }
 
 const WATCH_KEY = "flashcards.watch";
@@ -12523,7 +12517,6 @@ function syncModeButtonHighlights() {
   lt.classList.toggle("active", listTrOn);
   lt.setAttribute("aria-pressed", String(listTrOn));
   document.getElementById("listWatch").hidden = off || !watchCanOpen();
-  document.getElementById("listBlind").hidden = off || !blindCanOpen();
   syncTheater();
   flag.hidden = !isAllLessons() && !groupState;
 }
@@ -13571,7 +13564,9 @@ if ("onvoiceschanged" in speechSynthesis) speechSynthesis.onvoiceschanged = load
 function pickVoice(lang) {
   if (ttsVoices.length === 0) loadTtsVoices();
   const prefix = lang.split("-")[0].toLowerCase();
-  return ttsVoices.find(v => v.lang.toLowerCase().startsWith(prefix) && /google/i.test(v.name)) || ttsVoices.find(v => v.lang.toLowerCase() === lang.toLowerCase()) || ttsVoices.find(v => v.lang.toLowerCase().startsWith(prefix)) || null;
+  const same = ttsVoices.filter(v => v.lang.toLowerCase().startsWith(prefix)), exact = same.filter(v => v.lang.toLowerCase().replace("_", "-") === lang.toLowerCase());
+  const best = list => list.find(v => /natural|neural/i.test(v.name)) || list.find(v => /online/i.test(v.name)) || list.find(v => /google/i.test(v.name)) || list.find(v => /premium|enhanced/i.test(v.name));
+  return best(exact) || best(same) || exact[0] || same[0] || null;
 }
 
 function buildTtsQueue() {
@@ -21646,7 +21641,6 @@ function setVocabView(view) {
 
 document.getElementById("vocabViewToggle").onclick = () => setVocabView("card");
 document.getElementById("vocabPodcast").onclick = () => openBlind();
-document.getElementById("listBlind").onclick = () => openBlind();
 document.getElementById("listWatch").onclick = () => {
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   theaterWanted = true;
