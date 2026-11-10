@@ -548,9 +548,9 @@ window.onYouTubeIframeAPIReady = function(){
   .vc-time i{display:block;width:0;height:100%;border-radius:2px;background:var(--accent);}
   .vocab-card.listen:not(.flipped) .vc-sent{visibility:hidden;}
   .vocab-card.listen.flipped .vc-art{display:none;}
-  .vocab-card.fill .cloze-head{display:flex;flex-direction:column;align-items:center;gap:4px;margin:0 0 .8em;margin:0 0 round(.8em, 1px);font-size:inherit;line-height:inherit;font-weight:inherit;font-style:normal;}
+  .vocab-card.fill .cloze-head{display:flex;flex-direction:column;align-items:center;gap:.3em;gap:round(.3em, 1px);margin:0 0 .8em;margin:0 0 round(.8em, 1px);font-size:inherit;line-height:inherit;font-weight:inherit;font-style:normal;}
   .vocab-card.fill .cloze-py{font-size:.6em;font-size:round(.6em, 1px);line-height:1.4;line-height:round(1.4em, 1px);font-weight:600;opacity:.7;}
-  .vocab-card.fill .cloze-main{font-size:2em;font-size:round(2em, 1px);line-height:1.2;line-height:round(1.2em, 1px);font-weight:800;color:var(--accent);}
+  .vocab-card.fill .cloze-main{font-size:2em;font-size:round(2em, 1px);line-height:1.3;line-height:round(1.3em, 1px);font-weight:800;color:var(--accent);}
   .vocab-card.fill .cloze-mean{font-size:.75em;font-size:round(.75em, 1px);line-height:1.4;line-height:round(1.4em, 1px);font-weight:700;}
   .vocab-card.fill.flipped .vocab-front, .vocab-card.fill.settled .vocab-front{visibility:visible;}
   .vocab-card.fill.flipped .vocab-back{visibility:hidden;}
@@ -19000,6 +19000,8 @@ let vocabTtsToken = 0;
 
 let vocabPendingKey = null;
 
+let vocabRestart = null;
+
 let vocabVideoId = null;
 
 let vocabHoveredKey = null;
@@ -19497,7 +19499,8 @@ function noteSentence(item) {
 
 function vocabContext(item) {
   const pieces = text => (text || "").split(/\n+/).flatMap(line => splitIntoSentences(line).map(s => s.text));
-  const sentenceIn = card => pieces(card.q).concat(pieces(card.a)).map(t => t.trim()).find(t => t && findWordForm(t.normalize("NFC"), item.term));
+  const whole = card => card.time != null && (card.q || "").trim() ? (card.q || "").replace(/\s*\n+\s*/g, " ").trim() : "";
+  const sentenceIn = card => [ whole(card) ].concat(pieces(card.q), pieces(card.a)).map(t => t.trim()).find(t => t && findWordForm(t.normalize("NFC"), item.term));
   const own = sentenceIn(item.card);
   if (own) return {
     card: item.card,
@@ -21044,6 +21047,7 @@ document.getElementById("vocabSpeed").onchange = e => {
 };
 
 function stopVocabSound() {
+  vocabRestart = null;
   const wasTts = vocabTtsOn;
   vocabTtsOn = false;
   vocabTtsToken++;
@@ -21077,7 +21081,8 @@ function startPendingVocabVideo() {
   vocabPendingKey = null;
   if (item && !ytHasError) startLoop(item.card);
   if (item && vocabOnce && loopingRowId === item.card.id) {
-    passThen = () => stopVocabSound();
+    const again = vocabRestart && vocabRestart.key === item.key ? vocabRestart : null;
+    passThen = () => again ? playVocabSound(again, false) : stopVocabSound();
     passThen.once = true;
   }
   syncVocabSound();
@@ -21091,12 +21096,13 @@ function preloadVocabVideo(item) {
 
 let vocabOnce = false;
 
-function playVocabSound(item, once, ownClip) {
+function playVocabSound(item, once, ownClip, thenRestart) {
   stopVocabSound();
+  vocabRestart = thenRestart ? item : null;
   vocabOnce = !!once;
   if (!item) return;
   if (navigator.userActivation && !navigator.userActivation.hasBeenActive) {
-    afterFirstTouch(() => currentView === "vocab" && vocabShownRowId === item.card.id && playVocabSound(item, once, ownClip));
+    afterFirstTouch(() => currentView === "vocab" && vocabShownRowId === item.card.id && playVocabSound(item, once, ownClip, thenRestart));
     return;
   }
   const row = item.card, vc = document.getElementById("vocabCard");
@@ -21143,7 +21149,7 @@ function playVocabSound(item, once, ownClip) {
     if (voice) utter.voice = voice;
     utter.onend = () => setTimeout(() => {
       if (token !== vocabTtsToken) return;
-      if (clipAfter && at >= texts.length) return playVocabSound(item, vocabOnce, true);
+      if (clipAfter && at >= texts.length) return playVocabSound(item, true, true, !vocabOnce);
       if (vocabOnce && at >= texts.length) {
         vocabTtsOn = false;
         return syncVocabSound();
