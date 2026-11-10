@@ -307,6 +307,7 @@ Hàm chính: `swipe`, `ghostFor`, `angelFly`, `cutLayer`, `playCut`.
 | RING-4 | `ea6c79f` | Vòng mới tạo thì đầy ngay, không chạy ngược |
 | RING-5 | `0ab30de` | Bỏ tia sét giật khi chờ tiếng ở mọi mode |
 | RING-6 | `91ea79a` | Giọng đọc (TTS) cũng có vòng viền, chạy theo từng chữ được đọc (sự kiện boundary), thanh chạy thẻ nghe cũng vậy |
+| RING-7 | `1901f9a` | Ưu tiên: thanh chạy dưới cảnh (thẻ nghe) > mốc giờ của câu > nút loa trên cùng; chỉ một dấu tiến độ một lúc |
 
 Hàm chính: `paintRing`, `dropRing`, `setDash`.
 
