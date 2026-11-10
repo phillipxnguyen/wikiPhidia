@@ -8292,12 +8292,10 @@ function sentenceKeyWord(row) {
   if (own) return own;
   let seg = null;
   try {
-    seg = new Intl.Segmenter(detectLang(q).split("-")[0] || undefined, {
-      granularity: "word"
-    });
+    seg = cutWords(q, detectLang(q));
   } catch (e) {}
   if (!seg) return "";
-  const words = [ ...seg.segment(q) ].filter(x => x.isWordLike && x.segment.length >= ([ ...x.segment ].some(ch => CJK_CHAR_RE.test(ch)) ? 2 : 4)).map(x => x.segment);
+  const words = seg.filter(x => x.isWordLike && x.segment.length >= ([ ...x.segment ].some(ch => CJK_CHAR_RE.test(ch)) ? 2 : 4)).map(x => x.segment);
   return words.length ? words[Math.floor(Math.random() * words.length)] : "";
 }
 
@@ -10380,13 +10378,63 @@ function ownDictLang(text, row) {
   return detectLang(text).split("-")[0];
 }
 
+let jieba = null, jiebaJob = null;
+
+function loadJieba() {
+  if (!jiebaJob) jiebaJob = import("https://cdn.jsdelivr.net/npm/jieba-wasm@2.4.0/pkg/web/jieba_rs_wasm.js").then(async m => {
+    await m.default();
+    jieba = m;
+    return m;
+  }).catch(() => {
+    jiebaJob = null;
+    return null;
+  });
+  return jiebaJob;
+}
+
+function cutWords(text, lang) {
+  lang = (lang || "").split("-")[0];
+  if (lang === "zh" && jieba) {
+    let at = 0;
+    try {
+      return jieba.cut(text, false).map(w => {
+        const i = text.indexOf(w, at);
+        at = i < 0 ? at : i + w.length;
+        return {
+          segment: w,
+          index: i < 0 ? at : i,
+          isWordLike: /[\p{L}\p{N}]/u.test(w)
+        };
+      });
+    } catch (e) {}
+  }
+  if (lang === "zh") loadJieba();
+  return [ ...new Intl.Segmenter(lang || undefined, {
+    granularity: "word"
+  }).segment(text) ];
+}
+
 function ownDictWords(text, row) {
   const lang = ownDictLang(text, row), stop = new Set((OWN_STOP[lang] || "").split(" "));
   let parts = [];
   try {
-    for (const x of new Intl.Segmenter(lang === "zh" ? "zh" : lang, {
-      granularity: "word"
-    }).segment(text)) if (x.isWordLike) parts.push(x.segment);
+    for (const x of cutWords(text, lang)) if (x.isWordLike) parts.push(x.segment);
+    if (lang === "zh" || lang === "ja") {
+      const known = ownDictKnownKeys(), joined = [];
+      for (let i = 0; i < parts.length; i++) {
+        let take = 1;
+        for (let n = Math.min(4, parts.length - i); n > 1; n--) {
+          const w = parts.slice(i, i + n).join("");
+          if (known.has(normalizeVocabText(w)) && text.includes(w)) {
+            take = n;
+            break;
+          }
+        }
+        joined.push(parts.slice(i, i + take).join(""));
+        i += take - 1;
+      }
+      parts = joined;
+    }
   } catch (e) {
     parts = text.split(/[^\p{L}\p{M}'’-]+/u);
   }
@@ -10545,6 +10593,9 @@ function showOwnDict(text, row, onAdd) {
   const trash = new Set(hiddenWordsFor(lang).concat((hiddenStore().lessons[currentLessonId] || []).map(normalizeVocabText))), have = ownDictKnownKeys();
   const list = words.filter(w => !trash.has(normalizeVocabText(w)));
   const fresh = list.filter(w => !have.has(normalizeVocabText(w))), old = list.filter(w => have.has(normalizeVocabText(w))), gone = words.filter(w => trash.has(normalizeVocabText(w)) && !have.has(normalizeVocabText(w)));
+  if (lang === "zh" && !jieba) loadJieba().then(m => {
+    if (m && ownDictShown && ownDictShown.text === text) showOwnDict(text, row, onAdd);
+  });
   ownDictShown = {
     lang: lang,
     row: row,
@@ -17156,9 +17207,13 @@ function hideWord(w) {
 
 function wordSegmenter() {
   try {
-    return new Intl.Segmenter(wordLang(), {
+    const lang = wordLang();
+    new Intl.Segmenter(lang, {
       granularity: "word"
     });
+    return {
+      segment: text => cutWords(text, lang)
+    };
   } catch (e) {
     return null;
   }
@@ -19655,9 +19710,7 @@ function worldFits(text, term, lang) {
   if (lang === "zh" || lang === "ja") {
     try {
       const cuts = new Set([ 0, text.length ]);
-      for (const x of new Intl.Segmenter(lang, {
-        granularity: "word"
-      }).segment(text)) {
+      for (const x of cutWords(text, lang)) {
         cuts.add(x.index);
         cuts.add(x.index + x.segment.length);
       }
@@ -20595,7 +20648,13 @@ function syncVocabEditPopup(items) {
   const vc = document.getElementById("vocabCard"), world = vc && vc.dataset.lookKey === item.key && vc.dataset.ex === "other" && vc.dataset.other || "";
   const base = world || vocabDictText(item), lang = detectLang(base).split("-")[0];
   const ownLine = world ? vocabContext(item).sentence || "" : "";
-  const extra = [ ...new Set([ ownLine ].concat(plainTextOf(wordNotesOf(item), "\n").split("\n")).map(t => t.trim())) ].filter(t => t && t !== base && detectLang(t).split("-")[0] === lang && !base.includes(t));
+  const bare = t => t.replace(/[\s\p{P}]+/gu, ""), seen = new Set([ bare(base) ]);
+  const extra = [ ownLine ].concat(plainTextOf(wordNotesOf(item), "\n").split("\n")).map(t => t.trim()).filter(t => {
+    const k = bare(t);
+    if (!t || seen.has(k) || bare(base).includes(k) || detectLang(t).split("-")[0] !== lang) return false;
+    seen.add(k);
+    return true;
+  });
   const text = [ base ].concat(extra).join("\n");
   pop.querySelector(".le-box").classList.remove("edit-row");
   pop.querySelector(".le-content").innerHTML = vocabEditorHtml(item) + '<div id="vocabEditDict"></div>';
