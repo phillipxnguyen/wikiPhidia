@@ -214,6 +214,7 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 | DICT-22 | `321567a` | Khoảng cách câu–thẻ cân đối (16 px); tạo từ xong hiện dòng xanh “✓ … added” ngay dưới câu |
 | DICT-23 | `8064cf8` | Bỏ dòng “added”; tạo hết từ của câu: khung xanh “Sentence complete” có dấu ✓ nảy, số từ |
 | DICT-24 | `07954ab` | “Sentence complete” không nền, đầu từ điển không đổi màu nền |
+| DICT-25 | `817a1f6` | Không có từ nào để thêm: hiện ghi chú nhỏ giữa khung (Nothing to add here, bấm từ đỏ để học lại) |
 
 Hàm chính: `showOwnDict`, `ownDictCardHtml`, `ownDictLookup`, `ownDictWords`, `ownDictFetch`, `ownDictPrefetch`, `addWordToEditNotes`, `hideOwnDict`.
 
