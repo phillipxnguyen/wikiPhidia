@@ -142,6 +142,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-39 | `197a1c6` | Câu gốc chỉ tô vàng từ đang học (từ khác chỉ đổi màu chữ); hiragana kiểu ruby cho từ tiếng Nhật |
 | FLASH-40 | `8064cf8` | Nghĩa to hơn câu 4 px; các khối câu chung line-height 1.4 cho khoảng cách nhìn đều; ⌘C copy đủ các câu đang hiện |
 | FLASH-41 | `32271f0` | Gọn lại như trước: line-height 1.25, khoảng giữa các khối 0,6 cỡ chữ |
+| FLASH-42 | `7826755` | Thẻ là cả câu dịch (A → B) luôn ra mặt Podcast: cảnh động, đọc cả câu; Show hiện câu và nghĩa |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
