@@ -17,6 +17,7 @@ Cột "Hàm chính" là tên hàm hoặc hằng trong `index.html`. Tên không 
 | LISTEN-1 | `961cf80` | Bản V1: thẻ nghe, phát clip, Show, Again/Good, list transcript và popup chi tiết |
 | LISTEN-2 | `901658b` | Bỏ nút vào mode; câu video không còn tính New/Due |
 | LISTEN-3 | `fc25c6d` | Câu video tính lại New/Due/Done (học ở theater); thẻ cũ chỉ còn trong task |
+| LISTEN-4 | `326581f` | Task cũng học câu video ở theater (chấm hết câu thì sang từ, ✕ là rời task); bỏ code thẻ nghe trong task |
 
 Hàm chính: `isListenMode`, `listenBatch`, `startSequenceLoop`, `stopSequenceLoop`, `startLoop`, `toggleLoopForRow`, `segmentReached`, `seamTo`, `render`, `gradeCard`, `applyGrade`, `cardInMode`, `modeScopeRows`, `lessonStudyMode`.
 
@@ -256,6 +257,7 @@ Hàm chính: `updateTouchBar`, `sizeTouchBar`, `#tbSound`, `#tbMore`, `tools-ope
 | TODAY-2 | `83c560f` | Từ trong task học bằng Podcast |
 | TODAY-3 | `e981763` | Trong focus: không khung, không thanh tên task |
 | TODAY-4 | `f42c79a` | Từ trong task: ngẫu nhiên flashcard hoặc Podcast |
+| TODAY-5 | `326581f` | Task theo đúng mode thường: câu video mở theater, không còn thẻ Listening |
 
 Hàm chính: `todayTasks`, `todayTaskCounts`, `taskQueue`, `startTaskSide`, `taskAdvance`, `leftToday`, `limitStudy`, `limitRows`.
 
