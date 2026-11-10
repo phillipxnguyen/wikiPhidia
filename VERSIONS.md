@@ -137,6 +137,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-34 | `2248a51` | Mặt sau chỉ 4 cỡ chữ: pinyin, từ chính, nghĩa, mọi câu |
 | FLASH-35 | `1acf767` | Chỗ trống flashcard cũng gạch chân mảnh như Speaking |
 | FLASH-36 | `cc9a4dd` | Thẻ nghe đọc một câu ngẫu nhiên của thẻ (giọng đọc hoặc clip YouTube), có thanh chạy như Podcast |
+| FLASH-37 | `bc52269` | Câu YouTube hiện trọn dòng như clip phát; lặp âm thanh: câu đọc rồi clip rồi lại từ đầu; nghĩa không dính sát từ (khoảng theo cỡ chữ) |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
