@@ -209,6 +209,7 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 | DICT-19 | `a3e9ca1` | Từ tiếng Anh khác đuôi (passports/passport) chỉ hiện một lần |
 | DICT-20 | `5111240` | Câu đầu từ điển bỏ gạch chân; tạo từ xong: từ nảy xanh, dòng notes sáng lên, báo đã thêm |
 | DICT-21 | `197a1c6` | Bỏ đường kẻ dưới câu đầu từ điển; click ra ngoài khung sửa từ đóng được cả sau khi Add |
+| DICT-22 | `321567a` | Khoảng cách câu–thẻ cân đối (16 px); tạo từ xong hiện dòng xanh “✓ … added” ngay dưới câu |
 
 Hàm chính: `showOwnDict`, `ownDictCardHtml`, `ownDictLookup`, `ownDictWords`, `ownDictFetch`, `ownDictPrefetch`, `addWordToEditNotes`, `hideOwnDict`.
 
