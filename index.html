@@ -6276,12 +6276,23 @@ function trackSpeech(utter) {
   speechTrack = null;
   const track = {
     start: 0,
-    done: false
+    done: false,
+    len: 0,
+    at: 0,
+    atT: 0
   };
   utter.addEventListener("start", () => {
     track.start = performance.now();
+    track.len = Math.max(1, (utter.text || "").length);
+    track.rate = utter.rate || 1;
     speechTrack = track;
     soundProgressLoop();
+  });
+  utter.addEventListener("boundary", e => {
+    if (e.charIndex > track.at) {
+      track.at = e.charIndex;
+      track.atT = performance.now();
+    }
   });
   utter.addEventListener("end", () => track.done = true);
   return utter;
@@ -6289,7 +6300,13 @@ function trackSpeech(utter) {
 
 function speechProgress() {
   const track = speechTrack;
-  return track && track.start && !track.done && speechSynthesis.speaking ? 0 : null;
+  if (!track || !track.start || track.done || !speechSynthesis.speaking) return null;
+  const now = performance.now(), spent = now - track.start;
+  if (track.at > 0 && track.atT > track.start) {
+    const speed = track.at / (track.atT - track.start);
+    return Math.max(0, Math.min(.99, (track.at + speed * (now - track.atT)) / track.len));
+  }
+  return Math.max(0, Math.min(.95, spent / ((600 + track.len * 130) / track.rate)));
 }
 
 function testAudioProgress() {
@@ -6378,8 +6395,16 @@ function soundProgressLoop() {
     document.querySelectorAll(".loop-time[data-id]").forEach(el => add(el, el.classList.contains("looping") && Number(el.dataset.id) === loopingRowId ? video : null));
     [ "btnPlaySequence", "vocabSpeak" ].forEach(id => {
       const el = document.getElementById(id);
-      add(el, el && el.classList.contains("active") ? video : null);
+      add(el, el && el.classList.contains("active") ? video != null ? video : speech : null);
     });
+    const listenRun = document.querySelector("#vocabCard.listen:not(.flipped) .vc-time i");
+    if (listenRun) {
+      const lp = video != null ? video : speech;
+      if (lp != null) {
+        listenRun.style.transition = "none";
+        listenRun.style.width = (lp * 100).toFixed(2) + "%";
+      }
+    }
     document.querySelectorAll(".exam-play").forEach(el => add(el, el.classList.contains("on") && Number(el.dataset.listen) === testAudio.n ? exam : null));
     const chosen = all.find(([ el, p ]) => p != null && el.offsetParent);
     if (chosen) ringHold = {
@@ -21157,7 +21182,7 @@ function sayVocabWord(item) {
   if (!card.dataset.listenText || !pool.includes(card.dataset.listenText)) card.dataset.listenText = pool[Math.floor(Math.random() * pool.length)] || item.term;
   const text = card.dataset.listenText;
   if (text === own && vocabVideoIdFor(item.card) && !ytHasError) {
-    listenBar(card, Math.max(2500, text.length * 260));
+    listenBar(card, 0);
     return playVocabSound(item, true, true);
   }
   const utter = trackSpeech(new SpeechSynthesisUtterance(cleanForSpeech(text)));
@@ -21165,7 +21190,7 @@ function sayVocabWord(item) {
   const voice = rotateVoice(utter.lang);
   if (voice) utter.voice = voice;
   utter.rate = ttsSpeed;
-  listenBar(card, (800 + text.length * 160) / (ttsSpeed || 1));
+  listenBar(card, 0);
   utter.onend = () => {
     const bar = card.querySelector(".vc-time i");
     if (bar) {
