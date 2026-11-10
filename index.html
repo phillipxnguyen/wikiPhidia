@@ -1649,17 +1649,19 @@ window.onYouTubeIframeAPIReady = function(){
   .le-box #editDict{display:none;}
   .le-dict{position:relative;height:0;overflow:hidden;}
   .own-dict{--od-bg:var(--surface);--od-card:color-mix(in srgb, var(--text) 3%, var(--surface));--od-line:color-mix(in srgb, var(--text) 9%, transparent);--od-soft:var(--text-2);--od-mean:var(--a-text);position:absolute;inset:0;display:flex;flex-direction:column;overflow:auto;overscroll-behavior:contain;box-sizing:border-box;border-radius:inherit;background:var(--od-bg);}
-  .od-head{position:sticky;top:0;z-index:1;display:flex;flex-direction:column;gap:8px;padding:16px 20px 12px;background:color-mix(in srgb, var(--od-bg) 92%, transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);}
+  .od-head{position:sticky;top:0;z-index:1;display:flex;flex-direction:column;gap:8px;padding:16px 20px 4px;background:color-mix(in srgb, var(--od-bg) 92%, transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);}
   .od-sent{font-size:17px;line-height:28px;color:var(--text);white-space:pre-line;}
   .od-jump{padding:0 1px;border:0;border-radius:4px;background:none;color:var(--accent);font:inherit;line-height:inherit;text-decoration:none;cursor:pointer;}
   .od-jump.od-got{color:var(--a-label);background:color-mix(in srgb, var(--a-label) 12%, transparent);}
   .od-jump.od-pop{animation:odPop .7s ease-out;}
   @keyframes odPop{0%{transform:scale(1);background:color-mix(in srgb, var(--a-label) 45%, transparent);}35%{transform:scale(1.18);}100%{transform:scale(1);}}
   .od-jump.od-pop{display:inline-block;}
+  .od-note{max-height:0;overflow:hidden;opacity:0;font-size:14px;line-height:20px;font-weight:700;color:var(--a-label);transition:max-height .2s, opacity .2s;}
+  .od-note.on{max-height:20px;opacity:1;}
   #editNotes li.note-new, #vocabEditNotes li.note-new{animation:noteNew 1.6s ease-out;}
   @keyframes noteNew{0%{background:color-mix(in srgb, var(--a-label) 30%, transparent);}100%{background:transparent;}}
   @media (hover:hover){.od-jump:hover{background:color-mix(in srgb, var(--accent) 10%, transparent);}}
-  .od-list{display:flex;flex-direction:column;gap:12px;padding:16px 16px 20px;}
+  .od-list{display:flex;flex-direction:column;gap:12px;padding:12px 16px 16px;}
   .od-card{display:flex;flex-direction:column;gap:8px;padding:16px;border:1px solid var(--od-line);border-radius:16px;background:var(--od-card);transition:border-color .2s, box-shadow .2s, background-color .2s;}
   @media (hover:hover){.od-card:not(.od-have):hover{border-color:color-mix(in srgb, var(--accent) 35%, transparent);box-shadow:0 8px 24px color-mix(in srgb, var(--text) 8%, transparent);}}
   .od-card.od-added{border-color:color-mix(in srgb, var(--a-label) 45%, transparent);background:color-mix(in srgb, var(--a-label) 6%, var(--od-bg));}
@@ -1714,7 +1716,7 @@ window.onYouTubeIframeAPIReady = function(){
   .od-ex mark{padding:0 2px;border-radius:4px;background:color-mix(in srgb, var(--accent) 14%, transparent);color:inherit;font-weight:700;}
   .od-off{padding:0 1px;border-radius:4px;background:color-mix(in srgb, var(--danger) 18%, transparent);color:var(--danger);cursor:pointer;}
   @media (prefers-reduced-motion: reduce){.od-card, .od-add, .od-skel i, .od-card.od-flash{animation:none;transition:none;}}
-  @media (max-width:600px){.od-head{padding:12px 16px 10px;}.od-list{padding:12px;gap:10px;}.od-card{padding:14px;}.od-word b{font-size:24px;line-height:32px;}}
+  @media (max-width:600px){.od-head{padding:12px 16px 2px;}.od-list{padding:10px 12px 12px;gap:10px;}.od-card{padding:14px;}.od-word b{font-size:24px;line-height:32px;}}
   .le-dict.on{margin-top:10px;height:var(--dict-h, 360px);}
   @container (max-width:699px){
   }
@@ -10582,7 +10584,21 @@ function markOwnDictAdded(card) {
     void li.offsetWidth;
     li.classList.add("note-new");
   }
-  showToast(`✓ “${w}” added to your words`);
+  const head = document.querySelector("#editPopup .od-head");
+  if (head) {
+    let note = head.querySelector(".od-note");
+    if (!note) {
+      note = document.createElement("div");
+      note.className = "od-note";
+      head.appendChild(note);
+    }
+    note.textContent = `✓ “${w}” added to your words`;
+    note.classList.remove("on");
+    void note.offsetWidth;
+    note.classList.add("on");
+    clearTimeout(note.timer);
+    note.timer = setTimeout(() => note.classList.remove("on"), 2600);
+  }
 }
 
 let ownDictHover = null;
