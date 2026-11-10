@@ -543,7 +543,9 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-card.fill .cloze-notes :is(ul, ol){margin:0;padding-left:1.2em;}
   .vc-stack{display:grid;}
   .vc-stack > *{grid-area:1 / 1;}
-  .vc-art{display:flex;align-items:center;justify-content:center;font-size:16px;line-height:20px;font-style:normal;}
+  .vc-art{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;font-size:16px;line-height:20px;font-style:normal;}
+  .vc-time{display:block;width:240px;max-width:100%;height:4px;border-radius:2px;background:color-mix(in srgb, var(--text) 14%, transparent);overflow:hidden;}
+  .vc-time i{display:block;width:0;height:100%;border-radius:2px;background:var(--accent);}
   .vocab-card.listen:not(.flipped) .vc-sent{visibility:hidden;}
   .vocab-card.listen.flipped .vc-art{display:none;}
   .vocab-card.fill .cloze-head{display:flex;flex-direction:column;align-items:center;gap:4px;margin:0 0 .8em;margin:0 0 round(.8em, 1px);font-size:inherit;line-height:inherit;font-weight:inherit;font-style:normal;}
@@ -2422,10 +2424,6 @@ window.onYouTubeIframeAPIReady = function(){
   @media (hover:hover){.watch-pop.cabin .w-row:hover :is(.w-py, .w-text){filter:none;}}
   @media (min-width:821px){.watch-pop.with-list{grid-template-columns:min(calc(100% - 396px), calc((100vh - 136px) * 16 / 9)) minmax(380px, 1fr);grid-template-columns:min(calc(100% - 396px), calc((100dvh - 136px) * 16 / 9)) minmax(380px, 1fr);align-content:safe center;overflow:auto;}}
   @media (max-width:820px){.watch-pop .w-listbox{display:none;}.watch-pop, .watch-pop.with-list{grid-template-columns:minmax(0, 1fr);grid-template-rows:minmax(0, 1fr);align-content:stretch;gap:8px;padding:calc(60px + env(safe-area-inset-top)) 12px calc(12px + env(safe-area-inset-bottom));}.watch-pop .w-topbar{top:calc(12px + env(safe-area-inset-top));left:12px;right:12px;}.w-ctl{display:flex;justify-content:center;gap:0;}.w-ctl-c, .w-ctl-r{display:none;}.w-ctl-l{flex:none;flex-wrap:nowrap;justify-content:center;gap:2px;}.w-main{height:100%;min-height:0;}.w-stage{flex:1 1 auto;display:flex;flex-direction:column;min-height:0;}.w-video{flex:none;}.w-cap{position:static;flex:1 1 auto;align-items:safe center;min-height:0;padding:16px 0;overflow:auto;}.w-cap .w-capline{padding:0;background:none;-webkit-backdrop-filter:none;backdrop-filter:none;}.w-cap .w-text{font-size:22px;line-height:30px;}.watch-pop[data-size="125"] .w-cap .w-text{font-size:26px;line-height:36px;}.watch-pop[data-size="150"] .w-cap .w-text{font-size:32px;line-height:42px;}.w-cap .w-py{font-size:15px;line-height:22px;}.watch-pop[data-size="125"] .w-cap .w-py{font-size:18px;line-height:26px;}.watch-pop[data-size="150"] .w-cap .w-py{font-size:21px;line-height:30px;}.w-ctl-l .w-pill{min-width:32px;padding:0 4px;}.w-size, .w-rate{width:72px;padding:0 4px 0 24px;background-position:6px 50%;font-size:13px;}}
-  html.focus-on .ielts-paper{border:0;border-radius:24px;background:color-mix(in srgb, var(--surface) 76%, transparent);-webkit-backdrop-filter:blur(16px) saturate(1.4);backdrop-filter:blur(16px) saturate(1.4);box-shadow:0 20px 50px rgba(10,20,40,.14), inset 0 0 0 1px color-mix(in srgb, var(--border) 60%, transparent);}
-  html.focus-on .ielts-paper::before{display:none;}
-  html.focus-on .ielts-paper :is(.paper-lines, .paper-prompt, .cell.shown.paper-lines:hover, .cell.hidden.paper-prompt:hover){background-image:none;}
-  html.focus-on .paper-notes{border-left-color:color-mix(in srgb, var(--text) 14%, transparent);}
   html.focus-on .sidebar{display:none !important;}
   html.focus-on .shell{grid-template-columns:minmax(0, 1fr);}
   html.focus-on .main-inner{margin-top:auto;margin-bottom:auto;}
@@ -20022,6 +20020,7 @@ function fillVocabCard(el, item) {
     el.dataset.listen = ex !== "word" && "speechSynthesis" in window && Math.random() < 1 / 3 ? "1" : "";
     el.dataset.scene = el.dataset.listen ? wordSceneFor(item, el.dataset.scene || null) : "";
     delete el.dataset.said;
+    delete el.dataset.listenText;
     cardType(el, item);
   }
   el.classList.toggle("view-only", viewOnly);
@@ -20036,7 +20035,7 @@ function fillVocabCard(el, item) {
     const own = otherGap && sentence && sentence !== text ? sentence : "";
     const ownTs = own && item.card.time != null && vocabVideoIdFor(item.card) ? `<button type="button" class="own-ts" title="Play this line">${fmtTime(item.card.time)}</button>` : "";
     const ownHtml = own ? `<span class="cloze-more cloze-own">${ownTs}${lookupOthers(vocabSentenceHtml(own, item.term, item.card), item)}</span>` : "";
-    el.querySelector(".vocab-term").innerHTML = `<span class="cloze-body">${el.dataset.listen ? `<span class="vc-stack"><span class="vc-art" aria-hidden="true">${sceneArt(el.dataset.scene)}</span>${sent}</span>` : sent}${ownHtml}${notes ? `<span class="cloze-more cloze-notes">${notesWithPinyin(brLines(notes), item.card)}</span>` : ""}</span>`;
+    el.querySelector(".vocab-term").innerHTML = `<span class="cloze-body">${el.dataset.listen ? `<span class="vc-stack"><span class="vc-art" aria-hidden="true">${sceneArt(el.dataset.scene)}<span class="vc-time"><i></i></span></span>${sent}</span>` : sent}${ownHtml}${notes ? `<span class="cloze-more cloze-notes">${notesWithPinyin(brLines(notes), item.card)}</span>` : ""}</span>`;
     const py = pinyinLine(item.term);
     el.querySelector(".vocab-term").insertAdjacentHTML("afterbegin", `<span class="cloze-more cloze-head">${py ? `<span class="cloze-py">${escapeHtml(py)}</span>` : ""}<span class="cloze-main">${escapeHtml(item.term)}</span>${item.meaning ? `<span class="cloze-mean">${escapeHtml(item.meaning)}</span>` : ""}</span>`);
     el.classList.add("fill");
@@ -21137,13 +21136,43 @@ function playVocabSound(item, once, ownClip) {
   syncVocabSound();
 }
 
+function listenBar(card, ms) {
+  const bar = card && card.querySelector(".vc-time i");
+  if (!bar) return;
+  bar.style.transition = "none";
+  bar.style.width = "0";
+  void bar.offsetWidth;
+  if (!ms) return;
+  bar.style.transition = `width ${Math.round(ms)}ms linear`;
+  bar.style.width = "100%";
+}
+
 function sayVocabWord(item) {
+  const card = document.getElementById("vocabCard");
   stopVocabSound();
   speechSynthesis.cancel();
-  const utter = trackSpeech(new SpeechSynthesisUtterance(cleanForSpeech(item.term)));
-  utter.lang = resolveSpeechLang(item.term);
+  if (!card) return;
+  const own = vocabContext(item).sentence || "", shown = card.dataset.ex === "other" && card.dataset.other || own;
+  const pool = [ shown ].concat(own && own !== shown ? [ own ] : []).filter(Boolean);
+  if (!card.dataset.listenText || !pool.includes(card.dataset.listenText)) card.dataset.listenText = pool[Math.floor(Math.random() * pool.length)] || item.term;
+  const text = card.dataset.listenText;
+  if (text === own && vocabVideoIdFor(item.card) && !ytHasError) {
+    listenBar(card, Math.max(2500, text.length * 260));
+    return playVocabSound(item, true, true);
+  }
+  const utter = trackSpeech(new SpeechSynthesisUtterance(cleanForSpeech(text)));
+  utter.lang = resolveSpeechLang(text);
   const voice = rotateVoice(utter.lang);
   if (voice) utter.voice = voice;
+  utter.rate = ttsSpeed;
+  listenBar(card, (800 + text.length * 160) / (ttsSpeed || 1));
+  utter.onend = () => {
+    const bar = card.querySelector(".vc-time i");
+    if (bar) {
+      bar.style.transition = "width .2s linear";
+      bar.style.width = "100%";
+    }
+  };
   speechSynthesis.speak(utter);
 }
 
