@@ -29,6 +29,7 @@ Hàm chính: `isListenMode`, `listenBatch`, `startSequenceLoop`, `stopSequenceLo
 | SPEAK-4 | `4fe949e` | Hiển thị như SPEAK-2 (câu hỏi, Hint, Show câu trả lời); dạng khoét từ / từ khoá chỉ cho câu đơn không có `/câu hỏi` |
 | SPEAK-5 | `f9e5447` | Chỗ trống rộng đúng bằng từ, Show chỉ hiện từ vào chỗ trống, không gì xê dịch |
 | SPEAK-6 | `1acf767` | Chỗ trống là gạch chân mảnh bình thường (2 px, nhạt), không còn thanh dày bo tròn |
+| SPEAK-7 | `cc9a4dd` | Trong focus vẫn là tờ giấy có gáy và dòng kẻ như cũ (bỏ tờ mờ kính) |
 
 Hàm chính: `ieltsPaperHtml`, `ieltsFrontHtml`, `sentenceEx`, `sentenceKeyWord`, `entryHidden`, `revealAction`, `render` (nhánh `groupViewStyle === "ielts"`). Cùng `ieltsHints`, `ieltsHintNext`, `ieltsHintId` (Hint).
 
@@ -135,6 +136,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-33 | `2248a51` | Thêm nguồn câu: Leipzig, Wiktionary, Wikiquote, Wikisource, Wikinews, Free Dictionary, Hacker News, Reddit |
 | FLASH-34 | `2248a51` | Mặt sau chỉ 4 cỡ chữ: pinyin, từ chính, nghĩa, mọi câu |
 | FLASH-35 | `1acf767` | Chỗ trống flashcard cũng gạch chân mảnh như Speaking |
+| FLASH-36 | `cc9a4dd` | Thẻ nghe đọc một câu ngẫu nhiên của thẻ (giọng đọc hoặc clip YouTube), có thanh chạy như Podcast |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
