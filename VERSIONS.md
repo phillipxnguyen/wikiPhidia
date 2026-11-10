@@ -140,6 +140,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-37 | `bc52269` | Câu YouTube hiện trọn dòng như clip phát; lặp âm thanh: câu đọc rồi clip rồi lại từ đầu; nghĩa không dính sát từ (khoảng theo cỡ chữ) |
 | FLASH-38 | `26a1cb8` | Pinyin của từ chính kiểu ruby: từng âm nằm sát trên từng chữ |
 | FLASH-39 | `197a1c6` | Câu gốc chỉ tô vàng từ đang học (từ khác chỉ đổi màu chữ); hiragana kiểu ruby cho từ tiếng Nhật |
+| FLASH-40 | `8064cf8` | Nghĩa to hơn câu 4 px; các khối câu chung line-height 1.4 cho khoảng cách nhìn đều; ⌘C copy đủ các câu đang hiện |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
@@ -210,6 +211,7 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 | DICT-20 | `5111240` | Câu đầu từ điển bỏ gạch chân; tạo từ xong: từ nảy xanh, dòng notes sáng lên, báo đã thêm |
 | DICT-21 | `197a1c6` | Bỏ đường kẻ dưới câu đầu từ điển; click ra ngoài khung sửa từ đóng được cả sau khi Add |
 | DICT-22 | `321567a` | Khoảng cách câu–thẻ cân đối (16 px); tạo từ xong hiện dòng xanh “✓ … added” ngay dưới câu |
+| DICT-23 | `8064cf8` | Bỏ dòng “added”; tạo hết từ của câu: khung xanh “Sentence complete” có dấu ✓ nảy, số từ |
 
 Hàm chính: `showOwnDict`, `ownDictCardHtml`, `ownDictLookup`, `ownDictWords`, `ownDictFetch`, `ownDictPrefetch`, `addWordToEditNotes`, `hideOwnDict`.
 
