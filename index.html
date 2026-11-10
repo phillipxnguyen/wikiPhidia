@@ -536,7 +536,7 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-card.fill :is(.cloze-own, .cloze-notes) .py-line{font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;font-style:normal;}
   .own-ts{display:inline-flex;align-items:center;height:24px;margin-right:8px;padding:0 8px;vertical-align:4px;border:0;border-radius:12px;background:color-mix(in srgb, currentColor 12%, transparent);color:inherit;font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;font-size:13px;line-height:16px;font-weight:700;font-style:normal;cursor:pointer;}
   @media (hover:hover){.own-ts:hover{background:color-mix(in srgb, currentColor 20%, transparent);}}
-  .vocab-card.fill .cloze-own mark{padding:0 2px;border-radius:4px;background:var(--word-mark);color:inherit;}
+  .vocab-card.fill .cloze-own mark:not(.vocab-hit):not(.vocab-own){padding:0 2px;border-radius:4px;background:var(--word-mark);color:inherit;}
   .vocab-card.fill .cloze-body{display:flex;flex-direction:column;align-items:stretch;row-gap:.8em;row-gap:round(.8em, 1px);box-sizing:border-box;width:fit-content;max-width:100%;margin:0 auto;text-align:left;}
   .vocab-card.fill .cloze-body > span, .vocab-card.fill .vc-sent{display:block;}
   .vocab-card.fill .vc-stack{display:grid;}
@@ -1649,7 +1649,7 @@ window.onYouTubeIframeAPIReady = function(){
   .le-box #editDict{display:none;}
   .le-dict{position:relative;height:0;overflow:hidden;}
   .own-dict{--od-bg:var(--surface);--od-card:color-mix(in srgb, var(--text) 3%, var(--surface));--od-line:color-mix(in srgb, var(--text) 9%, transparent);--od-soft:var(--text-2);--od-mean:var(--a-text);position:absolute;inset:0;display:flex;flex-direction:column;overflow:auto;overscroll-behavior:contain;box-sizing:border-box;border-radius:inherit;background:var(--od-bg);}
-  .od-head{position:sticky;top:0;z-index:1;display:flex;flex-direction:column;gap:8px;padding:16px 20px 12px;border-bottom:1px solid var(--od-line);background:color-mix(in srgb, var(--od-bg) 92%, transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);}
+  .od-head{position:sticky;top:0;z-index:1;display:flex;flex-direction:column;gap:8px;padding:16px 20px 12px;background:color-mix(in srgb, var(--od-bg) 92%, transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);}
   .od-sent{font-size:17px;line-height:28px;color:var(--text);white-space:pre-line;}
   .od-jump{padding:0 1px;border:0;border-radius:4px;background:none;color:var(--accent);font:inherit;line-height:inherit;text-decoration:none;cursor:pointer;}
   .od-jump.od-got{color:var(--a-label);background:color-mix(in srgb, var(--a-label) 12%, transparent);}
@@ -11274,11 +11274,12 @@ window.addEventListener("keydown", e => {
 
 document.addEventListener("pointerdown", e => {
   const pop = document.getElementById("editPopup");
-  if (pop.hidden || !pop.dataset.vocab || !e.target.closest || pop.contains(e.target) || e.target.closest(".vocab-add-popup, .vocab-popup, .hover-tooltip, #toast, .toast")) return;
+  if (pop.hidden || !pop.dataset.vocab || !e.target.closest || e.target.closest("#editPopup .le-box, .vocab-add-popup, .vocab-popup, .hover-tooltip")) return;
   const save = document.getElementById("vocabEditSave");
   if (!save) return;
   e.preventDefault();
   e.stopImmediatePropagation();
+  save.click();
   const swallow = ev => {
     ev.preventDefault();
     ev.stopImmediatePropagation();
@@ -11288,7 +11289,6 @@ document.addEventListener("pointerdown", e => {
     once: true
   });
   setTimeout(() => document.removeEventListener("click", swallow, true), 400);
-  save.click();
 }, true);
 
 document.addEventListener("click", e => {
@@ -20013,6 +20013,10 @@ function cardType(el, item) {
 }
 
 function rubyWord(term, card) {
+  if (cjkScriptFor(term, card) === "ja") {
+    const ja = japaneseFor(term);
+    return ja && ja.units ? ja.units.map(u => u.r && u.r !== u.s ? `<ruby>${escapeHtml(u.s)}<rt>${escapeHtml(u.r)}</rt></ruby>` : escapeHtml(u.s)).join("") : escapeHtml(term);
+  }
   if (typeof pinyinPro === "undefined" || !/[\u3400-\u9fff]/.test(term) || cjkScriptFor(term, card) !== "zh") return escapeHtml(term);
   try {
     const chars = [ ...term ], py = pinyinPro.pinyin(term, {
