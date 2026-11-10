@@ -20110,18 +20110,19 @@ function notesWithPinyin(html, card) {
 function fillVocabCard(el, item) {
   const viewOnly = vocabViewOnly(item);
   const sentence = vocabContext(item).sentence || "", gap = !viewOnly && sentence && !wholeSentenceCard(item, sentence) ? findTermIn(sentence, item.term) : null;
+  const whole = !viewOnly && wholeSentenceCard(item, sentence);
   if (el.dataset.lookKey !== item.key) {
-    const other = viewOnly ? "" : otherLessonSentence(item);
-    if (!viewOnly && !other && !worldSentences(item)) fetchWorld(item);
-    const alt = other || gap || viewOnly ? other : worldPick(item);
-    let ex = alt ? "other" : gap ? "cloze" : "word";
+    const other = viewOnly || whole ? "" : otherLessonSentence(item);
+    if (!viewOnly && !whole && !other && !worldSentences(item)) fetchWorld(item);
+    const alt = other || gap || viewOnly || whole ? other : worldPick(item);
+    let ex = whole ? "sent" : alt ? "other" : gap ? "cloze" : "word";
     const cloze = ex !== "word";
     el.dataset.other = ex === "other" ? alt : "";
     const look = "plain";
     el.dataset.lookKey = item.key;
     el.dataset.look = look;
     el.dataset.ex = ex;
-    el.dataset.listen = ex !== "word" && "speechSynthesis" in window && Math.random() < 1 / 3 ? "1" : "";
+    el.dataset.listen = "speechSynthesis" in window && (whole || ex !== "word" && Math.random() < 1 / 3) ? "1" : "";
     el.dataset.scene = el.dataset.listen ? wordSceneFor(item, el.dataset.scene || null) : "";
     delete el.dataset.said;
     delete el.dataset.listenText;
@@ -20143,6 +20144,11 @@ function fillVocabCard(el, item) {
     el.querySelector(".vocab-term").insertAdjacentHTML("afterbegin", `<span class="cloze-more cloze-head"><span class="cloze-main">${rubyWord(item.term, item.card)}</span>${item.meaning ? `<span class="cloze-mean">${escapeHtml(item.meaning)}</span>` : ""}</span>`);
     el.classList.add("fill");
     el.classList.toggle("listen", !!el.dataset.listen);
+  } else if (ex === "sent" && whole && el.dataset.listen) {
+    const text = sentence || item.term, spy = cjkScriptFor(text, item.card) === "zh" ? pinyinLine(text) : "";
+    const sent = `<span class="vc-sent">${spy ? `<span class="cloze-more cloze-spy py-line">${escapeHtml(spy)}</span>` : ""}${lookupOthers(escapeHtml(text), item)}</span>`;
+    el.querySelector(".vocab-term").innerHTML = `<span class="cloze-body"><span class="vc-stack"><span class="vc-art" aria-hidden="true">${sceneArt(el.dataset.scene)}<span class="vc-time"><i></i></span></span>${sent}</span>${item.meaning ? `<span class="cloze-more cloze-notes">${escapeHtml(item.meaning)}</span>` : ""}</span>`;
+    el.classList.add("fill", "listen");
   } else {
     el.classList.remove("listen");
     el.querySelector(".vocab-term").innerHTML = `<span>${escapeHtml(item.term)}</span>`;
