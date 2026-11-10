@@ -3318,7 +3318,7 @@ function watchLines() {
 }
 
 function watchCanOpen() {
-  return appMode !== "vocab" && !!currentLessonId && !isVirtualLesson() && watchLines().some(r => cardClip(r));
+  return appMode !== "vocab" && !!currentLessonId && (!isVirtualLesson() || !!taskRun && !!taskRun.theater) && watchLines().some(r => cardClip(r));
 }
 
 function watchTranslation(r) {
@@ -3444,7 +3444,7 @@ let theaterWanted = false;
 
 function syncTheater() {
   const study = document.getElementById("viewStudy");
-  const want = theaterWanted && currentView === "study" && !study.hidden && !groupState && !isAllLessons() && watchCanOpen();
+  const want = theaterWanted && currentView === "study" && !study.hidden && !groupState && (!isAllLessons() || !!taskRun && !!taskRun.theater) && watchCanOpen();
   if (watch && (!want || watch.lessonId !== currentLessonId)) closeWatch();
   if (want && !watch) openWatch(); else if (watch && watch.sig !== watchSig()) {
     watch.lines = watchLines();
@@ -3898,6 +3898,8 @@ function watchGrade(isAgain) {
   if (!watch.again) watch.again = new Set;
   if (isAgain) watch.again.add(r.id); else watch.again.delete(r.id);
   const after = () => {
+    if (!watch) return;
+    if (taskRun && taskRun.theater && !q.length) return taskTheaterDone();
     paintWatchList();
     const ni = watch.lines.findIndex(x => x.id === nextId);
     if (ni >= 0) watchSeek(ni);
@@ -4311,7 +4313,7 @@ function takeSnapshot(label, expiresAt) {
     links: JSON.stringify(lessonLinks),
     media: document.getElementById("mediaUrl").value,
     pdf: JSON.stringify(lessonPdf),
-    mix: isAllLessons() ? [ mixFocusId, mixStyle ] : null,
+    mix: isAllLessons() ? [ mixFocusId ] : null,
     ctx: currentLessonId,
     task: taskRun && taskRun.queue ? JSON.stringify({
       key: taskRun.key,
@@ -4484,7 +4486,7 @@ function restoreFrom(fromStack, toStack, verb) {
   }
   const mixRow = isAllLessons() && entry.mix && rows.find(r => r.id === entry.mix[0]);
   if (mixRow) {
-    mixShow(mixRow, entry.mix[1]);
+    mixShow(mixRow);
   } else {
     skipEmptyGroups();
     updateGroupUI();
@@ -5014,7 +5016,6 @@ function onPlayerReady() {
   updateSequenceBtnUI();
   render();
   startPendingVocabVideo();
-  mixCueDone();
 }
 
 function safeDestroyPlayer() {
@@ -5113,7 +5114,6 @@ function onPlayerStateChange(event) {
   if (event.data === YT.PlayerState.CUED) {
     ytCueing = false;
     vocabCueDone();
-    mixCueDone();
     const retried = retryPlay;
     retryPlay = null;
     if (retried && currentView === "study" && retried === extractYouTubeId(document.getElementById("mediaUrl").value.trim())) startSequenceLoop(isAllLessons() && isListenMode());
@@ -5202,7 +5202,7 @@ function onPlayerError(e) {
   const id = extractYouTubeId(document.getElementById("mediaUrl").value.trim());
   if (id && !retriedVideos.has(id)) {
     retriedVideos.add(id);
-    const play = isSequencePlaying || loopingRowId !== null || isAllLessons() && mixStyle === "listen";
+    const play = isSequencePlaying || loopingRowId !== null;
     stopSequenceLoop();
     setTimeout(() => retryVideo(play), 800);
     return;
@@ -5215,8 +5215,6 @@ function onPlayerError(e) {
   vocabAwaitCue = false;
   syncVocabSound();
   showToast((code === 101 || code === 150 ? "The owner of this video only lets it play on YouTube" : code === 100 ? "This video was removed or made private" : code === 2 ? "This video link isn't valid" : "YouTube can't play this video") + (code != null ? ` (YouTube error ${code})` : ""));
-  const row = isAllLessons() && mixStyle === "listen" ? rows.find(r => r.id === mixFocusId) : null;
-  if (row) setTimeout(mixNext, 0);
 }
 
 function clearMedia() {
@@ -6869,7 +6867,7 @@ function deckHasVideoCards() {
 }
 
 function isVideoLesson() {
-  if (isAllLessons()) return !!mixFocusId && mixStyle !== "ielts";
+  if (isAllLessons()) return false;
   return !isVirtualLesson() && (!!extractYouTubeId(document.getElementById("mediaUrl").value.trim()) || deckHasVideoCards());
 }
 
@@ -7004,7 +7002,7 @@ function doneCardCount(mode) {
 
 function progressBadgesHtml(mode, currentIds) {
   const now = Date.now();
-  const allowed = isAllLessons() ? mixCandidates().map(([ r ]) => r) : dueRows(mode);
+  const allowed = isAllLessons() ? mixCandidates() : dueRows(mode);
   const newN = allowed.filter(r => cardBucket(r, mode, now) === "new").length;
   const waiting = (isAllLessons() ? rows.filter(r => speakable(r) || vocabVideoIdFor(r)) : modeScopeRows(mode)).filter(cardWaiting);
   const readyDue = allowed.filter(r => cardBucket(r, mode, now) === "due").length;
@@ -7438,7 +7436,6 @@ function afterFirstTouch(start) {
 }
 
 function startSequenceLoop(auto) {
-  if (auto && mixAwaitCue) return;
   if (ytHasError || !ytPlayer || !ytReady || !ytHasVideo) {
     if (auto && !ytHasError && (ytHasVideo || pendingVideoId)) autoPlayFor = lastShownCardId;
     return;
@@ -7904,8 +7901,8 @@ function showSessionCompletePanel() {
   document.querySelector("#viewStudy .toolbar").style.display = "none";
   const now = Date.now();
   const next = rows.filter(r => speakable(r) && !cardWaiting(r)).map(r => srsOf(r, "Table")).filter(st => st.reps && st.due > now).map(st => st.due).sort((a, b) => a - b)[0];
-  const due = isAllLessons() ? mixCandidates(true).map(([ r ]) => r) : modeScopeRows(modeKey()).filter(r => cardReady(r, "Table", now));
-  const more = heldMore(due, isAllLessons() ? mixCandidates().map(([ r ]) => r) : limitRows(due), r => srsOf(r, "Table"));
+  const due = isAllLessons() ? mixCandidates(true) : modeScopeRows(modeKey()).filter(r => cardReady(r, "Table", now));
+  const more = heldMore(due, isAllLessons() ? mixCandidates() : limitRows(due), r => srsOf(r, "Table"));
   const held = more.total;
   const waiting = isAllLessons() ? 0 : modeScopeRows(isVideoLesson() ? "Listen" : "Table").filter(cardWaiting).length;
   let text = finishText(held, studiedToday(rows, false), next, "card", modeScopeRows(modeKey()).filter(r => !cardWaiting(r)).map(r => srsOf(r, "Table")));
@@ -8206,7 +8203,7 @@ function renderStudy() {
       showSessionCompletePanel();
       return;
     }
-    if (!groupState) return mixShow(focus, mixStyle);
+    if (!groupState) return mixShow(focus);
   }
   if (groupState && lessonCaughtUp()) {
     setReviewMode("full");
@@ -12123,14 +12120,6 @@ function isAllLessons() {
 
 let mixFocusId = null;
 
-let mixStyle = "listen";
-
-let mixAwaitCue = false;
-
-let mixCueTimer = 0;
-
-let mixCueSince = 0;
-
 function preloadVideo(url) {
   const id = extractYouTubeId(url);
   if (!id || unplayableVideos.has(id)) return false;
@@ -12139,65 +12128,14 @@ function preloadVideo(url) {
   return true;
 }
 
-function mixCueDone() {
-  if (!mixAwaitCue) return;
-  clearTimeout(mixCueTimer);
-  if (!isAllLessons() || currentView !== "study") {
-    mixAwaitCue = false;
-    return;
-  }
-  if (!ytHasError && (!ytPlayer || !ytReady || !ytHasVideo || ytCueing && Date.now() - mixCueSince < 8e3)) {
-    mixCueTimer = setTimeout(mixCueDone, 300);
-    return;
-  }
-  mixAwaitCue = false;
-  const id = mixFocusId;
-  setTimeout(() => {
-    if (mixFocusId === id && !mixAwaitCue && !ytHasError && isAllLessons() && currentView === "study" && isListenMode() && !isSequencePlaying && !(taskRun && taskRun.peeking)) startSequenceLoop(true);
-  }, 300);
-}
-
 function mixCandidates(unlimited) {
   const now = Date.now();
-  const video = new Map;
-  const isVideo = r => {
-    if (!video.has(r.srcLessonId)) {
-      const l = library.find(o => o.id === r.srcLessonId);
-      video.set(r.srcLessonId, !!l && (!!extractYouTubeId(l.mediaUrl || "") || l.cards.some(c => c.time != null)));
-    }
-    return video.get(r.srcLessonId);
-  };
-  const ready = rows.filter(r => cardReady(r, "Table", now) && speakable(r) && !isVideo(r));
-  return (unlimited ? ready : limitRows(ready)).map(r => [ r, !isVideo(r) ? "ielts" : "listen" ]);
+  const ready = rows.filter(r => cardReady(r, "Table", now) && speakable(r) && r.time == null);
+  return unlimited ? ready : limitRows(ready);
 }
 
-function mixShow(row, style) {
+function mixShow(row) {
   mixFocusId = row.id;
-  mixStyle = style;
-  const url = vocabVideoUrlFor(row);
-  const input = document.getElementById("mediaUrl");
-  if (style !== "ielts" && url && input.value.trim() === url && !ytHasVideo && !pendingVideoId) {
-    mixAwaitCue = true;
-    mixCueSince = Date.now();
-    clearTimeout(mixCueTimer);
-    mixCueTimer = setTimeout(mixCueDone, 1500);
-    createYtPlayer(extractYouTubeId(url));
-  } else if (style !== "ielts" && input.value.trim() !== url) {
-    mixAwaitCue = false;
-    clearTimeout(mixCueTimer);
-    input.value = url;
-    if (url) {
-      mixAwaitCue = true;
-      mixCueSince = Date.now();
-      mixCueTimer = setTimeout(mixCueDone, 1500);
-      applyMediaUrl(true);
-    } else destroyYtPlayer();
-  } else if (style !== "ielts" && ytCueing) {
-    mixAwaitCue = true;
-    mixCueSince = Date.now();
-    clearTimeout(mixCueTimer);
-    mixCueTimer = setTimeout(mixCueDone, 300);
-  }
   groupState = null;
   savedGroupState = null;
   pinnedCardId = row.id;
@@ -12205,11 +12143,7 @@ function mixShow(row, style) {
     lesson: null,
     ids: []
   };
-  setReviewMode(style);
-  const up = style === "ielts" && taskUpNext();
-  const upRow = up && up.k === "c" && rows.find(r => r.uid === up.id);
-  const ahead = upRow && mixCandidates(true).some(([ r, st ]) => r === upRow && st !== "ielts") && vocabVideoUrlFor(upRow);
-  if (ahead && input.value.trim() !== ahead) preloadVideo(ahead);
+  setReviewMode("ielts");
 }
 
 function mixNext() {
@@ -21471,6 +21405,7 @@ document.getElementById("listWatch").onclick = () => {
 };
 
 function leaveTheater() {
+  if (taskRun && taskRun.theater) return document.getElementById("taskClose").click();
   theaterWanted = false;
   syncTheater();
   render();
@@ -22804,10 +22739,10 @@ function taskShowPick(run, pick) {
     if (taskRun !== run) return false;
     if (currentView !== "study") showView("study");
     const row = rows.find(r => r.uid === pick.id);
-    const pair = row && mixCandidates(true).find(([r]) => r === row);
     run.opening = false;
-    if (!pair) return false;
-    mixShow(pair[0], pair[1]);
+    if (row && row.time != null && cardClip(row)) return taskTheater(run);
+    if (!row || !mixCandidates(true).includes(row)) return false;
+    mixShow(row);
     return true;
   }
   taskOpenSide(run, "v");
@@ -22923,6 +22858,29 @@ function celebrateTaskDone() {
   });
 }
 
+function taskTheater(run) {
+  run.theater = true;
+  run.queue = run.queue.filter(p => p.k !== "c" || !(rows.find(r => r.uid === p.id) || {}).time);
+  theaterWanted = true;
+  syncTheater();
+  if (!watch) {
+    run.theater = false;
+    theaterWanted = false;
+    return false;
+  }
+  return true;
+}
+
+function taskTheaterDone() {
+  const run = taskRun;
+  if (!run || !run.theater) return;
+  run.theater = false;
+  theaterWanted = false;
+  syncTheater();
+  run.current = null;
+  taskAdvance();
+}
+
 function taskModeOf(pick) {
   if (!pick) return "";
   if (pick.k === "v") return "word";
@@ -22934,7 +22892,7 @@ function taskModeChanges() {
   const run = taskRun;
   const up = run && run.current && taskUpNext();
   if (!up) return false;
-  const now = currentView === "vocab" ? "word" : mixStyle === "listen" ? "listen" : "speak";
+  const now = currentView === "vocab" ? "word" : watch ? "listen" : "speak";
   return taskModeOf(up) !== now;
 }
 
@@ -22989,8 +22947,12 @@ function renderTaskBar() {
 
 function endTask() {
   if (!taskRun && !document.documentElement.classList.contains("in-task")) return;
-  const home = taskRun && taskRun.homeMode;
+  const home = taskRun && taskRun.homeMode, inTheater = !!taskRun && !!taskRun.theater;
   taskRun = null;
+  if (inTheater) {
+    theaterWanted = false;
+    syncTheater();
+  }
   if (home && home !== appMode) setAppMode(home);
   document.documentElement.classList.remove("in-task", "home-vocab");
   renderTaskBar();
