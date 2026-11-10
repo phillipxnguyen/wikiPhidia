@@ -139,6 +139,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-36 | `cc9a4dd` | Thẻ nghe đọc một câu ngẫu nhiên của thẻ (giọng đọc hoặc clip YouTube), có thanh chạy như Podcast |
 | FLASH-37 | `bc52269` | Câu YouTube hiện trọn dòng như clip phát; lặp âm thanh: câu đọc rồi clip rồi lại từ đầu; nghĩa không dính sát từ (khoảng theo cỡ chữ) |
 | FLASH-38 | `26a1cb8` | Pinyin của từ chính kiểu ruby: từng âm nằm sát trên từng chữ |
+| FLASH-39 | `197a1c6` | Câu gốc chỉ tô vàng từ đang học (từ khác chỉ đổi màu chữ); hiragana kiểu ruby cho từ tiếng Nhật |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
@@ -207,6 +208,7 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 | DICT-18 | `eec36a0` | Ô sửa thẻ: từ điển đọc mọi câu đang hiện; câu đầu từ điển không còn lặp chữ |
 | DICT-19 | `a3e9ca1` | Từ tiếng Anh khác đuôi (passports/passport) chỉ hiện một lần |
 | DICT-20 | `5111240` | Câu đầu từ điển bỏ gạch chân; tạo từ xong: từ nảy xanh, dòng notes sáng lên, báo đã thêm |
+| DICT-21 | `197a1c6` | Bỏ đường kẻ dưới câu đầu từ điển; click ra ngoài khung sửa từ đóng được cả sau khi Add |
 
 Hàm chính: `showOwnDict`, `ownDictCardHtml`, `ownDictLookup`, `ownDictWords`, `ownDictFetch`, `ownDictPrefetch`, `addWordToEditNotes`, `hideOwnDict`.
 
