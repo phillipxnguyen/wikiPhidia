@@ -215,6 +215,7 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 | DICT-23 | `8064cf8` | Bỏ dòng “added”; tạo hết từ của câu: khung xanh “Sentence complete” có dấu ✓ nảy, số từ |
 | DICT-24 | `07954ab` | “Sentence complete” không nền, đầu từ điển không đổi màu nền |
 | DICT-25 | `817a1f6` | Không có từ nào để thêm: hiện ghi chú nhỏ giữa khung (Nothing to add here, bấm từ đỏ để học lại) |
+| DICT-26 | `b921742` | Từ đã có/vừa Add rời danh sách như Delete; bấm từ xanh ở câu trên để sửa; câu đứng yên, lề trên dưới bằng nhau, thẻ mờ dần ở mép khi cuộn |
 
 Hàm chính: `showOwnDict`, `ownDictCardHtml`, `ownDictLookup`, `ownDictWords`, `ownDictFetch`, `ownDictPrefetch`, `addWordToEditNotes`, `hideOwnDict`.
 
@@ -324,6 +325,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-2 | `51f8b07` | Chỉ tô màu chữ: xanh lá cho từ của thẻ khác, tím cho từ của thẻ này |
 | LOOKUP-3 | `16a2b79` | Xanh lá đậm hơn và xanh dương, không tím |
 | LOOKUP-4 | `3921081` | Rê chuột lên lookup không còn gạch chân |
+| LOOKUP-5 | `b921742` | Popup từ chỉ hiện dòng notes của đúng từ đó; pinyin chỉ hiện khi rê đúng vào từ |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
