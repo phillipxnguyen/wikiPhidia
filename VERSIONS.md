@@ -217,6 +217,7 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 | DICT-24 | `07954ab` | “Sentence complete” không nền, đầu từ điển không đổi màu nền |
 | DICT-25 | `817a1f6` | Không có từ nào để thêm: hiện ghi chú nhỏ giữa khung (Nothing to add here, bấm từ đỏ để học lại) |
 | DICT-26 | `b921742` | Từ đã có/vừa Add rời danh sách như Delete; bấm từ xanh ở câu trên để sửa; câu đứng yên, lề trên dưới bằng nhau, thẻ mờ dần ở mép khi cuộn |
+| DICT-27 | `c95a43e` | Tách từ tiếng Trung bằng jieba (批复, 介于 không bị tách lẻ), từ đã có luôn giữ nguyên; câu đầu không bao giờ lặp hai lần |
 
 Hàm chính: `showOwnDict`, `ownDictCardHtml`, `ownDictLookup`, `ownDictWords`, `ownDictFetch`, `ownDictPrefetch`, `addWordToEditNotes`, `hideOwnDict`.
 
