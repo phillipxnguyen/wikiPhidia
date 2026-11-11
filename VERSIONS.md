@@ -32,6 +32,7 @@ Hàm chính: `isListenMode`, `listenBatch`, `startSequenceLoop`, `stopSequenceLo
 | SPEAK-5 | `f9e5447` | Chỗ trống rộng đúng bằng từ, Show chỉ hiện từ vào chỗ trống, không gì xê dịch |
 | SPEAK-6 | `1acf767` | Chỗ trống là gạch chân mảnh bình thường (2 px, nhạt), không còn thanh dày bo tròn |
 | SPEAK-7 | `cc9a4dd` | Trong focus vẫn là tờ giấy có gáy và dòng kẻ như cũ (bỏ tờ mờ kính) |
+| SPEAK-8 | `71d9610` | Sổ còng luôn ít nhất 2 còng (tờ Speaking, sổ ☰ Full, tờ Today) |
 
 Hàm chính: `ieltsPaperHtml`, `ieltsFrontHtml`, `sentenceEx`, `sentenceKeyWord`, `entryHidden`, `revealAction`, `render` (nhánh `groupViewStyle === "ielts"`). Cùng `ieltsHints`, `ieltsHintNext`, `ieltsHintId` (Hint).
 
@@ -224,6 +225,7 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 | DICT-26 | `b921742` | Từ đã có/vừa Add rời danh sách như Delete; bấm từ xanh ở câu trên để sửa; câu đứng yên, lề trên dưới bằng nhau, thẻ mờ dần ở mép khi cuộn |
 | DICT-27 | `c95a43e` | Tách từ tiếng Trung bằng jieba (批复, 介于 không bị tách lẻ), từ đã có luôn giữ nguyên; câu đầu không bao giờ lặp hai lần |
 | DICT-28 | `5b0a629` | Bấm từ xanh/đỏ trong câu: popup thẻ từ (đổi nghĩa / Add lại), tìm được từ ở mọi bài; viền xanh đỏ cùng cỡ |
+| DICT-29 | `71d9610` | Kéo qua các từ trong câu để tạo cụm: chọn tự bắt trọn từ, thả tay mở popup Add |
 
 Hàm chính: `showOwnDict`, `ownDictCardHtml`, `ownDictLookup`, `ownDictWords`, `ownDictFetch`, `ownDictPrefetch`, `addWordToEditNotes`, `hideOwnDict`.
 
@@ -311,6 +313,7 @@ Hàm chính: `studyingNow`, `placeStudyClock`, `STUDY_TIME_KEY`, `#focusClock`.
 | MOVE-4 | `71aff22` | Nhát chém dày, viền đỏ, chậm hơn |
 | MOVE-5 | `f4c55cc` | Good/Again nhanh hơn |
 | MOVE-6 | `7ea384e` | Good/Again/Delete nhanh hơn nữa (khoảng 0,35 giây; Delete dưới 1 giây) |
+| MOVE-7 | `71d9610` | Good/Again: dấu ✓/✕ nằm sẵn trên thẻ và bay cùng thẻ, không đóng dấu rồi mới vuốt |
 
 Hàm chính: `swipe`, `ghostFor`, `angelFly`, `cutLayer`, `playCut`.
 
@@ -326,6 +329,7 @@ Hàm chính: `swipe`, `ghostFor`, `angelFly`, `cutLayer`, `playCut`.
 | RING-7 | `1901f9a` | Ưu tiên: thanh chạy dưới cảnh (thẻ nghe) > mốc giờ của câu > nút loa trên cùng; chỉ một dấu tiến độ một lúc |
 | RING-8 | `5b0a629` | Flashcard: vòng chạy trên pill của từng câu thay vì nút loa trên cùng |
 | RING-9 | `199b7d3` | Lessons: câu không video có pill ▶/⏸ ở ☰ Full và tờ Speaking, vòng chạy trên pill |
+| RING-10 | `71d9610` | Pill ▶/giờ căn giữa dòng đầu của câu (Speaking, ☰ Full) |
 
 Hàm chính: `paintRing`, `dropRing`, `setDash`.
 
