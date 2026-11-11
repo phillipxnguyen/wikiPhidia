@@ -1666,13 +1666,13 @@ window.onYouTubeIframeAPIReady = function(){
   .od-float .od-card{border-color:var(--border);}
   .od-float input.od-mean-in{width:100%;box-sizing:border-box;margin:0;padding:0 0 2px;border:0;border-bottom:1px dashed var(--od-line);border-radius:0;background:none;color:var(--od-mean);font:inherit;font-size:18px;line-height:26px;font-weight:700;}
   .od-float input.od-mean-in:focus{outline:none;box-shadow:none;border-bottom:1px solid var(--accent);}
-  .od-save{flex:none;height:40px;padding:0 16px;border:0;border-radius:12px;background:var(--accent);color:#ffffff;font:inherit;font-size:14px;line-height:20px;font-weight:700;cursor:pointer;}
+  .od-acts [hidden]{display:none;}
   .od-float .od-term.od-cur{border-color:var(--a-label);color:var(--a-label);}
   .od-card{position:relative;display:flex;flex-direction:column;gap:8px;padding:16px;border:1px solid var(--od-line);border-radius:16px;background:var(--od-card);transition:border-color .2s, box-shadow .2s, background-color .2s;}
-  .od-top{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+  .od-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 12px;}
   .od-word{display:flex;align-items:center;gap:8px;min-width:0;}
   .od-say:focus:not(:focus-visible){outline:none;}
-  .od-word b{font-size:28px;line-height:36px;font-weight:700;color:var(--text);overflow-wrap:anywhere;}
+  .od-word b{font-size:28px;line-height:36px;font-weight:700;color:var(--text);overflow-wrap:break-word;}
   .od-say{position:relative;flex:none;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border:0;border-radius:16px;background:color-mix(in srgb, var(--text) 6%, transparent);color:var(--od-soft);cursor:pointer;}
   .od-say svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
   @media (hover:hover){.od-say:hover{background:var(--accent);color:#ffffff;}}
@@ -10728,13 +10728,22 @@ function paintOwnDictFloat() {
   const entry = ownDictEntry(shown.lang, w);
   pop.innerHTML = ownDictCardHtml(shown.lang, w, shown);
   const card = pop.querySelector(".od-card"), acts = card.querySelector(".od-acts");
-  acts.innerHTML = have ? '<span class="od-done">✓ In your words</span><button type="button" class="od-save">Save</button>' : '<button type="button" class="od-add"><span>＋</span> Add</button>';
+  acts.innerHTML = have ? '<span class="od-done">✓ In your words</span><button type="button" class="od-add od-save" hidden>Save</button>' : '<button type="button" class="od-add"><span>＋</span> Add</button>';
   if (have) card.querySelectorAll(".od-term").forEach(b => b.classList.toggle("od-cur", !!found && b.dataset.m === found.meaning));
   const value = typed != null ? typed : have ? found ? found.meaning : "" : entry ? entry.m : "";
   const field = `<input class="od-mean-in" type="text" autocomplete="off" spellcheck="false" aria-label="Meaning" title="Change the meaning if it is not right" placeholder="Type the meaning" value="${escapeAttr(value)}">`, main = card.querySelector(".od-main");
   if (main) main.outerHTML = field; else card.querySelector(".od-body").insertAdjacentHTML("afterbegin", field);
-  const input = card.querySelector(".od-mean-in");
+  const input = card.querySelector(".od-mean-in"), save = card.querySelector(".od-save");
   if (typed != null) input.dataset.dirty = "1";
+  if (save) {
+    const sync = () => {
+      const changed = input.value.replace(/\s+/g, " ").trim() !== (found ? found.meaning : "");
+      save.hidden = !changed;
+      card.querySelector(".od-done").hidden = changed;
+    };
+    input.addEventListener("input", sync);
+    sync();
+  }
   if (focused) {
     input.focus();
     input.setSelectionRange(input.value.length, input.value.length);
@@ -10953,6 +10962,22 @@ document.addEventListener("click", e => {
 
 document.addEventListener("pointerdown", e => {
   if (ownDictFloat && e.target.closest && !e.target.closest(".od-float")) closeOwnDictFloat();
+}, true);
+
+let floatShiftTap = false;
+
+window.addEventListener("keydown", e => {
+  floatShiftTap = e.key === "Shift" && !e.repeat && !e.metaKey && !e.ctrlKey && !e.altKey && !!ownDictFloat;
+}, true);
+
+window.addEventListener("keyup", e => {
+  if (e.key !== "Shift" || !floatShiftTap || !ownDictFloat) return;
+  floatShiftTap = false;
+  const b = ownDictFloat.querySelector(".od-acts .od-add:not([hidden])");
+  if (!b) return;
+  e.preventDefault();
+  e.stopImmediatePropagation();
+  ownDictFloatPick(b);
 }, true);
 
 window.addEventListener("keydown", e => {
