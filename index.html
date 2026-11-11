@@ -1649,7 +1649,10 @@ window.onYouTubeIframeAPIReady = function(){
   :is(.od-jump, .od-off):focus:not(:focus-visible){outline:none;}
   .od-float{--od-bg:var(--surface);--od-card:var(--surface);--od-line:color-mix(in srgb, var(--text) 9%, transparent);--od-soft:var(--text-2);--od-mean:var(--a-text);position:fixed;z-index:1700;width:min(380px, calc(100vw - 16px));border-radius:16px;box-shadow:var(--shadow-md);}
   .od-float .od-card{border-color:var(--border);}
-  .od-now{font-size:18px;line-height:26px;font-weight:700;color:var(--od-mean);}
+  .od-now{display:flex;align-items:center;gap:8px;}
+  .od-mean-in{flex:1;min-width:0;box-sizing:border-box;height:40px;padding:0 12px;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--od-mean);font:inherit;font-size:17px;line-height:24px;font-weight:700;}
+  .od-mean-in:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);}
+  .od-save{flex:none;height:40px;padding:0 16px;border:0;border-radius:12px;background:var(--accent);color:#ffffff;font:inherit;font-size:14px;line-height:20px;font-weight:700;cursor:pointer;}
   .od-float[data-mode="have"] .od-main:not(.od-cur){font-size:15px;line-height:22px;font-weight:600;color:var(--text-2);}
   .od-float :is(.od-main, .od-term).od-cur{border-color:var(--a-label);color:var(--a-label);}
   .od-jump.od-got{color:var(--a-label);background:color-mix(in srgb, var(--a-label) 12%, transparent);}
@@ -10820,13 +10823,22 @@ function paintOwnDictFloat() {
   const pop = ownDictFloat, shown = ownDictShown;
   if (!pop || !shown) return;
   const w = pop.dataset.w, have = pop.dataset.mode === "have", found = have ? ownDictFindWord(w) : null;
+  const was = pop.querySelector(".od-mean-in"), typed = was && was.dataset.dirty ? was.value : null, focused = was && document.activeElement === was;
+  const entry = ownDictEntry(shown.lang, w);
   pop.innerHTML = ownDictCardHtml(shown.lang, w);
   const card = pop.querySelector(".od-card"), acts = card.querySelector(".od-acts");
   if (have) {
     acts.innerHTML = '<span class="od-done">✓ In your words</span>';
-    card.querySelector(".od-body").insertAdjacentHTML("afterbegin", `<div class="od-now">${escapeHtml(found ? found.meaning : "")}</div>`);
     card.querySelectorAll(".od-main, .od-term").forEach(b => b.classList.toggle("od-cur", !!found && b.dataset.m === found.meaning));
   } else acts.querySelector(".od-del").remove();
+  const value = typed != null ? typed : have ? found ? found.meaning : "" : entry ? entry.m : "";
+  card.querySelector(".od-body").insertAdjacentHTML("afterbegin", `<div class="od-now"><input class="od-mean-in" type="text" autocomplete="off" spellcheck="false" aria-label="Meaning" placeholder="Type the meaning" value="${escapeAttr(value)}"><button type="button" class="od-save">${have ? "Save" : "Add"}</button></div>`);
+  const input = card.querySelector(".od-mean-in");
+  if (typed != null) input.dataset.dirty = "1";
+  if (focused) {
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
+  }
   const r = pop.anchor.getBoundingClientRect(), box = pop.getBoundingClientRect();
   let top = r.bottom + 8;
   if (top + box.height > window.innerHeight - 8) top = Math.max(8, r.top - box.height - 8);
@@ -10854,7 +10866,8 @@ function openOwnDictFloat(el, mode, word) {
 function ownDictFloatPick(b) {
   const pop = ownDictFloat, shown = ownDictShown;
   if (!pop || !shown) return;
-  const w = pop.dataset.w, entry = ownDictEntry(shown.lang, w), meaning = b.dataset.m != null ? b.dataset.m : entry ? entry.m : "";
+  const input = pop.querySelector(".od-mean-in");
+  const w = pop.dataset.w, entry = ownDictEntry(shown.lang, w), meaning = (b.dataset.m != null ? b.dataset.m : input ? input.value : entry ? entry.m : "").replace(/\s+/g, " ").trim();
   if (pop.dataset.mode === "have") {
     const found = ownDictFindWord(w);
     closeOwnDictFloat();
@@ -10870,7 +10883,19 @@ function ownDictFloatPick(b) {
   ownDictAllDone();
 }
 
+document.getElementById("editPopup").addEventListener("input", e => {
+  if (e.target.matches && e.target.matches(".od-mean-in")) e.target.dataset.dirty = "1";
+});
+
 document.getElementById("editPopup").addEventListener("keydown", e => {
+  if (e.target.matches && e.target.matches(".od-mean-in")) {
+    e.stopPropagation();
+    if (e.key !== "Enter" || e.isComposing || e.keyCode === 229) return;
+    e.preventDefault();
+    const save = ownDictFloat && ownDictFloat.querySelector(".od-save");
+    if (save) ownDictFloatPick(save);
+    return;
+  }
   if (e.key !== "Enter" && e.key !== " " || !e.target.matches || !e.target.matches(".od-jump, .od-off")) return;
   e.preventDefault();
   e.target.click();
@@ -11075,6 +11100,7 @@ function ownDictPointed() {
 }
 
 window.addEventListener("keydown", e => {
+  if (ownDictShown && isTypingInField() && (e.key === "Delete" || e.key === "Backspace")) return;
   if (ownDictShown && (e.key === "Shift" || e.key === "Delete" || e.key === "Backspace")) ownDictHover = ownDictPointed();
   ownDictShift = e.key === "Shift" && !e.repeat && !e.metaKey && !e.ctrlKey && !e.altKey && !!ownDictShown && !!ownDictHover;
   if (!ownDictShown || !ownDictHover || !ownDictHover.isConnected || e.key !== "Delete" && e.key !== "Backspace" || e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
@@ -11152,7 +11178,7 @@ document.getElementById("editPopup").addEventListener("click", e => {
   const fl = e.target.closest(".od-float");
   if (fl) {
     if (e.target.closest(".od-say")) return soundWaitOn(e.target.closest(".od-say")), ownDictSay(fl.dataset.w);
-    const pick = e.target.closest(".od-add, .od-main, .od-term");
+    const pick = e.target.closest(".od-add, .od-save, .od-main, .od-term");
     return pick ? ownDictFloatPick(pick) : undefined;
   }
   const off = e.target.closest(".od-off");
