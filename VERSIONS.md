@@ -260,6 +260,7 @@ Hàm chính: `showOwnDict`, `ownDictCardHtml`, `ownDictLookup`, `ownDictWords`, 
 | DATA-8 | `d8ccbdb` | Chỉ một ô `/Q, rồi A` + Notes ở mọi chỗ nhập: bỏ ô Answer của ＋ và ô Meaning của trình sửa từ Vocabulary; không có code gộp |
 | DATA-9 | `f9e5447` | Dán bài không tự tạo từ: dòng `từ: nghĩa`, bullet, bản dịch, tiêu đề nằm nguyên trong notes của thẻ gần nhất |
 | DATA-10 | `9b3cf86` | Ô /Q tự thêm / ở dòng đầu khi có dòng thứ hai (ô sửa thẻ, sửa từ, ＋) |
+| DATA-11 | `7e54b58` | Ô thẻ (sửa thẻ, sửa từ, ＋): dòng câu hỏi tô màu của bên, dấu / không vẽ ra, thẳng lề |
 
 Hàm chính: `newRow` (bản dịch vào notes khi tạo), `foldAnswer` + `keepsAnswer` (dòng thêm dưới câu khi sửa thẻ hoặc khi dán thì vào notes), `wordLike`, `belongsInVocab`, `isTranslationCard` (cho dòng `từ: nghĩa`), `autoSortLibrary`.
 
