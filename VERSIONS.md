@@ -154,6 +154,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-42 | `7826755` | Thẻ là cả câu dịch (A → B) luôn ra mặt Podcast: cảnh động, đọc cả câu; Show hiện câu và nghĩa |
 | FLASH-43 | `5b0a629` | Mỗi câu trên flashcard có pill phát: giờ (YouTube) hoặc ▶/⏸; vòng chạy trên pill của câu đang phát |
 | FLASH-44 | `b62d155` | Chưa lật thì ← →, Return, nút Again/Good đều lật trước, lần sau mới chấm |
+| FLASH-45 | `5f66b6a` | Pill của mọi câu nằm đầu dòng pinyin (không có pinyin thì đầu dòng chữ), không đứng riêng một dòng |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
