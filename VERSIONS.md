@@ -155,6 +155,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-43 | `5b0a629` | Mỗi câu trên flashcard có pill phát: giờ (YouTube) hoặc ▶/⏸; vòng chạy trên pill của câu đang phát |
 | FLASH-44 | `b62d155` | Chưa lật thì ← →, Return, nút Again/Good đều lật trước, lần sau mới chấm |
 | FLASH-45 | `5f66b6a` | Pill của mọi câu nằm đầu dòng pinyin (không có pinyin thì đầu dòng chữ), không đứng riêng một dòng |
+| FLASH-46 | `8873df2` | Pinyin trên notes chỉ cho phần chữ Hán, không tách chữ Việt/Anh |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
@@ -235,6 +236,7 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 | DICT-30 | `91d7103` | Kéo từ bất kỳ đâu (cả trên từ có sẵn) để chọn cụm, nhấn không di chuyển mới là bấm; câu đầu to bằng ô thẻ (22/30, phone 20/28) |
 | DICT-31 | `28ef288` | Kéo chọn cụm mở ô A: B như cũ, con trỏ sẵn sau dấu hai chấm để tự gõ nghĩa |
 | DICT-32 | `9f2b660` | Popup thẻ có ô gõ nghĩa tuỳ ý (Save/Add/Enter), không chỉ chọn nghĩa từ điển |
+| DICT-33 | `8873df2` | Câu gốc của từ lên đầu; dòng định nghĩa trong notes (có dấu :) hay chữ khác hệ không thành câu để bấm |
 
 Hàm chính: `showOwnDict`, `ownDictCardHtml`, `ownDictLookup`, `ownDictWords`, `ownDictFetch`, `ownDictPrefetch`, `addWordToEditNotes`, `hideOwnDict`.
 
