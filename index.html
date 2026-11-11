@@ -533,6 +533,7 @@ window.onYouTubeIframeAPIReady = function(){
   .own-ts{position:relative;display:inline-flex;align-items:center;height:24px;margin-right:8px;padding:0 8px;vertical-align:4px;border:0;border-radius:12px;background:color-mix(in srgb, currentColor 12%, transparent);color:inherit;font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;font-size:13px;line-height:16px;font-weight:700;font-style:normal;cursor:pointer;}
   .say-ts{justify-content:center;min-width:40px;}
   .py-line .own-ts{vertical-align:middle;}
+  .own-ts.on{background:color-mix(in srgb, currentColor 28%, transparent);}
   .loop-time.say-ts{display:inline-flex;align-items:center;box-sizing:border-box;min-width:36px;height:22px;padding:0 8px;}
   .loop-time.say-ts.on{background:var(--accent);color:var(--on-accent);}
   .say-ts svg{width:14px;height:14px;fill:currentColor;}
@@ -1638,6 +1639,7 @@ window.onYouTubeIframeAPIReady = function(){
   }
   .edit-popup{position:fixed;inset:0;z-index:1500;}
   .edit-popup[hidden]{display:block!important;opacity:0;pointer-events:none;}
+  .edit-popup.on-theater{background:rgba(0,0,0,.6);transition:opacity .15s;}
   .edit-popup[hidden] :is(.le-box, .le-dict){overflow:visible;}
   .le-box{position:fixed;display:flex;flex-direction:column;box-sizing:border-box;width:min(440px, calc(100vw - 32px));max-height:min(760px, 80dvh);overflow-y:auto;overscroll-behavior:contain;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);}
   .le-box > *{flex-shrink:0;}
@@ -2323,7 +2325,7 @@ window.onYouTubeIframeAPIReady = function(){
   .w-modes button.active{background:rgba(255,255,255,.16);color:#ffffff;}
   @media (hover:hover){.w-modes button:not(.active):hover{color:#ffffff;}}
   .watch-pop.cabin .w-listbox{display:none;}
-  .watch-pop.cabin .w-pill:is([data-w="auto"], [data-w="loop"], [data-w="blur"], [data-w="trans"]){display:none;}
+  .watch-pop.cabin .w-pill:is([data-w="auto"], [data-w="loop"], [data-w="blur"]){display:none;}
   @media (min-width:821px){.watch-pop.cabin{grid-template-columns:min(100%, calc((100vh - 136px) * 16 / 9));grid-template-columns:min(100%, calc((100dvh - 136px) * 16 / 9));justify-content:center;align-content:safe center;overflow:auto;}}
   .w-main{display:flex;flex-direction:column;gap:8px;min-width:0;container-type:inline-size;}
   .w-video{position:relative;width:100%;aspect-ratio:16 / 9;overflow:hidden;border-radius:12px;background:#000000;}
@@ -2359,7 +2361,7 @@ window.onYouTubeIframeAPIReady = function(){
   .watch-pop[data-size="150"] .w-cap .w-text{font-size:40px;line-height:52px;}
   .watch-pop[data-size="150"] .w-cap .w-py{font-size:24px;line-height:34px;}
   .watch-pop[data-size="150"] .w-cap .w-tr{font-size:26px;line-height:36px;}
-  .w-cap{position:absolute;left:16px;right:16px;bottom:16px;z-index:2;display:flex;justify-content:center;pointer-events:none;text-align:center;}
+  .w-cap{position:absolute;left:round(8%, 1px);right:round(8%, 1px);bottom:round(8%, 1px);z-index:2;display:flex;justify-content:center;pointer-events:none;text-align:center;}
   .w-cap .w-capline{padding:8px 16px;border-radius:12px;background:rgba(0,0,0,.66);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);}
   .watch-pop.cabin .w-cap{pointer-events:auto;}
   .w-cap .w-capline{pointer-events:auto;cursor:pointer;}
@@ -3462,7 +3464,7 @@ function watchWordsHtml(html, lang, pin) {
 }
 
 function watchLineHtml(r, inList) {
-  const p = watch.prefs, pin = p.pin && watchChinese() && typeof pinyinPro !== "undefined", tr = p.trans && !p.cabin ? watchLineTr(r) : "";
+  const p = watch.prefs, pin = p.pin && watchChinese() && typeof pinyinPro !== "undefined", tr = p.trans ? watchLineTr(r) : "";
   const lang = detectLang(r.q || "").split("-")[0];
   const text = watchWordsHtml(highlightVocabInHtml(r.qHtml || escapeHtml(r.q), r.id), lang, pin && /[\u3400-\u9fff]/.test(r.q || ""));
   return `<div class="w-text${pin ? " w-ruby" : ""}">${text}</div>` + (tr ? `<div class="w-tr">${escapeHtml(tr)}</div>` : "");
@@ -3653,13 +3655,14 @@ function paintWatchSound(state) {
     btn.classList.toggle("sound-wait", wait);
     if (wait) kickSoundLoop();
   }
+  const playing = hidden ? speechSynthesis.speaking || !!watch.waitSince : state === 1 || state === 3 || !!watch.waitSince;
   if (p == null && state === 1 && r) p = Math.max(0, Math.min(1, (watchTime() - r.time) / ((next ? next.time : r.time + 8) - r.time || 1)));
-  const on = p != null;
+  const on = playing;
   if (btn.dataset.on !== String(on)) {
     btn.dataset.on = on;
     btn.innerHTML = playFace(on ? YT_PAUSE_ICON : YT_ICON);
   }
-  if (on) paintRing(btn, p); else dropRing(btn);
+  if (p != null) paintRing(btn, p); else dropRing(btn);
 }
 
 function watchSoundBtn() {
@@ -3692,7 +3695,7 @@ function watchTick() {
   }
   let i = 0;
   for (let k = 0; k < L.length; k++) if (L[k].time <= t + .15) i = k; else break;
-  if (i > watch.at && watch.prefs.loop && L[watch.at]) {
+  if (i > watch.at && (watch.prefs.loop || watchShownFront()) && L[watch.at]) {
     watchArm(watch.at);
     try {
       watch.player.seekTo(L[watch.at].time, true);
@@ -3827,6 +3830,11 @@ async function cabinSay(r) {
   speechSynthesis.speak(utter);
 }
 
+function watchShownFront() {
+  const cap = watch && watch.prefs.cabin && document.querySelector("#watchPop .w-capline");
+  return !!cap && cap.classList.contains("reveal");
+}
+
 function watchHearAgain() {
   const r = watch && watch.lines[watch.at], cap = document.querySelector("#watchPop .w-capline");
   if (!r) return;
@@ -3899,6 +3907,7 @@ function watchPrefChanged(k) {
     if (p.trans || p.cabin) mtFill(watch.lines);
     watch.rowHtml = null;
     paintWatchList();
+    paintWatchLine();
   }
   updateTouchBar();
 }
@@ -4000,6 +4009,9 @@ function paintWatchCounts() {
   if (sig === watch.countSig) return;
   watch.countSig = sig;
   const cur = watch.lines[watch.at], on = cur ? marks[watch.at] : "";
+  const allowed = limitRows(watch.lines.filter(r => cardReady(r, "Listen", now)));
+  n.new = allowed.filter(r => cardBucket(r, "Listen", now) === "new").length;
+  n.due = allowed.filter(r => cardBucket(r, "Listen", now) === "due").length;
   el.innerHTML = badgesHtml(n.new, n.due, n.done, {
     new: on === "new",
     due: on === "due",
@@ -4086,6 +4098,7 @@ document.getElementById("watchPop").addEventListener("mouseover", e => {
   if (!watch || isTouch()) return;
   const row = e.target.closest && e.target.closest(".w-row[data-id], .w-capline[data-id]");
   hoveredRowId = row ? Number(row.dataset.id) : null;
+  if (row && row.matches(".w-capline") && watch.prefs.cabin && !row.classList.contains("reveal")) return;
   const mk = row && e.target.closest("mark.vocab-hit, mark.vocab-own");
   if (mk && mk !== watch.hoverMark) {
     watch.hoverMark = mk;
@@ -4283,6 +4296,9 @@ document.getElementById("watchPop").addEventListener("click", e => {
   if (k === "mode-i" || k === "mode-w") {
     if (watch.prefs.cabin === (k === "mode-i")) return;
     watch.prefs.cabin = k === "mode-i";
+    const capl = document.querySelector("#watchPop .w-capline");
+    if (capl) capl.classList.remove("reveal");
+    hideTooltip();
     watchPrefChanged("cabin");
     return watch.prefs.cabin ? watchSeek(Math.max(0, watch.at)) : speechSynthesis.cancel();
   }
@@ -6651,7 +6667,11 @@ function soundProgressLoop() {
       if (on && el.classList.contains("sound-wait")) el.classList.remove("sound-wait");
       add(el, on ? speech : null);
     });
-    document.querySelectorAll("#vocabCard .own-ts:not(.say-ts)").forEach(el => add(el, video != null && shownEl(el) ? video : null));
+    document.querySelectorAll("#vocabCard .own-ts:not(.say-ts)").forEach(el => {
+      const on = video != null && shownEl(el);
+      if (el.classList.contains("on") !== on) el.classList.toggle("on", on);
+      add(el, on ? video : null);
+    });
     [ "btnPlaySequence", "vocabSpeak" ].forEach(id => {
       const el = document.getElementById(id);
       add(el, el && el.classList.contains("active") ? video != null ? video : speech : null);
@@ -11594,6 +11614,12 @@ function placeEditPopup() {
   }
   const {x: x, y: y} = editPopupAnchor;
   const w = box.offsetWidth, h = box.offsetHeight, gap = 16;
+  document.getElementById("editPopup").classList.toggle("on-theater", !!watch);
+  if (watch && !isTouch()) {
+    box.style.left = Math.round(Math.max(gap, (window.innerWidth - w) / 2)) + "px";
+    box.style.top = Math.round(Math.max(gap, (window.innerHeight - h) / 2)) + "px";
+    return;
+  }
   const clamp = (v, max) => Math.round(Math.max(gap, Math.min(v, max - gap)));
   if (isTouch()) {
     box.style.left = Math.round((window.innerWidth - w) / 2) + "px";
