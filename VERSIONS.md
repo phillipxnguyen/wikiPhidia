@@ -257,6 +257,7 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 | DICT-36 | `e20ad1e` | Popup từ ở theater, thẻ học, flashcard cũng tải câu ví dụ như trong ô sửa: một popup giống hệt ở mọi màn |
 | DICT-37 | `504be8c` | Ô sửa thẻ quay lại nhúng trang từ điển (chinesedictionary.mobi, Bing) như DICT-1; bỏ danh sách từ, câu đầu, kéo chọn cụm, Shift/Delete trong ô sửa; tạo từ chỉ ở câu ngoài màn bằng popup |
 | DICT-38 | `d0dfb12` | Giữ Shift rồi kéo: câu thành chữ thường để bôi đen (không sáng/mở từ), thả tay mở ô A: B với con trỏ sẵn sau dấu hai chấm; bỏ dấu câu ở hai đầu cụm; ở theater, thẻ Lessons, flashcard |
+| DICT-39 | `aec0764` | Popup từ: Save chỉ hiện khi đã đổi nghĩa, cùng kiểu nút Add; Shift bấm Add/Save dù chuột ở đâu; từ dài không bị ngắt giữa |
 
 Hàm chính: `showDictSite`, `hideDictOverlay`, `dictUrlFor`, `ownDictCardHtml`, `openWordFloat`, `sentenceWordAt`, `ownDictLookup`, `ownDictFetch`, `ownDictPrefetch`.
 
