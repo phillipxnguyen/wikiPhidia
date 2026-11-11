@@ -10632,7 +10632,7 @@ function ownDictCardHtml(lang, w, ctx) {
     pos: "",
     terms: e.alts
   } ] : []) : [];
-  const body = !e ? '<div class="od-skel"><i></i><i></i></div>' : `<button type="button" class="od-main" data-m="${escapeAttr(e.m)}" title="Add with this meaning">${escapeHtml(e.m)}</button>` + groups.map(g => `<div class="od-group">${g.pos ? `<span class="od-pos">${escapeHtml(g.pos)}</span>` : ""}<div class="od-terms">${g.terms.map(t => `<button type="button" class="od-term" data-m="${escapeAttr(t)}" title="Add with this meaning">${escapeHtml(t)}</button>`).join("")}</div></div>`).join("");
+  const body = !e ? '<div class="od-skel"><i></i><i></i></div>' : `<button type="button" class="od-main" data-m="${escapeAttr(e.m)}" title="Add with this meaning">${escapeHtml(e.m)}</button>` + groups.map(g => `<div class="od-group">${g.pos ? `<span class="od-pos">${escapeHtml(g.pos)}</span>` : ""}<div class="od-terms">${g.terms.map(t => `<button type="button" class="od-term" data-m="${escapeAttr(t)}" title="Add this meaning to the meaning line">${escapeHtml(t)}</button>`).join("")}</div></div>`).join("");
   const act = '<span class="od-acts"></span>';
   const wi = ctx ? {
     term: w,
@@ -10729,21 +10729,21 @@ function paintOwnDictFloat() {
   pop.innerHTML = ownDictCardHtml(shown.lang, w, shown);
   const card = pop.querySelector(".od-card"), acts = card.querySelector(".od-acts");
   acts.innerHTML = have ? '<span class="od-done">✓ In your words</span><button type="button" class="od-add od-save" hidden>Save</button>' : '<button type="button" class="od-add"><span>＋</span> Add</button>';
-  if (have) card.querySelectorAll(".od-term").forEach(b => b.classList.toggle("od-cur", !!found && b.dataset.m === found.meaning));
   const value = typed != null ? typed : have ? found ? found.meaning : "" : entry ? entry.m : "";
   const field = `<input class="od-mean-in" type="text" autocomplete="off" spellcheck="false" aria-label="Meaning" title="Change the meaning if it is not right" placeholder="Type the meaning" value="${escapeAttr(value)}">`, main = card.querySelector(".od-main");
   if (main) main.outerHTML = field; else card.querySelector(".od-body").insertAdjacentHTML("afterbegin", field);
   const input = card.querySelector(".od-mean-in"), save = card.querySelector(".od-save");
   if (typed != null) input.dataset.dirty = "1";
-  if (save) {
-    const sync = () => {
-      const changed = input.value.replace(/\s+/g, " ").trim() !== (found ? found.meaning : "");
-      save.hidden = !changed;
-      card.querySelector(".od-done").hidden = changed;
-    };
-    input.addEventListener("input", sync);
-    sync();
-  }
+  const sync = () => {
+    const now = input.value.replace(/\s+/g, " ").trim(), parts = now.split(/\s*[,;，；]\s*/);
+    card.querySelectorAll(".od-term").forEach(b => b.classList.toggle("od-cur", parts.includes(b.dataset.m)));
+    if (!save) return;
+    const changed = now !== (found ? found.meaning : "");
+    save.hidden = !changed;
+    card.querySelector(".od-done").hidden = changed;
+  };
+  input.addEventListener("input", sync);
+  sync();
   if (focused) {
     input.focus();
     input.setSelectionRange(input.value.length, input.value.length);
@@ -10783,7 +10783,7 @@ function ownDictFloatPick(b) {
   const pop = ownDictFloat, shown = pop && pop.ctx;
   if (!pop || !shown) return;
   const input = pop.querySelector(".od-mean-in");
-  const w = pop.dataset.w, entry = ownDictEntry(shown.lang, w), meaning = (b.dataset.m != null ? b.dataset.m : input ? input.value : entry ? entry.m : "").replace(/\s+/g, " ").trim();
+  const w = pop.dataset.w, entry = ownDictEntry(shown.lang, w), meaning = (input ? input.value : entry ? entry.m : "").replace(/\s+/g, " ").trim();
   if (pop.dataset.mode === "have") {
     const found = ownDictFindWord(w);
     closeOwnDictFloat();
@@ -10839,7 +10839,19 @@ document.addEventListener("click", e => {
   const fl = e.target.closest && e.target.closest(".od-float");
   if (!fl) return;
   if (e.target.closest(".od-say")) return soundWaitOn(e.target.closest(".od-say")), ownDictSay(fl.dataset.w);
-  const pick = e.target.closest(".od-add, .od-save, .od-main, .od-term");
+  const chip = e.target.closest(".od-term"), input = fl.querySelector(".od-mean-in");
+  if (chip && input) {
+    const m = chip.dataset.m, now = input.value.replace(/\s+/g, " ").trim();
+    if (!now.split(/\s*[,;，；]\s*/).includes(m)) input.value = now ? now + ", " + m : m;
+    input.dataset.dirty = "1";
+    input.dispatchEvent(new Event("input", {
+      bubbles: true
+    }));
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
+    return;
+  }
+  const pick = e.target.closest(".od-add, .od-save");
   if (pick) ownDictFloatPick(pick);
 });
 
