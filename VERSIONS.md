@@ -162,6 +162,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-48 | `563502d` | Mặt trước không tô màu lookup các từ đã có, chỉ hiện sau khi lật |
 | FLASH-49 | `f6831ed` | Bỏ FLASH-47: câu ở mặt trước luôn ở trên cùng khi lật, các câu khác ở dưới |
 | FLASH-50 | `1260029` | Câu, nghĩa, notes, pinyin luôn 4 màu khác họ nhau (không xanh lá/xanh dương) |
+| FLASH-51 | `e17599b` | Mặt trước chỉ có Podcast hoặc đục lỗ: từ không đục được luôn ra Podcast, không hiện chữ |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
