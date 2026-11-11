@@ -10591,6 +10591,18 @@ function ownDictPickPhrase() {
   const key = normalizeVocabText(got.text), gone = new Set(hiddenWordsFor(ownDictShown.lang).map(normalizeVocabText));
   const mode = ownDictFindWord(got.text) ? "have" : gone.has(key) ? "off" : "new";
   const rect = got.rect;
+  if (mode !== "have") {
+    ownDictRestore(got.text, rect);
+    const field = vocabAddPopup && vocabAddPopup.querySelector(".vocab-add-field");
+    if (!field) return;
+    field.focus();
+    const r = document.createRange();
+    r.selectNodeContents(field);
+    r.collapse(false);
+    getSelection().removeAllRanges();
+    getSelection().addRange(r);
+    return;
+  }
   openOwnDictFloat({
     getBoundingClientRect: () => rect,
     isConnected: false
