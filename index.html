@@ -3975,19 +3975,19 @@ function paintWatchCounts() {
     new: 0,
     due: 0,
     done: 0
-  }, marks = watch.lines.map(r => {
-    const b = cardBucket(r, "Listen", now);
+  }, waits = r => !!watch.again && watch.again.has(r.id), marks = watch.lines.map(r => {
+    const b = waits(r) ? "due" : cardBucket(r, "Listen", now);
     if (b) n[b]++;
     return b || "later";
   });
   if (watchQueueSync()) return paintWatchList();
-  const sig = marks.join(",");
+  const sig = marks.join(",") + "|" + watch.at;
   if (sig === watch.countSig) return;
   watch.countSig = sig;
   const cur = watch.lines[watch.at], on = cur ? marks[watch.at] : "";
   const allowed = limitRows(watch.lines.filter(r => cardReady(r, "Listen", now)));
   n.new = allowed.filter(r => cardBucket(r, "Listen", now) === "new").length;
-  n.due = allowed.filter(r => cardBucket(r, "Listen", now) === "due").length;
+  n.due = allowed.filter(r => !waits(r) && cardBucket(r, "Listen", now) === "due").length + watch.lines.filter(waits).length;
   el.innerHTML = badgesHtml(n.new, n.due, n.done, {
     new: on === "new",
     due: on === "due",
@@ -4043,6 +4043,7 @@ function watchGrade(isAgain) {
     paintWatchList();
     const ni = watch.lines.findIndex(x => x.id === nextId);
     if (ni >= 0) watchSeek(ni);
+    paintWatchCounts();
   };
   if (rowEl && !reducedMotion()) {
     const h = rowEl.offsetHeight;
