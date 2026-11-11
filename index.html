@@ -2351,6 +2351,13 @@ window.onYouTubeIframeAPIReady = function(){
   html.touch.theater-on .watch-pop{padding-bottom:calc(88px + env(safe-area-inset-bottom));}
   .watch-pop .w-topbar{position:fixed;z-index:2;top:16px;left:max(16px, calc(50% - 760px));right:calc(max(16px, calc(50% - 760px)) + 52px);width:auto;height:40px;margin:0;padding:0;}
   .watch-pop .w-topbar .progress-badge.done{color:#d0d0d0;}
+  .w-modes{flex:none;display:inline-flex;gap:2px;padding:4px;border-radius:12px;background:rgba(255,255,255,.08);pointer-events:auto;}
+  .w-modes button{height:32px;padding:0 14px;border:0;border-radius:8px;background:none;color:var(--tw-dim);font:inherit;font-size:14px;line-height:20px;font-weight:700;cursor:pointer;transition:background-color .15s, color .15s;}
+  .w-modes button.active{background:rgba(255,255,255,.16);color:#ffffff;}
+  @media (hover:hover){.w-modes button:not(.active):hover{color:#ffffff;}}
+  .watch-pop.cabin .w-listbox{display:none;}
+  .watch-pop.cabin .w-pill:is([data-w="auto"], [data-w="loop"], [data-w="blur"], [data-w="trans"]){display:none;}
+  @media (min-width:821px){.watch-pop.cabin{grid-template-columns:min(100%, calc((100vh - 136px) * 16 / 9));grid-template-columns:min(100%, calc((100dvh - 136px) * 16 / 9));justify-content:center;align-content:safe center;overflow:auto;}}
   .w-main{display:flex;flex-direction:column;gap:8px;min-width:0;container-type:inline-size;}
   .w-video{position:relative;width:100%;aspect-ratio:16 / 9;overflow:hidden;border-radius:12px;background:#000000;}
   .w-video > *{position:absolute;inset:0;width:100%;height:100%;}
@@ -3464,7 +3471,10 @@ function openWatch() {
   watch = {
     lessonId: currentLessonId,
     lines: lines,
-    prefs: watchPrefs(),
+    prefs: Object.assign(watchPrefs(), {
+      cabin: true,
+      loop: false
+    }),
     at: 0,
     player: null,
     timer: 0,
@@ -3477,7 +3487,7 @@ function openWatch() {
   box.hidden = false;
   box.style.setProperty("--scene", theaterScene(watch.scene));
   box.dataset.scene = watch.scene;
-  box.innerHTML = '<div class="toolbar vocab-toolbar w-topbar"><span class="flag-set toolbar-flag"></span><div class="toolbar-counts w-counts"></div></div><div class="w-main"><div class="w-stage"><div class="w-video"><div></div><div class="w-shield"></div></div><div class="w-cap"><div class="w-capline"></div></div></div><div class="w-ctl"><div class="w-ctl-l"></div><div class="w-ctl-c"></div><div class="w-ctl-r"></div></div></div><div class="w-listbox"></div>';
+  box.innerHTML = '<div class="toolbar vocab-toolbar w-topbar"><span class="flag-set toolbar-flag"></span><div class="w-modes" role="tablist" aria-label="Theater mode"><button type="button" role="tab" data-w="mode-i" title="Interpreter: each line is read to you in translation; say it yourself, then Show plays it from the video">Interpreter</button><button type="button" role="tab" data-w="mode-w" title="Watch: the video with the list of lines">Watch</button></div><div class="toolbar-counts w-counts"></div></div><div class="w-main"><div class="w-stage"><div class="w-video"><div></div><div class="w-shield"></div></div><div class="w-cap"><div class="w-capline"></div></div></div><div class="w-ctl"><div class="w-ctl-l"></div><div class="w-ctl-c"></div><div class="w-ctl-r"></div></div></div><div class="w-listbox"></div>';
   paintWatch();
   placeTheater();
   requestAnimationFrame(placeTheater);
@@ -3754,6 +3764,9 @@ function watchPrefChanged(k) {
   syncWatchPills();
   box.classList.toggle("blurred", !!p.blur);
   box.classList.toggle("cabin", !!p.cabin);
+  box.classList.toggle("with-list", !p.cabin);
+  watchModeTabs();
+  requestAnimationFrame(placeTheater);
   if (k === "trans" || k === "cabin" || k === "pin") {
     if (p.trans || p.cabin) mtFill(watch.lines);
     watch.rowHtml = null;
@@ -3762,17 +3775,26 @@ function watchPrefChanged(k) {
   updateTouchBar();
 }
 
+function watchModeTabs() {
+  document.querySelectorAll("#watchPop .w-modes [data-w]").forEach(b => {
+    const on = (b.dataset.w === "mode-i") === !!watch.prefs.cabin;
+    b.classList.toggle("active", on);
+    b.setAttribute("aria-selected", String(on));
+  });
+}
+
 function paintWatch() {
   const p = watch.prefs, box = document.getElementById("watchPop");
   watchQueueSync();
   watch.rowHtml = null;
   box.querySelector(".w-topbar .toolbar-flag").innerHTML = document.getElementById("studyFlag").innerHTML;
   box.dataset.size = p.size || 100;
-  box.className = "watch-pop with-list" + (p.pin && watchChinese() ? " pinned" : "") + (p.blur ? " blurred" : "") + (p.cabin ? " cabin" : "");
+  box.className = "watch-pop" + (p.cabin ? "" : " with-list") + (p.pin && watchChinese() ? " pinned" : "") + (p.blur ? " blurred" : "") + (p.cabin ? " cabin" : "");
+  watchModeTabs();
   if (p.trans || p.cabin) mtFill(watch.lines);
   watch.countSig = "";
   const pill = (k, title, label) => `<button type="button" class="w-pill${p[k] ? " on" : ""}" data-w="${k}" aria-pressed="${!!p[k]}" title="${title}">${label}</button>`;
-  const tools = `${pill("auto", "Pause at the end of every line (Q)", '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 10h7M13 6v8M16.5 6v8"/></svg>')}${pill("loop", "Loop the line being said", '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 9V8a3 3 0 0 1 3-3h8M13 3l2 2-2 2M16 11v1a3 3 0 0 1-3 3H5M7 17l-2-2 2-2"/></svg>')}${pill("blur", "Blur the writing until you point at it", '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 10s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/><path d="M4 16L16 4"/></svg>')}${watchChinese() ? pill("pin", "Pinyin", "拼") : ""}${pill("trans", "The translation (the lesson's own, or a machine translation when the line has none)", '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M3 10h14M10 3c2.6 2.6 2.6 11.4 0 14M10 3c-2.6 2.6-2.6 11.4 0 14"/></svg>')}${pill("cabin", "Interpreting: each line is first read to you in translation; say it yourself, then Show plays it from the video, and grade it as usual", '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 11V9a6 6 0 0 1 12 0v2"/><rect x="3" y="10" width="3" height="5" rx="1.5"/><rect x="14" y="10" width="3" height="5" rx="1.5"/><path d="M15.5 15.5c0 1.5-1.8 2.5-4.5 2.5"/></svg>')}<select class="w-size" aria-label="Subtitle size" title="Subtitle size">${[ 100, 125, 150 ].map(v => `<option value="${v}"${v === (p.size || 100) ? " selected" : ""}>${v}%</option>`).join("")}</select><select class="w-rate" aria-label="Speed" title="Speed">${[ ...document.getElementById("playbackSpeed").options ].map(o => `<option value="${o.value}"${Number(o.value) === p.rate ? " selected" : ""}>${o.textContent}</option>`).join("")}</select>`;
+  const tools = `${pill("auto", "Pause at the end of every line (Q)", '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 10h7M13 6v8M16.5 6v8"/></svg>')}${pill("loop", "Loop the line being said", '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 9V8a3 3 0 0 1 3-3h8M13 3l2 2-2 2M16 11v1a3 3 0 0 1-3 3H5M7 17l-2-2 2-2"/></svg>')}${pill("blur", "Blur the writing until you point at it", '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 10s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/><path d="M4 16L16 4"/></svg>')}${watchChinese() ? pill("pin", "Pinyin", "拼") : ""}${pill("trans", "The translation (the lesson's own, or a machine translation when the line has none)", '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M3 10h14M10 3c2.6 2.6 2.6 11.4 0 14M10 3c-2.6 2.6-2.6 11.4 0 14"/></svg>')}<select class="w-size" aria-label="Subtitle size" title="Subtitle size">${[ 100, 125, 150 ].map(v => `<option value="${v}"${v === (p.size || 100) ? " selected" : ""}>${v}%</option>`).join("")}</select><select class="w-rate" aria-label="Speed" title="Speed">${[ ...document.getElementById("playbackSpeed").options ].map(o => `<option value="${o.value}"${Number(o.value) === p.rate ? " selected" : ""}>${o.textContent}</option>`).join("")}</select>`;
   box.querySelector(".w-ctl-l").innerHTML = tools;
   syncWatchPills();
   box.querySelector(".w-ctl-c").innerHTML = "";
@@ -4033,6 +4055,12 @@ document.getElementById("watchPop").addEventListener("click", e => {
   if (k === "prev") return watchSeek(Math.max(0, watch.at - 1));
   if (k === "next") return watchSeek(Math.min(watch.lines.length - 1, watch.at + 1));
   if (k === "gagain" || k === "ggood") return watchGrade(k === "gagain");
+  if (k === "mode-i" || k === "mode-w") {
+    if (watch.prefs.cabin === (k === "mode-i")) return;
+    watch.prefs.cabin = k === "mode-i";
+    watchPrefChanged("cabin");
+    return watch.prefs.cabin ? watchSeek(Math.max(0, watch.at)) : speechSynthesis.cancel();
+  }
   watch.prefs[k] = !watch.prefs[k];
   saveWatchPrefs();
   watchPrefChanged(k);
