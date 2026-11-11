@@ -338,6 +338,7 @@ Hàm chính: `swipe`, `ghostFor`, `angelFly`, `cutLayer`, `playCut`.
 | RING-9 | `199b7d3` | Lessons: câu không video có pill ▶/⏸ ở ☰ Full và tờ Speaking, vòng chạy trên pill |
 | RING-10 | `71d9610` | Pill ▶/giờ căn giữa dòng đầu của câu (Speaking, ☰ Full) |
 | RING-11 | `bba0a99` | Vòng chạy trên nút sound của theater và nút 🔊 trong Dictionary; không vẽ vòng lên mặt thẻ đang ẩn |
+| RING-12 | `e44ef17` | Trả lại tia sét giật khi chờ tiếng (như trước RING-5), thêm cho nút sound theater, pill ▶ và 🔊 Dictionary |
 
 Hàm chính: `paintRing`, `dropRing`, `setDash`.
 
