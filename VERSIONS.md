@@ -158,6 +158,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-45 | `5f66b6a` | Pill của mọi câu nằm đầu dòng pinyin (không có pinyin thì đầu dòng chữ), không đứng riêng một dòng |
 | FLASH-46 | `8873df2` | Pinyin trên notes chỉ cho phần chữ Hán, không tách chữ Việt/Anh |
 | FLASH-47 | `d8b20e4` | Mặt sau: câu gốc của từ lên trên câu thế giới/bài khác |
+| FLASH-48 | `563502d` | Mặt trước không tô màu lookup các từ đã có, chỉ hiện sau khi lật |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
