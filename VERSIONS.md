@@ -163,6 +163,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-49 | `f6831ed` | Bỏ FLASH-47: câu ở mặt trước luôn ở trên cùng khi lật, các câu khác ở dưới |
 | FLASH-50 | `1260029` | Câu, nghĩa, notes, pinyin luôn 4 màu khác họ nhau (không xanh lá/xanh dương) |
 | FLASH-51 | `e17599b` | Mặt trước chỉ có Podcast hoặc đục lỗ: từ không đục được luôn ra Podcast, không hiện chữ |
+| FLASH-52 | `76fd44b` | Podcast đầu tiên khi trình duyệt chặn tiếng: nút sound giật chờ, chạm đầu tiên là phát |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
@@ -265,6 +266,7 @@ Hàm chính: `showOwnDict`, `ownDictCardHtml`, `ownDictLookup`, `ownDictWords`, 
 | DATA-12 | `ac10946` | Bỏ luật /: xuống dòng 2 lần liên tiếp thì phần trên thành Q, sau đó xuống dòng bình thường; xoá hết đáp án thì về câu thường |
 | DATA-13 | `551decf` | Bỏ hẳn /: Q đánh dấu bằng ký tự vô hình (do 2 lần xuống dòng tạo ra), / gõ hay dán đều là chữ thường |
 | DATA-14 | `8529b6f` | Mở ô sửa là dòng Q có màu ngay; bỏ đoạn dọn ký tự đánh dấu trong cleanText |
+| DATA-15 | `76fd44b` | Bỏ tự dọn: không làm sạch/nối/ghép khi mở app hay mở bài, không tự chuyển thẻ↔từ hay xoá trùng khi lưu; giữ chuyển định dạng tiến độ và bỏ mốc giờ khi không có video |
 
 Hàm chính: `newRow` (bản dịch vào notes khi tạo), `foldAnswer` + `keepsAnswer` (dòng thêm dưới câu khi sửa thẻ hoặc khi dán thì vào notes), `wordLike`, `belongsInVocab`, `isTranslationCard` (cho dòng `từ: nghĩa`), `autoSortLibrary`.
 
