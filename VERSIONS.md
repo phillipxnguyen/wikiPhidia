@@ -109,6 +109,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-55 | `a46cc82` | Mép kéo thanh câu: dải sáng mờ dần vào trong ở hai mép (như mép mờ khi cuộn), thay viền cứng |
 | THEATER-56 | `0a92bb6` | Đếm: dòng Again tính vào ⏳ tới khi quay lại; ô của dòng đang học luôn sáng sau mỗi lần chấm (trước bị tắt xen kẽ) |
 | THEATER-57 | `d0dfb12` | Interpreter: chưa Show mà bật 🌐 thì thanh chỉ hiện câu dịch (bỏ khối mờ), Show thì câu gốc hiện trên |
+| THEATER-58 | `7b097cc` | Câu dịch trong hộp tối riêng ôm sát chữ như phụ đề YouTube, chữ nhỏ hơn câu gốc 2 px ở mọi cỡ (cả phone) |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
@@ -259,8 +260,16 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 | DICT-38 | `d0dfb12` | Giữ Shift rồi kéo: câu thành chữ thường để bôi đen (không sáng/mở từ), thả tay mở ô A: B với con trỏ sẵn sau dấu hai chấm; bỏ dấu câu ở hai đầu cụm; ở theater, thẻ Lessons, flashcard |
 | DICT-39 | `aec0764` | Popup từ: Save chỉ hiện khi đã đổi nghĩa, cùng kiểu nút Add; Shift bấm Add/Save dù chuột ở đâu; từ dài không bị ngắt giữa |
 | DICT-40 | `5888791` | Bấm nghĩa gợi ý chỉ thêm vào dòng nghĩa (sau dấu phẩy), không lưu; nghĩa đã có trong dòng được viền |
+| DICT-41 | `7b097cc` | Popup từ: mỗi nghĩa một dòng (không dấu phẩy), nghĩa gợi ý thêm thành dòng mới; rê chuột vào từ chỉ hiện nghĩa |
 
 Hàm chính: `showDictSite`, `hideDictOverlay`, `dictUrlFor`, `ownDictCardHtml`, `openWordFloat`, `sentenceWordAt`, `ownDictLookup`, `ownDictFetch`, `ownDictPrefetch`.
+
+### DICTLOAD: Tải trước trang từ điển
+| Mã | Commit | Là gì |
+|---|---|---|
+| DICTLOAD-1 | `7b097cc` | Trang từ điển của thẻ đang hiện và thẻ kế tiếp (Lessons, flashcard, theater) tải sẵn trong ô sửa ẩn, đúng kích thước; mở ô sửa dùng lại trang đã tải, không tải lại |
+
+Hàm chính: `dictLoad`, `dictSlot`, `dictFit`, `showDictSite`, `hideDictOverlay`, `preloadCardDict`, `preloadVocabDict`, `rowDictText`, `dictPreloadObserver`.
 
 ### DATA: Dữ liệu thẻ (Q/A)
 | Mã | Commit | Là gì |
