@@ -108,6 +108,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-54 | `cebda15` | Interpreter: hàng nút gom trong một khung tối, cách câu và mép dưới bằng nhau; câu không kéo xuống dưới hàng nút (hay lên dưới thanh trên); kéo câu bằng hai mép của chính thanh câu |
 | THEATER-55 | `a46cc82` | Mép kéo thanh câu: dải sáng mờ dần vào trong ở hai mép (như mép mờ khi cuộn), thay viền cứng |
 | THEATER-56 | `0a92bb6` | Đếm: dòng Again tính vào ⏳ tới khi quay lại; ô của dòng đang học luôn sáng sau mỗi lần chấm (trước bị tắt xen kẽ) |
+| THEATER-57 | `d0dfb12` | Interpreter: chưa Show mà bật 🌐 thì thanh chỉ hiện câu dịch (bỏ khối mờ), Show thì câu gốc hiện trên |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
@@ -255,6 +256,7 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 | DICT-35 | `86a7bf3` | Bấm từ trên mọi câu đang hiện (thẻ Lessons đã show, mặt sau flashcard, theater, câu đầu ô sửa) mở popup từ điển; nghĩa sửa thẳng tại chỗ, không ô nhập riêng; từ đơn đã có mở popup để đổi nghĩa, cụm từ vẫn ô A: B; rê sáng từ + nghĩa |
 | DICT-36 | `e20ad1e` | Popup từ ở theater, thẻ học, flashcard cũng tải câu ví dụ như trong ô sửa: một popup giống hệt ở mọi màn |
 | DICT-37 | `504be8c` | Ô sửa thẻ quay lại nhúng trang từ điển (chinesedictionary.mobi, Bing) như DICT-1; bỏ danh sách từ, câu đầu, kéo chọn cụm, Shift/Delete trong ô sửa; tạo từ chỉ ở câu ngoài màn bằng popup |
+| DICT-38 | `d0dfb12` | Giữ Shift rồi kéo: câu thành chữ thường để bôi đen (không sáng/mở từ), thả tay mở ô A: B với con trỏ sẵn sau dấu hai chấm; bỏ dấu câu ở hai đầu cụm; ở theater, thẻ Lessons, flashcard |
 
 Hàm chính: `showDictSite`, `hideDictOverlay`, `dictUrlFor`, `ownDictCardHtml`, `openWordFloat`, `sentenceWordAt`, `ownDictLookup`, `ownDictFetch`, `ownDictPrefetch`.
 
