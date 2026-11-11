@@ -451,6 +451,18 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-list .vocab-editor{margin:4px 0;box-shadow:none;}
   .vocab-editor textarea{width:100%;font-size:16px;}
   #vocabEditTerm, #qaQ{border-left:4px solid var(--lesson-accent);}
+  .q-wrap{position:relative;display:block;min-width:0;}
+  .qa-row > .q-wrap{flex:1 1 auto;}
+  :is(.q-mirror, .q-mirrored){text-indent:var(--q-indent, 0px);}
+  :is(.q-mirror, .q-mirrored) :is(div, p, li){text-indent:0;}
+  :is(.q-mirror, .q-mirrored).q-lead-block > :is(div, p):first-child{text-indent:var(--q-indent, 0px);}
+  .q-mirror{position:absolute;z-index:0;margin:0;overflow:hidden;border-style:solid;border-color:transparent;color:var(--text);pointer-events:none;}
+  .q-mirror .q-slash{color:transparent;}
+  .q-mirror .q-line{color:var(--accent);}
+  .q-mirrored{position:relative;z-index:1;background-color:transparent!important;color:transparent!important;-webkit-text-fill-color:transparent;caret-color:var(--text);}
+  .q-mirrored *{color:transparent!important;-webkit-text-fill-color:transparent;}
+  .q-mirrored::placeholder{-webkit-text-fill-color:var(--placeholder);}
+  .q-mirrored:empty::before{-webkit-text-fill-color:var(--placeholder);}
   #vocabEditNotes, #qaNotes{font-size:16px;}
   .quick-add{margin-bottom:12px;box-shadow:none;}
   .quick-add, #addForm{--kind:var(--accent);}
@@ -11270,6 +11282,130 @@ function addWordToEditNotes(notes, term, meaning) {
     bubbles: true
   }));
 }
+
+const Q_BOXES = "#qaQ, #vocabEditTerm, #editQ";
+
+let qSlashCanvas = null;
+
+function qSlashWidth(cs) {
+  const g = (qSlashCanvas = qSlashCanvas || document.createElement("canvas")).getContext("2d");
+  g.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+  return Math.round(g.measureText("/").width);
+}
+
+function qMirrorBody(el, m) {
+  if (el.tagName === "TEXTAREA") {
+    const t = el.value, lead = t.length - t.trimStart().length, has = t.slice(lead, lead + 1) === "/";
+    if (!has) {
+      m.textContent = t + "​";
+      return false;
+    }
+    const nl = t.indexOf("\n"), end = nl < 0 ? t.length : nl;
+    m.innerHTML = escapeHtml(t.slice(0, lead)) + '<span class="q-slash">/</span><span class="q-line">' + escapeHtml(t.slice(lead + 1, end)) + "</span>" + escapeHtml(t.slice(end)) + "​";
+    return true;
+  }
+  m.innerHTML = el.innerHTML;
+  const walk = document.createTreeWalker(m, NodeFilter.SHOW_TEXT), first = (() => {
+    let n;
+    while (n = walk.nextNode()) if (n.nodeValue.trim()) return n;
+    return null;
+  })();
+  if (!first || first.nodeValue.trimStart()[0] !== "/") return false;
+  const at = first.nodeValue.indexOf("/"), rest = first.splitText(at);
+  rest.splitText(1);
+  const slash = document.createElement("span");
+  slash.className = "q-slash";
+  rest.replaceWith(slash);
+  slash.append(rest);
+  const block = first.parentElement.closest("div, p, li");
+  const scope = block && block !== m && m.contains(block) ? block : m, nodes = [];
+  const w2 = document.createTreeWalker(scope, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
+  let n, started = false;
+  while (n = w2.nextNode()) {
+    if (n === slash) {
+      started = true;
+      continue;
+    }
+    if (!started || slash.contains(n)) continue;
+    if (n.nodeType === 1 && (n.tagName === "BR" || scope === m && /^(DIV|P|LI|UL|OL)$/.test(n.tagName))) break;
+    if (n.nodeType === 3) nodes.push(n);
+  }
+  nodes.forEach(t => {
+    const sp = document.createElement("span");
+    sp.className = "q-line";
+    t.replaceWith(sp);
+    sp.append(t);
+  });
+  return true;
+}
+
+function qMirrorSync(el) {
+  if (!el || !el.isConnected || !el.offsetParent || el.classList.contains("yt-ph")) {
+    if (el && el.classList.contains("q-mirrored") && el.classList.contains("yt-ph")) {
+      el.classList.remove("q-mirrored");
+      el.style.removeProperty("--q-indent");
+      const m = el.parentElement && el.parentElement.querySelector(":scope > .q-mirror");
+      if (m) m.remove();
+    }
+    return;
+  }
+  let wrap = el.parentElement;
+  if (!wrap.classList.contains("q-wrap")) {
+    const focused = document.activeElement === el;
+    wrap = document.createElement("div");
+    wrap.className = "q-wrap";
+    el.before(wrap);
+    wrap.append(el);
+    if (focused) el.focus();
+  }
+  let m = wrap.querySelector(":scope > .q-mirror");
+  if (!m) {
+    m = document.createElement("div");
+    m.className = "q-mirror";
+    m.setAttribute("aria-hidden", "true");
+    wrap.prepend(m);
+  }
+  const cs = getComputedStyle(el);
+  [ "fontFamily", "fontSize", "fontWeight", "fontStyle", "lineHeight", "letterSpacing", "wordSpacing", "textAlign", "paddingTop", "paddingRight", "paddingBottom", "paddingLeft", "borderTopWidth", "borderRightWidth", "borderBottomWidth", "borderLeftWidth", "borderTopLeftRadius", "borderTopRightRadius", "borderBottomLeftRadius", "borderBottomRightRadius", "boxSizing", "whiteSpace", "overflowWrap", "wordBreak", "tabSize" ].forEach(k => m.style[k] = cs[k]);
+  if (el.tagName === "TEXTAREA") m.style.whiteSpace = "pre-wrap";
+  if (!el.classList.contains("q-mirrored")) el.classList.add("q-mirrored");
+  const bg = el.dataset.qBg || (el.dataset.qBg = cs.backgroundColor);
+  m.style.backgroundColor = bg;
+  m.style.width = el.offsetWidth + "px";
+  m.style.height = el.offsetHeight + "px";
+  m.style.left = el.offsetLeft + "px";
+  m.style.top = el.offsetTop + "px";
+  const has = qMirrorBody(el, m), indent = has ? -qSlashWidth(cs) + "px" : "0px";
+  let lead = false;
+  if (el.tagName !== "TEXTAREA") {
+    const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    let n;
+    while ((n = w.nextNode()) && !n.nodeValue.trim()) ;
+    lead = !!n && n.parentElement !== el && !!n.parentElement.closest("div, p, li") && n.parentElement.closest("div, p, li") !== el;
+  }
+  [ el, m ].forEach(x => {
+    if (x.style.getPropertyValue("--q-indent") !== indent) x.style.setProperty("--q-indent", indent);
+    x.classList.toggle("q-lead-block", lead);
+  });
+  m.scrollTop = el.scrollTop;
+}
+
+function qMirrorAll() {
+  document.querySelectorAll(Q_BOXES).forEach(qMirrorSync);
+}
+
+[ "input", "focusin", "keyup", "scroll" ].forEach(t => document.addEventListener(t, e => {
+  if (e.target && e.target.matches && e.target.matches(Q_BOXES)) requestAnimationFrame(() => qMirrorSync(e.target));
+}, true));
+
+setInterval(() => {
+  document.querySelectorAll(Q_BOXES).forEach(el => {
+    const sig = (el.tagName === "TEXTAREA" ? el.value : el.innerHTML) + "|" + el.offsetWidth + "x" + el.offsetHeight + "|" + !!el.offsetParent;
+    if (el.qSig === sig) return;
+    el.qSig = sig;
+    qMirrorSync(el);
+  });
+}, 250);
 
 function cardDictUrl(row) {
   const video = isVideoLesson();
