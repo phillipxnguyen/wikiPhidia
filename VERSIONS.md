@@ -33,6 +33,7 @@ Hàm chính: `isListenMode`, `listenBatch`, `startSequenceLoop`, `stopSequenceLo
 | SPEAK-6 | `1acf767` | Chỗ trống là gạch chân mảnh bình thường (2 px, nhạt), không còn thanh dày bo tròn |
 | SPEAK-7 | `cc9a4dd` | Trong focus vẫn là tờ giấy có gáy và dòng kẻ như cũ (bỏ tờ mờ kính) |
 | SPEAK-8 | `71d9610` | Sổ còng luôn ít nhất 2 còng (tờ Speaking, sổ ☰ Full, tờ Today) |
+| SPEAK-9 | `b62d155` | Chưa Show thì ← →, Return, nút Again/Good đều Show (Hint) trước, lần sau mới chấm |
 
 Hàm chính: `ieltsPaperHtml`, `ieltsFrontHtml`, `sentenceEx`, `sentenceKeyWord`, `entryHidden`, `revealAction`, `render` (nhánh `groupViewStyle === "ielts"`). Cùng `ieltsHints`, `ieltsHintNext`, `ieltsHintId` (Hint).
 
@@ -151,6 +152,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-41 | `32271f0` | Gọn lại như trước: line-height 1.25, khoảng giữa các khối 0,6 cỡ chữ |
 | FLASH-42 | `7826755` | Thẻ là cả câu dịch (A → B) luôn ra mặt Podcast: cảnh động, đọc cả câu; Show hiện câu và nghĩa |
 | FLASH-43 | `5b0a629` | Mỗi câu trên flashcard có pill phát: giờ (YouTube) hoặc ▶/⏸; vòng chạy trên pill của câu đang phát |
+| FLASH-44 | `b62d155` | Chưa lật thì ← →, Return, nút Again/Good đều lật trước, lần sau mới chấm |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
