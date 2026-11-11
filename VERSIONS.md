@@ -267,6 +267,7 @@ Hàm chính: `showOwnDict`, `ownDictCardHtml`, `ownDictLookup`, `ownDictWords`, 
 | DATA-13 | `551decf` | Bỏ hẳn /: Q đánh dấu bằng ký tự vô hình (do 2 lần xuống dòng tạo ra), / gõ hay dán đều là chữ thường |
 | DATA-14 | `8529b6f` | Mở ô sửa là dòng Q có màu ngay; bỏ đoạn dọn ký tự đánh dấu trong cleanText |
 | DATA-15 | `76fd44b` | Bỏ tự dọn: không làm sạch/nối/ghép khi mở app hay mở bài, không tự chuyển thẻ↔từ hay xoá trùng khi lưu; giữ chuyển định dạng tiến độ và bỏ mốc giờ khi không có video |
+| DATA-16 | `11b9bb7` | Không tự lưu gì: bỏ xoá bài rỗng, chuyển tiến độ chỉ trong bộ nhớ, bài không video chỉ hiển thị như Speaking (giữ mốc giờ) |
 
 Hàm chính: `newRow` (bản dịch vào notes khi tạo), `foldAnswer` + `keepsAnswer` (dòng thêm dưới câu khi sửa thẻ hoặc khi dán thì vào notes), `wordLike`, `belongsInVocab`, `isTranslationCard` (cho dòng `từ: nghĩa`), `autoSortLibrary`.
 
