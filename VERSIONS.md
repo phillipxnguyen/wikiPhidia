@@ -105,6 +105,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-51 | `80128d9` | Điện thoại: câu căn giữa video và ô copy/✕ khi ô đó hiện; câu dịch lặp hai lần (phụ đề tách đôi) chỉ viết một lần |
 | THEATER-52 | `31ff949` | Interpreter trên máy tính: video full màn, thanh trên và hàng nút nổi trên video |
 | THEATER-53 | `86a7bf3` | Interpreter: YouTube phủ kín màn, không dải đen hai bên; bấm từ mở popup từ điển; Esc trong popup không đóng theater |
+| THEATER-54 | `cebda15` | Interpreter: hàng nút gom trong một khung tối, cách câu và mép dưới bằng nhau; câu không kéo xuống dưới hàng nút (hay lên dưới thanh trên); kéo câu bằng hai mép của chính thanh câu |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
