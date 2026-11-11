@@ -97,6 +97,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-44 | `90a4621` | Công tắc Interpreter / Watch ở thanh trên; mở luôn là Interpreter: video to, ẩn list, chỉ còn 拼, cỡ chữ, tốc độ; bỏ nút 🎧 |
 | THEATER-45 | `47a4813` | Công tắc Interpreter / Watch dùng icon (🎧 và màn hình + list), tên hiện khi trỏ chuột |
 | THEATER-46 | `863ac6c` | Hàng nút dưới video cách đều video và mép dưới; tay nắm ↕ kéo câu lên xuống (nhớ vị trí); bấm câu mở ô sửa; Interpreter: A = Again, D = Good |
+| THEATER-47 | `e9be2a3` | Interpreter: chưa Show thì mọi phím/nút chấm (A, D, ← →, Return, nút điện thoại) đều Show trước, lần sau mới chấm |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
