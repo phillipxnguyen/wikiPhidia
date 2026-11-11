@@ -532,6 +532,7 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-card.fill :is(.cloze-own, .cloze-notes) .py-line{font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;font-style:normal;}
   .own-ts{position:relative;display:inline-flex;align-items:center;height:24px;margin-right:8px;padding:0 8px;vertical-align:4px;border:0;border-radius:12px;background:color-mix(in srgb, currentColor 12%, transparent);color:inherit;font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;font-size:13px;line-height:16px;font-weight:700;font-style:normal;cursor:pointer;}
   .say-ts{justify-content:center;min-width:40px;}
+  .py-line .own-ts{vertical-align:middle;}
   .loop-time.say-ts{display:inline-flex;align-items:center;box-sizing:border-box;min-width:36px;height:22px;padding:0 8px;}
   .loop-time.say-ts.on{background:var(--accent);color:var(--on-accent);}
   .say-ts svg{width:14px;height:14px;fill:currentColor;}
@@ -20200,6 +20201,11 @@ function wholeSentenceCard(item, sentence) {
   return term === line || !sentence && (/[.!?。！？]$/.test(item.term.trim()) || item.term.trim().split(/\s+/).length > 4);
 }
 
+function withPill(pill, html) {
+  const m = pill && /<span class="[^"]*\bpy-line\b[^"]*">/.exec(html);
+  return m ? html.slice(0, m.index + m[0].length) + pill + html.slice(m.index + m[0].length) : pill + html;
+}
+
 function linePillHtml(item, text, own, cls) {
   const c = cls ? " " + cls : "";
   if (own && item.card.time != null && vocabVideoIdFor(item.card)) return `<button type="button" class="own-ts${c}" title="Play this line">${fmtTime(item.card.time)}</button>`;
@@ -20214,7 +20220,7 @@ function vocabBackInner(item) {
   }
   const whole = wholeSentenceCard(item, sentence);
   const inSentence = !whole && sentence && !!findWordForm(sentence.normalize("NFC"), item.term);
-  const main = whole ? `<div class="vocab-ctx">${linePillHtml(item, item.term, true)}${lookupOthers(vocabSentenceHtml(item.term, "", card), item)}</div>` : inSentence ? `<div class="vocab-ctx">${linePillHtml(item, sentence, true)}${lookupOthers(vocabSentenceHtml(sentence, item.term, card), item)}</div>` : `<div class="vocab-ctx"><b class="vocab-word">${vocabSentenceHtml(item.term, "", card)}</b></div>` + (sentence ? `<div class="vocab-ctx small">${linePillHtml(item, sentence, true)}${lookupOthers(vocabSentenceHtml(sentence, "", card), item)}</div>` : "");
+  const main = whole ? `<div class="vocab-ctx">${withPill(linePillHtml(item, item.term, true), lookupOthers(vocabSentenceHtml(item.term, "", card), item))}</div>` : inSentence ? `<div class="vocab-ctx">${withPill(linePillHtml(item, sentence, true), lookupOthers(vocabSentenceHtml(sentence, item.term, card), item))}</div>` : `<div class="vocab-ctx"><b class="vocab-word">${vocabSentenceHtml(item.term, "", card)}</b></div>` + (sentence ? `<div class="vocab-ctx small">${withPill(linePillHtml(item, sentence, true), lookupOthers(vocabSentenceHtml(sentence, "", card), item))}</div>` : "");
   const notes = rest ?? wordNotesOf(item);
   return main + `<div class="vocab-meaning${whole ? "" : " word"}">${escapeHtml(item.meaning)}</div>` + (notes ? `<div class="vocab-word-notes">${brLines(notes)}</div>` : "");
 }
@@ -20392,17 +20398,17 @@ function fillVocabCard(el, item) {
     const [ before, after ] = [ text.slice(0, span[0]), text.slice(span[1]) ];
     const noted = noteSentence(item), notes = noted ? noted.rest.replace(/^(\s|<br\s*\/?>|<div>\s*<\/div>)+/i, "") : wordNotesOf(item);
     const spy = cjkScriptFor(text, item.card) === "zh" ? pinyinLine(text) : "";
-    const sent = `<span${el.dataset.listen ? ' class="vc-sent"' : ""}>${spy ? `<span class="cloze-more cloze-spy py-line">${escapeHtml(spy)}</span>` : ""}${linePillHtml(item, text, !otherGap, "cloze-pill")}${lookupOthers(escapeHtml(before), item)}<span class="cloze-gap" style="--gap:${n}"><span class="cloze-word">${escapeHtml(text.slice(span[0], span[1]))}</span></span>${lookupOthers(escapeHtml(after), item)}</span>`;
+    const sent = `<span${el.dataset.listen ? ' class="vc-sent"' : ""}>${spy ? `<span class="cloze-more cloze-spy py-line">${linePillHtml(item, text, !otherGap)}${escapeHtml(spy)}</span>` : linePillHtml(item, text, !otherGap, "cloze-pill")}${lookupOthers(escapeHtml(before), item)}<span class="cloze-gap" style="--gap:${n}"><span class="cloze-word">${escapeHtml(text.slice(span[0], span[1]))}</span></span>${lookupOthers(escapeHtml(after), item)}</span>`;
     const own = otherGap && sentence && sentence !== text ? sentence : "";
     const ownTs = own ? linePillHtml(item, own, true) : "";
-    const ownHtml = own ? `<span class="cloze-more cloze-own">${ownTs}${lookupOthers(vocabSentenceHtml(own, item.term, item.card), item)}</span>` : "";
+    const ownHtml = own ? `<span class="cloze-more cloze-own">${withPill(ownTs, lookupOthers(vocabSentenceHtml(own, item.term, item.card), item))}</span>` : "";
     el.querySelector(".vocab-term").innerHTML = `<span class="cloze-body">${el.dataset.listen ? `<span class="vc-stack"><span class="vc-art" aria-hidden="true">${sceneArt(el.dataset.scene)}<span class="vc-time"><i></i></span></span>${sent}</span>` : sent}${ownHtml}${notes ? `<span class="cloze-more cloze-notes">${notesWithPinyin(brLines(notes), item.card)}</span>` : ""}</span>`;
     el.querySelector(".vocab-term").insertAdjacentHTML("afterbegin", `<span class="cloze-more cloze-head"><span class="cloze-main">${rubyWord(item.term, item.card)}</span>${item.meaning ? `<span class="cloze-mean">${escapeHtml(item.meaning)}</span>` : ""}</span>`);
     el.classList.add("fill");
     el.classList.toggle("listen", !!el.dataset.listen);
   } else if (ex === "sent" && whole && el.dataset.listen) {
     const text = sentence || item.term, spy = cjkScriptFor(text, item.card) === "zh" ? pinyinLine(text) : "";
-    const sent = `<span class="vc-sent">${spy ? `<span class="cloze-more cloze-spy py-line">${escapeHtml(spy)}</span>` : ""}${linePillHtml(item, text, true, "cloze-pill")}${lookupOthers(escapeHtml(text), item)}</span>`;
+    const sent = `<span class="vc-sent">${spy ? `<span class="cloze-more cloze-spy py-line">${linePillHtml(item, text, true)}${escapeHtml(spy)}</span>` : linePillHtml(item, text, true, "cloze-pill")}${lookupOthers(escapeHtml(text), item)}</span>`;
     el.querySelector(".vocab-term").innerHTML = `<span class="cloze-body"><span class="vc-stack"><span class="vc-art" aria-hidden="true">${sceneArt(el.dataset.scene)}<span class="vc-time"><i></i></span></span>${sent}</span>${item.meaning ? `<span class="cloze-more cloze-notes">${escapeHtml(item.meaning)}</span>` : ""}</span>`;
     el.classList.add("fill", "listen");
   } else {
@@ -20412,7 +20418,7 @@ function fillVocabCard(el, item) {
   }
   el.querySelector(".vocab-term").classList.toggle("word", !viewOnly && !wholeSentenceCard(item, vocabContext(item).sentence));
   const main = el.querySelector(".vocab-back-main");
-  const html = vocabBackInner(item) + (otherGap ? `<div class="vocab-ctx small">${linePillHtml(item, el.dataset.other, false)}${lookupOthers(vocabSentenceHtml(el.dataset.other, item.term, item.card), item)}</div>` : "");
+  const html = vocabBackInner(item) + (otherGap ? `<div class="vocab-ctx small">${withPill(linePillHtml(item, el.dataset.other, false), lookupOthers(vocabSentenceHtml(el.dataset.other, item.term, item.card), item))}</div>` : "");
   if (main.dataset.html === html) return;
   main.dataset.html = html;
   main.innerHTML = html;
