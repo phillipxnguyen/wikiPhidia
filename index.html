@@ -2334,7 +2334,7 @@ window.onYouTubeIframeAPIReady = function(){
   @media (hover:hover){.w-modes button:not(.active):hover{color:#ffffff;}}
   .watch-pop.cabin .w-listbox{display:none;}
   .watch-pop.cabin .w-pill:is([data-w="auto"], [data-w="loop"], [data-w="blur"]){display:none;}
-  @media (min-width:821px){.watch-pop.cabin{--cw:max(100vw, calc(100dvh * 16 / 9));grid-template-columns:100vw;align-content:start;padding:0;overflow:hidden;}.watch-pop.cabin .w-main{position:relative;}.watch-pop.cabin .w-video{height:100dvh;aspect-ratio:auto;border-radius:0;}.watch-pop.cabin .w-video > iframe{left:calc((100vw - var(--cw)) / 2);top:calc((100dvh - var(--cw) * 9 / 16) / 2 - 64px);width:var(--cw);height:calc(var(--cw) * 9 / 16 + 128px);}.watch-pop.cabin .w-ctl{position:absolute;left:0;right:0;bottom:16px;z-index:3;pointer-events:none;}.watch-pop.cabin .w-ctl > *{pointer-events:auto;}.watch-pop.cabin .w-cap{bottom:max(round(8%, 1px), 80px);}}
+  @media (min-width:821px){.watch-pop.cabin{--cw:max(100vw, calc(100dvh * 16 / 9));grid-template-columns:100vw;align-content:start;padding:0;overflow:hidden;}.watch-pop.cabin .w-main{position:relative;}.watch-pop.cabin .w-video{height:100dvh;aspect-ratio:auto;border-radius:0;}.watch-pop.cabin .w-video > iframe{left:calc((100vw - var(--cw)) / 2);top:calc((100dvh - var(--cw) * 9 / 16) / 2 - 64px);width:var(--cw);height:calc(var(--cw) * 9 / 16 + 128px);}.watch-pop.cabin .w-ctl{position:absolute;left:0;right:0;bottom:16px;z-index:3;height:44px;pointer-events:none;}.watch-pop.cabin .w-ctl > *{pointer-events:auto;}.watch-pop.cabin .w-ctl-l{gap:4px;padding:4px;border-radius:22px;background:rgba(0,0,0,.66);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);}.watch-pop.cabin .w-cap{bottom:76px;}}
   .w-main{display:flex;flex-direction:column;gap:8px;min-width:0;container-type:inline-size;}
   .w-video{position:relative;width:100%;aspect-ratio:16 / 9;overflow:hidden;border-radius:12px;background:#000000;}
   .w-video > *{position:absolute;inset:0;width:100%;height:100%;}
@@ -2373,11 +2373,9 @@ window.onYouTubeIframeAPIReady = function(){
   .w-cap .w-capline{padding:8px 16px;border-radius:12px;background:rgba(0,0,0,.66);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);}
   .watch-pop.cabin .w-cap{pointer-events:auto;}
   .w-cap .w-capline{pointer-events:auto;cursor:pointer;}
-  .w-stage.w-edge, .w-stage.w-edge .w-shield{cursor:ns-resize;}
-  .w-stage::before, .w-stage::after{content:"";position:absolute;top:0;bottom:0;z-index:2;width:56px;pointer-events:none;opacity:0;transition:opacity .2s;}
-  .w-stage::before{left:0;border-radius:12px 0 0 12px;background:linear-gradient(90deg, rgba(255,255,255,.12), transparent);}
-  .w-stage::after{right:0;border-radius:0 12px 12px 0;background:linear-gradient(270deg, rgba(255,255,255,.12), transparent);}
-  .w-stage.w-edge::before, .w-stage.w-edge::after{opacity:1;}
+  .w-stage.w-edge, .w-stage.w-edge *{cursor:ns-resize;}
+  .w-cap .w-capline{transition:box-shadow .2s;}
+  .w-stage.w-edge .w-cap .w-capline{box-shadow:inset 4px 0 rgba(255,255,255,.5), inset -4px 0 rgba(255,255,255,.5);}
   @media (min-width:821px){.watch-pop{padding-bottom:0;}.watch-pop .w-main{gap:0;}.watch-pop .w-ctl{height:72px;}}
   .w-capline{display:flex;flex-direction:column;align-items:center;gap:4px;max-width:900px;}
   .w-capline[hidden]{display:none;}
@@ -4149,27 +4147,37 @@ function placeWatchCap() {
     cap.style.bottom = "";
     return;
   }
+  const [ lo, hi ] = watchCapRange(stage, cap);
   cap.style.bottom = "auto";
-  cap.style.top = Math.round(Math.max(0, Math.min(stage.clientHeight - cap.offsetHeight, y * stage.clientHeight))) + "px";
+  cap.style.top = Math.round(Math.max(lo, Math.min(hi, y * stage.clientHeight))) + "px";
+}
+
+function watchCapRange(stage, cap) {
+  const ctl = document.querySelector("#watchPop.cabin .w-ctl"), max = stage.clientHeight - cap.offsetHeight;
+  if (!ctl || matchMedia("(max-width:820px)").matches) return [ 0, max ];
+  return [ 72, Math.max(72, ctl.offsetTop - 16 - cap.offsetHeight) ];
 }
 
 window.addEventListener("resize", () => watch && placeWatchCap());
 
 function watchEdgeAt(e) {
-  const stage = watch && e.target.closest && e.target.closest(".w-stage");
-  if (!stage || e.pointerType === "touch" || matchMedia("(max-width:820px)").matches || e.target.closest(".w-capline")) return null;
-  const r = stage.getBoundingClientRect();
-  return e.clientX - r.left < 56 || r.right - e.clientX < 56 ? stage : null;
+  const line = watch && document.querySelector("#watchPop .w-cap .w-capline:not([hidden])");
+  if (!line || e.pointerType === "touch" || matchMedia("(max-width:820px)").matches) return null;
+  const r = line.getBoundingClientRect(), x = e.clientX;
+  if (e.clientY < r.top || e.clientY > r.bottom) return null;
+  return x >= r.left - 24 && x <= r.left + 20 || x >= r.right - 20 && x <= r.right + 24 ? line.closest(".w-stage") : null;
 }
 
 document.getElementById("watchPop").addEventListener("pointerdown", e => {
   const stage = e.button === 0 && watchEdgeAt(e), cap = stage && stage.querySelector(".w-cap");
   if (!cap || !cap.querySelector(".w-capline:not([hidden])")) return;
+  const [ lo, hi ] = watchCapRange(stage, cap);
   watch.capDrag = {
     id: e.pointerId,
     y: e.clientY,
     top: cap.offsetTop,
-    max: stage.clientHeight - cap.offsetHeight,
+    min: lo,
+    max: hi,
     cap: cap,
     moved: false
   };
@@ -4180,7 +4188,7 @@ document.getElementById("watchPop").addEventListener("pointerdown", e => {
 document.getElementById("watchPop").addEventListener("pointermove", e => {
   const d = watch && watch.capDrag;
   if (!d) {
-    const stage = watch && e.target.closest && e.target.closest(".w-stage");
+    const stage = watch && document.querySelector("#watchPop .w-stage");
     if (stage) stage.classList.toggle("w-edge", !!watchEdgeAt(e));
     return;
   }
@@ -4188,7 +4196,7 @@ document.getElementById("watchPop").addEventListener("pointermove", e => {
   if (!d.moved && Math.abs(e.clientY - d.y) < 4) return;
   d.moved = true;
   d.cap.style.bottom = "auto";
-  d.cap.style.top = Math.round(Math.max(0, Math.min(d.max, d.top + e.clientY - d.y))) + "px";
+  d.cap.style.top = Math.round(Math.max(d.min, Math.min(d.max, d.top + e.clientY - d.y))) + "px";
 });
 
 document.getElementById("watchPop").addEventListener("mouseleave", () => {
