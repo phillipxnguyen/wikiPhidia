@@ -15244,12 +15244,7 @@ function openLesson(lesson) {
   const playable = url => !!extractYouTubeId(url || "") || /(^|\.)(tiktok|douyin)\.com\//i.test((url || "").replace(/^https?:\/\//i, ""));
   if (!isVirtualId(lesson.id) && !playable(lesson.mediaUrl) && rows.some(r => r.time != null)) {
     rows.forEach(r => r.time = null);
-    lesson.cards = rows.map(r => Object.assign({}, lesson.cards.find(c => c.uid === r.uid) || {}, normalizeCard(r), {
-      time: null
-    }));
-    lesson.updatedAt = Date.now();
-    dbPut("lessons", lesson).catch(() => {});
-    queueMicrotask(() => showToast("No video in this lesson: its cards are now Speaking cards"));
+    queueMicrotask(() => showToast("No video in this lesson: its cards are studied as Speaking cards"));
   }
   importHistory = Array.isArray(lesson.importHistory) ? lesson.importHistory.slice() : [];
   vocabExtras = lesson.extraWords ? normalizeExtras(lesson.extraWords) : null;
@@ -19330,32 +19325,10 @@ async function initApp() {
   await claimActiveTab();
   await openDb();
   library = (await dbGetAll("lessons")).filter(l => l && l.id && Array.isArray(l.cards));
-  let lastId = null;
-  try {
-    lastId = localStorage.getItem("flashcards.lastLesson");
-  } catch (e) {}
-  const isLeftover = l => isEmptyLesson(l) && l.id !== lastId;
-  const leftovers = library.filter(isLeftover);
-  library = library.filter(l => !isLeftover(l));
-  library.forEach(l => {
-    let converted = false;
-    l.cards.forEach(c => {
-
-      if (c.srs && MODES.some(m => c.srs[m] && typeof c.srs[m].streak !== "number")) {
-        c.srs = normalizeSrs(c.srs);
-        converted = true;
-      }
-      if (c.srs && (c.srs.Listen && c.srs.Listen.reps || c.srs.Write && c.srs.Write.reps)) {
-        c.srs = mergeModeSrs(normalizeSrs(c.srs));
-        converted = true;
-      }
-    });
-    if (converted) dbPut("lessons", l).catch(() => {});
-  });
-  leftovers.forEach(l => {
-    dbDelete("lessons", l.id);
-    forgetLesson(l.id);
-  });
+  library.forEach(l => l.cards.forEach(c => {
+    if (c.srs && MODES.some(m => c.srs[m] && typeof c.srs[m].streak !== "number")) c.srs = normalizeSrs(c.srs);
+    if (c.srs && (c.srs.Listen && c.srs.Listen.reps || c.srs.Write && c.srs.Write.reps)) c.srs = mergeModeSrs(normalizeSrs(c.srs));
+  }));
   reviewLog = (await dbGetAll("reviews")).filter(e => e && isFinite(e.ts)).sort((a, b) => a.ts - b.ts);
   renderStreakChip();
   await openDefaultLesson();
