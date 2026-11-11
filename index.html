@@ -7951,7 +7951,7 @@ function syncAddLook() {
   document.getElementById("qaTime").hidden = kind !== "listen";
   const merged = lessonAddKind() !== "listen";
   document.getElementById("qaQ").classList.toggle("yt-ph", kind === "listen");
-  document.getElementById("qaQ").placeholder = kind === "listen" ? " " : merged ? appMode === "vocab" ? "/Word, then its meaning below" : "/Question, then the Answer below" : kind ? "Question" : "";
+  document.getElementById("qaQ").placeholder = kind === "listen" ? " " : merged ? appMode === "vocab" ? "Word, then its meaning two lines below" : "Question, then the Answer two lines below" : kind ? "Question" : "";
   document.getElementById("qaQ").setAttribute("aria-label", appMode === "vocab" ? "Question" : "Card");
   if (kind) document.getElementById("qaNotes").dataset.placeholder = "Notes"; else delete document.getElementById("qaNotes").dataset.placeholder;
 }
@@ -11835,29 +11835,47 @@ document.addEventListener("paste", e => {
   }));
 });
 
+function qRuleText(t) {
+  const lead = t.length - t.trimStart().length, has = t.slice(lead, lead + 1) === "/";
+  if (has) return t.includes("\n") ? null : {
+    text: t.slice(0, lead) + t.slice(lead + 1),
+    caret: -1
+  };
+  const lines = t.split("\n"), k = lines.findIndex((l, n) => n > 0 && !l.trim() && lines.slice(0, n).some(x => x.trim()));
+  if (k < 0 || k + 1 >= lines.length) return null;
+  const q = lines.slice(0, k).map(l => l.trim()).filter(Boolean).join(" "), head = "/" + q + "\n";
+  return {
+    text: head + lines.slice(k + 1).join("\n"),
+    caret: head.length
+  };
+}
+
 document.addEventListener("input", e => {
   const el = e.target;
   if (e.isComposing || !el.matches || !el.matches("#qaQ, #vocabEditTerm, #editQ:not(.yt-ph)")) return;
   if (el.tagName === "TEXTAREA") {
-    const lines = el.value.split("\n");
-    if (lines.length < 2 || !lines[0].trim() || /^\s*\//.test(lines[0])) return;
-    const a = el.selectionStart, b = el.selectionEnd, lead = lines[0].length - lines[0].trimStart().length;
-    el.value = el.value.slice(0, lead) + "/" + el.value.slice(lead);
-    el.setSelectionRange(a + (a >= lead ? 1 : 0), b + (b >= lead ? 1 : 0));
+    const was = el.selectionStart, next = qRuleText(el.value);
+    if (!next) return;
+    el.value = next.text;
+    const at = next.caret < 0 ? Math.max(0, was - 1) : next.caret;
+    el.setSelectionRange(at, at);
     return;
   }
-  const text = el.innerText.replace(/\n+$/, ""), lines = text.split("\n");
-  if (lines.length < 2 || !lines[0].trim() || /^\s*\//.test(lines[0])) return;
-  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, {
-    acceptNode: n => n.nodeValue.trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP
-  }), node = walker.nextNode();
-  if (!node) return;
-  const sel = getSelection(), range = sel.rangeCount ? sel.getRangeAt(0) : null, at = range && range.startContainer === node ? range.startOffset : -1;
-  const lead = node.nodeValue.length - node.nodeValue.trimStart().length;
-  node.nodeValue = node.nodeValue.slice(0, lead) + "/" + node.nodeValue.slice(lead);
-  if (at >= 0) {
+  const raw = el.innerText, text = raw.endsWith("\n\n") ? raw.slice(0, -1) : raw, next = qRuleText(text);
+  if (!next) return;
+  const sel = getSelection(), r0 = sel.rangeCount ? sel.getRangeAt(0) : null;
+  let was = 0;
+  if (r0 && el.contains(r0.startContainer)) {
+    const pre = document.createRange();
+    pre.setStart(el, 0);
+    pre.setEnd(r0.startContainer, r0.startOffset);
+    was = pre.toString().length;
+  }
+  el.textContent = next.text + (next.text.endsWith("\n") ? "\n" : "");
+  const node = el.firstChild, at = Math.min(next.caret < 0 ? Math.max(0, was - 1) : next.caret, node ? node.nodeValue.length : 0);
+  if (node) {
     const r = document.createRange();
-    r.setStart(node, at + (at >= lead ? 1 : 0));
+    r.setStart(node, at);
     r.collapse(true);
     sel.removeAllRanges();
     sel.addRange(r);
@@ -11982,7 +12000,7 @@ window.addEventListener("blur", () => {
 });
 
 function buildEditBoxInner(row) {
-  return `\n    <div class="edit-qa">\n      <div>\n        <div id="editQ" class="rich-editor${row.time == null ? "" : " yt-ph"}" contenteditable="true"${row.time == null ? ' data-placeholder="/Question, then the Answer below"' : ""} aria-label="Card">${row.time == null ? mergedCardEditHtml(row) : getEditInitialHtml(row.q, row.qHtml, row.id)}</div>\n      </div>\n      <div hidden>\n        <div id="editA" class="rich-editor" contenteditable="true">${getEditInitialHtml(row.a, row.aHtml, row.id)}</div>\n      </div>\n    </div>\n    <div class="notes-clip"><div id="editNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes">${notesEditorHtml(row)}</div></div>\n    <div class="edit-actions">\n      <button id="editSave" class="primary">Save</button>\n    </div>\n    <div id="editDict"></div>\n  `;
+  return `\n    <div class="edit-qa">\n      <div>\n        <div id="editQ" class="rich-editor${row.time == null ? "" : " yt-ph"}" contenteditable="true"${row.time == null ? ' data-placeholder="Question, then the Answer two lines below"' : ""} aria-label="Card">${row.time == null ? mergedCardEditHtml(row) : getEditInitialHtml(row.q, row.qHtml, row.id)}</div>\n      </div>\n      <div hidden>\n        <div id="editA" class="rich-editor" contenteditable="true">${getEditInitialHtml(row.a, row.aHtml, row.id)}</div>\n      </div>\n    </div>\n    <div class="notes-clip"><div id="editNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes">${notesEditorHtml(row)}</div></div>\n    <div class="edit-actions">\n      <button id="editSave" class="primary">Save</button>\n    </div>\n    <div id="editDict"></div>\n  `;
 }
 
 document.addEventListener("click", e => {
@@ -20904,7 +20922,7 @@ function vocabEditValues() {
 }
 
 function vocabEditorHtml(item) {
-  return '<div class="vocab-editor">' + `<textarea id="vocabEditTerm" class="autofit" rows="1" autocomplete="off" aria-label="Word" placeholder="/Word, then its meaning below">${escapeHtml(item.meaning ? "/" + item.term + "\n" + item.meaning : item.term)}</textarea>` + `<div class="notes-clip"><div id="vocabEditNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes" aria-label="Notes">${wordNotesOf(item)}</div></div>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
+  return '<div class="vocab-editor">' + `<textarea id="vocabEditTerm" class="autofit" rows="1" autocomplete="off" aria-label="Word" placeholder="Word, then its meaning two lines below">${escapeHtml(item.meaning ? "/" + item.term + "\n" + item.meaning : item.term)}</textarea>` + `<div class="notes-clip"><div id="vocabEditNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes" aria-label="Notes">${wordNotesOf(item)}</div></div>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
 }
 
 const VOCAB_FLIP_MS = 450;
