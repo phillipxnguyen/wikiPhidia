@@ -103,6 +103,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-49 | `fd11ef1` | Xoá chém đôi cả màn hình như mọi mode; nút sound giật tia sét khi chờ tiếng; bỏ tay nắm, kéo câu từ mép trái/phải video |
 | THEATER-50 | `44a73bc` | Luật học như mọi mode: đếm theo giới hạn ngày, câu ẩn không lookup, đã Show thì lặp, đổi mode về mặt trước; 🌐 ở Interpreter; câu cách mép 8%; ô sửa giữa màn hình nền tối; nút sound đồng bộ ⏸ |
 | THEATER-51 | `80128d9` | Điện thoại: câu căn giữa video và ô copy/✕ khi ô đó hiện; câu dịch lặp hai lần (phụ đề tách đôi) chỉ viết một lần |
+| THEATER-52 | `31ff949` | Interpreter trên máy tính: video full màn, thanh trên và hàng nút nổi trên video |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
@@ -269,6 +270,7 @@ Hàm chính: `showOwnDict`, `ownDictCardHtml`, `ownDictLookup`, `ownDictWords`, 
 | DATA-14 | `8529b6f` | Mở ô sửa là dòng Q có màu ngay; bỏ đoạn dọn ký tự đánh dấu trong cleanText |
 | DATA-15 | `76fd44b` | Bỏ tự dọn: không làm sạch/nối/ghép khi mở app hay mở bài, không tự chuyển thẻ↔từ hay xoá trùng khi lưu; giữ chuyển định dạng tiến độ và bỏ mốc giờ khi không có video |
 | DATA-16 | `11b9bb7` | Không tự lưu gì: bỏ xoá bài rỗng, chuyển tiến độ chỉ trong bộ nhớ, bài không video chỉ hiển thị như Speaking (giữ mốc giờ) |
+| DATA-17 | `31ff949` | Ô thẻ: hết dòng trống thừa sau khi xuống dòng 2 lần thành Q (ô từ, ô thêm thẻ); ô sửa thẻ Lessons chỉ tô màu dòng Q, không tô dòng nghĩa |
 
 Hàm chính: `newRow` (bản dịch vào notes khi tạo), `foldAnswer` + `keepsAnswer` (dòng thêm dưới câu khi sửa thẻ hoặc khi dán thì vào notes), `wordLike`, `belongsInVocab`, `isTranslationCard` (cho dòng `từ: nghĩa`), `autoSortLibrary`.
 
