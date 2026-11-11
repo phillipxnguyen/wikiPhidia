@@ -110,6 +110,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-56 | `0a92bb6` | Đếm: dòng Again tính vào ⏳ tới khi quay lại; ô của dòng đang học luôn sáng sau mỗi lần chấm (trước bị tắt xen kẽ) |
 | THEATER-57 | `d0dfb12` | Interpreter: chưa Show mà bật 🌐 thì thanh chỉ hiện câu dịch (bỏ khối mờ), Show thì câu gốc hiện trên |
 | THEATER-58 | `7b097cc` | Câu dịch trong hộp tối riêng ôm sát chữ như phụ đề YouTube, chữ nhỏ hơn câu gốc 2 px ở mọi cỡ (cả phone) |
+| THEATER-59 | `4b95902` | Mặt trước: câu gốc vẫn hiện mờ tại chỗ cũ, câu dịch hộp riêng ngay dưới (bỏ kiểu chỉ còn câu dịch của THEATER-57) |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
