@@ -242,6 +242,7 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 | DICT-31 | `28ef288` | Kéo chọn cụm mở ô A: B như cũ, con trỏ sẵn sau dấu hai chấm để tự gõ nghĩa |
 | DICT-32 | `9f2b660` | Popup thẻ có ô gõ nghĩa tuỳ ý (Save/Add/Enter), không chỉ chọn nghĩa từ điển |
 | DICT-33 | `8873df2` | Câu gốc của từ lên đầu; dòng định nghĩa trong notes (có dấu :) hay chữ khác hệ không thành câu để bấm |
+| DICT-34 | `cc14df6` | Shift/Delete tác dụng lên thẻ dưới chuột cả khi con trỏ gõ còn trong ô sửa (ô nhả con trỏ); nhãn nhắc trên thẻ |
 
 Hàm chính: `showOwnDict`, `ownDictCardHtml`, `ownDictLookup`, `ownDictWords`, `ownDictFetch`, `ownDictPrefetch`, `addWordToEditNotes`, `hideOwnDict`.
 
