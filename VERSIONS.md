@@ -325,6 +325,7 @@ Hàm chính: `swipe`, `ghostFor`, `angelFly`, `cutLayer`, `playCut`.
 | RING-6 | `91ea79a` | Giọng đọc (TTS) cũng có vòng viền, chạy theo từng chữ được đọc (sự kiện boundary), thanh chạy thẻ nghe cũng vậy |
 | RING-7 | `1901f9a` | Ưu tiên: thanh chạy dưới cảnh (thẻ nghe) > mốc giờ của câu > nút loa trên cùng; chỉ một dấu tiến độ một lúc |
 | RING-8 | `5b0a629` | Flashcard: vòng chạy trên pill của từng câu thay vì nút loa trên cùng |
+| RING-9 | `199b7d3` | Lessons: câu không video có pill ▶/⏸ ở ☰ Full và tờ Speaking, vòng chạy trên pill |
 
 Hàm chính: `paintRing`, `dropRing`, `setDash`.
 
