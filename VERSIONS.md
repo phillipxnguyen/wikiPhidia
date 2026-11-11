@@ -262,6 +262,7 @@ Hàm chính: `showOwnDict`, `ownDictCardHtml`, `ownDictLookup`, `ownDictWords`, 
 | DATA-10 | `9b3cf86` | Ô /Q tự thêm / ở dòng đầu khi có dòng thứ hai (ô sửa thẻ, sửa từ, ＋) |
 | DATA-11 | `7e54b58` | Ô thẻ (sửa thẻ, sửa từ, ＋): dòng câu hỏi tô màu của bên, dấu / không vẽ ra, thẳng lề |
 | DATA-12 | `ac10946` | Bỏ luật /: xuống dòng 2 lần liên tiếp thì phần trên thành Q, sau đó xuống dòng bình thường; xoá hết đáp án thì về câu thường |
+| DATA-13 | `551decf` | Bỏ hẳn /: Q đánh dấu bằng ký tự vô hình (do 2 lần xuống dòng tạo ra), / gõ hay dán đều là chữ thường |
 
 Hàm chính: `newRow` (bản dịch vào notes khi tạo), `foldAnswer` + `keepsAnswer` (dòng thêm dưới câu khi sửa thẻ hoặc khi dán thì vào notes), `wordLike`, `belongsInVocab`, `isTranslationCard` (cho dòng `từ: nghĩa`), `autoSortLibrary`.
 
