@@ -104,6 +104,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-50 | `44a73bc` | Luật học như mọi mode: đếm theo giới hạn ngày, câu ẩn không lookup, đã Show thì lặp, đổi mode về mặt trước; 🌐 ở Interpreter; câu cách mép 8%; ô sửa giữa màn hình nền tối; nút sound đồng bộ ⏸ |
 | THEATER-51 | `80128d9` | Điện thoại: câu căn giữa video và ô copy/✕ khi ô đó hiện; câu dịch lặp hai lần (phụ đề tách đôi) chỉ viết một lần |
 | THEATER-52 | `31ff949` | Interpreter trên máy tính: video full màn, thanh trên và hàng nút nổi trên video |
+| THEATER-53 | `86a7bf3` | Interpreter: YouTube phủ kín màn, không dải đen hai bên; bấm từ mở popup từ điển; Esc trong popup không đóng theater |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
@@ -248,6 +249,7 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 | DICT-32 | `9f2b660` | Popup thẻ có ô gõ nghĩa tuỳ ý (Save/Add/Enter), không chỉ chọn nghĩa từ điển |
 | DICT-33 | `8873df2` | Câu gốc của từ lên đầu; dòng định nghĩa trong notes (có dấu :) hay chữ khác hệ không thành câu để bấm |
 | DICT-34 | `cc14df6` | Shift/Delete tác dụng lên thẻ dưới chuột cả khi con trỏ gõ còn trong ô sửa (ô nhả con trỏ); nhãn nhắc trên thẻ |
+| DICT-35 | `86a7bf3` | Bấm từ trên mọi câu đang hiện (thẻ Lessons đã show, mặt sau flashcard, theater, câu đầu ô sửa) mở popup từ điển; nghĩa sửa thẳng tại chỗ, không ô nhập riêng; từ đơn đã có mở popup để đổi nghĩa, cụm từ vẫn ô A: B; rê sáng từ + nghĩa |
 
 Hàm chính: `showOwnDict`, `ownDictCardHtml`, `ownDictLookup`, `ownDictWords`, `ownDictFetch`, `ownDictPrefetch`, `addWordToEditNotes`, `hideOwnDict`.
 
