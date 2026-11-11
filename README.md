@@ -456,3 +456,5 @@ Loaded from CDNs at runtime: [pinyin-pro](https://github.com/zh-lx/pinyin-pro), 
 **A ring-bound sheet always has at least two rings.** The Speaking paper, the notebook of ☰ Full and the Today sheet are never so short that only one ring shows: even the shortest sheet is tall enough for two.
 
 **Play pills sit in the middle of their line.** The ▶ or time pill in front of a sentence is centred on the first line of that sentence, whatever its size (the Speaking paper, ☰ Full, on a computer and a phone), never riding higher than the words.
+
+**Nothing is graded unseen.** In every study mode (Speaking, the flashcards of Vocabulary, a task and the theater's Interpreter), while the card or line being studied is not shown yet, any way of grading it (← →, Return, Shift+Return, A and D on the theater, the Again and Good buttons on a computer and a phone) first shows it (in Speaking the hint first, as Show does), and only the next press grades it; holding a key down never runs on into grading. Only a swipe of the card with the finger or the mouse grades at once.

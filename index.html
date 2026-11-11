@@ -10068,7 +10068,10 @@ document.getElementById("tbShow").onclick = () => {
 
 function touchGrade(isAgain) {
   if (currentView !== "vocab" && watch) return watchGrade(isAgain);
-  if (currentView !== "vocab") gradeAction(isAgain); else flyVocab(isAgain);
+  if (currentView !== "vocab") return groupState && studyCardsHidden() ? revealAction() : gradeAction(isAgain);
+  const item = currentVocabItem();
+  if (item && vocabSession && !vocabSession.flipped && !vocabViewOnly(item)) return flipVocab();
+  flyVocab(isAgain);
 }
 
 document.getElementById("tbAgain").onclick = () => touchGrade(true);
@@ -21505,7 +21508,8 @@ function handleVocabKey(e) {
   if (!gradeKey(e) || !currentVocabItem()) return;
   e.preventDefault();
   if (document.activeElement && document.activeElement.tagName === "BUTTON") document.activeElement.blur();
-  if (e.key === "Enter" && !vocabSession.flipped && !vocabViewOnly(currentVocabItem())) flipVocab(); else flyVocab(gradeKey(e) === "again");
+  if (e.repeat) return;
+  if (!vocabSession.flipped && !vocabViewOnly(currentVocabItem())) flipVocab(); else flyVocab(gradeKey(e) === "again");
 }
 
 function setAppMode(mode) {
@@ -31716,7 +31720,7 @@ document.addEventListener("keydown", e => {
   if (gradeKey(e)) {
     if (e.repeat || !groupState) return;
     e.preventDefault();
-    if (e.key === "Enter" && studyCardsHidden()) revealAction(); else gradeAction(gradeKey(e) === "again");
+    if (studyCardsHidden()) revealAction(); else gradeAction(gradeKey(e) === "again");
     return;
   }
   if (e.code === "Space" || e.key === " ") {
