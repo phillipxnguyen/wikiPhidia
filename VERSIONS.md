@@ -99,6 +99,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-45 | `47a4813` | Công tắc Interpreter / Watch dùng icon (🎧 và màn hình + list), tên hiện khi trỏ chuột |
 | THEATER-46 | `863ac6c` | Hàng nút dưới video cách đều video và mép dưới; tay nắm ↕ kéo câu lên xuống (nhớ vị trí); bấm câu mở ô sửa; Interpreter: A = Again, D = Good |
 | THEATER-47 | `e9be2a3` | Interpreter: chưa Show thì mọi phím/nút chấm (A, D, ← →, Return, nút điện thoại) đều Show trước, lần sau mới chấm |
+| THEATER-48 | `bba0a99` | Từ kiểu Reactor: pinyin trên từng từ, rê sáng cả từ + pinyin kèm nghĩa, bấm từ để thêm; R nghe lại; nút sound + speed trên thanh trên có vòng; xoá có nhát chém, câu sau ẩn |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
@@ -336,6 +337,7 @@ Hàm chính: `swipe`, `ghostFor`, `angelFly`, `cutLayer`, `playCut`.
 | RING-8 | `5b0a629` | Flashcard: vòng chạy trên pill của từng câu thay vì nút loa trên cùng |
 | RING-9 | `199b7d3` | Lessons: câu không video có pill ▶/⏸ ở ☰ Full và tờ Speaking, vòng chạy trên pill |
 | RING-10 | `71d9610` | Pill ▶/giờ căn giữa dòng đầu của câu (Speaking, ☰ Full) |
+| RING-11 | `bba0a99` | Vòng chạy trên nút sound của theater và nút 🔊 trong Dictionary; không vẽ vòng lên mặt thẻ đang ẩn |
 
 Hàm chính: `paintRing`, `dropRing`, `setDash`.
 
