@@ -20379,7 +20379,7 @@ function notesWithPinyin(html, card) {
   box.innerHTML = html;
   const add = (el, text) => {
     if (!/[\u3400-\u9fff]/.test(text) || cjkScriptFor(text, card) !== "zh") return;
-    const py = pinyinLine(text.trim());
+    const py = /\p{Script=Latin}/u.test(text) ? (text.match(/[\u3400-\u9fff]+/g) || []).map(pinyinLine).join(" ") : pinyinLine(text.trim());
     if (py) el.insertAdjacentHTML("afterbegin", `<span class="py-line">${escapeHtml(py)}</span>`);
   };
   const blocks = [ ...box.querySelectorAll("li, div, p") ].filter(el => !el.querySelector("li, div, p"));
@@ -20884,13 +20884,15 @@ function syncVocabEditPopup(items) {
   const base = world || vocabDictText(item), lang = detectLang(base).split("-")[0];
   const ownLine = world ? vocabContext(item).sentence || "" : "";
   const bare = t => t.replace(/[\s\p{P}]+/gu, ""), seen = new Set([ bare(base) ]);
-  const extra = [ ownLine ].concat(plainTextOf(wordNotesOf(item), "\n").split("\n")).map(t => t.trim()).filter(t => {
+  const cjk = /^(zh|ja|ko)$/.test(lang);
+  const extra = plainTextOf(wordNotesOf(item), "\n").split("\n").map(t => t.trim()).filter(t => {
     const k = bare(t);
-    if (!t || seen.has(k) || bare(base).includes(k) || detectLang(t).split("-")[0] !== lang) return false;
+    if (!t || seen.has(k) || bare(base).includes(k) || detectLang(t).split("-")[0] !== lang || /[:：]/.test(t) || cjk && /\p{Script=Latin}/u.test(t)) return false;
     seen.add(k);
     return true;
   });
-  const text = [ base ].concat(extra).join("\n");
+  const own = ownLine.trim() && !seen.has(bare(ownLine)) ? [ ownLine.trim() ] : [];
+  const text = own.concat([ base ], extra).join("\n");
   pop.querySelector(".le-box").classList.remove("edit-row");
   pop.querySelector(".le-content").innerHTML = vocabEditorHtml(item) + '<div id="vocabEditDict"></div>';
   pop.dataset.vocab = item.key;
