@@ -251,6 +251,7 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 | DICT-33 | `8873df2` | Câu gốc của từ lên đầu; dòng định nghĩa trong notes (có dấu :) hay chữ khác hệ không thành câu để bấm |
 | DICT-34 | `cc14df6` | Shift/Delete tác dụng lên thẻ dưới chuột cả khi con trỏ gõ còn trong ô sửa (ô nhả con trỏ); nhãn nhắc trên thẻ |
 | DICT-35 | `86a7bf3` | Bấm từ trên mọi câu đang hiện (thẻ Lessons đã show, mặt sau flashcard, theater, câu đầu ô sửa) mở popup từ điển; nghĩa sửa thẳng tại chỗ, không ô nhập riêng; từ đơn đã có mở popup để đổi nghĩa, cụm từ vẫn ô A: B; rê sáng từ + nghĩa |
+| DICT-36 | `e20ad1e` | Popup từ ở theater, thẻ học, flashcard cũng tải câu ví dụ như trong ô sửa: một popup giống hệt ở mọi màn |
 
 Hàm chính: `showOwnDict`, `ownDictCardHtml`, `ownDictLookup`, `ownDictWords`, `ownDictFetch`, `ownDictPrefetch`, `addWordToEditNotes`, `hideOwnDict`.
 
