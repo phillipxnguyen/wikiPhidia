@@ -18,6 +18,7 @@ Cột "Hàm chính" là tên hàm hoặc hằng trong `index.html`. Tên không 
 | LISTEN-2 | `901658b` | Bỏ nút vào mode; câu video không còn tính New/Due |
 | LISTEN-3 | `fc25c6d` | Câu video tính lại New/Due/Done (học ở theater); thẻ cũ chỉ còn trong task |
 | LISTEN-4 | `326581f` | Task cũng học câu video ở theater (chấm hết câu thì sang từ, ✕ là rời task); bỏ code thẻ nghe trong task |
+| LISTEN-5 | `8c5952b` | Xoá hẳn code thẻ nghe Listening cũ (khung video + câu, lớp che sóng âm, batch, thanh cuộn riêng); Speaking không đổi |
 
 Hàm chính: `isListenMode`, `listenBatch`, `startSequenceLoop`, `stopSequenceLoop`, `startLoop`, `toggleLoopForRow`, `segmentReached`, `seamTo`, `render`, `gradeCard`, `applyGrade`, `cardInMode`, `modeScopeRows`, `lessonStudyMode`.
 
