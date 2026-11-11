@@ -328,6 +328,7 @@ Hàm chính: `studyingNow`, `placeStudyClock`, `STUDY_TIME_KEY`, `#focusClock`.
 | MOVE-5 | `f4c55cc` | Good/Again nhanh hơn |
 | MOVE-6 | `7ea384e` | Good/Again/Delete nhanh hơn nữa (khoảng 0,35 giây; Delete dưới 1 giây) |
 | MOVE-7 | `71d9610` | Good/Again: dấu ✓/✕ nằm sẵn trên thẻ và bay cùng thẻ, không đóng dấu rồi mới vuốt |
+| MOVE-8 | `d203440` | Sửa MOVE-7: dấu ✓/✕ hiện sẵn trên thẻ khi bay (trước đó bị trong suốt) |
 
 Hàm chính: `swipe`, `ghostFor`, `angelFly`, `cutLayer`, `playCut`.
 
