@@ -100,6 +100,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-46 | `863ac6c` | Hàng nút dưới video cách đều video và mép dưới; tay nắm ↕ kéo câu lên xuống (nhớ vị trí); bấm câu mở ô sửa; Interpreter: A = Again, D = Good |
 | THEATER-47 | `e9be2a3` | Interpreter: chưa Show thì mọi phím/nút chấm (A, D, ← →, Return, nút điện thoại) đều Show trước, lần sau mới chấm |
 | THEATER-48 | `bba0a99` | Từ kiểu Reactor: pinyin trên từng từ, rê sáng cả từ + pinyin kèm nghĩa, bấm từ để thêm; R nghe lại; nút sound + speed trên thanh trên có vòng; xoá có nhát chém, câu sau ẩn |
+| THEATER-49 | `fd11ef1` | Xoá chém đôi cả màn hình như mọi mode; nút sound giật tia sét khi chờ tiếng; bỏ tay nắm, kéo câu từ mép trái/phải video |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
