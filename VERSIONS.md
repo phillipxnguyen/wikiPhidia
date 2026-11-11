@@ -227,6 +227,7 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 | DICT-28 | `5b0a629` | Bấm từ xanh/đỏ trong câu: popup thẻ từ (đổi nghĩa / Add lại), tìm được từ ở mọi bài; viền xanh đỏ cùng cỡ |
 | DICT-29 | `71d9610` | Kéo qua các từ trong câu để tạo cụm: chọn tự bắt trọn từ, thả tay mở popup Add |
 | DICT-30 | `91d7103` | Kéo từ bất kỳ đâu (cả trên từ có sẵn) để chọn cụm, nhấn không di chuyển mới là bấm; câu đầu to bằng ô thẻ (22/30, phone 20/28) |
+| DICT-31 | `28ef288` | Kéo chọn cụm mở ô A: B như cũ, con trỏ sẵn sau dấu hai chấm để tự gõ nghĩa |
 
 Hàm chính: `showOwnDict`, `ownDictCardHtml`, `ownDictLookup`, `ownDictWords`, `ownDictFetch`, `ownDictPrefetch`, `addWordToEditNotes`, `hideOwnDict`.
 
