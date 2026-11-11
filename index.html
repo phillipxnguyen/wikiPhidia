@@ -1634,7 +1634,8 @@ window.onYouTubeIframeAPIReady = function(){
   .le-dict{position:relative;height:0;overflow:hidden;}
   .own-dict{--od-bg:var(--surface);--od-card:color-mix(in srgb, var(--text) 3%, var(--surface));--od-line:color-mix(in srgb, var(--text) 9%, transparent);--od-soft:var(--text-2);--od-mean:var(--a-text);position:absolute;inset:0;display:flex;flex-direction:column;overflow:hidden;box-sizing:border-box;border-radius:inherit;background:var(--od-bg);}
   .od-head{flex:none;display:flex;flex-direction:column;gap:8px;padding:16px 20px 0;}
-  .od-sent{font-size:17px;line-height:28px;color:var(--text);white-space:pre-line;}
+  .od-sent{font-size:22px;line-height:30px;color:var(--text);white-space:pre-line;}
+  @media (max-width:600px){.od-sent{font-size:20px;line-height:28px;}}
   .od-jump{padding:0 1px;border-radius:4px;color:var(--accent);cursor:pointer;}
   :is(.od-jump, .od-off):focus:not(:focus-visible){outline:none;}
   .od-float{--od-bg:var(--surface);--od-card:var(--surface);--od-line:color-mix(in srgb, var(--text) 9%, transparent);--od-soft:var(--text-2);--od-mean:var(--a-text);position:fixed;z-index:1700;width:min(380px, calc(100vw - 16px));border-radius:16px;box-shadow:var(--shadow-md);}
@@ -10533,8 +10534,22 @@ function ownDictSnap() {
     x.setEnd(node, o);
     return x.toString().length;
   };
+  return ownDictSnapAt(off(r.startContainer, r.startOffset), off(r.endContainer, r.endOffset));
+}
+
+function ownDictOffset(sent, node, o) {
+  const x = document.createRange();
+  x.setStart(sent, 0);
+  x.setEnd(node, o);
+  return x.toString().length;
+}
+
+function ownDictSnapAt(a, b, paintOnly) {
+  const sent = document.querySelector("#editPopup .od-sent");
+  if (!sent || !ownDictShown) return null;
+  if (a > b) [ a, b ] = [ b, a ];
+  const off = (node, o) => ownDictOffset(sent, node, o);
   const T = sent.textContent;
-  let a = off(r.startContainer, r.startOffset), b = off(r.endContainer, r.endOffset);
   sent.querySelectorAll(".od-jump, .od-off").forEach(el => {
     const s0 = off(el, 0), e0 = s0 + el.textContent.length;
     if (a > s0 && a < e0) a = s0;
@@ -10560,8 +10575,10 @@ function ownDictSnap() {
   const nr = document.createRange();
   nr.setStart(...at(a, false));
   nr.setEnd(...at(b, true));
+  const sel = getSelection();
   sel.removeAllRanges();
   sel.addRange(nr);
+  if (paintOnly) return null;
   return {
     text: text,
     rect: nr.getBoundingClientRect()
@@ -10582,9 +10599,53 @@ function ownDictPickPhrase() {
 
 let ownDictSelTimer = 0, ownDictTouching = false;
 
-document.getElementById("editPopup").addEventListener("pointerup", e => {
-  if (e.pointerType === "touch" || !e.target.closest || !e.target.closest(".od-sent") && !(getSelection().anchorNode && document.querySelector("#editPopup .od-sent") && document.querySelector("#editPopup .od-sent").contains(getSelection().anchorNode))) return;
-  setTimeout(ownDictPickPhrase, 0);
+let ownDictDrag = null, ownDictDragged = false;
+
+function ownDictCaret(x, y) {
+  const sent = document.querySelector("#editPopup .od-sent");
+  let node = null, o = 0;
+  if (document.caretPositionFromPoint) {
+    const c = document.caretPositionFromPoint(x, y);
+    if (c) [ node, o ] = [ c.offsetNode, c.offset ];
+  } else if (document.caretRangeFromPoint) {
+    const c = document.caretRangeFromPoint(x, y);
+    if (c) [ node, o ] = [ c.startContainer, c.startOffset ];
+  }
+  return sent && node && sent.contains(node) ? ownDictOffset(sent, node, o) : null;
+}
+
+document.getElementById("editPopup").addEventListener("pointerdown", e => {
+  ownDictDrag = null;
+  if (e.pointerType === "touch" || e.button !== 0 || !ownDictShown || !e.target.closest || !e.target.closest(".od-sent")) return;
+  const at = ownDictCaret(e.clientX, e.clientY);
+  if (at == null) return;
+  e.preventDefault();
+  getSelection().removeAllRanges();
+  ownDictDrag = {
+    x: e.clientX,
+    y: e.clientY,
+    at: at,
+    moved: false
+  };
+});
+
+document.addEventListener("pointermove", e => {
+  const d = ownDictDrag;
+  if (!d) return;
+  if (!d.moved && Math.hypot(e.clientX - d.x, e.clientY - d.y) < 6) return;
+  d.moved = true;
+  closeOwnDictFloat();
+  const to = ownDictCaret(e.clientX, e.clientY);
+  if (to != null) ownDictSnapAt(d.at, to, true);
+});
+
+document.addEventListener("pointerup", () => {
+  const d = ownDictDrag;
+  ownDictDrag = null;
+  if (!d || !d.moved) return;
+  ownDictDragged = true;
+  setTimeout(() => ownDictDragged = false, 0);
+  ownDictPickPhrase();
 });
 
 document.addEventListener("touchstart", () => ownDictTouching = true, {
@@ -10710,7 +10771,7 @@ function ownDictSay(w) {
 
 document.getElementById("editPopup").addEventListener("click", e => {
   if (!ownDictShown || !e.target.closest) return;
-  if (!getSelection().isCollapsed && e.target.closest(".od-sent")) return;
+  if (ownDictDragged && e.target.closest(".od-sent")) return;
   const fl = e.target.closest(".od-float");
   if (fl) {
     if (e.target.closest(".od-say")) return ownDictSay(fl.dataset.w);
