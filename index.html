@@ -14725,17 +14725,6 @@ function joinedTranslation(list) {
   return "<div>" + joinSentences(html.map(x => x.match(PLAIN_LINE_RE)[1])) + "</div>";
 }
 
-function joinOldTranslation(c) {
-  if (c.time == null || !c.merged) return false;
-  const lines = (c.notesHtml || "").match(/<div>[^<]*<\/div>/g);
-  if (!lines || lines.length < 2 || lines.join("") !== (c.notesHtml || "").trim()) return false;
-  const q = detectLang(c.q || "").split("-")[0];
-  if (lines.some(l => detectLang(plainTextOf(l, " ")).split("-")[0] === q)) return false;
-  c.notesHtml = joinedTranslation(lines);
-  c.notes = plainTextOf(c.notesHtml, "\n");
-  return true;
-}
-
 function mergedCard(group) {
   const vocab = {};
   group.forEach(c => Object.entries(c.vocab || {}).forEach(([ k, st ]) => {
@@ -14987,99 +14976,6 @@ function scheduleAutoSave() {
   autoSaveDebounceTimer = setTimeout(saveCurrentLesson, STORE_DELAY_MS);
 }
 
-function autoSortLibrary() {
-  if (isVirtualLesson()) return false;
-  const live = !!currentLessonId && !isVirtualId(currentLessonId);
-  const homes = library.filter(l => !isVirtualId(l.id) && (!live || l.id !== currentLessonId)).map(l => ({
-    lesson: l,
-    cards: l.cards || [],
-    extras: l.extraWords && l.extraWords.uid ? l.extraWords : normalizeExtras(l.extraWords)
-  }));
-  if (live) homes.unshift({
-    lesson: null,
-    cards: rows,
-    extras: vocabExtras
-  });
-  const editing = activeEdit && activeEdit.row;
-  const stateOf = st => st && st.reps ? Object.assign({}, st, {
-    notes: undefined,
-    added: undefined
-  }) : null;
-  let liveTouched = false;
-  homes.forEach(home => {
-    const toWords = home.cards.filter(c => c && c.uid !== EXTRA_UID && c !== editing && c.time == null && (c.q || "").trim() && (c.a || "").trim() && belongsInVocab(c));
-    const holders = home.cards.filter(c => c && c !== editing).concat(home.extras ? [ home.extras ] : []);
-    const toCards = [];
-    holders.forEach(card => vocabEntriesOf(card).forEach(e => {
-      const blank = !e.meaning || !e.meaning.trim();
-      if (blank && card.uid !== EXTRA_UID || !blank && isTranslationCard({
-        q: e.term,
-        a: e.meaning
-      }) || !home.lesson && e.key === vocabEditingKey) return;
-      const own = card.uid !== EXTRA_UID && card.time == null && normalizeVocabText((card.q || "").replace(/\s+/g, " ").trim()) === e.tkey;
-      if (!own) toCards.push([ card, e ]);
-    }));
-    if (!toWords.length && !toCards.length) return;
-    const made = [];
-    toCards.forEach(([ card, e ]) => {
-      const next = rewrittenVocabNotes(card, e, null, null);
-      if (!next) return;
-      const st = card.vocab && card.vocab[e.key];
-      card.notes = next.notes;
-      card.notesHtml = next.notesHtml;
-      if (card.vocab) delete card.vocab[e.key];
-      const row = newRow(e.term, e.meaning, null);
-      if (st && st.notes) {
-        row.notesHtml = sanitizeHtml(st.notes);
-        row.notes = plainTextOf(row.notesHtml, "\n");
-      }
-      const progress = stateOf(st);
-      if (progress) row.srs.Table = Object.assign(row.srs.Table, progress);
-      made.push(home.lesson ? serializeCard(row) : row);
-    });
-    if (toWords.length) {
-      if (!home.lesson) home.extras = ensureVocabExtras(); else if (!home.extras) home.extras = {
-        uid: EXTRA_UID,
-        q: "",
-        a: "",
-        notes: "",
-        notesHtml: "",
-        time: null,
-        vocab: {}
-      };
-      toWords.forEach(c => {
-        const term = c.q.replace(/\s+/g, " ").trim(), key = wordKey(term, c.a);
-        const pairs = [ [ term, c.a.replace(/\s+/g, " ").trim() ] ].concat(vocabEntriesOf(c).filter(e => e.key !== key).map(e => [ e.term, e.meaning ]));
-        appendWordItems(home.extras, pairs);
-        const progress = stateOf(c.srs && c.srs.Table);
-        if (progress) home.extras.vocab[key] = Object.assign(home.extras.vocab[key] || newSrsState(), progress);
-        vocabEntriesOf(c).forEach(e => {
-          if (c.vocab && c.vocab[e.key]) home.extras.vocab[e.key] = c.vocab[e.key];
-        });
-        const plain = plainTextOf(c.notesHtml || "", "\n").trim();
-        if (plain && !vocabEntriesOf(c).length) setWordNotes(home.extras, key, c.notesHtml);
-      });
-    }
-    const gone = new Set(toWords);
-    const left = home.cards.filter(c => !gone.has(c)).concat(made);
-    if (!home.lesson) {
-      toWords.forEach(c => {
-        pruneIdFromGroupState(groupState, c.id);
-        pruneIdFromGroupState(savedGroupState, c.id);
-      });
-      rows = left;
-      vocabExtras = home.extras;
-      liveTouched = true;
-      return;
-    }
-    home.lesson.cards = left;
-    home.lesson.extraWords = serializeExtras(home.extras);
-    home.lesson.updatedAt = Date.now();
-    dbPut("lessons", home.lesson).catch(() => {});
-  });
-  return liveTouched;
-}
-
 let dedupePrefer = null;
 
 function dedupeLibrary(prefer = dedupePrefer) {
@@ -15223,8 +15119,6 @@ function saveCurrentLesson() {
   autoSaveDebounceTimer = null;
   if (!currentLessonId || tabPaused) return Promise.resolve();
   if (isVirtualLesson()) return saveVirtualLesson();
-  const sorted = autoSortLibrary();
-  if (dedupeLibrary() || sorted) afterDedupe();
   const data = serializeCurrentLesson();
   upsertLibrary(data);
   updateLessonListItem(data);
@@ -15232,13 +15126,6 @@ function saveCurrentLesson() {
   return dbPut("lessons", data).catch(() => {
     setFileNote(dbAvailable ? "⚠️ Couldn't save in the browser — click Save to keep a file copy" : "⚠️ Browser storage is off here — click Save to keep your work");
   });
-}
-
-function afterDedupe() {
-  if (hoveredRowId !== null && !rows.some(r => r.id === hoveredRowId)) hoveredRowId = null;
-  if (selectedRowId !== null && !rows.some(r => r.id === selectedRowId)) selectedRowId = null;
-  if (currentView === "vocab") renderVocab(); else if (currentView === "study") render();
-  renderLessonList();
 }
 
 function flushAutoSave() {
@@ -15348,7 +15235,7 @@ function openLesson(lesson) {
   resetStudyState();
   vocabView = "list";
   currentLessonId = lesson.id;
-  const cards = isVirtualId(lesson.id) ? lesson.cards : mergeLessonCards(lesson.cards);
+  const cards = lesson.cards;
   rows = cards.map(c => {
     const r = newRow(c.q, c.a, c.time);
     Object.assign(r, normalizeCard(c));
@@ -19453,7 +19340,6 @@ async function initApp() {
   library.forEach(l => {
     let converted = false;
     l.cards.forEach(c => {
-      if (joinOldTranslation(c)) converted = true;
 
       if (c.srs && MODES.some(m => c.srs[m] && typeof c.srs[m].streak !== "number")) {
         c.srs = normalizeSrs(c.srs);
@@ -19463,28 +19349,13 @@ async function initApp() {
         c.srs = mergeModeSrs(normalizeSrs(c.srs));
         converted = true;
       }
-      [ "q", "a" ].forEach(f => {
-        const text = cleanPunct(c[f] || "");
-        if (text === (c[f] || "")) return;
-        c[f] = text;
-        c[f + "Html"] = c[f + "Html"] ? cleanPunctHtml(c[f + "Html"]) : textHtml(text);
-        converted = true;
-      });
     });
-    const joined = mergeLessonCards(l.cards);
-    if (joined !== l.cards) {
-      l.cards = joined;
-      l.updatedAt = Date.now();
-      converted = true;
-    }
     if (converted) dbPut("lessons", l).catch(() => {});
   });
   leftovers.forEach(l => {
     dbDelete("lessons", l.id);
     forgetLesson(l.id);
   });
-  autoSortLibrary();
-  dedupeLibrary();
   reviewLog = (await dbGetAll("reviews")).filter(e => e && isFinite(e.ts)).sort((a, b) => a.ts - b.ts);
   renderStreakChip();
   await openDefaultLesson();
@@ -21751,6 +21622,13 @@ function sayVocabWord(item) {
   stopVocabSound();
   speechSynthesis.cancel();
   if (!card) return;
+  const btn = document.getElementById("vocabSpeak");
+  if (navigator.userActivation && !navigator.userActivation.hasBeenActive) {
+    soundWaitOn(btn);
+    afterFirstTouch(() => currentView === "vocab" && currentVocabItem() === item && vocabSession && !vocabSession.flipped && sayVocabWord(item));
+    return;
+  }
+  soundWaitOn(btn);
   const own = vocabContext(item).sentence || "", shown = card.dataset.ex === "other" && card.dataset.other || own;
   const pool = [ shown ].concat(own && own !== shown ? [ own ] : []).filter(Boolean);
   if (!card.dataset.listenText || !pool.includes(card.dataset.listenText)) card.dataset.listenText = pool[Math.floor(Math.random() * pool.length)] || item.term;
@@ -21765,7 +21643,9 @@ function sayVocabWord(item) {
   if (voice) utter.voice = voice;
   utter.rate = ttsSpeed;
   listenBar(card, 0);
+  utter.addEventListener("start", () => btn && btn.classList.remove("sound-wait"));
   utter.onend = () => {
+    btn && btn.classList.remove("sound-wait");
     const bar = card.querySelector(".vc-time i");
     if (bar) {
       bar.style.transition = "width .2s linear";
