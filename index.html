@@ -2336,7 +2336,7 @@ window.onYouTubeIframeAPIReady = function(){
   @media (hover:hover){.w-modes button:not(.active):hover{color:#ffffff;}}
   .watch-pop.cabin .w-listbox{display:none;}
   .watch-pop.cabin .w-pill:is([data-w="auto"], [data-w="loop"], [data-w="blur"]){display:none;}
-  @media (min-width:821px){.watch-pop.cabin{grid-template-columns:min(100%, calc((100vh - 136px) * 16 / 9));grid-template-columns:min(100%, calc((100dvh - 136px) * 16 / 9));justify-content:center;align-content:safe center;overflow:auto;}}
+  @media (min-width:821px){.watch-pop.cabin{grid-template-columns:min(100vw, calc(100vh * 16 / 9));grid-template-columns:min(100vw, calc(100dvh * 16 / 9));justify-content:center;align-content:center;padding:0;overflow:hidden;}.watch-pop.cabin .w-main{position:relative;}.watch-pop.cabin .w-video{border-radius:0;}.watch-pop.cabin .w-ctl{position:absolute;left:0;right:0;bottom:16px;z-index:3;pointer-events:none;}.watch-pop.cabin .w-ctl > *{pointer-events:auto;}.watch-pop.cabin .w-cap{bottom:max(round(8%, 1px), 80px);}}
   .w-main{display:flex;flex-direction:column;gap:8px;min-width:0;container-type:inline-size;}
   .w-video{position:relative;width:100%;aspect-ratio:16 / 9;overflow:hidden;border-radius:12px;background:#000000;}
   .w-video > *{position:absolute;inset:0;width:100%;height:100%;}
@@ -11322,7 +11322,17 @@ function qMirrorBody(el, m) {
     }
     if (!started || slash.contains(n)) continue;
     if (n.nodeType === 1 && (n.tagName === "BR" || scope === m && /^(DIV|P|LI|UL|OL)$/.test(n.tagName))) break;
-    if (n.nodeType === 3) nodes.push(n);
+    if (n.nodeType !== 3) continue;
+    const nl = n.nodeValue.indexOf("\n");
+    if (nl < 0) {
+      nodes.push(n);
+      continue;
+    }
+    if (nl) {
+      n.splitText(nl);
+      nodes.push(n);
+    }
+    break;
   }
   nodes.forEach(t => {
     const sp = document.createElement("span");
@@ -11838,6 +11848,7 @@ document.addEventListener("input", e => {
     el.value = next.text;
     const at = next.caret < 0 ? Math.max(0, was - 1) : next.caret;
     el.setSelectionRange(at, at);
+    fitTextarea(el);
     return;
   }
   const raw = el.innerText, text = raw.endsWith("\n\n") ? raw.slice(0, -1) : raw, next = qRuleText(text);
