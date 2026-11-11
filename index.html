@@ -558,6 +558,9 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-card.fill .cloze-main ruby{ruby-position:over;}
   .vocab-card.fill .cloze-main rt{padding-bottom:2px;font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;font-size:.3em;font-size:round(.3em, 1px);font-weight:600;font-style:normal;line-height:1;opacity:.75;}
   .vocab-card.fill .cloze-main{font-size:2em;font-size:round(2em, 1px);line-height:1.3;line-height:round(1.3em, 1px);font-weight:800;color:var(--accent);}
+  .vocab-card[data-look] .vocab-back > .vocab-back-main .vocab-word-notes, .vocab-card[data-look].fill .cloze-notes{color:var(--nc);}
+  .vocab-card[data-look].fill .cloze-mean{color:var(--mc);}
+  .vocab-card[data-look] :is(.vocab-front, .vocab-back) .py-line{color:var(--pc);opacity:1;}
   .vocab-card.fill .cloze-mean{font-size:calc(1em + 4px);line-height:1.25;line-height:round(1.25em, 1px);font-weight:700;}
   .vocab-card.fill.flipped .vocab-front, .vocab-card.fill.settled .vocab-front{visibility:visible;}
   .vocab-card.fill.flipped .vocab-back{visibility:hidden;}
@@ -20318,7 +20321,7 @@ const TYPE_CJK = {
   ja: [ "Noto Sans JP", "Noto Serif JP", "M PLUS Rounded 1c", "Zen Maru Gothic", "Zen Kaku Gothic New", "Sawarabi Mincho" ]
 };
 
-const TYPE_INKS = [ "#1d2433", "#7a2e0e", "#0f5c3a", "#173f8a", "#8a1c4a", "#4a3a12", "#0b5563", "#5b2a86", "#9a3412", "#1f2937", "#3f6212", "#9f1239" ];
+const INK_FAMILIES = [ [ "#1d2433", "#1f2937" ], [ "#7a2e0e", "#9a3412", "#4a3a12" ], [ "#0b5563" ], [ "#8a1c4a", "#9f1239" ], [ "#5b2a86" ] ];
 
 function cardType(el, item) {
   const pick = list => list[Math.floor(Math.random() * list.length)], phone = matchMedia("(max-width:600px)").matches;
@@ -20347,7 +20350,9 @@ function cardType(el, item) {
   set("--tk", pick([ "0px", "0px", "1px", "2px", "4px", "-1px" ]));
   set("--tz", tz + "px");
   set("--tl", tz + 8 + "px");
-  set("--tc", pick(TYPE_INKS));
+  const fams = INK_FAMILIES.slice().sort(() => Math.random() - .5), textFam = fams[0], rest = fams.filter(f => f !== textFam);
+  const textInk = pick(textFam);
+  set("--tc", textInk);
   const bz = pick(phone ? [ 22, 24, 26 ] : [ 32, 36, 40 ]), mz = pick(phone ? [ 18, 20, 22, 26 ] : [ 22, 26, 30, 36, 44 ]);
   const align = pick([ "left", "center", "center", "left" ]);
   set("--bf", font());
@@ -20356,8 +20361,10 @@ function cardType(el, item) {
   set("--bz", bz + "px");
   set("--bl", bz + Math.round(bz / 3) + "px");
   set("--bk", pick([ "0px", "0px", "1px" ]));
-  set("--bc", pick(TYPE_INKS));
-  set("--mc", pick(TYPE_INKS));
+  set("--bc", textInk);
+  set("--mc", pick(rest[0]));
+  set("--nc", pick(rest[1]));
+  set("--pc", pick(rest[2]));
   set("--mz", mz + "px");
   set("--ml", mz + 8 + "px");
   set("--mw", pick([ "400", "600", "800" ]));
