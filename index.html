@@ -1007,11 +1007,11 @@ window.onYouTubeIframeAPIReady = function(){
   #cardTable.notebook{--line:36px;display:block;position:relative;overflow:visible;padding:0;background:none;color:var(--paper-ink);border:0;border-radius:0;box-shadow:none;font-family:Georgia, "Times New Roman", serif;}
   #cardTable.notebook colgroup, #cardTable.notebook thead{display:none;}
   #cardTable.notebook tbody{position:relative;display:flex;flex-direction:column;box-sizing:border-box;padding:12px 0 9px;background:var(--paper);border:1px solid var(--paper-edge);border-radius:12px;box-shadow:0 1px 0 var(--paper-edge), 0 14px 30px var(--paper-shadow);}
-  #cardTable.notebook tbody{min-height:104px;}
+  #cardTable.notebook tbody{min-height:106px;}
   #cardTable.notebook, .ielts-paper{--page-x:48px;--page-y:24px;}
   #cardTable.notebook tbody tr{padding-right:32px;}
   @media (max-width:600px){#cardTable.notebook, .ielts-paper{--page-x:40px;}}
-  .ielts-paper{min-height:104px;box-sizing:border-box;}
+  .ielts-paper{min-height:106px;box-sizing:border-box;}
   #cardTable.notebook tbody tr{position:relative;display:grid;grid-template-columns:0 minmax(0, 1fr);box-sizing:border-box;padding:12px var(--page-x);background:none;border:0;}
   #cardTable.notebook .cell[data-field="q"]{text-box:trim-both text;min-height:0;}
   .ielts-paper :is(.paper-question, .paper-question .cell, .paper-notes){text-box:trim-both text;min-height:0;}
@@ -1202,6 +1202,8 @@ window.onYouTubeIframeAPIReady = function(){
     cursor:pointer;user-select:none;font-style:normal;
   }
   @media (hover:hover){.loop-time:not(.looping):hover{filter:brightness(1.1);}}
+  .cell .loop-time{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;height:22px;padding-top:0;padding-bottom:0;line-height:inherit;margin-top:round(down, calc((1lh - 22px) / 2), 1px);}
+  .cell .loop-time > *{line-height:18px;}
   .loop-time.looping{background:var(--accent);color:var(--on-accent);}
   .loop-time, .exam-play{position:relative;}
   :is(#btnPlaySequence, #vocabSpeak, #tbShow, .loop-time, .exam-play){transition:background-color .4s ease, border-color .4s ease, color .4s ease;}
@@ -1801,7 +1803,7 @@ window.onYouTubeIframeAPIReady = function(){
   .empty-state h2{font-size:22px;margin:14px 0 6px;}
   .empty-state p{color:var(--text-2);margin:0 0 20px;}
   .empty-state .row-flex{justify-content:center;}
-  .today-panel{--page-x:40px;position:relative;padding:20px 20px 20px var(--page-x);background:var(--paper);border:1px solid var(--paper-edge);border-radius:20px;box-shadow:0 1px 0 var(--paper-edge), 0 14px 30px var(--paper-shadow);}
+  .today-panel{--page-x:40px;position:relative;min-height:114px;box-sizing:border-box;padding:20px 20px 20px var(--page-x);background:var(--paper);border:1px solid var(--paper-edge);border-radius:20px;box-shadow:0 1px 0 var(--paper-edge), 0 14px 30px var(--paper-shadow);}
   @media (max-width:600px){.today-panel{padding:16px 16px 16px var(--page-x);}.today-panel::before{top:16px;bottom:16px;}}
   .today-panel::before{content:"";position:absolute;z-index:1;top:20px;bottom:20px;left:-8px;width:32px;pointer-events:none;background:var(--ring-left) 0 0 / 32px 36px, radial-gradient(circle at 26px 18px, #1f2633 6px, transparent 6px) 0 0 / 32px 36px;background-repeat:no-repeat space;}
   .today-panel .today-tasks{gap:6px;}
@@ -3834,12 +3836,12 @@ function watchGrade(isAgain) {
     st2.textContent = isAgain ? "✕" : "✓";
     vid.appendChild(st2);
     st2.animate([ {
-      transform: "translate(-50%, -50%) scale(1.8) rotate(-12deg)",
-      opacity: 0
+      transform: "translate(-50%, -50%) scale(1) rotate(-12deg)",
+      opacity: 1
     }, {
       transform: "translate(-50%, -50%) scale(1) rotate(-12deg)",
       opacity: 1,
-      offset: .25
+      offset: .5
     }, {
       transform: "translate(-50%, -50%) scale(1) rotate(-12deg)",
       opacity: 0
@@ -10467,11 +10469,11 @@ function paintOwnDictFloat() {
   pop.style.top = Math.round(top) + "px";
 }
 
-function openOwnDictFloat(el, mode) {
+function openOwnDictFloat(el, mode, word) {
   closeOwnDictFloat();
   const shown = ownDictShown, host = document.querySelector("#editPopup .le-box");
   if (!shown || !host) return;
-  const w = mode === "have" ? el.dataset.w : el.textContent;
+  const w = word || (mode === "have" ? el.dataset.w : el.textContent);
   const pop = document.createElement("div");
   pop.className = "od-float";
   pop.dataset.w = w;
@@ -10519,6 +10521,93 @@ window.addEventListener("keydown", e => {
   e.stopImmediatePropagation();
   closeOwnDictFloat();
 }, true);
+
+function ownDictSnap() {
+  const sel = getSelection(), sent = document.querySelector("#editPopup .od-sent");
+  if (!ownDictShown || !sent || !sel.rangeCount || sel.isCollapsed) return null;
+  const r = sel.getRangeAt(0);
+  if (!sent.contains(r.commonAncestorContainer)) return null;
+  const off = (node, o) => {
+    const x = document.createRange();
+    x.setStart(sent, 0);
+    x.setEnd(node, o);
+    return x.toString().length;
+  };
+  const T = sent.textContent;
+  let a = off(r.startContainer, r.startOffset), b = off(r.endContainer, r.endOffset);
+  sent.querySelectorAll(".od-jump, .od-off").forEach(el => {
+    const s0 = off(el, 0), e0 = s0 + el.textContent.length;
+    if (a > s0 && a < e0) a = s0;
+    if (b > s0 && b < e0) b = e0;
+  });
+  if (!/^(zh|ja|ko)$/.test(ownDictShown.lang)) {
+    while (a > 0 && /[\p{L}\p{N}'’-]/u.test(T[a - 1])) a--;
+    while (b < T.length && /[\p{L}\p{N}'’-]/u.test(T[b])) b++;
+  }
+  while (a < b && /[\s\p{P}]/u.test(T[a])) a++;
+  while (b > a && /[\s\p{P}]/u.test(T[b - 1])) b--;
+  const text = T.slice(a, b);
+  if (!text || /\n/.test(text)) return null;
+  const at = (n, end) => {
+    const walk = document.createTreeWalker(sent, NodeFilter.SHOW_TEXT);
+    let k = n, t;
+    while (t = walk.nextNode()) {
+      if (end ? k <= t.length : k < t.length) return [ t, k ];
+      k -= t.length;
+    }
+    return [ sent, sent.childNodes.length ];
+  };
+  const nr = document.createRange();
+  nr.setStart(...at(a, false));
+  nr.setEnd(...at(b, true));
+  sel.removeAllRanges();
+  sel.addRange(nr);
+  return {
+    text: text,
+    rect: nr.getBoundingClientRect()
+  };
+}
+
+function ownDictPickPhrase() {
+  const got = ownDictSnap();
+  if (!got) return;
+  const key = normalizeVocabText(got.text), gone = new Set(hiddenWordsFor(ownDictShown.lang).map(normalizeVocabText));
+  const mode = ownDictFindWord(got.text) ? "have" : gone.has(key) ? "off" : "new";
+  const rect = got.rect;
+  openOwnDictFloat({
+    getBoundingClientRect: () => rect,
+    isConnected: false
+  }, mode, got.text);
+}
+
+let ownDictSelTimer = 0, ownDictTouching = false;
+
+document.getElementById("editPopup").addEventListener("pointerup", e => {
+  if (e.pointerType === "touch" || !e.target.closest || !e.target.closest(".od-sent") && !(getSelection().anchorNode && document.querySelector("#editPopup .od-sent") && document.querySelector("#editPopup .od-sent").contains(getSelection().anchorNode))) return;
+  setTimeout(ownDictPickPhrase, 0);
+});
+
+document.addEventListener("touchstart", () => ownDictTouching = true, {
+  passive: true,
+  capture: true
+});
+
+document.addEventListener("touchend", () => {
+  ownDictTouching = false;
+}, {
+  passive: true,
+  capture: true
+});
+
+document.addEventListener("selectionchange", () => {
+  if (!isTouch() || !ownDictShown) return;
+  clearTimeout(ownDictSelTimer);
+  ownDictSelTimer = setTimeout(() => {
+    const sel = getSelection(), sent = document.querySelector("#editPopup .od-sent");
+    if (ownDictTouching || ownDictFloat || !sent || sel.isCollapsed || !sel.anchorNode || !sent.contains(sel.anchorNode)) return;
+    ownDictPickPhrase();
+  }, 700);
+});
 
 function ownDictJumpHtml(w, got) {
   return `<span class="od-jump${got ? " od-got" : ""}" role="button" tabindex="0" data-w="${escapeAttr(w)}">${escapeHtml(w)}</span>`;
@@ -10621,6 +10710,7 @@ function ownDictSay(w) {
 
 document.getElementById("editPopup").addEventListener("click", e => {
   if (!ownDictShown || !e.target.closest) return;
+  if (!getSelection().isCollapsed && e.target.closest(".od-sent")) return;
   const fl = e.target.closest(".od-float");
   if (fl) {
     if (e.target.closest(".od-say")) return ownDictSay(fl.dataset.w);
@@ -12335,18 +12425,8 @@ function playCut(layer, kind, mark) {
     const st = document.createElement("div");
     st.className = "cut-stamp " + kind;
     st.textContent = text;
+    st.style.transform = "translate(-50%, -50%) rotate(-12deg)";
     layer.appendChild(st);
-    st.animate([ {
-      transform: "translate(-50%, -50%) scale(1.8) rotate(-12deg)",
-      opacity: 0
-    }, {
-      transform: "translate(-50%, -50%) scale(1) rotate(-12deg)",
-      opacity: 1
-    } ], {
-      duration: 100,
-      easing: "ease-out",
-      fill: "forwards"
-    });
   };
   if (kind === "cut") {
     const y1 = Math.round(H * .66), y2 = Math.round(H * .34), len = Math.ceil(Math.hypot(W, y1 - y2)), deg = Math.atan2(y2 - y1, W) * 180 / Math.PI;
@@ -12399,14 +12479,6 @@ function playCut(layer, kind, mark) {
   const tint = document.createElement("div");
   tint.className = "cut-tint " + kind;
   layer.appendChild(tint);
-  tint.animate([ {
-    opacity: 0
-  }, {
-    opacity: 1
-  } ], {
-    duration: 100,
-    fill: "forwards"
-  });
   const to = kind === "good" ? "translateX(112vw) rotate(9deg)" : kind === "again" ? "translateX(-112vw) rotate(-9deg)" : "translateY(-112vh) scale(.92)";
   layer.style.transformOrigin = "50% 110%";
   layer.animate([ {
@@ -12415,7 +12487,6 @@ function playCut(layer, kind, mark) {
     transform: to
   } ], {
     duration: 280,
-    delay: 70,
     easing: "cubic-bezier(.55,0,.85,.3)",
     fill: "forwards"
   }).finished.then(() => done(layer), () => done(layer));
