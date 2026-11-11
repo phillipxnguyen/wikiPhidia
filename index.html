@@ -453,9 +453,6 @@ window.onYouTubeIframeAPIReady = function(){
   #vocabEditTerm, #qaQ{border-left:4px solid var(--lesson-accent);}
   .q-wrap{position:relative;display:block;min-width:0;}
   .qa-row > .q-wrap{flex:1 1 auto;}
-  :is(.q-mirror, .q-mirrored){text-indent:var(--q-indent, 0px);}
-  :is(.q-mirror, .q-mirrored) :is(div, p, li){text-indent:0;}
-  :is(.q-mirror, .q-mirrored).q-lead-block > :is(div, p):first-child{text-indent:var(--q-indent, 0px);}
   .q-mirror{position:absolute;z-index:0;margin:0;overflow:hidden;border-style:solid;border-color:transparent;color:var(--text);pointer-events:none;}
   .q-mirror .q-slash{color:transparent;}
   .q-mirror .q-line{color:var(--accent);}
@@ -7906,16 +7903,18 @@ function lessonAddKind() {
   return isYouTubeLesson() ? "listen" : "speak";
 }
 
+const Q_MARK = "\u2063";
+
 function splitMergedPlain(text) {
   const lines = (text || "").replace(/\r/g, "").split("\n");
   while (lines.length && !lines[lines.length - 1].trim()) lines.pop();
   while (lines.length && !lines[0].trim()) lines.shift();
-  if (!lines.length || !/^\s*\//.test(lines[0])) return {
+  if (!lines.length || !/^\s*\u2063/.test(lines[0])) return {
     q: lines.join("\n"),
     a: ""
   };
   return {
-    q: lines[0].replace(/^\s*\//, ""),
+    q: lines[0].replace(/^\s*\u2063/, ""),
     a: lines.slice(1).join("\n")
   };
 }
@@ -8743,7 +8742,7 @@ function cleanPunctHtml(html) {
 }
 
 function cleanText(text) {
-  return String(text ?? "").split(/\r?\n|\r/).map(line => tidySpaces(line).trim()).join("\n").trim();
+  return String(text ?? "").replace(/\u2063/g, "").split(/\r?\n|\r/).map(line => tidySpaces(line).trim()).join("\n").trim();
 }
 
 function tidyTextNodes(root) {
@@ -9600,19 +9599,19 @@ function stripVocabHighlights(html) {
 function mergedCardEditHtml(row) {
   const q = getEditInitialHtml(row.q, row.qHtml, row.id);
   if (!(row.a || "").trim()) return q;
-  return `<div>/${q}</div>` + getEditInitialHtml(row.a, row.aHtml, row.id).split(/<br\s*\/?>/i).map(line => `<div>${line || "<br>"}</div>`).join("");
+  return `<div>${Q_MARK}${q}</div>` + getEditInitialHtml(row.a, row.aHtml, row.id).split(/<br\s*\/?>/i).map(line => `<div>${line || "<br>"}</div>`).join("");
 }
 
 function splitMergedCardHtml(html) {
   const lines = (html || "").replace(/<div[^>]*>/gi, "").replace(/<\/div>/gi, "<br>").replace(/\n/g, "<br>").split(/<br\s*\/?>/i);
   while (lines.length && !plainTextOf(lines[lines.length - 1], "").trim()) lines.pop();
   while (lines.length && !plainTextOf(lines[0], "").trim()) lines.shift();
-  if (!lines.length || !/^\s*\//.test(plainTextOf(lines[0], ""))) return {
+  if (!lines.length || !/^\s*\u2063/.test(plainTextOf(lines[0], ""))) return {
     q: lines.join("<br>"),
     a: ""
   };
   return {
-    q: lines[0].replace(/^((?:\s|<[^>]+>)*)\//, "$1"),
+    q: lines[0].replace(/^((?:\s|<[^>]+>)*)\u2063/, "$1"),
     a: lines.slice(1).join("<br>")
   };
 }
@@ -11285,23 +11284,15 @@ function addWordToEditNotes(notes, term, meaning) {
 
 const Q_BOXES = "#qaQ, #vocabEditTerm, #editQ";
 
-let qSlashCanvas = null;
-
-function qSlashWidth(cs) {
-  const g = (qSlashCanvas = qSlashCanvas || document.createElement("canvas")).getContext("2d");
-  g.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
-  return Math.round(g.measureText("/").width);
-}
-
 function qMirrorBody(el, m) {
   if (el.tagName === "TEXTAREA") {
-    const t = el.value, lead = t.length - t.trimStart().length, has = t.slice(lead, lead + 1) === "/";
+    const t = el.value, lead = t.length - t.trimStart().length, has = t.slice(lead, lead + 1) === Q_MARK;
     if (!has) {
       m.textContent = t + "​";
       return false;
     }
     const nl = t.indexOf("\n"), end = nl < 0 ? t.length : nl;
-    m.innerHTML = escapeHtml(t.slice(0, lead)) + '<span class="q-slash">/</span><span class="q-line">' + escapeHtml(t.slice(lead + 1, end)) + "</span>" + escapeHtml(t.slice(end)) + "​";
+    m.innerHTML = escapeHtml(t.slice(0, lead)) + '<span class="q-slash">' + Q_MARK + '</span><span class="q-line">' + escapeHtml(t.slice(lead + 1, end)) + "</span>" + escapeHtml(t.slice(end)) + "​";
     return true;
   }
   m.innerHTML = el.innerHTML;
@@ -11310,8 +11301,8 @@ function qMirrorBody(el, m) {
     while (n = walk.nextNode()) if (n.nodeValue.trim()) return n;
     return null;
   })();
-  if (!first || first.nodeValue.trimStart()[0] !== "/") return false;
-  const at = first.nodeValue.indexOf("/"), rest = first.splitText(at);
+  if (!first || first.nodeValue.trimStart()[0] !== Q_MARK) return false;
+  const at = first.nodeValue.indexOf(Q_MARK), rest = first.splitText(at);
   rest.splitText(1);
   const slash = document.createElement("span");
   slash.className = "q-slash";
@@ -11343,7 +11334,6 @@ function qMirrorSync(el) {
   if (!el || !el.isConnected || !el.offsetParent || el.classList.contains("yt-ph")) {
     if (el && el.classList.contains("q-mirrored") && el.classList.contains("yt-ph")) {
       el.classList.remove("q-mirrored");
-      el.style.removeProperty("--q-indent");
       const m = el.parentElement && el.parentElement.querySelector(":scope > .q-mirror");
       if (m) m.remove();
     }
@@ -11375,23 +11365,8 @@ function qMirrorSync(el) {
   m.style.height = el.offsetHeight + "px";
   m.style.left = el.offsetLeft + "px";
   m.style.top = el.offsetTop + "px";
-  const has = qMirrorBody(el, m), indent = has ? -qSlashWidth(cs) + "px" : "0px";
-  let lead = false;
-  if (el.tagName !== "TEXTAREA") {
-    const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
-    let n;
-    while ((n = w.nextNode()) && !n.nodeValue.trim()) ;
-    lead = !!n && n.parentElement !== el && !!n.parentElement.closest("div, p, li") && n.parentElement.closest("div, p, li") !== el;
-  }
-  [ el, m ].forEach(x => {
-    if (x.style.getPropertyValue("--q-indent") !== indent) x.style.setProperty("--q-indent", indent);
-    x.classList.toggle("q-lead-block", lead);
-  });
+  qMirrorBody(el, m);
   m.scrollTop = el.scrollTop;
-}
-
-function qMirrorAll() {
-  document.querySelectorAll(Q_BOXES).forEach(qMirrorSync);
 }
 
 [ "input", "focusin", "keyup", "scroll" ].forEach(t => document.addEventListener(t, e => {
@@ -11836,14 +11811,14 @@ document.addEventListener("paste", e => {
 });
 
 function qRuleText(t) {
-  const lead = t.length - t.trimStart().length, has = t.slice(lead, lead + 1) === "/";
+  const lead = t.length - t.trimStart().length, has = t.slice(lead, lead + 1) === Q_MARK;
   if (has) return t.includes("\n") ? null : {
     text: t.slice(0, lead) + t.slice(lead + 1),
     caret: -1
   };
   const lines = t.split("\n"), k = lines.findIndex((l, n) => n > 0 && !l.trim() && lines.slice(0, n).some(x => x.trim()));
   if (k < 0 || k + 1 >= lines.length) return null;
-  const q = lines.slice(0, k).map(l => l.trim()).filter(Boolean).join(" "), head = "/" + q + "\n";
+  const q = lines.slice(0, k).map(l => l.trim()).filter(Boolean).join(" "), head = Q_MARK + q + "\n";
   return {
     text: head + lines.slice(k + 1).join("\n"),
     caret: head.length
@@ -20922,7 +20897,7 @@ function vocabEditValues() {
 }
 
 function vocabEditorHtml(item) {
-  return '<div class="vocab-editor">' + `<textarea id="vocabEditTerm" class="autofit" rows="1" autocomplete="off" aria-label="Word" placeholder="Word, then its meaning two lines below">${escapeHtml(item.meaning ? "/" + item.term + "\n" + item.meaning : item.term)}</textarea>` + `<div class="notes-clip"><div id="vocabEditNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes" aria-label="Notes">${wordNotesOf(item)}</div></div>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
+  return '<div class="vocab-editor">' + `<textarea id="vocabEditTerm" class="autofit" rows="1" autocomplete="off" aria-label="Word" placeholder="Word, then its meaning two lines below">${escapeHtml(item.meaning ? Q_MARK + item.term + "\n" + item.meaning : item.term)}</textarea>` + `<div class="notes-clip"><div id="vocabEditNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes" aria-label="Notes">${wordNotesOf(item)}</div></div>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
 }
 
 const VOCAB_FLIP_MS = 450;
