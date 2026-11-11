@@ -261,6 +261,7 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 | DICT-39 | `aec0764` | Popup từ: Save chỉ hiện khi đã đổi nghĩa, cùng kiểu nút Add; Shift bấm Add/Save dù chuột ở đâu; từ dài không bị ngắt giữa |
 | DICT-40 | `5888791` | Bấm nghĩa gợi ý chỉ thêm vào dòng nghĩa (sau dấu phẩy), không lưu; nghĩa đã có trong dòng được viền |
 | DICT-41 | `7b097cc` | Popup từ: mỗi nghĩa một dòng (không dấu phẩy), nghĩa gợi ý thêm thành dòng mới; rê chuột vào từ chỉ hiện nghĩa |
+| DICT-42 | `c339e9d` | Bấm từ / Shift tạo cụm chạy cả ở Today, task, danh sách nhiều bài (trước bị chặn), từ lưu vào bài gốc của câu |
 
 Hàm chính: `showDictSite`, `hideDictOverlay`, `dictUrlFor`, `ownDictCardHtml`, `openWordFloat`, `sentenceWordAt`, `ownDictLookup`, `ownDictFetch`, `ownDictPrefetch`.
 
