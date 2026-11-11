@@ -2335,7 +2335,12 @@ window.onYouTubeIframeAPIReady = function(){
   .w-cap{position:absolute;left:16px;right:16px;bottom:16px;z-index:2;display:flex;justify-content:center;pointer-events:none;text-align:center;}
   .w-cap .w-capline{padding:8px 16px;border-radius:12px;background:rgba(0,0,0,.66);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);}
   .watch-pop.cabin .w-cap{pointer-events:auto;}
-  .w-cap .w-capline{pointer-events:auto;}
+  .w-cap .w-capline{pointer-events:auto;cursor:pointer;}
+  .w-grip{position:absolute;right:0;top:50%;display:flex;align-items:center;justify-content:center;width:40px;height:40px;margin-top:-20px;padding:0;border:0;border-radius:20px;background:rgba(0,0,0,.5);color:#ffffff;cursor:ns-resize;touch-action:none;pointer-events:auto;opacity:0;transition:opacity .2s;}
+  .w-grip svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+  .w-stage:hover .w-grip, .w-grip:focus-visible{opacity:1;}
+  @media (max-width:820px){.w-grip{display:none;}}
+  @media (min-width:821px){.watch-pop{padding-bottom:0;}.watch-pop .w-main{gap:0;}.watch-pop .w-ctl{height:72px;}}
   .w-capline{display:flex;flex-direction:column;align-items:center;gap:4px;max-width:900px;}
   .w-capline[hidden]{display:none;}
   .w-text{font-size:22px;line-height:30px;font-weight:600;color:#ffffff;}
@@ -3425,7 +3430,7 @@ function openWatch() {
   box.hidden = false;
   box.style.setProperty("--scene", theaterScene(watch.scene));
   box.dataset.scene = watch.scene;
-  box.innerHTML = '<div class="toolbar vocab-toolbar w-topbar"><span class="flag-set toolbar-flag"></span><div class="w-modes" role="tablist" aria-label="Theater mode"><button type="button" role="tab" data-w="mode-i" aria-label="Interpreter" title="Interpreter: each line is read to you in translation; say it yourself, then Show plays it from the video"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 11V9a6 6 0 0 1 12 0v2"/><rect x="3" y="10" width="3" height="5" rx="1.5"/><rect x="14" y="10" width="3" height="5" rx="1.5"/><path d="M15.5 15.5c0 1.5-1.8 2.5-4.5 2.5"/></svg></button><button type="button" role="tab" data-w="mode-w" aria-label="Watch" title="Watch: the video with the list of lines"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2" y="4" width="10" height="8" rx="2"/><path d="M5 15h4M14 5h4M14 9h4M14 13h4"/></svg></button></div><div class="toolbar-counts w-counts"></div></div><div class="w-main"><div class="w-stage"><div class="w-video"><div></div><div class="w-shield"></div></div><div class="w-cap"><div class="w-capline"></div></div></div><div class="w-ctl"><div class="w-ctl-l"></div><div class="w-ctl-c"></div><div class="w-ctl-r"></div></div></div><div class="w-listbox"></div>';
+  box.innerHTML = '<div class="toolbar vocab-toolbar w-topbar"><span class="flag-set toolbar-flag"></span><div class="w-modes" role="tablist" aria-label="Theater mode"><button type="button" role="tab" data-w="mode-i" aria-label="Interpreter" title="Interpreter: each line is read to you in translation; say it yourself, then Show plays it from the video"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 11V9a6 6 0 0 1 12 0v2"/><rect x="3" y="10" width="3" height="5" rx="1.5"/><rect x="14" y="10" width="3" height="5" rx="1.5"/><path d="M15.5 15.5c0 1.5-1.8 2.5-4.5 2.5"/></svg></button><button type="button" role="tab" data-w="mode-w" aria-label="Watch" title="Watch: the video with the list of lines"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2" y="4" width="10" height="8" rx="2"/><path d="M5 15h4M14 5h4M14 9h4M14 13h4"/></svg></button></div><div class="toolbar-counts w-counts"></div></div><div class="w-main"><div class="w-stage"><div class="w-video"><div></div><div class="w-shield"></div></div><div class="w-cap"><div class="w-capline"></div><button type="button" class="w-grip" aria-label="Move the line up or down" title="Drag to move the line up or down"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.5v15M6.5 6L10 2.5 13.5 6M6.5 14L10 17.5 13.5 14"/></svg></button></div></div><div class="w-ctl"><div class="w-ctl-l"></div><div class="w-ctl-c"></div><div class="w-ctl-r"></div></div></div><div class="w-listbox"></div>';
   paintWatch();
   placeTheater();
   requestAnimationFrame(placeTheater);
@@ -3916,6 +3921,52 @@ function watchPointed() {
   return watch && watch.lines.find(r => r.id === id) || null;
 }
 
+function placeWatchCap() {
+  const box = document.getElementById("watchPop"), cap = box && box.querySelector(".w-cap"), stage = cap && cap.parentElement;
+  if (!watch || !cap || !stage) return;
+  const y = watch.prefs.capY;
+  if (y == null || matchMedia("(max-width:820px)").matches) {
+    cap.style.top = "";
+    cap.style.bottom = "";
+    return;
+  }
+  cap.style.bottom = "auto";
+  cap.style.top = Math.round(Math.max(0, Math.min(stage.clientHeight - cap.offsetHeight, y * stage.clientHeight))) + "px";
+}
+
+window.addEventListener("resize", () => watch && placeWatchCap());
+
+document.getElementById("watchPop").addEventListener("pointerdown", e => {
+  const grip = watch && e.target.closest && e.target.closest(".w-grip"), cap = grip && grip.closest(".w-cap");
+  if (!cap) return;
+  watch.capDrag = {
+    id: e.pointerId,
+    y: e.clientY,
+    top: cap.offsetTop,
+    max: cap.parentElement.clientHeight - cap.offsetHeight,
+    cap: cap
+  };
+  cap.style.bottom = "auto";
+  cap.style.top = cap.offsetTop + "px";
+  grip.setPointerCapture(e.pointerId);
+  e.preventDefault();
+});
+
+document.getElementById("watchPop").addEventListener("pointermove", e => {
+  const d = watch && watch.capDrag;
+  if (!d || d.id !== e.pointerId) return;
+  d.cap.style.top = Math.round(Math.max(0, Math.min(d.max, d.top + e.clientY - d.y))) + "px";
+});
+
+[ "pointerup", "pointercancel" ].forEach(ev => document.getElementById("watchPop").addEventListener(ev, e => {
+  const d = watch && watch.capDrag;
+  if (!d || d.id !== e.pointerId) return;
+  watch.capDrag = null;
+  const h = d.cap.parentElement.clientHeight;
+  watch.prefs.capY = h ? Math.round(d.cap.offsetTop / h * 1000) / 1000 : null;
+  saveWatchPrefs();
+}));
+
 function paintWatchLine(scroll) {
   const box = document.getElementById("watchPop"), r = watch.lines[watch.at];
   const line = box.querySelector(".w-capline");
@@ -3926,6 +3977,7 @@ function paintWatchLine(scroll) {
     line.classList.toggle("row-selected", !!r && r.id === selectedRowId);
     line.innerHTML = r ? watchLineHtml(r) : "";
     line.hidden = !line.innerHTML;
+    requestAnimationFrame(placeWatchCap);
   }
   const cur = watch.lines[watch.at];
   if (cur && box.querySelector(".w-list") && (!box.querySelector(`.w-row[data-i="${watch.at}"]`) && !(watch.graded && watch.graded.has(cur.id)) || watch.extraId != null && watch.extraId !== cur.id)) return paintWatchList();
@@ -3980,7 +4032,14 @@ document.getElementById("watchPop").addEventListener("click", e => {
       document.querySelectorAll("#watchPop .w-row[data-id], #watchPop .w-capline[data-id]").forEach(el => el.classList.toggle("row-selected", Number(el.dataset.id) === selectedRowId));
       updateSelBar();
     }
-    if (row === cap) return;
+    if (row === cap && isTouch()) return;
+    if (row === cap) {
+      if (e.target.closest(".w-grip")) return;
+      try {
+        watch.player.pauseVideo();
+      } catch (err) {}
+      return openEditPopup(watch.lines.find(x => x.id === Number(cap.dataset.id)));
+    }
     return watchSeek(Number(row.dataset.i));
   }
   if (watch.prefs.cabin && e.target.closest(".w-capline")) return cabinReveal();
@@ -4070,7 +4129,7 @@ window.addEventListener("keydown", e => {
   const g = gradeKey(e), pointed = watchPointed();
   if (k === " ") watchToggle(); else if (g) watchGrade(g === "again"); else if (e.code === "KeyE" && !e.shiftKey && (pointed || watch.lines[watch.at])) openEditPopup(pointed || watch.lines[watch.at]); else if (e.code === "KeyW" && !e.shiftKey) showToast("A video sentence stays in its lesson"); else if ((k === "Delete" || k === "Backspace") && (pointed || watch.lines[watch.at]) && !e.repeat) {
     watchDelete(pointed || watch.lines[watch.at]);
-  } else if (e.code === "KeyV" && watch.prefs.cabin) cabinReveal(); else if (e.code === "KeyA") watchSeek(Math.max(0, watch.at - 1)); else if (e.code === "KeyD") watchSeek(Math.min(watch.lines.length - 1, watch.at + 1)); else if (e.code === "KeyS" || e.code === "KeyR") watchToggle(); else if (e.code === "KeyQ") {
+  } else if (e.code === "KeyV" && watch.prefs.cabin) cabinReveal(); else if ((e.code === "KeyA" || e.code === "KeyD") && !e.shiftKey && watch.prefs.cabin) watchGrade(e.code === "KeyA"); else if (e.code === "KeyA") watchSeek(Math.max(0, watch.at - 1)); else if (e.code === "KeyD") watchSeek(Math.min(watch.lines.length - 1, watch.at + 1)); else if (e.code === "KeyS" || e.code === "KeyR") watchToggle(); else if (e.code === "KeyQ") {
     watch.prefs.auto = !watch.prefs.auto;
     saveWatchPrefs();
     paintWatch();
