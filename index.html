@@ -1232,6 +1232,7 @@ window.onYouTubeIframeAPIReady = function(){
   .zap .arc{stroke:color-mix(in srgb, var(--accent) 65%, #fff);stroke-width:2;}
   .zap .core{stroke:#fff;stroke-width:1;}
   @media (prefers-reduced-motion: reduce){.sound-wait{animation:none;}}
+  html.zap-spent .sound-wait{animation:none;}
   @keyframes ringIn{from{opacity:0;}to{opacity:1;}}
   .exam-sheet .sound-ring{--ring:var(--sheet-edge);}
   .sound-ring path{fill:none;stroke-width:2;}
@@ -3658,6 +3659,7 @@ function paintWatchSound(state) {
   const cap = document.querySelector("#watchPop .w-capline"), hidden = watch.prefs.cabin && cap && !cap.classList.contains("reveal");
   const L = watch.lines, r = L[watch.at], next = L[watch.at + 1];
   let p = hidden ? speechProgress() : null;
+  if (p != null || state === 1) document.documentElement.classList.add("zap-spent");
   if (watch.waitSince && (hidden ? p != null : state === 1) || watch.waitSince && performance.now() - watch.waitSince > 8e3) watch.waitSince = 0;
   const wait = !!watch.waitSince || !hidden && state === 3;
   if (btn.classList.contains("sound-wait") !== wait) {
@@ -6660,6 +6662,7 @@ function soundProgressLoop() {
       video = soundSegment.armed ? Math.max(0, Math.min(1, (now - soundSegment.start) / Math.max(.1, soundSegment.end - soundSegment.start))) : 0;
     }
     const speech = speechProgress();
+    if (speech != null || video != null && soundSegment.armed && ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) document.documentElement.classList.add("zap-spent");
     if (!soundHeard && (speech != null || video != null && soundSegment.armed && ytPlayer.getPlayerState() === YT.PlayerState.PLAYING)) {
       soundHeard = true;
       if (video != null) ytWarm = true;
@@ -6839,7 +6842,7 @@ function drawZaps() {
     zapTimer = 0;
     return;
   }
-  if (reducedMotion()) return;
+  if (reducedMotion() || document.documentElement.classList.contains("zap-spent")) return document.querySelectorAll(".zap").forEach(z => z.remove());
   if (!document.getElementById("zapBlur")) document.body.insertAdjacentHTML("beforeend", '<svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="zapBlur" filterUnits="userSpaceOnUse" x="-100" y="-100" width="1000" height="1000"><feGaussianBlur stdDeviation="2"/></filter></svg>');
   els.forEach(el => {
     const pad = 16, w = el.offsetWidth, h = el.offsetHeight;
@@ -21616,7 +21619,10 @@ function sayVocabWord(item) {
   if (voice) utter.voice = voice;
   utter.rate = ttsSpeed;
   listenBar(card, 0);
-  utter.addEventListener("start", () => btn && btn.classList.remove("sound-wait"));
+  utter.addEventListener("start", () => {
+    document.documentElement.classList.add("zap-spent");
+    if (btn) btn.classList.remove("sound-wait");
+  });
   utter.onend = () => {
     btn && btn.classList.remove("sound-wait");
     const bar = card.querySelector(".vc-time i");
