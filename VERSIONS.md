@@ -114,6 +114,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-60 | `adf7c9a` | Dòng Again luôn quay lại cuối hàng, không bị chèn lên đầu khi bộ đếm đổi |
 | THEATER-61 | `a09ce83` | Chấm/xoá dùng đúng hiệu ứng chung (đóng dấu ✓/✕ trượt, chém đôi) chỉ trên thanh câu, video thật vẫn chạy; viền mờ khớp góc từng hộp; thanh câu mỗi lần mở về dưới |
 | THEATER-62 | `9fab495` | Cửa sổ hẹp trên máy tính giữ bố cục máy tính (video phủ, câu đè, chữ nhỏ lại); Watch giữ danh sách dưới video; nút ✕ không mất; kiểu điện thoại chỉ cho máy cảm ứng |
+| THEATER-63 | `8ac06e3` | Vuốt trên điện thoại: thanh câu chạy theo ngón tay, phải = Good, trái = Again, câu ẩn thì Show trước; popup streak không còn nuốt thao tác chạm (mọi mode) |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
