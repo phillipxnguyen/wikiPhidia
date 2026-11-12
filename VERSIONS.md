@@ -432,6 +432,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-8 | `71c9e83` | Từ tô màu không bị cắt chữ: dải bo được tính lại khi font của thẻ tải xong, đo lệch thì bỏ mặt nạ |
 | LOOKUP-9 | `003965a` | Popup câu dài: tiêu đề nhỏ trải hết bề ngang, loa + Add một hàng dưới, nghĩa giữ một câu (không tách theo dấu phẩy, cả tooltip) |
 | LOOKUP-10 | `8602c89` | Popup câu dài: loa và ＋ thu gọn, nằm cùng dòng đầu bên phải, chữ chảy quanh |
+| LOOKUP-11 | `526e75b` | Popup đều 4 lề (Notes không thò ra ngoài lề chữ), dấu ＋ là icon căn giữa |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
