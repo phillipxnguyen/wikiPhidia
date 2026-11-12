@@ -279,6 +279,7 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 | DICT-48 | `3a55847` | Từ tạo từ câu thế giới của flashcard vào Notes của thẻ đang học (cả Today/task, trước không lưu), câu giữ trong notes của từ; nút Add/Save luôn đặc màu khi rê |
 | DICT-49 | `5f98cc4` | Câu ví dụ trong popup từ lấy từ các bài của bạn, không tải từ bên ngoài |
 | DICT-50 | `f47dc4c` | Cụm từ dùng chung popup từ đơn: dòng đầu là cụm (sửa được), nghĩa mỗi dòng, Notes, Enter lưu; bỏ hẳn ô A: B ở mọi nơi (ô sửa, ô thêm thẻ, flashcard, sách, câu học) |
+| DICT-51 | `71c9e83` | Tải sẵn nghĩa mọi từ của mọi câu đang hiện (cả từ thông dụng): popup mở là đủ, không nháy |
 
 Hàm chính: `showDictSite`, `hideDictOverlay`, `dictUrlFor`, `ownDictCardHtml`, `openWordFloat`, `sentenceWordAt`, `ownDictLookup`, `ownDictFetch`, `ownDictPrefetch`.
 
@@ -420,6 +421,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-5 | `b921742` | Popup từ chỉ hiện dòng notes của đúng từ đó; pinyin chỉ hiện khi rê đúng vào từ |
 | LOOKUP-6 | `adf7c9a` | Từ đã có được tô ở mọi lần xuất hiện trong câu (cùng màu); bấm từ màu mở popup từ (cụm mở ô A: B), không mở ô sửa thẻ |
 | LOOKUP-7 | `c9a7c3f` | Ô sửa thẻ: từ đã có cùng màu như bên ngoài (hết nền vàng do lớp tô dòng Q), rê hiện nghĩa, bấm mở popup từ; tạo từ bằng bôi đen + Shift |
+| LOOKUP-8 | `71c9e83` | Từ tô màu không bị cắt chữ: dải bo được tính lại khi font của thẻ tải xong, đo lệch thì bỏ mặt nạ |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
