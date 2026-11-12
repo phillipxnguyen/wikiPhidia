@@ -10483,13 +10483,6 @@ let activeEdit = null;
 
 const OWN_DICT_KEY = "flashcards.ownDict", OWN_DICT_MAX = 6000;
 
-const OWN_STOP = {
-  zh: "的 了 是 在 我 你 他 她 它 们 我们 你们 他们 这 那 和 也 都 就 吗 呢 吧 啊 不 有 很 一 个 着 过 得 地 会 要 说 去 来 到 上 下 里 还 又 把 被 让 给 对 从 没 没有 什么 这个 那个 一个 自己 就是 还是 可以 因为 所以 但是 如果 已经",
-  en: "the a an to of and or in on at is are was were be been being i you he she it we they this that these those for with as by from not no do does did have has had my your his her its our their me him them us so but if then than there here what which who whom when where why how all any some just very can could will would shall should may might must",
-  ko: "이 그 저 것 수 등 및 더 또 은 는 이 가 을 를 에 의 도 로 으로 와 과",
-  ja: "の に は を が と で も た て だ です ます する いる ある こと これ それ あれ この その"
-};
-
 let ownDictStore = null;
 
 const ownDictPending = new Map;
@@ -10548,49 +10541,6 @@ function cutWords(text, lang) {
   return [ ...new Intl.Segmenter(lang || undefined, {
     granularity: "word"
   }).segment(text) ];
-}
-
-function ownDictWords(text, row) {
-  const lang = ownDictLang(text, row), stop = new Set((OWN_STOP[lang] || "").split(" "));
-  let parts = [];
-  try {
-    for (const x of cutWords(text, lang)) if (x.isWordLike) parts.push(x.segment);
-    if (lang === "zh" || lang === "ja") {
-      const known = ownDictKnownKeys(), joined = [];
-      for (let i = 0; i < parts.length; i++) {
-        let take = 1;
-        for (let n = Math.min(4, parts.length - i); n > 1; n--) {
-          const w = parts.slice(i, i + n).join("");
-          if (known.has(normalizeVocabText(w)) && text.includes(w)) {
-            take = n;
-            break;
-          }
-        }
-        joined.push(parts.slice(i, i + take).join(""));
-        i += take - 1;
-      }
-      parts = joined;
-    }
-  } catch (e) {
-    parts = text.split(/[^\p{L}\p{M}'’-]+/u);
-  }
-  const seen = new Set, out = [];
-  parts.forEach(w => {
-    w = w.trim();
-    const key = normalizeVocabText(w);
-    if (!w || seen.has(key) || /^\d+$/.test(w) || stop.has(w.toLowerCase()) || lang !== "zh" && lang !== "ja" && w.length < 2 || (lang === "zh" || lang === "ja") && [ ...w ].every(c => stop.has(c))) return;
-    seen.add(key);
-    out.push(w);
-  });
-  const lower = new Set(out.map(w => w.toLowerCase()));
-  const words = lang === "zh" || lang === "ja" || lang === "ko" ? out : out.filter(w => {
-    const l = w.toLowerCase();
-    return ![ l.replace(/ies$/, "y"), l.replace(/es$/, ""), l.replace(/s$/, ""), l.replace(/ed$/, ""), l.replace(/d$/, ""), l.replace(/ing$/, ""), l.replace(/ing$/, "e") ].some(b => b !== l && b.length > 1 && lower.has(b));
-  });
-  return {
-    lang: lang,
-    words: words
-  };
 }
 
 function ownDictEcho(e, w) {
@@ -10662,8 +10612,19 @@ function ownDictFetch(lang, w) {
 
 function ownDictPrefetch(text, row) {
   if (!text || !navigator.onLine) return;
-  const {lang: lang, words: words} = ownDictWords(text, row);
-  words.slice(0, 24).forEach(w => ownDictFetch(lang, w));
+  const lang = ownDictLang(text, row), seen = new Set;
+  let segs;
+  try {
+    segs = cutWords(text, lang);
+  } catch (e) {
+    return;
+  }
+  segs.forEach(x => {
+    const w = x.segment.trim(), k = normalizeVocabText(w);
+    if (!x.isWordLike || !/\p{L}/u.test(w) || seen.has(k) || seen.size >= 40) return;
+    seen.add(k);
+    ownDictFetch(lang, w);
+  });
 }
 
 function ownDictReadingHtml(lang, w) {
@@ -10699,17 +10660,6 @@ function ownDictCardHtml(lang, w, ctx) {
     return `<p>${sp ? escapeHtml(x.t.slice(0, sp[0])) + "<mark>" + escapeHtml(x.t.slice(sp[0], sp[1])) + "</mark>" + escapeHtml(x.t.slice(sp[1])) : escapeHtml(x.t)}</p>`;
   }).join("")}</div>` : "";
   return `<article class="od-card" data-w="${escapeAttr(w)}"><header class="od-top"><div class="od-word"><b>${escapeHtml(w)}</b><button type="button" class="od-say" data-say="${escapeAttr(w)}" aria-label="Listen" title="Listen">${OD_SPEAK}</button></div>${act}</header>${py ? `<div class="od-py">${py}</div>` : ""}<div class="od-body">${body}</div>${exHtml}</article>`;
-}
-
-function ownDictKnownKeys() {
-  const keys = new Set(lessonVocabItems(vocabSource()).map(i => i.tkey).concat([ ...wordStates().keys() ]));
-  library.forEach(l => {
-    if (l.id === currentLessonId || isVirtualId(l.id) || bookHidden(l)) return;
-    try {
-      lessonVocabItems(readerCards(l)).forEach(i => keys.add(i.tkey));
-    } catch (e) {}
-  });
-  return keys;
 }
 
 function ownDictFindWord(w) {
@@ -20153,6 +20103,7 @@ function fillVocabCard(el, item) {
   main.innerHTML = html;
   fitReadings(main);
   fitHighlights(main);
+  ownDictPrefetch([ ...main.querySelectorAll(".vocab-term, .vocab-ctx") ].map(z => z.textContent).join("\n"), item.card);
 }
 
 const HIGHLIGHT_SEL = ".vocab-ctx mark:not(.vocab-hit, .vocab-own), .vocab-list-meaning .card-notes mark";
@@ -20182,6 +20133,11 @@ function fitHighlights(root) {
 
 document.fonts && document.fonts.ready.then(() => fitHighlights());
 
+if (document.fonts) document.fonts.addEventListener("loadingdone", () => {
+  fitHighlights();
+  queueLookupFit();
+});
+
 const LOOKUP_SEL = ":is(.rich-editor, .cell, .vocab-ctx, .vocab-term, .wl-sent) mark:is(.vocab-hit, .vocab-own)";
 const LOOKUP_PAD = 4;
 
@@ -20206,6 +20162,14 @@ function fitLookupMarks(root) {
     const m = g.measureText(run.map(r => r.textContent).join(""));
     if (!isFinite(m.actualBoundingBoxAscent) || !isFinite(m.fontBoundingBoxAscent)) return;
     const h = m.fontBoundingBoxAscent + m.fontBoundingBoxDescent;
+    if (Math.abs(first.getBoundingClientRect().height - h) > 2) {
+      run.forEach(r => {
+        delete r.dataset.fit;
+        r.style.removeProperty("-webkit-mask");
+        r.style.removeProperty("mask");
+      });
+      return;
+    }
     const top = Math.max(0, Math.round(m.fontBoundingBoxAscent - m.actualBoundingBoxAscent - LOOKUP_PAD));
     let bottom = Math.min(Math.round(h), Math.round(m.fontBoundingBoxAscent + m.actualBoundingBoxDescent + LOOKUP_PAD));
     for (let el = first.parentElement; el && !el.matches(".rich-editor, .cell, .vocab-ctx, .vocab-term"); el = el.parentElement) if (/underline/.test(getComputedStyle(el).textDecorationLine)) bottom = Math.round(h);
