@@ -355,6 +355,7 @@ Hàm chính: `todayTasks`, `todayTaskCounts`, `taskQueue`, `startTaskSide`, `tas
 | LAYOUT-8 | `91183ba` | Sidebar Vocabulary hiện các ngôn ngữ thay cho danh sách bài; bỏ hẳn Tests (📝, ⌘⌥X, công tắc Settings, backup tests) |
 | LAYOUT-9 | `fb2edb8` | Logo và tên đổi màu cùng lúc (giữa vòng lật), tên mờ rồi hiện lại cùng nhịp logo |
 | LAYOUT-10 | `4182897` | Sidebar Vocabulary: thẻ Vocabulary dưới Today (đếm, chip ngôn ngữ, thanh) mở trang Vocabulary; bỏ ô ngôn ngữ to |
+| LAYOUT-11 | `003965a` | Thẻ Vocabulary chiếm hết sidebar: số New/Due/Today, hàng từng ngôn ngữ (bước lộ trình, thanh Done), biểu đồ 7 ngày, buổi đang chờ |
 
 Hàm chính: `switchToLesson`, `setAppMode`, `syncModeButtonHighlights`, `lessonInMode`, `lessonShown`, `bookHidden`.
 
@@ -429,6 +430,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-6 | `adf7c9a` | Từ đã có được tô ở mọi lần xuất hiện trong câu (cùng màu); bấm từ màu mở popup từ (cụm mở ô A: B), không mở ô sửa thẻ |
 | LOOKUP-7 | `c9a7c3f` | Ô sửa thẻ: từ đã có cùng màu như bên ngoài (hết nền vàng do lớp tô dòng Q), rê hiện nghĩa, bấm mở popup từ; tạo từ bằng bôi đen + Shift |
 | LOOKUP-8 | `71c9e83` | Từ tô màu không bị cắt chữ: dải bo được tính lại khi font của thẻ tải xong, đo lệch thì bỏ mặt nạ |
+| LOOKUP-9 | `003965a` | Popup câu dài: tiêu đề nhỏ trải hết bề ngang, loa + Add một hàng dưới, nghĩa giữ một câu (không tách theo dấu phẩy, cả tooltip) |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
