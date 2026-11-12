@@ -1666,6 +1666,7 @@ window.onYouTubeIframeAPIReady = function(){
   .od-float textarea.od-mean-in{display:block;resize:none;overflow:hidden;width:100%;box-sizing:border-box;margin:0;padding:0;border:0;border-radius:0;background:none;color:var(--od-mean);font:inherit;font-size:18px;line-height:26px;font-weight:700;}
   .od-float textarea.od-mean-in:focus{outline:none;box-shadow:none;}
   .od-acts [hidden]{display:none;}
+  .od-float .od-acts button.od-add, .od-float .od-acts button.od-add:hover, .od-float .od-acts button.od-add:focus{background:var(--accent);color:#ffffff;opacity:1;}
   .od-float .od-notes{min-height:24px;margin:0 -8px;padding:4px 8px;border-radius:8px;background:color-mix(in srgb, var(--text) 4%, transparent);color:var(--text);font-size:15px;line-height:22px;outline:none;}
   .od-float .od-notes:focus{box-shadow:inset 0 0 0 1px var(--accent);}
   .od-float .od-notes:empty::before{content:attr(data-placeholder);color:var(--text-3, var(--od-soft));}
@@ -11006,7 +11007,7 @@ function sentenceWordCtx(hit) {
     return {
       lang: hit.lang,
       row: item.card,
-      onAdd: (term, meaning) => world ? addWorldWord(world, term, meaning) : addVocabToRow(item.card, term, meaning)
+      onAdd: (term, meaning) => world ? addWorldWord(item.card, world, term, meaning) : addVocabToRow(item.card, term, meaning)
     };
   }
   const holder = hit.zone.closest("[data-id]"), row = holder && rows.find(r => r.id === Number(holder.dataset.id));
@@ -28542,17 +28543,12 @@ function sentenceOrderAnchor(list, term, text) {
   }) || null;
 }
 
-function addWorldWord(sentence, term, meaning) {
-  if (isVirtualLesson()) return;
-  term = cleanPunct(term);
-  meaning = cleanPunct(meaning);
-  pushUndo("Added card — " + cleanText(term).replace(/\n/g, " "));
-  const ex = ensureVocabExtras();
-  appendWordItems(ex, [ [ term, meaning ] ]);
-  const it = lessonVocabItems(vocabSource()).find(i => i.card === ex && i.tkey === normalizeVocabText(term));
-  if (it) setWordNotes(ex, it.key, "<div>" + escapeHtml(sentence) + "</div>");
+function addWorldWord(card, sentence, term, meaning) {
+  addVocabToRow(card, term, meaning);
+  const key = normalizeVocabText(cleanPunct(term)), it = lessonVocabItems(vocabSource()).find(i => i.card === card && i.tkey === key);
+  if (!it || !sentence || wordNotesOf(it) || !setWordNotes(card, it.key, "<div>" + escapeHtml(sentence) + "</div>")) return;
   scheduleAutoSave();
-  render();
+  refreshWordMarks();
 }
 
 function addVocabToRow(row, term, meaning) {
@@ -28846,7 +28842,7 @@ document.addEventListener("keydown", e => {
     e.preventDefault();
     const world = vc.dataset.ex === "other" && vc.dataset.other && (ctx.matches(".vocab-term") || ctx.matches(".small")) ? vc.dataset.other : "";
     showVocabAddPopup(null, text, sel.getRangeAt(0).getBoundingClientRect(), null, (term, meaning) => {
-      if (world) addWorldWord(world, term, meaning); else addVocabToRow(item.card, term, meaning);
+      if (world) addWorldWord(item.card, world, term, meaning); else addVocabToRow(item.card, term, meaning);
       showToast(`Added “${term}”`);
     });
     return;
