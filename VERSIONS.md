@@ -271,6 +271,7 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 | DICT-43 | `adf7c9a` | Popup từ: Enter lưu, Shift+Enter xuống dòng, bỏ Shift để lưu, click ra ngoài lưu thay đổi; ô Notes riêng của từ |
 | DICT-44 | `4132aa4` | Nghĩa chỉ lặp lại chính từ (passport → passport) không hiện, tra lại theo chiều kia |
 | DICT-45 | `59a5528` | Popup từ: bỏ mọi đường gạch, mọi phần thẳng một lề trái; Delete xoá từ đã có (⌘Z lấy lại); tooltip nghĩa giữa dưới từ, chữ lề trái, đệm trên dưới bằng nhau |
+| DICT-46 | `53dbe49` | Enter lưu ngay khi popup mở (không cần click vào popup), không chấm thẻ phía sau |
 
 Hàm chính: `showDictSite`, `hideDictOverlay`, `dictUrlFor`, `ownDictCardHtml`, `openWordFloat`, `sentenceWordAt`, `ownDictLookup`, `ownDictFetch`, `ownDictPrefetch`.
 
