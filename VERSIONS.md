@@ -277,6 +277,7 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 | DICT-47 | `4346d3a` | Click ra ngoài popup/ô sửa chỉ đóng (không play/pause, không chấm, không mở thứ khác); từ vừa tạo/sửa tô màu ngay ở flashcard và theater |
 | DICT-48 | `3a55847` | Từ tạo từ câu thế giới của flashcard vào Notes của thẻ đang học (cả Today/task, trước không lưu), câu giữ trong notes của từ; nút Add/Save luôn đặc màu khi rê |
 | DICT-49 | `5f98cc4` | Câu ví dụ trong popup từ lấy từ các bài của bạn, không tải từ bên ngoài |
+| DICT-50 | `f47dc4c` | Cụm từ dùng chung popup từ đơn: dòng đầu là cụm (sửa được), nghĩa mỗi dòng, Notes, Enter lưu; bỏ hẳn ô A: B ở mọi nơi (ô sửa, ô thêm thẻ, flashcard, sách, câu học) |
 
 Hàm chính: `showDictSite`, `hideDictOverlay`, `dictUrlFor`, `ownDictCardHtml`, `openWordFloat`, `sentenceWordAt`, `ownDictLookup`, `ownDictFetch`, `ownDictPrefetch`.
 
