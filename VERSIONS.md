@@ -410,6 +410,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-4 | `3921081` | Rê chuột lên lookup không còn gạch chân |
 | LOOKUP-5 | `b921742` | Popup từ chỉ hiện dòng notes của đúng từ đó; pinyin chỉ hiện khi rê đúng vào từ |
 | LOOKUP-6 | `adf7c9a` | Từ đã có được tô ở mọi lần xuất hiện trong câu (cùng màu); bấm từ màu mở popup từ (cụm mở ô A: B), không mở ô sửa thẻ |
+| LOOKUP-7 | `c9a7c3f` | Ô sửa thẻ: từ đã có cùng màu như bên ngoài (hết nền vàng do lớp tô dòng Q), rê hiện nghĩa, bấm mở popup từ; tạo từ bằng bôi đen + Shift |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
