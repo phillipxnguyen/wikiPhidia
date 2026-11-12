@@ -324,6 +324,7 @@ Hàm chính: `newRow` (bản dịch vào notes khi tạo), `foldAnswer` + `keeps
 | BAR-5 | `2b33b9c` | Bỏ thanh A: không còn hàng nút đáy và nút 🔊 riêng trên máy tính; thanh trên cố định như BAR-2 |
 | BAR-6 | `bb0fca5` | Podcast dùng đúng thanh trên chung: cờ, New/Due/Done, ✕ |
 | BAR-7 | `acf2457` | Popup giới hạn mỗi ngày mở từ bộ đếm 🆕 ⏳ ✅ của mọi mode học (cả theater), ngay dưới bộ đếm; ô 🔥 chỉ hiện streak |
+| BAR-8 | `f266b4e` | Hiệu ứng bộ đếm khi đổi giới hạn: một nhịp phồng nhẹ + vòng mờ, bỏ nảy đàn hồi và xoay; số lăn trong 1 giây |
 
 Hàm chính: `updateTouchBar`, `sizeTouchBar`, `#tbSound`, `#tbMore`, `tools-open`.
 
