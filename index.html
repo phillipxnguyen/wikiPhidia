@@ -19460,9 +19460,10 @@ function startVocabSession() {
   const items = lessonVocabItems(vocabSource()).filter(i => !vocabViewOnly(i));
   const drill = currentLessonId === VOCAB_ALL_ID && rows.length && rows[0].wordKeys;
   if (drill) {
+    const since = rows[0].wordSince || 0, graded = new Set(reviewLog.filter(e => e.mode === "Vocab" && e.word && e.ts >= since).map(e => e.word));
     vocabSession = {
       lessonId: currentLessonId,
-      queue: drill.filter(k => items.some(i => i.key === k)),
+      queue: drill.filter(k => !graded.has(k) && items.some(i => i.key === k)),
       flipped: false,
       pending: [],
       drill: true
@@ -28862,7 +28863,9 @@ function startWordPlan(id) {
     saveWordLocal(WORD_PLANS_KEY, all);
   }
   const seen = new Set(reviewLog.filter(e => e.mode === "Vocab" && e.ts >= plan.startedAt && e.word).map(e => e.word));
-  openWordWorld(plan.world, plan.keys.filter(k => !seen.has(k)), plan.title);
+  if (openWordWorld(plan.world, plan.keys.filter(k => !seen.has(k)), plan.title, plan.startedAt)) return;
+  saveWordLocal(WORD_PLANS_KEY, wordPlans().filter(p => p.id !== id));
+  if (currentView === "words") renderWords();
 }
 
 function drillWords(world, keys, title) {
@@ -28882,7 +28885,7 @@ function troubleWords(items) {
   return items.filter(i => vocabStateOf(i).lapses > 0).sort((a, b) => vocabStateOf(b).lapses - vocabStateOf(a).lapses);
 }
 
-function openWordWorld(world, keys, title) {
+function openWordWorld(world, keys, title, since) {
   commitActiveEdit();
   discardIfEmptyDraft();
   flushAutoSave();
@@ -28894,7 +28897,10 @@ function openWordWorld(world, keys, title) {
       lesson: l
     });
   }));
-  if (!picks.length) return showToast("No words for this yet");
+  if (!picks.length) {
+    showToast("No words for this yet");
+    return false;
+  }
   wordWorld = world;
   saveWordLocal(WORD_WORLD_KEY, world);
   const langs = new Set(picks.map(pk => pk.lesson.studyLang || "auto"));
@@ -28912,12 +28918,16 @@ function openWordWorld(world, keys, title) {
     r.srcLessonId = picks[i].lesson.id;
     r.wordWorld = world;
     r.wordLang = picks[i].lesson.studyLang || "auto";
-    if (keys) r.wordKeys = keys;
+    if (keys) {
+      r.wordKeys = keys;
+      r.wordSince = since || Date.now();
+    }
   });
   noteVirtualMembers();
   vocabVideoId = null;
   vocabView = "card";
   showView("study");
+  return true;
 }
 
 async function showWords() {
@@ -28980,7 +28990,10 @@ function wordBuildKeys(items, p) {
   return n ? keys.slice(0, n) : keys;
 }
 
-function wordQueueHtml(world) {
+function wordQueueHtml(world, items) {
+  const have = new Set(items.map(i => i.key));
+  const gone = liveWordPlans(world).filter(p => !p.keys.some(k => have.has(k)));
+  if (gone.length) saveWordLocal(WORD_PLANS_KEY, wordPlans().filter(p => !gone.some(g => g.id === p.id)));
   const list = liveWordPlans(world).sort((a, b) => !!b.startedAt - !!a.startedAt || (a.takeAt || a.createdAt) - (b.takeAt || b.createdAt));
   if (!list.length) return "";
   const today = new Date().setHours(0, 0, 0, 0);
@@ -29049,7 +29062,7 @@ function renderWords() {
     return;
   }
   const items = worlds[wordWorld], n = wordNumbers(items), route = wordRoute(wordWorld, n);
-  box.innerHTML = tiles + wordHeroHtml(wordWorld, items, n, route) + wordBuildHtml(wordWorld, items) + wordQueueHtml(wordWorld) + wordRouteHtml(wordWorld, route, n) + wordResultsHtml(wordWorld, items);
+  box.innerHTML = tiles + wordHeroHtml(wordWorld, items, n, route) + wordBuildHtml(wordWorld, items) + wordQueueHtml(wordWorld, items) + wordRouteHtml(wordWorld, route, n) + wordResultsHtml(wordWorld, items);
 }
 
 document.getElementById("lessonList").addEventListener("keydown", e => {
