@@ -179,6 +179,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-50 | `1260029` | Câu, nghĩa, notes, pinyin luôn 4 màu khác họ nhau (không xanh lá/xanh dương) |
 | FLASH-51 | `e17599b` | Mặt trước chỉ có Podcast hoặc đục lỗ: từ không đục được luôn ra Podcast, không hiện chữ |
 | FLASH-52 | `76fd44b` | Podcast đầu tiên khi trình duyệt chặn tiếng: nút sound giật chờ, chạm đầu tiên là phát |
+| FLASH-53 | `5f98cc4` | Bỏ câu thế giới (Tatoeba, Wikipedia, Reddit…): flashcard chỉ dùng câu gốc và câu trong các bài khác của bạn |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
@@ -275,6 +276,7 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 | DICT-46 | `53dbe49` | Enter lưu ngay khi popup mở (không cần click vào popup), không chấm thẻ phía sau |
 | DICT-47 | `4346d3a` | Click ra ngoài popup/ô sửa chỉ đóng (không play/pause, không chấm, không mở thứ khác); từ vừa tạo/sửa tô màu ngay ở flashcard và theater |
 | DICT-48 | `3a55847` | Từ tạo từ câu thế giới của flashcard vào Notes của thẻ đang học (cả Today/task, trước không lưu), câu giữ trong notes của từ; nút Add/Save luôn đặc màu khi rê |
+| DICT-49 | `5f98cc4` | Câu ví dụ trong popup từ lấy từ các bài của bạn, không tải từ bên ngoài |
 
 Hàm chính: `showDictSite`, `hideDictOverlay`, `dictUrlFor`, `ownDictCardHtml`, `openWordFloat`, `sentenceWordAt`, `ownDictLookup`, `ownDictFetch`, `ownDictPrefetch`.
 
