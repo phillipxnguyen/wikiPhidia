@@ -352,6 +352,7 @@ Hàm chính: `todayTasks`, `todayTaskCounts`, `taskQueue`, `startTaskSide`, `tas
 | LAYOUT-6 | `d0a1d9b` | Nút vào mode thành nút tròn xếp dọc (Speaking, theater, Podcast / flashcard, Podcast), bỏ ☰ trên thanh công cụ |
 | LAYOUT-7 | `dac6f98` | Nút tròn không bao giờ đè thanh công cụ: xếp từ dưới thanh xuống, nằm ở đáy màn khi đủ chỗ |
 | LAYOUT-8 | `91183ba` | Sidebar Vocabulary hiện các ngôn ngữ thay cho danh sách bài; bỏ hẳn Tests (📝, ⌘⌥X, công tắc Settings, backup tests) |
+| LAYOUT-9 | `fb2edb8` | Logo và tên đổi màu cùng lúc (giữa vòng lật), tên mờ rồi hiện lại cùng nhịp logo |
 
 Hàm chính: `switchToLesson`, `setAppMode`, `syncModeButtonHighlights`, `lessonInMode`, `lessonShown`, `bookHidden`.
 
