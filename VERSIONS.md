@@ -377,6 +377,7 @@ Hàm chính: `studyingNow`, `placeStudyClock`, `STUDY_TIME_KEY`, `#focusClock`.
 | MOVE-8 | `d203440` | Sửa MOVE-7: dấu ✓/✕ hiện sẵn trên thẻ khi bay (trước đó bị trong suốt) |
 | MOVE-9 | `a09ce83` | Theater dùng chung hiệu ứng chấm và xoá của mọi mode (trước có dấu nhỏ riêng và nền đen bị chém) |
 | MOVE-10 | `71e0073` | Good/Again/chuyển: nền màu đậm hơn (38%) làm mờ nội dung dưới, viền màu đặc 6 px và bóng đổ cho tấm đang bay |
+| MOVE-11 | `fbda3d8` | Bỏ viền màu quanh tấm đang bay, giữ nền đậm làm mờ và bóng đổ |
 
 Hàm chính: `swipe`, `ghostFor`, `angelFly`, `cutLayer`, `playCut`.
 
