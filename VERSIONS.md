@@ -112,6 +112,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-58 | `7b097cc` | Câu dịch trong hộp tối riêng ôm sát chữ như phụ đề YouTube, chữ nhỏ hơn câu gốc 2 px ở mọi cỡ (cả phone) |
 | THEATER-59 | `4b95902` | Mặt trước: câu gốc vẫn hiện mờ tại chỗ cũ, câu dịch hộp riêng ngay dưới (bỏ kiểu chỉ còn câu dịch của THEATER-57) |
 | THEATER-60 | `adf7c9a` | Dòng Again luôn quay lại cuối hàng, không bị chèn lên đầu khi bộ đếm đổi |
+| THEATER-61 | `a09ce83` | Chấm/xoá dùng đúng hiệu ứng chung (đóng dấu ✓/✕ trượt, chém đôi) chỉ trên thanh câu, video thật vẫn chạy; viền mờ khớp góc từng hộp; thanh câu mỗi lần mở về dưới |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
@@ -369,6 +370,7 @@ Hàm chính: `studyingNow`, `placeStudyClock`, `STUDY_TIME_KEY`, `#focusClock`.
 | MOVE-6 | `7ea384e` | Good/Again/Delete nhanh hơn nữa (khoảng 0,35 giây; Delete dưới 1 giây) |
 | MOVE-7 | `71d9610` | Good/Again: dấu ✓/✕ nằm sẵn trên thẻ và bay cùng thẻ, không đóng dấu rồi mới vuốt |
 | MOVE-8 | `d203440` | Sửa MOVE-7: dấu ✓/✕ hiện sẵn trên thẻ khi bay (trước đó bị trong suốt) |
+| MOVE-9 | `a09ce83` | Theater dùng chung hiệu ứng chấm và xoá của mọi mode (trước có dấu nhỏ riêng và nền đen bị chém) |
 
 Hàm chính: `swipe`, `ghostFor`, `angelFly`, `cutLayer`, `playCut`.
 
