@@ -181,6 +181,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-51 | `e17599b` | Mặt trước chỉ có Podcast hoặc đục lỗ: từ không đục được luôn ra Podcast, không hiện chữ |
 | FLASH-52 | `76fd44b` | Podcast đầu tiên khi trình duyệt chặn tiếng: nút sound giật chờ, chạm đầu tiên là phát |
 | FLASH-53 | `5f98cc4` | Bỏ câu thế giới (Tatoeba, Wikipedia, Reddit…): flashcard chỉ dùng câu gốc và câu trong các bài khác của bạn |
+| FLASH-54 | `91183ba` | Vocabulary gom theo ngôn ngữ: trang chủ ô ngôn ngữ + banner (lấy giao diện Tests), bấm một ngôn ngữ học mọi từ của nó từ mọi bài |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
@@ -350,6 +351,7 @@ Hàm chính: `todayTasks`, `todayTaskCounts`, `taskQueue`, `startTaskSide`, `tas
 | LAYOUT-5 | `f42c79a` | Khôi phục hai bên như LAYOUT-1: logo chuyển Lessons / Vocabulary, màu xanh lá, list bài riêng; ☰ flashcard và 🎧 Podcast trong Vocabulary; bỏ nút 字 trong bài và trên theater |
 | LAYOUT-6 | `d0a1d9b` | Nút vào mode thành nút tròn xếp dọc (Speaking, theater, Podcast / flashcard, Podcast), bỏ ☰ trên thanh công cụ |
 | LAYOUT-7 | `dac6f98` | Nút tròn không bao giờ đè thanh công cụ: xếp từ dưới thanh xuống, nằm ở đáy màn khi đủ chỗ |
+| LAYOUT-8 | `91183ba` | Sidebar Vocabulary hiện các ngôn ngữ thay cho danh sách bài; bỏ hẳn Tests (📝, ⌘⌥X, công tắc Settings, backup tests) |
 
 Hàm chính: `switchToLesson`, `setAppMode`, `syncModeButtonHighlights`, `lessonInMode`, `lessonShown`, `bookHidden`.
 
