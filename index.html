@@ -1548,10 +1548,17 @@ window.onYouTubeIframeAPIReady = function(){
   .od-word{display:flex;align-items:center;gap:8px;min-width:0;}
   .od-say:focus:not(:focus-visible){outline:none;}
   .od-word b{font-size:28px;line-height:36px;font-weight:700;color:var(--text);overflow-wrap:break-word;}
-  .od-long .od-top{display:grid;grid-template-columns:auto minmax(0, 1fr) auto;align-items:center;gap:12px 8px;}
-  .od-long .od-word{display:contents;}
-  .od-long .od-word b{grid-column:1 / -1;font-size:20px;line-height:28px;font-weight:600;}
-  .od-long .od-acts{grid-column:3;}
+  .od-long .od-top{display:flow-root;}
+  .od-long .od-word{display:block;}
+  .od-long .od-word b{font-size:20px;line-height:28px;font-weight:600;}
+  .od-long .od-acts{float:right;display:flex;align-items:center;gap:6px;height:28px;margin-left:6px;}
+  .od-long .od-say{float:right;width:28px;height:28px;margin-left:6px;}
+  .od-long .od-say svg{width:16px;height:16px;}
+  .od-long .od-add{justify-content:center;width:28px;height:28px;padding:0;border-radius:14px;font-size:0;box-shadow:none;}
+  .od-long .od-add span{font-size:16px;line-height:20px;}
+  .od-long .od-save{width:auto;padding:0 12px;font-size:13px;}
+  .od-long .od-done{font-size:0;}
+  .od-long .od-done::before{content:"✓";font-size:16px;line-height:20px;}
   .od-float .od-long textarea.od-mean-in{font-size:16px;line-height:24px;font-weight:600;}
   .od-float .od-word b{outline:none;cursor:text;}
   .od-say{position:relative;flex:none;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border:0;border-radius:16px;background:color-mix(in srgb, var(--text) 6%, transparent);color:var(--od-soft);cursor:pointer;}
@@ -10486,7 +10493,9 @@ function ownDictCardHtml(lang, w, ctx) {
     const sp = findTermIn(x.t, w);
     return `<p>${sp ? escapeHtml(x.t.slice(0, sp[0])) + "<mark>" + escapeHtml(x.t.slice(sp[0], sp[1])) + "</mark>" + escapeHtml(x.t.slice(sp[1])) : escapeHtml(x.t)}</p>`;
   }).join("")}</div>` : "";
-  return `<article class="od-card${odLong(w) ? " od-long" : ""}" data-w="${escapeAttr(w)}"><header class="od-top"><div class="od-word"><b>${escapeHtml(w)}</b><button type="button" class="od-say" data-say="${escapeAttr(w)}" aria-label="Listen" title="Listen">${OD_SPEAK}</button></div>${act}</header>${py ? `<div class="od-py">${py}</div>` : ""}<div class="od-body">${body}</div>${exHtml}</article>`;
+  const say = `<button type="button" class="od-say" data-say="${escapeAttr(w)}" aria-label="Listen" title="Listen">${OD_SPEAK}</button>`;
+  const top = odLong(w) ? `${act}<div class="od-word">${say}<b>${escapeHtml(w)}</b></div>` : `<div class="od-word"><b>${escapeHtml(w)}</b>${say}</div>${act}`;
+  return `<article class="od-card${odLong(w) ? " od-long" : ""}" data-w="${escapeAttr(w)}"><header class="od-top">${top}</header>${py ? `<div class="od-py">${py}</div>` : ""}<div class="od-body">${body}</div>${exHtml}</article>`;
 }
 
 function ownDictFindWord(w) {
@@ -10562,7 +10571,7 @@ function paintOwnDictFloat() {
   const entry = ownDictEntry(shown.lang, w);
   pop.innerHTML = ownDictCardHtml(shown.lang, w, shown);
   const card = pop.querySelector(".od-card"), acts = card.querySelector(".od-acts");
-  acts.innerHTML = have ? '<span class="od-done">✓ In your words</span><button type="button" class="od-add od-save" hidden>Save</button>' : '<button type="button" class="od-add"><span>＋</span> Add</button>';
+  acts.innerHTML = have ? '<span class="od-done" title="In your words">✓ In your words</span><button type="button" class="od-add od-save" hidden>Save</button>' : '<button type="button" class="od-add" title="Add" aria-label="Add"><span>＋</span> Add</button>';
   const raw = have ? found ? found.meaning : "" : entry ? entry.m : "";
   const value = typed != null ? typed : odLong(w) ? raw.replace(/\s+/g, " ").trim() : meaningLines(raw).join("\n");
   const field = `<textarea class="od-mean-in" rows="1" autocomplete="off" spellcheck="false" aria-label="Meaning" title="One meaning per line; change it if it is not right" placeholder="Type the meaning">${escapeHtml(value)}</textarea>`, main = card.querySelector(".od-main");

@@ -333,7 +333,7 @@ On a phone, swipe a card right for Good and left for Again. Whatever flies off (
 
 ## Lessons of words
 
-**Long phrases in the word popup.** A word is shown large, with ▶ and ＋ Add beside it; a long phrase or a piece of a sentence (more than 20 characters, or one with punctuation) is shown in smaller type across the whole popup, with the sound button and ＋ Add on one row under it, and its meaning stays one sentence instead of being split into lines at its commas (also in the meaning shown when pointing at it).
+**Long phrases in the word popup.** A word is shown large, with ▶ and ＋ Add beside it; a long phrase or a piece of a sentence (more than 20 characters, or one with punctuation) is shown in smaller type, with the sound button and a small round ＋ (Add) on its first line at the right, the text flowing around them (for a phrase you have already, a small ✓, and Save once you change it), and its meaning stays one sentence instead of being split into lines at its commas (also in the meaning shown when pointing at it).
 
 **Vocabulary by language.** Vocabulary is not split by lesson: its words are grouped by language (English, 中文, 한국어, 日本語, Tiếng Việt). A word's language is its lesson's language, or, in a lesson set to Auto, the one its writing shows. Words still live in the Notes of the card they were made from (a `word: meaning` line), so editing a word there, or in Vocabulary, changes the same word.
 
