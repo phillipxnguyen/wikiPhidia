@@ -3199,15 +3199,6 @@ let rows = [];
 
 const WORD_SCENES = [ "radio", "call", "voice", "tape", "night", "vinyl", "walkie", "tv", "cafe", "rain", "beach", "fire", "subway", "space", "phones", "park" ];
 
-function shuffled(list) {
-  const a = list.slice();
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [ a[i], a[j] ] = [ a[j], a[i] ];
-  }
-  return a;
-}
-
 const WORD_SCENES_KEY = "flashcards.wordScenes";
 
 function wordSceneFor(item, prev) {
@@ -10703,11 +10694,9 @@ function ownDictCardHtml(lang, w, ctx) {
   } ] : []) : [];
   const body = !e ? '<div class="od-skel"><i></i><i></i></div>' : `<button type="button" class="od-main" data-m="${escapeAttr(e.m)}" title="Add with this meaning">${escapeHtml(e.m)}</button>` + groups.map(g => `<div class="od-group">${g.pos ? `<span class="od-pos">${escapeHtml(g.pos)}</span>` : ""}<div class="od-terms">${g.terms.map(t => `<button type="button" class="od-term" data-m="${escapeAttr(t)}" title="Add this meaning to the meaning line">${escapeHtml(t)}</button>`).join("")}</div></div>`).join("");
   const act = '<span class="od-acts"></span>';
-  const wi = ctx ? {
-    term: w,
-    tkey: normalizeVocabText(w),
-    card: ctx.row || {}
-  } : null, we = wi && worldRead()[worldKeyOf(wi)], examples = we && we.list ? we.list.slice(0, 2) : [];
+  const examples = appSentencesFor(w, ctx && ctx.row, 2).map(t => ({
+    t: t
+  }));
   const exHtml = examples.length ? `<div class="od-ex">${examples.map(x => {
     const sp = findTermIn(x.t, w);
     return `<p>${sp ? escapeHtml(x.t.slice(0, sp[0])) + "<mark>" + escapeHtml(x.t.slice(sp[0], sp[1])) + "</mark>" + escapeHtml(x.t.slice(sp[1])) : escapeHtml(x.t)}</p>`;
@@ -10848,12 +10837,6 @@ function openOwnDictFloat(el, mode, word, ctx) {
   paintOwnDictFloat();
   const e = ownDictEntry(shown.lang, w);
   if (!e || !e.groups) ownDictFetch(shown.lang, w).then(() => ownDictFloat === pop && paintOwnDictFloat());
-  const wi = {
-    term: w,
-    tkey: normalizeVocabText(w),
-    card: shown.row || {}
-  };
-  if (!worldSentences(wi)) fetchWorld(wi).then(() => ownDictFloat === pop && paintOwnDictFloat());
 }
 
 function ownDictFloatPick(b) {
@@ -19733,7 +19716,6 @@ function startVocabSession() {
     flipped: false,
     pending: []
   };
-  worldPrefetch(allowed.slice(0, 12));
 }
 
 function renameVocabSessionKey(from, to) {
@@ -19905,336 +19887,18 @@ function lookupOthers(html, item) {
   return tmp.innerHTML;
 }
 
-const WORLD_KEY = "flashcards.worldSentences2", WORLD_TTL = 14 * 864e5, WORLD_KEEP = 40, WORLD_MAX = 300;
-
-const WORLD_ISO3 = {
-  zh: "cmn",
-  en: "eng",
-  ko: "kor",
-  ja: "jpn",
-  fr: "fra",
-  de: "deu",
-  es: "spa",
-  it: "ita",
-  pt: "por",
-  ru: "rus",
-  vi: "vie",
-  th: "tha",
-  nl: "nld",
-  pl: "pol",
-  tr: "tur",
-  id: "ind"
-};
-
-let worldStore = null;
-
-const worldPending = new Map;
-
-function worldLangOf(item) {
-  const l = library.find(x => x.id === (item.card.srcLessonId || currentLessonId));
-  const code = l && l.studyLang && l.studyLang !== "auto" ? l.studyLang : detectLang(item.term + " " + (item.card.q || ""));
-  return code.split("-")[0].toLowerCase();
-}
-
-function worldKeyOf(item) {
-  return worldLangOf(item) + "|" + item.tkey;
-}
-
-function worldRead() {
-  if (!worldStore) worldStore = readLocal(WORLD_KEY) || {};
-  return worldStore;
-}
-
-function worldSentences(item) {
-  const e = worldRead()[worldKeyOf(item)];
-  return e && Date.now() - e.at < WORLD_TTL ? e.list : null;
-}
-
-function worldEase(text) {
-  const cjk = (text.match(/[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]/g) || []).length, size = cjk > text.length / 3 ? text.length : text.split(/\s+/).length * 2;
-  return size + (/\d/.test(text) ? 12 : 0) + (/[()（）《》「」“”"]/.test(text) ? 8 : 0);
-}
-
-const WORLD_EASY = 24;
-
-function worldFits(text, term, lang) {
-  if (text.length < 6 || text.length > 160 || /[\n\r]/.test(text)) return false;
-  const span = findTermIn(text, term);
-  if (!span) return false;
-  if (lang === "zh" || lang === "ja") {
-    try {
-      const cuts = new Set([ 0, text.length ]);
-      for (const x of cutWords(text, lang)) {
-        cuts.add(x.index);
-        cuts.add(x.index + x.segment.length);
-      }
-      return cuts.has(span[0]) && cuts.has(span[1]);
-    } catch (e) {
-      return true;
+function appSentencesFor(term, row, n) {
+  const skip = row && plainTextOf(row.qHtml || textHtml(row.q || ""), " "), found = [], seen = new Set;
+  const add = c => c && c.uid !== EXTRA_UID && splitIntoSentences(c.q || "").forEach(x => {
+    const t = (x.text || "").trim();
+    if (found.length < 30 && t && t.length <= 160 && !seen.has(t) && (!skip || !skip.includes(t)) && findTermIn(t, term)) {
+      seen.add(t);
+      found.push(t);
     }
-  }
-  return !/\p{L}/u.test(text[span[0] - 1] || "") && !/\p{L}/u.test(text[span[1]] || "");
-}
-
-async function worldGet(url) {
-  const stop = new AbortController(), timer = setTimeout(() => stop.abort(), 8e3);
-  try {
-    const res = await fetch(url, {
-      signal: stop.signal
-    });
-    return res.ok ? await res.json() : null;
-  } catch (e) {
-    return null;
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-async function worldFromTatoeba(term, lang, page) {
-  const iso = WORLD_ISO3[lang];
-  if (!iso) return null;
-  const data = await worldGet(`https://tatoeba.org/en/api_v0/search?from=${iso}&query=${encodeURIComponent('"' + term + '"')}&sort=random${page > 1 ? "&page=" + page : ""}`);
-  if (!data) return null;
-  return (Array.isArray(data.results) ? data.results : []).map(r => ({
-    t: String(r.text || "").trim(),
-    src: "Tatoeba"
-  }));
-}
-
-const WORLD_CORPUS_KEY = "flashcards.leipzigCorpora";
-
-async function worldLeipzigCorpus(lang) {
-  const iso = WORLD_ISO3[lang];
-  if (!iso) return "";
-  let all = readLocal(WORLD_CORPUS_KEY);
-  if (!Array.isArray(all)) {
-    const data = await worldGet("https://api.wortschatz-leipzig.de/ws/corpora/availableCorpora");
-    all = Array.isArray(data) ? data.map(c => [ c.corpusName || c.name || "", c.language || "" ]).filter(c => c[0]) : [];
-    if (all.length) try {
-      localStorage.setItem(WORLD_CORPUS_KEY, JSON.stringify(all));
-    } catch (e) {}
-  }
-  const codes = lang === "zh" ? [ "zho", "cmn" ] : [ iso ];
-  const mine = all.filter(c => codes.includes(c[1]) || codes.some(code => c[0].startsWith(code + "_")));
-  const pick = mine.filter(c => /news/.test(c[0])).sort((x, y) => y[0].localeCompare(x[0]))[0] || mine.sort((x, y) => y[0].localeCompare(x[0]))[0];
-  return pick ? pick[0] : "";
-}
-
-async function worldFromLeipzig(term, lang, page) {
-  const corpus = await worldLeipzigCorpus(lang);
-  if (!corpus) return null;
-  const data = await worldGet(`https://api.wortschatz-leipzig.de/ws/sentences/${encodeURIComponent(corpus)}/sentences/${encodeURIComponent(term)}?offset=${(page - 1) * 20}&limit=20`);
-  if (!data) return null;
-  return (data.sentences || []).map(x => ({
-    t: String(x.sentence || "").trim(),
-    src: "Leipzig"
-  }));
-}
-
-function worldStrip(html) {
-  const box = document.createElement("div");
-  box.innerHTML = String(html || "").replace(/<br\s*\/?>/gi, " ");
-  return box.textContent.replace(/\s+/g, " ").trim();
-}
-
-function worldSentencesIn(text, term) {
-  return splitIntoSentences(text).map(x => (x.text || "").trim()).filter(t => /[.!?。！？…]["”』」）)]?$/.test(t) && findTermIn(t, term));
-}
-
-async function worldFromWiktionary(term, lang) {
-  const data = await worldGet(`https://en.wiktionary.org/api/rest_v1/page/definition/${encodeURIComponent(term)}`);
-  if (!data) return null;
-  const out = [];
-  (data[lang] || []).forEach(pos => (pos.definitions || []).forEach(d => (d.examples || []).concat((d.parsedExamples || []).map(x => x.example)).forEach(ex => {
-    const t = worldStrip(ex);
-    if (t && (lang !== "zh" || !/[A-Za-z]{3}/.test(t))) out.push({
-      t: t,
-      src: "Wiktionary"
-    });
-  })));
-  return out;
-}
-
-async function worldFromWikiSite(site, term, lang, page) {
-  const host = (lang === "zh" ? "zh" : lang) + "." + site + ".org";
-  const data = await worldGet(`https://${host}/w/api.php?action=query&format=json&origin=*&list=search&srsearch=${encodeURIComponent('"' + term + '"')}&srlimit=20&srprop=snippet${page > 1 ? "&sroffset=" + (page - 1) * 20 : ""}${lang === "zh" ? lessonZhScript() === "zh-TW" ? "&variant=zh-tw" : "&variant=zh-cn" : ""}`);
-  if (!data || !data.query) return null;
-  const out = [];
-  (data.query.search || []).forEach(hit => worldSentencesIn(worldStrip(hit.snippet), term).filter(t => /^[\p{Lu}\p{Lo}"“'(（「]/u.test(t)).forEach(t => out.push({
-    t: t,
-    src: site
-  })));
-  return out;
-}
-
-async function worldFromFreeDictionary(term, lang) {
-  if (lang !== "en") return null;
-  const data = await worldGet(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(term)}`);
-  if (!Array.isArray(data)) return null;
-  const out = [];
-  data.forEach(e => (e.meanings || []).forEach(m => (m.definitions || []).forEach(d => d.example && out.push({
-    t: String(d.example).trim().replace(/^[a-z]/, c => c.toUpperCase()).replace(/([^.!?])$/, "$1."),
-    src: "Free Dictionary"
-  }))));
-  return out;
-}
-
-async function worldFromHackerNews(term, lang, page) {
-  if (lang !== "en") return null;
-  const data = await worldGet(`https://hn.algolia.com/api/v1/search?tags=comment&hitsPerPage=20&page=${page - 1}&query=${encodeURIComponent('"' + term + '"')}`);
-  if (!data) return null;
-  const out = [];
-  (data.hits || []).forEach(h => worldSentencesIn(worldStrip(h.comment_text), term).forEach(t => out.push({
-    t: t,
-    src: "Hacker News"
-  })));
-  return out;
-}
-
-async function worldFromReddit(term, lang) {
-  const data = await worldGet(`https://www.reddit.com/search.json?limit=25&raw_json=1&q=${encodeURIComponent('"' + term + '"')}`);
-  if (!data || !data.data) return null;
-  const out = [];
-  (data.data.children || []).forEach(c => {
-    const d = c && c.data || {};
-    [ d.title, d.selftext ].forEach(text => worldSentencesIn(worldStrip(text), term).forEach(t => out.push({
-      t: t,
-      src: "Reddit"
-    })));
   });
-  return out;
-}
-
-async function worldFromGoogle(term, lang) {
-  const sl = lang === "zh" ? lessonZhScript() : lang;
-  const data = await worldGet(`https://translate.googleapis.com/translate_a/single?client=gtx&dj=1&dt=ex&sl=${encodeURIComponent(sl)}&tl=${lang === "vi" ? "en" : "vi"}&q=${encodeURIComponent(term)}`);
-  if (!data) return null;
-  return (data.examples && data.examples.example || []).map(x => ({
-    t: String(x.text || "").replace(/<[^>]+>/g, "").trim(),
-    src: "Google"
-  }));
-}
-
-async function worldFromWikipedia(term, lang, page) {
-  const host = lang === "zh" ? "zh" : lang;
-  const data = await worldGet(`https://${host}.wikipedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrsearch=${encodeURIComponent('"' + term + '"')}&gsrlimit=10${page > 1 ? "&gsroffset=" + (page - 1) * 10 : ""}&prop=extracts&explaintext=1&exintro=1&exlimit=10&exsentences=10${lang === "zh" ? lessonZhScript() === "zh-TW" ? "&variant=zh-tw&uselang=zh-tw" : "&variant=zh-cn&uselang=zh-cn" : ""}`);
-  if (!data) return null;
-  const pages = data.query && data.query.pages ? Object.values(data.query.pages) : [];
-  const out = [];
-  pages.forEach(pg => splitIntoSentences(String(pg.extract || "")).forEach(x => out.push({
-    t: String(x.text || "").trim(),
-    src: "Wikipedia"
-  })));
-  return out;
-}
-
-const ZH_TRAD = "們個這來說時會對還麼為學國語開關見問題長門車東書愛電話們買賣貓鳥魚飯體歡謝讓聽寫讀時間現發動點過們錢頭裡後從應該",
-  ZH_SIMP = "们个这来说时会对还么为学国语开关见问题长门车东书爱电话们买卖猫鸟鱼饭体欢谢让听写读时间现发动点过们钱头里后从应该";
-
-function zhScriptOf(text) {
-  let t = 0, c = 0;
-  for (const ch of text || "") {
-    if (ZH_TRAD.includes(ch) && !ZH_SIMP.includes(ch)) t++; else if (ZH_SIMP.includes(ch) && !ZH_TRAD.includes(ch)) c++;
-  }
-  return t > c ? "zh-TW" : c > t ? "zh-CN" : "";
-}
-
-function lessonZhScript() {
-  if (studyLang === "zh-TW") return "zh-TW";
-  return zhScriptOf(rows.map(r => r.q || "").join("").slice(0, 4000)) || "zh-CN";
-}
-
-function fetchWorld(item, more) {
-  const key = worldKeyOf(item), store = worldRead(), have = store[key];
-  if (!more && worldSentences(item) || worldPending.has(key) || !navigator.onLine || more && have && have.end) return worldPending.get(key) || Promise.resolve();
-  const lang = worldLangOf(item), term = item.term.trim(), page = more && have ? (have.page || 1) + 1 : 1;
-  const job = Promise.all([ worldFromTatoeba(term, lang, page), worldFromWikipedia(term, lang, page), page === 1 ? worldFromGoogle(term, lang) : null, worldFromLeipzig(term, lang, page).catch(() => null), page === 1 ? worldFromWiktionary(term, lang).catch(() => null) : null, worldFromWikiSite("wikiquote", term, lang, page).catch(() => null), worldFromWikiSite("wikisource", term, lang, page).catch(() => null), worldFromWikiSite("wikinews", term, lang, page).catch(() => null), page === 1 ? worldFromFreeDictionary(term, lang).catch(() => null) : null, worldFromHackerNews(term, lang, page).catch(() => null), page === 1 ? worldFromReddit(term, lang).catch(() => null) : null ]).then(async ([ a, b, g, ...more ]) => {
-    if (g && g.length) a = g.concat(a || []);
-    const extra = more.filter(Boolean).flat();
-    if (extra.length) b = (b || []).concat(extra);
-    if (lang === "zh") {
-      const target = lessonZhScript();
-      await Promise.all([ ...a || [], ...b || [] ].filter(x => zhScriptOf(x.t) && zhScriptOf(x.t) !== target).slice(0, 16).map(x => translateText(x.t, target).then(r => {
-        if (r.translated) x.t = r.translated;
-      }, () => {})));
-      [ a, b ] = [ a, b ].map(list => list && list.filter(x => zhScriptOf(x.t) !== (target === "zh-TW" ? "zh-CN" : "zh-TW")));
-    }
-    if (!a && !b) return;
-    const old = more && have ? have : {
-      list: [],
-      used: []
-    };
-    const seen = new Set(rows.map(r => normalizeVocabText(r.q || "")).concat(old.list.map(x => normalizeVocabText(x.t)))), add = [];
-    shuffled(a || []).concat(shuffled(b || [])).forEach(x => {
-      const k = normalizeVocabText(x.t);
-      if (!x.t || seen.has(k) || !worldFits(x.t, term, lang)) return;
-      seen.add(k);
-      add.push(x);
-    });
-    let list = old.list.map((x, i) => ({
-      x: x,
-      used: (old.used || []).includes(i)
-    }));
-    list = list.filter(o => !o.used).concat(list.filter(o => o.used));
-    list = add.sort((x, y) => worldEase(x.t) - worldEase(y.t)).map(x => ({
-      x: x,
-      used: false
-    })).concat(list).slice(0, WORLD_KEEP);
-    store[key] = {
-      at: Date.now(),
-      page: page,
-      end: !add.length,
-      list: list.map(o => o.x),
-      used: list.map((o, i) => o.used ? i : -1).filter(i => i >= 0)
-    };
-    const keys = Object.keys(store);
-    if (keys.length > WORLD_MAX) keys.sort((x, y) => store[x].at - store[y].at).slice(0, keys.length - WORLD_MAX).forEach(k => delete store[k]);
-    try {
-      localStorage.setItem(WORLD_KEY, JSON.stringify(store));
-    } catch (e) {}
-    return store[key];
-  }).finally(() => worldPending.delete(key)).then(e => {
-    if (e && !e.end && e.page < 5 && e.list.filter((x, i) => !e.used.includes(i) && worldEase(x.t) <= WORLD_EASY).length < 4) return fetchWorld(item, true);
-  });
-  worldPending.set(key, job);
-  return job;
-}
-
-function otherAvailable(item) {
-  const e = worldRead()[worldKeyOf(item)];
-  if (e && e.list && e.list.length) return true;
-  fetchWorld(item);
-  const home = item.card.srcLessonId || currentLessonId;
-  return library.some(l => l.id !== home && !isVirtualId(l.id) && !bookHidden(l) && l.cards.some(c => c.uid !== EXTRA_UID && c.q && findTermIn(c.q, item.term)));
-}
-
-function worldPick(item) {
-  const key = worldKeyOf(item), e = worldRead()[key];
-  if (!e || !e.list || !e.list.length) {
-    fetchWorld(item);
-    return "";
-  }
-  e.used = e.used || [];
-  let pool = e.list.map((x, i) => i).filter(i => !e.used.includes(i));
-  if (!pool.length) {
-    e.used = [];
-    pool = e.list.map((x, i) => i);
-  }
-  const short = pool.filter(k => worldEase(e.list[k].t) <= WORLD_EASY), easy = short.length ? short : pool.slice().sort((a, b) => worldEase(e.list[a].t) - worldEase(e.list[b].t)).slice(0, 1);
-  const i = easy[Math.floor(Math.random() * easy.length)];
-  e.used.push(i);
-  try {
-    localStorage.setItem(WORLD_KEY, JSON.stringify(worldRead()));
-  } catch (err) {}
-  if ((pool.length <= 4 || pool.filter(k => k !== i && worldEase(e.list[k].t) <= WORLD_EASY).length < 2) && !e.end) fetchWorld(item, true);
-  return e.list[i].t;
-}
-
-async function worldPrefetch(items) {
-  for (const item of items) {
-    if (!item || vocabViewOnly(item)) continue;
-    await fetchWorld(item);
-  }
+  rows.forEach(add);
+  library.forEach(l => !isVirtualId(l.id) && l.id !== currentLessonId && !bookHidden(l) && l.cards.forEach(add));
+  return found.sort(() => Math.random() - .5).slice(0, n);
 }
 
 function otherLessonSentence(item) {
@@ -20249,11 +19913,9 @@ function otherLessonSentence(item) {
       });
     });
   });
-  const own = vocabContext(item).sentence, pool = found.length + (otherAvailable(item) ? 6 : 0) + (own ? 1 : 0);
-  const roll = Math.random() * pool;
+  const own = vocabContext(item).sentence, roll = Math.random() * (found.length + (own ? 1 : 0));
   if (own && roll < 1) return "";
-  if (found.length && roll < 1 + found.length) return found[Math.floor(Math.random() * found.length)];
-  return worldPick(item) || (found.length ? found[Math.floor(Math.random() * found.length)] : "");
+  return found.length ? found[Math.floor(Math.random() * found.length)] : "";
 }
 
 function wholeSentenceCard(item, sentence) {
@@ -20440,8 +20102,7 @@ function fillVocabCard(el, item) {
   const whole = !viewOnly && wholeSentenceCard(item, sentence);
   if (el.dataset.lookKey !== item.key) {
     const other = viewOnly || whole ? "" : otherLessonSentence(item);
-    if (!viewOnly && !whole && !other && !worldSentences(item)) fetchWorld(item);
-    const alt = other || gap || viewOnly || whole ? other : worldPick(item);
+    const alt = other;
     let ex = whole ? "sent" : alt ? "other" : gap ? "cloze" : "word";
     el.dataset.other = ex === "other" ? alt : "";
     const look = "plain";
