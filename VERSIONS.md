@@ -336,6 +336,7 @@ Hàm chính: `updateTouchBar`, `sizeTouchBar`, `#tbSound`, `#tbMore`, `tools-ope
 | TODAY-3 | `e981763` | Trong focus: không khung, không thanh tên task |
 | TODAY-4 | `f42c79a` | Từ trong task: ngẫu nhiên flashcard hoặc Podcast |
 | TODAY-5 | `326581f` | Task theo đúng mode thường: câu video mở theater, không còn thẻ Listening |
+| TODAY-6 | `bfcec26` | Bỏ luật thẻ chờ từ: thẻ câu và từ học độc lập (bỏ màn Words first, vuốt ⏳ Waiting) |
 
 Hàm chính: `todayTasks`, `todayTaskCounts`, `taskQueue`, `startTaskSide`, `taskAdvance`, `leftToday`, `limitStudy`, `limitRows`.
 
