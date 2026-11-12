@@ -1667,6 +1667,9 @@ window.onYouTubeIframeAPIReady = function(){
   .od-float textarea.od-mean-in{display:block;resize:none;overflow:hidden;width:100%;box-sizing:border-box;margin:0;padding:0 0 2px;border:0;border-bottom:1px dashed var(--od-line);border-radius:0;background:none;color:var(--od-mean);font:inherit;font-size:18px;line-height:26px;font-weight:700;}
   .od-float textarea.od-mean-in:focus{outline:none;box-shadow:none;border-bottom:1px solid var(--accent);}
   .od-acts [hidden]{display:none;}
+  .od-float .od-notes{min-height:24px;padding:4px 8px;border-radius:8px;background:color-mix(in srgb, var(--text) 4%, transparent);color:var(--text);font-size:15px;line-height:22px;outline:none;}
+  .od-float .od-notes:focus{box-shadow:inset 0 0 0 1px var(--accent);}
+  .od-float .od-notes:empty::before{content:attr(data-placeholder);color:var(--text-3, var(--od-soft));}
   .od-float .od-term.od-cur{border-color:var(--a-label);color:var(--a-label);}
   .od-card{position:relative;display:flex;flex-direction:column;gap:8px;padding:16px;border:1px solid var(--od-line);border-radius:16px;background:var(--od-card);transition:border-color .2s, box-shadow .2s, background-color .2s;}
   .od-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 12px;}
@@ -3969,7 +3972,6 @@ function paintWatchCounts() {
   if (watch.lines.some(r => !rows.includes(r))) {
     watch.lines = watchLines();
     watch.sig = watchSig();
-    watch.undone = true;
     return paintWatch();
   }
   const now = Date.now(), n = {
@@ -9499,25 +9501,22 @@ function highlightVocabInHtml(html, excludeId, extraTerms, onlyKeys) {
   const textNodes = [];
   let node;
   while (node = walker.nextNode()) textNodes.push(node);
-  const seen = new Set;
   textNodes.forEach(textNode => {
     const text = textNode.nodeValue;
     if (!text.trim()) return;
     const fold = foldWithMap(text);
     const words = [];
     terms.forEach((entries, key) => {
-      if (seen.has(key) || onlyKeys && !onlyKeys.has(key)) return;
-      const span = termSpans(fold.folded, key)[0];
-      if (!span) return;
-      const a = fold.map[span[0]], b = fold.map[span[1]];
-      if (a >= b) return;
-      seen.add(key);
-      words.push({
-        a: a,
-        b: b,
-        key: key,
-        term: entries[0].term,
-        hit: entries.some(e => e.card !== exclude)
+      if (onlyKeys && !onlyKeys.has(key)) return;
+      termSpans(fold.folded, key).forEach(span => {
+        const a = fold.map[span[0]], b = fold.map[span[1]];
+        if (a < b) words.push({
+          a: a,
+          b: b,
+          key: key,
+          term: entries[0].term,
+          hit: entries.some(e => e.card !== exclude)
+        });
       });
     });
     if (!words.length) return;
@@ -10726,6 +10725,8 @@ function paintOwnDictFloat() {
   if (!pop || !shown) return;
   const w = pop.dataset.w, have = pop.dataset.mode === "have", found = have ? ownDictFindWord(w) : null;
   const was = pop.querySelector(".od-mean-in"), typed = was && was.dataset.dirty ? was.value : null, focused = was && document.activeElement === was;
+  const wasNotes = pop.querySelector(".od-notes"), typedNotes = wasNotes && wasNotes.dataset.dirty ? wasNotes.innerHTML : null;
+  const item = found && found.item, oldNotes = item ? wordNotesOf(item) : "";
   const entry = ownDictEntry(shown.lang, w);
   pop.innerHTML = ownDictCardHtml(shown.lang, w, shown);
   const card = pop.querySelector(".od-card"), acts = card.querySelector(".od-acts");
@@ -10733,19 +10734,23 @@ function paintOwnDictFloat() {
   const value = typed != null ? typed : meaningLines(have ? found ? found.meaning : "" : entry ? entry.m : "").join("\n");
   const field = `<textarea class="od-mean-in" rows="1" autocomplete="off" spellcheck="false" aria-label="Meaning" title="One meaning per line; change it if it is not right" placeholder="Type the meaning">${escapeHtml(value)}</textarea>`, main = card.querySelector(".od-main");
   if (main) main.outerHTML = field; else card.querySelector(".od-body").insertAdjacentHTML("afterbegin", field);
-  const input = card.querySelector(".od-mean-in"), save = card.querySelector(".od-save");
+  if (!have || item) card.querySelector(".od-mean-in").insertAdjacentHTML("afterend", `<div class="od-notes" contenteditable="true" data-placeholder="Notes" aria-label="Notes for this word">${typedNotes != null ? typedNotes : oldNotes}</div>`);
+  const input = card.querySelector(".od-mean-in"), save = card.querySelector(".od-save"), notes = card.querySelector(".od-notes");
   if (typed != null) input.dataset.dirty = "1";
+  if (notes && typedNotes != null) notes.dataset.dirty = "1";
+  pop.oldNotes = oldNotes;
   const sync = () => {
     input.style.height = "auto";
     input.style.height = input.scrollHeight + "px";
     const parts = meaningLines(input.value), now = parts.join(", ");
     card.querySelectorAll(".od-term").forEach(b => b.classList.toggle("od-cur", parts.includes(b.dataset.m)));
     if (!save) return;
-    const changed = now !== (found ? found.meaning : "");
+    const changed = now !== (found ? found.meaning : "") || !!notes && notes.innerHTML !== oldNotes;
     save.hidden = !changed;
     card.querySelector(".od-done").hidden = changed;
   };
   input.addEventListener("input", sync);
+  if (notes) notes.addEventListener("input", sync);
   sync();
   if (focused) {
     input.focus();
@@ -10787,14 +10792,25 @@ function ownDictFloatPick(b) {
   if (!pop || !shown) return;
   const input = pop.querySelector(".od-mean-in");
   const w = pop.dataset.w, entry = ownDictEntry(shown.lang, w), meaning = input ? meaningLines(input.value).join(", ") : entry ? entry.m : "";
+  const notesEl = pop.querySelector(".od-notes"), notes = notesEl && notesEl.innerHTML !== pop.oldNotes ? notesEl.innerHTML : null;
+  const putNotes = () => {
+    const f = notes != null && ownDictFindWord(w), it = f && f.item;
+    if (!it || !setWordNotes(it.card, it.key, notes)) return;
+    if (f.lesson) {
+      f.lesson.updatedAt = Date.now();
+      dbPut("lessons", f.lesson).catch(() => {});
+    } else scheduleAutoSave();
+  };
   if (pop.dataset.mode === "have") {
     const found = ownDictFindWord(w);
     closeOwnDictFloat();
     if (ownDictSetMeaning(found, meaning)) showToast(`“${found.term}”: ${meaning}`);
+    putNotes();
     return;
   }
   closeOwnDictFloat();
   shown.onAdd(w, meaning);
+  putNotes();
   unhideWords([ w ]);
   showToast(`Added “${w}”`);
 }
@@ -10863,16 +10879,16 @@ document.addEventListener("click", e => {
 });
 
 document.addEventListener("keydown", e => {
-  if (!e.target.matches || !e.target.matches(".od-mean-in")) return;
+  if (!e.target.matches || !e.target.matches(".od-mean-in, .od-notes")) return;
   e.stopPropagation();
-  if (e.key !== "Enter" || !e.metaKey && !e.ctrlKey || e.isComposing || e.keyCode === 229) return;
+  if (e.key !== "Enter" || e.shiftKey || e.isComposing || e.keyCode === 229) return;
   e.preventDefault();
   const save = ownDictFloat && ownDictFloat.querySelector(".od-save, .od-add");
   if (save) ownDictFloatPick(save);
 }, true);
 
 document.addEventListener("input", e => {
-  if (e.target.matches && e.target.matches(".od-mean-in")) e.target.dataset.dirty = "1";
+  if (e.target.matches && e.target.matches(".od-mean-in, .od-notes")) e.target.dataset.dirty = "1";
 });
 
 const SW_ZONES = "#viewStudy .cell.shown, #vocabCard.flipped :is(.vocab-term, .vocab-ctx)";
@@ -10961,6 +10977,30 @@ document.addEventListener("mousemove", e => {
   if (!got) ownDictFetch(hit.lang, hit.word).then(en => sentenceHover === hit && en && en.m && showMeaningTip(hit.anchor, en.m));
 });
 
+const MARK_ZONES = SW_ZONES + ", #watchPop .w-capline.reveal, #watchPop:not(.cabin) .w-capline, #watchPop .w-row";
+
+document.addEventListener("click", e => {
+  if (!getSelection().isCollapsed || e.button || e.shiftKey || !e.target.closest) return;
+  const mk = e.target.closest("mark.vocab-hit, mark.vocab-own"), mz = mk && mk.closest(MARK_ZONES);
+  if (!mz || isTouch()) return;
+  const term = (mk.dataset.own || mk.textContent).split("\n")[0].trim(), ctx = sentenceWordCtx({
+    zone: mz,
+    lang: detectLang(mz.textContent).split("-")[0]
+  });
+  if (!term || !ctx) return;
+  const found = ownDictFindWord(term), rect = mk.getBoundingClientRect();
+  e.preventDefault();
+  e.stopImmediatePropagation();
+  hideTooltip();
+  if (watch && mz.closest("#watchPop")) try {
+    watch.player.pauseVideo();
+  } catch (err) {}
+  if (oneWord(term)) return openWordFloat(rect, found ? found.term : term, ctx);
+  if (found && found.item && !found.lesson) return editOwnWord(found.item.card, found.item, rect);
+  const matches = mk.dataset.terms ? markMatches(mk, ctx.row.id) : [];
+  if (matches.length) showVocabPopup(matches, rect);
+}, true);
+
 document.addEventListener("click", e => {
   if (!getSelection().isCollapsed || e.button || e.shiftKey) return;
   const hit = sentenceWordAt(e.clientX, e.clientY);
@@ -10980,23 +11020,9 @@ document.addEventListener("click", e => {
 }, true);
 
 document.addEventListener("pointerdown", e => {
-  if (ownDictFloat && e.target.closest && !e.target.closest(".od-float")) closeOwnDictFloat();
-}, true);
-
-let floatShiftTap = false;
-
-window.addEventListener("keydown", e => {
-  floatShiftTap = e.key === "Shift" && !e.repeat && !e.metaKey && !e.ctrlKey && !e.altKey && !!ownDictFloat;
-}, true);
-
-window.addEventListener("keyup", e => {
-  if (e.key !== "Shift" || !floatShiftTap || !ownDictFloat) return;
-  floatShiftTap = false;
-  const b = ownDictFloat.querySelector(".od-acts .od-add:not([hidden])");
-  if (!b) return;
-  e.preventDefault();
-  e.stopImmediatePropagation();
-  ownDictFloatPick(b);
+  if (!ownDictFloat || !e.target.closest || e.target.closest(".od-float")) return;
+  const save = ownDictFloat.querySelector(".od-save:not([hidden])");
+  if (save) ownDictFloatPick(save); else closeOwnDictFloat();
 }, true);
 
 window.addEventListener("keydown", e => {
