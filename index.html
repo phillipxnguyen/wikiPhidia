@@ -250,8 +250,9 @@ window.onYouTubeIframeAPIReady = function(){
     overflow:hidden;
   }
   .brand{display:flex;align-items:center;gap:6px;font-size:15px;font-weight:700;padding:0 4px;letter-spacing:-.01em;}
-  .streak-chip{flex-shrink:0;margin-left:auto;display:inline-flex;align-items:center;gap:4px;height:20px;min-height:0;padding:0 6px;border:0;border-radius:10px;line-height:20px;font-size:12px;font-weight:700;color:var(--due-color);background:color-mix(in srgb, var(--due-color) 14%, transparent);font-variant-numeric:tabular-nums;}
+  .streak-chip{cursor:default;pointer-events:none;flex-shrink:0;margin-left:auto;display:inline-flex;align-items:center;gap:4px;height:20px;min-height:0;padding:0 6px;border:0;border-radius:10px;line-height:20px;font-size:12px;font-weight:700;color:var(--due-color);background:color-mix(in srgb, var(--due-color) 14%, transparent);font-variant-numeric:tabular-nums;}
   .cloud-chip{flex-shrink:0;display:inline-flex;align-items:center;margin-left:0;height:20px;min-height:0;padding:0 6px;border:0;border-radius:10px;font-size:12px;font-weight:700;line-height:20px;color:var(--accent);background:var(--accent-soft);white-space:nowrap;}
+  :is(.main-inner .toolbar-counts, #watchPop .w-counts) .progress-badges{cursor:pointer;}
   .limits-pop{position:fixed;z-index:2000;box-sizing:border-box;display:flex;flex-direction:column;gap:8px;width:360px;max-width:calc(100vw - 16px);padding:12px 16px 16px;border-radius:24px;background:color-mix(in srgb, var(--surface) 84%, transparent);-webkit-backdrop-filter:blur(24px) saturate(1.6);backdrop-filter:blur(24px) saturate(1.6);box-shadow:0 24px 60px rgba(10,20,40,.26), 0 2px 6px rgba(10,20,40,.08), inset 0 0 0 1px color-mix(in srgb, var(--border) 70%, transparent);}
   .limit-tiles{display:flex;flex-direction:column;gap:8px;}
   .limit-tile{display:flex;align-items:center;gap:12px;padding:4px 8px 4px 4px;border-radius:16px;}
@@ -2846,7 +2847,7 @@ window.onYouTubeIframeAPIReady = function(){
 <div class="shell">
 
 <aside class="sidebar">
-  <div class="brand"><button id="btnDrawer" class="ghost drawer-btn" aria-label="Menu">☰</button><button id="btnAppMode" class="brand-switch" title="Switch to Vocabulary"><span class="brand-mark">字</span><span id="brandName">Flashcard</span></button><div class="brand-stack"><div class="brand-stack-in"><button id="booksNav" class="test-chip books-chip" aria-label="Books" title="Books: your textbooks"><span class="test-chip-icon" aria-hidden="true">📚</span></button><button id="testNav" class="test-chip" aria-label="Tests"><span class="test-chip-icon" aria-hidden="true">📝</span><span id="testNavCount"></span></button><button id="streakChip" class="streak-chip" aria-haspopup="dialog" aria-controls="limitsPop"><span class="streak-chip-flame">🔥</span><span id="streakChipCount">0</span></button><button id="btnCloud" class="cloud-chip" hidden></button></div></div></div>
+  <div class="brand"><button id="btnDrawer" class="ghost drawer-btn" aria-label="Menu">☰</button><button id="btnAppMode" class="brand-switch" title="Switch to Vocabulary"><span class="brand-mark">字</span><span id="brandName">Flashcard</span></button><div class="brand-stack"><div class="brand-stack-in"><button id="booksNav" class="test-chip books-chip" aria-label="Books" title="Books: your textbooks"><span class="test-chip-icon" aria-hidden="true">📚</span></button><button id="testNav" class="test-chip" aria-label="Tests"><span class="test-chip-icon" aria-hidden="true">📝</span><span id="testNavCount"></span></button><button id="streakChip" class="streak-chip" tabindex="-1"><span class="streak-chip-flame">🔥</span><span id="streakChipCount">0</span></button><button id="btnCloud" class="cloud-chip" hidden></button></div></div></div>
   <button id="lessonSearch" class="spot-open" type="button" aria-haspopup="dialog" aria-controls="spot"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="9" cy="9" r="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M13.5 13.5L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>Search or Ask</span><kbd>⌘/</kbd></button>
   <nav id="lessonList" class="lesson-list" aria-label="Lessons"></nav>
   <div class="sidebar-footer">
@@ -16780,7 +16781,7 @@ function limitsPlace() {
 }
 
 function limitsApply() {
-  return currentView === "study" ? !!groupState || isAllLessons() : currentView === "vocab" && vocabView !== "list";
+  return currentView === "study" ? !!watch || !!groupState || isAllLessons() : currentView === "vocab" && vocabView !== "list";
 }
 
 function saveStudyLimits() {
@@ -16791,6 +16792,13 @@ function saveStudyLimits() {
 }
 
 function refreshAfterLimits() {
+  if (watch) {
+    watch.countSig = "";
+    watchQueueSync();
+    paintWatchList();
+    paintWatchCounts();
+    return;
+  }
   if (currentView === "study" && isAllLessons()) mixNext(); else if (currentView === "study" && groupState) setReviewMode("ielts"); else if (currentView === "study") render();
   if (currentView === "vocab") {
     vocabSession = null;
@@ -16829,7 +16837,14 @@ document.getElementById("limitsTitle").onclick = () => {
   closeLimitsPop();
 };
 
-document.getElementById("streakChip").onclick = () => {
+const COUNTS_SEL = ".main-inner .toolbar-counts .progress-badges, #watchPop .w-counts .progress-badges";
+
+document.addEventListener("click", e => {
+  const counts = e.target.closest && e.target.closest(COUNTS_SEL);
+  if (counts) openLimitsPop(counts);
+});
+
+function openLimitsPop(anchor) {
   const pop = document.getElementById("limitsPop");
   if (!pop.hidden) return closeLimitsPop();
   if (!limitsApply()) return;
@@ -16840,11 +16855,11 @@ document.getElementById("streakChip").onclick = () => {
   document.getElementById("limitFreshMore").textContent = studyLimits.fresh && more.fresh ? "+" + more.fresh : "";
   document.getElementById("limitReviewMore").textContent = studyLimits.review && more.review ? "+" + more.review : "";
   pop.hidden = false;
-  const r = document.getElementById("streakChip").getBoundingClientRect();
-  pop.style.left = Math.round(Math.max(8, Math.min(r.left, window.innerWidth - pop.offsetWidth - 8))) + "px";
+  const r = anchor.getBoundingClientRect();
+  pop.style.left = Math.round(Math.max(8, Math.min(r.left + r.width / 2 - pop.offsetWidth / 2, window.innerWidth - pop.offsetWidth - 8))) + "px";
   pop.style.top = Math.round(r.bottom + 8) + "px";
   paintStudyRules();
-};
+}
 
 function paintStudyRules() {
   document.querySelectorAll("#limitsPop [data-order]").forEach(b => {
@@ -16922,7 +16937,7 @@ document.getElementById("limitsPop").addEventListener("click", e => {
 
 document.addEventListener("pointerdown", e => {
   const pop = document.getElementById("limitsPop");
-  if (pop.hidden || pop.contains(e.target) || e.target.closest("#streakChip")) return;
+  if (pop.hidden || pop.contains(e.target) || e.target.closest(COUNTS_SEL)) return;
   applyStudyLimits();
   closeLimitsPop();
 }, true);
