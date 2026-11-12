@@ -117,6 +117,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-63 | `8ac06e3` | Vuốt trên điện thoại: thanh câu chạy theo ngón tay, phải = Good, trái = Again, câu ẩn thì Show trước; popup streak không còn nuốt thao tác chạm (mọi mode) |
 | THEATER-64 | `59a5528` | Ô sửa dòng video có Q/A như mọi ô (Q đổi màu, A là câu dịch hiện ở theater); vuốt chỉ chấm khi đã Show ở mọi mode |
 | THEATER-65 | `4346d3a` | Chấm xong dòng mới hiện mờ ngay trong lúc dòng cũ trượt đi, không chờ hiệu ứng |
+| THEATER-66 | `5a7e278` | Câu dịch nhỏ hơn câu gốc 5 px ở mọi cỡ (máy tính, cửa sổ hẹp, phone) |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
