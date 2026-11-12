@@ -183,6 +183,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-53 | `5f98cc4` | Bỏ câu thế giới (Tatoeba, Wikipedia, Reddit…): flashcard chỉ dùng câu gốc và câu trong các bài khác của bạn |
 | FLASH-54 | `91183ba` | Vocabulary gom theo ngôn ngữ: trang chủ ô ngôn ngữ + banner (lấy giao diện Tests), bấm một ngôn ngữ học mọi từ của nó từ mọi bài |
 | FLASH-55 | `4182897` | Trang Vocabulary lấy lại toàn bộ giao diện Tests cho học từ: lộ trình 7 bước, banner, tự tạo buổi học, Waiting for you, Results theo ngày, By lesson, Words to work on |
+| FLASH-56 | `2b9ee73` | Buổi học chọn sẵn xong không chạy lại từ đầu; buổi có từ đã bị xoá tự rời Waiting for you |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
