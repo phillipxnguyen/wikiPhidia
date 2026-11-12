@@ -1075,9 +1075,10 @@ window.onYouTubeIframeAPIReady = function(){
   .rich-editor:empty::before{content:attr(data-placeholder);color:var(--placeholder);}
   .rich-editor.yt-ph:empty::before{content:"";display:inline-block;width:28px;height:20px;vertical-align:-3px;background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2028%2020%22%3E%3Crect%20width%3D%2228%22%20height%3D%2220%22%20rx%3D%225%22%20fill%3D%22%23FF0000%22%2F%3E%3Cpath%20d%3D%22M11%205.5v9l8-4.5z%22%20fill%3D%22%23fff%22%2F%3E%3C%2Fsvg%3E") center / 28px 20px no-repeat;opacity:.45;}
   #qaQ.yt-ph:placeholder-shown{background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2028%2020%22%3E%3Crect%20width%3D%2228%22%20height%3D%2220%22%20rx%3D%225%22%20fill%3D%22%23FF0000%22%2F%3E%3Cpath%20d%3D%22M11%205.5v9l8-4.5z%22%20fill%3D%22%23fff%22%2F%3E%3C%2Fsvg%3E");background-repeat:no-repeat;background-size:28px 20px;background-position:12px center;}
-  :is(.rich-editor, .cell, .vocab-ctx, .vocab-term, .wl-sent) mark.vocab-own{background:none;color:var(--vocab-own-ink);}
+  .q-mirror mark{background:none;color:inherit;}
+  :is(.rich-editor, .q-mirror, .cell, .vocab-ctx, .vocab-term, .wl-sent) mark.vocab-own{background:none;color:var(--vocab-own-ink);}
   @media (hover:hover){:is(.rich-editor, .cell, .vocab-ctx, .vocab-term, .wl-sent) mark.vocab-own{cursor:pointer;}}
-  :is(.rich-editor, .cell, .vocab-ctx, .vocab-term, .wl-sent) mark.vocab-hit{background:none;color:var(--vocab-ink);cursor:pointer;}
+  :is(.rich-editor, .q-mirror, .cell, .vocab-ctx, .vocab-term, .wl-sent) mark.vocab-hit{background:none;color:var(--vocab-ink);cursor:pointer;}
   .rich-editor ul, .vocab-popup ul{margin:2px 0;padding-left:20px;}
   .rich-editor :is(ul, ol){padding-left:24px;}
   .rich-editor li, .vocab-popup li{margin:2px 0;}
@@ -9972,7 +9973,7 @@ function cjkAtPoint(x, y, el) {
 }
 
 document.addEventListener("mousemove", e => {
-  if (isTouch() || !(e.target instanceof Element) || e.target.closest(".cell.shown, .vocab-list-term, .vocab-popup, #watchPop mark")) return;
+  if (isTouch() || !(e.target instanceof Element) || e.target.closest(".cell.shown, .vocab-list-term, .vocab-popup, #watchPop mark, #editPopup :is(#editQ, #editA) mark:is(.vocab-hit, .vocab-own)")) return;
   const tip = hoverTooltip;
   const showing = tip && tip.style.display === "block" && tip.anchor && tip.anchor.closest && tip.anchor.closest(PINYIN_SEL);
   const el = e.target.closest(PINYIN_SEL);
@@ -11009,6 +11010,16 @@ function sentenceWordCtx(hit) {
   };
 }
 
+document.addEventListener("mouseover", e => {
+  const mk = !isTouch() && e.target.closest && e.target.closest("#editPopup :is(#editQ, #editA) mark:is(.vocab-hit, .vocab-own)");
+  if (mk) markTip(mk);
+});
+
+document.addEventListener("mouseout", e => {
+  const mk = e.target.closest && e.target.closest("#editPopup :is(#editQ, #editA) mark:is(.vocab-hit, .vocab-own)");
+  if (mk && !(e.relatedTarget && mk.contains(e.relatedTarget)) && hoverTooltip && hoverTooltip.anchor === mk) hideTooltip();
+});
+
 let sentenceHover = null;
 
 function paintSentenceHover(hit) {
@@ -11037,11 +11048,25 @@ const MARK_ZONES = SW_ZONES + ", #watchPop .w-capline.reveal, #watchPop:not(.cab
 
 document.addEventListener("click", e => {
   if (!getSelection().isCollapsed || e.button || e.shiftKey || !e.target.closest) return;
-  const mk = e.target.closest("mark.vocab-hit, mark.vocab-own"), mz = mk && mk.closest(MARK_ZONES);
+  const mk = e.target.closest("mark.vocab-hit, mark.vocab-own"), mz = mk && mk.closest(MARK_ZONES + ", #editPopup :is(#editQ, #editA)");
   if (!mz || isTouch()) return;
-  const term = (mk.dataset.own || mk.textContent).split("\n")[0].trim(), ctx = sentenceWordCtx({
+  const lang = detectLang(mz.textContent).split("-")[0], term = (mk.dataset.own || mk.textContent).split("\n")[0].trim(), ctx = mz.matches("#editQ, #editA") ? activeEdit && {
+    lang: lang,
+    row: activeEdit.row,
+    onAdd: (t, m) => {
+      const notes = activeEdit.editNotes;
+      let list = notes.querySelector("ul");
+      if (!list) notes.appendChild(list = document.createElement("ul"));
+      const li = document.createElement("li");
+      li.innerHTML = "<b>" + escapeHtml(t) + "</b>: " + escapeHtml(m);
+      list.appendChild(li);
+      notes.dispatchEvent(new Event("input", {
+        bubbles: true
+      }));
+    }
+  } : sentenceWordCtx({
     zone: mz,
-    lang: detectLang(mz.textContent).split("-")[0]
+    lang: lang
   });
   if (!term || !ctx) return;
   const found = ownDictFindWord(term), rect = mk.getBoundingClientRect();
