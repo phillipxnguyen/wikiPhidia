@@ -11106,6 +11106,16 @@ function ownDictFloatDelete() {
 }
 
 window.addEventListener("keydown", e => {
+  if (!ownDictFloat || e.key !== "Enter" || e.shiftKey || e.isComposing || e.keyCode === 229 || e.repeat) return;
+  const t = e.target, inPop = t.closest && t.closest(".od-float");
+  if (!inPop && t.closest && t.closest("input, textarea, select, [contenteditable=true]")) return;
+  e.preventDefault();
+  e.stopImmediatePropagation();
+  const b = ownDictFloat.querySelector(".od-acts .od-add:not([hidden])");
+  if (b) ownDictFloatPick(b); else closeOwnDictFloat();
+}, true);
+
+window.addEventListener("keydown", e => {
   if (!ownDictFloat || e.key !== "Delete" && e.key !== "Backspace" || e.repeat || e.target.closest && e.target.closest(".od-mean-in, .od-notes, input, textarea, [contenteditable=true]")) return;
   if (!ownDictFloatDelete()) return;
   e.preventDefault();
