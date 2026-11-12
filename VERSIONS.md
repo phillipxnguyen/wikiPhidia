@@ -111,6 +111,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-57 | `d0dfb12` | Interpreter: chưa Show mà bật 🌐 thì thanh chỉ hiện câu dịch (bỏ khối mờ), Show thì câu gốc hiện trên |
 | THEATER-58 | `7b097cc` | Câu dịch trong hộp tối riêng ôm sát chữ như phụ đề YouTube, chữ nhỏ hơn câu gốc 2 px ở mọi cỡ (cả phone) |
 | THEATER-59 | `4b95902` | Mặt trước: câu gốc vẫn hiện mờ tại chỗ cũ, câu dịch hộp riêng ngay dưới (bỏ kiểu chỉ còn câu dịch của THEATER-57) |
+| THEATER-60 | `adf7c9a` | Dòng Again luôn quay lại cuối hàng, không bị chèn lên đầu khi bộ đếm đổi |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
@@ -263,6 +264,7 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 | DICT-40 | `5888791` | Bấm nghĩa gợi ý chỉ thêm vào dòng nghĩa (sau dấu phẩy), không lưu; nghĩa đã có trong dòng được viền |
 | DICT-41 | `7b097cc` | Popup từ: mỗi nghĩa một dòng (không dấu phẩy), nghĩa gợi ý thêm thành dòng mới; rê chuột vào từ chỉ hiện nghĩa |
 | DICT-42 | `c339e9d` | Bấm từ / Shift tạo cụm chạy cả ở Today, task, danh sách nhiều bài (trước bị chặn), từ lưu vào bài gốc của câu |
+| DICT-43 | `adf7c9a` | Popup từ: Enter lưu, Shift+Enter xuống dòng, bỏ Shift để lưu, click ra ngoài lưu thay đổi; ô Notes riêng của từ |
 
 Hàm chính: `showDictSite`, `hideDictOverlay`, `dictUrlFor`, `ownDictCardHtml`, `openWordFloat`, `sentenceWordAt`, `ownDictLookup`, `ownDictFetch`, `ownDictPrefetch`.
 
@@ -396,6 +398,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-3 | `16a2b79` | Xanh lá đậm hơn và xanh dương, không tím |
 | LOOKUP-4 | `3921081` | Rê chuột lên lookup không còn gạch chân |
 | LOOKUP-5 | `b921742` | Popup từ chỉ hiện dòng notes của đúng từ đó; pinyin chỉ hiện khi rê đúng vào từ |
+| LOOKUP-6 | `adf7c9a` | Từ đã có được tô ở mọi lần xuất hiện trong câu (cùng màu); bấm từ màu mở popup từ (cụm mở ô A: B), không mở ô sửa thẻ |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
