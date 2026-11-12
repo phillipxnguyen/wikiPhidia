@@ -115,6 +115,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-61 | `a09ce83` | Chấm/xoá dùng đúng hiệu ứng chung (đóng dấu ✓/✕ trượt, chém đôi) chỉ trên thanh câu, video thật vẫn chạy; viền mờ khớp góc từng hộp; thanh câu mỗi lần mở về dưới |
 | THEATER-62 | `9fab495` | Cửa sổ hẹp trên máy tính giữ bố cục máy tính (video phủ, câu đè, chữ nhỏ lại); Watch giữ danh sách dưới video; nút ✕ không mất; kiểu điện thoại chỉ cho máy cảm ứng |
 | THEATER-63 | `8ac06e3` | Vuốt trên điện thoại: thanh câu chạy theo ngón tay, phải = Good, trái = Again, câu ẩn thì Show trước; popup streak không còn nuốt thao tác chạm (mọi mode) |
+| THEATER-64 | `59a5528` | Ô sửa dòng video có Q/A như mọi ô (Q đổi màu, A là câu dịch hiện ở theater); vuốt chỉ chấm khi đã Show ở mọi mode |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
@@ -269,6 +270,7 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 | DICT-42 | `c339e9d` | Bấm từ / Shift tạo cụm chạy cả ở Today, task, danh sách nhiều bài (trước bị chặn), từ lưu vào bài gốc của câu |
 | DICT-43 | `adf7c9a` | Popup từ: Enter lưu, Shift+Enter xuống dòng, bỏ Shift để lưu, click ra ngoài lưu thay đổi; ô Notes riêng của từ |
 | DICT-44 | `4132aa4` | Nghĩa chỉ lặp lại chính từ (passport → passport) không hiện, tra lại theo chiều kia |
+| DICT-45 | `59a5528` | Popup từ: bỏ mọi đường gạch, mọi phần thẳng một lề trái; Delete xoá từ đã có (⌘Z lấy lại); tooltip nghĩa giữa dưới từ, chữ lề trái, đệm trên dưới bằng nhau |
 
 Hàm chính: `showDictSite`, `hideDictOverlay`, `dictUrlFor`, `ownDictCardHtml`, `openWordFloat`, `sentenceWordAt`, `ownDictLookup`, `ownDictFetch`, `ownDictPrefetch`.
 
@@ -299,6 +301,7 @@ Hàm chính: `dictLoad`, `dictSlot`, `dictFit`, `showDictSite`, `hideDictOverlay
 | DATA-15 | `76fd44b` | Bỏ tự dọn: không làm sạch/nối/ghép khi mở app hay mở bài, không tự chuyển thẻ↔từ hay xoá trùng khi lưu; giữ chuyển định dạng tiến độ và bỏ mốc giờ khi không có video |
 | DATA-16 | `11b9bb7` | Không tự lưu gì: bỏ xoá bài rỗng, chuyển tiến độ chỉ trong bộ nhớ, bài không video chỉ hiển thị như Speaking (giữ mốc giờ) |
 | DATA-17 | `31ff949` | Ô thẻ: hết dòng trống thừa sau khi xuống dòng 2 lần thành Q (ô từ, ô thêm thẻ); ô sửa thẻ Lessons chỉ tô màu dòng Q, không tô dòng nghĩa |
+| DATA-18 | `59a5528` | Thẻ có video cũng dùng ô Q/A chung (trước chỉ có câu) |
 
 Hàm chính: `newRow` (bản dịch vào notes khi tạo), `foldAnswer` + `keepsAnswer` (dòng thêm dưới câu khi sửa thẻ hoặc khi dán thì vào notes), `wordLike`, `belongsInVocab`, `isTranslationCard` (cho dòng `từ: nghĩa`), `autoSortLibrary`.
 
