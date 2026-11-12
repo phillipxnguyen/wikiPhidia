@@ -4031,7 +4031,7 @@ function watchGrade(isAgain) {
     if (ni >= 0) watchSeek(ni);
     paintWatchCounts();
   };
-  if (rowEl && !reducedMotion()) {
+  if (rowEl && rowEl.offsetParent && !reducedMotion()) {
     const h = rowEl.offsetHeight;
     rowEl.style.overflow = "hidden";
     rowEl.animate([ {
@@ -4151,6 +4151,28 @@ function watchSwipeEnd(e) {
   setTimeout(() => watch && (watch.capMoved = false), 0);
   if (e.type === "touchend" && Math.abs(d.dx) >= 80) watchGrade(d.dx < 0);
 }
+
+let swallowClick = false;
+
+window.addEventListener("pointerdown", e => {
+  swallowClick = false;
+  const t = e.target;
+  if (!t.closest || t.closest(".hover-tooltip")) return;
+  const edit = document.getElementById("editPopup"), box = edit && !edit.hidden && edit.querySelector(".le-box");
+  const open = [ ownDictFloat, vocabAddPopup, vocabPopupEl && vocabPopupEl.style.display !== "none" && vocabPopupEl, box ].filter(Boolean);
+  swallowClick = open.length > 0 && !open.some(el => el.contains(t));
+}, true);
+
+window.addEventListener("click", e => {
+  if (!swallowClick) return;
+  swallowClick = false;
+  e.preventDefault();
+  e.stopImmediatePropagation();
+  if (activeEdit && !activeEdit.tr.contains(e.target)) {
+    commitActiveEdit();
+    setTimeout(render, 0);
+  }
+}, true);
 
 function watchPhone() {
   return matchMedia("(max-width:820px) and (hover:none)").matches;
@@ -11125,8 +11147,7 @@ function ownDictFloatDelete() {
   }
   showToast(`Deleted “${it.term}”`);
   render();
-  if (currentView === "vocab") renderVocab();
-  if (watch) paintWatch();
+  refreshWordMarks();
   return true;
 }
 
@@ -21315,6 +21336,7 @@ function updateVocabEntry(item, termRaw, meaningRaw) {
   renameVocabSessionKey(item.key, newKey);
   scheduleAutoSave();
   render();
+  refreshWordMarks();
   return true;
 }
 
@@ -21599,11 +21621,21 @@ function sayVocabWord(item) {
   if (voice) utter.voice = voice;
   utter.rate = ttsSpeed;
   listenBar(card, 0);
+  const token = ++vocabTtsToken, done = () => {
+    if (token !== vocabTtsToken) return;
+    vocabTtsOn = false;
+    syncVocabSound();
+  };
+  soundHeard = true;
+  vocabTtsOn = true;
+  syncVocabSound();
   utter.addEventListener("start", () => {
     document.documentElement.classList.add("zap-spent");
     if (btn) btn.classList.remove("sound-wait");
   });
+  utter.onerror = done;
   utter.onend = () => {
+    done();
     btn && btn.classList.remove("sound-wait");
     const bar = card.querySelector(".vc-time i");
     if (bar) {
@@ -28529,6 +28561,12 @@ function addVocabToRow(row, term, meaning) {
   putVocabHtml(row, html);
   scheduleAutoSave();
   render();
+  refreshWordMarks();
+}
+
+function refreshWordMarks() {
+  if (currentView === "vocab" && document.getElementById("vocabCard")) renderVocab();
+  if (watch) paintWatch();
 }
 
 function putVocabHtml(row, html) {
