@@ -431,6 +431,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-7 | `c9a7c3f` | Ô sửa thẻ: từ đã có cùng màu như bên ngoài (hết nền vàng do lớp tô dòng Q), rê hiện nghĩa, bấm mở popup từ; tạo từ bằng bôi đen + Shift |
 | LOOKUP-8 | `71c9e83` | Từ tô màu không bị cắt chữ: dải bo được tính lại khi font của thẻ tải xong, đo lệch thì bỏ mặt nạ |
 | LOOKUP-9 | `003965a` | Popup câu dài: tiêu đề nhỏ trải hết bề ngang, loa + Add một hàng dưới, nghĩa giữ một câu (không tách theo dấu phẩy, cả tooltip) |
+| LOOKUP-10 | `8602c89` | Popup câu dài: loa và ＋ thu gọn, nằm cùng dòng đầu bên phải, chữ chảy quanh |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
