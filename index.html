@@ -10546,8 +10546,13 @@ function ownDictWords(text, row) {
   };
 }
 
+function ownDictEcho(e, w) {
+  return !!e && normalizeVocabText((e.m || "").trim()) === normalizeVocabText(w.trim());
+}
+
 function ownDictEntry(lang, w) {
-  return ownDictRead()[lang + "|" + normalizeVocabText(w)] || null;
+  const e = ownDictRead()[lang + "|" + normalizeVocabText(w)];
+  return e && !ownDictEcho(e, w) ? e : null;
 }
 
 const OD_POS = {
@@ -10589,10 +10594,15 @@ async function ownDictLookup(w, to) {
 }
 
 function ownDictFetch(lang, w) {
-  const key = lang + "|" + normalizeVocabText(w), have = ownDictRead()[key];
+  const key = lang + "|" + normalizeVocabText(w), have = ownDictEntry(lang, w);
   if (have && have.groups) return Promise.resolve(have);
   if (ownDictPending.has(key)) return ownDictPending.get(key);
-  const job = ownDictLookup(w, lang === "vi" ? "en" : "vi").then(entry => {
+  const to = lang === "vi" ? "en" : "vi";
+  const job = ownDictLookup(w, to).then(entry => ownDictEcho(entry, w) ? ownDictLookup(w, to === "vi" ? "en" : "vi") : entry).then(entry => {
+    if (ownDictEcho(entry, w)) entry = {
+      m: "",
+      groups: []
+    };
     if (entry.m) {
       ownDictRead()[key] = entry;
       ownDictSave();
