@@ -1098,9 +1098,10 @@ window.onYouTubeIframeAPIReady = function(){
     white-space:pre-line;
     display:none;
   }
-  .hover-tooltip.lookup-tip{max-width:280px;padding:8px 10px;font-size:13px;line-height:18px;white-space:normal;}
+  .hover-tooltip.lookup-tip{max-width:280px;padding:8px 10px;text-align:left;font-size:13px;line-height:18px;white-space:normal;}
   .hover-tooltip.lookup-tip .tip-r{margin-top:4px;color:#cfd6e2;}
   .hover-tooltip.lookup-tip .tip-m{margin-top:4px;}
+  .hover-tooltip.lookup-tip .tip-m:first-child{margin-top:0;}
   .hover-tooltip.lookup-tip small{display:block;margin-top:6px;font-size:12px;line-height:16px;font-style:italic;color:var(--popup-muted);}
   .hover-tooltip.on-popup{z-index:10001;background:var(--popup-text);color:var(--popup-bg);}
   .vocab-popup .vocab-sentence, .vocab-popup .vocab-note li, .vocab-popup .vocab-note > div{cursor:default;}
@@ -1664,10 +1665,10 @@ window.onYouTubeIframeAPIReady = function(){
   ::highlight(word-hover){background-color:color-mix(in srgb, var(--accent) 18%, transparent);}
   .od-float{--od-bg:var(--surface);--od-card:var(--surface);--od-line:color-mix(in srgb, var(--text) 9%, transparent);--od-soft:var(--text-2);--od-mean:var(--a-text);position:fixed;z-index:1700;width:min(380px, calc(100vw - 16px));border-radius:16px;box-shadow:var(--shadow-md);}
   .od-float .od-card{border-color:var(--border);}
-  .od-float textarea.od-mean-in{display:block;resize:none;overflow:hidden;width:100%;box-sizing:border-box;margin:0;padding:0 0 2px;border:0;border-bottom:1px dashed var(--od-line);border-radius:0;background:none;color:var(--od-mean);font:inherit;font-size:18px;line-height:26px;font-weight:700;}
-  .od-float textarea.od-mean-in:focus{outline:none;box-shadow:none;border-bottom:1px solid var(--accent);}
+  .od-float textarea.od-mean-in{display:block;resize:none;overflow:hidden;width:100%;box-sizing:border-box;margin:0;padding:0;border:0;border-radius:0;background:none;color:var(--od-mean);font:inherit;font-size:18px;line-height:26px;font-weight:700;}
+  .od-float textarea.od-mean-in:focus{outline:none;box-shadow:none;}
   .od-acts [hidden]{display:none;}
-  .od-float .od-notes{min-height:24px;padding:4px 8px;border-radius:8px;background:color-mix(in srgb, var(--text) 4%, transparent);color:var(--text);font-size:15px;line-height:22px;outline:none;}
+  .od-float .od-notes{min-height:24px;margin:0 -8px;padding:4px 8px;border-radius:8px;background:color-mix(in srgb, var(--text) 4%, transparent);color:var(--text);font-size:15px;line-height:22px;outline:none;}
   .od-float .od-notes:focus{box-shadow:inset 0 0 0 1px var(--accent);}
   .od-float .od-notes:empty::before{content:attr(data-placeholder);color:var(--text-3, var(--od-soft));}
   .od-float .od-term.od-cur{border-color:var(--a-label);color:var(--a-label);}
@@ -1703,7 +1704,7 @@ window.onYouTubeIframeAPIReady = function(){
   .od-skel i:first-child{width:46%;height:18px;}
   .od-skel i:last-child{width:72%;}
   @keyframes odShimmer{to{background-position:-200% 0;}}
-  .od-ex{display:flex;flex-direction:column;gap:6px;margin-top:4px;padding-top:10px;border-top:1px dashed var(--od-line);}
+  .od-ex{display:flex;flex-direction:column;gap:6px;}
   .od-ex p{margin:0;font-size:15px;line-height:22px;color:var(--text);}
   .od-ex mark{padding:0 2px;border-radius:4px;background:color-mix(in srgb, var(--accent) 14%, transparent);color:inherit;font-weight:700;}
   @media (prefers-reduced-motion: reduce){.od-card, .od-add, .od-skel i{animation:none;transition:none;}}
@@ -3384,7 +3385,7 @@ async function mtFill(lines) {
 }
 
 function watchLineTr(r) {
-  return watchTranslation(r) || machineTr(oneLine(r.q));
+  return oneLine(r.a || "").trim() || watchTranslation(r) || machineTr(oneLine(r.q));
 }
 
 document.getElementById("listTrans").onclick = e => {
@@ -9278,7 +9279,9 @@ function showMeaningTip(anchor, meaning) {
   showTooltip(anchor, meaning);
   tip.classList.add("lookup-tip");
   tip.innerHTML = meaningLines(meaning).map(m => `<div class="tip-m">${escapeHtml(m)}</div>`).join("");
-  keepTipOnScreen(tip, anchor.getBoundingClientRect().top);
+  const a = anchor.getBoundingClientRect(), t = tip.getBoundingClientRect();
+  tip.style.left = Math.round(Math.max(4, a.left + a.width / 2 - t.width / 2) + window.scrollX) + "px";
+  keepTipOnScreen(tip, a.top);
 }
 
 function fromMark(side) {
@@ -11078,6 +11081,37 @@ document.addEventListener("pointerdown", e => {
   if (save) ownDictFloatPick(save); else closeOwnDictFloat();
 }, true);
 
+function ownDictFloatDelete() {
+  const pop = ownDictFloat, w = pop && pop.dataset.mode === "have" ? pop.dataset.w : null, f = w && ownDictFindWord(w), it = f && f.item;
+  if (!it) return false;
+  const row = it.card, next = rewrittenVocabNotes(row, it, null, null);
+  if (!next) return false;
+  closeOwnDictFloat();
+  if (!f.lesson) pushUndo("Deleted card — " + it.term);
+  row.notes = next.notes;
+  row.notesHtml = next.notesHtml;
+  if (row.vocab) delete row.vocab[it.key];
+  if (f.lesson) {
+    f.lesson.updatedAt = Date.now();
+    dbPut("lessons", f.lesson).catch(() => {});
+  } else {
+    if (vocabSession) dropVocabSessionKey(it.key);
+    scheduleAutoSave();
+  }
+  showToast(`Deleted “${it.term}”`);
+  render();
+  if (currentView === "vocab") renderVocab();
+  if (watch) paintWatch();
+  return true;
+}
+
+window.addEventListener("keydown", e => {
+  if (!ownDictFloat || e.key !== "Delete" && e.key !== "Backspace" || e.repeat || e.target.closest && e.target.closest(".od-mean-in, .od-notes, input, textarea, [contenteditable=true]")) return;
+  if (!ownDictFloatDelete()) return;
+  e.preventDefault();
+  e.stopImmediatePropagation();
+}, true);
+
 window.addEventListener("keydown", e => {
   if (!ownDictFloat || e.key !== "Escape") return;
   e.preventDefault();
@@ -11154,8 +11188,9 @@ function qMirrorBody(el, m) {
 }
 
 function qMirrorSync(el) {
-  if (!el || !el.isConnected || !el.offsetParent || el.classList.contains("yt-ph")) {
-    if (el && el.classList.contains("q-mirrored") && el.classList.contains("yt-ph")) {
+  const bare = el && el.classList.contains("yt-ph") && !(el.tagName === "TEXTAREA" ? el.value : el.textContent).trim();
+  if (!el || !el.isConnected || !el.offsetParent || bare) {
+    if (bare && el.classList.contains("q-mirrored")) {
       el.classList.remove("q-mirrored");
       const m = el.parentElement && el.parentElement.querySelector(":scope > .q-mirror");
       if (m) m.remove();
@@ -11541,7 +11576,7 @@ function notesEditorHtml(row) {
 
 function commitActiveEdit(keep) {
   if (!activeEdit) return;
-  const merged = activeEdit.row.time == null ? splitMergedCardHtml(stripVocabHighlights(activeEdit.editQ.innerHTML)) : null;
+  const merged = splitMergedCardHtml(stripVocabHighlights(activeEdit.editQ.innerHTML));
   let newQHtml = cleanPunctHtml(sanitizeHtml(merged ? merged.q : stripVocabHighlights(editorHtml(activeEdit.editQ)), "br"));
   let newQ = cleanPunct(plainTextOf(newQHtml, "\n"));
   let newAHtml = cleanPunctHtml(sanitizeHtml(merged ? merged.a : stripVocabHighlights(editorHtml(activeEdit.editA)), "br"));
@@ -11735,7 +11770,7 @@ function qRuleText(t) {
 
 document.addEventListener("input", e => {
   const el = e.target;
-  if (e.isComposing || !el.matches || !el.matches("#qaQ, #vocabEditTerm, #editQ:not(.yt-ph)")) return;
+  if (e.isComposing || !el.matches || !el.matches("#qaQ, #vocabEditTerm, #editQ")) return;
   if (el.tagName === "TEXTAREA") {
     const was = el.selectionStart, next = qRuleText(el.value);
     if (!next) return;
@@ -11884,7 +11919,7 @@ window.addEventListener("blur", () => {
 });
 
 function buildEditBoxInner(row) {
-  return `\n    <div class="edit-qa">\n      <div>\n        <div id="editQ" class="rich-editor${row.time == null ? "" : " yt-ph"}" contenteditable="true"${row.time == null ? ' data-placeholder="Question, then the Answer two lines below"' : ""} aria-label="Card">${row.time == null ? mergedCardEditHtml(row) : getEditInitialHtml(row.q, row.qHtml, row.id)}</div>\n      </div>\n      <div hidden>\n        <div id="editA" class="rich-editor" contenteditable="true">${getEditInitialHtml(row.a, row.aHtml, row.id)}</div>\n      </div>\n    </div>\n    <div class="notes-clip"><div id="editNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes">${notesEditorHtml(row)}</div></div>\n    <div class="edit-actions">\n      <button id="editSave" class="primary">Save</button>\n    </div>\n    <div id="editDict"></div>\n  `;
+  return `\n    <div class="edit-qa">\n      <div>\n        <div id="editQ" class="rich-editor${row.time == null ? "" : " yt-ph"}" contenteditable="true"${row.time == null ? ' data-placeholder="Question, then the Answer two lines below"' : ""} aria-label="Card">${mergedCardEditHtml(row)}</div>\n      </div>\n      <div hidden>\n        <div id="editA" class="rich-editor" contenteditable="true">${getEditInitialHtml(row.a, row.aHtml, row.id)}</div>\n      </div>\n    </div>\n    <div class="notes-clip"><div id="editNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes">${notesEditorHtml(row)}</div></div>\n    <div class="edit-actions">\n      <button id="editSave" class="primary">Save</button>\n    </div>\n    <div id="editDict"></div>\n  `;
 }
 
 document.addEventListener("click", e => {
@@ -12346,7 +12381,7 @@ function wireEditBox(host, row) {
   activeEdit.originalQHtml = sanitizeHtml(stripVocabHighlights(editorHtml(editQ)), "br");
   activeEdit.originalA = plainTextOf(editA.innerHTML, "\n");
   activeEdit.originalAHtml = sanitizeHtml(stripVocabHighlights(editorHtml(editA)), "br");
-  if (row.time == null) {
+  {
     const parts = splitMergedCardHtml(stripVocabHighlights(editQ.innerHTML));
     activeEdit.originalQHtml = cleanPunctHtml(sanitizeHtml(parts.q, "br"));
     activeEdit.originalQ = cleanPunct(plainTextOf(activeEdit.originalQHtml, "\n"));
@@ -13185,8 +13220,13 @@ window.addEventListener("pointermove", e => {
 function dragMove(clientX, clientY) {
   const dx = clientX - drag.x;
   const dy = clientY - drag.y;
+  if (drag.reveal) return;
   if (!drag.ghost) {
     if (drag.axis !== "x" || Math.abs(dx) < SWIPE_START) return;
+    if (drag.vocab ? vocabSession && !vocabSession.flipped && !vocabViewOnly(currentVocabItem()) : groupState && studyCardsHidden()) {
+      drag.reveal = true;
+      return;
+    }
     drag.ghost = ghostFor(drag.parts);
     if (!drag.ghost) {
       drag = null;
@@ -13262,6 +13302,12 @@ function endDrag(e) {
   const d = drag;
   if (!d || e.pointerId !== d.id) return;
   drag = null;
+  if (d.reveal && e.type === "pointerup") {
+    dragSuppressClick = true;
+    setTimeout(() => dragSuppressClick = false, 0);
+    if (d.vocab) flipVocab(); else revealAction();
+    return;
+  }
   if (!d.ghost) return;
   dragSuppressClick = true;
   setTimeout(() => dragSuppressClick = false, 0);
