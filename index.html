@@ -1733,7 +1733,6 @@ window.onYouTubeIframeAPIReady = function(){
   .swipe-ghost.row{align-items:center;border-radius:var(--radius);font-size:20px;}
   .swipe-ghost.good{color:var(--a-label);border-color:currentColor;}
   .swipe-ghost.again{color:var(--danger);border-color:currentColor;}
-  .swipe-ghost.waiting{color:var(--due-color);border-color:currentColor;background:color-mix(in srgb, var(--due-color) 12%, var(--surface));}
   .swipe-ghost.again.mark, .swipe-ghost.delete, .touch-bar .tb-again.tb-mark{-webkit-text-stroke:.04em currentColor;}
   .swipe-ghost.delete{color:var(--text);border-color:currentColor;}
   .swipe-ghost.to-vocab{color:#1e9466;border-color:currentColor;}
@@ -3987,7 +3986,6 @@ function watchGrade(isAgain) {
   (watch.graded || (watch.graded = new Set)).add(r.id);
   scheduleReview(st, grade, now);
   logReview(r, "Listen", grade, now, fresh);
-  doneWordCache = null;
   scheduleAutoSave();
   flushAutoSave();
   renderLessonList();
@@ -7283,62 +7281,11 @@ function srsBucket(st, now) {
   return st.due <= now ? "due" : null;
 }
 
-let doneWordCache = null;
-
-function doneWordKeys() {
-  if (doneWordCache) return doneWordCache;
-  const keys = new Set;
-  const add = c => c && c.vocab && Object.keys(c.vocab).forEach(k => {
-    if (c.vocab[k] && isDoneState(c.vocab[k])) keys.add(k);
-  });
-  library.forEach(l => {
-    if (l.id === currentLessonId) return;
-    (l.cards || []).forEach(add);
-    add(l.extraWords);
-  });
-  rows.forEach(add);
-  add(vocabExtras);
-  doneWordCache = keys;
-  queueMicrotask(() => doneWordCache = null);
-  return keys;
-}
-
-const addedOnScreen = new Map;
-
-function waitWords(r) {
-  const fresh = addedOnScreen.get(r.uid);
-  const words = vocabEntriesOf(r);
-  return fresh ? words.filter(e => !fresh.has(e.key)) : words;
-}
-
-function cardWaiting(r) {
-  if (!r || r.uid === EXTRA_UID) return false;
-  const words = waitWords(r);
-  if (!words.length) return false;
-  const done = doneWordKeys();
-  return words.some(e => !done.has(e.key));
-}
-
-function gradeWaits(r) {
-  if (!r || r.uid === EXTRA_UID) return false;
-  const words = vocabEntriesOf(r);
-  if (!words.length) return false;
-  const done = doneWordKeys();
-  return words.some(e => !done.has(e.key));
-}
-
-function studyPickRow() {
-  if (!groupState) return null;
-  const {scope: scope, picked: picked} = studyPick();
-  return picked || scope[0] || null;
-}
-
 function cardReady(r, mode, now = Date.now()) {
-  return srsOf(r, mode).due <= now && !cardWaiting(r);
+  return srsOf(r, mode).due <= now;
 }
 
 function cardBucket(r, mode, now = Date.now()) {
-  if (cardWaiting(r)) return "due";
   return srsBucket(srsOf(r, mode), now);
 }
 
@@ -7358,11 +7305,7 @@ function progressBadgesHtml(mode, currentIds) {
   const now = Date.now();
   const allowed = isAllLessons() ? mixCandidates() : dueRows(mode);
   const newN = allowed.filter(r => cardBucket(r, mode, now) === "new").length;
-  const waiting = (isAllLessons() ? rows.filter(r => speakable(r) || vocabVideoIdFor(r)) : modeScopeRows(mode)).filter(cardWaiting);
-  const readyDue = allowed.filter(r => cardBucket(r, mode, now) === "due").length;
-  const room = reviewsLeftToday(rows.map(r => r.srcLessonId || currentLessonId), false) - allowed.filter(r => srsOf(r, mode).reps && cardBucket(r, mode, now) === "due").length;
-  const studying = !!groupState || isAllLessons();
-  const dueN = readyDue + (studying ? 0 : Math.min(waiting.length, Math.max(0, room)));
+  const dueN = allowed.filter(r => cardBucket(r, mode, now) === "due").length;
   const doneN = isAllLessons() ? rows.filter(r => (speakable(r) || vocabVideoIdFor(r)) && cardBucket(r, mode, now) === "done").length : doneCardCount(mode);
   let active = {
     new: false,
@@ -7555,12 +7498,6 @@ function limitRoom(vocab, lessons) {
     left: left,
     pool: pool
   };
-}
-
-function reviewsLeftToday(lessonIds, vocab) {
-  if (!studyLimits.review) return Infinity;
-  const {left: left, pool: pool} = limitRoom(vocab, new Set(lessonIds));
-  return [ ...left.values() ].reduce((n, room) => n + room.review, Math.max(0, pool.review));
 }
 
 function limitStudy(list, vocab, keyOf, stateOf) {
@@ -8156,17 +8093,11 @@ function showSessionCompletePanel() {
   }
   document.querySelector("#viewStudy .toolbar").style.display = "none";
   const now = Date.now();
-  const next = rows.filter(r => speakable(r) && !cardWaiting(r)).map(r => srsOf(r, "Table")).filter(st => st.reps && st.due > now).map(st => st.due).sort((a, b) => a - b)[0];
+  const next = rows.filter(r => speakable(r)).map(r => srsOf(r, "Table")).filter(st => st.reps && st.due > now).map(st => st.due).sort((a, b) => a - b)[0];
   const due = isAllLessons() ? mixCandidates(true) : modeScopeRows(modeKey()).filter(r => cardReady(r, "Table", now));
   const more = heldMore(due, isAllLessons() ? mixCandidates() : limitRows(due), r => srsOf(r, "Table"));
   const held = more.total;
-  const waiting = isAllLessons() ? 0 : modeScopeRows(isVideoLesson() ? "Listen" : "Table").filter(cardWaiting).length;
-  let text = finishText(held, studiedToday(rows, false), next, "card", modeScopeRows(modeKey()).filter(r => !cardWaiting(r)).map(r => srsOf(r, "Table")));
-  if (waiting && text.emoji === "🎉" && !held) text = {
-    emoji: "字",
-    title: "Words first",
-    sub: `${waiting} card${waiting === 1 ? " waits" : "s wait"} for ${waiting === 1 ? "its" : "their"} words: study them first`
-  };
+  const text = finishText(held, studiedToday(rows, false), next, "card", modeScopeRows(modeKey()).map(r => srsOf(r, "Table")));
   panel.querySelector(".emoji").textContent = text.emoji;
   panel.querySelector(".emoji").classList.toggle("blend-text", text.emoji === "字");
   panel.querySelector(".session-complete-title").textContent = text.title;
@@ -12770,18 +12701,13 @@ function applyGrade(r, isAgain, mode, now) {
   const fresh = !st.reps;
   scheduleReview(st, grade, now);
   logReview(r, mode, grade, now, fresh);
-  addedOnScreen.delete(r.uid);
-  doneWordCache = null;
-  const waits = cardWaiting(r);
-  if (waits) st.due = now;
-  if (isAgain && mode === "Table" && !waits) {
+  if (isAgain && mode === "Table") {
     if (!groupState.pendingAgain) groupState.pendingAgain = [];
     groupState.pendingAgain.push({
       id: r.id,
       readyAt: st.due
     });
   }
-  return waits;
 }
 
 function gradeCard(row, isAgain) {
@@ -12794,7 +12720,7 @@ function gradeCard(row, isAgain) {
   if (isCardMode()) stopTts();
   adjustSequenceIndexForRemoval(row.id);
   pushUndo(gradeLabel(isAgain) + " — " + cardSummary(row));
-  const waits = applyGrade(row, isAgain, mode, Date.now());
+  applyGrade(row, isAgain, mode, Date.now());
   ieltsAnswered++;
   ieltsHintId = null;
   scheduleAutoSave();
@@ -12805,7 +12731,7 @@ function gradeCard(row, isAgain) {
       return mixNext();
     }
     render();
-  }, true, waits ? "Waiting" : undefined);
+  }, true);
 }
 
 let heldPage = null;
@@ -13089,12 +13015,12 @@ function swipe(parts, dir, update, next, label = dir > 0 ? "Good" : "Again") {
     angelFly(ghost, from);
   } else if (ghost) {
     ghost.classList.remove("good", "again", "waiting");
-    ghost.classList.add(label === "Delete" ? "delete" : label === "Vocab" ? "to-vocab" : label === "Lesson" ? "to-lesson" : label === "Waiting" ? "waiting" : dir > 0 ? "good" : "again");
-    ghost.textContent = label === "Delete" ? "✕" : label === "Vocab" || label === "Lesson" ? "字" : label === "Waiting" ? "⏳ Waiting" : gradeMark(dir < 0);
+    ghost.classList.add(label === "Delete" ? "delete" : label === "Vocab" ? "to-vocab" : label === "Lesson" ? "to-lesson" : dir > 0 ? "good" : "again");
+    ghost.textContent = label === "Delete" ? "✕" : label === "Vocab" || label === "Lesson" ? "字" : gradeMark(dir < 0);
     ghost.animate([ {
       transform: from
     }, {
-      transform: `translate(${dir * 110}vw, ${label === "Delete" || label === "Vocab" || label === "Lesson" || label === "Waiting" ? -25 : 25}vh) rotate(${dir * 24}deg)`
+      transform: `translate(${dir * 110}vw, ${label === "Delete" || label === "Vocab" || label === "Lesson" ? -25 : 25}vh) rotate(${dir * 24}deg)`
     } ], {
       duration: 750,
       easing: "ease-in-out",
@@ -13221,16 +13147,13 @@ function dragMove(clientX, clientY) {
     } catch (err) {}
     getSelection().removeAllRanges();
     hideTooltip();
-    if (drag.waits === undefined) drag.waits = !drag.vocab && gradeWaits(studyPickRow());
     drag.restore = taskRun && taskModeChanges() && taskPeek() || (drag.vocab ? hideUnderSwipe(drag.parts) : showNextUnderSwipe());
   }
   drag.dx = dx;
   const again = dx < 0;
-  if (drag.waits === undefined) drag.waits = !drag.vocab && gradeWaits(studyPickRow());
-  drag.ghost.classList.toggle("waiting", drag.waits);
-  drag.ghost.classList.toggle("again", again && !drag.waits);
-  drag.ghost.classList.toggle("good", !again && !drag.waits);
-  drag.ghost.textContent = drag.waits ? "⏳ Waiting" : gradeMark(again);
+  drag.ghost.classList.toggle("again", again);
+  drag.ghost.classList.toggle("good", !again);
+  drag.ghost.textContent = gradeMark(again);
   drag.ghost.style.transform = `translate(${dx}px, ${dy / 4}px) rotate(${dx / 20}deg)`;
 }
 
@@ -17295,7 +17218,6 @@ function toolBackup(homes) {
 }
 
 function toolRefresh() {
-  doneWordCache = null;
   if (currentLessonId) {
     flushAutoSave();
     if (currentView === "vocab") renderVocab(); else render();
@@ -19526,11 +19448,6 @@ function stampNewVocab(card, before) {
   const fresh = vocabEntriesOf(card).filter(e => !before.has(e.key));
   if (!fresh.length) return;
   unhideWords(fresh.map(e => e.term || ""));
-  if (currentView === "study" && [ mixFocusId, pinnedCardId, lastShownCardId ].includes(card.id) && card.uid) {
-    const keys = addedOnScreen.get(card.uid) || new Set;
-    fresh.forEach(e => keys.add(e.key));
-    addedOnScreen.set(card.uid, keys);
-  }
   const at = vocabStamp();
   if (!card.vocab) card.vocab = {};
   fresh.forEach(e => {
@@ -22702,7 +22619,7 @@ function taskComesBack(run) {
   const l = library.find(x => x.id === run.lessonId), now = Date.now(), soon = [];
   if (!l) return 0;
   const add = st => st.lastGrade === GRADE_AGAIN && st.due > now && soon.push(st.due);
-  if (run.onC !== false) l.cards.forEach(c => !cardWaiting(c) && add(srsOf(c)));
+  if (run.onC !== false) l.cards.forEach(c => add(srsOf(c)));
   if (run.onV !== false) lessonVocabItems(lessonCardsWithExtras(l)).forEach(i => add(vocabStateOf(i)));
   return soon.length ? Math.min(...soon) : 0;
 }
@@ -22823,7 +22740,7 @@ function taskShowable(pick) {
   const now = Date.now();
   if (pick.k === "c") {
     const c = l.cards.find(x => x.uid === pick.id);
-    return !!c && srsOf(c).due <= now && !cardWaiting(c);
+    return !!c && srsOf(c).due <= now;
   }
   if (!showableMemo || showableMemo.lesson !== l) {
     showableMemo = {
@@ -22982,8 +22899,6 @@ function endTask() {
 function taskCardGone() {
   const run = taskRun;
   if (!run || run.opening || !run.current || run.current.k !== "c") return false;
-  const pick = run.current, row = rows.find(r => r.uid === pick.id);
-  if (row && cardWaiting(row)) run.queue.push(pick);
   run.current = null;
   taskAdvance();
   return true;
