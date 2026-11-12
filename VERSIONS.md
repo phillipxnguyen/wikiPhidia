@@ -182,6 +182,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-52 | `76fd44b` | Podcast đầu tiên khi trình duyệt chặn tiếng: nút sound giật chờ, chạm đầu tiên là phát |
 | FLASH-53 | `5f98cc4` | Bỏ câu thế giới (Tatoeba, Wikipedia, Reddit…): flashcard chỉ dùng câu gốc và câu trong các bài khác của bạn |
 | FLASH-54 | `91183ba` | Vocabulary gom theo ngôn ngữ: trang chủ ô ngôn ngữ + banner (lấy giao diện Tests), bấm một ngôn ngữ học mọi từ của nó từ mọi bài |
+| FLASH-55 | `4182897` | Trang Vocabulary lấy lại toàn bộ giao diện Tests cho học từ: lộ trình 7 bước, banner, tự tạo buổi học, Waiting for you, Results theo ngày, By lesson, Words to work on |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
@@ -353,6 +354,7 @@ Hàm chính: `todayTasks`, `todayTaskCounts`, `taskQueue`, `startTaskSide`, `tas
 | LAYOUT-7 | `dac6f98` | Nút tròn không bao giờ đè thanh công cụ: xếp từ dưới thanh xuống, nằm ở đáy màn khi đủ chỗ |
 | LAYOUT-8 | `91183ba` | Sidebar Vocabulary hiện các ngôn ngữ thay cho danh sách bài; bỏ hẳn Tests (📝, ⌘⌥X, công tắc Settings, backup tests) |
 | LAYOUT-9 | `fb2edb8` | Logo và tên đổi màu cùng lúc (giữa vòng lật), tên mờ rồi hiện lại cùng nhịp logo |
+| LAYOUT-10 | `4182897` | Sidebar Vocabulary: thẻ Vocabulary dưới Today (đếm, chip ngôn ngữ, thanh) mở trang Vocabulary; bỏ ô ngôn ngữ to |
 
 Hàm chính: `switchToLesson`, `setAppMode`, `syncModeButtonHighlights`, `lessonInMode`, `lessonShown`, `bookHidden`.
 
