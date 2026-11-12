@@ -113,6 +113,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-59 | `4b95902` | Mặt trước: câu gốc vẫn hiện mờ tại chỗ cũ, câu dịch hộp riêng ngay dưới (bỏ kiểu chỉ còn câu dịch của THEATER-57) |
 | THEATER-60 | `adf7c9a` | Dòng Again luôn quay lại cuối hàng, không bị chèn lên đầu khi bộ đếm đổi |
 | THEATER-61 | `a09ce83` | Chấm/xoá dùng đúng hiệu ứng chung (đóng dấu ✓/✕ trượt, chém đôi) chỉ trên thanh câu, video thật vẫn chạy; viền mờ khớp góc từng hộp; thanh câu mỗi lần mở về dưới |
+| THEATER-62 | `9fab495` | Cửa sổ hẹp trên máy tính giữ bố cục máy tính (video phủ, câu đè, chữ nhỏ lại); Watch giữ danh sách dưới video; nút ✕ không mất; kiểu điện thoại chỉ cho máy cảm ứng |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
