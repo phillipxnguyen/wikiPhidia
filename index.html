@@ -305,7 +305,7 @@ window.onYouTubeIframeAPIReady = function(){
   .streak-best{text-align:right;font-size:12px;color:var(--text-2);}
   .streak-best b{display:block;font-size:20px;color:var(--text);font-variant-numeric:tabular-nums;}
   @media (max-width:700px){.streak-card{grid-template-columns:auto 1fr auto;}.streak-week{grid-column:1 / -1;grid-row:2;}}
-  .streak-celebration{position:fixed;inset:0;z-index:30000;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb, var(--bg) 35%, transparent);cursor:pointer;animation:fadeIn .2s ease;}
+  .streak-celebration{position:fixed;inset:0;z-index:30000;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb, var(--bg) 35%, transparent);animation:fadeIn .2s ease;pointer-events:none;}
   .streak-pop{text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:26px 38px 22px;box-shadow:var(--shadow-md);animation:popIn .45s cubic-bezier(.34,1.56,.64,1);}
   .streak-pop-flame{font-size:64px;line-height:1;display:inline-block;transform-origin:50% 90%;animation:flameJump .9s ease-out .15s both, flameFlicker 2.4s ease-in-out 1.05s infinite;}
   .streak-pop-count{font-size:28px;font-weight:800;color:var(--due-color);margin-top:10px;letter-spacing:-.01em;}
@@ -2345,6 +2345,8 @@ window.onYouTubeIframeAPIReady = function(){
   .w-cap .w-capline{position:relative;}
   @media (min-width:821px), (hover:hover){.w-cap .w-capline:has(> .w-tr){gap:8px;padding:0;background:none;-webkit-backdrop-filter:none;backdrop-filter:none;}.w-cap .w-capline:has(> .w-tr) > :not(.w-tr){padding:8px 16px;border-radius:12px;background:rgba(0,0,0,.66);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);}.w-cap .w-capline > .w-tr{width:fit-content;max-width:100%;box-sizing:border-box;padding:2px 8px;border-radius:4px;background:rgba(8,8,8,.75);color:#ffffff;}}
   .watch-pop.cut-hold .w-cap{visibility:hidden;}
+  .w-cap[data-swipe="good"] :is(.w-text, .w-tr){color:#5fd38d;}
+  .w-cap[data-swipe="again"] :is(.w-text, .w-tr){color:#ff7b7b;}
   .w-stage.w-edge .w-cap .w-capline:not(:has(> .w-tr)), .w-stage.w-edge .w-cap .w-capline:has(> .w-tr) > *{background-image:linear-gradient(90deg, rgba(255,255,255,.24), transparent 48px, transparent calc(100% - 48px), rgba(255,255,255,.24));}
   @media (min-width:821px), (hover:hover){.watch-pop{padding-bottom:0;}.watch-pop .w-main{gap:0;}.watch-pop .w-ctl{height:72px;}}
   .w-capline{display:flex;flex-direction:column;align-items:center;gap:4px;max-width:900px;}
@@ -4088,6 +4090,64 @@ document.getElementById("watchPop").addEventListener("mouseleave", () => {
 function watchPointed() {
   const id = pickedRowId();
   return watch && watch.lines.find(r => r.id === id) || null;
+}
+
+let watchSwipe = null;
+
+document.getElementById("watchPop").addEventListener("touchstart", e => {
+  watchSwipe = null;
+  if (!watch || e.touches.length !== 1 || e.target.closest("button, select, input, textarea, [contenteditable=true], .w-topbar, .w-ctl, .w-listbox")) return;
+  const t = e.touches[0], cap = document.querySelector("#watchPop .w-cap");
+  if (!cap || !document.querySelector("#watchPop .w-capline:not([hidden])")) return;
+  watchSwipe = {
+    x: t.clientX,
+    y: t.clientY,
+    dx: 0,
+    axis: null,
+    cap: cap,
+    target: e.target
+  };
+  e.target.addEventListener("touchmove", watchSwipeMove, {
+    passive: false
+  });
+  e.target.addEventListener("touchend", watchSwipeEnd);
+  e.target.addEventListener("touchcancel", watchSwipeEnd);
+}, {
+  passive: true
+});
+
+function watchSwipeMove(e) {
+  const d = watchSwipe;
+  if (!d || e.touches.length !== 1) return;
+  const t = e.touches[0], dx = t.clientX - d.x, dy = t.clientY - d.y;
+  if (!d.axis) {
+    if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+    d.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+  }
+  if (d.axis !== "x") return;
+  if (e.cancelable) e.preventDefault();
+  d.dx = dx;
+  d.cap.style.transition = "none";
+  d.cap.style.transform = `translateX(${Math.round(dx)}px) rotate(${Math.round(dx / 4) / 10}deg)`;
+  d.cap.dataset.swipe = Math.abs(dx) < SWIPE_START ? "" : dx < 0 ? "again" : "good";
+}
+
+function watchSwipeEnd(e) {
+  const d = watchSwipe;
+  watchSwipe = null;
+  if (!d) return;
+  d.target.removeEventListener("touchmove", watchSwipeMove);
+  d.target.removeEventListener("touchend", watchSwipeEnd);
+  d.target.removeEventListener("touchcancel", watchSwipeEnd);
+  if (d.axis !== "x") return;
+  d.cap.style.transition = "transform .2s";
+  d.cap.style.transform = "";
+  delete d.cap.dataset.swipe;
+  setTimeout(() => d.cap.style.transition = "", 220);
+  if (!watch) return;
+  watch.capMoved = true;
+  setTimeout(() => watch && (watch.capMoved = false), 0);
+  if (e.type === "touchend" && Math.abs(d.dx) >= 80) watchGrade(d.dx < 0);
 }
 
 function watchPhone() {
@@ -16803,10 +16863,6 @@ function celebrateStreak() {
     }, 300);
   };
   celebrationTimer = setTimeout(close, 2600);
-  box.onclick = () => {
-    clearTimeout(celebrationTimer);
-    close();
-  };
 }
 
 function cardInMode(c, mode, lang) {
