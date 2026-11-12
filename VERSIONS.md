@@ -265,6 +265,7 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 | DICT-41 | `7b097cc` | Popup từ: mỗi nghĩa một dòng (không dấu phẩy), nghĩa gợi ý thêm thành dòng mới; rê chuột vào từ chỉ hiện nghĩa |
 | DICT-42 | `c339e9d` | Bấm từ / Shift tạo cụm chạy cả ở Today, task, danh sách nhiều bài (trước bị chặn), từ lưu vào bài gốc của câu |
 | DICT-43 | `adf7c9a` | Popup từ: Enter lưu, Shift+Enter xuống dòng, bỏ Shift để lưu, click ra ngoài lưu thay đổi; ô Notes riêng của từ |
+| DICT-44 | `4132aa4` | Nghĩa chỉ lặp lại chính từ (passport → passport) không hiện, tra lại theo chiều kia |
 
 Hàm chính: `showDictSite`, `hideDictOverlay`, `dictUrlFor`, `ownDictCardHtml`, `openWordFloat`, `sentenceWordAt`, `ownDictLookup`, `ownDictFetch`, `ownDictPrefetch`.
 
