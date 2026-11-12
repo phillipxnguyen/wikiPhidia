@@ -116,6 +116,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-62 | `9fab495` | Cửa sổ hẹp trên máy tính giữ bố cục máy tính (video phủ, câu đè, chữ nhỏ lại); Watch giữ danh sách dưới video; nút ✕ không mất; kiểu điện thoại chỉ cho máy cảm ứng |
 | THEATER-63 | `8ac06e3` | Vuốt trên điện thoại: thanh câu chạy theo ngón tay, phải = Good, trái = Again, câu ẩn thì Show trước; popup streak không còn nuốt thao tác chạm (mọi mode) |
 | THEATER-64 | `59a5528` | Ô sửa dòng video có Q/A như mọi ô (Q đổi màu, A là câu dịch hiện ở theater); vuốt chỉ chấm khi đã Show ở mọi mode |
+| THEATER-65 | `4346d3a` | Chấm xong dòng mới hiện mờ ngay trong lúc dòng cũ trượt đi, không chờ hiệu ứng |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
@@ -272,6 +273,7 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 | DICT-44 | `4132aa4` | Nghĩa chỉ lặp lại chính từ (passport → passport) không hiện, tra lại theo chiều kia |
 | DICT-45 | `59a5528` | Popup từ: bỏ mọi đường gạch, mọi phần thẳng một lề trái; Delete xoá từ đã có (⌘Z lấy lại); tooltip nghĩa giữa dưới từ, chữ lề trái, đệm trên dưới bằng nhau |
 | DICT-46 | `53dbe49` | Enter lưu ngay khi popup mở (không cần click vào popup), không chấm thẻ phía sau |
+| DICT-47 | `4346d3a` | Click ra ngoài popup/ô sửa chỉ đóng (không play/pause, không chấm, không mở thứ khác); từ vừa tạo/sửa tô màu ngay ở flashcard và theater |
 
 Hàm chính: `showDictSite`, `hideDictOverlay`, `dictUrlFor`, `ownDictCardHtml`, `openWordFloat`, `sentenceWordAt`, `ownDictLookup`, `ownDictFetch`, `ownDictPrefetch`.
 
@@ -398,6 +400,7 @@ Hàm chính: `swipe`, `ghostFor`, `angelFly`, `cutLayer`, `playCut`.
 | RING-11 | `bba0a99` | Vòng chạy trên nút sound của theater và nút 🔊 trong Dictionary; không vẽ vòng lên mặt thẻ đang ẩn |
 | RING-12 | `e44ef17` | Trả lại tia sét giật khi chờ tiếng (như trước RING-5), thêm cho nút sound theater, pill ▶ và 🔊 Dictionary |
 | RING-13 | `43e7be1` | Tia sét chỉ khi chờ tiếng lần đầu sau khi mở app; tiếng đã phát một lần thì các lần chờ sau không giật |
+| RING-14 | `4346d3a` | Mặt trước Podcast đọc bằng giọng máy: nút 🔊 hiện ⏸ đồng bộ với thanh chạy |
 
 Hàm chính: `paintRing`, `dropRing`, `setDash`.
 
