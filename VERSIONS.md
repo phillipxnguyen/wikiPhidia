@@ -334,6 +334,7 @@ Hàm chính: `dictLoad`, `dictSlot`, `dictFit`, `showDictSite`, `hideDictOverlay
 | DATA-20 | `673d6cc` | Delete giống nhau ở popup, ô sửa thẻ, ô sửa từ (khi không gõ trong box) |
 | DATA-21 | `de572ec` | Mỗi nghĩa một dòng trong mục của từ ở Notes (không dùng dấu phẩy để tách); dấu phẩy thuộc về nghĩa; tiến độ giữ nguyên |
 | DATA-22 | `330101e` | Ô sửa thẻ Lessons cùng kiểu thẻ: câu + bản dịch xanh, loa góc trên, Notes nền xám |
+| DATA-23 | `e8979d4` | Notes: Shift+Enter 1 lần trong mục từ = nghĩa tiếp (thẳng cột nghĩa đầu), 2 lần = mục mới |
 
 Hàm chính: `newRow` (bản dịch vào notes khi tạo), `foldAnswer` + `keepsAnswer` (dòng thêm dưới câu khi sửa thẻ hoặc khi dán thì vào notes), `wordLike`, `belongsInVocab`, `isTranslationCard` (cho dòng `từ: nghĩa`), `autoSortLibrary`.
 
@@ -464,6 +465,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-17 | `c0caa7e` | Lề đồng bộ popup và ô sửa: khung 16px quanh thẻ, Save cách 16px, Notes 8/12px, loa canh giữa dòng đầu |
 | LOOKUP-18 | `2e19088` | Một thiết kế duy nhất cho popup và mọi ô sửa (cỡ chữ, thứ tự, màu như popup); Notes xuống dưới cùng |
 | LOOKUP-19 | `0b06da0` | Ô sửa bỏ viền thẻ bên trong (khung là thẻ); In your words thành dấu ✓ tròn nhỏ; popup lề 16px cả trên điện thoại |
+| LOOKUP-20 | `e8979d4` | Nhãn từ loại (noun, adj, adv…) viết thường |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
