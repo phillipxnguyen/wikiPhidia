@@ -450,6 +450,8 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-list .vocab-editor{margin:4px 0;box-shadow:none;}
   .vocab-editor textarea{width:100%;font-size:16px;}
   #vocabEditTerm, #qaQ{border-left:4px solid var(--lesson-accent);}
+  #vocabEditSentence{padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);outline:none;}
+  #vocabEditSentence:focus{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft);}
   .q-wrap{position:relative;display:block;min-width:0;}
   .qa-row > .q-wrap{flex:1 1 auto;}
   .q-mirror{position:absolute;z-index:0;margin:0;overflow:hidden;border-style:solid;border-color:transparent;color:var(--text);pointer-events:none;}
@@ -1292,7 +1294,11 @@ window.onYouTubeIframeAPIReady = function(){
   @media (max-width:600px){.shell #cardTable.full-list .card-notes{padding-bottom:9px;}}
   #cardTable:not(.notebook) .card-notes :is(ul, ol){padding-left:16px;}
   .vocab-list-meaning:has(.card-notes){flex-direction:column;align-items:flex-start;justify-content:center;}
-  .vocab-list-meaning .card-notes{margin-top:4px;}
+  .vocab-list-meaning .card-notes{margin-top:8px;}
+  .vocab-list-row[data-key] > .vocab-list-meaning:has(.card-notes){padding-top:18px;padding-bottom:18px;}
+  .vocab-list-meaning .card-notes > *{margin:0;}
+  .vocab-list-meaning .card-notes > * + *{margin-top:8px;}
+  .vocab-list-meaning .card-notes > * + :is(ul, ol){margin-top:10px;}
   #cardTable.notebook .card-notes{padding:6px 4px 0;font-size:20px;line-height:28px;}
   .single-card-body.ielts-card{background:none;border:0;box-shadow:none;padding:0;}
   :root{--blend:linear-gradient(90deg, var(--mode-blue), var(--new-color));}
@@ -2729,12 +2735,12 @@ window.onYouTubeIframeAPIReady = function(){
   #fileStatus, #importInfo, #heatTitle, .cloud-or, .progress-badge, .loop-time, .streak-best, .streak-hint, thead th{line-height:18px;}
   .segmented button, .empty-state p, .heat-numbers, #mediaBarTitle, #mediaLoading, #cloudError, #cloudDialog p, #editQ, #editA, .rich-editor, .add-target, .muted-label, .toast, .session-complete-sub, .streak-label, .stats-empty, .stats-table td, .stats-table .clamp, .vocab-list-row > span{line-height:20px;}
   :is(.rich-editor, #editQ, #editA, #editNotes, .vocab-editor textarea, #vocabEditNotes, #qaNotes){font-size:22px;line-height:30px;}
-  :is(#cardTable.full-list, .vocab-list-meaning) .card-notes ul{list-style:none;padding-left:23px;}
+  :is(#cardTable.full-list, .vocab-list-meaning) .card-notes ul{list-style:none;padding-left:17px;}
   :is(#cardTable.full-list, .vocab-list-meaning) .card-notes ul > li{position:relative;}
   :is(#cardTable.full-list, .vocab-list-meaning) .card-notes ul > li::before{content:"";position:absolute;left:-17px;top:9px;width:7px;height:7px;border-radius:4px;background:currentColor;}
-  :is(#cardTable.full-list, .vocab-list-meaning) .card-notes > :not(ul):not(ol){padding-left:6px;}
+  :is(#cardTable.full-list, .vocab-list-meaning) .card-notes > :not(ul):not(ol){padding-left:0;}
   @media (max-width:600px){
-    :is(#cardTable.full-list, .vocab-list-meaning) .card-notes ul{padding-left:21px;}
+    :is(#cardTable.full-list, .vocab-list-meaning) .card-notes ul{padding-left:15px;}
     :is(#cardTable.full-list, .vocab-list-meaning) .card-notes ul > li::before{left:-15px;top:8px;width:6px;height:6px;border-radius:3px;}
   }
   #importText{line-height:20px;}
@@ -2742,6 +2748,13 @@ window.onYouTubeIframeAPIReady = function(){
   .rich-editor{min-height:calc(1lh + 18px);}
   :is(#editNotes, #vocabEditNotes, #qaNotes){min-height:calc(1lh + 18px);}
   #cardTable.full-list:not(.notebook) .cell{font-size:22px;line-height:30px;}
+  #cardTable.full-list:not(.notebook) .cell{margin-top:12px;margin-bottom:12px;}
+  #cardTable.full-list:not(.notebook) .cell + .cell{margin-top:-8px;}
+  #cardTable.full-list:not(.notebook) .card-notes{margin-top:-8px;padding-bottom:16px;}
+  #cardTable.full-list:not(.notebook) .card-notes > *{margin:0;}
+  #cardTable.full-list:not(.notebook) .card-notes > * + *{margin-top:8px;}
+  #cardTable.full-list:not(.notebook) .card-notes > * + :is(ul, ol){margin-top:10px;}
+  #cardTable.full-list:not(.notebook) .card-notes > .row-tr.row-tr.row-tr{padding-bottom:0;}
   #cardTable.full-list:not(.notebook) .card-notes, .vocab-list-meaning .card-notes{font-size:20px;line-height:28px;}
   @media (max-width:600px){
     :is(.rich-editor, #editQ, #editA, .vocab-editor textarea, #editNotes, #vocabEditNotes, #qaNotes), #cardTable.full-list:not(.notebook) .cell, .vocab-list-row[data-key] > *, #cardTable.notebook .cell[data-field="q"], .paper-question{font-size:20px;line-height:28px;}
@@ -20202,8 +20215,25 @@ function vocabEditValues() {
   };
 }
 
+function vocabSentenceCard(item) {
+  return !!item && !!item.card && item.card.uid !== EXTRA_UID && !!(item.card.q || "").trim();
+}
+
+function saveVocabSentence(item, el) {
+  if (!el || !vocabSentenceCard(item)) return;
+  const card = item.card;
+  const html = cleanPunctHtml(sanitizeHtml(stripVocabHighlights(editorHtml(el)), "br"));
+  const q = cleanPunct(plainTextOf(html, "\n"));
+  if (!q.trim() || q === card.q && html === (card.qHtml || textHtml(card.q))) return;
+  pushUndo("Edited sentence — " + item.term);
+  card.q = q;
+  card.qHtml = html;
+  if (card.id != null) transliterationCache.delete(cacheKey(card.id, "q"));
+  scheduleAutoSave();
+}
+
 function vocabEditorHtml(item) {
-  return '<div class="vocab-editor">' + `<textarea id="vocabEditTerm" class="autofit" rows="1" autocomplete="off" aria-label="Word" placeholder="Word, then its meaning two lines below">${escapeHtml(item.meaning ? Q_MARK + item.term + "\n" + item.meaning : item.term)}</textarea>` + `<div class="notes-clip"><div id="vocabEditNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes" aria-label="Notes">${wordNotesOf(item)}</div></div>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
+  return '<div class="vocab-editor">' + `<textarea id="vocabEditTerm" class="autofit" rows="1" autocomplete="off" aria-label="Word" placeholder="Word, then its meaning two lines below">${escapeHtml(item.meaning ? Q_MARK + item.term + "\n" + item.meaning : item.term)}</textarea>` + (vocabSentenceCard(item) ? `<div id="vocabEditSentence" class="rich-editor" contenteditable="true" data-placeholder="Sentence" aria-label="The sentence this word comes from" title="The sentence of this word's card: changing it changes the card everywhere">${item.card.qHtml || textHtml(item.card.q)}</div>` : "") + `<div class="notes-clip"><div id="vocabEditNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes" aria-label="Notes">${wordNotesOf(item)}</div></div>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
 }
 
 const VOCAB_FLIP_MS = 450;
@@ -20235,7 +20265,7 @@ function renderVocab() {
   vocabShownRowId = null;
   if (vocabEditingKey && vocabEditingKey !== NEW_WORD_KEY && !items.some(i => i.key === vocabEditingKey)) vocabEditingKey = null;
   const canAdd = currentLessonId !== VOCAB_ALL_ID;
-  const studyOnly = !canAdd;
+  const studyOnly = !canAdd && !(rows.length && rows[0].wordWorld);
   if (studyOnly) vocabView = "card";
   document.getElementById("vocabToolbar").classList.toggle("study-only", studyOnly);
   document.getElementById("vocabAddWord").hidden = !canAdd || !items.length || vocabView !== "list";
@@ -20288,7 +20318,7 @@ function renderVocab() {
   vocabStudying = studying.length > 0;
   document.getElementById("viewVocab").classList.toggle("focus-study", vocabStudying && vocabView !== "list");
   const anyDue = !!currentVocabItem() || items.some(i => vocabStateOf(i).due <= now);
-  document.getElementById("vocabFlag").hidden = currentLessonId !== VOCAB_ALL_ID && vocabView === "list";
+  document.getElementById("vocabFlag").hidden = vocabView === "list";
   document.getElementById("vocabViewToggle").hidden = studyOnly || vocabView !== "list" || !anyDue;
   if (vocabView === "list") {
     badges.innerHTML = anyDue ? badgesHtml(c.fresh, c.due, c.done, { new: c.fresh > 0, due: c.due > 0, done: c.done > 0 }) : "";
@@ -20421,6 +20451,7 @@ function wireVocabEditor(items) {
     const key = vocabEditingKey;
     vocabEditingKey = null;
     const now = lessonVocabItems(vocabSource()).find(i => i.key === key) || item;
+    saveVocabSentence(now, document.getElementById("vocabEditSentence"));
     const v = vocabEditValues();
     if (!saveVocabEditor(now, v.term, v.meaning, editorHtml(notes), true)) {
       vocabEditingKey = key;
@@ -20429,7 +20460,7 @@ function wireVocabEditor(items) {
     renderVocab();
   };
   document.getElementById("vocabEditSave").onclick = save;
-  [ term, notes ].forEach(input => {
+  [ term, document.getElementById("vocabEditSentence"), notes ].filter(Boolean).forEach(input => {
     input.addEventListener("keydown", e => {
       e.stopPropagation();
       if (e.isComposing || e.keyCode === 229) return;
@@ -20529,6 +20560,7 @@ function commitVocabEdit() {
   const item = lessonVocabItems(vocabSource()).find(i => i.key === vocabEditingKey);
   const isNew = vocabEditingKey === NEW_WORD_KEY;
   vocabEditingKey = null;
+  if (item) saveVocabSentence(item, document.getElementById("vocabEditSentence"));
   const v = vocabEditValues();
   if (term && (isNew || item)) saveVocabEditor(isNew ? null : item, v.term, v.meaning, notes ? editorHtml(notes) : "", false);
   return true;
@@ -21230,7 +21262,7 @@ function gradeVocabItems(items, isAgain, label) {
 }
 
 function setVocabView(view) {
-  if (view === "group" || currentLessonId === VOCAB_ALL_ID) view = "card";
+  if (view === "group") view = "card";
   if (vocabView === view) return;
   commitVocabEdit();
   stopVocabSound();
@@ -28925,8 +28957,8 @@ function openWordWorld(world, keys, title, since) {
   });
   noteVirtualMembers();
   vocabVideoId = null;
-  vocabView = "card";
   showView("study");
+  setVocabView("card");
   return true;
 }
 
@@ -29066,7 +29098,7 @@ function renderWords() {
 }
 
 document.getElementById("lessonList").addEventListener("keydown", e => {
-  if ((e.key === "Enter" || e.key === " ") && e.target.matches("[data-word-pad], [data-today-pad]")) {
+  if ((e.key === "Enter" || e.key === " ") && e.target.matches("[data-word-pad]")) {
     e.preventDefault();
     e.target.click();
   }
