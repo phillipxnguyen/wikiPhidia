@@ -477,13 +477,24 @@ window.onYouTubeIframeAPIReady = function(){
   #editPopup .vocab-editor:has(> .ed-card){gap:0;}
   .ed-card #vocabEditSentence{min-height:0;padding:0;border:0;border-radius:0;background:none;box-shadow:none;}
   .ed-card .q-mirror{color:var(--a-text);}
+  .ed-card .q-mirror .q-line{color:var(--text);}
+  .ed-card .q-mirror mark.vocab-own, .ed-card .q-mirror mark.vocab-own .q-line{color:var(--vocab-own-ink);}
+  .ed-card .q-mirror mark.vocab-hit, .ed-card .q-mirror mark.vocab-hit .q-line{color:var(--vocab-ink);}
+  .ed-card #editQ{color:var(--text);}
+  .ed-card :is(#editQ, .q-mirror){font-size:20px;line-height:28px;font-weight:600;}
+  .ed-card :is(#editQ, .q-mirror) > div:not(:first-child){font-size:18px;line-height:26px;font-weight:700;}
   .ed-card:focus-within{border-color:color-mix(in srgb, var(--accent) 45%, var(--border));}
-  .ed-card > .ed-say{position:absolute;top:15px;right:16px;z-index:3;}
+  .ed-card > .ed-say{position:absolute;top:14px;right:16px;z-index:3;}
   .ed-card .edit-qa{display:block;margin:0;}
   .ed-card :is(#editQ, #vocabEditMain, #vocabEditTerm){min-height:0;margin:0;padding:0 44px 0 0;border:0;border-radius:0;background:none;box-shadow:none;outline:none;}
   .ed-card :is(#editQ, #vocabEditMain, #vocabEditTerm):focus{border:0;box-shadow:none;}
   .ed-card #vocabEditMain .vem-t{font-size:28px;line-height:36px;font-weight:700;}
-  .ed-card #vocabEditMain .vem-a{font-weight:700;}
+  .ed-card #vocabEditMain .vem-t.long{font-size:20px;line-height:28px;font-weight:600;}
+  .ed-card #vocabEditMain .vem-a{font-size:18px;line-height:26px;font-weight:700;}
+  .ed-card #vocabEditSentence{font-size:15px;line-height:22px;}
+  .ed-card #vocabEditSentence mark.vem-w{padding:0 2px;font-weight:700;}
+  .ed-card :is(#editNotes, #vocabEditNotes){font-size:15px;line-height:22px;}
+  @media (max-width:600px){.ed-card #vocabEditMain .vem-t:not(.long){font-size:24px;line-height:32px;}}
   .ed-card .notes-clip::after{display:none;}
   .ed-card :is(#editNotes, #vocabEditNotes){min-height:0;padding:8px 12px;border:0;border-radius:8px;background:color-mix(in srgb, var(--text) 4%, transparent);box-shadow:none;}
   .ed-card :is(#editNotes, #vocabEditNotes):focus{box-shadow:inset 0 0 0 1px var(--accent);}
@@ -10666,7 +10677,7 @@ function paintOwnDictFloat() {
   const value = typed != null ? typed : odLong(w) ? raw.replace(/\s+/g, " ").trim() : meaningLines(raw).join("\n");
   const field = `<textarea class="od-mean-in" rows="1" autocomplete="off" spellcheck="false" aria-label="Meaning" title="One meaning per line; change it if it is not right" placeholder="${pop.loading && !value ? "Translating…" : "Type the meaning"}">${escapeHtml(value)}</textarea>`, main = card.querySelector(".od-main");
   if (main) main.outerHTML = field; else card.querySelector(".od-body").insertAdjacentHTML("afterbegin", field);
-  if (!have || item) card.querySelector(".od-mean-in").insertAdjacentHTML("afterend", `<div class="od-notes" contenteditable="true" data-placeholder="Notes" aria-label="Notes for this word">${typedNotes != null ? typedNotes : oldNotes}</div>`);
+  if (!have || item) card.insertAdjacentHTML("beforeend", `<div class="od-notes" contenteditable="true" data-placeholder="Notes" aria-label="Notes for this word">${typedNotes != null ? typedNotes : oldNotes}</div>`);
   const input = card.querySelector(".od-mean-in"), save = card.querySelector(".od-save"), notes = card.querySelector(".od-notes"), title = card.querySelector(".od-word b");
   title.contentEditable = "true";
   title.spellcheck = false;
@@ -20434,7 +20445,7 @@ function vocabEditSpan(item) {
 function vocabEditLineHtml(item, q, span) {
   const lines = t => escapeHtml(t).replace(/\n/g, "<br>");
   const box = document.createElement("div");
-  box.innerHTML = highlightVocabInHtml(lines(q), null, [ item.term ]);
+  box.innerHTML = highlightVocabInHtml(lines(q), item.card.id, [ item.term ]);
   const own = [ ...box.querySelectorAll("mark") ].find(m => normalizeVocabText(m.textContent) === item.tkey);
   if (own) {
     own.classList.add("vem-w");
@@ -20455,10 +20466,10 @@ function vocabEditChipsHtml(item) {
 function vocabEditorHtml(item) {
   const span = vocabEditSpan(item), q = span ? item.card.q : "";
   const area = `<textarea id="vocabEditTerm" class="autofit" rows="1" autocomplete="off" aria-label="Word" placeholder="Word, then its meaning two lines below"${span ? " hidden" : ""}>${escapeHtml(item.meaning ? Q_MARK + item.term + "\n" + item.meaning : item.term)}</textarea>`;
-  const main = span ? `<div id="vocabEditMain" class="rich-editor" contenteditable="true" aria-label="The word, then its meanings, one per line"><div class="vem-t">${escapeHtml(item.term)}</div><div class="vem-a">${(odLong(item.term) ? [ item.meaning ] : meaningLines(item.meaning)).filter(Boolean).map(escapeHtml).join("<br>") || "<br>"}</div></div>` : "";
+  const main = span ? `<div id="vocabEditMain" class="rich-editor" contenteditable="true" aria-label="The word, then its meanings, one per line"><div class="vem-t${odLong(item.term) ? " long" : ""}">${escapeHtml(item.term)}</div><div class="vem-a">${(odLong(item.term) ? [ item.meaning ] : meaningLines(item.meaning)).filter(Boolean).map(escapeHtml).join("<br>") || "<br>"}</div></div>` : "";
   const sentence = span ? `<div id="vocabEditSentence" class="rich-editor vem-q" contenteditable="true" aria-label="The sentence this word comes from" title="The card's own sentence: changing it changes the card everywhere">${vocabEditLineHtml(item, q, span)}</div>` : "";
   const say = `<button type="button" class="od-say ed-say" data-say="${escapeAttr(item.term)}" aria-label="Listen" title="Listen">${OD_SPEAK}</button>`;
-  return '<div class="vocab-editor">' + `<div class="od-card ed-card">${say}${area}${main}<div class="notes-clip"><div id="vocabEditNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes" aria-label="Notes">${wordNotesOf(item)}</div></div><div class="ed-chips">${vocabEditChipsHtml(item)}</div>${sentence}</div>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
+  return '<div class="vocab-editor">' + `<div class="od-card ed-card">${say}${area}${main}<div class="ed-chips">${vocabEditChipsHtml(item)}</div>${sentence}<div class="notes-clip"><div id="vocabEditNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes" aria-label="Notes">${wordNotesOf(item)}</div></div></div>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
 }
 
 function syncVocabEditMain(item) {

@@ -24,7 +24,7 @@ The shared rules of the whole app, one line each. They hold in every mode (☰ F
 2. A word matches only the same text (capitals, spaces and punctuation ignored); other forms do not match.
 3. Your words are coloured in every sentence, in every mode and editor; pointing at one shows its meaning.
 4. A click on any word opens the one word popup; Shift on a selection opens it for a phrase; E opens the word editor.
-5. The popup and the editors share one card: the word (or a card's sentence) with the sound button, its meanings (or translation) in green, Notes, the dictionary's chips, and the sentence with the word marked.
+5. The popup and the editors share one card, in this order: the word (or a card's sentence) with the sound button, its meanings (or translation) in green, the dictionary's chips, the sentence with the word marked, and the Notes at the bottom.
 6. Each meaning has its own line: in a card's Notes the first sits after `word:` and each further one on the line right under it, inside the same item (not one step in, which is for the word's notes); everywhere else (the word popup, the word editor, the flashcard, the word list) they show one per line, and a new line (Shift + Return) adds a meaning. A comma is just a comma, so one meaning can hold commas (`đi, về nhà`). A long phrase keeps one sentence.
 7. While a meaning loads it says Translating…; if nothing comes it asks you to type it.
 8. A look-up never stays on screen once what it points at is gone.
@@ -50,7 +50,7 @@ The shared rules of the whole app, one line each. They hold in every mode (☰ F
 
 ### 5. Popups and editors
 1. Every editor and popup opens where you click (centred near the top on a phone) and scrolls to its top.
-2. Every editor is one card in the word popup's style, never separate boxes: the main text (a card's sentence with its translation in green under it; a word in large bold type with its meanings in green), the Notes on a soft grey ground, and for a word the dictionary's chips (a click adds that meaning) and the card's sentence; its only button is the sound button at its top right, and Save sits under the card on the right.
+2. There is one design for the word popup and every editor, the popup's card, with the same type and spacing: the main line (a word large and bold, 28 px; a sentence or long phrase 20 px), its meanings or translation in green (18 px, one per line), the dictionary's chips, the sentence holding the word (15 px, the word marked in yellow), and the Notes last, on a soft grey ground (15 px). An editor's only button on the card is the sound button at its top right; Save sits under the card on the right.
 3. One set of spacings for the word popup and every editor: the card's text 16 px inside its edge (plus its 1 px outline) on all four sides, 8 px between its parts, the Notes 8 px top and bottom and 12 px left and right inside their grey ground, the sound button centred on the first line at the top right; an editor's frame keeps 16 px all round the card, and Save sits 16 px under it.
 4. The card editor's dictionary is the outside page, loaded ahead of time (see DICTLOAD in `VERSIONS.md`).
 5. Add and Save are always solid.
