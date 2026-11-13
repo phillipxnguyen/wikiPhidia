@@ -329,6 +329,7 @@ Hàm chính: `dictLoad`, `dictSlot`, `dictFit`, `showDictSite`, `hideDictOverlay
 | DATA-18 | `59a5528` | Thẻ có video cũng dùng ô Q/A chung (trước chỉ có câu) |
 | DATA-19 | `0091022` | Ghi chú của từ là các dòng con dưới dòng `từ: nghĩa` trong Notes thẻ (một loại notes duy nhất); notes riêng cũ chuyển vào khi lưu |
 | DATA-20 | `673d6cc` | Delete giống nhau ở popup, ô sửa thẻ, ô sửa từ (khi không gõ trong box) |
+| DATA-21 | `de572ec` | Mỗi nghĩa một dòng trong mục của từ ở Notes (không dùng dấu phẩy để tách); dấu phẩy thuộc về nghĩa; tiến độ giữ nguyên |
 
 Hàm chính: `newRow` (bản dịch vào notes khi tạo), `foldAnswer` + `keepsAnswer` (dòng thêm dưới câu khi sửa thẻ hoặc khi dán thì vào notes), `wordLike`, `belongsInVocab`, `isTranslationCard` (cho dòng `từ: nghĩa`), `autoSortLibrary`.
 
@@ -455,6 +456,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-13 | `0091022` | Rule chung: từ đã có = mọi bài cùng ngôn ngữ (tô màu, popup); khác ngôn ngữ không tính |
 | LOOKUP-14 | `673d6cc` | Ô sửa từ tô màu mọi từ của bạn trong câu, rê chuột hiện nghĩa, click mở popup |
 | LOOKUP-15 | `0ce61a7` | Chữ phụ trong popup từ (Add, Save, In your words, NOUN, Notes) dùng font pixel; lọc ngôn ngữ chỉ giữa Trung/Nhật/Hàn |
+| LOOKUP-16 | `de572ec` | Popup, ô sửa từ, flashcard, list từ đều hiện mỗi nghĩa một dòng |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
