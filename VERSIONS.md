@@ -197,6 +197,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-66 | `d18b8de` | Ô sửa từ: nghĩa cách từ như một dòng thường (6px), không dính sát; câu cách 14px |
 | FLASH-67 | `396ae7f` | Box chính ô sửa từ dùng đúng thông số box Notes: chữ 22/30, lề 9/14/9/16, các dòng nối tiếp không khoảng thêm |
 | FLASH-68 | `d89f669` | Ô sửa từ: xuống dòng ở nghĩa = thêm nghĩa (lưu bằng dấu phẩy, hiện mỗi nghĩa một dòng) |
+| FLASH-69 | `330101e` | Ô sửa từ = thẻ popup: từ to + loa, nghĩa xanh, Notes nền xám, chip từ điển (bấm thêm nghĩa), câu gốc tô vàng |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
@@ -330,6 +331,7 @@ Hàm chính: `dictLoad`, `dictSlot`, `dictFit`, `showDictSite`, `hideDictOverlay
 | DATA-19 | `0091022` | Ghi chú của từ là các dòng con dưới dòng `từ: nghĩa` trong Notes thẻ (một loại notes duy nhất); notes riêng cũ chuyển vào khi lưu |
 | DATA-20 | `673d6cc` | Delete giống nhau ở popup, ô sửa thẻ, ô sửa từ (khi không gõ trong box) |
 | DATA-21 | `de572ec` | Mỗi nghĩa một dòng trong mục của từ ở Notes (không dùng dấu phẩy để tách); dấu phẩy thuộc về nghĩa; tiến độ giữ nguyên |
+| DATA-22 | `330101e` | Ô sửa thẻ Lessons cùng kiểu thẻ: câu + bản dịch xanh, loa góc trên, Notes nền xám |
 
 Hàm chính: `newRow` (bản dịch vào notes khi tạo), `foldAnswer` + `keepsAnswer` (dòng thêm dưới câu khi sửa thẻ hoặc khi dán thì vào notes), `wordLike`, `belongsInVocab`, `isTranslationCard` (cho dòng `từ: nghĩa`), `autoSortLibrary`.
 
