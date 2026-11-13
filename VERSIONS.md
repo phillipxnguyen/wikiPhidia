@@ -186,6 +186,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-55 | `4182897` | Trang Vocabulary lấy lại toàn bộ giao diện Tests cho học từ: lộ trình 7 bước, banner, tự tạo buổi học, Waiting for you, Results theo ngày, By lesson, Words to work on |
 | FLASH-56 | `2b9ee73` | Buổi học chọn sẵn xong không chạy lại từ đầu; buổi có từ đã bị xoá tự rời Waiting for you |
 | FLASH-57 | `263aa9b` | Ô sửa từ có câu gốc (sửa là sửa thẻ ở mọi nơi); ✕ khi học một ngôn ngữ ra list từ của ngôn ngữ đó; list từ đều lề |
+| FLASH-58 | `7d308b7` | Ô sửa từ về lại 2 box: box chính là câu gốc có từ tô màu + nghĩa dòng dưới, rồi Notes |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
