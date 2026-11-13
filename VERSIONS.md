@@ -46,6 +46,7 @@ Hàm chính: `ieltsPaperHtml`, `ieltsFrontHtml`, `sentenceEx`, `sentenceKeyWord`
 | FULL-4 | `128c757` | Bản dịch thẳng lề câu, cách đều 8px trên dưới |
 | FULL-5 | `0ab30de` | Thanh của list bỏ nút phát YouTube và tốc độ, chỉ còn đếm và 🌐 |
 | FULL-6 | `de95b47` | Khoảng trên/dưới mỗi dòng bằng nhau (12px, điện thoại 10px) |
+| FULL-7 | `263aa9b` | Khoảng cách đều: trên/dưới mỗi dòng như nhau, câu → dịch → notes → list từ cách đều, thẳng lề trái với câu |
 
 Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `selectRow`, `clearRowSelection`, `updateSelBar`.
 
@@ -184,6 +185,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-54 | `91183ba` | Vocabulary gom theo ngôn ngữ: trang chủ ô ngôn ngữ + banner (lấy giao diện Tests), bấm một ngôn ngữ học mọi từ của nó từ mọi bài |
 | FLASH-55 | `4182897` | Trang Vocabulary lấy lại toàn bộ giao diện Tests cho học từ: lộ trình 7 bước, banner, tự tạo buổi học, Waiting for you, Results theo ngày, By lesson, Words to work on |
 | FLASH-56 | `2b9ee73` | Buổi học chọn sẵn xong không chạy lại từ đầu; buổi có từ đã bị xoá tự rời Waiting for you |
+| FLASH-57 | `263aa9b` | Ô sửa từ có câu gốc (sửa là sửa thẻ ở mọi nơi); ✕ khi học một ngôn ngữ ra list từ của ngôn ngữ đó; list từ đều lề |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
