@@ -1651,6 +1651,11 @@ window.onYouTubeIframeAPIReady = function(){
   .od-body{display:flex;flex-direction:column;gap:8px;}
   .od-main{align-self:flex-start;padding:0;border:0;background:none;color:var(--od-mean);font:inherit;font-size:18px;line-height:26px;font-weight:700;text-align:left;cursor:pointer;}
   .od-group{display:flex;align-items:baseline;gap:8px;}
+  .od-defs .od-terms{flex-direction:column;align-items:flex-start;}
+  .od-term.od-def{border-radius:10px;text-align:left;}
+  .od-lv{flex:none;padding:2px 8px;border-radius:6px;background:color-mix(in srgb, var(--a-label) 14%, transparent);color:var(--a-label);font-family:"Doto", system-ui, sans-serif;font-size:14px;line-height:20px;font-weight:800;white-space:nowrap;cursor:default;}
+  .ed-card > .ed-lv{position:absolute;top:6px;right:40px;z-index:3;}
+  .ed-card #vocabEditMain .vem-t{padding-right:var(--lv-w, 0px);}
   .od-pos{flex:none;min-width:44px;padding:2px 6px;border-radius:6px;background:color-mix(in srgb, var(--text) 7%, transparent);color:var(--od-soft);font-size:18px;line-height:26px;font-weight:700;text-transform:lowercase;text-align:center;}
   .od-terms{display:flex;flex-wrap:wrap;gap:6px;min-width:0;}
   .od-term{padding:2px 12px;border:1px solid var(--od-line);border-radius:16px;background:var(--od-bg);color:var(--text);font:inherit;font-size:18px;line-height:26px;cursor:pointer;transition:border-color .15s, color .15s;}
@@ -6576,6 +6581,8 @@ function startLoop(row) {
 
 let speechTrack = null;
 
+let wordAudio = null;
+
 function trackSpeech(utter) {
   speechTrack = null;
   const track = {
@@ -6605,6 +6612,11 @@ function trackSpeech(utter) {
 
 function speechProgress() {
   const track = speechTrack;
+  if (track && track.audio) {
+    const a = track.audio;
+    if (a !== wordAudio || a.paused || a.ended) return null;
+    return a.duration > 0 ? Math.max(0, Math.min(.99, a.currentTime / a.duration)) : 0;
+  }
   if (!track || !track.start || track.done || !speechSynthesis.speaking) return null;
   const now = performance.now(), spent = now - track.start;
   if (track.at > 0 && track.atT > track.start) {
@@ -10683,23 +10695,65 @@ async function ownDictLookup(w, to) {
   };
 }
 
-function ownDictFetch(lang, w) {
-  const key = lang + "|" + normalizeVocabText(w), have = ownDictEntry(lang, w);
-  if (have && have.groups) return Promise.resolve(have);
-  if (ownDictPending.has(key)) return ownDictPending.get(key);
+async function enDictLookup(w) {
+  try {
+    const res = await fetch("https://api.dictionaryapi.dev/api/v2/entries/en/" + encodeURIComponent(w.toLowerCase()));
+    if (res.status === 404) return {
+      defs: []
+    };
+    if (!res.ok) return null;
+    const data = await res.json(), byPos = new Map;
+    let audio = "";
+    (Array.isArray(data) ? data : []).forEach(en => {
+      (en.phonetics || []).forEach(ph => {
+        const a = (ph.audio || "").trim();
+        if (a && (!audio || /-us\.mp3$/.test(a) && !/-us\.mp3$/.test(audio))) audio = a;
+      });
+      (en.meanings || []).forEach(m => {
+        const pos = OD_POS[(m.partOfSpeech || "").toLowerCase()] || (m.partOfSpeech || "").toLowerCase();
+        const list = byPos.get(pos) || [];
+        (m.definitions || []).forEach(d => {
+          const t = (d.definition || "").replace(/\s+/g, " ").trim();
+          if (t && t.length <= 160 && list.length < 2 && !list.includes(t)) list.push(t);
+        });
+        if (list.length) byPos.set(pos, list);
+      });
+    });
+    return {
+      defs: [ ...byPos ].slice(0, 3).map(([pos, d]) => ({
+        pos: pos,
+        d: d
+      })),
+      audio: audio
+    };
+  } catch (e) {
+    return null;
+  }
+}
+
+function ownDictFetch(lang, w, full) {
+  const key = lang + "|" + normalizeVocabText(w), have = ownDictEntry(lang, w), wantDefs = !!full && lang === "en" && !odLong(w) && !/\s/.test(w.trim());
+  if (have && have.groups && (!wantDefs || have.defs)) return Promise.resolve(have);
+  const pkey = key + (wantDefs ? "+" : "");
+  if (ownDictPending.has(pkey)) return ownDictPending.get(pkey);
   const to = lang === "vi" ? "en" : "vi";
-  const job = ownDictLookup(w, to).then(entry => ownDictEcho(entry, w) ? ownDictLookup(w, to === "vi" ? "en" : "vi") : entry).then(entry => {
+  const base = have && have.groups ? Promise.resolve(have) : ownDictLookup(w, to).then(entry => ownDictEcho(entry, w) ? ownDictLookup(w, to === "vi" ? "en" : "vi") : entry);
+  const job = Promise.all([ base, wantDefs ? enDictLookup(w) : null ]).then(([entry, extra]) => {
     if (ownDictEcho(entry, w)) entry = {
       m: "",
       groups: []
     };
+    if (extra) {
+      entry.defs = extra.defs;
+      if (extra.audio) entry.audio = extra.audio;
+    }
     if (entry.m) {
       ownDictRead()[key] = entry;
       ownDictSave();
     }
     return entry;
-  }).finally(() => ownDictPending.delete(key));
-  ownDictPending.set(key, job);
+  }).finally(() => ownDictPending.delete(pkey));
+  ownDictPending.set(pkey, job);
   return job;
 }
 
@@ -10741,13 +10795,93 @@ function odLong(w) {
   return (w || "").trim().length > 20 || /[.!?,;:。！？，；]/.test(w || "");
 }
 
+function odDefsHtml(e) {
+  return (e && e.defs || []).map(g => `<div class="od-group od-defs">${g.pos ? `<span class="od-pos">${escapeHtml(g.pos)}</span>` : ""}<div class="od-terms">${g.d.map(t => `<button type="button" class="od-term od-def" data-m="${escapeAttr(t)}" title="Add this meaning to the meaning line">${escapeHtml(t)}</button>`).join("")}</div></div>`).join("");
+}
+
+let wordLevels = null, wordLevelsJob = null, irregularBase = null;
+
+function loadWordLevels() {
+  if (!wordLevelsJob) wordLevelsJob = fetch("levels.json").then(r => r.ok ? r.json() : Promise.reject()).then(d => {
+    const all = {};
+    Object.entries(d).forEach(([lang, levels]) => {
+      const map = new Map;
+      Object.entries(levels).forEach(([l, words]) => words.split("|").forEach(x => map.has(x) || map.set(x, l)));
+      all[lang] = map;
+    });
+    wordLevels = all;
+    return all;
+  }).catch(() => {
+    wordLevelsJob = null;
+    return null;
+  });
+  return wordLevelsJob;
+}
+
+function enBaseForms(k) {
+  if (!irregularBase) {
+    irregularBase = new Map;
+    Object.entries(IRREGULAR_FORMS).forEach(([b, f]) => f.split(" ").forEach(x => x && !irregularBase.has(x) && irregularBase.set(x, b)));
+  }
+  const out = [];
+  if (irregularBase.has(k)) out.push(irregularBase.get(k));
+  if (/[^aeiou]ie[sd]$/.test(k)) out.push(k.slice(0, -3) + "y");
+  if (/es$/.test(k)) out.push(k.slice(0, -2));
+  if (/s$/.test(k)) out.push(k.slice(0, -1));
+  if (/ed$/.test(k)) out.push(k.slice(0, -2), k.slice(0, -1));
+  if (/ing$/.test(k)) out.push(k.slice(0, -3), k.slice(0, -3) + "e");
+  if (/([^aeiou])\1(ed|ing)$/.test(k)) out.push(k.replace(/([^aeiou])\1(ed|ing)$/, "$1"));
+  return out;
+}
+
+function wordLevel(lang, w) {
+  w = (w || "").trim();
+  lang = (lang || "").split("-")[0];
+  if (!w || odLong(w)) return null;
+  if (!wordLevels) {
+    loadWordLevels();
+    return null;
+  }
+  const map = wordLevels[lang];
+  if (!map) return null;
+  let l = map.get(w);
+  if (!l && lang === "en") {
+    const k = w.toLowerCase();
+    l = map.get(k) || enBaseForms(k).map(x => map.get(x)).find(Boolean);
+  }
+  if (!l) return null;
+  if (lang === "zh") return {
+    t: "HSK " + (l === "7" ? "7–9" : l),
+    tip: "HSK 3.0, level " + (l === "7" ? "7–9" : l)
+  };
+  if (lang === "ja") return {
+    t: "N" + l,
+    tip: "JLPT N" + l
+  };
+  if (lang === "ko") return {
+    t: "TOPIK " + (l === "1" ? "I" : "II"),
+    tip: l === "1" ? "TOPIK I (beginner)" : "TOPIK II (intermediate and up)"
+  };
+  return {
+    t: l,
+    tip: "CEFR " + l
+  };
+}
+
+setTimeout(loadWordLevels, 3e3);
+
+function levelHtml(lang, w, cls) {
+  const lv = wordLevel(lang, w);
+  return lv ? `<span class="od-lv${cls ? " " + cls : ""}" title="${escapeAttr(lv.tip)}">${escapeHtml(lv.t)}</span>` : "";
+}
+
 function ownDictCardHtml(lang, w, ctx) {
   const e = ownDictEntry(lang, w), py = ownDictReadingHtml(lang, w);
   const groups = e ? e.groups || (e.alts && e.alts.length ? [ {
     pos: "",
     terms: e.alts
   } ] : []) : [];
-  const body = !e ? "" : `<button type="button" class="od-main" data-m="${escapeAttr(e.m)}" title="Add with this meaning">${escapeHtml(e.m)}</button>` + groups.map(g => `<div class="od-group">${g.pos ? `<span class="od-pos">${escapeHtml(g.pos)}</span>` : ""}<div class="od-terms">${g.terms.map(t => `<button type="button" class="od-term" data-m="${escapeAttr(t)}" title="Add this meaning to the meaning line">${escapeHtml(t)}</button>`).join("")}</div></div>`).join("");
+  const body = !e ? "" : `<button type="button" class="od-main" data-m="${escapeAttr(e.m)}" title="Add with this meaning">${escapeHtml(e.m)}</button>` + groups.map(g => `<div class="od-group">${g.pos ? `<span class="od-pos">${escapeHtml(g.pos)}</span>` : ""}<div class="od-terms">${g.terms.map(t => `<button type="button" class="od-term" data-m="${escapeAttr(t)}" title="Add this meaning to the meaning line">${escapeHtml(t)}</button>`).join("")}</div></div>`).join("") + odDefsHtml(e);
   const act = '<span class="od-acts"></span>';
   const examples = appSentencesFor(w, ctx && ctx.row, 2).map(t => ({
     t: t
@@ -10757,7 +10891,7 @@ function ownDictCardHtml(lang, w, ctx) {
     return `<p>${sp ? escapeHtml(x.t.slice(0, sp[0])) + "<mark>" + escapeHtml(x.t.slice(sp[0], sp[1])) + "</mark>" + escapeHtml(x.t.slice(sp[1])) : escapeHtml(x.t)}</p>`;
   }).join("")}</div>` : "";
   const say = `<button type="button" class="od-say" data-say="${escapeAttr(w)}" aria-label="Listen" title="Listen">${OD_SPEAK}</button>`;
-  const top = odLong(w) ? `${act}<div class="od-word">${say}<b>${escapeHtml(w)}</b></div>` : `<div class="od-word"><b>${escapeHtml(w)}</b>${say}</div>${act}`;
+  const top = odLong(w) ? `${act}<div class="od-word">${say}<b>${escapeHtml(w)}</b></div>` : `<div class="od-word"><b>${escapeHtml(w)}</b>${say}${levelHtml(lang, w)}</div>${act}`;
   return `<article class="od-card${odLong(w) ? " od-long" : ""}" data-w="${escapeAttr(w)}"><header class="od-top">${top}</header>${py ? `<div class="od-py">${py}</div>` : ""}<div class="od-body">${body}</div>${exHtml}</article>`;
 }
 
@@ -10895,10 +11029,11 @@ function openOwnDictFloat(el, mode, word, ctx) {
   const e = ownDictEntry(shown.lang, w);
   pop.loading = !e;
   paintOwnDictFloat();
-  if (!e || !e.groups) ownDictFetch(shown.lang, w).catch(() => null).then(() => {
+  if (!e || !e.groups || shown.lang === "en" && !e.defs) ownDictFetch(shown.lang, w, true).catch(() => null).then(() => {
     pop.loading = false;
     if (ownDictFloat === pop) paintOwnDictFloat();
   });
+  if (!wordLevels) loadWordLevels().then(() => ownDictFloat === pop && wordLevel(shown.lang, w) && paintOwnDictFloat());
 }
 
 function ownDictFloatPick(b) {
@@ -11273,9 +11408,83 @@ document.addEventListener("click", e => {
   if (row) toggleRowSay(row); else ownDictSay(b.dataset.say);
 }, true);
 
+function wordAudioUrl(lang, w) {
+  w = (w || "").trim();
+  if (!w || odLong(w) || w.length > 12 && !/^[a-z' -]+$/i.test(w)) return "";
+  lang = (lang || "").split("-")[0];
+  if (lang === "en") {
+    const e = ownDictEntry("en", w);
+    return e && e.audio || "https://dict.youdao.com/dictvoice?type=2&audio=" + encodeURIComponent(w.toLowerCase());
+  }
+  const le = {
+    zh: "zh",
+    ja: "jap",
+    ko: "ko"
+  }[lang];
+  return le ? "https://dict.youdao.com/dictvoice?le=" + le + "&audio=" + encodeURIComponent(w) : "";
+}
+
+function stopWordAudio() {
+  const a = wordAudio;
+  if (!a) return;
+  wordAudio = null;
+  clearTimeout(a.giveUp);
+  a.onended = a.onerror = a.onplaying = null;
+  try {
+    a.pause();
+  } catch (e) {}
+}
+
+function playWordAudio(w, lang, onEnd, onFail) {
+  const url = wordAudioUrl(lang, w);
+  if (!url) return false;
+  stopWordAudio();
+  const a = new Audio;
+  wordAudio = a;
+  let started = false;
+  const fail = () => {
+    if (wordAudio !== a) return;
+    stopWordAudio();
+    if (onFail) onFail();
+  };
+  a.preload = "auto";
+  a.playbackRate = Math.max(.5, Math.min(2, ttsSpeed || 1));
+  a.onplaying = () => {
+    if (wordAudio !== a || started) return;
+    started = true;
+    clearTimeout(a.giveUp);
+    speechTrack = {
+      start: performance.now(),
+      audio: a,
+      text: cleanForSpeech(w),
+      done: false,
+      len: 1
+    };
+    document.documentElement.classList.add("zap-spent");
+    soundProgressLoop();
+  };
+  a.onended = () => {
+    if (wordAudio !== a) return;
+    wordAudio = null;
+    if (onEnd) onEnd();
+  };
+  a.onerror = fail;
+  a.giveUp = setTimeout(() => started || fail(), 3e3);
+  a.src = url;
+  const p = a.play();
+  if (p && p.catch) p.catch(fail);
+  return true;
+}
+
 function ownDictSay(w) {
   speechSynthesis.cancel();
   soundHeard = true;
+  if (playWordAudio(w, ownDictLang(w), null, () => ownDictTts(w))) return;
+  ownDictTts(w);
+}
+
+function ownDictTts(w) {
+  speechSynthesis.cancel();
   const utter = trackSpeech(new SpeechSynthesisUtterance(w));
   utter.lang = resolveSpeechLang(w);
   const voice = pickVoice(utter.lang);
@@ -13614,6 +13823,7 @@ function stopTts() {
 }
 
 function cancelSpeechOnly() {
+  stopWordAudio();
   passThen = null;
   ttsPlaying = false;
   ttsOnlyId = null;
@@ -20643,7 +20853,7 @@ function vocabEditChipsHtml(item) {
     pos: "",
     terms: e.alts
   } ] : []) : [];
-  return groups.map(g => `<div class="od-group">${g.pos ? `<span class="od-pos">${escapeHtml(g.pos)}</span>` : ""}<div class="od-terms">${g.terms.map(t => `<button type="button" class="od-term" data-m="${escapeAttr(t)}">${escapeHtml(t)}</button>`).join("")}</div></div>`).join("");
+  return groups.map(g => `<div class="od-group">${g.pos ? `<span class="od-pos">${escapeHtml(g.pos)}</span>` : ""}<div class="od-terms">${g.terms.map(t => `<button type="button" class="od-term" data-m="${escapeAttr(t)}">${escapeHtml(t)}</button>`).join("")}</div></div>`).join("") + odDefsHtml(e);
 }
 
 function vocabEditorHtml(item) {
@@ -20653,7 +20863,7 @@ function vocabEditorHtml(item) {
   const noted = !span && item.card ? noteSentence(item) : null, nspan = noted && findTermIn(noted.sentence, item.term);
   const sentence = span ? `<div id="vocabEditSentence" class="rich-editor vem-q" contenteditable="true" aria-label="The sentence this word comes from" title="The card's own sentence: changing it changes the card everywhere">${vocabEditLineHtml(item, q, span)}</div>` : nspan ? `<div id="vocabEditSentence" class="rich-editor vem-q" contenteditable="true" data-noted="1" aria-label="The sentence this word was saved with">${vocabEditLineHtml(item, noted.sentence, nspan)}</div>` : "";
   const say = `<button type="button" class="od-say ed-say" data-say="${escapeAttr(item.term)}" aria-label="Listen" title="Listen">${OD_SPEAK}</button>`;
-  return '<div class="vocab-editor">' + `<div class="od-card ed-card">${say}${area}${main}<div class="ed-chips">${vocabEditChipsHtml(item)}</div>${sentence}<div class="notes-clip"><div id="vocabEditNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes" aria-label="Notes">${noted && nspan ? noted.rest : wordNotesOf(item)}</div></div></div>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
+  return '<div class="vocab-editor">' + `<div class="od-card ed-card">${levelHtml(ownDictLang(item.term, item.card), item.term, "ed-lv")}${say}${area}${main}<div class="ed-chips">${vocabEditChipsHtml(item)}</div>${sentence}<div class="notes-clip"><div id="vocabEditNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes" aria-label="Notes">${noted && nspan ? noted.rest : wordNotesOf(item)}</div></div></div>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
 }
 
 function vocabEditNotesHtml(notes) {
@@ -20911,7 +21121,18 @@ function wireVocabEditor(items) {
     const now = new Set(main ? meaningLines(main.querySelector(".vem-a").innerText) : meaningLines(vocabEditValues().meaning));
     chips.querySelectorAll(".od-term").forEach(b => b.classList.toggle("od-cur", now.has(b.dataset.m)));
   };
-  if (chips && item && !chips.children.length) ownDictFetch(detectLang(item.term).split("-")[0], item.term).then(() => {
+  const fitLevel = () => {
+    const card = term.closest(".vocab-editor").querySelector(".ed-card"), lv = card && card.querySelector(":scope > .ed-lv");
+    if (main) main.style.setProperty("--lv-w", lv ? Math.round(lv.offsetWidth + 8) + "px" : "0px");
+  };
+  if (item && !wordLevels) loadWordLevels().then(() => {
+    const card = term.isConnected && term.closest(".vocab-editor").querySelector(".ed-card");
+    if (!card || card.querySelector(":scope > .ed-lv")) return;
+    card.insertAdjacentHTML("afterbegin", levelHtml(ownDictLang(item.term, item.card), item.term, "ed-lv"));
+    fitLevel();
+  });
+  fitLevel();
+  if (chips && item && (!chips.children.length || !chips.querySelector(".od-defs"))) ownDictFetch(detectLang(item.term).split("-")[0], item.term, true).then(() => {
     if (!chips.isConnected) return;
     chips.innerHTML = vocabEditChipsHtml(item);
     paintChips();
@@ -21516,24 +21737,26 @@ function playVocabSound(item, once, ownClip, thenRestart) {
   soundHeard = true;
   vocabTtsOn = true;
   const token = ++vocabTtsToken;
-  const speak = () => {
+  const after = () => setTimeout(() => {
+    if (token !== vocabTtsToken) return;
+    if (clipAfter && at >= texts.length) return playVocabSound(item, true, true, !vocabOnce);
+    if (vocabOnce && at >= texts.length) {
+      vocabTtsOn = false;
+      return syncVocabSound();
+    }
+    speak();
+  }, 700);
+  const speak = (tts) => {
     if (!vocabTtsOn || token !== vocabTtsToken) return;
-    const text = texts[at++ % texts.length];
+    const text = tts || texts[at++ % texts.length];
+    if (!tts && text === item.term && playWordAudio(text, ownDictLang(text, item.card), after, () => token === vocabTtsToken && vocabTtsOn && speak(text))) return;
     const utter = new SpeechSynthesisUtterance(cleanForSpeech(text));
     utter.lang = resolveSpeechLang(text);
     utter.rate = ttsSpeed;
     trackSpeech(utter);
     const voice = pickVoice(utter.lang);
     if (voice) utter.voice = voice;
-    utter.onend = () => setTimeout(() => {
-      if (token !== vocabTtsToken) return;
-      if (clipAfter && at >= texts.length) return playVocabSound(item, true, true, !vocabOnce);
-      if (vocabOnce && at >= texts.length) {
-        vocabTtsOn = false;
-        return syncVocabSound();
-      }
-      speak();
-    }, 700);
+    utter.onend = after;
     utter.onerror = e => {
       if (e.error === "interrupted" || e.error === "canceled" || token !== vocabTtsToken) return;
       vocabTtsOn = false;
@@ -21541,7 +21764,7 @@ function playVocabSound(item, once, ownClip, thenRestart) {
     };
     speechSynthesis.speak(utter);
   };
-  setTimeout(speak, 0);
+  setTimeout(() => speak(), 0);
   syncVocabSound();
 }
 
