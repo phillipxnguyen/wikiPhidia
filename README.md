@@ -63,7 +63,7 @@ The shared rules of the whole app, one line each. They hold in every mode (☰ F
 
 ### 7. Layout and spacing
 1. Every size is a whole number of pixels.
-2. Even spacing: the same room above and below each part and between parts, in lists, cards, popups and pages; in the card editor (Lessons and Vocabulary) and the word popup every part (word, translation, sentence, Notes, Save, stroke order tiles) is 16 px from the next as the eye sees it: a line of text counts from the top of its capitals to its baseline (not from its invisible line box), so text to text, text to a box and box to box all look the same, and each meaning of a word, one per line, is a part of its own.
+2. Even spacing: the same room above and below each part and between parts, in lists, cards, popups and pages; in the card editor (Lessons and Vocabulary) and the word popup every part (word, translation, sentence, Notes, Save, stroke order tiles) is 16 px from the next as the eye sees it: a line of text counts from the top of its capitals to its baseline (not from its invisible line box), so text to text, text to a box and box to box all look the same, and each meaning of a word, one per line, is a part of its own. Notes there is not a grey box but a bar down its left, in the accent colour (lighter until you type in it), with the notes beside it.
 3. Corners: 12 px for cards, popups and dialogs; 10 px for what sits inside them; 8 px for bars, buttons and fields.
 4. Text sizes: questions and answers 22 px (20 px on a phone), notes 20 px (18 px on a phone).
 5. Things line up: the texts of one block start at the same left edge.
