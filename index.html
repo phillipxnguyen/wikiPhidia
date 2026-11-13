@@ -446,6 +446,23 @@ window.onYouTubeIframeAPIReady = function(){
   :root.in-task.home-vocab, html.in-task.vocab-mode :is(.main, #touchBar, #selBar){--badge:var(--new-color);--accent:var(--new-color);--accent-hover:color-mix(in srgb, var(--new-color) 85%, black);--accent-soft:color-mix(in srgb, var(--new-color) 13%, transparent);}
   html.in-task.home-vocab:not(.vocab-mode) :is(.main, #touchBar, #selBar){--badge:var(--mode-blue);--accent:var(--mode-blue);--accent-hover:color-mix(in srgb, var(--mode-blue) 85%, black);--accent-soft:color-mix(in srgb, var(--mode-blue) 13%, transparent);}
   .stats-title, .lesson-name-input{color:var(--accent);}
+  #viewVocab.word-list-on :is(.vocab-head, #vocabToolbar, #vocabViewToggle){display:none;}
+  .wlh{position:relative;display:grid;grid-template-columns:minmax(0, 1fr) auto;align-items:end;gap:16px 24px;margin-bottom:24px;padding:24px 28px;overflow:hidden;border-radius:24px;color:#fff;background:radial-gradient(circle at 88% 12%, rgba(255,255,255,.28), transparent 42%), linear-gradient(135deg, var(--w1), var(--w2));box-shadow:0 24px 40px -28px var(--w1);}
+  .wlh > *{position:relative;}
+  .wlh > .wlh-glyph{position:absolute;right:24px;top:-48px;font-size:200px;line-height:200px;font-weight:900;opacity:.12;pointer-events:none;}
+  .wlh-back{grid-column:1 / -1;justify-self:start;height:32px;padding:0 14px;border:1px solid rgba(255,255,255,.45);border-radius:16px;background:rgba(255,255,255,.14);color:#fff;font-size:14px;font-weight:800;}
+  .wlh-main{display:flex;flex-direction:column;gap:6px;min-width:0;}
+  .wlh-kicker{font-size:12px;line-height:16px;font-weight:800;letter-spacing:3px;text-transform:uppercase;opacity:.85;}
+  .wlh-title{margin:0;font-size:36px;line-height:42px;font-weight:900;letter-spacing:-1px;}
+  .wlh-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+  .wlh-chip{height:28px;padding:0 10px;border-radius:14px;background:rgba(255,255,255,.16);box-shadow:inset 0 0 0 1px rgba(255,255,255,.22);font-size:13px;line-height:28px;font-weight:700;white-space:nowrap;}
+  .wlh-chip b{font-variant-numeric:tabular-nums;}
+  .wlh-btns{display:flex;flex-wrap:wrap;gap:8px;}
+  .wlh-btns button{height:44px;border-radius:22px;font-size:15px;font-weight:800;}
+  .wlh-go{padding:0 24px;border:0;background:#fff;color:var(--w1);box-shadow:0 10px 20px -10px rgba(0,0,0,.5);}
+  .wlh-ghost{padding:0 16px;border:1px solid rgba(255,255,255,.45);background:rgba(255,255,255,.14);color:#fff;}
+  @media (hover:hover){.wlh-back:hover, .wlh-ghost:hover{background:rgba(255,255,255,.26);border-color:#fff;}.wlh-go:hover{background:#fff;transform:translateY(-2px);}}
+  @media (max-width:600px){.wlh{grid-template-columns:minmax(0, 1fr);padding:20px;border-radius:20px;}.wlh-title{font-size:28px;line-height:34px;}.wlh-btns, .wlh-btns button{flex:1 1 auto;}.wlh > .wlh-glyph{font-size:144px;line-height:144px;top:-32px;}}
   .vocab-editor{display:flex;flex-direction:column;gap:10px;padding:16px;margin-bottom:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);}
   .vocab-list .vocab-editor{margin:4px 0;box-shadow:none;}
   .vocab-editor textarea{width:100%;font-size:16px;}
@@ -1710,7 +1727,7 @@ window.onYouTubeIframeAPIReady = function(){
   .wp-stats{display:grid;grid-template-columns:repeat(3, minmax(0, 1fr));gap:6px;}
   .wp-stat{display:flex;flex-direction:column;align-items:center;min-width:0;padding:8px 2px;border-radius:12px;background:rgba(255,255,255,.16);box-shadow:inset 0 0 0 1px rgba(255,255,255,.18);}
   .wp-stat b{font-size:20px;line-height:24px;font-weight:900;font-variant-numeric:tabular-nums;}
-  .wp-stat span{font-size:10px;line-height:14px;font-weight:800;letter-spacing:1px;text-transform:uppercase;opacity:.85;}
+  .wp-stat span{max-width:100%;overflow:hidden;text-overflow:ellipsis;font-size:10px;line-height:14px;font-weight:800;text-transform:uppercase;opacity:.85;}
   .wp-langs{display:flex;flex-direction:column;gap:6px;}
   .wp-lang{position:relative;display:grid;grid-template-columns:32px minmax(0, 1fr);align-items:center;gap:6px 8px;padding:8px;overflow:hidden;border-radius:12px;background:linear-gradient(135deg, var(--w1), var(--w2));box-shadow:0 6px 12px -8px rgba(0,0,0,.5);transition:transform .15s;}
   @media (hover:hover){.wp-lang:hover{transform:translateY(-1px);}}
@@ -2992,6 +3009,7 @@ window.onYouTubeIframeAPIReady = function(){
       <button id="vocabDeleteBtn" class="ghost danger" title="Delete this lesson">Delete</button>
     </div>
   </div>
+  <div id="wordListHead" hidden></div>
   <div id="vocabToolbar" class="toolbar vocab-toolbar">
     <div class="segmented" role="group" aria-label="Vocabulary options">
     </div>
@@ -20260,6 +20278,8 @@ const VOCAB_FLIP_MS = 450;
 function renderVocab() {
   markFreshLesson();
   if (currentView !== "vocab") return;
+  document.getElementById("viewVocab").classList.remove("word-list-on");
+  document.getElementById("wordListHead").hidden = true;
   if (taskRun && vocabView === "card" && !vocabEditingKey && vocabSession && vocabSession.lessonId === currentLessonId && (taskRun.opening || taskRun.current && taskRun.current.k === "v") && !currentVocabItem()) {
     taskSideDone();
     return;
@@ -20340,6 +20360,7 @@ function renderVocab() {
   document.getElementById("vocabFlag").hidden = vocabView === "list";
   document.getElementById("vocabViewToggle").hidden = studyOnly || vocabView !== "list" || !anyDue;
   if (vocabView === "list") {
+    paintWordListHead(items);
     badges.innerHTML = anyDue ? badgesHtml(c.fresh, c.due, c.done, { new: c.fresh > 0, due: c.due > 0, done: c.done > 0 }) : "";
     stage.innerHTML = "";
     wireVocabEditor(items);
@@ -28993,6 +29014,24 @@ async function showWords() {
   showView("words");
 }
 
+function paintWordListHead(items) {
+  const world = currentLessonId === VOCAB_ALL_ID && rows.length && rows[0].wordWorld;
+  const head = document.getElementById("wordListHead");
+  if (!world || !WORD_WORLDS[world]) return;
+  const n = wordNumbers(items.filter(i => !vocabViewOnly(i))), left = n.fresh + n.due;
+  const name = (document.getElementById("lessonName").value || WORD_WORLDS[world][0]).trim();
+  const chip = (icon, v, label) => `<span class="wlh-chip" title="${label}">${icon} <b>${v}</b></span>`;
+  head.innerHTML = `<section class="wlh w-${world}"><span class="wlh-glyph" aria-hidden="true">${WORD_WORLDS[world][1]}</span><button class="wlh-back" data-wlh="back">‹ Vocabulary</button><div class="wlh-main"><span class="wlh-kicker">Word list</span><h2 class="wlh-title">${escapeHtml(name)}</h2><div class="wlh-chips">${chip("📚", n.total, "Words")}${chip("🆕", n.fresh, "New")}${chip("⏳", n.due, "Due")}${chip("🌱", n.later, "Learning")}${chip("✅", n.done, "Done")}</div></div><div class="wlh-btns"><button class="wlh-go" data-wlh="study">▶ ${left ? "Study " + left : "Study"}</button><button class="wlh-ghost" data-wlh="weak">🎯 Weak words</button></div></section>`;
+  head.hidden = false;
+  document.getElementById("viewVocab").classList.add("word-list-on");
+}
+
+document.getElementById("wordListHead").addEventListener("click", e => {
+  const b = e.target.closest("[data-wlh]"), world = rows.length && rows[0].wordWorld;
+  if (!b || !world) return;
+  if (b.dataset.wlh === "back") showWords(); else if (b.dataset.wlh === "study") openWordWorld(world); else drillWords(world, weakWordKeys((wordWorldItems()[world] || []), 12), "Weak words");
+});
+
 function wordTilesHtml(worlds) {
   return '<div class="ta-worlds">' + Object.keys(WORD_WORLDS).map(w => {
     const [ name, glyph ] = WORD_WORLDS[w];
@@ -29140,7 +29179,7 @@ function wordPadHtml() {
   const langs = open.map(w => {
     const m = wordNumbers(worlds[w]), route = wordRoute(w, m), cur = route.find(st => st.state === "open");
     const pct = m.total ? Math.round(m.done / m.total * 100) : 0;
-    return `<span class="wp-lang w-${w}${w === shown ? " on" : ""}" data-world="${w}" title="${escapeAttr(WORD_WORLDS[w][0] + ": " + countOf(m.total, "word") + ", " + pct + "% done")}"><i aria-hidden="true">${WORD_WORLDS[w][1]}</i><span class="wp-lang-main"><b>${WORD_WORLDS[w][0]}</b><span>🆕 ${m.fresh} · ⏳ ${m.due} · ✅ ${m.done}</span></span><span class="wp-step">${cur ? "Step " + cur.n + " · " + escapeHtml(cur.name) : "Route complete"}</span><span class="wp-bar"><span style="width:${pct}%"></span></span></span>`;
+    return `<span class="wp-lang w-${w}${w === shown ? " on" : ""}" data-world="${w}" title="${escapeAttr(WORD_WORLDS[w][0] + ": " + countOf(m.total, "word") + ", " + pct + "% done")}"><i aria-hidden="true">${WORD_WORLDS[w][1]}</i><span class="wp-lang-main"><b>${WORD_WORLDS[w][0]}</b><span>🆕 ${m.fresh} · ⏳ ${m.due}</span></span><span class="wp-step">${cur ? "Step " + cur.n + " · " + escapeHtml(cur.name) : "Route complete"}</span><span class="wp-bar"><span style="width:${pct}%"></span></span></span>`;
   }).join("");
   const plans = liveWordPlans().length;
   const days = [ ...Array(7) ].map((_, i) => {
