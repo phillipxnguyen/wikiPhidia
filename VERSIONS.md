@@ -189,6 +189,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-58 | `7d308b7` | Ô sửa từ về lại 2 box: box chính là câu gốc có từ tô màu + nghĩa dòng dưới, rồi Notes |
 | FLASH-59 | `266b0f1` | Nút ☰ Word list trên banner Vocabulary mở list từ của ngôn ngữ |
 | FLASH-60 | `53fb529` | List từ có banner màu ngôn ngữ: ‹ Vocabulary để quay về, số đếm dạng chip, Study, Weak words |
+| FLASH-61 | `0ce61a7` | Giới hạn mỗi ngày tính theo ngôn ngữ khi học Vocabulary (không còn x số bài); nút Study đếm theo giới hạn |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
@@ -446,6 +447,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-12 | `9a54d6a` | Popup từ: đang tải nghĩa thì hiện Translating… như extension (bỏ thanh xám chờ) |
 | LOOKUP-13 | `0091022` | Rule chung: từ đã có = mọi bài cùng ngôn ngữ (tô màu, popup); khác ngôn ngữ không tính |
 | LOOKUP-14 | `673d6cc` | Ô sửa từ tô màu mọi từ của bạn trong câu, rê chuột hiện nghĩa, click mở popup |
+| LOOKUP-15 | `0ce61a7` | Chữ phụ trong popup từ (Add, Save, In your words, NOUN, Notes) dùng font pixel; lọc ngôn ngữ chỉ giữa Trung/Nhật/Hàn |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
