@@ -190,6 +190,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-59 | `266b0f1` | Nút ☰ Word list trên banner Vocabulary mở list từ của ngôn ngữ |
 | FLASH-60 | `53fb529` | List từ có banner màu ngôn ngữ: ‹ Vocabulary để quay về, số đếm dạng chip, Study, Weak words |
 | FLASH-61 | `0ce61a7` | Giới hạn mỗi ngày tính theo ngôn ngữ khi học Vocabulary (không còn x số bài); nút Study đếm theo giới hạn |
+| FLASH-62 | `6c7e86d` | Box chính ô sửa từ 3 tầng: từ đậm, nghĩa xanh, câu dưới vạch kẻ (nhãn Sentence, từ nền vàng); câu trong popup cũng tô vàng |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
