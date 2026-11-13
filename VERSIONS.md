@@ -187,6 +187,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-56 | `2b9ee73` | Buổi học chọn sẵn xong không chạy lại từ đầu; buổi có từ đã bị xoá tự rời Waiting for you |
 | FLASH-57 | `263aa9b` | Ô sửa từ có câu gốc (sửa là sửa thẻ ở mọi nơi); ✕ khi học một ngôn ngữ ra list từ của ngôn ngữ đó; list từ đều lề |
 | FLASH-58 | `7d308b7` | Ô sửa từ về lại 2 box: box chính là câu gốc có từ tô màu + nghĩa dòng dưới, rồi Notes |
+| FLASH-59 | `266b0f1` | Nút ☰ Word list trên banner Vocabulary mở list từ của ngôn ngữ |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
@@ -360,6 +361,7 @@ Hàm chính: `todayTasks`, `todayTaskCounts`, `taskQueue`, `startTaskSide`, `tas
 | LAYOUT-9 | `fb2edb8` | Logo và tên đổi màu cùng lúc (giữa vòng lật), tên mờ rồi hiện lại cùng nhịp logo |
 | LAYOUT-10 | `4182897` | Sidebar Vocabulary: thẻ Vocabulary dưới Today (đếm, chip ngôn ngữ, thanh) mở trang Vocabulary; bỏ ô ngôn ngữ to |
 | LAYOUT-11 | `003965a` | Thẻ Vocabulary chiếm hết sidebar: số New/Due/Today, hàng từng ngôn ngữ (bước lộ trình, thanh Done), biểu đồ 7 ngày, buổi đang chờ |
+| LAYOUT-12 | `266b0f1` | Thẻ Vocabulary ở sidebar làm lại: nền gradient rực, ô số dạng kính, mỗi ngôn ngữ một thẻ màu riêng (tên đủ, 🆕⏳✅, bước), biểu đồ 7 ngày, nút Open trắng |
 
 Hàm chính: `switchToLesson`, `setAppMode`, `syncModeButtonHighlights`, `lessonInMode`, `lessonShown`, `bookHidden`.
 
