@@ -504,6 +504,10 @@ window.onYouTubeIframeAPIReady = function(){
   .ed-card .ed-chips{display:flex;flex-direction:column;gap:8px;}
   .ed-card .ed-chips:empty{display:none;}
   .ed-card .od-term.od-cur{border-color:var(--a-label);color:var(--a-label);}
+  li.wm-li{position:relative;display:grid;grid-template-columns:max-content max-content minmax(0, 1fr);list-style:none;}
+  li.wm-li > .wm{min-width:0;padding-left:5px;}
+  li.wm-li > :is(ul, ol){grid-column:1 / -1;}
+  .rich-editor li.wm-li::before, .card-notes li.wm-li::before{content:"";position:absolute;left:-15px;top:calc(.5lh - 3px);width:6px;height:6px;border-radius:3px;background:currentColor;}
   .ed-card .od-pos{font-family:"Doto", system-ui, sans-serif;font-weight:800;}
   .ed-card :is(#editNotes, #vocabEditNotes):empty::before{font-family:"Doto", system-ui, sans-serif;font-weight:800;}
   #vocabEditSentence mark.vem-w{border-radius:4px;background:var(--word-mark);color:inherit;}
@@ -1640,7 +1644,7 @@ window.onYouTubeIframeAPIReady = function(){
   .od-body{display:flex;flex-direction:column;gap:8px;}
   .od-main{align-self:flex-start;padding:0;border:0;background:none;color:var(--od-mean);font:inherit;font-size:18px;line-height:26px;font-weight:700;text-align:left;cursor:pointer;}
   .od-group{display:flex;align-items:baseline;gap:8px;}
-  .od-pos{flex:none;min-width:44px;padding:2px 6px;border-radius:6px;background:color-mix(in srgb, var(--text) 7%, transparent);color:var(--od-soft);font-size:11px;line-height:14px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;text-align:center;}
+  .od-pos{flex:none;min-width:44px;padding:2px 6px;border-radius:6px;background:color-mix(in srgb, var(--text) 7%, transparent);color:var(--od-soft);font-size:12px;line-height:16px;font-weight:700;text-transform:lowercase;text-align:center;}
   .od-terms{display:flex;flex-wrap:wrap;gap:6px;min-width:0;}
   .od-term{padding:2px 10px;border:1px solid var(--od-line);border-radius:12px;background:var(--od-bg);color:var(--text);font:inherit;font-size:14px;line-height:20px;cursor:pointer;transition:border-color .15s, color .15s;}
   @media (hover:hover){.od-term:hover{color:var(--accent);border-color:var(--accent);}}
@@ -7958,8 +7962,98 @@ function flatVocabLists(html) {
   return box.innerHTML;
 }
 
+function alignLi(li, force) {
+  if (!isVocabItem(li)) return;
+  const own = [ ...li.childNodes ].filter(n => !(n.nodeType === 1 && /^(UL|OL)$/.test(n.nodeName)));
+  const has = li.querySelector(":scope > .wm");
+  if (!force && !own.some(n => n.nodeName === "BR") && !(has && has.querySelector("br"))) {
+    if (has) has.replaceWith(...has.childNodes);
+    li.classList.remove("wm-li");
+    return;
+  }
+  li.classList.add("wm-li");
+  if (has) return;
+  const colon = li.firstChild.nextSibling, m = colon.nodeValue.match(/^\s*[:：]\s*/);
+  const rest = m && m[0].length < colon.nodeValue.length ? colon.splitText(m[0].length) : colon.nextSibling;
+  const span = document.createElement("span");
+  span.className = "wm";
+  let n = rest;
+  while (n && !(n.nodeType === 1 && /^(UL|OL)$/.test(n.nodeName))) {
+    const next = n.nextSibling;
+    span.appendChild(n);
+    n = next;
+  }
+  li.insertBefore(span, n);
+}
+
+function alignMeanings(html) {
+  if (!html || !/<br/i.test(html)) return html;
+  const box = document.createElement("div");
+  box.innerHTML = html;
+  box.querySelectorAll("li").forEach(alignLi);
+  return box.innerHTML;
+}
+
+function meaningBreak(li) {
+  const word = isVocabItem(li) ? li : null;
+  if (!word) return false;
+  const sel = getSelection();
+  if (!sel.rangeCount) return false;
+  let r = sel.getRangeAt(0);
+  r.deleteContents();
+  let c = r.startContainer, o = r.startOffset;
+  if (c.nodeType === 1 && c === word && o > 0 && word.childNodes[o - 1] && word.childNodes[o - 1].nodeType === 3) {
+    c = word.childNodes[o - 1];
+    o = c.nodeValue.length;
+  }
+  if (!word.querySelector(":scope > .wm")) {
+    const mark = document.createElement("i");
+    r.setStart(c, o);
+    r.collapse(true);
+    r.insertNode(mark);
+    alignLi(word, true);
+    r = document.createRange();
+    r.setStartBefore(mark);
+    r.collapse(true);
+    mark.remove();
+    word.normalize();
+    sel.removeAllRanges();
+    sel.addRange(r);
+    r = sel.getRangeAt(0);
+    c = r.startContainer;
+    o = r.startOffset;
+  }
+  const before = c.nodeType === 3 ? c.nodeValue.slice(0, o) : "", prevNode = c.nodeType === 3 ? o === 0 ? c.previousSibling : null : c.childNodes[o - 1];
+  const tail = document.createRange();
+  tail.setStart(c, o);
+  const sub = [ ...word.children ].find(el => /^(UL|OL)$/.test(el.tagName));
+  if (sub) tail.setEndBefore(sub); else tail.setEnd(word, word.childNodes.length);
+  const empty = !tail.toString().trim();
+  if (empty && (/\n$/.test(before) || prevNode && prevNode.nodeName === "BR")) {
+    if (/\n$/.test(before)) c.nodeValue = before.slice(0, -1) + c.nodeValue.slice(o); else prevNode.remove();
+    tail.deleteContents();
+    const next = document.createElement("li");
+    next.appendChild(document.createElement("br"));
+    word.after(next);
+    const at = document.createRange();
+    at.setStart(next, 0);
+    sel.removeAllRanges();
+    sel.addRange(at);
+    alignLi(word);
+    return true;
+  }
+  const br = document.createElement("br");
+  r.insertNode(br);
+  if (empty) br.after(document.createElement("br"));
+  const at = document.createRange();
+  at.setStartAfter(br);
+  sel.removeAllRanges();
+  sel.addRange(at);
+  return true;
+}
+
 function cardNotesHtml(row) {
-  const html = flatVocabLists(notesEditorHtml(row));
+  const html = alignMeanings(flatVocabLists(notesEditorHtml(row)));
   return html && plainTextOf(html, "\n").trim() ? `<div class="card-notes">${blockNotesHtml(html)}</div>` : "";
 }
 
@@ -11739,6 +11833,7 @@ document.addEventListener("keydown", e => {
   const li = host && host.closest("li");
   if (!li || !el.contains(li)) return;
   e.preventDefault();
+  if (meaningBreak(li)) return;
   document.execCommand("insertParagraph");
   if (el.id === "qaNotes" && li.isConnected && !li.contains(window.getSelection().anchorNode) && !isVocabItem(li) && !underWordLine(li) && NOTE_VOCAB_ITEM_RE.test(ownLiTextNodes(li).map(n => n.nodeValue).join(""))) {
     if (noteItemIsDuplicate(li, noteVocabKeys(el, [ li ]))) warnVocabDuplicates([ noteItemTerm(li) ]); else boldVocabItem(li);
@@ -11929,7 +12024,7 @@ window.addEventListener("blur", () => {
 });
 
 function buildEditBoxInner(row) {
-  return `\n    <div class="od-card ed-card"><button type="button" class="od-say ed-say" data-ed-row="${row.id}" data-say="${escapeAttr(row.q || "")}" aria-label="Listen" title="Listen">${OD_SPEAK}</button><div class="edit-qa">\n      <div>\n        <div id="editQ" class="rich-editor${row.time == null ? "" : " yt-ph"}" contenteditable="true"${row.time == null ? ' data-placeholder="Question, then the Answer two lines below"' : ""} aria-label="Card">${mergedCardEditHtml(row)}</div>\n      </div>\n      <div hidden>\n        <div id="editA" class="rich-editor" contenteditable="true">${getEditInitialHtml(row.a, row.aHtml, row.id)}</div>\n      </div>\n    </div>\n    <div class="notes-clip"><div id="editNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes">${notesEditorHtml(row)}</div></div></div>\n    <div class="edit-actions">\n      <button id="editSave" class="primary">Save</button>\n    </div>\n    <div id="editDict"></div>\n  `;
+  return `\n    <div class="od-card ed-card"><button type="button" class="od-say ed-say" data-ed-row="${row.id}" data-say="${escapeAttr(row.q || "")}" aria-label="Listen" title="Listen">${OD_SPEAK}</button><div class="edit-qa">\n      <div>\n        <div id="editQ" class="rich-editor${row.time == null ? "" : " yt-ph"}" contenteditable="true"${row.time == null ? ' data-placeholder="Question, then the Answer two lines below"' : ""} aria-label="Card">${mergedCardEditHtml(row)}</div>\n      </div>\n      <div hidden>\n        <div id="editA" class="rich-editor" contenteditable="true">${getEditInitialHtml(row.a, row.aHtml, row.id)}</div>\n      </div>\n    </div>\n    <div class="notes-clip"><div id="editNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes">${alignMeanings(notesEditorHtml(row))}</div></div></div>\n    <div class="edit-actions">\n      <button id="editSave" class="primary">Save</button>\n    </div>\n    <div id="editDict"></div>\n  `;
 }
 
 document.addEventListener("click", e => {
@@ -12259,6 +12354,7 @@ function wireEditBox(host, row) {
         const li = host && host.closest("li");
         if (!li || !el.contains(li)) return;
         e.preventDefault();
+        if (meaningBreak(li)) return;
         document.execCommand("insertParagraph");
         if (el === editNotes && li.isConnected && !li.contains(window.getSelection().anchorNode) && !isVocabItem(li) && !underWordLine(li) && NOTE_VOCAB_ITEM_RE.test(ownLiTextNodes(li).map(n => n.nodeValue).join(""))) {
           if (noteItemIsDuplicate(li, noteVocabKeys(el, [ li ]))) warnVocabDuplicates([ noteItemTerm(li) ]); else boldVocabItem(li);
