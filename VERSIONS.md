@@ -195,6 +195,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-64 | `c51a339` | Box chính ô sửa từ cân đối: chữ cách 4 mép 14px, từ/nghĩa/câu cách đều 8px |
 | FLASH-65 | `7b82c37` | Ô sửa từ: từ và nghĩa sát nhau thành một cặp, câu cách ra 14px bên dưới |
 | FLASH-66 | `d18b8de` | Ô sửa từ: nghĩa cách từ như một dòng thường (6px), không dính sát; câu cách 14px |
+| FLASH-67 | `396ae7f` | Box chính ô sửa từ dùng đúng thông số box Notes: chữ 22/30, lề 9/14/9/16, các dòng nối tiếp không khoảng thêm |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
