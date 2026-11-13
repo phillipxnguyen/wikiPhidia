@@ -488,6 +488,7 @@ window.onYouTubeIframeAPIReady = function(){
   .ed-card :is(#editQ, #vocabEditMain, #vocabEditTerm){min-height:0;margin:0;padding:0 44px 0 0;border:0;border-radius:0;background:none;box-shadow:none;outline:none;}
   .ed-card :is(#editQ, #vocabEditMain, #vocabEditTerm):focus{border:0;box-shadow:none;}
   .ed-card #vocabEditMain .vem-t{font-size:28px;line-height:36px;font-weight:700;}
+  .ed-card #vocabEditMain :is(.vem-t, .vem-a):empty::before{content:attr(data-placeholder);font-family:"Doto", system-ui, sans-serif;font-weight:800;color:var(--placeholder);}
   .ed-card #vocabEditMain .vem-t.long{font-size:20px;line-height:28px;font-weight:600;}
   .ed-card #vocabEditMain .vem-a{font-size:18px;line-height:26px;font-weight:700;}
   .ed-card #vocabEditSentence{font-size:15px;line-height:22px;}
@@ -1667,7 +1668,8 @@ window.onYouTubeIframeAPIReady = function(){
   html.touch .le-box:has(> .le-dict.on) > .le-dict.on{flex:1 1 0;height:auto;min-height:0;margin-top:0;}
   html.touch .le-box[data-tab="edit"]:has(> .le-dict.on) > .le-dict.on{position:absolute;left:16px;right:16px;top:68px;bottom:16px;visibility:hidden;pointer-events:none;}
   @media (min-width:1000px){
-    html:not(.touch) .le-box:has(> .le-dict.on){flex-direction:row;width:min(900px, calc(100vw - 32px));height:min(640px, calc(100dvh - 32px));max-height:none;overflow:hidden;padding:0;}
+    html:not(.touch) .le-box:has(> .le-dict.on){flex-direction:row;width:min(900px, calc(100vw - 32px));height:auto;min-height:360px;max-height:min(640px, calc(100dvh - 32px));overflow:hidden;padding:0;}
+    html:not(.touch) .le-box:has(> .le-dict.on) > .le-content{display:flex;flex-direction:column;justify-content:safe center;}
     html:not(.touch) .le-box:has(> .le-dict.on) > .le-content{flex:1 1 0;min-width:0;overflow-y:auto;overscroll-behavior:contain;padding:16px;}
     html:not(.touch) .le-box > .le-dict.on{order:-1;flex:1 1 0;min-width:0;height:auto;margin:0;border-right:1px solid var(--border);border-radius:var(--radius) 0 0 var(--radius);}
   }
@@ -7994,6 +7996,48 @@ function alignMeanings(html) {
   return box.innerHTML;
 }
 
+function trimAfterBreak(br) {
+  let n = br.nextSibling;
+  while (n && n.nodeType === 3 && !n.nodeValue.replace(/^[ \t\u00a0]+/, "")) {
+    const next = n.nextSibling;
+    n.remove();
+    n = next;
+  }
+  if (n && n.nodeType === 3) n.nodeValue = n.nodeValue.replace(/^[ \t\u00a0]+/, "");
+}
+
+document.addEventListener("keydown", e => {
+  if (e.key !== "Enter" || !e.shiftKey || e.isComposing) return;
+  const t = e.target;
+  if (t.matches && t.matches("textarea.od-mean-in")) {
+    e.preventDefault();
+    const a = t.selectionStart, b = t.selectionEnd, rest = t.value.slice(b).replace(/^[ \t]+/, "");
+    t.value = t.value.slice(0, a).replace(/[ \t]+$/, "") + "\n" + rest;
+    t.selectionStart = t.selectionEnd = t.value.length - rest.length;
+    t.dispatchEvent(new Event("input", {
+      bubbles: true
+    }));
+    return;
+  }
+  const sel = getSelection(), node = sel.rangeCount && sel.anchorNode, host = node && (node.nodeType === 1 ? node : node.parentElement);
+  if (!host || !host.closest("#vocabEditMain .vem-a")) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const r = sel.getRangeAt(0);
+  r.deleteContents();
+  const br = document.createElement("br");
+  r.insertNode(br);
+  trimAfterBreak(br);
+  if (!br.nextSibling) br.after(document.createElement("br"));
+  const at = document.createRange();
+  at.setStartAfter(br);
+  sel.removeAllRanges();
+  sel.addRange(at);
+  host.closest("#vocabEditMain").dispatchEvent(new Event("input", {
+    bubbles: true
+  }));
+}, true);
+
 function meaningBreak(li) {
   const word = isVocabItem(li) ? li : null;
   if (!word) return false;
@@ -8044,6 +8088,7 @@ function meaningBreak(li) {
   }
   const br = document.createElement("br");
   r.insertNode(br);
+  trimAfterBreak(br);
   if (empty) br.after(document.createElement("br"));
   const at = document.createRange();
   at.setStartAfter(br);
@@ -8584,7 +8629,7 @@ function ieltsPaperHtml(row, ahead = 0) {
   const hints = row.aHidden ? ieltsHints(row) : [], veiled = ieltsHintId !== row.id;
   const answer = row.aHidden ? hints.length ? `<div class="cell hidden paper-prompt paper-hint${veiled ? " paper-veil" : ""}" data-field="a"><ol>` + hints.map(m => `<li>${escapeHtml(m)}</li>`).join("") + "</ol></div>" : `<div class="cell hidden paper-lines paper-veil" data-field="a">${aCellContent(row)}</div>` : `<div class="cell shown paper-lines" data-field="a">${aCellContent(row)}</div>`;
   const own = row.aHidden || words.length ? "" : cardNotesHtml(row);
-  const list = words.length ? "<ol>" + words.map((i, n) => `<li><span class="pn">${n + 1}.</span><b>${escapeHtml(i.term)}</b>${i.meaning ? " — " + escapeHtml(i.meaning) : ""}</li>`).join("") + "</ol>" : own;
+  const list = words.length ? "<ol>" + words.map((i, n) => `<li><span class="pn">${n + 1}.</span><b>${escapeHtml(i.term)}</b>${i.meaning ? " — " + meaningHtml(i.meaning) : ""}</li>`).join("") + "</ol>" : own;
   const notes = list ? `<aside class="paper-notes">${list}</aside>` : "";
   const extras = "";
   if (!hasAnswer(row)) return `<article class="ielts-paper top-rings${notes ? " with-notes" : ""}"><div class="paper-body"><div class="paper-main"><div class="paper-answer">${row.aHidden ? ieltsFrontHtml(row) : sentenceEx(row).kind === "blank" ? sentenceBlankHtml((row.q || "").normalize("NFC"), sentenceEx(row), true) : `<div class="cell shown paper-lines" data-field="q">${qCellContent(row)}</div>`}</div></div>${notes}</div>` + extras + "</article>";
@@ -17621,7 +17666,7 @@ function wordPopHtml() {
     return these.length ? `<div class="wl-band"><span class="wl-label${sel("b", label)}" data-band="${label}">${label}</span><div class="wl-chips">${these.map(chip).join("")}</div></div>` : "";
   }).join("");
   const pick = wordPick && words.find(w => w.w === wordPick), meaning = pick && (states.get(pick.w) || {}).meaning;
-  const detail = pick ? `<div class="wl-dhead"><b>${escapeHtml(pick.text)}<em title="${countOf(pick.n, "time")} in ${countOf(pick.rows.length, "sentence")}">${pick.n}</em></b>${meaning ? `<i>${escapeHtml(meaning)}</i>` : ""}</div>${pick.rows.map(r => `<div class="wl-sent${sel("s", r.id)}" data-id="${r.id}">${wordMarked(r, pick.w)}</div>`).join("")}` : "";
+  const detail = pick ? `<div class="wl-dhead"><b>${escapeHtml(pick.text)}<em title="${countOf(pick.n, "time")} in ${countOf(pick.rows.length, "sentence")}">${pick.n}</em></b>${meaning ? `<i>${meaningHtml(meaning)}</i>` : ""}</div>${pick.rows.map(r => `<div class="wl-sent${sel("s", r.id)}" data-id="${r.id}">${wordMarked(r, pick.w)}</div>`).join("")}` : "";
   return head + `<div class="wl-main${pick ? " picked" : ""}"><div class="wl-words">${bands}</div>${pick ? `<div class="wl-detail">${detail}</div>` : ""}</div>`;
 }
 
@@ -19763,6 +19808,17 @@ function startVocabSession() {
 }
 
 function renameVocabSessionKey(from, to) {
+  if (from !== to && currentLessonId === VOCAB_ALL_ID) {
+    const lists = new Set(rows.map(r => r.wordKeys).filter(Boolean));
+    lists.forEach(list => {
+      const i = list.indexOf(from);
+      if (i >= 0) list[i] = to;
+    });
+    const plans = wordPlans();
+    if (plans.some(pl => pl.keys.includes(from))) saveWordLocal(WORD_PLANS_KEY, plans.map(pl => Object.assign(pl, {
+      keys: pl.keys.map(k => k === from ? to : k)
+    })));
+  }
   const s = vocabSession;
   if (!s) return;
   const swap = k => k === from ? to : k;
@@ -20172,19 +20228,19 @@ function fillVocabCard(el, item) {
     const ownTs = own ? linePillHtml(item, own, true) : "";
     const ownHtml = own ? `<span class="cloze-more cloze-own">${withPill(ownTs, lookupOthers(vocabSentenceHtml(own, item.term, item.card), item))}</span>` : "";
     el.querySelector(".vocab-term").innerHTML = `<span class="cloze-body">${el.dataset.listen ? `<span class="vc-stack"><span class="vc-art" aria-hidden="true">${sceneArt(el.dataset.scene)}<span class="vc-time"><i></i></span></span>${sent}</span>` : sent}${ownHtml}${notes ? `<span class="cloze-more cloze-notes">${notesWithPinyin(brLines(notes), item.card)}</span>` : ""}</span>`;
-    el.querySelector(".vocab-term").insertAdjacentHTML("afterbegin", `<span class="cloze-more cloze-head"><span class="cloze-main">${rubyWord(item.term, item.card)}</span>${item.meaning ? `<span class="cloze-mean">${escapeHtml(item.meaning)}</span>` : ""}</span>`);
+    el.querySelector(".vocab-term").insertAdjacentHTML("afterbegin", `<span class="cloze-more cloze-head"><span class="cloze-main">${rubyWord(item.term, item.card)}</span>${item.meaning ? `<span class="cloze-mean">${meaningHtml(item.meaning)}</span>` : ""}</span>`);
     el.classList.add("fill");
     el.classList.toggle("listen", !!el.dataset.listen);
   } else if (ex === "word" && el.dataset.listen && !viewOnly) {
     const noted = noteSentence(item), notes = noted ? noted.rest.replace(/^(\s|<br\s*\/?>|<div>\s*<\/div>)+/i, "") : wordNotesOf(item);
     const sent = sentence ? `<span class="vc-sent">${withPill(linePillHtml(item, sentence, true, "cloze-pill"), lookupOthers(vocabSentenceHtml(sentence, item.term, item.card), item))}</span>` : '<span class="vc-sent"></span>';
     el.querySelector(".vocab-term").innerHTML = `<span class="cloze-body"><span class="vc-stack"><span class="vc-art" aria-hidden="true">${sceneArt(el.dataset.scene)}<span class="vc-time"><i></i></span></span>${sent}</span>${notes ? `<span class="cloze-more cloze-notes">${notesWithPinyin(brLines(notes), item.card)}</span>` : ""}</span>`;
-    el.querySelector(".vocab-term").insertAdjacentHTML("afterbegin", `<span class="cloze-more cloze-head"><span class="cloze-main">${rubyWord(item.term, item.card)}</span>${item.meaning ? `<span class="cloze-mean">${escapeHtml(item.meaning)}</span>` : ""}</span>`);
+    el.querySelector(".vocab-term").insertAdjacentHTML("afterbegin", `<span class="cloze-more cloze-head"><span class="cloze-main">${rubyWord(item.term, item.card)}</span>${item.meaning ? `<span class="cloze-mean">${meaningHtml(item.meaning)}</span>` : ""}</span>`);
     el.classList.add("fill", "listen");
   } else if (ex === "sent" && whole && el.dataset.listen) {
     const text = sentence || item.term, spy = cjkScriptFor(text, item.card) === "zh" ? pinyinLine(text) : "";
     const sent = `<span class="vc-sent">${spy ? `<span class="cloze-more cloze-spy py-line">${linePillHtml(item, text, true)}${escapeHtml(spy)}</span>` : linePillHtml(item, text, true, "cloze-pill")}${lookupOthers(escapeHtml(text), item)}</span>`;
-    el.querySelector(".vocab-term").innerHTML = `<span class="cloze-body"><span class="vc-stack"><span class="vc-art" aria-hidden="true">${sceneArt(el.dataset.scene)}<span class="vc-time"><i></i></span></span>${sent}</span>${item.meaning ? `<span class="cloze-more cloze-notes">${escapeHtml(item.meaning)}</span>` : ""}</span>`;
+    el.querySelector(".vocab-term").innerHTML = `<span class="cloze-body"><span class="vc-stack"><span class="vc-art" aria-hidden="true">${sceneArt(el.dataset.scene)}<span class="vc-time"><i></i></span></span>${sent}</span>${item.meaning ? `<span class="cloze-more cloze-notes">${meaningHtml(item.meaning)}</span>` : ""}</span>`;
     el.classList.add("fill", "listen");
   } else {
     el.classList.remove("listen");
@@ -20539,13 +20595,17 @@ function vocabEditValues() {
 }
 
 function vocabSentenceCard(item) {
-  return !!item && !!item.card && item.card.uid !== EXTRA_UID && !!(item.card.q || "").trim();
+  if (!item || !item.card) return null;
+  const has = c => !!c && c.uid !== EXTRA_UID && !!(c.q || "").trim() && !!findTermIn(c.q, item.term);
+  if (has(item.card)) return item.card;
+  const ctx = vocabContext(item).card;
+  return has(ctx) && rows.includes(ctx) ? ctx : null;
 }
 
 function saveVocabSentence(item, el) {
   const line = el && (el.matches(".vem-q") ? el : el.querySelector(".vem-q"));
-  if (!line || !vocabSentenceCard(item)) return;
-  const card = item.card;
+  const card = vocabSentenceCard(item);
+  if (!line || !card) return;
   const q = cleanPunct(plainTextOf(stripVocabHighlights(line.innerHTML), "\n")).trim();
   if (!q || q === card.q.trim()) return;
   pushUndo("Edited sentence — " + item.term);
@@ -20556,13 +20616,14 @@ function saveVocabSentence(item, el) {
 }
 
 function vocabEditSpan(item) {
-  return vocabSentenceCard(item) ? findTermIn(item.card.q, item.term) : null;
+  const card = vocabSentenceCard(item);
+  return card ? findTermIn(card.q, item.term) : null;
 }
 
 function vocabEditLineHtml(item, q, span) {
   const lines = t => escapeHtml(t).replace(/\n/g, "<br>");
   const box = document.createElement("div");
-  box.innerHTML = highlightVocabInHtml(lines(q), item.card.id, [ item.term ]);
+  box.innerHTML = highlightVocabInHtml(lines(q), (vocabSentenceCard(item) || item.card).id, [ item.term ]);
   const own = [ ...box.querySelectorAll("mark") ].find(m => normalizeVocabText(m.textContent) === item.tkey);
   if (own) {
     own.classList.add("vem-w");
@@ -20581,12 +20642,20 @@ function vocabEditChipsHtml(item) {
 }
 
 function vocabEditorHtml(item) {
-  const span = vocabEditSpan(item), q = span ? item.card.q : "";
-  const area = `<textarea id="vocabEditTerm" class="autofit" rows="1" autocomplete="off" aria-label="Word" placeholder="Word, then its meaning two lines below"${span ? " hidden" : ""}>${escapeHtml(item.meaning ? Q_MARK + item.term + "\n" + item.meaning : item.term)}</textarea>`;
-  const main = span ? `<div id="vocabEditMain" class="rich-editor" contenteditable="true" aria-label="The word, then its meanings, one per line"><div class="vem-t${odLong(item.term) ? " long" : ""}">${escapeHtml(item.term)}</div><div class="vem-a">${(odLong(item.term) ? [ item.meaning ] : meaningLines(item.meaning)).filter(Boolean).map(escapeHtml).join("<br>") || "<br>"}</div></div>` : "";
-  const sentence = span ? `<div id="vocabEditSentence" class="rich-editor vem-q" contenteditable="true" aria-label="The sentence this word comes from" title="The card's own sentence: changing it changes the card everywhere">${vocabEditLineHtml(item, q, span)}</div>` : "";
+  const sCard = vocabSentenceCard(item), span = vocabEditSpan(item), q = span ? sCard.q : "";
+  const area = `<textarea id="vocabEditTerm" class="autofit" rows="1" autocomplete="off" aria-label="Word" placeholder="Word, then its meaning two lines below" hidden>${escapeHtml(item.meaning ? Q_MARK + item.term + "\n" + item.meaning : item.term)}</textarea>`;
+  const main = `<div id="vocabEditMain" class="rich-editor" contenteditable="true" aria-label="The word, then its meanings, one per line"><div class="vem-t${odLong(item.term) ? " long" : ""}" data-placeholder="Word">${escapeHtml(item.term)}</div><div class="vem-a" data-placeholder="Meaning">${(odLong(item.term) ? [ item.meaning ] : meaningLines(item.meaning)).filter(Boolean).map(escapeHtml).join("<br>")}</div></div>`;
+  const noted = !span && item.card ? noteSentence(item) : null, nspan = noted && findTermIn(noted.sentence, item.term);
+  const sentence = span ? `<div id="vocabEditSentence" class="rich-editor vem-q" contenteditable="true" aria-label="The sentence this word comes from" title="The card's own sentence: changing it changes the card everywhere">${vocabEditLineHtml(item, q, span)}</div>` : nspan ? `<div id="vocabEditSentence" class="rich-editor vem-q" contenteditable="true" data-noted="1" aria-label="The sentence this word was saved with">${vocabEditLineHtml(item, noted.sentence, nspan)}</div>` : "";
   const say = `<button type="button" class="od-say ed-say" data-say="${escapeAttr(item.term)}" aria-label="Listen" title="Listen">${OD_SPEAK}</button>`;
-  return '<div class="vocab-editor">' + `<div class="od-card ed-card">${say}${area}${main}<div class="ed-chips">${vocabEditChipsHtml(item)}</div>${sentence}<div class="notes-clip"><div id="vocabEditNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes" aria-label="Notes">${wordNotesOf(item)}</div></div></div>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
+  return '<div class="vocab-editor">' + `<div class="od-card ed-card">${say}${area}${main}<div class="ed-chips">${vocabEditChipsHtml(item)}</div>${sentence}<div class="notes-clip"><div id="vocabEditNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes" aria-label="Notes">${noted && nspan ? noted.rest : wordNotesOf(item)}</div></div></div>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
+}
+
+function vocabEditNotesHtml(notes) {
+  const sent = document.getElementById("vocabEditSentence"), html = notes ? editorHtml(notes) : "";
+  if (!sent || !sent.dataset.noted) return html;
+  const t = cleanPunct(plainTextOf(stripVocabHighlights(sent.innerHTML), "\n")).replace(/\s+/g, " ").trim();
+  return (t ? "<div>" + escapeHtml(t) + "</div>" : "") + html;
 }
 
 function syncVocabEditMain(item) {
@@ -20748,10 +20817,25 @@ function vocabDictText(item) {
   return sentence && findWordForm(sentence.normalize("NFC"), item.term) ? sentence : item.term;
 }
 
+function vocabShownText(item) {
+  const vc = document.getElementById("vocabCard");
+  const other = vc && vc.dataset.lookKey === item.key && vc.dataset.ex === "other" ? vc.dataset.other || "" : "";
+  const base = [ vocabDictText(item), other ].filter((t, i, a) => t && a.indexOf(t) === i).join("\n"), lang = detectLang(base).split("-")[0];
+  const bare = t => t.replace(/[\s\p{P}]+/gu, ""), seen = new Set([ bare(base) ]);
+  const cjk = /^(zh|ja|ko)$/.test(lang);
+  const extra = plainTextOf(wordNotesOf(item), "\n").split("\n").map(t => t.trim()).filter(t => {
+    const k = bare(t);
+    if (!t || seen.has(k) || bare(base).includes(k) || detectLang(t).split("-")[0] !== lang || /[:：]/.test(t) || cjk && /\p{Script=Latin}/u.test(t)) return false;
+    seen.add(k);
+    return true;
+  });
+  return [ base ].concat(extra).join("\n");
+}
+
 function preloadVocabDict(item) {
   if (!item) return;
-  ownDictPrefetch(vocabDictText(item), vocabContext(item).card);
-  dictLoad(dictUrlFor(vocabDictText(item), vocabContext(item).card));
+  ownDictPrefetch(vocabShownText(item), vocabContext(item).card);
+  dictLoad(dictUrlFor(vocabShownText(item), vocabContext(item).card));
 }
 
 function syncVocabEditPopup(items) {
@@ -20763,19 +20847,7 @@ function syncVocabEditPopup(items) {
   }
   if (pop.dataset.vocab === item.key && !pop.hidden) return false;
   const {card: card} = vocabContext(item);
-  const vc = document.getElementById("vocabCard"), world = vc && vc.dataset.lookKey === item.key && vc.dataset.ex === "other" && vc.dataset.other || "";
-  const base = world || vocabDictText(item), lang = detectLang(base).split("-")[0];
-  const ownLine = world ? vocabContext(item).sentence || "" : "";
-  const bare = t => t.replace(/[\s\p{P}]+/gu, ""), seen = new Set([ bare(base) ]);
-  const cjk = /^(zh|ja|ko)$/.test(lang);
-  const extra = plainTextOf(wordNotesOf(item), "\n").split("\n").map(t => t.trim()).filter(t => {
-    const k = bare(t);
-    if (!t || seen.has(k) || bare(base).includes(k) || detectLang(t).split("-")[0] !== lang || /[:：]/.test(t) || cjk && /\p{Script=Latin}/u.test(t)) return false;
-    seen.add(k);
-    return true;
-  });
-  const own = ownLine.trim() && !seen.has(bare(ownLine)) ? [ ownLine.trim() ] : [];
-  const text = own.concat([ base ], extra).join("\n");
+  const text = vocabShownText(item);
   pop.querySelector(".le-box").classList.remove("edit-row");
   pop.querySelector(".le-content").innerHTML = vocabEditorHtml(item) + '<div id="vocabEditDict"></div>';
   pop.dataset.vocab = item.key;
@@ -20788,7 +20860,7 @@ function syncVocabEditPopup(items) {
     dict.before(stroke);
     drawStrokeOrder(stroke, text, cjkScriptFor(text, card) === "ja");
   }
-  showDictSite(world || vocabDictText(item), card);
+  showDictSite(text, card);
   placeEditPopup();
   editPopupFromTop();
   return true;
@@ -20819,7 +20891,7 @@ function wireVocabEditor(items) {
     syncVocabEditMain(now);
     saveVocabSentence(now, document.getElementById("vocabEditSentence"));
     const v = vocabEditValues();
-    if (!saveVocabEditor(now, v.term, v.meaning, editorHtml(notes), true)) {
+    if (!saveVocabEditor(now, v.term, v.meaning, vocabEditNotesHtml(notes), true)) {
       vocabEditingKey = key;
       return;
     }
@@ -20964,7 +21036,7 @@ function commitVocabEdit() {
     saveVocabSentence(item, document.getElementById("vocabEditSentence"));
   }
   const v = vocabEditValues();
-  if (term && (isNew || item)) saveVocabEditor(isNew ? null : item, v.term, v.meaning, notes ? editorHtml(notes) : "", false);
+  if (term && (isNew || item)) saveVocabEditor(isNew ? null : item, v.term, v.meaning, vocabEditNotesHtml(notes), false);
   return true;
 }
 
@@ -21028,7 +21100,7 @@ function keepVocabEdit() {
   if (key !== item.key && lessonVocabItems(vocabSource()).some(i => i.key === key)) return;
   const blank = !item.meaning || vocabKeptBlank === item.key;
   vocabEditingKey = null;
-  const saved = saveVocabEditor(item, v.term, v.meaning, notes ? editorHtml(notes) : "", false, true);
+  const saved = saveVocabEditor(item, v.term, v.meaning, vocabEditNotesHtml(notes), false, true);
   vocabEditingKey = saved ? key : item.key;
   if (saved) {
     vocabKeptBlank = blank ? key : null;
@@ -21727,7 +21799,7 @@ function vocabCopyAction() {
   if (!item) return;
   const own = oneLine(vocabContext(item).sentence || ""), vc = document.getElementById("vocabCard");
   const shown = vocabView === "card" && vc && vc.dataset.lookKey === item.key && vc.dataset.ex === "other" && vc.dataset.other ? oneLine(vc.dataset.other) : "";
-  const lines = [ shown, own ].filter((t, i, a) => t && a.indexOf(t) === i);
+  const lines = [ own, shown ].filter((t, i, a) => t && a.indexOf(t) === i);
   copyText(lines.join("\n") || oneLine(item.term));
 }
 
