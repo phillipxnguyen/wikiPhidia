@@ -471,6 +471,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-20 | `e8979d4` | Nhãn từ loại (noun, adj, adv…) viết thường |
 | LOOKUP-21 | `8d03895` | Ô sửa cạnh từ điển cao vừa nội dung: lề 16px đều quanh nội dung và Save, tối thiểu 360px, căn giữa khi ngắn |
 | LOOKUP-22 | `e9da0fd` | Trang từ điển cách mép khung 16px trên, trái, dưới và cách nội dung 16px; ô ＋ thêm thẻ/từ dùng chung thẻ của popup |
+| LOOKUP-23 | `60ef5d9` | Ô sửa cạnh từ điển trở lại cỡ đầy đủ như trước (900×640, nhỏ hơn khi màn hình nhỏ); nội dung căn giữa, trên dưới bằng nhau |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
