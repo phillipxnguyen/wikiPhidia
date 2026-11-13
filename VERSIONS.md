@@ -459,6 +459,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-14 | `673d6cc` | Ô sửa từ tô màu mọi từ của bạn trong câu, rê chuột hiện nghĩa, click mở popup |
 | LOOKUP-15 | `0ce61a7` | Chữ phụ trong popup từ (Add, Save, In your words, NOUN, Notes) dùng font pixel; lọc ngôn ngữ chỉ giữa Trung/Nhật/Hàn |
 | LOOKUP-16 | `de572ec` | Popup, ô sửa từ, flashcard, list từ đều hiện mỗi nghĩa một dòng |
+| LOOKUP-17 | `c0caa7e` | Lề đồng bộ popup và ô sửa: khung 16px quanh thẻ, Save cách 16px, Notes 8/12px, loa canh giữa dòng đầu |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
