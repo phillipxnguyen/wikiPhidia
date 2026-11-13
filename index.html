@@ -450,8 +450,9 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-list .vocab-editor{margin:4px 0;box-shadow:none;}
   .vocab-editor textarea{width:100%;font-size:16px;}
   #vocabEditTerm, #qaQ{border-left:4px solid var(--lesson-accent);}
-  #vocabEditSentence{padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);outline:none;}
-  #vocabEditSentence:focus{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft);}
+  #vocabEditMain{padding:8px 10px;border:1px solid var(--border);border-left:4px solid var(--lesson-accent);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);outline:none;}
+  #vocabEditMain:focus{border-color:var(--accent);border-left-color:var(--lesson-accent);box-shadow:0 0 0 4px var(--accent-soft);}
+  #vocabEditMain .vem-a{color:var(--a-text);}
   .q-wrap{position:relative;display:block;min-width:0;}
   .qa-row > .q-wrap{flex:1 1 auto;}
   .q-mirror{position:absolute;z-index:0;margin:0;overflow:hidden;border-style:solid;border-color:transparent;color:var(--text);pointer-events:none;}
@@ -20220,20 +20221,37 @@ function vocabSentenceCard(item) {
 }
 
 function saveVocabSentence(item, el) {
-  if (!el || !vocabSentenceCard(item)) return;
+  const line = el && el.querySelector(".vem-q");
+  if (!line || !vocabSentenceCard(item)) return;
   const card = item.card;
-  const html = cleanPunctHtml(sanitizeHtml(stripVocabHighlights(editorHtml(el)), "br"));
-  const q = cleanPunct(plainTextOf(html, "\n"));
-  if (!q.trim() || q === card.q && html === (card.qHtml || textHtml(card.q))) return;
+  const q = cleanPunct(plainTextOf(stripVocabHighlights(line.innerHTML), "\n")).trim();
+  if (!q || q === card.q.trim()) return;
   pushUndo("Edited sentence — " + item.term);
   card.q = q;
-  card.qHtml = html;
+  card.qHtml = textHtml(q);
   if (card.id != null) transliterationCache.delete(cacheKey(card.id, "q"));
   scheduleAutoSave();
 }
 
+function vocabEditSpan(item) {
+  return vocabSentenceCard(item) ? findTermIn(item.card.q, item.term) : null;
+}
+
 function vocabEditorHtml(item) {
-  return '<div class="vocab-editor">' + `<textarea id="vocabEditTerm" class="autofit" rows="1" autocomplete="off" aria-label="Word" placeholder="Word, then its meaning two lines below">${escapeHtml(item.meaning ? Q_MARK + item.term + "\n" + item.meaning : item.term)}</textarea>` + (vocabSentenceCard(item) ? `<div id="vocabEditSentence" class="rich-editor" contenteditable="true" data-placeholder="Sentence" aria-label="The sentence this word comes from" title="The sentence of this word's card: changing it changes the card everywhere">${item.card.qHtml || textHtml(item.card.q)}</div>` : "") + `<div class="notes-clip"><div id="vocabEditNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes" aria-label="Notes">${wordNotesOf(item)}</div></div>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
+  const span = vocabEditSpan(item), q = span ? item.card.q : "";
+  const area = `<textarea id="vocabEditTerm" class="autofit" rows="1" autocomplete="off" aria-label="Word" placeholder="Word, then its meaning two lines below"${span ? " hidden" : ""}>${escapeHtml(item.meaning ? Q_MARK + item.term + "\n" + item.meaning : item.term)}</textarea>`;
+  const lines = t => escapeHtml(t).replace(/\n/g, "<br>");
+  const main = span ? `<div id="vocabEditMain" class="rich-editor" contenteditable="true" aria-label="The word in its sentence, then its meaning" title="The word in its card's sentence, then its meaning: changing the sentence changes the card everywhere"><div class="vem-q">${lines(q.slice(0, span[0]))}<mark class="vocab-own vem-w">${escapeHtml(q.slice(span[0], span[1]))}</mark>${lines(q.slice(span[1]))}</div><div class="vem-a">${escapeHtml(item.meaning) || "<br>"}</div></div>` : "";
+  return '<div class="vocab-editor">' + area + main + `<div class="notes-clip"><div id="vocabEditNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes" aria-label="Notes">${wordNotesOf(item)}</div></div>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
+}
+
+function syncVocabEditMain(item) {
+  const main = document.getElementById("vocabEditMain"), term = document.getElementById("vocabEditTerm");
+  if (!main || !term) return;
+  const w = main.querySelector(".vem-w"), a = main.querySelector(".vem-a");
+  const word = (w ? w.textContent : "").replace(/\s+/g, " ").trim() || item.term;
+  const meaning = a ? a.innerText.replace(/\s+/g, " ").trim() : "";
+  term.value = meaning ? Q_MARK + word + "\n" + meaning : word;
 }
 
 const VOCAB_FLIP_MS = 450;
@@ -20451,7 +20469,8 @@ function wireVocabEditor(items) {
     const key = vocabEditingKey;
     vocabEditingKey = null;
     const now = lessonVocabItems(vocabSource()).find(i => i.key === key) || item;
-    saveVocabSentence(now, document.getElementById("vocabEditSentence"));
+    syncVocabEditMain(now);
+    saveVocabSentence(now, document.getElementById("vocabEditMain"));
     const v = vocabEditValues();
     if (!saveVocabEditor(now, v.term, v.meaning, editorHtml(notes), true)) {
       vocabEditingKey = key;
@@ -20460,7 +20479,9 @@ function wireVocabEditor(items) {
     renderVocab();
   };
   document.getElementById("vocabEditSave").onclick = save;
-  [ term, document.getElementById("vocabEditSentence"), notes ].filter(Boolean).forEach(input => {
+  const main = document.getElementById("vocabEditMain");
+  if (main) main.addEventListener("input", () => syncVocabEditMain(item));
+  [ term, main, notes ].filter(Boolean).forEach(input => {
     input.addEventListener("keydown", e => {
       e.stopPropagation();
       if (e.isComposing || e.keyCode === 229) return;
@@ -20560,7 +20581,10 @@ function commitVocabEdit() {
   const item = lessonVocabItems(vocabSource()).find(i => i.key === vocabEditingKey);
   const isNew = vocabEditingKey === NEW_WORD_KEY;
   vocabEditingKey = null;
-  if (item) saveVocabSentence(item, document.getElementById("vocabEditSentence"));
+  if (item) {
+    syncVocabEditMain(item);
+    saveVocabSentence(item, document.getElementById("vocabEditMain"));
+  }
   const v = vocabEditValues();
   if (term && (isNew || item)) saveVocabEditor(isNew ? null : item, v.term, v.meaning, notes ? editorHtml(notes) : "", false);
   return true;
