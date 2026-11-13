@@ -486,7 +486,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-32 | `54fcb75` | Khoảng chung trong popup tra từ và ô sửa tăng 12px → 15px (đỡ dính) |
 | LOOKUP-33 | `58fda29` | Ô sửa Vocabulary: các hàng chip/định nghĩa cách nhau 15px như popup |
 | LOOKUP-34 | `e482e32` | Chốt khoảng chung 16px (12 + 4) trong popup tra từ và ô sửa |
-| LOOKUP-35 | `pending` | Ô sửa: nút Save sát Notes hơn (16px → 12px) |
+| LOOKUP-35 | `351fec2` | Ô sửa: nút Save sát Notes hơn (16px → 12px) |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
