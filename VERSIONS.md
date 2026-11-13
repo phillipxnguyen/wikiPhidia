@@ -320,6 +320,7 @@ Hàm chính: `dictLoad`, `dictSlot`, `dictFit`, `showDictSite`, `hideDictOverlay
 | DATA-17 | `31ff949` | Ô thẻ: hết dòng trống thừa sau khi xuống dòng 2 lần thành Q (ô từ, ô thêm thẻ); ô sửa thẻ Lessons chỉ tô màu dòng Q, không tô dòng nghĩa |
 | DATA-18 | `59a5528` | Thẻ có video cũng dùng ô Q/A chung (trước chỉ có câu) |
 | DATA-19 | `0091022` | Ghi chú của từ là các dòng con dưới dòng `từ: nghĩa` trong Notes thẻ (một loại notes duy nhất); notes riêng cũ chuyển vào khi lưu |
+| DATA-20 | `673d6cc` | Delete giống nhau ở popup, ô sửa thẻ, ô sửa từ (khi không gõ trong box) |
 
 Hàm chính: `newRow` (bản dịch vào notes khi tạo), `foldAnswer` + `keepsAnswer` (dòng thêm dưới câu khi sửa thẻ hoặc khi dán thì vào notes), `wordLike`, `belongsInVocab`, `isTranslationCard` (cho dòng `từ: nghĩa`), `autoSortLibrary`.
 
@@ -364,6 +365,7 @@ Hàm chính: `todayTasks`, `todayTaskCounts`, `taskQueue`, `startTaskSide`, `tas
 | LAYOUT-10 | `4182897` | Sidebar Vocabulary: thẻ Vocabulary dưới Today (đếm, chip ngôn ngữ, thanh) mở trang Vocabulary; bỏ ô ngôn ngữ to |
 | LAYOUT-11 | `003965a` | Thẻ Vocabulary chiếm hết sidebar: số New/Due/Today, hàng từng ngôn ngữ (bước lộ trình, thanh Done), biểu đồ 7 ngày, buổi đang chờ |
 | LAYOUT-12 | `266b0f1` | Thẻ Vocabulary ở sidebar làm lại: nền gradient rực, ô số dạng kính, mỗi ngôn ngữ một thẻ màu riêng (tên đủ, 🆕⏳✅, bước), biểu đồ 7 ngày, nút Open trắng |
+| LAYOUT-13 | `673d6cc` | Bộ rule chung (README → Rules, 12 nhóm); màu ngôn ngữ Library = Vocabulary |
 
 Hàm chính: `switchToLesson`, `setAppMode`, `syncModeButtonHighlights`, `lessonInMode`, `lessonShown`, `bookHidden`.
 
@@ -443,6 +445,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-11 | `526e75b` | Popup đều 4 lề (Notes không thò ra ngoài lề chữ), dấu ＋ là icon căn giữa |
 | LOOKUP-12 | `9a54d6a` | Popup từ: đang tải nghĩa thì hiện Translating… như extension (bỏ thanh xám chờ) |
 | LOOKUP-13 | `0091022` | Rule chung: từ đã có = mọi bài cùng ngôn ngữ (tô màu, popup); khác ngôn ngữ không tính |
+| LOOKUP-14 | `673d6cc` | Ô sửa từ tô màu mọi từ của bạn trong câu, rê chuột hiện nghĩa, click mở popup |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
