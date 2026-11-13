@@ -193,6 +193,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-62 | `6c7e86d` | Box chính ô sửa từ 3 tầng: từ đậm, nghĩa xanh, câu dưới vạch kẻ (nhãn Sentence, từ nền vàng); câu trong popup cũng tô vàng |
 | FLASH-63 | `bba5fa8` | Bỏ vạch kẻ và nhãn Sentence trên câu trong ô sửa từ |
 | FLASH-64 | `c51a339` | Box chính ô sửa từ cân đối: chữ cách 4 mép 14px, từ/nghĩa/câu cách đều 8px |
+| FLASH-65 | `7b82c37` | Ô sửa từ: từ và nghĩa sát nhau thành một cặp, câu cách ra 14px bên dưới |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
