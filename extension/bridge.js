@@ -68,7 +68,11 @@
 
   window.addEventListener("message", e => {
     if (e.source !== window || !alive() || !e.data || e.data.from !== "wikiphidia-app") return;
-    if (e.data.type === "ready") post({ type: "hello" });
+    if (e.data.type === "ready") post({ type: "hello", caps: [ "dict" ] });
+    if (e.data.type === "dictFetch") {
+      const id = e.data.id;
+      chrome.runtime.sendMessage({ type: "dictFetch", url: e.data.url }).then(r => post(Object.assign({ type: "dictFetched", id: id }, r || { ok: false })), err => post({ type: "dictFetched", id: id, ok: false, error: String(err) }));
+    }
     if (e.data.type === "state") {
       ready = true;
       chrome.storage.local.set({
@@ -95,12 +99,12 @@
   });
 
   chrome.runtime.onMessage.addListener(msg => {
-    if (msg && msg.type === "flush") post({ type: "hello" });
+    if (msg && msg.type === "flush") post({ type: "hello", caps: [ "dict" ] });
   });
 
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible") post({ type: "hello" });
+    if (document.visibilityState === "visible") post({ type: "hello", caps: [ "dict" ] });
   });
 
-  post({ type: "hello" });
+  post({ type: "hello", caps: [ "dict" ] });
 })();

@@ -10749,6 +10749,213 @@ async function enDictLookup(w) {
   }
 }
 
+let extDictOn = false, extFetchSeq = 0;
+
+const extFetchWait = new Map;
+
+function extFetch(url) {
+  if (!extDictOn) return Promise.resolve(null);
+  const id = "f" + ++extFetchSeq;
+  return new Promise(done => {
+    const timer = setTimeout(() => {
+      extFetchWait.delete(id);
+      done(null);
+    }, 15e3);
+    extFetchWait.set(id, r => {
+      clearTimeout(timer);
+      done(r && r.ok && typeof r.text === "string" ? r.text : null);
+    });
+    window.postMessage({
+      from: "wikiphidia-app",
+      type: "dictFetch",
+      id: id,
+      url: url
+    }, "*");
+  });
+}
+
+const DICT_SRC_KEY = "flashcards.dictSrc", DICT_SRC_MAX = 800, dictSrcPending = new Map;
+
+let dictSrcStore = null, dictSrcQueue = Promise.resolve();
+
+function dictSrcRead() {
+  if (!dictSrcStore) dictSrcStore = readLocal(DICT_SRC_KEY) || {};
+  return dictSrcStore;
+}
+
+function dictSrcSave() {
+  const st = dictSrcRead(), keys = Object.keys(st);
+  if (keys.length > DICT_SRC_MAX) keys.slice(0, keys.length - DICT_SRC_MAX).forEach(k => delete st[k]);
+  try {
+    localStorage.setItem(DICT_SRC_KEY, JSON.stringify(st));
+  } catch (e) {}
+}
+
+function dictSrcKey(lang, w) {
+  return (lang || "").split("-")[0] + "|" + normalizeVocabText(w);
+}
+
+function dictSrcOf(lang, w) {
+  return dictSrcRead()[dictSrcKey(lang, w)] || null;
+}
+
+function htmlDoc(text) {
+  return new DOMParser().parseFromString(text, "text/html");
+}
+
+function cleanLine(el, drop) {
+  if (!el) return "";
+  const c = el.cloneNode(true);
+  if (drop) c.querySelectorAll(drop).forEach(n => n.remove());
+  return c.textContent.replace(/\s+/g, " ").trim();
+}
+
+function dictPos(p) {
+  p = (p || "").toLowerCase().replace(/[「」.]/g, "").trim();
+  return OD_POS[p] || {
+    n: "noun",
+    v: "verb",
+    adj: "adj",
+    adv: "adv",
+    명사: "noun",
+    동사: "verb",
+    형용사: "adj",
+    부사: "adv"
+  }[p] || p;
+}
+
+function pushDef(defs, pos, d) {
+  d = (d || "").replace(/\s*:\s*$/, "").trim();
+  if (!d || d.length > 200) return;
+  let g = defs.find(x => x.pos === pos);
+  if (!g) {
+    if (defs.length >= 3) return;
+    g = {
+      pos: pos,
+      d: []
+    };
+    defs.push(g);
+  }
+  if (g.d.length < 2 && !g.d.includes(d)) g.d.push(d);
+}
+
+function pushEx(ex, t, tr) {
+  t = (t || "").replace(/\s+/g, " ").trim();
+  if (t && t.length <= 200 && ex.length < 12 && !ex.some(x => x.t === t)) ex.push(tr ? {
+    t: t,
+    tr: tr
+  } : {
+    t: t
+  });
+}
+
+async function dictSrcCambridge(w) {
+  const text = await extFetch("https://dictionary.cambridge.org/dictionary/english/" + encodeURIComponent(w.toLowerCase().replace(/\s+/g, "-")));
+  if (!text) return null;
+  const doc = htmlDoc(text), defs = [], ex = [];
+  doc.querySelectorAll(".pr.entry-body__el, .pr.idiom-block").forEach(en => {
+    const pos = dictPos(cleanLine(en.querySelector(".pos-header .pos, .dpos")));
+    en.querySelectorAll(".def-block").forEach(b => {
+      pushDef(defs, pos, cleanLine(b.querySelector(".def")));
+      b.querySelectorAll(".examp .eg").forEach(e => pushEx(ex, cleanLine(e)));
+    });
+  });
+  doc.querySelectorAll(".degs .deg").forEach(e => pushEx(ex, cleanLine(e)));
+  const au = doc.querySelector('.us source[type="audio/mpeg"]'), lv = doc.querySelector(".epp-xref");
+  return {
+    src: "Cambridge",
+    defs: defs,
+    ex: ex,
+    audio: au ? new URL(au.getAttribute("src"), "https://dictionary.cambridge.org/").href : "",
+    lv: lv ? lv.textContent.trim() : ""
+  };
+}
+
+async function dictSrcYoudao(w) {
+  const text = await extFetch("https://dict.youdao.com/result?lang=en&word=" + encodeURIComponent(w));
+  if (!text) return null;
+  const doc = htmlDoc(text), defs = [], ex = [];
+  doc.querySelectorAll(".basic .trans-ce").forEach(el => pushDef(defs, "", cleanLine(el)));
+  doc.querySelectorAll(".blng_sents_part li").forEach(li => pushEx(ex, cleanLine(li.querySelector(".sen-eng")), cleanLine(li.querySelector(".sen-ch"))));
+  return {
+    src: "Youdao",
+    defs: defs,
+    ex: ex
+  };
+}
+
+async function dictSrcJapanese(w) {
+  const [jt, text] = await Promise.all([ extFetch("https://jisho.org/api/v1/search/words?keyword=" + encodeURIComponent(w)), extFetch("https://ejje.weblio.jp/sentence/content/" + encodeURIComponent(w)) ]);
+  const defs = [], ex = [];
+  let j = null;
+  try {
+    j = jt && JSON.parse(jt);
+  } catch (e) {}
+  const hit = j && (j.data || []).find(d => (d.japanese || []).some(x => x.word === w || x.reading === w));
+  if (hit) hit.senses.forEach(sn => pushDef(defs, dictPos((sn.parts_of_speech || [])[0] || ""), (sn.english_definitions || []).join("; ")));
+  if (text) htmlDoc(text).querySelectorAll(".qotC").forEach(q => pushEx(ex, cleanLine(q.querySelector(".qotCJJ"), ".addToSlBtnCntner"), cleanLine(q.querySelector(".qotCJE"), "span, i, audio")));
+  return hit || text ? {
+    src: "Jisho · Weblio",
+    defs: defs,
+    ex: ex
+  } : null;
+}
+
+async function dictSrcKorean(w) {
+  const base = "https://krdict.korean.go.kr/eng/dicMarinerSearch/search?nation=eng&nationCode=6&mainSearchWord=" + encodeURIComponent(w);
+  const [tw, te] = await Promise.all([ extFetch(base), extFetch(base + "&searchType=E&blockCount=30") ]);
+  if (!tw && !te) return null;
+  const defs = [], ex = [];
+  let audio = "";
+  if (tw) {
+    const doc = htmlDoc(tw);
+    doc.querySelectorAll(".search_result dl").forEach(dl => {
+      const head = cleanLine(dl.querySelector("dt .word_type1_17"), "sup");
+      if (head !== w) return;
+      const pos = dictPos(cleanLine(dl.querySelector(".word_att_type1"), ".manyLang6"));
+      dl.querySelectorAll("dd.manyLang6:not(.ml20)").forEach(dd => pushDef(defs, pos, cleanLine(dd, "strong").replace(/^\.\s*/, "")));
+      const snd = !audio && dl.querySelector("a.sound[href*='fnSoundPlay']");
+      const m = snd && snd.getAttribute("href").match(/fnSoundPlay\('([^']+)'/);
+      if (m) try {
+        audio = atob(m[1]);
+      } catch (e) {}
+    });
+  }
+  if (te) htmlDoc(te).querySelectorAll(".search_result li a").forEach(a => pushEx(ex, cleanLine(a).replace(/\((Word|단어)\s*:[^)]*\)\s*$/, "").trim()));
+  return {
+    src: "krdict",
+    defs: defs,
+    ex: ex.filter(x => findTermIn(x.t, w)),
+    audio: /^https:\/\//.test(audio) ? audio : ""
+  };
+}
+
+function dictSrcFetch(lang, w) {
+  lang = (lang || "").split("-")[0];
+  w = (w || "").replace(/\s+/g, " ").trim();
+  const key = dictSrcKey(lang, w), have = dictSrcRead()[key];
+  if (have) return Promise.resolve(have);
+  if (!extDictOn || !w || odLong(w) || ![ "en", "zh", "ja", "ko" ].includes(lang)) return Promise.resolve(null);
+  if (dictSrcPending.has(key)) return dictSrcPending.get(key);
+  const run = () => (lang === "en" ? dictSrcCambridge(w) : lang === "zh" ? dictSrcYoudao(w) : lang === "ja" ? dictSrcJapanese(w) : dictSrcKorean(w)).catch(() => null);
+  const job = dictSrcQueue = dictSrcQueue.then(run, run).then(r => {
+    if (r && (r.defs.length || r.ex.length)) {
+      r.at = Date.now();
+      dictSrcRead()[key] = r;
+      dictSrcSave();
+      return r;
+    }
+    return null;
+  }).finally(() => dictSrcPending.delete(key));
+  dictSrcPending.set(key, job);
+  return job;
+}
+
+function dictSrcSentences(lang, w) {
+  const r = dictSrcOf(lang, w);
+  return r ? r.ex.map(x => x.t).filter(t => t.length <= 160 && findTermIn(t, w)) : [];
+}
+
 function ownDictFetch(lang, w, full) {
   const key = lang + "|" + normalizeVocabText(w), have = ownDictEntry(lang, w), wantDefs = !!full && lang === "en" && !odLong(w) && !/\s/.test(w.trim());
   if (have && have.groups && (!wantDefs || have.defs)) return Promise.resolve(have);
@@ -10813,8 +11020,13 @@ function odLong(w) {
   return (w || "").trim().length > 20 || /[.!?,;:。！？，；]/.test(w || "");
 }
 
-function odDefsHtml(e) {
-  return (e && e.defs || []).map(g => `<div class="od-group od-defs">${g.pos ? `<span class="od-pos">${escapeHtml(g.pos)}</span>` : ""}<div class="od-terms">${g.d.map(t => `<button type="button" class="od-term od-def" data-m="${escapeAttr(t)}" title="Add this meaning to the meaning line">${escapeHtml(t)}</button>`).join("")}</div></div>`).join("");
+function dictDefsFor(lang, w, e) {
+  const r = dictSrcOf(lang, w);
+  return r && r.defs.length ? r.defs : e && e.defs || [];
+}
+
+function odDefsHtml(defs) {
+  return (defs || []).map(g => `<div class="od-group od-defs">${g.pos ? `<span class="od-pos">${escapeHtml(g.pos)}</span>` : ""}<div class="od-terms">${g.d.map(t => `<button type="button" class="od-term od-def" data-m="${escapeAttr(t)}" title="Add this meaning to the meaning line">${escapeHtml(t)}</button>`).join("")}</div></div>`).join("");
 }
 
 let wordLevels = null, wordLevelsJob = null, irregularBase = null;
@@ -10860,9 +11072,10 @@ function wordLevel(lang, w) {
     loadWordLevels();
     return null;
   }
-  const map = wordLevels[lang];
-  if (!map) return null;
+  const map = wordLevels[lang] || new Map;
   let l = map.get(w);
+  const cam = lang === "en" && dictSrcOf("en", w);
+  if (cam && /^[ABC][12]$/.test(cam.lv || "")) l = cam.lv;
   if (!l && lang === "en") {
     const k = w.toLowerCase();
     l = map.get(k) || enBaseForms(k).map(x => map.get(x)).find(Boolean);
@@ -10899,9 +11112,10 @@ function ownDictCardHtml(lang, w, ctx) {
     pos: "",
     terms: e.alts
   } ] : []) : [];
-  const body = !e ? "" : `<button type="button" class="od-main" data-m="${escapeAttr(e.m)}" title="Add with this meaning">${escapeHtml(e.m)}</button>` + groups.map(g => `<div class="od-group">${g.pos ? `<span class="od-pos">${escapeHtml(g.pos)}</span>` : ""}<div class="od-terms">${g.terms.map(t => `<button type="button" class="od-term" data-m="${escapeAttr(t)}" title="Add this meaning to the meaning line">${escapeHtml(t)}</button>`).join("")}</div></div>`).join("") + odDefsHtml(e);
+  const body = !e ? "" : `<button type="button" class="od-main" data-m="${escapeAttr(e.m)}" title="Add with this meaning">${escapeHtml(e.m)}</button>` + groups.map(g => `<div class="od-group">${g.pos ? `<span class="od-pos">${escapeHtml(g.pos)}</span>` : ""}<div class="od-terms">${g.terms.map(t => `<button type="button" class="od-term" data-m="${escapeAttr(t)}" title="Add this meaning to the meaning line">${escapeHtml(t)}</button>`).join("")}</div></div>`).join("") + odDefsHtml(dictDefsFor(lang, w, e));
   const act = '<span class="od-acts"></span>';
-  const examples = appSentencesFor(w, ctx && ctx.row, 2).map(t => ({
+  const mine = appSentencesFor(w, ctx && ctx.row, 2), world = dictSrcSentences(lang, w).filter(t => !mine.includes(t)).slice(0, 3 - mine.length);
+  const examples = mine.concat(world).map(t => ({
     t: t
   }));
   const exHtml = examples.length ? `<div class="od-ex">${examples.map(x => {
@@ -11125,6 +11339,7 @@ function openOwnDictFloat(el, mode, word, ctx) {
     if (ownDictFloat === pop) paintOwnDictFloat();
   });
   if (!wordLevels) loadWordLevels().then(() => ownDictFloat === pop && wordLevel(shown.lang, w) && paintOwnDictFloat());
+  if (!dictSrcOf(shown.lang, w)) dictSrcFetch(shown.lang, w).then(r => r && ownDictFloat === pop && paintOwnDictFloat());
 }
 
 function ownDictFloatPick(b) {
@@ -11503,6 +11718,8 @@ function wordAudioUrl(lang, w) {
   w = (w || "").trim();
   if (!w || odLong(w) || w.length > 12 && !/^[a-z' -]+$/i.test(w)) return "";
   lang = (lang || "").split("-")[0];
+  const src = dictSrcOf(lang, w);
+  if (src && src.audio) return src.audio;
   if (lang === "en") {
     const e = ownDictEntry("en", w);
     return e && e.audio || "https://dict.youdao.com/dictvoice?type=2&audio=" + encodeURIComponent(w.toLowerCase());
@@ -19683,7 +19900,17 @@ function readerYouTube(d) {
 function startReaderBridge() {
   window.addEventListener("message", e => {
     if (e.source !== window || !e.data || e.data.from !== "wikiphidia-reader" || tabPaused) return;
-    if (e.data.type === "hello") window.postMessage(readerState(), "*");
+    if (e.data.type === "hello") {
+      if ((e.data.caps || []).includes("dict")) extDictOn = true;
+      window.postMessage(readerState(), "*");
+    }
+    if (e.data.type === "dictFetched") {
+      const done = extFetchWait.get(e.data.id);
+      if (done) {
+        extFetchWait.delete(e.data.id);
+        done(e.data);
+      }
+    }
     if (e.data.type === "add") {
       window.postMessage(readerAdd(e.data.words), "*");
       window.postMessage(readerState(), "*");
@@ -20319,6 +20546,7 @@ function otherLessonSentence(item) {
       });
     });
   });
+  dictSrcSentences(ownDictLang(item.term, item.card), item.term).forEach(t => t.length <= 120 && !found.includes(t) && found.push(t));
   const own = vocabContext(item).sentence, roll = Math.random() * (found.length + (own ? 1 : 0));
   if (own && roll < 1) return "";
   return found.length ? found[Math.floor(Math.random() * found.length)] : "";
@@ -20944,7 +21172,7 @@ function vocabEditChipsHtml(item) {
     pos: "",
     terms: e.alts
   } ] : []) : [];
-  return groups.map(g => `<div class="od-group">${g.pos ? `<span class="od-pos">${escapeHtml(g.pos)}</span>` : ""}<div class="od-terms">${g.terms.map(t => `<button type="button" class="od-term" data-m="${escapeAttr(t)}">${escapeHtml(t)}</button>`).join("")}</div></div>`).join("") + odDefsHtml(e);
+  return groups.map(g => `<div class="od-group">${g.pos ? `<span class="od-pos">${escapeHtml(g.pos)}</span>` : ""}<div class="od-terms">${g.terms.map(t => `<button type="button" class="od-term" data-m="${escapeAttr(t)}">${escapeHtml(t)}</button>`).join("")}</div></div>`).join("") + odDefsHtml(dictDefsFor(ownDictLang(item.term, item.card), item.term, e));
 }
 
 function vocabEditorHtml(item) {
@@ -21140,6 +21368,7 @@ function vocabShownText(item) {
 
 function preloadVocabDict(item) {
   if (!item) return;
+  dictSrcFetch(ownDictLang(item.term, item.card), item.term);
   ownDictPrefetch(vocabShownText(item), vocabContext(item).card);
   dictLoad(dictUrlFor(vocabShownText(item), vocabContext(item).card));
 }
@@ -21223,6 +21452,11 @@ function wireVocabEditor(items) {
     fitLevel();
   });
   fitLevel();
+  if (chips && item && !dictSrcOf(ownDictLang(item.term, item.card), item.term)) dictSrcFetch(ownDictLang(item.term, item.card), item.term).then(r => {
+    if (!r || !chips.isConnected) return;
+    chips.innerHTML = vocabEditChipsHtml(item);
+    paintChips();
+  });
   if (chips && item && (!chips.children.length || !chips.querySelector(".od-defs"))) ownDictFetch(detectLang(item.term).split("-")[0], item.term, true).then(() => {
     if (!chips.isConnected) return;
     chips.innerHTML = vocabEditChipsHtml(item);

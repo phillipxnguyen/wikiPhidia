@@ -252,7 +252,21 @@ chrome.storage.onChanged.addListener((changes, area) => {
   if (area === "local" && (changes.pending || changes.update || changes.settings)) paintBadge();
 });
 
+const DICT_HOSTS = [ "dictionary.cambridge.org", "www.ldoceonline.com", "dict.youdao.com", "jisho.org", "ejje.weblio.jp", "krdict.korean.go.kr" ];
+
+async function dictFetch(url) {
+  const u = new URL(url);
+  if (u.protocol !== "https:" || !DICT_HOSTS.includes(u.hostname)) throw new Error("host not allowed");
+  const res = await fetch(u.href, { credentials: "omit", redirect: "follow" });
+  const text = await res.text();
+  return { ok: res.ok, status: res.status, url: res.url, text: text.slice(0, 3e6) };
+}
+
 chrome.runtime.onMessage.addListener((msg, sender, reply) => {
+  if (msg && msg.type === "dictFetch") {
+    dictFetch(String(msg.url || "")).then(r => reply(r), e => reply({ ok: false, status: 0, error: String(e && e.message || e) }));
+    return true;
+  }
   if (msg && msg.type === "translate") {
     const text = cleanPunct(msg.text) || msg.text;
     translate(text, msg.to).catch(() => translateBackup(text, msg.to)).then(r => reply({ ok: true, ...r }), e => reply({ ok: false, error: String(e && e.message || e) }));

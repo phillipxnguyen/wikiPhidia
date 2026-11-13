@@ -54,8 +54,12 @@ Each word sits in its own box, and the hint under the list in a tinted box, so t
 
 Before a word or sentence is translated, stray marks (quotation marks of every kind, brackets, asterisks, bullets, music notes) are taken out, so the translation is not thrown off by them.
 
+## Dictionaries for the app
+
+While the extension is installed, wikiPhidia asks it for dictionary pages a web page cannot load itself: Cambridge (English), Youdao (Chinese, with its Oxford and other example sentences), Jisho and Weblio (Japanese) and the Korean Basic Dictionary (krdict, Korean). The extension only fetches pages from those sites, only for the app, and hands the page back; the app reads the definitions, example sentences and recordings out of it.
+
 ## Privacy
 
-Words, settings and the list of your vocabulary stay in the browser's extension storage. The only things sent anywhere are the word or sentence being translated, to Google Translate (with MyMemory as a fallback).
+Words, settings and the list of your vocabulary stay in the browser's extension storage. The only things sent anywhere are the word or sentence being translated, to Google Translate (with MyMemory as a fallback), and the words the app looks up, to the dictionaries above.
 
 Pinyin comes from [pinyin-pro](https://github.com/zh-lx/pinyin-pro) (MIT), bundled in `vendor/`.
