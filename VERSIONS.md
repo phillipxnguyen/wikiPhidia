@@ -439,6 +439,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-9 | `003965a` | Popup câu dài: tiêu đề nhỏ trải hết bề ngang, loa + Add một hàng dưới, nghĩa giữ một câu (không tách theo dấu phẩy, cả tooltip) |
 | LOOKUP-10 | `8602c89` | Popup câu dài: loa và ＋ thu gọn, nằm cùng dòng đầu bên phải, chữ chảy quanh |
 | LOOKUP-11 | `526e75b` | Popup đều 4 lề (Notes không thò ra ngoài lề chữ), dấu ＋ là icon căn giữa |
+| LOOKUP-12 | `9a54d6a` | Popup từ: đang tải nghĩa thì hiện Translating… như extension (bỏ thanh xám chờ) |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
