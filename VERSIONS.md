@@ -301,7 +301,7 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 | DICT-50 | `f47dc4c` | Cụm từ dùng chung popup từ đơn: dòng đầu là cụm (sửa được), nghĩa mỗi dòng, Notes, Enter lưu; bỏ hẳn ô A: B ở mọi nơi (ô sửa, ô thêm thẻ, flashcard, sách, câu học) |
 | DICT-51 | `71c9e83` | Tải sẵn nghĩa mọi từ của mọi câu đang hiện (cả từ thông dụng): popup mở là đủ, không nháy |
 | DICT-52 | `47e260f` | Theo ODH: 🔊 từ đơn phát âm thật (Free Dictionary, Youdao), nhãn cấp độ (HSK, JLPT, TOPIK, CEFR) cạnh từ, định nghĩa tiếng Anh bấm để thêm vào nghĩa |
-| DICT-53 | `pending` | Định nghĩa và câu ví dụ từ điển thật qua extension (Cambridge, Youdao, Jisho·Weblio, krdict): trong popup, ô sửa từ và làm câu "nơi khác" của flashcard; extension 1.6.22 |
+| DICT-53 | `bda56fb` | Định nghĩa và câu ví dụ từ điển thật qua extension (Cambridge, Youdao, Jisho·Weblio, krdict): trong popup, ô sửa từ và làm câu "nơi khác" của flashcard; extension 1.6.22 |
 
 Hàm chính: `showDictSite`, `hideDictOverlay`, `dictUrlFor`, `ownDictCardHtml`, `openWordFloat`, `sentenceWordAt`, `ownDictLookup`, `ownDictFetch`, `ownDictPrefetch`.
 
