@@ -300,7 +300,7 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 | DICT-49 | `5f98cc4` | Câu ví dụ trong popup từ lấy từ các bài của bạn, không tải từ bên ngoài |
 | DICT-50 | `f47dc4c` | Cụm từ dùng chung popup từ đơn: dòng đầu là cụm (sửa được), nghĩa mỗi dòng, Notes, Enter lưu; bỏ hẳn ô A: B ở mọi nơi (ô sửa, ô thêm thẻ, flashcard, sách, câu học) |
 | DICT-51 | `71c9e83` | Tải sẵn nghĩa mọi từ của mọi câu đang hiện (cả từ thông dụng): popup mở là đủ, không nháy |
-| DICT-52 | `pending` | Theo ODH: 🔊 từ đơn phát âm thật (Free Dictionary, Youdao), nhãn cấp độ (HSK, JLPT, TOPIK, CEFR) cạnh từ, định nghĩa tiếng Anh bấm để thêm vào nghĩa |
+| DICT-52 | `47e260f` | Theo ODH: 🔊 từ đơn phát âm thật (Free Dictionary, Youdao), nhãn cấp độ (HSK, JLPT, TOPIK, CEFR) cạnh từ, định nghĩa tiếng Anh bấm để thêm vào nghĩa |
 
 Hàm chính: `showDictSite`, `hideDictOverlay`, `dictUrlFor`, `ownDictCardHtml`, `openWordFloat`, `sentenceWordAt`, `ownDictLookup`, `ownDictFetch`, `ownDictPrefetch`.
 
