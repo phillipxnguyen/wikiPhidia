@@ -188,6 +188,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-57 | `263aa9b` | Ô sửa từ có câu gốc (sửa là sửa thẻ ở mọi nơi); ✕ khi học một ngôn ngữ ra list từ của ngôn ngữ đó; list từ đều lề |
 | FLASH-58 | `7d308b7` | Ô sửa từ về lại 2 box: box chính là câu gốc có từ tô màu + nghĩa dòng dưới, rồi Notes |
 | FLASH-59 | `266b0f1` | Nút ☰ Word list trên banner Vocabulary mở list từ của ngôn ngữ |
+| FLASH-60 | `53fb529` | List từ có banner màu ngôn ngữ: ‹ Vocabulary để quay về, số đếm dạng chip, Study, Weak words |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
