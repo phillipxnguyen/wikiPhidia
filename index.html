@@ -7871,7 +7871,7 @@ function flatVocabLists(html) {
     box.querySelectorAll("li > ul, li > ol").forEach(sub => {
       const li = sub.parentElement;
       const items = [ ...sub.children ];
-      if (!items.length || !items.every(x => x.tagName === "LI" && parseVocabLine(ownLiText(x)))) return;
+      if (!items.length || !items.every(x => x.tagName === "LI" && isVocabItem(x))) return;
       li.after(...items);
       sub.remove();
       moved = true;
@@ -9354,7 +9354,8 @@ function vocabLookup() {
       if (!key) return;
       if (!terms.has(key)) terms.set(key, []);
       terms.get(key).push(Object.assign({
-        term: e.term
+        term: e.term,
+        world: wordWorldOf(e.term, entry.lesson ? entry.lesson.id === currentLessonId ? studyLang : entry.lesson.studyLang : studyLang)
       }, entry));
     }));
     vocabLookupCache = {
@@ -9386,6 +9387,14 @@ function termMatches(key, exclude) {
 
 const CJK_CHAR_RE = /[぀-ヿ一-鿿]/;
 
+function textWorld(text) {
+  return worldOf(LANG_CODES[detectLang(text || "")] || "");
+}
+
+function worldFits(world, tw) {
+  return !world || !tw || world === tw || world === "ja" && tw === "zh";
+}
+
 function highlightVocabInHtml(html, excludeId, extraTerms, onlyKeys) {
   if (!html) return html;
   const exclude = rows.find(r => r.id === excludeId);
@@ -9403,6 +9412,7 @@ function highlightVocabInHtml(html, excludeId, extraTerms, onlyKeys) {
   if (!terms.size) return html;
   const container = document.createElement("div");
   container.innerHTML = html;
+  const tw = textWorld(container.textContent);
   const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null);
   const textNodes = [];
   let node;
@@ -9414,6 +9424,7 @@ function highlightVocabInHtml(html, excludeId, extraTerms, onlyKeys) {
     const words = [];
     terms.forEach((entries, key) => {
       if (onlyKeys && !onlyKeys.has(key)) return;
+      if (!entries.some(e => worldFits(e.world, tw))) return;
       termSpans(fold.folded, key).forEach(span => {
         const a = fold.map[span[0]], b = fold.map[span[1]];
         if (a < b) words.push({
@@ -10527,8 +10538,10 @@ function ownDictCardHtml(lang, w, ctx) {
   return `<article class="od-card${odLong(w) ? " od-long" : ""}" data-w="${escapeAttr(w)}"><header class="od-top">${top}</header>${py ? `<div class="od-py">${py}</div>` : ""}<div class="od-body">${body}</div>${exHtml}</article>`;
 }
 
-function ownDictFindWord(w) {
+function ownDictFindWord(w, lang) {
   const key = normalizeVocabText(w);
+  const world = worldOf(lang || ownDictFloat && ownDictFloat.ctx && ownDictFloat.ctx.lang || "");
+  const fits = (it, l) => !world || !WORD_WORLDS[world] || wordWorldOf(it.term, l ? l.studyLang : studyLang) === world;
   const li = [ ...document.querySelectorAll("#editPopup #editNotes li") ].find(el => normalizeVocabText((el.querySelector("b") || el).textContent.split(/[:：]/)[0]) === key);
   if (li) {
     const text = li.textContent, at = text.search(/[:：]/);
@@ -10538,7 +10551,7 @@ function ownDictFindWord(w) {
       meaning: at < 0 ? "" : text.slice(at + 1).trim()
     };
   }
-  const here = lessonVocabItems(vocabSource()).find(i => i.tkey === key);
+  const here = lessonVocabItems(vocabSource()).find(i => i.tkey === key && fits(i, i.card.srcLessonId ? library.find(l => l.id === i.card.srcLessonId) : null));
   if (here) return {
     item: here,
     term: here.term,
@@ -10546,7 +10559,7 @@ function ownDictFindWord(w) {
   };
   for (const l of library) {
     if (isVirtualId(l.id) || l.id === currentLessonId || bookHidden(l)) continue;
-    const it = lessonVocabItems(lessonCardsWithExtras(l)).find(i => i.tkey === key);
+    const it = lessonVocabItems(lessonCardsWithExtras(l)).find(i => i.tkey === key && fits(i, l));
     if (it) return {
       item: it,
       lesson: l,
@@ -10560,8 +10573,9 @@ function ownDictFindWord(w) {
 function ownDictSetMeaning(found, meaning) {
   if (!found || meaning === found.meaning) return false;
   if (found.li) {
-    const notes = found.li.closest("#editNotes");
+    const notes = found.li.closest("#editNotes"), nested = [ ...found.li.children ].filter(el => el.tagName === "UL" || el.tagName === "OL");
     found.li.innerHTML = "<b>" + escapeHtml(found.term) + "</b>: " + escapeHtml(meaning);
+    nested.forEach(el => found.li.appendChild(el));
     if (notes) notes.dispatchEvent(new Event("input", {
       bubbles: true
     }));
@@ -10726,7 +10740,7 @@ function meaningLines(text) {
 }
 
 function openWordFloat(rect, w, ctx, typeIn) {
-  const have = ownDictFindWord(w);
+  const have = ownDictFindWord(w, ctx && ctx.lang);
   openOwnDictFloat(rectAnchor(rect), have ? "have" : "add", w, ctx);
   const input = typeIn && ownDictFloat && ownDictFloat.querySelector(".od-mean-in");
   if (!input) return;
@@ -10906,7 +10920,7 @@ document.addEventListener("click", e => {
     lang: lang
   });
   if (!term || !ctx) return;
-  const found = ownDictFindWord(term), rect = mk.getBoundingClientRect();
+  const found = ownDictFindWord(term, ctx.lang), rect = mk.getBoundingClientRect();
   e.preventDefault();
   e.stopImmediatePropagation();
   hideTooltip();
@@ -11454,7 +11468,7 @@ function commitActiveEdit(keep) {
   let newA = cleanPunct(plainTextOf(newAHtml, "\n"));
   const takenKeys = new Set;
   if (!keep) activeEdit.editNotes.querySelectorAll("li").forEach(li => {
-    if (isVocabItem(li)) takenKeys.add(normalizeVocabText(noteItemTerm(li))); else if (NOTE_VOCAB_ITEM_RE.test(ownLiTextNodes(li).map(n => n.nodeValue).join("")) && !noteItemIsDuplicate(li, takenKeys)) boldVocabItem(li);
+    if (isVocabItem(li)) takenKeys.add(normalizeVocabText(noteItemTerm(li))); else if (!underWordLine(li) && NOTE_VOCAB_ITEM_RE.test(ownLiTextNodes(li).map(n => n.nodeValue).join("")) && !noteItemIsDuplicate(li, takenKeys)) boldVocabItem(li);
   });
   if (!keep && activeEdit.editNotes.textContent.trim() && !activeEdit.editNotes.querySelector("*")) activeEdit.editNotes.innerHTML = "<div>" + activeEdit.editNotes.innerHTML + "</div>";
   const notesNow = flatVocabLists(editorHtml(activeEdit.editNotes));
@@ -11601,7 +11615,7 @@ document.addEventListener("keydown", e => {
   if (!li || !el.contains(li)) return;
   e.preventDefault();
   document.execCommand("insertParagraph");
-  if (el.id === "qaNotes" && li.isConnected && !li.contains(window.getSelection().anchorNode) && !isVocabItem(li) && NOTE_VOCAB_ITEM_RE.test(ownLiTextNodes(li).map(n => n.nodeValue).join(""))) {
+  if (el.id === "qaNotes" && li.isConnected && !li.contains(window.getSelection().anchorNode) && !isVocabItem(li) && !underWordLine(li) && NOTE_VOCAB_ITEM_RE.test(ownLiTextNodes(li).map(n => n.nodeValue).join(""))) {
     if (noteItemIsDuplicate(li, noteVocabKeys(el, [ li ]))) warnVocabDuplicates([ noteItemTerm(li) ]); else boldVocabItem(li);
   }
 }, true);
@@ -12121,7 +12135,7 @@ function wireEditBox(host, row) {
         if (!li || !el.contains(li)) return;
         e.preventDefault();
         document.execCommand("insertParagraph");
-        if (el === editNotes && li.isConnected && !li.contains(window.getSelection().anchorNode) && !isVocabItem(li) && NOTE_VOCAB_ITEM_RE.test(ownLiTextNodes(li).map(n => n.nodeValue).join(""))) {
+        if (el === editNotes && li.isConnected && !li.contains(window.getSelection().anchorNode) && !isVocabItem(li) && !underWordLine(li) && NOTE_VOCAB_ITEM_RE.test(ownLiTextNodes(li).map(n => n.nodeValue).join(""))) {
           if (noteItemIsDuplicate(li, noteVocabKeys(el, [ li ]))) warnVocabDuplicates([ noteItemTerm(li) ]); else boldVocabItem(li);
         }
         autoResizeDiv(el);
@@ -19228,6 +19242,7 @@ function vocabEntriesOf(card) {
   box.innerHTML = html;
   const lines = [];
   Array.from(box.querySelectorAll("li")).forEach(li => {
+    if (underWordLine(li) && !isVocabItem(li)) return;
     lines.push(liVocabEntry(li) || ownLiText(li));
   });
   box.querySelectorAll("ul, ol").forEach(el => el.remove());
@@ -20209,21 +20224,84 @@ function wordNotesView(item) {
   return noted ? `<div>${vocabSentenceHtml(noted.sentence, item.term, item.card, true)}</div>` + noted.rest : wordNotesOf(item);
 }
 
+function wordLiIn(box, key, tkey) {
+  return [ ...box.querySelectorAll("li") ].find(li => {
+    const e = liVocabEntry(li);
+    return !!e && (e.key === key || !!tkey && e.tkey === tkey);
+  }) || null;
+}
+
+function underWordLine(li) {
+  const up = li.parentElement && li.parentElement.closest("li");
+  return !!up && isVocabItem(up);
+}
+
 function wordNotesOf(item) {
-  const st = item && item.card && item.card.vocab && item.card.vocab[item.key];
+  const card = item && item.card;
+  if (!card) return "";
+  const box = document.createElement("div");
+  box.innerHTML = notesEditorHtml(card);
+  const li = wordLiIn(box, item.key, item.tkey);
+  const subs = li ? [ ...li.children ].filter(el => el.tagName === "UL" || el.tagName === "OL") : [];
+  if (subs.length) return subs.flatMap(sub => [ ...sub.children ]).map(x => "<div>" + x.innerHTML + "</div>").join("");
+  const st = card.vocab && card.vocab[item.key];
   return st && st.notes || "";
 }
 
-function setWordNotes(card, key, html, at) {
-  const notes = sanitizeHtml(html || "");
-  const clean = plainTextOf(notes, "\n").trim() ? notes : "";
-  if (!card.vocab) card.vocab = {};
-  const st = card.vocab[key];
-  if ((st && st.notes || "") === clean) return false;
-  card.vocab[key] = Object.assign(st || newSrsState(), {
-    notes: clean,
-    notesAt: at || Date.now()
+function noteItemsOf(html) {
+  const box = document.createElement("div");
+  box.innerHTML = sanitizeHtml(html || "");
+  const items = [];
+  let loose = "";
+  const flush = () => {
+    plainTextOf(loose, "\n").split("\n").map(t => t.trim()).filter(Boolean).forEach(t => items.push(escapeHtml(t)));
+    loose = "";
+  };
+  [ ...box.childNodes ].forEach(n => {
+    if (n.nodeType === 1 && /^(UL|OL)$/.test(n.nodeName)) {
+      flush();
+      [ ...n.children ].forEach(li => li.textContent.trim() && items.push(li.innerHTML));
+    } else if (n.nodeType === 1 && /^(DIV|P)$/.test(n.nodeName) && !n.querySelector("div, p, ul, ol, br")) {
+      flush();
+      if (n.textContent.trim()) items.push(n.innerHTML);
+    } else loose += n.nodeType === 1 ? n.outerHTML : escapeHtml(n.nodeValue || "");
   });
+  flush();
+  return items;
+}
+
+function setWordNotes(card, key, html, at) {
+  const st = card.vocab && card.vocab[key];
+  const box = document.createElement("div");
+  box.innerHTML = notesEditorHtml(card);
+  const li = wordLiIn(box, key);
+  if (!li) {
+    const notes = sanitizeHtml(html || "");
+    const clean = plainTextOf(notes, "\n").trim() ? notes : "";
+    if (!card.vocab) card.vocab = {};
+    if ((st && st.notes || "") === clean) return false;
+    card.vocab[key] = Object.assign(st || newSrsState(), {
+      notes: clean,
+      notesAt: at || Date.now()
+    });
+    return true;
+  }
+  const before = box.innerHTML;
+  [ ...li.children ].filter(el => el.tagName === "UL" || el.tagName === "OL").forEach(el => el.remove());
+  const items = noteItemsOf(html);
+  if (items.length) {
+    const ul = document.createElement("ul");
+    ul.innerHTML = items.map(t => "<li>" + t + "</li>").join("");
+    li.appendChild(ul);
+  }
+  const legacy = !!st && "notes" in st;
+  if (legacy) {
+    delete st.notes;
+    delete st.notesAt;
+  }
+  if (box.innerHTML === before && !legacy) return false;
+  card.notesHtml = sanitizeHtml(box.innerHTML);
+  card.notes = plainTextOf(card.notesHtml, "\n");
   return true;
 }
 
