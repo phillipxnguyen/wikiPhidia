@@ -471,8 +471,29 @@ window.onYouTubeIframeAPIReady = function(){
   #vocabEditMain:focus{border-color:var(--accent);border-left-color:var(--lesson-accent);box-shadow:0 0 0 4px var(--accent-soft);}
   #vocabEditMain .vem-t{font-weight:800;color:var(--text);}
   #vocabEditMain .vem-a{color:var(--a-text);}
-  #vocabEditMain .vem-q{color:var(--text);}
-  #vocabEditMain .vem-q mark.vem-w{border-radius:4px;background:var(--word-mark);color:inherit;}
+  #vocabEditSentence{color:var(--text);outline:none;}
+  .ed-card{--od-bg:var(--surface);--od-card:var(--surface);--od-line:color-mix(in srgb, var(--text) 9%, transparent);--od-soft:var(--text-2);--od-mean:var(--a-text);position:relative;display:flex;flex-direction:column;gap:12px;padding:16px;border:1px solid var(--border);border-radius:16px;background:var(--surface);box-shadow:none;}
+  .ed-card #vocabEditSentence{min-height:0;padding:0;border:0;border-radius:0;background:none;box-shadow:none;}
+  .ed-card .q-mirror{color:var(--a-text);}
+  .ed-card:focus-within{border-color:color-mix(in srgb, var(--accent) 45%, var(--border));}
+  .ed-card > .ed-say{position:absolute;top:16px;right:16px;z-index:3;}
+  .ed-card .edit-qa{display:block;margin:0;}
+  .ed-card :is(#editQ, #vocabEditMain, #vocabEditTerm){min-height:0;margin:0;padding:0 44px 0 0;border:0;border-radius:0;background:none;box-shadow:none;outline:none;}
+  .ed-card :is(#editQ, #vocabEditMain, #vocabEditTerm):focus{border:0;box-shadow:none;}
+  .ed-card #vocabEditMain .vem-t{font-size:28px;line-height:36px;font-weight:700;}
+  .ed-card #vocabEditMain .vem-a{font-weight:700;}
+  .ed-card .notes-clip::after{display:none;}
+  .ed-card :is(#editNotes, #vocabEditNotes){min-height:0;padding:8px 12px;border:0;border-radius:8px;background:color-mix(in srgb, var(--text) 4%, transparent);box-shadow:none;}
+  .ed-card :is(#editNotes, #vocabEditNotes):focus{box-shadow:inset 0 0 0 1px var(--accent);}
+  .ed-card :is(#editNotes, #vocabEditNotes):not(:empty):not(.clip-list)::before{display:none;}
+  .ed-card :is(#editNotes, #vocabEditNotes) li.clip-li{margin-left:0;}
+  .ed-card :is(#editNotes, #vocabEditNotes):empty{padding-left:12px;}
+  .ed-card .ed-chips{display:flex;flex-direction:column;gap:8px;}
+  .ed-card .ed-chips:empty{display:none;}
+  .ed-card .od-term.od-cur{border-color:var(--a-label);color:var(--a-label);}
+  .ed-card .od-pos{font-family:"Doto", system-ui, sans-serif;font-weight:800;}
+  .ed-card :is(#editNotes, #vocabEditNotes):empty::before{font-family:"Doto", system-ui, sans-serif;font-weight:800;}
+  #vocabEditSentence mark.vem-w{border-radius:4px;background:var(--word-mark);color:inherit;}
   .q-wrap{position:relative;display:block;min-width:0;}
   .qa-row > .q-wrap{flex:1 1 auto;}
   .q-mirror{position:absolute;z-index:0;margin:0;overflow:hidden;border-style:solid;border-color:transparent;color:var(--text);pointer-events:none;}
@@ -9866,7 +9887,7 @@ function cjkAtPoint(x, y, el) {
 }
 
 document.addEventListener("mousemove", e => {
-  if (isTouch() || !(e.target instanceof Element) || e.target.closest(".cell.shown, .vocab-list-term, .vocab-popup, #watchPop mark, #editPopup :is(#editQ, #editA, #vocabEditMain .vem-q) mark:is(.vocab-hit, .vocab-own)")) return;
+  if (isTouch() || !(e.target instanceof Element) || e.target.closest(".cell.shown, .vocab-list-term, .vocab-popup, #watchPop mark, #editPopup :is(#editQ, #editA, #vocabEditSentence) mark:is(.vocab-hit, .vocab-own)")) return;
   const tip = hoverTooltip;
   const showing = tip && tip.style.display === "block" && tip.anchor && tip.anchor.closest && tip.anchor.closest(PINYIN_SEL);
   const el = e.target.closest(PINYIN_SEL);
@@ -10893,12 +10914,12 @@ function sentenceWordCtx(hit) {
 }
 
 document.addEventListener("mouseover", e => {
-  const mk = !isTouch() && e.target.closest && e.target.closest("#editPopup :is(#editQ, #editA, #vocabEditMain .vem-q) mark:is(.vocab-hit, .vocab-own)");
+  const mk = !isTouch() && e.target.closest && e.target.closest("#editPopup :is(#editQ, #editA, #vocabEditSentence) mark:is(.vocab-hit, .vocab-own)");
   if (mk) markTip(mk);
 });
 
 document.addEventListener("mouseout", e => {
-  const mk = e.target.closest && e.target.closest("#editPopup :is(#editQ, #editA, #vocabEditMain .vem-q) mark:is(.vocab-hit, .vocab-own)");
+  const mk = e.target.closest && e.target.closest("#editPopup :is(#editQ, #editA, #vocabEditSentence) mark:is(.vocab-hit, .vocab-own)");
   if (mk && !(e.relatedTarget && mk.contains(e.relatedTarget)) && hoverTooltip && hoverTooltip.anchor === mk) hideTooltip();
 });
 
@@ -10930,9 +10951,9 @@ const MARK_ZONES = SW_ZONES + ", #watchPop .w-capline.reveal, #watchPop:not(.cab
 
 document.addEventListener("click", e => {
   if (!getSelection().isCollapsed || e.button || e.shiftKey || !e.target.closest) return;
-  const mk = e.target.closest("mark.vocab-hit, mark.vocab-own"), mz = mk && mk.closest(MARK_ZONES + ", #editPopup :is(#editQ, #editA), #vocabEditMain .vem-q");
+  const mk = e.target.closest("mark.vocab-hit, mark.vocab-own"), mz = mk && mk.closest(MARK_ZONES + ", #editPopup :is(#editQ, #editA), #vocabEditSentence");
   if (!mz || isTouch() || mk.classList.contains("vem-w")) return;
-  const editing = mz.matches(".vem-q") && lessonVocabItems(vocabSource()).find(i => i.key === vocabEditingKey);
+  const editing = mz.matches("#vocabEditSentence") && lessonVocabItems(vocabSource()).find(i => i.key === vocabEditingKey);
   const lang = detectLang(mz.textContent).split("-")[0], term = (mk.dataset.own || mk.textContent).split("\n")[0].trim(), ctx = mz.matches("#editQ, #editA") ? activeEdit && {
     lang: lang,
     row: activeEdit.row,
@@ -11060,6 +11081,17 @@ window.addEventListener("keydown", e => {
   e.preventDefault();
   e.stopImmediatePropagation();
   closeOwnDictFloat();
+}, true);
+
+document.addEventListener("click", e => {
+  const b = e.target.closest && e.target.closest(".ed-say");
+  if (!b) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const row = b.dataset.edRow ? rows.find(r => r.id === Number(b.dataset.edRow)) || activeEdit && activeEdit.row : null;
+  if (row && row.time != null && cardClip(row)) return toggleRowPlay(row);
+  soundWaitOn(b);
+  if (row) toggleRowSay(row); else ownDictSay(b.dataset.say);
 }, true);
 
 function ownDictSay(w) {
@@ -11862,7 +11894,7 @@ window.addEventListener("blur", () => {
 });
 
 function buildEditBoxInner(row) {
-  return `\n    <div class="edit-qa">\n      <div>\n        <div id="editQ" class="rich-editor${row.time == null ? "" : " yt-ph"}" contenteditable="true"${row.time == null ? ' data-placeholder="Question, then the Answer two lines below"' : ""} aria-label="Card">${mergedCardEditHtml(row)}</div>\n      </div>\n      <div hidden>\n        <div id="editA" class="rich-editor" contenteditable="true">${getEditInitialHtml(row.a, row.aHtml, row.id)}</div>\n      </div>\n    </div>\n    <div class="notes-clip"><div id="editNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes">${notesEditorHtml(row)}</div></div>\n    <div class="edit-actions">\n      <button id="editSave" class="primary">Save</button>\n    </div>\n    <div id="editDict"></div>\n  `;
+  return `\n    <div class="od-card ed-card"><button type="button" class="od-say ed-say" data-ed-row="${row.id}" data-say="${escapeAttr(row.q || "")}" aria-label="Listen" title="Listen">${OD_SPEAK}</button><div class="edit-qa">\n      <div>\n        <div id="editQ" class="rich-editor${row.time == null ? "" : " yt-ph"}" contenteditable="true"${row.time == null ? ' data-placeholder="Question, then the Answer two lines below"' : ""} aria-label="Card">${mergedCardEditHtml(row)}</div>\n      </div>\n      <div hidden>\n        <div id="editA" class="rich-editor" contenteditable="true">${getEditInitialHtml(row.a, row.aHtml, row.id)}</div>\n      </div>\n    </div>\n    <div class="notes-clip"><div id="editNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes">${notesEditorHtml(row)}</div></div></div>\n    <div class="edit-actions">\n      <button id="editSave" class="primary">Save</button>\n    </div>\n    <div id="editDict"></div>\n  `;
 }
 
 document.addEventListener("click", e => {
@@ -20380,7 +20412,7 @@ function vocabSentenceCard(item) {
 }
 
 function saveVocabSentence(item, el) {
-  const line = el && el.querySelector(".vem-q");
+  const line = el && (el.matches(".vem-q") ? el : el.querySelector(".vem-q"));
   if (!line || !vocabSentenceCard(item)) return;
   const card = item.card;
   const q = cleanPunct(plainTextOf(stripVocabHighlights(line.innerHTML), "\n")).trim();
@@ -20408,12 +20440,22 @@ function vocabEditLineHtml(item, q, span) {
   return `${lines(q.slice(0, span[0]))}<mark class="vocab-own vem-w">${escapeHtml(q.slice(span[0], span[1]))}</mark>${lines(q.slice(span[1]))}`;
 }
 
+function vocabEditChipsHtml(item) {
+  const e = ownDictEntry(detectLang(item.term).split("-")[0], item.term);
+  const groups = e ? e.groups || (e.alts && e.alts.length ? [ {
+    pos: "",
+    terms: e.alts
+  } ] : []) : [];
+  return groups.map(g => `<div class="od-group">${g.pos ? `<span class="od-pos">${escapeHtml(g.pos)}</span>` : ""}<div class="od-terms">${g.terms.map(t => `<button type="button" class="od-term" data-m="${escapeAttr(t)}">${escapeHtml(t)}</button>`).join("")}</div></div>`).join("");
+}
+
 function vocabEditorHtml(item) {
   const span = vocabEditSpan(item), q = span ? item.card.q : "";
   const area = `<textarea id="vocabEditTerm" class="autofit" rows="1" autocomplete="off" aria-label="Word" placeholder="Word, then its meaning two lines below"${span ? " hidden" : ""}>${escapeHtml(item.meaning ? Q_MARK + item.term + "\n" + item.meaning : item.term)}</textarea>`;
-  const lines = t => escapeHtml(t).replace(/\n/g, "<br>");
-  const main = span ? `<div id="vocabEditMain" class="rich-editor" contenteditable="true" aria-label="The word in its sentence, then its meaning" title="The word in its card's sentence, then its meaning: changing the sentence changes the card everywhere"><div class="vem-t">${escapeHtml(item.term)}</div><div class="vem-a">${(odLong(item.term) ? [ item.meaning ] : meaningLines(item.meaning)).filter(Boolean).map(escapeHtml).join("<br>") || "<br>"}</div><div class="vem-q">${vocabEditLineHtml(item, q, span)}</div></div>` : "";
-  return '<div class="vocab-editor">' + area + main + `<div class="notes-clip"><div id="vocabEditNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes" aria-label="Notes">${wordNotesOf(item)}</div></div>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
+  const main = span ? `<div id="vocabEditMain" class="rich-editor" contenteditable="true" aria-label="The word, then its meanings, one per line"><div class="vem-t">${escapeHtml(item.term)}</div><div class="vem-a">${(odLong(item.term) ? [ item.meaning ] : meaningLines(item.meaning)).filter(Boolean).map(escapeHtml).join("<br>") || "<br>"}</div></div>` : "";
+  const sentence = span ? `<div id="vocabEditSentence" class="rich-editor vem-q" contenteditable="true" aria-label="The sentence this word comes from" title="The card's own sentence: changing it changes the card everywhere">${vocabEditLineHtml(item, q, span)}</div>` : "";
+  const say = `<button type="button" class="od-say ed-say" data-say="${escapeAttr(item.term)}" aria-label="Listen" title="Listen">${OD_SPEAK}</button>`;
+  return '<div class="vocab-editor">' + `<div class="od-card ed-card">${say}${area}${main}<div class="notes-clip"><div id="vocabEditNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes" aria-label="Notes">${wordNotesOf(item)}</div></div><div class="ed-chips">${vocabEditChipsHtml(item)}</div>${sentence}</div>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
 }
 
 function syncVocabEditMain(item) {
@@ -20644,7 +20686,7 @@ function wireVocabEditor(items) {
     vocabEditingKey = null;
     const now = lessonVocabItems(vocabSource()).find(i => i.key === key) || item;
     syncVocabEditMain(now);
-    saveVocabSentence(now, document.getElementById("vocabEditMain"));
+    saveVocabSentence(now, document.getElementById("vocabEditSentence"));
     const v = vocabEditValues();
     if (!saveVocabEditor(now, v.term, v.meaning, editorHtml(notes), true)) {
       vocabEditingKey = key;
@@ -20653,9 +20695,40 @@ function wireVocabEditor(items) {
     renderVocab();
   };
   document.getElementById("vocabEditSave").onclick = save;
-  const main = document.getElementById("vocabEditMain");
+  const main = document.getElementById("vocabEditMain"), sentence = document.getElementById("vocabEditSentence");
   if (main) main.addEventListener("input", () => syncVocabEditMain(item));
-  [ term, main, notes ].filter(Boolean).forEach(input => {
+  const chips = term.closest(".vocab-editor").querySelector(".ed-chips");
+  const paintChips = () => {
+    if (!chips || !item) return;
+    const now = new Set(main ? meaningLines(main.querySelector(".vem-a").innerText) : meaningLines(vocabEditValues().meaning));
+    chips.querySelectorAll(".od-term").forEach(b => b.classList.toggle("od-cur", now.has(b.dataset.m)));
+  };
+  if (chips && item && !chips.children.length) ownDictFetch(detectLang(item.term).split("-")[0], item.term).then(() => {
+    if (!chips.isConnected) return;
+    chips.innerHTML = vocabEditChipsHtml(item);
+    paintChips();
+  });
+  paintChips();
+  if (chips) chips.addEventListener("click", e => {
+    const b = e.target.closest(".od-term");
+    if (!b) return;
+    e.preventDefault();
+    if (main) {
+      const a = main.querySelector(".vem-a"), list = meaningLines(a.innerText);
+      if (!list.includes(b.dataset.m)) list.push(b.dataset.m);
+      a.innerHTML = list.map(escapeHtml).join("<br>");
+      syncVocabEditMain(item);
+    } else {
+      const v = vocabEditValues(), list = meaningLines(v.meaning);
+      if (!list.includes(b.dataset.m)) list.push(b.dataset.m);
+      term.value = Q_MARK + v.term + "\n" + list.join("\n");
+      fitTextarea(term);
+    }
+    paintChips();
+  });
+  if (main) main.addEventListener("input", paintChips);
+  term.addEventListener("input", paintChips);
+  [ term, main, sentence, notes ].filter(Boolean).forEach(input => {
     input.addEventListener("keydown", e => {
       e.stopPropagation();
       if (e.isComposing || e.keyCode === 229) return;
@@ -20757,7 +20830,7 @@ function commitVocabEdit() {
   vocabEditingKey = null;
   if (item) {
     syncVocabEditMain(item);
-    saveVocabSentence(item, document.getElementById("vocabEditMain"));
+    saveVocabSentence(item, document.getElementById("vocabEditSentence"));
   }
   const v = vocabEditValues();
   if (term && (isNew || item)) saveVocabEditor(isNew ? null : item, v.term, v.meaning, notes ? editorHtml(notes) : "", false);
