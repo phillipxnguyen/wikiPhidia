@@ -319,6 +319,7 @@ Hàm chính: `dictLoad`, `dictSlot`, `dictFit`, `showDictSite`, `hideDictOverlay
 | DATA-16 | `11b9bb7` | Không tự lưu gì: bỏ xoá bài rỗng, chuyển tiến độ chỉ trong bộ nhớ, bài không video chỉ hiển thị như Speaking (giữ mốc giờ) |
 | DATA-17 | `31ff949` | Ô thẻ: hết dòng trống thừa sau khi xuống dòng 2 lần thành Q (ô từ, ô thêm thẻ); ô sửa thẻ Lessons chỉ tô màu dòng Q, không tô dòng nghĩa |
 | DATA-18 | `59a5528` | Thẻ có video cũng dùng ô Q/A chung (trước chỉ có câu) |
+| DATA-19 | `0091022` | Ghi chú của từ là các dòng con dưới dòng `từ: nghĩa` trong Notes thẻ (một loại notes duy nhất); notes riêng cũ chuyển vào khi lưu |
 
 Hàm chính: `newRow` (bản dịch vào notes khi tạo), `foldAnswer` + `keepsAnswer` (dòng thêm dưới câu khi sửa thẻ hoặc khi dán thì vào notes), `wordLike`, `belongsInVocab`, `isTranslationCard` (cho dòng `từ: nghĩa`), `autoSortLibrary`.
 
@@ -441,6 +442,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-10 | `8602c89` | Popup câu dài: loa và ＋ thu gọn, nằm cùng dòng đầu bên phải, chữ chảy quanh |
 | LOOKUP-11 | `526e75b` | Popup đều 4 lề (Notes không thò ra ngoài lề chữ), dấu ＋ là icon căn giữa |
 | LOOKUP-12 | `9a54d6a` | Popup từ: đang tải nghĩa thì hiện Translating… như extension (bỏ thanh xám chờ) |
+| LOOKUP-13 | `0091022` | Rule chung: từ đã có = mọi bài cùng ngôn ngữ (tô màu, popup); khác ngôn ngữ không tính |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
