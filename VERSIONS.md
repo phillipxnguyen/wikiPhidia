@@ -463,6 +463,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-16 | `de572ec` | Popup, ô sửa từ, flashcard, list từ đều hiện mỗi nghĩa một dòng |
 | LOOKUP-17 | `c0caa7e` | Lề đồng bộ popup và ô sửa: khung 16px quanh thẻ, Save cách 16px, Notes 8/12px, loa canh giữa dòng đầu |
 | LOOKUP-18 | `2e19088` | Một thiết kế duy nhất cho popup và mọi ô sửa (cỡ chữ, thứ tự, màu như popup); Notes xuống dưới cùng |
+| LOOKUP-19 | `0b06da0` | Ô sửa bỏ viền thẻ bên trong (khung là thẻ); In your words thành dấu ✓ tròn nhỏ; popup lề 16px cả trên điện thoại |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
