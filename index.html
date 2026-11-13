@@ -10774,7 +10774,7 @@ function extFetch(url) {
   });
 }
 
-const DICT_SRC_KEY = "flashcards.dictSrc", DICT_SRC_MAX = 800, dictSrcPending = new Map;
+const DICT_SRC_KEY = "flashcards.dictSrc", DICT_SRC_MAX = 400, dictSrcPending = new Map, dictSrcMiss = new Set;
 
 let dictSrcStore = null, dictSrcQueue = Promise.resolve();
 
@@ -10841,7 +10841,7 @@ function pushDef(defs, pos, d) {
 
 function pushEx(ex, t, tr) {
   t = (t || "").replace(/\s+/g, " ").trim();
-  if (t && t.length <= 200 && ex.length < 12 && !ex.some(x => x.t === t)) ex.push(tr ? {
+  if (t && t.length <= 200 && ex.length < 8 && !ex.some(x => x.t === t)) ex.push(tr ? {
     t: t,
     tr: tr
   } : {
@@ -10935,7 +10935,7 @@ function dictSrcFetch(lang, w) {
   w = (w || "").replace(/\s+/g, " ").trim();
   const key = dictSrcKey(lang, w), have = dictSrcRead()[key];
   if (have) return Promise.resolve(have);
-  if (!extDictOn || !w || odLong(w) || ![ "en", "zh", "ja", "ko" ].includes(lang)) return Promise.resolve(null);
+  if (!extDictOn || !w || odLong(w) || dictSrcMiss.has(key) || ![ "en", "zh", "ja", "ko" ].includes(lang)) return Promise.resolve(null);
   if (dictSrcPending.has(key)) return dictSrcPending.get(key);
   const run = () => (lang === "en" ? dictSrcCambridge(w) : lang === "zh" ? dictSrcYoudao(w) : lang === "ja" ? dictSrcJapanese(w) : dictSrcKorean(w)).catch(() => null);
   const job = dictSrcQueue = dictSrcQueue.then(run, run).then(r => {
@@ -10945,6 +10945,7 @@ function dictSrcFetch(lang, w) {
       dictSrcSave();
       return r;
     }
+    dictSrcMiss.add(key);
     return null;
   }).finally(() => dictSrcPending.delete(key));
   dictSrcPending.set(key, job);

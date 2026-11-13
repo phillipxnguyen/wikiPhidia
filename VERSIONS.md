@@ -302,6 +302,7 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 | DICT-51 | `71c9e83` | Tải sẵn nghĩa mọi từ của mọi câu đang hiện (cả từ thông dụng): popup mở là đủ, không nháy |
 | DICT-52 | `47e260f` | Theo ODH: 🔊 từ đơn phát âm thật (Free Dictionary, Youdao), nhãn cấp độ (HSK, JLPT, TOPIK, CEFR) cạnh từ, định nghĩa tiếng Anh bấm để thêm vào nghĩa |
 | DICT-53 | `bda56fb` | Định nghĩa và câu ví dụ từ điển thật qua extension (Cambridge, Youdao, Jisho·Weblio, krdict): trong popup, ô sửa từ và làm câu "nơi khác" của flashcard; extension 1.6.22 |
+| DICT-54 | `pending` | Rà soát: nhớ từ từ điển không có (không tải lại trong phiên), giảm bộ nhớ lưu (400 từ, 8 câu/từ) |
 
 Hàm chính: `showDictSite`, `hideDictOverlay`, `dictUrlFor`, `ownDictCardHtml`, `openWordFloat`, `sentenceWordAt`, `ownDictLookup`, `ownDictFetch`, `ownDictPrefetch`.
 
