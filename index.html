@@ -1566,6 +1566,7 @@ window.onYouTubeIframeAPIReady = function(){
   .od-float .od-notes{min-height:24px;margin:0;padding:4px 8px;border-radius:8px;background:color-mix(in srgb, var(--text) 4%, transparent);color:var(--text);font-size:15px;line-height:22px;outline:none;}
   .od-float .od-notes:focus{box-shadow:inset 0 0 0 1px var(--accent);}
   .od-float .od-notes:empty::before{content:attr(data-placeholder);color:var(--text-3, var(--od-soft));}
+  .od-float :is(.od-add, .od-done, .od-pos), .od-float .od-notes:empty::before{font-family:"Doto", system-ui, sans-serif;font-weight:800;}
   .od-float .od-term.od-cur{border-color:var(--a-label);color:var(--a-label);}
   .od-card{position:relative;display:flex;flex-direction:column;gap:8px;padding:16px;border:1px solid var(--od-line);border-radius:16px;background:var(--od-card);transition:border-color .2s, box-shadow .2s, background-color .2s;}
   .od-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 12px;}
@@ -7428,9 +7429,27 @@ function limitRoom(vocab, lessons) {
   };
 }
 
+function languageLimit(list, keyOf, stateOf, mine, extra) {
+  limitsToday();
+  if (!studyLimits.fresh && !studyLimits.review) return list;
+  const {seen: seen, fresh: fresh} = todayLog(true, new Set([ ...mine ].map(k => k.split(":")[0])));
+  const room = {}, used = {
+    fresh: 0,
+    review: 0
+  };
+  seen.forEach(k => mine.has(k) && used[fresh.has(k) ? "fresh" : "review"]++);
+  [ "fresh", "review" ].forEach(k => room[k] = studyLimits[k] ? Math.max(0, studyLimits[k] + (extra ? extra[k] : 0) - used[k]) : Infinity);
+  return list.filter(x => {
+    if (seen.has(keyOf(x))) return true;
+    const k = stateOf(x).reps ? "review" : "fresh";
+    return room[k] > 0 ? (room[k]--, true) : false;
+  });
+}
+
 function limitStudy(list, vocab, keyOf, stateOf) {
   limitsToday();
   if (!studyLimits.fresh && !studyLimits.review) return list;
+  if (vocab && currentLessonId === VOCAB_ALL_ID && rows.length && rows[0].wordWorld) return languageLimit(list, keyOf, stateOf, new Set(lessonVocabItems(vocabSource()).map(i => (i.card.srcLessonId || currentLessonId) + ":" + i.key)), extraToday(true, VOCAB_ALL_ID));
   const lessonOf = x => keyOf(x).split(":")[0];
   const {seen: seen, left: left, pool: pool} = limitRoom(vocab, new Set(list.map(lessonOf)));
   return list.filter(x => {
@@ -9392,7 +9411,8 @@ function textWorld(text) {
 }
 
 function worldFits(world, tw) {
-  return !world || !tw || world === tw || world === "ja" && tw === "zh";
+  const cjk = w => w === "zh" || w === "ja" || w === "ko";
+  return !world || !tw || world === tw || !(cjk(world) && cjk(tw)) || world === "ja" && tw === "zh";
 }
 
 function highlightVocabInHtml(html, excludeId, extraTerms, onlyKeys) {
@@ -10541,7 +10561,7 @@ function ownDictCardHtml(lang, w, ctx) {
 function ownDictFindWord(w, lang) {
   const key = normalizeVocabText(w);
   const world = worldOf(lang || ownDictFloat && ownDictFloat.ctx && ownDictFloat.ctx.lang || "");
-  const fits = (it, l) => !world || !WORD_WORLDS[world] || wordWorldOf(it.term, l ? l.studyLang : studyLang) === world;
+  const fits = (it, l) => !world || !WORD_WORLDS[world] || worldFits(wordWorldOf(it.term, l ? l.studyLang : studyLang), world);
   const li = [ ...document.querySelectorAll("#editPopup #editNotes li") ].find(el => normalizeVocabText((el.querySelector("b") || el).textContent.split(/[:：]/)[0]) === key);
   if (li) {
     const text = li.textContent, at = text.search(/[:：]/);
@@ -29135,7 +29155,7 @@ function paintWordListHead(items) {
   const world = currentLessonId === VOCAB_ALL_ID && rows.length && rows[0].wordWorld;
   const head = document.getElementById("wordListHead");
   if (!world || !WORD_WORLDS[world]) return;
-  const n = wordNumbers(items.filter(i => !vocabViewOnly(i))), left = n.fresh + n.due;
+  const n = wordNumbers(items.filter(i => !vocabViewOnly(i))), now = Date.now(), left = limitVocab(items.filter(i => !vocabViewOnly(i) && vocabStateOf(i).due <= now)).length;
   const name = (document.getElementById("lessonName").value || WORD_WORLDS[world][0]).trim();
   const chip = (icon, v, label) => `<span class="wlh-chip" title="${label}">${icon} <b>${v}</b></span>`;
   head.innerHTML = `<section class="wlh w-${world}"><span class="wlh-glyph" aria-hidden="true">${WORD_WORLDS[world][1]}</span><button class="wlh-back" data-wlh="back">‹ Vocabulary</button><div class="wlh-main"><span class="wlh-kicker">Word list</span><h2 class="wlh-title">${escapeHtml(name)}</h2><div class="wlh-chips">${chip("📚", n.total, "Words")}${chip("🆕", n.fresh, "New")}${chip("⏳", n.due, "Due")}${chip("🌱", n.later, "Learning")}${chip("✅", n.done, "Done")}</div></div><div class="wlh-btns"><button class="wlh-go" data-wlh="study">▶ ${left ? "Study " + left : "Study"}</button><button class="wlh-ghost" data-wlh="weak">🎯 Weak words</button></div></section>`;
@@ -29159,10 +29179,15 @@ function wordTilesHtml(worlds) {
   }).join("") + "</div>";
 }
 
+function wordWorldLeft(items) {
+  const now = Date.now(), keyOf = i => i.lessonId + ":" + i.key;
+  return languageLimit(items.filter(i => vocabStateOf(i).due <= now), keyOf, vocabStateOf, new Set(items.map(keyOf))).length;
+}
+
 function wordHeroHtml(world, items, n, route) {
   const cur = route.find(s => s.state === "open");
   const done = route.filter(s => s.state === "passed").length;
-  const left = n.fresh + n.due;
+  const left = wordWorldLeft(items);
   const stat = (k, v) => `<div class="ta-stat"><span>${k}</span><b>${v}</b></div>`;
   return `<section class="ta-hero w-${world}"><div class="ta-glyph" aria-hidden="true">${WORD_WORLDS[world][1]}</div><div class="ta-hero-main"><div class="ta-kicker">${WORD_WORLDS[world][0]} · ${countOf(items.lessons.size, "lesson")}</div><h2 class="ta-hero-title">${cur ? "Step " + cur.n + " · " + cur.name : "Route complete"}</h2><p class="ta-hero-desc">${cur ? cur.desc : "Every step passed. Keep your words fresh with the reviews that come due."}</p><div class="ta-hero-btns"><button class="ta-go" data-act="study">▶ ${left ? "Study " + left : "Nothing due · study"}</button><button class="ta-ghost" data-act="list">☰ Word list</button><button class="ta-ghost" data-act="weak">🎯 Weak words</button><button class="ta-ghost" data-act="quick">⚡ Quick check</button><button class="ta-ghost${wordBuild ? " on" : ""}" data-act="build" aria-expanded="${wordBuild}">✎ Build a session</button></div></div><div class="ta-ring">${ringSvg(done, route.length)}<b>${done}/${route.length}<small>Steps</small></b></div><div class="ta-stats">${stat("Words", n.total)}${stat("New", n.fresh)}${stat("Due", n.due)}${stat("Done", n.done)}</div></section>`;
 }
