@@ -198,6 +198,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-67 | `396ae7f` | Box chính ô sửa từ dùng đúng thông số box Notes: chữ 22/30, lề 9/14/9/16, các dòng nối tiếp không khoảng thêm |
 | FLASH-68 | `d89f669` | Ô sửa từ: xuống dòng ở nghĩa = thêm nghĩa (lưu bằng dấu phẩy, hiện mỗi nghĩa một dòng) |
 | FLASH-69 | `330101e` | Ô sửa từ = thẻ popup: từ to + loa, nghĩa xanh, Notes nền xám, chip từ điển (bấm thêm nghĩa), câu gốc tô vàng |
+| FLASH-70 | `8d03895` | Sửa từ trong buổi chọn sẵn không nhảy thẻ; flashcard hiện mỗi nghĩa một dòng; ô sửa từ hiện câu lưu kèm từ; bỏ dấu cách đầu dòng nghĩa mới |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
@@ -306,6 +307,7 @@ Hàm chính: `showDictSite`, `hideDictOverlay`, `dictUrlFor`, `ownDictCardHtml`,
 | Mã | Commit | Là gì |
 |---|---|---|
 | DICTLOAD-1 | `7b097cc` | Trang từ điển của thẻ đang hiện và thẻ kế tiếp (Lessons, flashcard, theater) tải sẵn trong ô sửa ẩn, đúng kích thước; mở ô sửa dùng lại trang đã tải, không tải lại |
+| DICTLOAD-2 | `8d03895` | Từ điển (tải trước và trong ô sửa) nhận mọi câu đang hiện trên thẻ + ghi chú cùng ngôn ngữ |
 
 Hàm chính: `dictLoad`, `dictSlot`, `dictFit`, `showDictSite`, `hideDictOverlay`, `preloadCardDict`, `preloadVocabDict`, `rowDictText`, `dictPreloadObserver`.
 
@@ -466,6 +468,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-18 | `2e19088` | Một thiết kế duy nhất cho popup và mọi ô sửa (cỡ chữ, thứ tự, màu như popup); Notes xuống dưới cùng |
 | LOOKUP-19 | `0b06da0` | Ô sửa bỏ viền thẻ bên trong (khung là thẻ); In your words thành dấu ✓ tròn nhỏ; popup lề 16px cả trên điện thoại |
 | LOOKUP-20 | `e8979d4` | Nhãn từ loại (noun, adj, adv…) viết thường |
+| LOOKUP-21 | `8d03895` | Ô sửa cạnh từ điển cao vừa nội dung: lề 16px đều quanh nội dung và Save, tối thiểu 360px, căn giữa khi ngắn |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
