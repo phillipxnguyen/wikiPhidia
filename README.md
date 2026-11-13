@@ -51,7 +51,7 @@ The shared rules of the whole app, one line each. They hold in every mode (☰ F
 ### 5. Popups and editors
 1. Every editor and popup opens where you click (centred near the top on a phone) and scrolls to its top.
 2. There is one design for the word popup and every editor, the popup's card, with the same type and spacing: the main line (a word large and bold, 28 px; a sentence or long phrase 20 px), its meanings or translation in green (18 px, one per line), the dictionary's chips, the sentence holding the word (15 px, the word marked in yellow), and the Notes last, on a soft grey ground (15 px). An editor's only button on the card is the sound button at its top right; Save sits under the card on the right.
-3. One set of spacings for the word popup and every editor: the card's text 16 px inside its edge (plus its 1 px outline) on all four sides, 8 px between its parts, the Notes 8 px top and bottom and 12 px left and right inside their grey ground, the sound button centred on the first line at the top right; an editor's frame keeps 16 px all round the card, and Save sits 16 px under it.
+3. One set of spacings for the word popup and every editor, on a computer and a phone: the text 16 px inside the edge (plus the 1 px outline) on all four sides, 8 px between the parts, the Notes 8 px top and bottom and 12 px left and right inside their grey ground, the sound button centred on the first line at the top right. In an editor the frame itself is the card (no second outline inside it), and Save sits 16 px under the content.
 4. The card editor's dictionary is the outside page, loaded ahead of time (see DICTLOAD in `VERSIONS.md`).
 5. Add and Save are always solid.
 
@@ -430,9 +430,11 @@ On a phone, swipe a card right for Good and left for Again. Whatever flies off (
 - **What matches.** Exactly the same text, ignoring capitals, spaces and punctuation; other forms of a word (went for go) are not matched.
 - **Doing things.** Pointing at a word shows its meaning; a click on any word (yours or not) opens the word popup; Shift with a dragged selection opens it for a phrase; E opens the word editor. In both: Return saves, Shift + Return starts a new line, Esc closes, a click outside saves and closes, Delete deletes the word.
 
+**Yours, at a glance.** A word or phrase you already have shows a small round ✓ in the word popup where ＋ Add would be (pointing at it says In your words), so the top line never wraps.
+
 **Translating… while it loads.** In the word popup, while the meaning of a word or phrase is being looked up, its meaning line says Translating… (as in the browser extension's card); the meaning fills in as soon as it comes, and if nothing comes the line asks you to type the meaning.
 
-**Long phrases in the word popup.** A word is shown large, with ▶ and ＋ Add beside it; a long phrase or a piece of a sentence (more than 20 characters, or one with punctuation) is shown in smaller type, with the sound button and a small round ＋ (Add) on its first line at the right, the text flowing around them (for a phrase you have already, a small ✓, and Save once you change it), and its meaning stays one sentence instead of being split into lines at its commas (also in the meaning shown when pointing at it).
+**Long phrases in the word popup.** A word is shown large, with ▶ and ＋ Add beside it; a long phrase or a piece of a sentence (more than 20 characters, or one with punctuation) is shown in smaller type, with the sound button and a small round ＋ (Add) on its first line at the right, the text flowing around them (for a phrase you have already, the same small ✓, and Save once you change it), and its meaning stays one sentence instead of being split into lines at its commas (also in the meaning shown when pointing at it).
 
 **Vocabulary by language.** Vocabulary is not split by lesson: its words are grouped by language (English, 中文, 한국어, 日本語, Tiếng Việt). A word's language is its lesson's language, or, in a lesson set to Auto, the one its writing shows. Words still live in the Notes of the card they were made from (a `word: meaning` line), so editing a word there, or in Vocabulary, changes the same word.
 
