@@ -469,7 +469,11 @@ window.onYouTubeIframeAPIReady = function(){
   #vocabEditTerm, #qaQ{border-left:4px solid var(--lesson-accent);}
   #vocabEditMain{padding:8px 10px;border:1px solid var(--border);border-left:4px solid var(--lesson-accent);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);outline:none;}
   #vocabEditMain:focus{border-color:var(--accent);border-left-color:var(--lesson-accent);box-shadow:0 0 0 4px var(--accent-soft);}
+  #vocabEditMain .vem-t{font-weight:800;color:var(--text);}
   #vocabEditMain .vem-a{color:var(--a-text);}
+  #vocabEditMain .vem-q{margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:18px;line-height:26px;color:var(--text);}
+  #vocabEditMain .vem-q::before{content:attr(data-label);display:block;font-family:"Doto", system-ui, sans-serif;font-size:12px;line-height:16px;font-weight:800;color:var(--text-2);pointer-events:none;user-select:none;}
+  #vocabEditMain .vem-q mark.vem-w{border-radius:4px;background:var(--word-mark);color:inherit;}
   .q-wrap{position:relative;display:block;min-width:0;}
   .qa-row > .q-wrap{flex:1 1 auto;}
   .q-mirror{position:absolute;z-index:0;margin:0;overflow:hidden;border-style:solid;border-color:transparent;color:var(--text);pointer-events:none;}
@@ -1610,7 +1614,7 @@ window.onYouTubeIframeAPIReady = function(){
   @media (hover:hover){.od-term:hover{color:var(--accent);border-color:var(--accent);}}
   .od-ex{display:flex;flex-direction:column;gap:6px;}
   .od-ex p{margin:0;font-size:15px;line-height:22px;color:var(--text);}
-  .od-ex mark{padding:0 2px;border-radius:4px;background:color-mix(in srgb, var(--accent) 14%, transparent);color:inherit;font-weight:700;}
+  .od-ex mark{padding:0 2px;border-radius:4px;background:var(--word-mark);color:inherit;font-weight:700;}
   @media (prefers-reduced-motion: reduce){.od-card, .od-add{animation:none;transition:none;}}
   @media (max-width:600px){.od-card{padding:14px;}.od-word b{font-size:24px;line-height:32px;}}
   .le-dict.on{margin-top:10px;height:var(--dict-h, 360px);}
@@ -20387,7 +20391,7 @@ function vocabEditLineHtml(item, q, span) {
   box.innerHTML = highlightVocabInHtml(lines(q), null, [ item.term ]);
   const own = [ ...box.querySelectorAll("mark") ].find(m => normalizeVocabText(m.textContent) === item.tkey);
   if (own) {
-    own.classList.add("vocab-own", "vem-w");
+    own.classList.add("vem-w");
     return box.innerHTML;
   }
   return `${lines(q.slice(0, span[0]))}<mark class="vocab-own vem-w">${escapeHtml(q.slice(span[0], span[1]))}</mark>${lines(q.slice(span[1]))}`;
@@ -20397,14 +20401,14 @@ function vocabEditorHtml(item) {
   const span = vocabEditSpan(item), q = span ? item.card.q : "";
   const area = `<textarea id="vocabEditTerm" class="autofit" rows="1" autocomplete="off" aria-label="Word" placeholder="Word, then its meaning two lines below"${span ? " hidden" : ""}>${escapeHtml(item.meaning ? Q_MARK + item.term + "\n" + item.meaning : item.term)}</textarea>`;
   const lines = t => escapeHtml(t).replace(/\n/g, "<br>");
-  const main = span ? `<div id="vocabEditMain" class="rich-editor" contenteditable="true" aria-label="The word in its sentence, then its meaning" title="The word in its card's sentence, then its meaning: changing the sentence changes the card everywhere"><div class="vem-q">${vocabEditLineHtml(item, q, span)}</div><div class="vem-a">${escapeHtml(item.meaning) || "<br>"}</div></div>` : "";
+  const main = span ? `<div id="vocabEditMain" class="rich-editor" contenteditable="true" aria-label="The word in its sentence, then its meaning" title="The word in its card's sentence, then its meaning: changing the sentence changes the card everywhere"><div class="vem-t">${escapeHtml(item.term)}</div><div class="vem-a">${escapeHtml(item.meaning) || "<br>"}</div><div class="vem-q" data-label="Sentence">${vocabEditLineHtml(item, q, span)}</div></div>` : "";
   return '<div class="vocab-editor">' + area + main + `<div class="notes-clip"><div id="vocabEditNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes" aria-label="Notes">${wordNotesOf(item)}</div></div>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
 }
 
 function syncVocabEditMain(item) {
   const main = document.getElementById("vocabEditMain"), term = document.getElementById("vocabEditTerm");
   if (!main || !term) return;
-  const w = main.querySelector(".vem-w"), a = main.querySelector(".vem-a");
+  const w = main.querySelector(".vem-t"), a = main.querySelector(".vem-a");
   const word = (w ? w.textContent : "").replace(/\s+/g, " ").trim() || item.term;
   const meaning = a ? a.innerText.replace(/\s+/g, " ").trim() : "";
   term.value = meaning ? Q_MARK + word + "\n" + meaning : word;
