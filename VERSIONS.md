@@ -488,7 +488,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-34 | `e482e32` | Chốt khoảng chung 16px (12 + 4) trong popup tra từ và ô sửa |
 | LOOKUP-35 | `351fec2` | Ô sửa: nút Save sát Notes hơn (16px → 12px) |
 | LOOKUP-36 | `0752a2c` | Ô sửa: Save cách Notes 13px |
-| LOOKUP-37 | `pending` | Notes trong popup và ô sửa: vạch dọc bên trái thay cho hộp xám |
+| LOOKUP-37 | `68e4edf` | Notes trong popup và ô sửa: vạch dọc bên trái thay cho hộp xám |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
