@@ -20400,7 +20400,7 @@ function vocabEditorHtml(item) {
   const span = vocabEditSpan(item), q = span ? item.card.q : "";
   const area = `<textarea id="vocabEditTerm" class="autofit" rows="1" autocomplete="off" aria-label="Word" placeholder="Word, then its meaning two lines below"${span ? " hidden" : ""}>${escapeHtml(item.meaning ? Q_MARK + item.term + "\n" + item.meaning : item.term)}</textarea>`;
   const lines = t => escapeHtml(t).replace(/\n/g, "<br>");
-  const main = span ? `<div id="vocabEditMain" class="rich-editor" contenteditable="true" aria-label="The word in its sentence, then its meaning" title="The word in its card's sentence, then its meaning: changing the sentence changes the card everywhere"><div class="vem-t">${escapeHtml(item.term)}</div><div class="vem-a">${escapeHtml(item.meaning) || "<br>"}</div><div class="vem-q">${vocabEditLineHtml(item, q, span)}</div></div>` : "";
+  const main = span ? `<div id="vocabEditMain" class="rich-editor" contenteditable="true" aria-label="The word in its sentence, then its meaning" title="The word in its card's sentence, then its meaning: changing the sentence changes the card everywhere"><div class="vem-t">${escapeHtml(item.term)}</div><div class="vem-a">${(odLong(item.term) ? [ item.meaning ] : meaningLines(item.meaning)).filter(Boolean).map(escapeHtml).join("<br>") || "<br>"}</div><div class="vem-q">${vocabEditLineHtml(item, q, span)}</div></div>` : "";
   return '<div class="vocab-editor">' + area + main + `<div class="notes-clip"><div id="vocabEditNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes" aria-label="Notes">${wordNotesOf(item)}</div></div>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
 }
 
@@ -20409,7 +20409,7 @@ function syncVocabEditMain(item) {
   if (!main || !term) return;
   const w = main.querySelector(".vem-t"), a = main.querySelector(".vem-a");
   const word = (w ? w.textContent : "").replace(/\s+/g, " ").trim() || item.term;
-  const meaning = a ? a.innerText.replace(/\s+/g, " ").trim() : "";
+  const meaning = a ? a.innerText.split("\n").map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") : "";
   term.value = meaning ? Q_MARK + word + "\n" + meaning : word;
 }
 
@@ -20753,6 +20753,7 @@ function commitVocabEdit() {
 }
 
 function saveVocabEditor(item, termRaw, meaningRaw, notesHtml, explicit, keep) {
+  if (/\n/.test(meaningRaw || "")) meaningRaw = odLong(termRaw) ? meaningRaw.replace(/\s+/g, " ").trim() : meaningLines(meaningRaw).join(", ");
   termRaw = cleanPunct(termRaw);
   meaningRaw = cleanPunct(meaningRaw);
   const term = (termRaw || "").replace(/\s+/g, " ").trim();

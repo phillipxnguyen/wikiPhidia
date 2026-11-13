@@ -25,7 +25,7 @@ The shared rules of the whole app, one line each. They hold in every mode (☰ F
 3. Your words are coloured in every sentence, in every mode and editor; pointing at one shows its meaning.
 4. A click on any word opens the one word popup; Shift on a selection opens it for a phrase; E opens the word editor.
 5. The popup and the editor have two boxes: the main one (the word, its meaning, and in the editor the card's sentence under them) and Notes.
-6. Several meanings are written with commas and shown one per line; a long phrase keeps one sentence.
+6. Several meanings are saved with commas (`word: meaning 1, meaning 2`) and shown one per line in the word popup and the word editor; starting a new line there (Shift + Return) adds a meaning. A long phrase keeps one sentence.
 7. While a meaning loads it says Translating…; if nothing comes it asks you to type it.
 8. A look-up never stays on screen once what it points at is gone.
 9. Wherever the word sits in a sentence beside it (the flashcard, the word editor, the sentences in the word popup), it is marked with the same yellow; the popup also shows up to two other sentences of yours that hold the word, in the normal type.
