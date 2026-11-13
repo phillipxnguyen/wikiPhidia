@@ -422,6 +422,7 @@ Hàm chính: `studyingNow`, `placeStudyClock`, `STUDY_TIME_KEY`, `#focusClock`.
 | MOVE-9 | `a09ce83` | Theater dùng chung hiệu ứng chấm và xoá của mọi mode (trước có dấu nhỏ riêng và nền đen bị chém) |
 | MOVE-10 | `71e0073` | Good/Again/chuyển: nền màu đậm hơn (38%) làm mờ nội dung dưới, viền màu đặc 6 px và bóng đổ cho tấm đang bay |
 | MOVE-11 | `fbda3d8` | Bỏ viền màu quanh tấm đang bay, giữ nền đậm làm mờ và bóng đổ |
+| MOVE-12 | `7667158` | Bật giảm chuyển động trong hệ thống thì mọi hiệu ứng (CSS và JS) đều bỏ, mọi thứ hiện ngay |
 
 Hàm chính: `swipe`, `ghostFor`, `angelFly`, `cutLayer`, `playCut`.
 
