@@ -479,7 +479,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-27 | `83738fe` | Ô sửa (Lessons, Vocabulary) và popup tra từ: một khoảng 10px giữa mọi phần (dòng chính, câu, Notes, Save, ô nét chữ) |
 | LOOKUP-28 | `0fc66d7` | Ô sửa: bản dịch cách dòng chính 10px (Lessons và Vocabulary), như popup tra từ |
 | LOOKUP-29 | `d96bfb8` | Popup tra từ: các câu ví dụ cũng cách nhau 10px như mọi phần khác |
-| LOOKUP-30 | `pending` | Cân theo mắt: khoảng 12px tính từ đỉnh chữ hoa tới chân chữ; mỗi nghĩa một dòng riêng cách nhau 12px (popup, ô sửa Lessons và Vocabulary) |
+| LOOKUP-30 | `d4ba644` | Cân theo mắt: khoảng 12px tính từ đỉnh chữ hoa tới chân chữ; mỗi nghĩa một dòng riêng cách nhau 12px (popup, ô sửa Lessons và Vocabulary) |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
