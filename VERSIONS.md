@@ -474,6 +474,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-23 | `60ef5d9` | Ô sửa cạnh từ điển trở lại cỡ đầy đủ như trước (900×640, nhỏ hơn khi màn hình nhỏ); nội dung căn giữa, trên dưới bằng nhau |
 | LOOKUP-24 | `14ab296` | Nội dung ô sửa cạnh từ điển nằm sát trên như trước (không căn giữa), thẳng hàng với mép trên trang từ điển |
 | LOOKUP-25 | `812fbee` | Trả khung ô sửa cạnh từ điển về đúng như trước LOOKUP-21: từ điển sát mép trái, khung cỡ đầy đủ, nội dung sát trên |
+| LOOKUP-26 | `c7979be` | Popup và mọi ô sửa: trừ dòng chính, mọi chữ (chip, từ loại, câu, pinyin, Notes) cùng cỡ bản dịch 18px/26px |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
