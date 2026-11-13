@@ -7,6 +7,7 @@ The whole app is `index.html`; `README.md` documents what users see. The user ru
 - **Push to `main` only.** Commit and push every finished change straight to `main` (GitHub Pages builds from it); never push to other branches.
 - **Lessons and Vocabulary stay in step.** Anything added or changed on one side (import options, column delimiters, shortcuts, buttons, editing, study behaviour) is made on the other side in the same change. If something cannot work the same way on the other side, ask the user how it should behave there; do not quietly leave it out.
 - Keep `README.md` in step with every user-visible change.
+- **The rulebook is binding.** `README.md` → **Rules** lists the app's shared rules, one line each, in 12 groups. Every change follows them in every mode, Lessons and Vocabulary, computer and phone; a new shared behaviour gets its line there, and a rule that changes is changed there first.
 - **No comments in `index.html`.** No `//` or `/* */` comments in its scripts or styles.
 - After any change under `extension/`, bump its version in `extension/manifest.json` and rebuild `Extension.zip` (`python3 extension/make-zip.py`), the download that unzips to a folder named `Extension`.
 - **Fix reported bugs everywhere.** When the user points out a bug or an odd behaviour, fix its cause, then check the same behaviour and similar situations across every mode, Lessons and Vocabulary, computer and phone, and fix those too in the same change; say what else was checked or fixed.

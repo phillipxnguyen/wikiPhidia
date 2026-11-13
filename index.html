@@ -9843,7 +9843,7 @@ function cjkAtPoint(x, y, el) {
 }
 
 document.addEventListener("mousemove", e => {
-  if (isTouch() || !(e.target instanceof Element) || e.target.closest(".cell.shown, .vocab-list-term, .vocab-popup, #watchPop mark, #editPopup :is(#editQ, #editA) mark:is(.vocab-hit, .vocab-own)")) return;
+  if (isTouch() || !(e.target instanceof Element) || e.target.closest(".cell.shown, .vocab-list-term, .vocab-popup, #watchPop mark, #editPopup :is(#editQ, #editA, #vocabEditMain .vem-q) mark:is(.vocab-hit, .vocab-own)")) return;
   const tip = hoverTooltip;
   const showing = tip && tip.style.display === "block" && tip.anchor && tip.anchor.closest && tip.anchor.closest(PINYIN_SEL);
   const el = e.target.closest(PINYIN_SEL);
@@ -10862,12 +10862,12 @@ function sentenceWordCtx(hit) {
 }
 
 document.addEventListener("mouseover", e => {
-  const mk = !isTouch() && e.target.closest && e.target.closest("#editPopup :is(#editQ, #editA) mark:is(.vocab-hit, .vocab-own)");
+  const mk = !isTouch() && e.target.closest && e.target.closest("#editPopup :is(#editQ, #editA, #vocabEditMain .vem-q) mark:is(.vocab-hit, .vocab-own)");
   if (mk) markTip(mk);
 });
 
 document.addEventListener("mouseout", e => {
-  const mk = e.target.closest && e.target.closest("#editPopup :is(#editQ, #editA) mark:is(.vocab-hit, .vocab-own)");
+  const mk = e.target.closest && e.target.closest("#editPopup :is(#editQ, #editA, #vocabEditMain .vem-q) mark:is(.vocab-hit, .vocab-own)");
   if (mk && !(e.relatedTarget && mk.contains(e.relatedTarget)) && hoverTooltip && hoverTooltip.anchor === mk) hideTooltip();
 });
 
@@ -10899,8 +10899,9 @@ const MARK_ZONES = SW_ZONES + ", #watchPop .w-capline.reveal, #watchPop:not(.cab
 
 document.addEventListener("click", e => {
   if (!getSelection().isCollapsed || e.button || e.shiftKey || !e.target.closest) return;
-  const mk = e.target.closest("mark.vocab-hit, mark.vocab-own"), mz = mk && mk.closest(MARK_ZONES + ", #editPopup :is(#editQ, #editA)");
-  if (!mz || isTouch()) return;
+  const mk = e.target.closest("mark.vocab-hit, mark.vocab-own"), mz = mk && mk.closest(MARK_ZONES + ", #editPopup :is(#editQ, #editA), #vocabEditMain .vem-q");
+  if (!mz || isTouch() || mk.classList.contains("vem-w")) return;
+  const editing = mz.matches(".vem-q") && lessonVocabItems(vocabSource()).find(i => i.key === vocabEditingKey);
   const lang = detectLang(mz.textContent).split("-")[0], term = (mk.dataset.own || mk.textContent).split("\n")[0].trim(), ctx = mz.matches("#editQ, #editA") ? activeEdit && {
     lang: lang,
     row: activeEdit.row,
@@ -10915,6 +10916,10 @@ document.addEventListener("click", e => {
         bubbles: true
       }));
     }
+  } : editing ? {
+    lang: lang,
+    row: editing.card,
+    onAdd: (t, m) => addVocabToRow(editing.card, t, m)
   } : sentenceWordCtx({
     zone: mz,
     lang: lang
@@ -10995,6 +11000,28 @@ window.addEventListener("keydown", e => {
   if (!ownDictFloatDelete()) return;
   e.preventDefault();
   e.stopImmediatePropagation();
+}, true);
+
+window.addEventListener("keydown", e => {
+  if (e.key !== "Delete" && e.key !== "Backspace" || e.repeat || e.metaKey || e.ctrlKey || e.altKey || ownDictFloat || isTypingInField() || dialogOpen()) return;
+  if (vocabEditingKey && vocabEditingKey !== NEW_WORD_KEY && currentView === "vocab") {
+    const item = lessonVocabItems(vocabSource()).find(i => i.key === vocabEditingKey);
+    if (!item) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    vocabEditingKey = null;
+    closeEditPopup();
+    deleteVocabEntry(item, null);
+    return;
+  }
+  if (activeEdit && !document.getElementById("editPopup").hidden && activeEdit.row && rows.includes(activeEdit.row)) {
+    const row = activeEdit.row;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    commitActiveEdit();
+    closeEditPopup();
+    deleteRow(row.id);
+  }
 }, true);
 
 window.addEventListener("keydown", e => {
@@ -20334,11 +20361,23 @@ function vocabEditSpan(item) {
   return vocabSentenceCard(item) ? findTermIn(item.card.q, item.term) : null;
 }
 
+function vocabEditLineHtml(item, q, span) {
+  const lines = t => escapeHtml(t).replace(/\n/g, "<br>");
+  const box = document.createElement("div");
+  box.innerHTML = highlightVocabInHtml(lines(q), null, [ item.term ]);
+  const own = [ ...box.querySelectorAll("mark") ].find(m => normalizeVocabText(m.textContent) === item.tkey);
+  if (own) {
+    own.classList.add("vocab-own", "vem-w");
+    return box.innerHTML;
+  }
+  return `${lines(q.slice(0, span[0]))}<mark class="vocab-own vem-w">${escapeHtml(q.slice(span[0], span[1]))}</mark>${lines(q.slice(span[1]))}`;
+}
+
 function vocabEditorHtml(item) {
   const span = vocabEditSpan(item), q = span ? item.card.q : "";
   const area = `<textarea id="vocabEditTerm" class="autofit" rows="1" autocomplete="off" aria-label="Word" placeholder="Word, then its meaning two lines below"${span ? " hidden" : ""}>${escapeHtml(item.meaning ? Q_MARK + item.term + "\n" + item.meaning : item.term)}</textarea>`;
   const lines = t => escapeHtml(t).replace(/\n/g, "<br>");
-  const main = span ? `<div id="vocabEditMain" class="rich-editor" contenteditable="true" aria-label="The word in its sentence, then its meaning" title="The word in its card's sentence, then its meaning: changing the sentence changes the card everywhere"><div class="vem-q">${lines(q.slice(0, span[0]))}<mark class="vocab-own vem-w">${escapeHtml(q.slice(span[0], span[1]))}</mark>${lines(q.slice(span[1]))}</div><div class="vem-a">${escapeHtml(item.meaning) || "<br>"}</div></div>` : "";
+  const main = span ? `<div id="vocabEditMain" class="rich-editor" contenteditable="true" aria-label="The word in its sentence, then its meaning" title="The word in its card's sentence, then its meaning: changing the sentence changes the card everywhere"><div class="vem-q">${vocabEditLineHtml(item, q, span)}</div><div class="vem-a">${escapeHtml(item.meaning) || "<br>"}</div></div>` : "";
   return '<div class="vocab-editor">' + area + main + `<div class="notes-clip"><div id="vocabEditNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes" aria-label="Notes">${wordNotesOf(item)}</div></div>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
 }
 
@@ -27355,7 +27394,7 @@ A 연락을 드리려던 참이었는데, 연락을 주셨네요. / B 그러셨�
 
 const BOOK_LANG_KEY = "flashcards.bookLang";
 
-const LIB_LANGS = [ [ "ko", "한국어", "한", "#1b6fc8", "#0f2f6e" ], [ "zh-CN", "中文", "中", "#d7263d", "#7a0f1f" ], [ "ja", "日本語", "日", "#d6336c", "#6b1235" ], [ "en", "English", "Aa", "#2f9e6b", "#0f4f35" ] ];
+const LIB_LANGS = [ [ "ko", "한국어", "한", "#0e7490", "#2563eb" ], [ "zh-CN", "中文", "中", "#c81e1e", "#e68a00" ], [ "ja", "日本語", "日", "#1e3a8a", "#e11d48" ], [ "en", "English", "Aa", "#7c3aed", "#db2777" ] ];
 
 let bookLang = LIB_LANGS.some(x => x[0] === readLocal(BOOK_LANG_KEY)) ? readLocal(BOOK_LANG_KEY) : "ko", bookShown = null, bookUnitShown = 0, bookPage = null;
 
