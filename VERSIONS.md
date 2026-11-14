@@ -491,7 +491,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-36 | `0752a2c` | Ô sửa: Save cách Notes 13px |
 | LOOKUP-37 | `68e4edf` | Notes trong popup và ô sửa: vạch dọc bên trái thay cho hộp xám |
 | LOOKUP-38 | `147e4a7` | Điện thoại: bấm từ tô màu mở popup đầy đủ như PC (không còn chỉ đọc); ☰ Full bấm một lần là tra từ (vẫn chọn dòng), bấm đúp mở ô sửa |
-| LOOKUP-39 | `pending` | Điện thoại: chữ chọn được như PC; chọn cụm chữ hiện nút 字 thay phím Shift (☰ Full, Speaking, theater, flashcard, ô sửa, sách) |
+| LOOKUP-39 | `19e0834` | Điện thoại: chữ chọn được như PC; chọn cụm chữ hiện nút 字 thay phím Shift (☰ Full, Speaking, theater, flashcard, ô sửa, sách) |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
