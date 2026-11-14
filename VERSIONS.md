@@ -123,7 +123,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-67 | `147e4a7` | Điện thoại: một lần vuốt là chấm (kể cả khi chữ còn mờ), cả video + dòng chạy theo tay, ✓/✕ to hiện ngay; Watch có danh sách dòng dưới video |
 | THEATER-68 | `7569d81` | Bỏ nút "dừng cuối mỗi dòng" (AP) và phím Q: loop đã giữ dòng, Interpreter tự dừng |
 | THEATER-69 | `d83250a` | Bài nhập mới: gộp dòng phụ đề theo ~30 giây thay vì 3 dòng; Vocabulary chỉ hiện và phát đúng dòng chứa từ |
-| THEATER-70 | `pending` | Danh sách dòng: nhãn giờ hiện lại khi bật pinyin (拼) |
+| THEATER-70 | `e0b6605` | Danh sách dòng: nhãn giờ hiện lại khi bật pinyin (拼) |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
