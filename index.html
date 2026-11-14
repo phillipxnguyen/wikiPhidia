@@ -14038,16 +14038,24 @@ function hideUnderSwipe(parts) {
   if (el && el.id === "vocabCard") {
     const pending = document.querySelector(".vocab-deck > .vocab-card.pending");
     el.style.visibility = "hidden";
+    el.style.opacity = "0";
     if (pending) pending.style.opacity = "1"; else el.insertAdjacentHTML("afterend", underDoneHtml());
     return () => {
       el.style.visibility = "";
+      el.style.opacity = "";
       if (pending) pending.style.opacity = ""; else el.parentElement && el.parentElement.querySelectorAll(":scope > .under-done").forEach(x => x.remove());
     };
   }
   const prop = el && el.tagName === "TR" ? "display" : "visibility";
-  const saved = parts.map(el => [ el, el.style[prop] ]);
-  parts.forEach(el => el.style[prop] = prop === "display" ? "none" : "hidden");
-  return () => saved.forEach(([el, v]) => el.style[prop] = v);
+  const saved = parts.map(el => [ el, el.style[prop], el.style.opacity ]);
+  parts.forEach(el => {
+    el.style[prop] = prop === "display" ? "none" : "hidden";
+    el.style.opacity = "0";
+  });
+  return () => saved.forEach(([el, v, o]) => {
+    el.style[prop] = v;
+    el.style.opacity = o;
+  });
 }
 
 function showNextUnderSwipe() {
