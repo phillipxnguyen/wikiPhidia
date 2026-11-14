@@ -432,7 +432,7 @@ Hàm chính: `studyingNow`, `placeStudyClock`, `STUDY_TIME_KEY`, `#focusClock`.
 | MOVE-11 | `fbda3d8` | Bỏ viền màu quanh tấm đang bay, giữ nền đậm làm mờ và bóng đổ |
 | MOVE-12 | `7667158` | Bật giảm chuyển động trong hệ thống thì mọi hiệu ứng (CSS và JS) đều bỏ, mọi thứ hiện ngay |
 | MOVE-13 | `0a3f333` | Viền khi vuốt luôn bo ít nhất 12px (flashcard kiểu trơn trước đây vuông 0px) |
-| MOVE-14 | `pending` | Khi vuốt, thẻ hiện tại ẩn hẳn (trong suốt), không còn chữ điền chỗ trống/chữ lớn lọt ra chồng lên thẻ kế tiếp |
+| MOVE-14 | `caa33dc` | Khi vuốt, thẻ hiện tại ẩn hẳn (trong suốt), không còn chữ điền chỗ trống/chữ lớn lọt ra chồng lên thẻ kế tiếp |
 
 Hàm chính: `swipe`, `ghostFor`, `angelFly`, `cutLayer`, `playCut`.
 
