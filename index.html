@@ -11194,12 +11194,14 @@ function ownDictFloatPick(b) {
     } else scheduleAutoSave();
   };
   if (pop.dataset.mode === "have") {
-    const found = ownDictFindWord(w);
+    const found = ownDictFindWord(w), studying = currentView === "vocab" && vocabView === "card" && vocabSession ? currentVocabItem() : null;
     closeOwnDictFloat();
     const renamed = found && term !== found.term && found.item && !found.lesson;
     if (renamed ? updateVocabEntry(found.item, term, meaning) : ownDictSetMeaning(found, meaning)) showToast(`“${renamed ? term : found.term}”: ${meaning}`);
     w = renamed ? term : w;
     putNotes();
+    keepStudying(studying);
+    if (studying) renderVocab();
     return;
   }
   closeOwnDictFloat();
@@ -11494,6 +11496,12 @@ document.addEventListener("pointerdown", e => {
   if (save) ownDictFloatPick(save); else closeOwnDictFloat();
 }, true);
 
+function keepStudying(studying) {
+  if (!studying || !vocabSession) return;
+  const now = lessonVocabItems(vocabSource()).find(i => i.card === studying.card && i.tkey === studying.tkey);
+  if (now) vocabSession.queue = [ now.key ].concat(vocabSession.queue.filter(k => k !== now.key && k !== studying.key));
+}
+
 function ownDictFloatDelete() {
   const pop = ownDictFloat, w = pop && pop.dataset.mode === "have" ? pop.dataset.w : null, f = w && ownDictFindWord(w), it = f && f.item;
   if (f && f.li) {
@@ -11508,6 +11516,12 @@ function ownDictFloatDelete() {
     return true;
   }
   if (!it) return false;
+  const studying = currentView === "vocab" && vocabView === "card" && vocabSession ? currentVocabItem() : null;
+  if (studying && studying.card === it.card && studying.tkey === it.tkey) {
+    closeOwnDictFloat();
+    vocabDeleteAction();
+    return true;
+  }
   const row = it.card, next = rewrittenVocabNotes(row, it, null, null);
   if (!next) return false;
   closeOwnDictFloat();
@@ -11523,7 +11537,9 @@ function ownDictFloatDelete() {
     scheduleAutoSave();
   }
   showToast(`Deleted “${it.term}”`);
+  keepStudying(studying);
   render();
+  if (currentView === "vocab") renderVocab();
   refreshWordMarks();
   return true;
 }
