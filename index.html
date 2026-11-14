@@ -1639,7 +1639,7 @@ window.onYouTubeIframeAPIReady = function(){
   .od-card.ed-card, .od-float .od-card, .od-float .od-body{gap:16px;}
   .ed-card > :not(.ed-say), .ed-card .edit-qa, .ed-card .notes-clip, .ed-card :is(#editNotes, #vocabEditNotes, #qaNotes), .od-float .od-card > *, .od-float .od-body > *{margin-top:0;margin-bottom:0;}
   .od-float .od-ex{gap:16px;padding-top:0;border-top:0;}
-  .od-done{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:16px;background:color-mix(in srgb, var(--a-label) 14%, transparent);font-size:0 !important;}
+  .od-done{cursor:pointer;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:16px;background:color-mix(in srgb, var(--a-label) 14%, transparent);font-size:0 !important;}
   .od-done::before{content:"✓";font-size:16px;line-height:20px;font-weight:800;}
   .od-float .od-long .od-mean-in{font-size:18px;line-height:26px;font-weight:600;}
   .od-float .od-word b{outline:none;cursor:text;}
@@ -2462,7 +2462,7 @@ window.onYouTubeIframeAPIReady = function(){
   html.focus-on .dots{display:none;}
   html.focus-on #viewVocab.focus-study > .vocab-toolbar, html.focus-on #viewStudy.focus-study .study-head .toolbar{position:fixed;z-index:960;top:16px;left:max(16px, calc(50% - 450px));right:calc(max(16px, calc(50% - 450px)) + 52px);width:auto;height:40px;align-items:center;margin:0;}
   @media (max-width:820px){html.focus-on #viewVocab.focus-study > .vocab-toolbar, html.focus-on #viewStudy.focus-study .study-head .toolbar{top:calc(12px + env(safe-area-inset-top));left:12px;right:12px;}}
-  .focus-exit{position:fixed;z-index:2450;top:16px;right:16px;display:none;width:40px;height:40px;padding:0;border:0;border-radius:20px;background:color-mix(in srgb, var(--text) 10%, transparent);color:var(--text);font-size:18px;line-height:20px;cursor:pointer;}
+  .focus-exit{position:fixed;z-index:999;top:16px;right:16px;display:none;width:40px;height:40px;padding:0;border:0;border-radius:20px;background:color-mix(in srgb, var(--text) 10%, transparent);color:var(--text);font-size:18px;line-height:20px;cursor:pointer;}
   @media (hover:hover){.focus-exit:hover{background:color-mix(in srgb, var(--text) 18%, transparent);}}
   @media (max-width:820px){.focus-exit{top:calc(12px + env(safe-area-inset-top));right:12px;width:44px;height:44px;border-radius:22px;font-size:20px;}}
   html.focus-on .focus-exit{display:block;}
@@ -11176,7 +11176,9 @@ function ownDictCardHtml(lang, w, ctx) {
   } ] : []) : [];
   const body = !e ? "" : `<button type="button" class="od-main" data-m="${escapeAttr(e.m)}" title="Add with this meaning">${escapeHtml(e.m)}</button>` + groups.map(g => `<div class="od-group">${g.pos ? `<span class="od-pos">${escapeHtml(g.pos)}</span>` : ""}<div class="od-terms">${g.terms.map(t => `<button type="button" class="od-term" data-m="${escapeAttr(t)}" title="Add this meaning to the meaning line">${escapeHtml(t)}</button>`).join("")}</div></div>`).join("") + odDefsHtml(dictDefsFor(lang, w, e));
   const act = '<span class="od-acts"></span>';
-  const mine = appSentencesFor(w, ctx && ctx.row, 2), world = dictSrcSentences(lang, w).filter(t => !mine.includes(t)).slice(0, 3 - mine.length);
+  const pool = appSentencesFor(w, ctx && ctx.row, 30), zt = ctx && ctx.zoneText || "", spot = t => zt.indexOf(oneLine(t));
+  const seen = zt ? pool.filter(t => spot(t) >= 0).sort((a, b) => spot(a) - spot(b)) : [];
+  const mine = seen.concat(pool.filter(t => !seen.includes(t))).slice(0, 2), world = dictSrcSentences(lang, w).filter(t => !mine.includes(t)).slice(0, 3 - mine.length);
   const examples = mine.concat(world).map(t => ({
     t: t
   }));
@@ -11336,11 +11338,12 @@ function paintOwnDictFloat() {
   const w = pop.dataset.w, have = pop.dataset.mode === "have", found = have ? ownDictFindWord(w) : null;
   const was = pop.querySelector(".od-mean-in"), typed = was && was.dataset.dirty ? was.value : null, focused = was && document.activeElement === was;
   const wasNotes = pop.querySelector(".od-notes"), typedNotes = wasNotes && wasNotes.dataset.dirty ? wasNotes.innerHTML : null;
-  const item = found && found.item, oldNotes = item ? wordNotesOf(item) : "";
+  const item = found && found.item, noted = item ? noteSentence(item) : null, oldNotes = item ? noted ? noted.rest : wordNotesOf(item) : "";
+  pop.notedLine = noted ? noted.lineHtml : "";
   const entry = ownDictEntry(shown.lang, w);
   pop.innerHTML = ownDictCardHtml(shown.lang, w, shown);
   const card = pop.querySelector(".od-card"), acts = card.querySelector(".od-acts");
-  acts.innerHTML = have ? '<span class="od-done" title="In your words">✓ In your words</span><button type="button" class="od-add od-save" hidden>Save</button>' : '<button type="button" class="od-add" title="Add" aria-label="Add"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg><span>Add</span></button>';
+  acts.innerHTML = have ? '<span class="od-done" role="button" title="In your words: click to delete it again">✓ In your words</span><button type="button" class="od-add od-save" hidden>Save</button>' : '<button type="button" class="od-add" title="Add" aria-label="Add"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg><span>Add</span></button>';
   const raw = have ? found ? found.meaning : "" : entry ? entry.m : "";
   const value = typed != null ? typed : odLong(w) ? raw.replace(/\s+/g, " ").trim() : meaningLines(raw).join("\n");
   const field = `<div class="od-mean-in" contenteditable="true" spellcheck="false" role="textbox" aria-multiline="true" aria-label="Meaning" title="One meaning per line; change it if it is not right" data-placeholder="${pop.loading && !value ? "Translating…" : "Type the meaning"}">${meanLinesHtml(value)}</div>`, main = card.querySelector(".od-main");
@@ -11393,6 +11396,14 @@ function openOwnDictFloat(el, mode, word, ctx) {
   pop.anchor = el;
   pop.ctx = shown;
   pop.openedAt = Date.now();
+  const zoneSel = ".vocab-back-main, .vocab-front, #vocabCard, #watchPop .w-cap, #watchPop .w-row, .cell, .paper-lines, #editPopup .le-content, .bp-sheet";
+  let zone = el && el.closest ? el.closest(zoneSel) : null;
+  if (!zone && el && el.getBoundingClientRect) {
+    const r = el.getBoundingClientRect(), at = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+    zone = at && at.closest ? at.closest(zoneSel) : null;
+  }
+  if (zone && zone.closest("#vocabCard") && document.getElementById("vocabCard").classList.contains("flipped")) zone = document.querySelector("#vocabCard .vocab-back-main") || zone;
+  shown.zoneText = zone ? zone.textContent.replace(/\s+/g, " ") : "";
   host.appendChild(pop);
   ownDictFloat = pop;
   const e = ownDictEntry(shown.lang, w);
@@ -11416,7 +11427,7 @@ function ownDictFloatPick(b) {
   const term = (pop.querySelector(".od-word b").textContent || "").replace(/\s+/g, " ").trim() || w;
   const putNotes = () => {
     const f = notes != null && ownDictFindWord(w), it = f && f.item;
-    if (!it || !setWordNotes(it.card, it.key, notes)) return;
+    if (!it || !setWordNotes(it.card, it.key, (pop.notedLine || "") + notes)) return;
     if (f.lesson) {
       f.lesson.updatedAt = Date.now();
       dbPut("lessons", f.lesson).catch(() => {});
@@ -11506,6 +11517,7 @@ document.addEventListener("click", e => {
   const fl = e.target.closest && e.target.closest(".od-float");
   if (!fl) return;
   if (e.target.closest(".od-say")) return soundWaitOn(e.target.closest(".od-say")), ownDictSay(fl.dataset.w);
+  if (e.target.closest(".od-done")) return void ownDictFloatDelete();
   const chip = e.target.closest(".od-term"), input = fl.querySelector(".od-mean-in");
   if (chip && input) {
     const m = chip.dataset.m, now = meaningLines(input.value);
@@ -11711,6 +11723,17 @@ document.addEventListener("pointerdown", e => {
 
 function ownDictFloatDelete() {
   const pop = ownDictFloat, w = pop && pop.dataset.mode === "have" ? pop.dataset.w : null, f = w && ownDictFindWord(w), it = f && f.item;
+  if (f && f.li) {
+    const notes = f.li.closest("#editNotes");
+    closeOwnDictFloat();
+    f.li.remove();
+    if (notes) notes.dispatchEvent(new Event("input", {
+      bubbles: true
+    }));
+    showToast(`Deleted “${f.term}”`);
+    refreshWordMarks();
+    return true;
+  }
   if (!it) return false;
   const row = it.card, next = rewrittenVocabNotes(row, it, null, null);
   if (!next) return false;
@@ -20547,10 +20570,11 @@ function noteSentence(item) {
   box.innerHTML = html;
   const line = [ ...box.children ].find(el => findWordForm(el.textContent.trim().normalize("NFC"), item.term));
   if (!line) return null;
-  const sentence = line.textContent.trim();
+  const sentence = line.textContent.trim(), lineHtml = line.outerHTML;
   line.remove();
   return {
     sentence: sentence,
+    lineHtml: lineHtml,
     rest: box.innerHTML
   };
 }
@@ -22047,6 +22071,7 @@ document.getElementById("vocabSpeed").onchange = e => {
 
 function stopVocabSound() {
   vocabRestart = null;
+  vocabAfterClipOnce = false;
   const wasTts = vocabTtsOn;
   vocabTtsOn = false;
   vocabTtsToken++;
@@ -22081,7 +22106,7 @@ function startPendingVocabVideo() {
   if (item && !ytHasError) startLoop(item.card);
   if (item && vocabOnce && loopingRowId === item.card.id) {
     const again = vocabRestart && vocabRestart.key === item.key ? vocabRestart : null;
-    passThen = () => again ? playVocabSound(again, false) : stopVocabSound();
+    passThen = () => again ? playVocabSound(again, vocabAfterClipOnce, false, false, true) : stopVocabSound();
     passThen.once = true;
   }
   syncVocabSound();
@@ -22095,7 +22120,9 @@ function preloadVocabVideo(item) {
 
 let vocabOnce = false;
 
-function playVocabSound(item, once, ownClip, thenRestart) {
+let vocabAfterClipOnce = false;
+
+function playVocabSound(item, once, ownClip, thenRestart, fromClip) {
   stopVocabSound();
   vocabRestart = thenRestart ? item : null;
   vocabOnce = !!once;
@@ -22106,6 +22133,14 @@ function playVocabSound(item, once, ownClip, thenRestart) {
   }
   const row = item.card, vc = document.getElementById("vocabCard");
   const shown = !ownClip && vc && vc.dataset.lookKey === item.key && vc.dataset.ex === "other" && vc.dataset.other || "";
+  if (shown && !fromClip && vocabSession && vocabSession.flipped && !ytHasError && vocabVideoIdFor(row)) {
+    const first = vocabContext(item).sentence;
+    if (first && findWordForm(first.normalize("NFC"), item.term)) {
+      playVocabSound(item, true, true, true);
+      vocabAfterClipOnce = !!once;
+      return;
+    }
+  }
   const videoId = shown || ytHasError && ownClip ? "" : vocabVideoIdFor(row);
   if (videoId) {
     if (row.srcLessonId && (vocabVideoId !== videoId || !ytHasVideo)) {
@@ -22131,8 +22166,8 @@ function playVocabSound(item, once, ownClip, thenRestart) {
   }
   const ctx = vocabContext(item);
   const own = ctx.sentence && findWordForm(ctx.sentence.normalize("NFC"), item.term) ? ctx.sentence : "";
-  const clipAfter = !!shown && vocabSession && vocabSession.flipped && !!own && !ytHasError && !!vocabVideoIdFor(row);
-  const texts = shown ? [ shown ].concat(vocabSession && vocabSession.flipped && own && own !== shown && !clipAfter ? [ own ] : []) : [ own || item.term ];
+  const clipAfter = !!shown && vocabSession && vocabSession.flipped && !!own && !ytHasError && !!vocabVideoIdFor(row) && !(fromClip && once);
+  const texts = shown ? vocabSession && vocabSession.flipped && own && own !== shown && !clipAfter && !fromClip ? [ own, shown ] : [ shown ] : [ own || item.term ];
   let at = 0;
   soundHeard = true;
   vocabTtsOn = true;
