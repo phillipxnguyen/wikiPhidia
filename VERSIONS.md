@@ -122,7 +122,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-66 | `5a7e278` | Câu dịch nhỏ hơn câu gốc 5 px ở mọi cỡ (máy tính, cửa sổ hẹp, phone) |
 | THEATER-67 | `147e4a7` | Điện thoại: một lần vuốt là chấm (kể cả khi chữ còn mờ), cả video + dòng chạy theo tay, ✓/✕ to hiện ngay; Watch có danh sách dòng dưới video |
 | THEATER-68 | `7569d81` | Bỏ nút "dừng cuối mỗi dòng" (AP) và phím Q: loop đã giữ dòng, Interpreter tự dừng |
-| THEATER-69 | `pending` | Bài nhập mới: gộp dòng phụ đề theo ~30 giây thay vì 3 dòng; Vocabulary chỉ hiện và phát đúng dòng chứa từ |
+| THEATER-69 | `d83250a` | Bài nhập mới: gộp dòng phụ đề theo ~30 giây thay vì 3 dòng; Vocabulary chỉ hiện và phát đúng dòng chứa từ |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
