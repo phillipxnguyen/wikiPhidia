@@ -6552,8 +6552,9 @@ function toggleLoopForRow(row) {
   startLoop(row);
 }
 
-function startLoop(row) {
+function startLoop(row, clip) {
   if (row.time == null) return;
+  const from = clip ? clip.t : row.time;
   stopWordAudio();
   if (ytHasError) return;
   if (!ytPlayer || !ytReady || !ytHasVideo || typeof ytPlayer.seekTo !== "function") {
@@ -6570,10 +6571,10 @@ function startLoop(row) {
   updateSequenceBtnUI();
   loopingRowId = row.id;
   beginSound();
-  const end = segmentEnd(row, 8);
+  const end = clip && clip.end != null ? clip.end : segmentEnd(row, 8);
   soundSegment = {
     id: row.id,
-    start: row.time,
+    start: from,
     end: end
   };
   loopingRowData = {
@@ -6590,17 +6591,17 @@ function startLoop(row) {
     if (videoActionSeq !== mySeq || loopingRowId !== row.id) return;
     if (!ytPlayer || typeof ytPlayer.seekTo !== "function") return;
     playbackRateOnce();
-    seamTo(row.time);
+    seamTo(from);
     if (soundSegment.id === row.id) soundSegment.ready = true;
   }, 100);
   loopInterval = setInterval(() => {
     if (!ytPlayer || !ytReady || typeof ytPlayer.getCurrentTime !== "function") return;
     if (loopingRowId !== row.id) return;
-    if (segmentReached(row.time, end, true)) {
+    if (segmentReached(from, end, true)) {
       if (endPass()) return fullVolume();
       segmentArmed = false;
       soundSegment.armed = false;
-      seamTo(row.time);
+      seamTo(from);
     }
   }, 40);
   markPlayingRow();
@@ -15152,7 +15153,10 @@ function normalizeCard(c) {
     srs: mergeModeSrs(c.srs ? normalizeSrs(c.srs) : migrateLegacySrs(c)),
     vocab: normalizeVocabSrs(c.vocab),
     merged: !!c.merged,
-    kept: !!c.kept
+    kept: !!c.kept,
+    ...(Array.isArray(c.parts) && c.parts.length ? {
+      parts: cleanParts(c.parts)
+    } : {})
   };
   return withWordKeys(card);
 }
@@ -15240,6 +15244,10 @@ function mergedCard(group) {
     notes: joinedTranslation(group.map(c => c.notesHtml)) ? plainTextOf(joinedTranslation(group.map(c => c.notesHtml)), "\n") : group.map(c => (c.notes || "").trim()).filter(Boolean).join("\n"),
     notesHtml: joinedTranslation(group.map(c => c.notesHtml)) || joinNotesHtml(group.map(c => c.notesHtml || (c.notes ? escapeHtml(c.notes).replace(/\n/g, "<br>") : ""))),
     time: group[0].time,
+    parts: group.flatMap(c => c.parts || [ {
+      t: c.time,
+      q: c.q || ""
+    } ]),
     srs: newSrs(),
     vocab: vocab,
     merged: true
@@ -15257,6 +15265,8 @@ function answersIntoNotes(cards) {
   });
 }
 
+const MERGE_SECONDS = 30;
+
 function mergeLessonCards(cards) {
   cards = liftTimestamps(cards);
   cards.forEach(c => {
@@ -15270,8 +15280,11 @@ function mergeLessonCards(cards) {
     return clean.length === cards.length ? cards : clean;
   }
   const out = cards.slice();
-  for (let i = 0; i < timed.length; i += 3) {
-    const group = timed.slice(i, i + 3);
+  for (let i = 0; i < timed.length; ) {
+    let n = 1;
+    while (i + n < timed.length && timed[i + n].time - timed[i].time < MERGE_SECONDS) n++;
+    const group = timed.slice(i, i + n);
+    i += n;
     if (group.length === 1) {
       group[0].merged = true;
       continue;
@@ -15334,8 +15347,18 @@ function serializeCard(r) {
     srs: r.srs,
     vocab: vocabForSave(r),
     merged: !!r.merged,
-    kept: !!r.kept
+    kept: !!r.kept,
+    ...(Array.isArray(r.parts) && r.parts.length ? {
+      parts: cleanParts(r.parts)
+    } : {})
   };
+}
+
+function cleanParts(parts) {
+  return parts.map(pt => ({
+    t: Number(pt.t),
+    q: String(pt.q || "")
+  })).filter(pt => isFinite(pt.t) && pt.q.trim());
 }
 
 function serializeCurrentLesson() {
@@ -20390,6 +20413,15 @@ function vocabContext(item) {
   const pieces = text => (text || "").split(/\n+/).flatMap(line => splitIntoSentences(line).map(s => s.text));
   const whole = card => card.time != null && (card.q || "").trim() ? (card.q || "").replace(/\s*\n+\s*/g, " ").trim() : "";
   const sentenceIn = card => [ whole(card) ].concat(pieces(card.q), pieces(card.a)).map(t => t.trim()).find(t => t && findWordForm(t.normalize("NFC"), item.term));
+  const parts = item.card.parts || [], at = parts.findIndex(pt => findWordForm((pt.q || "").normalize("NFC"), item.term));
+  if (at >= 0) return {
+    card: item.card,
+    sentence: parts[at].q.replace(/\s*\n+\s*/g, " ").trim(),
+    part: {
+      t: parts[at].t,
+      end: parts[at + 1] ? parts[at + 1].t : null
+    }
+  };
   const own = sentenceIn(item.card);
   if (own) return {
     card: item.card,
@@ -20471,7 +20503,7 @@ function withPill(pill, html) {
 
 function linePillHtml(item, text, own, cls) {
   const c = cls ? " " + cls : "";
-  if (own && item.card.time != null && vocabVideoIdFor(item.card)) return `<button type="button" class="own-ts${c}" title="Play this line">${fmtTime(item.card.time)}</button>`;
+  if (own && item.card.time != null && vocabVideoIdFor(item.card)) return `<button type="button" class="own-ts${c}" title="Play this line">${fmtTime((vocabContext(item).part || item.card).t ?? item.card.time)}</button>`;
   return `<button type="button" class="own-ts say-ts${c}" data-say="${escapeAttr(text)}" title="Play this sentence" aria-label="Play this sentence">${SAY_ICONS}</button>`;
 }
 
@@ -21910,7 +21942,7 @@ function startPendingVocabVideo() {
   if (vocabPendingKey === null || vocabAwaitCue || !ytPlayer || !ytReady || !ytHasVideo) return;
   const item = lessonVocabItems(vocabSource()).find(i => i.key === vocabPendingKey);
   vocabPendingKey = null;
-  if (item && !ytHasError) startLoop(item.card);
+  if (item && !ytHasError) startLoop(item.card, vocabContext(item).part);
   if (item && vocabOnce && loopingRowId === item.card.id) {
     const again = vocabRestart && vocabRestart.key === item.key ? vocabRestart : null;
     passThen = () => again ? playVocabSound(again, vocabAfterClipOnce, false, false, true) : stopVocabSound();
