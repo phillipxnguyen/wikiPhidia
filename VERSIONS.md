@@ -508,6 +508,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-46 | `5d6d19a` | Rà soát cuối: bỏ hàm popup chỉ đọc cũ trên điện thoại (không còn dùng) |
 | LOOKUP-47 | `64c5412` | Từ vàng và chữ to trên flashcard cũng mở popup (trước bấm mở ô sửa hoặc không gì); điện thoại: chạm vào câu luôn nhận (iOS), bỏ trễ chạm |
 | LOOKUP-48 | `cce649b` | Từ xanh dương/xanh lá như mọi từ: hover hiện nghĩa, bấm/chạm mở popup (cả điện thoại, cả flashcard), nghĩa lấy từ thẻ đã giải nghĩa |
+| LOOKUP-49 | `pending` | Popup/ô sửa từ: hàng chip 🔍 các nghĩa bạn đã viết cho từ đó ở thẻ khác |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 

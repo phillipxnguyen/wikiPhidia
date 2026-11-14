@@ -1670,6 +1670,9 @@ window.onYouTubeIframeAPIReady = function(){
   .od-main{align-self:flex-start;padding:0;border:0;background:none;color:var(--od-mean);font:inherit;font-size:18px;line-height:26px;font-weight:700;text-align:left;cursor:pointer;}
   .od-group{display:flex;align-items:baseline;gap:8px;}
   .od-defs .od-terms{flex-direction:column;align-items:flex-start;}
+  .od-lens{display:inline-flex;align-items:center;justify-content:center;}
+  .od-group.od-mine{align-items:center;}
+  .od-lens svg{width:16px;height:26px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;}
   .od-term.od-def{border-radius:10px;text-align:left;}
   .od-lv{flex:none;padding:2px 8px;border-radius:6px;background:color-mix(in srgb, var(--a-label) 14%, transparent);color:var(--a-label);font-family:"Doto", system-ui, sans-serif;font-size:14px;line-height:20px;font-weight:800;white-space:nowrap;cursor:default;}
   .ed-card > .ed-lv{position:absolute;top:-2px;right:40px;z-index:3;}
@@ -11094,6 +11097,30 @@ function odLong(w) {
   return (w || "").trim().length > 20 || /[.!?,;:。！？，；]/.test(w || "");
 }
 
+const OD_LENS = '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5"/><path d="M12.5 12.5L17 17"/></svg>';
+
+function myMeaningsFor(w, lang, skip) {
+  const key = normalizeVocabText(w), out = [], have = new Set(meaningLines(skip || "").map(m => m.toLowerCase()));
+  const take = it => it.tkey === key && meaningLines(it.meaning || "").forEach(m => {
+    const k = m.toLowerCase();
+    if (!have.has(k)) {
+      have.add(k);
+      out.push(m);
+    }
+  });
+  lessonVocabItems(vocabSource()).forEach(take);
+  library.forEach(l => {
+    if (isVirtualId(l.id) || l.id === currentLessonId || bookHidden(l)) return;
+    lessonVocabItems(lessonCardsWithExtras(l)).forEach(take);
+  });
+  return out.slice(0, 8);
+}
+
+function myMeaningsHtml(w, lang, skip) {
+  const list = myMeaningsFor(w, lang, skip);
+  return list.length ? `<div class="od-group od-mine"><span class="od-pos od-lens" title="Meanings you gave this word on your cards">${OD_LENS}</span><div class="od-terms">${list.map(t => `<button type="button" class="od-term" data-m="${escapeAttr(t)}" title="Add this meaning to the meaning line">${escapeHtml(t)}</button>`).join("")}</div></div>` : "";
+}
+
 function dictDefsFor(lang, w, e) {
   const r = dictSrcOf(lang, w);
   return r && r.defs.length ? r.defs : e && e.defs || [];
@@ -11186,7 +11213,7 @@ function ownDictCardHtml(lang, w, ctx) {
     pos: "",
     terms: e.alts
   } ] : []) : [];
-  const body = !e ? "" : `<button type="button" class="od-main" data-m="${escapeAttr(e.m)}" title="Add with this meaning">${escapeHtml(e.m)}</button>` + groups.map(g => `<div class="od-group">${g.pos ? `<span class="od-pos">${escapeHtml(g.pos)}</span>` : ""}<div class="od-terms">${g.terms.map(t => `<button type="button" class="od-term" data-m="${escapeAttr(t)}" title="Add this meaning to the meaning line">${escapeHtml(t)}</button>`).join("")}</div></div>`).join("") + odDefsHtml(dictDefsFor(lang, w, e));
+  const body = (!e ? "" : `<button type="button" class="od-main" data-m="${escapeAttr(e.m)}" title="Add with this meaning">${escapeHtml(e.m)}</button>`) + myMeaningsHtml(w, lang, (ownDictFindWord(w, lang) || {}).meaning) + groups.map(g => `<div class="od-group">${g.pos ? `<span class="od-pos">${escapeHtml(g.pos)}</span>` : ""}<div class="od-terms">${g.terms.map(t => `<button type="button" class="od-term" data-m="${escapeAttr(t)}" title="Add this meaning to the meaning line">${escapeHtml(t)}</button>`).join("")}</div></div>`).join("") + odDefsHtml(dictDefsFor(lang, w, e));
   const act = '<span class="od-acts"></span>';
   const pool = appSentencesFor(w, ctx && ctx.row, 30), zt = ctx && ctx.zoneText || "", spot = t => zt.indexOf(oneLine(t));
   const seen = zt ? pool.filter(t => spot(t) >= 0).sort((a, b) => spot(a) - spot(b)) : [];
@@ -21318,12 +21345,12 @@ function vocabEditLineHtml(item, q, span) {
 }
 
 function vocabEditChipsHtml(item) {
-  const e = ownDictEntry(detectLang(item.term).split("-")[0], item.term);
+  const e = ownDictEntry(detectLang(item.term).split("-")[0], item.term), mine = myMeaningsHtml(item.term, ownDictLang(item.term, item.card), item.meaning);
   const groups = e ? e.groups || (e.alts && e.alts.length ? [ {
     pos: "",
     terms: e.alts
   } ] : []) : [];
-  return groups.map(g => `<div class="od-group">${g.pos ? `<span class="od-pos">${escapeHtml(g.pos)}</span>` : ""}<div class="od-terms">${g.terms.map(t => `<button type="button" class="od-term" data-m="${escapeAttr(t)}">${escapeHtml(t)}</button>`).join("")}</div></div>`).join("") + odDefsHtml(dictDefsFor(ownDictLang(item.term, item.card), item.term, e));
+  return mine + groups.map(g => `<div class="od-group">${g.pos ? `<span class="od-pos">${escapeHtml(g.pos)}</span>` : ""}<div class="od-terms">${g.terms.map(t => `<button type="button" class="od-term" data-m="${escapeAttr(t)}">${escapeHtml(t)}</button>`).join("")}</div></div>`).join("") + odDefsHtml(dictDefsFor(ownDictLang(item.term, item.card), item.term, e));
 }
 
 function vocabEditorHtml(item) {
