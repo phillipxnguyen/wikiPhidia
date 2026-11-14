@@ -33,7 +33,7 @@ The shared rules of the whole app, one line each. They hold in every mode (☰ F
 ### 3. Studying and scheduling
 1. 🆕 New is never studied, ⏳ Due has come for review, ✅ Done is remembered five times in a row.
 2. Again brings a card back in 10 minutes; each Good moves it on a day until Done, then a Done card returns every 7 days (all three numbers set in ⚙️).
-3. New ones come in order; reviews are shuffled after every grade; two of one sentence never follow each other.
+3. New ones come in order; reviews are shuffled after every grade; two of one sentence (two words of the same sentence, or a word and its sentence) always have at least 10 other cards between them, and when there are not enough others to keep them that far apart they are spread as far as they can be.
 4. Cards and words are studied on their own schedules; nothing waits for anything else.
 5. Daily limits (new and reviews a day) are set from the 🆕 ⏳ ✅ counts of any study mode; they count per lesson in Lessons and per language in Vocabulary (all of a language's words together, whatever lesson they come from).
 6. Nothing is graded unseen: a card is shown before it can be graded or swiped. The one exception is the theater on a phone, where you only listen: one swipe grades the line at once, hidden or not.

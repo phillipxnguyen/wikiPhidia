@@ -20170,19 +20170,26 @@ function vocabSentenceKey(item) {
   return item && !vocabViewOnly(item) ? sentenceKey(vocabContext(item).sentence) : "";
 }
 
+const SAME_SENTENCE_GAP = 10;
+
 function spreadSameSentence(list, keyOf, prev = "") {
-  const keys = new Map(list.map(x => [ x, keyOf(x) ]));
+  const keys = new Map(list.map(x => [ x, keyOf(x) ])), out = [], rest = list.slice();
+  const recent = (Array.isArray(prev) ? prev : [ prev ]).filter(Boolean);
+  const lastAt = k => {
+    for (let n = out.length - 1; n >= 0; n--) if (keys.get(out[n]) === k) return out.length - 1 - n;
+    const r = recent.lastIndexOf(k);
+    return r < 0 ? Infinity : out.length + recent.length - 1 - r;
+  };
   const left = new Map;
   keys.forEach(k => k && left.set(k, (left.get(k) || 0) + 1));
-  const out = [], rest = list.slice();
   while (rest.length) {
-    const last = out.length ? keys.get(out[out.length - 1]) : prev;
-    const fits = x => !last || keys.get(x) !== last;
-    const heavy = [ ...left ].find(([ k, n ]) => k !== last && n * 2 > rest.length);
-    let i = heavy ? rest.findIndex(x => keys.get(x) === heavy[0]) : rest.findIndex(fits);
-    if (i === -1) i = 0;
-    const [ x ] = rest.splice(i, 1);
-    if (keys.get(x)) left.set(keys.get(x), left.get(keys.get(x)) - 1);
+    let best = -1, bestOk = false, bestLeft = -1, bestFar = -1;
+    for (let n = 0; n < rest.length; n++) {
+      const k = keys.get(rest[n]), d = k ? lastAt(k) : Infinity, ok = d >= SAME_SENTENCE_GAP, many = k ? left.get(k) : 0;
+      if (ok ? !bestOk || many > bestLeft : !bestOk && (d > bestFar || d === bestFar && many > bestLeft)) best = n, bestOk = ok, bestLeft = many, bestFar = d;
+    }
+    const [ x ] = rest.splice(best < 0 ? 0 : best, 1), k = keys.get(x);
+    if (k) left.set(k, left.get(k) - 1);
     out.push(x);
   }
   return out;
@@ -20214,6 +20221,7 @@ function startVocabSession() {
   const dueCount = allowed.filter(i => vocabStateOf(i).reps).length;
   if (allowed.slice(0, dueCount).every(i => vocabStateOf(i).reps)) allowed = spreadSameSentence(allowed.slice(0, dueCount), vocabSentenceKey).concat(allowed.slice(dueCount));
   allowed = orderStudy(allowed, i => !vocabStateOf(i).reps);
+  allowed = spreadSameSentence(allowed, vocabSentenceKey);
   vocabSession = {
     lessonId: currentLessonId,
     queue: allowed.map(i => i.key),
