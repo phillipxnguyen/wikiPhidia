@@ -373,7 +373,7 @@ Hàm chính: `updateTouchBar`, `sizeTouchBar`, `#tbSound`, `#tbMore`, `tools-ope
 | TODAY-5 | `326581f` | Task theo đúng mode thường: câu video mở theater, không còn thẻ Listening |
 | TODAY-6 | `bfcec26` | Bỏ luật thẻ chờ từ: thẻ câu và từ học độc lập (bỏ màn Words first, vuốt ⏳ Waiting) |
 | TODAY-7 | `dcdd678` | Điện thoại: tranh nền thẻ Today neo ở trên, mây không còn đè lên hàng cờ và chữ |
-| TODAY-8 | `aa68f1b` | Thông báo 🔥 streak chỉ hiện một lần mỗi ngày (undo rồi chấm lại không hiện nữa) |
+| TODAY-8 | `529db14` | Thông báo 🔥 streak chỉ hiện một lần mỗi ngày (undo rồi chấm lại không hiện nữa) |
 
 Hàm chính: `todayTasks`, `todayTaskCounts`, `taskQueue`, `startTaskSide`, `taskAdvance`, `leftToday`, `limitStudy`, `limitRows`.
 
