@@ -119,7 +119,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-64 | `59a5528` | Ô sửa dòng video có Q/A như mọi ô (Q đổi màu, A là câu dịch hiện ở theater); vuốt chỉ chấm khi đã Show ở mọi mode |
 | THEATER-65 | `4346d3a` | Chấm xong dòng mới hiện mờ ngay trong lúc dòng cũ trượt đi, không chờ hiệu ứng |
 | THEATER-66 | `5a7e278` | Câu dịch nhỏ hơn câu gốc 5 px ở mọi cỡ (máy tính, cửa sổ hẹp, phone) |
-| THEATER-67 | `pending` | Điện thoại: một lần vuốt là chấm (kể cả khi chữ còn mờ), cả video + dòng chạy theo tay, ✓/✕ to hiện ngay; Watch có danh sách dòng dưới video |
+| THEATER-67 | `147e4a7` | Điện thoại: một lần vuốt là chấm (kể cả khi chữ còn mờ), cả video + dòng chạy theo tay, ✓/✕ to hiện ngay; Watch có danh sách dòng dưới video |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
@@ -490,7 +490,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-35 | `351fec2` | Ô sửa: nút Save sát Notes hơn (16px → 12px) |
 | LOOKUP-36 | `0752a2c` | Ô sửa: Save cách Notes 13px |
 | LOOKUP-37 | `68e4edf` | Notes trong popup và ô sửa: vạch dọc bên trái thay cho hộp xám |
-| LOOKUP-38 | `pending` | Điện thoại: bấm từ tô màu mở popup đầy đủ như PC (không còn chỉ đọc); ☰ Full bấm một lần là tra từ (vẫn chọn dòng), bấm đúp mở ô sửa |
+| LOOKUP-38 | `147e4a7` | Điện thoại: bấm từ tô màu mở popup đầy đủ như PC (không còn chỉ đọc); ☰ Full bấm một lần là tra từ (vẫn chọn dòng), bấm đúp mở ô sửa |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
