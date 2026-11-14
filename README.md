@@ -344,7 +344,7 @@ In a task, grading a card moves straight to the next one (and Undo works across 
 
 **A click outside only closes.** While a popup or an editor is open (a word popup, a lookup, a card's or a word's editor), a click or tap outside it only closes it (saving what you changed, as before): it never also plays or pauses the video, shows or grades a card or opens something else; the next click does that. A word you make or change is coloured at once everywhere it shows (the flashcard, the theater, the lists), with no need to move on first, and it is written into the card's Notes as a `word: meaning` line, as always.
 
-**The streak message never gets in the way.** The 🔥 day-streak message that shows after the first card of the day is only a message: touches and clicks go straight through it to the card beneath, so a swipe or a tap is never lost while it shows.
+**The streak message never gets in the way.** The 🔥 day-streak message shows once a day, after the first card of the day (undoing that card and grading it again does not bring it back), and it is only a message: touches and clicks go straight through it to the card beneath, so a swipe or a tap is never lost while it shows.
 
 **Short messages.** The messages that pop up at the bottom are one short phrase (Copied, Saved, Added word…), with nothing tacked on after a dash. Nothing pops up for what you can already see happen: grading, deleting a card, a word or a lesson, or changing the speed with a key. Undo and Redo name what they undid, briefly, by the card's question only (for example "Undo — 👍 Good — 我明白了一个重要的道理…", cut short with … past 30 characters).
 
