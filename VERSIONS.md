@@ -202,6 +202,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-69 | `330101e` | Ô sửa từ = thẻ popup: từ to + loa, nghĩa xanh, Notes nền xám, chip từ điển (bấm thêm nghĩa), câu gốc tô vàng |
 | FLASH-70 | `8d03895` | Sửa từ trong buổi chọn sẵn không nhảy thẻ; flashcard hiện mỗi nghĩa một dòng; ô sửa từ hiện câu lưu kèm từ; bỏ dấu cách đầu dòng nghĩa mới |
 | FLASH-71 | `b86717d` | Mặt sau: sound phát theo thứ tự hiển thị (câu của thẻ trước, câu nơi khác sau), như copy |
+| FLASH-72 | `pending` | Giọng đọc: bỏ hẳn giọng vui/robot của Apple (Bubbles, Zarvox…), mặt trước nghe luôn đọc giọng ngẫu nhiên, không dùng clip YouTube |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 

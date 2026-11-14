@@ -14188,9 +14188,16 @@ loadTtsVoices();
 
 if ("onvoiceschanged" in speechSynthesis) speechSynthesis.onvoiceschanged = loadTtsVoices;
 
-function voicePool(lang) {
+const ODD_VOICES = /^(Albert|Bad News|Bahh|Bells|Boing|Bubbles|Cellos|Deranged|Good News|Hysterical|Jester|Organ|Pipe Organ|Superstar|Trinoids|Whisper|Wobble|Zarvox|Junior|Ralph|Fred|Kathy|Princess|Agnes|Bruce|Vicki|Eddy|Flo|Grandma|Grandpa|Reed|Rocko|Sandy|Shelley)\b/i;
+
+function sameLangVoices(lang) {
   if (ttsVoices.length === 0) loadTtsVoices();
-  const prefix = lang.split("-")[0].toLowerCase(), same = ttsVoices.filter(v => v.lang.toLowerCase().startsWith(prefix));
+  const prefix = lang.split("-")[0].toLowerCase(), same = ttsVoices.filter(v => v.lang.toLowerCase().replace("_", "-").startsWith(prefix)), plain = same.filter(v => !ODD_VOICES.test(v.name));
+  return plain.length ? plain : same;
+}
+
+function voicePool(lang) {
+  const same = sameLangVoices(lang);
   for (const re of [ /natural|neural|online/i, /google|premium|enhanced/i ]) {
     const good = same.filter(v => re.test(v.name));
     if (good.length) return good;
@@ -14206,9 +14213,7 @@ function rotateVoice(lang) {
 }
 
 function pickVoice(lang) {
-  if (ttsVoices.length === 0) loadTtsVoices();
-  const prefix = lang.split("-")[0].toLowerCase();
-  const same = ttsVoices.filter(v => v.lang.toLowerCase().startsWith(prefix)), exact = same.filter(v => v.lang.toLowerCase().replace("_", "-") === lang.toLowerCase());
+  const same = sameLangVoices(lang), exact = same.filter(v => v.lang.toLowerCase().replace("_", "-") === lang.toLowerCase());
   const best = list => list.find(v => /natural|neural/i.test(v.name)) || list.find(v => /online/i.test(v.name)) || list.find(v => /google/i.test(v.name)) || list.find(v => /premium|enhanced/i.test(v.name));
   return best(exact) || best(same) || exact[0] || same[0] || null;
 }
@@ -22254,10 +22259,6 @@ function sayVocabWord(item) {
   const pool = [ shown ].concat(own && own !== shown ? [ own ] : []).filter(Boolean);
   if (!card.dataset.listenText || !pool.includes(card.dataset.listenText)) card.dataset.listenText = pool[Math.floor(Math.random() * pool.length)] || item.term;
   const text = card.dataset.listenText;
-  if (text === own && vocabVideoIdFor(item.card) && !ytHasError) {
-    listenBar(card, 0);
-    return playVocabSound(item, true, true);
-  }
   const utter = trackSpeech(new SpeechSynthesisUtterance(cleanForSpeech(text)));
   utter.lang = resolveSpeechLang(text);
   const voice = rotateVoice(utter.lang);
