@@ -511,7 +511,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-48 | `cce649b` | Từ xanh dương/xanh lá như mọi từ: hover hiện nghĩa, bấm/chạm mở popup (cả điện thoại, cả flashcard), nghĩa lấy từ thẻ đã giải nghĩa |
 | LOOKUP-49 | `5332f80` | Popup/ô sửa từ: hàng chip 🔍 các nghĩa bạn đã viết cho từ đó ở thẻ khác |
 | LOOKUP-50 | `dd997de` | Rà soát: mọi từ màu mở popup từ (bỏ hẳn khung tối cũ và mã/CSS của nó), bỏ hàm thừa |
-| LOOKUP-51 | `pending` | Xoá/sửa từ trong popup không làm nhảy thẻ đang học; ✓ trên chính từ đang học = Delete (chém màn hình) |
+| LOOKUP-51 | `39b560a` | Xoá/sửa từ trong popup không làm nhảy thẻ đang học; ✓ trên chính từ đang học = Delete (chém màn hình) |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
