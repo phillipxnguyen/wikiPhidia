@@ -6600,6 +6600,7 @@ function toggleLoopForRow(row) {
 
 function startLoop(row) {
   if (row.time == null) return;
+  stopWordAudio();
   if (ytHasError) return;
   if (!ytPlayer || !ytReady || !ytHasVideo || typeof ytPlayer.seekTo !== "function") {
     if (ytHasVideo && ytReady && !ytCueing || !wakeVideo(true)) {
@@ -11883,7 +11884,10 @@ function playWordAudio(w, lang, onEnd, onFail) {
 }
 
 function ownDictSay(w) {
+  stopVocabSound();
+  haltAllPlayback();
   speechSynthesis.cancel();
+  syncVocabSound();
   soundHeard = true;
   if (playWordAudio(w, ownDictLang(w), null, () => ownDictTts(w))) return;
   ownDictTts(w);
@@ -13713,7 +13717,7 @@ function ghostFor(parts) {
     width: Math.round(Math.max(...rects.map(r => r.right))) - left + "px",
     height: bottom - top + "px"
   });
-  if (!row) ghost.style.borderRadius = getComputedStyle(shape).borderTopLeftRadius;
+  if (!row) ghost.style.borderRadius = Math.max(12, Math.round(parseFloat(getComputedStyle(shape).borderTopLeftRadius) || 0)) + "px";
   if (!row) ghost.style.paddingTop = Math.round((Math.max(top, 0) + Math.min(bottom, window.innerHeight)) / 2 - top - 25) + "px";
   document.body.appendChild(ghost);
   return ghost;
@@ -22072,6 +22076,7 @@ document.getElementById("vocabSpeed").onchange = e => {
 function stopVocabSound() {
   vocabRestart = null;
   vocabAfterClipOnce = false;
+  stopWordAudio();
   const wasTts = vocabTtsOn;
   vocabTtsOn = false;
   vocabTtsToken++;

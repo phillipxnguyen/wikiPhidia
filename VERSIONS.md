@@ -431,6 +431,7 @@ Hàm chính: `studyingNow`, `placeStudyClock`, `STUDY_TIME_KEY`, `#focusClock`.
 | MOVE-10 | `71e0073` | Good/Again/chuyển: nền màu đậm hơn (38%) làm mờ nội dung dưới, viền màu đặc 6 px và bóng đổ cho tấm đang bay |
 | MOVE-11 | `fbda3d8` | Bỏ viền màu quanh tấm đang bay, giữ nền đậm làm mờ và bóng đổ |
 | MOVE-12 | `7667158` | Bật giảm chuyển động trong hệ thống thì mọi hiệu ứng (CSS và JS) đều bỏ, mọi thứ hiện ngay |
+| MOVE-13 | `pending` | Viền khi vuốt luôn bo ít nhất 12px (flashcard kiểu trơn trước đây vuông 0px) |
 
 Hàm chính: `swipe`, `ghostFor`, `angelFly`, `cutLayer`, `playCut`.
 
@@ -497,6 +498,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-38 | `147e4a7` | Điện thoại: bấm từ tô màu mở popup đầy đủ như PC (không còn chỉ đọc); ☰ Full bấm một lần là tra từ (vẫn chọn dòng), bấm đúp mở ô sửa |
 | LOOKUP-39 | `19e0834` | Điện thoại: chữ chọn được như PC; chọn cụm chữ hiện nút 字 thay phím Shift (☰ Full, Speaking, theater, flashcard, ô sửa, sách) |
 | LOOKUP-40 | `b86717d` | Popup từ: bấm ✓ để xoá từ vừa tạo; Notes không lặp câu đã lưu kèm từ; câu xếp theo thứ tự trên thẻ; ✕ thoát focus nằm dưới popup như nút thanh công cụ |
+| LOOKUP-41 | `pending` | Âm thanh không tranh nhau: bấm 🔊 của từ dừng hẳn video/đọc câu/vòng lặp; phát dòng/thẻ thì dừng tiếng từ |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
