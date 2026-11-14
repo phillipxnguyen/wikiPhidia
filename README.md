@@ -57,7 +57,7 @@ The shared rules of the whole app, one line each. They hold in every mode (☰ F
 5. Add and Save are always solid.
 
 ### 6. Sound
-1. The card you work on plays its clip, or is read aloud with the best voice the browser has.
+1. The card you work on plays its clip, or is read aloud with the best voice the browser has; if that voice stays silent for 3 seconds (an online voice that has not loaded yet, often on the first card), it is read again with a voice built into the device, and if that also stays silent the sound stops instead of hanging.
 2. Every sound button has the same ring: full at once, emptying as the sound plays, fading in and out over 0.4 s.
 3. The speed sits beside the sound button; [ and ] change it.
 

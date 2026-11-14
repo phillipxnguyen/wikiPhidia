@@ -3785,7 +3785,7 @@ async function cabinSay(r) {
   const voice = pickVoice(utter.lang);
   if (voice) utter.voice = voice;
   utter.rate = watch.prefs.rate || 1;
-  speechSynthesis.speak(utter);
+  speakSpeech(utter);
 }
 
 function watchShownFront() {
@@ -6174,7 +6174,7 @@ function sayWord(text) {
   const u = new SpeechSynthesisUtterance(text);
   u.lang = detectLang(text);
   u.rate = .9;
-  speechSynthesis.speak(u);
+  speakSpeech(u);
 }
 
 function openReadCard(found) {
@@ -6608,6 +6608,53 @@ function startLoop(row, clip) {
 let speechTrack = null;
 
 let wordAudio = null;
+
+function speechEvent(type, utter, e) {
+  try {
+    return type === "error" ? new SpeechSynthesisErrorEvent("error", {
+      utterance: utter,
+      error: e && e.error || "synthesis-failed"
+    }) : new SpeechSynthesisEvent(type, {
+      utterance: utter,
+      charIndex: e && e.charIndex || 0
+    });
+  } catch (err) {
+    const ev = new Event(type);
+    ev.error = e && e.error;
+    ev.charIndex = e && e.charIndex || 0;
+    return ev;
+  }
+}
+
+function speakSpeech(utter, origin) {
+  let settled = false;
+  const settle = () => settled = true;
+  utter.addEventListener("start", settle);
+  utter.addEventListener("end", settle);
+  utter.addEventListener("error", settle);
+  speechSynthesis.speak(utter);
+  setTimeout(() => {
+    if (settled || !(speechSynthesis.speaking || speechSynthesis.pending)) return;
+    utter.dropped = true;
+    const keep = {
+      onend: utter.onend,
+      onerror: utter.onerror
+    };
+    utter.onend = utter.onerror = null;
+    speechSynthesis.cancel();
+    setTimeout(() => Object.assign(utter, keep), 60);
+    if (origin) return origin.dispatchEvent(speechEvent("error", origin));
+    const twin = new SpeechSynthesisUtterance(utter.text);
+    twin.lang = utter.lang;
+    twin.rate = utter.rate;
+    twin.pitch = utter.pitch;
+    twin.volume = utter.volume;
+    const local = sameLangVoices(utter.lang || "").find(v => v.localService && v !== utter.voice);
+    if (local) twin.voice = local;
+    [ "start", "end", "error", "boundary" ].forEach(type => twin.addEventListener(type, e => twin.dropped || utter.dispatchEvent(speechEvent(type, utter, e))));
+    speakSpeech(twin, utter);
+  }, 3e3);
+}
 
 function trackSpeech(utter) {
   speechTrack = null;
@@ -7881,7 +7928,7 @@ function playNextSequenceStep() {
       sequenceIndex++;
       playNextSequenceStep();
     };
-    speechSynthesis.speak(utter);
+    speakSpeech(utter);
   }
 }
 
@@ -8804,7 +8851,7 @@ function toggleRowSay(row) {
   utter.rate = ttsSpeed;
   const voice = pickVoice(utter.lang);
   if (voice) utter.voice = voice;
-  speechSynthesis.speak(utter);
+  speakSpeech(utter);
 }
 
 function cardFrontShowing(row) {
@@ -11710,7 +11757,7 @@ function ownDictTts(w) {
   utter.lang = resolveSpeechLang(w);
   const voice = pickVoice(utter.lang);
   if (voice) utter.voice = voice;
-  speechSynthesis.speak(utter);
+  speakSpeech(utter);
 }
 
 const Q_BOXES = "#qaQ, #vocabEditTerm, #editQ";
@@ -14047,7 +14094,7 @@ function speakNext() {
     stopTts();
   };
   if (speechSynthesis.paused) speechSynthesis.resume();
-  speechSynthesis.speak(utter);
+  speakSpeech(utter);
 }
 
 function stopTts() {
@@ -21973,7 +22020,7 @@ function playVocabSound(item, once, ownClip, thenRestart, fromClip) {
       vocabTtsOn = false;
       syncVocabSound();
     };
-    speechSynthesis.speak(utter);
+    speakSpeech(utter);
   };
   setTimeout(() => speak(), 0);
   syncVocabSound();
@@ -22034,7 +22081,7 @@ function sayVocabWord(item) {
       bar.style.width = "100%";
     }
   };
-  speechSynthesis.speak(utter);
+  speakSpeech(utter);
 }
 
 function vocabLineOn(text) {
@@ -22062,7 +22109,7 @@ function toggleVocabLine(item, text) {
   };
   utter.onend = done;
   utter.onerror = done;
-  speechSynthesis.speak(utter);
+  speakSpeech(utter);
   syncVocabSound();
 }
 
