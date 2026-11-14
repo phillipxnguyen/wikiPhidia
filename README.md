@@ -42,7 +42,7 @@ The shared rules of the whole app, one line each. They hold in every mode (☰ F
 9. Everything a card shows is used by every action on it: the dictionary beside the editor (and the one loaded ahead) gets every sentence on the card, in the order shown, and the notes in the same language; ⌘C copies every sentence on it; the sound plays them in turn.
 
 ### 4. Keys and actions
-1. The same keys work in every mode: Space or S shows, then plays; → or Return is Good; ← or Shift + Return is Again; E edits; Delete deletes; W moves; M switches list and study; ⌘Z and ⇧⌘Z undo and redo.
+1. The same keys work in every mode: Space or S shows, then plays; → or Return is Good; ← or Shift + Return is Again; E edits; Delete deletes; W moves; M switches list and study (in a video lesson ☰ Full and the theater, in a text lesson ☰ Full and Speaking, in Vocabulary the list and the flashcards); ⌘Z and ⇧⌘Z undo and redo.
 2. In any popup or editor: Return saves, Shift + Return starts a new line, Esc closes; Delete, when you are not typing in a box, deletes its card or word.
 3. A click outside a popup or editor saves and closes it, and does nothing else.
 4. A click on a card that is not shown shows it; a click on a shown card edits it.
