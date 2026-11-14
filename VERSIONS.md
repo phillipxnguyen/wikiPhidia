@@ -502,7 +502,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-41 | `0a3f333` | Âm thanh không tranh nhau: bấm 🔊 của từ dừng hẳn video/đọc câu/vòng lặp; phát dòng/thẻ thì dừng tiếng từ |
 | LOOKUP-42 | `021ef97` | Ô sửa: câu hỏi luôn mực tối 20px (cả khi nhiều dòng hoặc chưa có đáp án), đáp án xanh 18px; Save giữ nguyên câu hỏi nhiều dòng (trước bị dồn sang đáp án) |
 | LOOKUP-43 | `314b43a` | Chữ thường: Q màu bài học đậm như Speaking, A mực thường, A và Notes nhỏ hơn Q 2px (ô sửa, ☰ Full, Speaking, danh sách Vocabulary); chữ to giữ nguyên |
-| LOOKUP-44 | `pending` | Ô sửa: thẻ không có đáp án giữ mực thường, không đậm (như ☰ Full) |
+| LOOKUP-44 | `d0bcaf6` | Ô sửa: thẻ không có đáp án giữ mực thường, không đậm (như ☰ Full) |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
