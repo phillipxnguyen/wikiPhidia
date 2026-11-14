@@ -1680,9 +1680,10 @@ window.onYouTubeIframeAPIReady = function(){
   @container (max-width:699px){
   }
   .le-tabs{display:none;}
-  html.touch .le-box{max-height:min(760px, calc(100dvh - 80px));}
+  html.touch .le-box{max-height:min(760px, calc(100dvh - 128px));}
+  html.touch :is(.od-float, .settings-pop, .preset-pop, .limits-pop, .tool-box){max-height:calc(100dvh - 128px);overflow-y:auto;overscroll-behavior:contain;}
   html.touch .le-box:has(> .le-dict.on){overflow:hidden;}
-  html.touch .le-box[data-tab="dict"]:has(> .le-dict.on){height:min(760px, calc(100dvh - 80px));}
+  html.touch .le-box[data-tab="dict"]:has(> .le-dict.on){height:min(760px, calc(100dvh - 128px));}
   html.touch .le-box:has(> .le-dict.on) > .le-tabs{display:flex;flex:none;margin-bottom:16px;}
   html.touch .le-box:has(> .le-dict.on) > .le-tabs button{flex:1 1 0;height:36px;padding:0;font-size:15px;line-height:20px;}
   html.touch .le-box:has(> .le-dict.on) > .le-content{flex:0 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;}
@@ -2811,7 +2812,7 @@ window.onYouTubeIframeAPIReady = function(){
   #addForm.in-popup #importInfo, #importInfo{line-height:20px;}
   .add-pop-head #addPopClose{display:none;}
   #addForm.in-popup .add-target{display:none;}
-  @media (max-width:600px){.add-pop-card{margin:12px auto;}}
+  @media (max-width:600px){.add-pop-card{margin:64px auto;}}
   .cloud-error{min-height:18px;font-size:14px;color:var(--danger);}
   .import-preview{margin-top:16px;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;background:var(--surface);}
   .ip-summary{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;padding:8px 12px;background:var(--surface-2);border-bottom:1px solid var(--border);font-size:12px;color:var(--text-2);}
@@ -10015,7 +10016,7 @@ function placeVocabPopup(anchorRect) {
   popup.style.maxHeight = "";
   fitPopupWidth(popup);
   const popupRect = popup.getBoundingClientRect();
-  const below = Math.floor(window.innerHeight - anchorRect.bottom - 16), above = Math.floor(anchorRect.top - 16);
+  const edge = isTouch() ? 64 : 16, below = Math.floor(window.innerHeight - anchorRect.bottom - edge), above = Math.floor(anchorRect.top - edge);
   const down = popupRect.height <= below || below >= above;
   const height = Math.min(popupRect.height, down ? below : above);
   popup.style.maxHeight = Math.max(80, height) + "px";
@@ -10023,7 +10024,7 @@ function placeVocabPopup(anchorRect) {
   if (left + popupRect.width > window.innerWidth - 8) left = window.innerWidth - popupRect.width - 8;
   const top = down ? anchorRect.bottom + 8 : anchorRect.top - 8 - height;
   popup.style.left = Math.round(Math.max(8, left)) + "px";
-  popup.style.top = Math.round(Math.max(8, top)) + "px";
+  popup.style.top = Math.round(Math.max(isTouch() ? 64 : 8, top)) + "px";
   const sc = popup.querySelector(".vocab-scroll");
   sc.scrollTop = 0;
   markEdges(sc);
@@ -11372,9 +11373,10 @@ function paintOwnDictFloat() {
     input.focus();
     input.setSelectionRange(input.value.length, input.value.length);
   }
-  const r = pop.anchor.getBoundingClientRect(), box = pop.getBoundingClientRect();
+  const r = pop.anchor.getBoundingClientRect(), box = pop.getBoundingClientRect(), edge = isTouch() ? 64 : 8;
   let top = r.bottom + 8;
-  if (top + box.height > window.innerHeight - 8) top = Math.max(8, r.top - box.height - 8);
+  if (top + box.height > window.innerHeight - edge) top = r.top - box.height - 8;
+  top = Math.max(edge, Math.min(top, window.innerHeight - edge - box.height));
   pop.style.left = Math.round(Math.max(8, Math.min(r.left, window.innerWidth - box.width - 8))) + "px";
   pop.style.top = Math.round(top) + "px";
 }
