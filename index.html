@@ -2263,7 +2263,7 @@ window.onYouTubeIframeAPIReady = function(){
   .w-modes button.active{background:rgba(255,255,255,.16);color:#ffffff;}
   @media (hover:hover){.w-modes button:not(.active):hover{color:#ffffff;}}
   .watch-pop.cabin .w-listbox{display:none;}
-  .watch-pop.cabin .w-pill:is([data-w="auto"], [data-w="loop"], [data-w="blur"]){display:none;}
+  .watch-pop.cabin .w-pill:is([data-w="loop"], [data-w="blur"]){display:none;}
   @media (min-width:821px), (hover:hover){.watch-pop.cabin{--cw:max(100vw, calc(100dvh * 16 / 9));grid-template-columns:100vw;align-content:start;padding:0;overflow:hidden;}.watch-pop.cabin .w-main{position:relative;}.watch-pop.cabin .w-video{height:100dvh;aspect-ratio:auto;border-radius:0;}.watch-pop.cabin .w-video > iframe{left:calc((100vw - var(--cw)) / 2);top:calc((100dvh - var(--cw) * 9 / 16) / 2 - 64px);width:var(--cw);height:calc(var(--cw) * 9 / 16 + 128px);}.watch-pop.cabin .w-ctl{position:absolute;left:0;right:0;bottom:16px;z-index:3;height:44px;pointer-events:none;}.watch-pop.cabin .w-ctl > *{pointer-events:auto;}.watch-pop.cabin .w-ctl-l{gap:4px;padding:4px;border-radius:22px;background:rgba(0,0,0,.66);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);}.watch-pop.cabin .w-cap{bottom:76px;}}
   .w-main{display:flex;flex-direction:column;gap:8px;min-width:0;container-type:inline-size;}
   .w-video{position:relative;width:100%;aspect-ratio:16 / 9;overflow:hidden;border-radius:12px;background:#000000;}
@@ -3665,7 +3665,7 @@ function watchTick() {
     } catch (e) {}
     return;
   }
-  if ((watch.prefs.auto || watch.prefs.cabin) && watch.at >= 0 && i > watch.at && watch.pausedAt !== watch.at) {
+  if (watch.prefs.cabin && watch.at >= 0 && i > watch.at && watch.pausedAt !== watch.at) {
     watch.pausedAt = watch.at;
     try {
       watch.player.pauseVideo();
@@ -3839,7 +3839,7 @@ function watchToggle() {
 function syncWatchPills() {
   const p = watch.prefs;
   document.querySelectorAll("#watchPop .w-pill[data-w]").forEach(b => {
-    const k = b.dataset.w, held = !!p.cabin && (k === "auto" || k === "blur"), on = held || !!p[k];
+    const k = b.dataset.w, held = !!p.cabin && k === "blur", on = held || !!p[k];
     b.classList.toggle("on", on);
     b.classList.toggle("held", held);
     b.setAttribute("aria-pressed", String(on));
@@ -3849,8 +3849,6 @@ function syncWatchPills() {
 
 function watchPrefChanged(k) {
   const p = watch.prefs, box = document.getElementById("watchPop");
-  if (k === "loop" && p.loop) p.auto = false;
-  if (k === "auto" && p.auto) p.loop = false;
   if (k === "cabin" && p.cabin) p.loop = false;
   saveWatchPrefs();
   syncWatchPills();
@@ -3887,7 +3885,7 @@ function paintWatch() {
   if (p.trans || p.cabin) mtFill(watch.lines);
   watch.countSig = "";
   const pill = (k, title, label) => `<button type="button" class="w-pill${p[k] ? " on" : ""}" data-w="${k}" aria-pressed="${!!p[k]}" title="${title}">${label}</button>`;
-  const tools = `${pill("auto", "Pause at the end of every line (Q)", '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 10h7M13 6v8M16.5 6v8"/></svg>')}${pill("loop", "Loop the line being said", '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 9V8a3 3 0 0 1 3-3h8M13 3l2 2-2 2M16 11v1a3 3 0 0 1-3 3H5M7 17l-2-2 2-2"/></svg>')}${pill("blur", "Blur the writing until you point at it", '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 10s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/><path d="M4 16L16 4"/></svg>')}${watchChinese() ? pill("pin", "Pinyin", "拼") : ""}${pill("trans", "The translation (the lesson's own, or a machine translation when the line has none)", '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M3 10h14M10 3c2.6 2.6 2.6 11.4 0 14M10 3c-2.6 2.6-2.6 11.4 0 14"/></svg>')}<select class="w-size" aria-label="Subtitle size" title="Subtitle size">${[ 100, 125, 150 ].map(v => `<option value="${v}"${v === (p.size || 100) ? " selected" : ""}>${v}%</option>`).join("")}</select><select class="w-rate" aria-label="Speed" title="Speed">${[ ...document.getElementById("playbackSpeed").options ].map(o => `<option value="${o.value}"${Number(o.value) === p.rate ? " selected" : ""}>${o.textContent}</option>`).join("")}</select>`;
+  const tools = `${pill("loop", "Loop the line being said", '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 9V8a3 3 0 0 1 3-3h8M13 3l2 2-2 2M16 11v1a3 3 0 0 1-3 3H5M7 17l-2-2 2-2"/></svg>')}${pill("blur", "Blur the writing until you point at it", '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 10s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/><path d="M4 16L16 4"/></svg>')}${watchChinese() ? pill("pin", "Pinyin", "拼") : ""}${pill("trans", "The translation (the lesson's own, or a machine translation when the line has none)", '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M3 10h14M10 3c2.6 2.6 2.6 11.4 0 14M10 3c-2.6 2.6-2.6 11.4 0 14"/></svg>')}<select class="w-size" aria-label="Subtitle size" title="Subtitle size">${[ 100, 125, 150 ].map(v => `<option value="${v}"${v === (p.size || 100) ? " selected" : ""}>${v}%</option>`).join("")}</select><select class="w-rate" aria-label="Speed" title="Speed">${[ ...document.getElementById("playbackSpeed").options ].map(o => `<option value="${o.value}"${Number(o.value) === p.rate ? " selected" : ""}>${o.textContent}</option>`).join("")}</select>`;
   box.querySelector(".w-ctl-l").innerHTML = tools;
   syncWatchPills();
   box.querySelector(".w-ctl-c").innerHTML = "";
@@ -4422,11 +4420,7 @@ window.addEventListener("keydown", e => {
   const g = gradeKey(e), pointed = watchPointed();
   if (k === " ") watchToggle(); else if (g) e.repeat || watchGrade(g === "again"); else if (e.code === "KeyE" && !e.shiftKey && (pointed || watch.lines[watch.at])) openEditPopup(pointed || watch.lines[watch.at]); else if (e.code === "KeyW" && !e.shiftKey) showToast("A video sentence stays in its lesson"); else if ((k === "Delete" || k === "Backspace") && (pointed || watch.lines[watch.at]) && !e.repeat) {
     watchDelete(pointed || watch.lines[watch.at]);
-  } else if (e.code === "KeyV" && watch.prefs.cabin) cabinReveal(); else if ((e.code === "KeyA" || e.code === "KeyD") && !e.shiftKey && watch.prefs.cabin) e.repeat || watchGrade(e.code === "KeyA"); else if (e.code === "KeyA") watchSeek(Math.max(0, watch.at - 1)); else if (e.code === "KeyD") watchSeek(Math.min(watch.lines.length - 1, watch.at + 1)); else if (e.code === "KeyR") watchHearAgain(); else if (e.code === "KeyS") watchToggle(); else if (e.code === "KeyQ") {
-    watch.prefs.auto = !watch.prefs.auto;
-    saveWatchPrefs();
-    paintWatch();
-  } else return;
+  } else if (e.code === "KeyV" && watch.prefs.cabin) cabinReveal(); else if ((e.code === "KeyA" || e.code === "KeyD") && !e.shiftKey && watch.prefs.cabin) e.repeat || watchGrade(e.code === "KeyA"); else if (e.code === "KeyA") watchSeek(Math.max(0, watch.at - 1)); else if (e.code === "KeyD") watchSeek(Math.min(watch.lines.length - 1, watch.at + 1)); else if (e.code === "KeyR") watchHearAgain(); else if (e.code === "KeyS") watchToggle(); else return;
   e.preventDefault();
   e.stopImmediatePropagation();
 }, true);

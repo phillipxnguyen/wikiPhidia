@@ -121,6 +121,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-65 | `4346d3a` | Chấm xong dòng mới hiện mờ ngay trong lúc dòng cũ trượt đi, không chờ hiệu ứng |
 | THEATER-66 | `5a7e278` | Câu dịch nhỏ hơn câu gốc 5 px ở mọi cỡ (máy tính, cửa sổ hẹp, phone) |
 | THEATER-67 | `147e4a7` | Điện thoại: một lần vuốt là chấm (kể cả khi chữ còn mờ), cả video + dòng chạy theo tay, ✓/✕ to hiện ngay; Watch có danh sách dòng dưới video |
+| THEATER-68 | `pending` | Bỏ nút "dừng cuối mỗi dòng" (AP) và phím Q: loop đã giữ dòng, Interpreter tự dừng |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
