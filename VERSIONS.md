@@ -463,7 +463,7 @@ Hàm chính: `swipe`, `ghostFor`, `angelFly`, `cutLayer`, `playCut`.
 | RING-12 | `e44ef17` | Trả lại tia sét giật khi chờ tiếng (như trước RING-5), thêm cho nút sound theater, pill ▶ và 🔊 Dictionary |
 | RING-13 | `43e7be1` | Tia sét chỉ khi chờ tiếng lần đầu sau khi mở app; tiếng đã phát một lần thì các lần chờ sau không giật |
 | RING-14 | `4346d3a` | Mặt trước Podcast đọc bằng giọng máy: nút 🔊 hiện ⏸ đồng bộ với thanh chạy |
-| RING-15 | `pending` | Giọng đọc im lặng 3 giây (giọng online chưa tải, hay gặp ở thẻ đầu) thì đọc lại bằng giọng có sẵn trong máy; vẫn im thì dừng, không treo nút |
+| RING-15 | `b211816` | Giọng đọc im lặng 3 giây (giọng online chưa tải, hay gặp ở thẻ đầu) thì đọc lại bằng giọng có sẵn trong máy; vẫn im thì dừng, không treo nút |
 
 Hàm chính: `paintRing`, `dropRing`, `setDash`.
 
