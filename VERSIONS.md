@@ -499,6 +499,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-39 | `19e0834` | Điện thoại: chữ chọn được như PC; chọn cụm chữ hiện nút 字 thay phím Shift (☰ Full, Speaking, theater, flashcard, ô sửa, sách) |
 | LOOKUP-40 | `b86717d` | Popup từ: bấm ✓ để xoá từ vừa tạo; Notes không lặp câu đã lưu kèm từ; câu xếp theo thứ tự trên thẻ; ✕ thoát focus nằm dưới popup như nút thanh công cụ |
 | LOOKUP-41 | `0a3f333` | Âm thanh không tranh nhau: bấm 🔊 của từ dừng hẳn video/đọc câu/vòng lặp; phát dòng/thẻ thì dừng tiếng từ |
+| LOOKUP-42 | `pending` | Ô sửa: câu hỏi luôn mực tối 20px (cả khi nhiều dòng hoặc chưa có đáp án), đáp án xanh 18px; Save giữ nguyên câu hỏi nhiều dòng (trước bị dồn sang đáp án) |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 

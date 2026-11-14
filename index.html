@@ -478,6 +478,7 @@ window.onYouTubeIframeAPIReady = function(){
   #editPopup .vocab-editor:has(> .ed-card){gap:0;}
   .ed-card #vocabEditSentence{min-height:0;padding:0;border:0;border-radius:0;background:none;box-shadow:none;}
   .ed-card .q-mirror{overflow:visible;color:var(--a-text);}
+  .ed-card .q-mirror.q-whole{color:var(--text);}
   .ed-card .q-mirror .q-line{color:var(--text);}
   .ed-card .q-mirror mark.vocab-own, .ed-card .q-mirror mark.vocab-own .q-line{color:var(--vocab-own-ink);}
   .ed-card .q-mirror mark.vocab-hit, .ed-card .q-mirror mark.vocab-hit .q-line{color:var(--vocab-ink);}
@@ -493,6 +494,7 @@ window.onYouTubeIframeAPIReady = function(){
   .ed-card #vocabEditMain .vem-t.long{font-size:20px;line-height:28px;font-weight:600;}
   .ed-card #vocabEditMain .vem-a{margin-top:16px;font-size:18px;line-height:26px;font-weight:700;}
   .ed-card :is(#editQ, .q-mirror) > div:nth-child(n+2), .ed-card #vocabEditMain .vem-a > div + div, .od-float .od-mean-in > div + div{margin-top:16px;}
+  .ed-card :is(#editQ, .q-mirror).q-whole > div:nth-child(n+2){margin-top:0;font-size:20px;line-height:28px;font-weight:600;}
   .od-float .od-card:not(.od-long){padding-top:24px;}
   .od-float .od-card:not(.od-long) .od-word b{text-box:trim-both cap alphabetic;}
   .od-float .od-card:not(.od-long) .od-top{align-items:center;}
@@ -9818,6 +9820,20 @@ function mergedCardEditHtml(row) {
 }
 
 function splitMergedCardHtml(html) {
+  const tmp = document.createElement("div");
+  tmp.innerHTML = html || "";
+  const first = [ ...tmp.childNodes ].find(n => (n.textContent || "").trim());
+  if (first && first.nodeType === 1 && /^(DIV|P)$/.test(first.tagName) && first.innerHTML.includes("<br") && /^\s*\u2063/.test(first.textContent)) {
+    const q = first.innerHTML.replace(/^((?:\s|<[^>]+>)*)\u2063/, "$1").replace(/(<br\s*\/?>\s*)+$/i, "");
+    let n = first;
+    while (n.previousSibling) n.previousSibling.remove();
+    first.remove();
+    const rest = splitMergedCardHtml(tmp.innerHTML);
+    return {
+      q: q,
+      a: [ rest.q, rest.a ].filter(x => plainTextOf(x, "").trim()).join("<br>")
+    };
+  }
   const lines = (html || "").replace(/<div[^>]*>/gi, "").replace(/<\/div>/gi, "<br>").replace(/\n/g, "<br>").split(/<br\s*\/?>/i);
   while (lines.length && !plainTextOf(lines[lines.length - 1], "").trim()) lines.pop();
   while (lines.length && !plainTextOf(lines[0], "").trim()) lines.shift();
@@ -11938,7 +11954,7 @@ function qMirrorBody(el, m) {
       continue;
     }
     if (!started || slash.contains(n)) continue;
-    if (n.nodeType === 1 && (n.tagName === "BR" || scope === m && /^(DIV|P|LI|UL|OL)$/.test(n.tagName))) break;
+    if (n.nodeType === 1 && (n.tagName === "BR" && scope === m || scope === m && /^(DIV|P|LI|UL|OL)$/.test(n.tagName))) break;
     if (n.nodeType !== 3) continue;
     const nl = n.nodeValue.indexOf("\n");
     if (nl < 0) {
@@ -11996,7 +12012,9 @@ function qMirrorSync(el) {
   m.style.height = el.offsetHeight + "px";
   m.style.left = el.offsetLeft + "px";
   m.style.top = el.offsetTop + "px";
-  qMirrorBody(el, m);
+  const split = qMirrorBody(el, m);
+  el.classList.toggle("q-whole", !split);
+  m.classList.toggle("q-whole", !split);
   m.scrollTop = el.scrollTop;
 }
 
