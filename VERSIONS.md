@@ -34,6 +34,7 @@ Hàm chính: `isListenMode`, `listenBatch`, `startSequenceLoop`, `stopSequenceLo
 | SPEAK-7 | `cc9a4dd` | Trong focus vẫn là tờ giấy có gáy và dòng kẻ như cũ (bỏ tờ mờ kính) |
 | SPEAK-8 | `71d9610` | Sổ còng luôn ít nhất 2 còng (tờ Speaking, sổ ☰ Full, tờ Today) |
 | SPEAK-9 | `b62d155` | Chưa Show thì ← →, Return, nút Again/Good đều Show (Hint) trước, lần sau mới chấm |
+| SPEAK-10 | `pending` | Điện thoại: khi đáp án còn ẩn, chạm vào câu hỏi luôn là Hint/Show, không bị đổi thành tra từ |
 
 Hàm chính: `ieltsPaperHtml`, `ieltsFrontHtml`, `sentenceEx`, `sentenceKeyWord`, `entryHidden`, `revealAction`, `render` (nhánh `groupViewStyle === "ielts"`). Cùng `ieltsHints`, `ieltsHintNext`, `ieltsHintId` (Hint).
 
