@@ -519,6 +519,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-49 | `5332f80` | Popup/ô sửa từ: hàng chip 🔍 các nghĩa bạn đã viết cho từ đó ở thẻ khác |
 | LOOKUP-50 | `dd997de` | Rà soát: mọi từ màu mở popup từ (bỏ hẳn khung tối cũ và mã/CSS của nó), bỏ hàm thừa |
 | LOOKUP-51 | `39b560a` | Xoá/sửa từ trong popup không làm nhảy thẻ đang học; ✓ trên chính từ đang học = Delete (chém màn hình) |
+| LOOKUP-52 | `pending` | Từ xanh không còn bị cắt mất nửa chữ: bỏ hẳn lớp mặt nạ đo theo phông (đo sai với phông khác), bỏ luôn bộ theo dõi DOM của nó |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
