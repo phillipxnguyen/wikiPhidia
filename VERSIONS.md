@@ -506,6 +506,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-44 | `d0bcaf6` | Ô sửa: thẻ không có đáp án giữ mực thường, không đậm (như ☰ Full) |
 | LOOKUP-45 | `c76a7b8` | Câu hỏi không in đậm ở mọi chỗ chữ thường (ô sửa, ☰ Full, Speaking, danh sách Vocabulary), vẫn màu bài |
 | LOOKUP-46 | `5d6d19a` | Rà soát cuối: bỏ hàm popup chỉ đọc cũ trên điện thoại (không còn dùng) |
+| LOOKUP-47 | `pending` | Từ vàng và chữ to trên flashcard cũng mở popup (trước bấm mở ô sửa hoặc không gì); điện thoại: chạm vào câu luôn nhận (iOS), bỏ trễ chạm |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 

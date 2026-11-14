@@ -665,6 +665,8 @@ window.onYouTubeIframeAPIReady = function(){
   #lessonSearch span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:"Doto", system-ui, sans-serif;font-weight:800;color:var(--placeholder);}
   #lessonSearch kbd{flex:none;padding:0 6px;border:1px solid var(--border);border-radius:6px;background:var(--surface-2);font:inherit;font-size:12px;line-height:18px;color:var(--text-2);}
   html.touch #lessonSearch kbd{display:none;}
+  html.touch body{touch-action:manipulation;}
+  html.touch :is(#viewStudy .cell.shown, #vocabCard, #watchPop .w-capline, #watchPop .w-row, .bp-sheet .bp-line, mark){cursor:pointer;-webkit-tap-highlight-color:transparent;}
   @media (hover:hover){#lessonSearch:hover{border-color:var(--accent);color:var(--text);}}
   .spot{position:fixed;inset:0;z-index:3000;display:flex;justify-content:center;align-items:flex-start;padding:6vh 16px 16px;background:color-mix(in srgb, var(--bg) 30%, transparent);}
   .spot[hidden]{display:none;}
@@ -11570,6 +11572,17 @@ function sentenceWordAt(x, y) {
   }
   if (!node || node.nodeType !== 3) return null;
   const host = node.parentElement, zone = host && host.closest(SW_ZONES);
+  const gold = zone && host.closest("mark:not(.vocab-hit):not(.vocab-own):not(.vem-w), .cloze-word, .cloze-main");
+  if (gold && zone.contains(gold) && gold.textContent.trim()) {
+    const range = document.createRange();
+    range.selectNodeContents(gold);
+    return {
+      word: gold.textContent.replace(/\s+/g, " ").trim(),
+      range: range,
+      zone: zone,
+      lang: detectLang(zone.textContent).split("-")[0]
+    };
+  }
   if (!zone || host.closest("mark, rt, button, a, input, textarea, [contenteditable=true], .loop-time, .py-line, .wr > i, .cell.hidden, .vocab-cloze, .vc-blank")) return null;
   const text = node.nodeValue, lang = detectLang(zone.textContent).split("-")[0];
   let segs;
