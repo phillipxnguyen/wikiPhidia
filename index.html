@@ -3952,10 +3952,9 @@ function paintWatchCounts() {
     new: 0,
     due: 0,
     done: 0
-  }, waits = r => !!watch.again && watch.again.has(r.id), marks = watch.lines.map(r => {
-    const b = waits(r) ? "due" : cardBucket(r, "Listen", now);
-    if (b) n[b]++;
-    return b || "later";
+  }, marks = watch.lines.map(r => {
+    const b = cardBucket(r, "Listen", now);
+    return b && (b === "new" || cardReady(r, "Listen", now)) ? b : "later";
   });
   if (watchQueueSync()) return paintWatchList();
   const sig = marks.join(",") + "|" + watch.at;
@@ -3963,8 +3962,7 @@ function paintWatchCounts() {
   watch.countSig = sig;
   const cur = watch.lines[watch.at], on = cur ? marks[watch.at] : "";
   const allowed = limitRows(watch.lines.filter(r => cardReady(r, "Listen", now)));
-  n.new = allowed.filter(r => cardBucket(r, "Listen", now) === "new").length;
-  n.due = allowed.filter(r => !waits(r) && cardBucket(r, "Listen", now) === "due").length + watch.lines.filter(waits).length;
+  Object.assign(n, readyCounts(allowed, r => srsOf(r, "Listen"), now));
   el.innerHTML = badgesHtml(n.new, n.due, n.done, {
     new: on === "new",
     due: on === "due",
@@ -4819,18 +4817,10 @@ function restoreFrom(fromStack, toStack, verb) {
 
 function currentCounts() {
   if (appMode === "vocab") {
-    const c = vocabCounts(lessonVocabItems(vocabSource()));
-    return {
-      new: c.fresh,
-      due: c.due,
-      done: c.done
-    };
+    const now = Date.now();
+    return readyCounts(limitVocab(lessonVocabItems(vocabSource()).filter(i => !vocabViewOnly(i) && vocabStateOf(i).due <= now)), vocabStateOf, now);
   }
-  return {
-    new: newCardCount("Table"),
-    due: dueCardCount("Table"),
-    done: doneCardCount("Table")
-  };
+  return readyCounts(isAllLessons() ? mixCandidates() : dueRows(countMode(rows)), srsOf);
 }
 
 function undo() {
@@ -4897,12 +4887,20 @@ const STUDY_RULES_KEY = "flashcards.studyRules";
 
 const STUDY_RULE_DEFAULTS = {
   order: "reviews",
-  again: 10,
+  again: 30,
   doneAfter: 5,
   doneEvery: 7
 };
 
 let studyRules = Object.assign({}, STUDY_RULE_DEFAULTS, readLocal(STUDY_RULES_KEY) || {});
+
+if (!studyRules.again30) {
+  if (studyRules.again === 10) studyRules.again = 30;
+  studyRules.again30 = true;
+  try {
+    localStorage.setItem(STUDY_RULES_KEY, JSON.stringify(studyRules));
+  } catch (e) {}
+}
 
 function againDelayMs() {
   return studyRules.again * 60 * 1e3;
@@ -7327,24 +7325,12 @@ function cardBucket(r, mode, now = Date.now()) {
   return srsBucket(srsOf(r, mode), now);
 }
 
-function newCardCount(mode) {
-  return modeScopeRows(mode).filter(r => cardBucket(r, mode) === "new").length;
-}
-
-function dueCardCount(mode) {
-  return modeScopeRows(mode).filter(r => cardBucket(r, mode) === "due").length;
-}
-
-function doneCardCount(mode) {
-  return modeScopeRows(mode).filter(r => cardBucket(r, mode) === "done").length;
-}
-
 function progressBadgesHtml(mode, currentIds) {
   const now = Date.now();
   const allowed = isAllLessons() ? mixCandidates() : dueRows(mode);
   const newN = allowed.filter(r => cardBucket(r, mode, now) === "new").length;
   const dueN = allowed.filter(r => cardBucket(r, mode, now) === "due").length;
-  const doneN = isAllLessons() ? rows.filter(r => (speakable(r) || vocabVideoIdFor(r)) && cardBucket(r, mode, now) === "done").length : doneCardCount(mode);
+  const doneN = allowed.filter(r => cardBucket(r, mode, now) === "done").length;
   let active = {
     new: false,
     due: false,
@@ -7357,6 +7343,21 @@ function progressBadgesHtml(mode, currentIds) {
     if (bucket) active[bucket] = true;
   });
   return badgesHtml(newN, dueN, doneN, active);
+}
+
+function readyCounts(list, stateOf, now = Date.now()) {
+  const n = {
+    new: 0,
+    due: 0,
+    done: 0
+  };
+  list.forEach(x => {
+    const st = stateOf(x);
+    if (!st) return;
+    const b = srsBucket(st, now);
+    if (b && st.due <= now) n[b]++;
+  });
+  return n;
 }
 
 function badgesHtml(newN, dueN, doneN, active) {
@@ -8558,7 +8559,7 @@ function renderStudy() {
     const mode = countMode(rows);
     const counts = !caughtUp && modeScopeRows(mode).length > 0;
     progress.style.display = counts ? "" : "none";
-    progress.innerHTML = counts ? (n => badgesHtml(n.new, n.due, n.done, { new: n.new > 0, due: n.due > 0, done: n.done > 0 }))({ new: newCardCount(mode), due: dueCardCount(mode), done: doneCardCount(mode) }) : "";
+    progress.innerHTML = counts ? (n => badgesHtml(n.new, n.due, n.done, { new: n.new > 0, due: n.due > 0, done: n.done > 0 }))(readyCounts(dueRows(mode), r => srsOf(r, mode))) : "";
   }
   const visibleRows = getVisibleRows();
   const singleCardRows = singleCard ? singleCardQueue() : visibleRows;
@@ -21161,7 +21162,6 @@ function renderVocab() {
     syncVocabSound();
     return;
   }
-  const c = vocabCounts(items);
   const now = Date.now();
   const buckets = new Set(studying.map(i => srsBucket(vocabStateOf(i), now)));
   vocabStudying = studying.length > 0;
@@ -21171,14 +21171,15 @@ function renderVocab() {
   document.getElementById("vocabViewToggle").hidden = studyOnly || vocabView !== "list" || !anyDue;
   if (vocabView === "list") {
     paintWordListHead(items);
-    badges.innerHTML = anyDue ? badgesHtml(c.fresh, c.due, c.done, { new: c.fresh > 0, due: c.due > 0, done: c.done > 0 }) : "";
+    const ready = readyCounts(limitVocab(items.filter(i => !vocabViewOnly(i) && vocabStateOf(i).due <= now)), vocabStateOf, now);
+    badges.innerHTML = anyDue ? badgesHtml(ready.new, ready.due, ready.done, { new: ready.new > 0, due: ready.due > 0, done: ready.done > 0 }) : "";
     stage.innerHTML = "";
     wireVocabEditor(items);
     syncVocabSound();
     return;
   }
-  const allowed = vocabCounts(limitVocab(items.filter(i => vocabStateOf(i).due <= now)));
-  badges.innerHTML = badgesHtml(allowed.fresh, allowed.due, c.done, {
+  const allowed = readyCounts(limitVocab(items.filter(i => !vocabViewOnly(i) && vocabStateOf(i).due <= now)), vocabStateOf, now);
+  badges.innerHTML = badgesHtml(allowed.new, allowed.due, allowed.done, {
     new: buckets.has("new"),
     due: buckets.has("due"),
     done: buckets.has("done")
@@ -21416,7 +21417,7 @@ function resetVocabProgress() {
   commitVocabEdit();
   stopVocabSound();
   pushUndo("Reset cards — " + name);
-  const was = vocabCounts(items);
+  const was = currentCounts();
   const at = Date.now();
   vocabSource().forEach(c => {
     c.vocab = keepVocabAdded(c.vocab, at);
@@ -21425,16 +21426,7 @@ function resetVocabProgress() {
   scheduleAutoSave();
   renderVocab();
   renderLessonList();
-  const now = vocabCounts(lessonVocabItems(vocabSource()));
-  fairyDust({
-    new: was.fresh,
-    due: was.due,
-    done: was.done
-  }, {
-    new: now.fresh,
-    due: now.due,
-    done: now.done
-  });
+  fairyDust(was, currentCounts());
 }
 
 document.getElementById("vocabSaveBtn").onclick = e => exportCurrentLesson(e);
