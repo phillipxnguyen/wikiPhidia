@@ -6791,9 +6791,10 @@ function soundProgressLoop() {
       add(el, on ? speech : null);
     });
     document.querySelectorAll("#vocabCard .own-ts:not(.say-ts)").forEach(el => {
-      const on = video != null && shownEl(el);
+      const read = video == null && said != null && !!el.dataset.line && cleanForSpeech(el.dataset.line) === said;
+      const on = (video != null || read) && shownEl(el);
       if (el.classList.contains("on") !== on) el.classList.toggle("on", on);
-      add(el, on ? video : null);
+      add(el, on ? video != null ? video : speech : null);
     });
     [ "btnPlaySequence", "vocabSpeak" ].forEach(id => {
       const el = document.getElementById(id);
@@ -20578,7 +20579,7 @@ function withPill(pill, html) {
 
 function linePillHtml(item, text, own, cls) {
   const c = cls ? " " + cls : "";
-  if (own && item.card.time != null && vocabVideoIdFor(item.card)) return `<button type="button" class="own-ts${c}" title="Play this line">${fmtTime((vocabContext(item).part || item.card).t ?? item.card.time)}</button>`;
+  if (own && item.card.time != null && vocabVideoIdFor(item.card)) return `<button type="button" class="own-ts${c}" data-line="${escapeAttr(text)}" title="Play this line">${fmtTime((vocabContext(item).part || item.card).t ?? item.card.time)}</button>`;
   return `<button type="button" class="own-ts say-ts${c}" data-say="${escapeAttr(text)}" title="Play this sentence" aria-label="Play this sentence">${SAY_ICONS}</button>`;
 }
 
