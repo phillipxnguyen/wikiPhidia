@@ -2328,7 +2328,7 @@ window.onYouTubeIframeAPIReady = function(){
   .w-row .w-ruby .w-p{min-height:16px;font-size:12px;line-height:16px;font-weight:400;color:#b8a066;}
   .w-row.on .w-ruby .w-p{color:#e8c46a;}
   .w-row .w-ruby .w-u{padding:0 3px;}
-  .w-row .w-ruby > .w-t{align-self:flex-end;margin-bottom:0;}
+  .w-row .w-ruby > .w-t{align-self:center;margin-bottom:0;}
   .w-listbox{position:relative;min-height:0;}
   .w-list{position:absolute;inset:0;overflow:auto;overscroll-behavior:contain;border-radius:12px;}
   .w-row{position:relative;display:block;padding:16px;border-bottom:1px solid var(--tw-line);color:var(--tw-dim);cursor:pointer;}
@@ -10663,11 +10663,34 @@ async function dictSrcCambridge(w) {
   };
 }
 
+async function googlePosOf(w) {
+  const terms = new Map;
+  let first = "";
+  try {
+    const res = await fetch("https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=en&dt=t&dt=bd&dj=1&q=" + encodeURIComponent(w));
+    const data = res.ok ? await res.json() : {};
+    (data.dict || []).forEach(d => {
+      const pos = OD_POS[(d.pos || "").toLowerCase()] || (d.pos || "").toLowerCase();
+      if (!first) first = pos;
+      (d.terms || []).forEach(t => terms.has(t.toLowerCase()) || terms.set(t.toLowerCase(), pos));
+    });
+  } catch (e) {}
+  return d => {
+    const key = d.toLowerCase();
+    for (const [t, pos] of terms) if (key === t || key.split(/[;,]\s*/).includes(t)) return pos;
+    return /^\s*to\s/i.test(d) ? "verb" : first || guessPos(d);
+  };
+}
+
 async function dictSrcYoudao(w) {
   const text = await extFetch("https://dict.youdao.com/result?lang=en&word=" + encodeURIComponent(w));
   if (!text) return null;
   const doc = htmlDoc(text), defs = [], ex = [];
-  doc.querySelectorAll(".basic .trans-ce").forEach(el => pushDef(defs, "", cleanLine(el)));
+  const posOf = await googlePosOf(w);
+  doc.querySelectorAll(".basic .trans-ce").forEach(el => {
+    const d = cleanLine(el);
+    pushDef(defs, posOf(d), d);
+  });
   doc.querySelectorAll(".blng_sents_part li").forEach(li => pushEx(ex, cleanLine(li.querySelector(".sen-eng")), cleanLine(li.querySelector(".sen-ch"))));
   return {
     src: "Youdao",
@@ -10842,8 +10865,12 @@ function dictDefsFor(lang, w, e) {
   return r && r.defs.length ? r.defs : e && e.defs || [];
 }
 
+function guessPos(d) {
+  return /^\s*to\s/i.test(d || "") ? "verb" : /^\s*(\(of|of|having|being|very|too|quite)\b/i.test(d || "") ? "adj" : "noun";
+}
+
 function odDefsHtml(defs) {
-  return (defs || []).map(g => `<div class="od-group od-defs">${g.pos ? `<span class="od-pos">${escapeHtml(g.pos)}</span>` : ""}<div class="od-terms">${g.d.map(t => `<button type="button" class="od-term od-def" data-m="${escapeAttr(t)}" title="Add this meaning to the meaning line">${escapeHtml(t)}</button>`).join("")}</div></div>`).join("");
+  return (defs || []).map(g => `<div class="od-group od-defs"><span class="od-pos">${escapeHtml(g.pos || guessPos(g.d[0]))}</span><div class="od-terms">${g.d.map(t => `<button type="button" class="od-term od-def" data-m="${escapeAttr(t)}" title="Add this meaning to the meaning line">${escapeHtml(t)}</button>`).join("")}</div></div>`).join("");
 }
 
 let wordLevels = null, wordLevelsJob = null, irregularBase = null;

@@ -124,6 +124,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-68 | `7569d81` | Bỏ nút "dừng cuối mỗi dòng" (AP) và phím Q: loop đã giữ dòng, Interpreter tự dừng |
 | THEATER-69 | `d83250a` | Bài nhập mới: gộp dòng phụ đề theo ~30 giây thay vì 3 dòng; Vocabulary chỉ hiện và phát đúng dòng chứa từ |
 | THEATER-70 | `e0b6605` | Danh sách dòng: nhãn giờ hiện lại khi bật pinyin (拼) |
+| THEATER-71 | `pending` | Danh sách dòng: nhãn giờ căn giữa cụm pinyin + chữ khi bật 拼 |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
@@ -311,6 +312,7 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 | DICT-52 | `47e260f` | Theo ODH: 🔊 từ đơn phát âm thật (Free Dictionary, Youdao), nhãn cấp độ (HSK, JLPT, TOPIK, CEFR) cạnh từ, định nghĩa tiếng Anh bấm để thêm vào nghĩa |
 | DICT-53 | `bda56fb` | Định nghĩa và câu ví dụ từ điển thật qua extension (Cambridge, Youdao, Jisho·Weblio, krdict): trong popup, ô sửa từ và làm câu "nơi khác" của flashcard; extension 1.6.22 |
 | DICT-54 | `720132a` | Rà soát: nhớ từ từ điển không có (không tải lại trong phiên), giảm bộ nhớ lưu (400 từ, 8 câu/từ) |
+| DICT-55 | `pending` | Mọi hàng định nghĩa có nhãn từ loại; Youdao (Trung) không có thì lấy từ Google hoặc đoán từ định nghĩa |
 
 Hàm chính: `showDictSite`, `hideDictOverlay`, `dictUrlFor`, `ownDictCardHtml`, `openWordFloat`, `sentenceWordAt`, `ownDictLookup`, `ownDictFetch`, `ownDictPrefetch`.
 
