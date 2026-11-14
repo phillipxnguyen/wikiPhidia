@@ -11649,9 +11649,23 @@ function paintSentenceHover(hit) {
   if (hit) CSS.highlights.set("word-hover", new Highlight(hit.range)); else CSS.highlights.delete("word-hover");
 }
 
+function markWordAt(target) {
+  const mk = target && target.closest && target.closest("mark.vocab-hit, mark.vocab-own"), zone = mk && !mk.classList.contains("vem-w") && mk.closest(MARK_ZONES);
+  if (!zone) return null;
+  const range = document.createRange();
+  range.selectNodeContents(mk);
+  return {
+    word: (mk.dataset.own || mk.dataset.terms || mk.textContent).split("\n")[0].trim(),
+    range: range,
+    zone: zone,
+    lang: detectLang(zone.textContent).split("-")[0],
+    mark: true
+  };
+}
+
 document.addEventListener("mousemove", e => {
   if (isTouch() || e.buttons || ownDictFloat) return;
-  const hit = e.shiftKey ? null : sentenceWordAt(e.clientX, e.clientY);
+  const hit = e.shiftKey ? null : markWordAt(e.target) || sentenceWordAt(e.clientX, e.clientY);
   if (hit && sentenceHover && sentenceHover.word === hit.word && sentenceHover.range.startContainer === hit.range.startContainer && sentenceHover.range.startOffset === hit.range.startOffset) return;
   const was = sentenceHover;
   sentenceHover = hit;
@@ -11661,8 +11675,8 @@ document.addEventListener("mousemove", e => {
     return;
   }
   hit.anchor = rectAnchor(hit.range.getBoundingClientRect());
-  const got = watchWordMeaning(hit.word);
-  showMeaningTip(hit.anchor, got ? got.meaning : "", hit.word);
+  const got = hit.mark ? ownDictFindWord(hit.word, hit.lang) : watchWordMeaning(hit.word);
+  showMeaningTip(hit.anchor, got ? got.meaning : "", got && got.term || hit.word);
   if (!got) ownDictFetch(hit.lang, hit.word).then(en => sentenceHover === hit && en && en.m && showMeaningTip(hit.anchor, en.m, hit.word));
 });
 
@@ -11671,7 +11685,7 @@ const MARK_ZONES = SW_ZONES + ", #watchPop .w-capline.reveal, #watchPop:not(.cab
 document.addEventListener("click", e => {
   if (!getSelection().isCollapsed || e.button || e.shiftKey || !e.target.closest) return;
   const mk = e.target.closest("mark.vocab-hit, mark.vocab-own"), mz = mk && mk.closest(MARK_ZONES + ", #editPopup :is(#editQ, #editA), #vocabEditSentence");
-  if (!mz || isTouch() || mk.classList.contains("vem-w")) return;
+  if (!mz || mk.classList.contains("vem-w")) return;
   const editing = mz.matches("#vocabEditSentence") && lessonVocabItems(vocabSource()).find(i => i.key === vocabEditingKey);
   const lang = detectLang(mz.textContent).split("-")[0], term = (mk.dataset.own || mk.textContent).split("\n")[0].trim(), ctx = mz.matches("#editQ, #editA") ? activeEdit && {
     lang: lang,
@@ -11703,10 +11717,7 @@ document.addEventListener("click", e => {
   if (watch && mz.closest("#watchPop")) try {
     watch.player.pauseVideo();
   } catch (err) {}
-  if (oneWord(term)) return openWordFloat(rect, found ? found.term : term, ctx);
-  if (found && found.item && !found.lesson) return editOwnWord(found.item.card, found.item, rect);
-  const matches = mk.dataset.terms ? markMatches(mk, ctx.row.id) : [];
-  if (matches.length) showVocabPopup(matches, rect);
+  openWordFloat(rect, found ? found.term : term, ctx);
 }, true);
 
 document.addEventListener("click", e => {
