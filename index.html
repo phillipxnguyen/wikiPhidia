@@ -1579,7 +1579,7 @@ window.onYouTubeIframeAPIReady = function(){
   .ielts-paper .paper-veil *{color:transparent !important;background:none !important;}
   .ielts-paper .paper-veil::before{content:"···";position:absolute;left:0;top:0;color:var(--paper-ink-2);}
   .ielts-paper .paper-lines{user-select:text;cursor:pointer;}
-  html:not(.touch) .cell.shown, html:not(.touch) .vocab-card.flipped .vocab-ctx, html:not(.touch) .vocab-card.fill.flipped .vocab-term, html:not(.touch) .vocab-list-row[data-key] > *{-webkit-user-select:text;user-select:text;}
+  .cell.shown, .vocab-card.flipped .vocab-ctx, .vocab-card.fill.flipped .vocab-term, .vocab-list-row[data-key] > *{-webkit-user-select:text;user-select:text;}
   .paper-body{display:grid;grid-template-columns:minmax(0, 1fr);column-gap:24px;}
   .ielts-paper.with-notes .paper-body{grid-template-columns:minmax(0, 1fr) fit-content(44%);}
   .paper-notes{min-width:180px;padding-left:20px;border-left:2px solid var(--paper-rule);font-size:20px;line-height:28px;}
@@ -4181,7 +4181,7 @@ let swallowClick = false;
 window.addEventListener("pointerdown", e => {
   swallowClick = false;
   const t = e.target;
-  if (!t.closest || t.closest(".hover-tooltip")) return;
+  if (!t.closest || t.closest(".hover-tooltip, .read-pick")) return;
   const edit = document.getElementById("editPopup"), box = edit && !edit.hidden && edit.querySelector(".le-box");
   const open = [ ownDictFloat, vocabPopupEl && vocabPopupEl.style.display !== "none" && vocabPopupEl, box ].filter(Boolean);
   const fresh = ownDictFloat && Date.now() - (ownDictFloat.openedAt || 0) < 450;
@@ -6392,7 +6392,51 @@ document.getElementById("pdfView").addEventListener("mouseup", () => setTimeout(
   if (found) showReadPick(found); else hideReadPick();
 }, 0));
 
-let readPickTimer = 0;
+let readPickTimer = 0, shiftPickTimer = 0;
+
+document.addEventListener("selectionchange", () => {
+  if (!isTouch() || pdfShown) return;
+  clearTimeout(shiftPickTimer);
+  shiftPickTimer = setTimeout(() => {
+    const sel = getSelection(), n = sel.rangeCount && !sel.isCollapsed && sel.toString().trim() && sel.anchorNode;
+    const el = n && (n.nodeType === 1 ? n : n.parentElement), zone = el && el.closest(PHRASE_ZONES + ", #editPopup :is(#editQ, #editA), .bp-sheet .bp-line[data-uid]");
+    if (!zone || ownDictFloat) return hideReadPick();
+    const range = sel.getRangeAt(0), rects = range.getClientRects(), r = rects[rects.length - 1] || range.getBoundingClientRect();
+    if (!r || !r.width && !r.height) return hideReadPick();
+    hideReadPick();
+    readPick = document.createElement("button");
+    readPick.className = "read-pick";
+    readPick.textContent = "字";
+    readPick.setAttribute("aria-label", "Make a word of this");
+    readPick.style.left = Math.round(Math.min(innerWidth - 40, r.right + 4)) + "px";
+    readPick.style.top = Math.round(Math.max(8, r.top - 36)) + "px";
+    readPick.addEventListener("pointerdown", e => e.preventDefault());
+    const keep = range.cloneRange();
+    const act = () => {
+      if (!readPick) return;
+      hideReadPick();
+      if (el.isConnected && keep.startContainer.isConnected) {
+        const now = getSelection();
+        now.removeAllRanges();
+        now.addRange(keep);
+      }
+      el.dispatchEvent(new KeyboardEvent("keydown", {
+        key: "Shift",
+        bubbles: true,
+        cancelable: true
+      }));
+    };
+    readPick.addEventListener("touchstart", e => e.preventDefault(), {
+      passive: false
+    });
+    readPick.addEventListener("touchend", e => {
+      e.preventDefault();
+      act();
+    });
+    readPick.addEventListener("click", act);
+    document.body.appendChild(readPick);
+  }, 400);
+});
 
 document.addEventListener("selectionchange", () => {
   if (!pdfShown || readCard || !isTouch()) return;
@@ -12572,7 +12616,7 @@ window.addEventListener("keydown", e => {
 
 document.addEventListener("pointerdown", e => {
   const pop = document.getElementById("editPopup");
-  if (pop.hidden || !pop.dataset.vocab || !e.target.closest || e.target.closest("#editPopup .le-box, .od-float, .vocab-popup, .hover-tooltip")) return;
+  if (pop.hidden || !pop.dataset.vocab || !e.target.closest || e.target.closest("#editPopup .le-box, .od-float, .vocab-popup, .hover-tooltip, .read-pick")) return;
   const save = document.getElementById("vocabEditSave");
   if (!save) return;
   e.preventDefault();
