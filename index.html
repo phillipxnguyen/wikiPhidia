@@ -22169,12 +22169,12 @@ function sortedWord(item) {
 }
 
 function canMoveToLesson(item) {
-  return !!item && !!item.card && !isVirtualLesson() && currentLessonId !== VOCAB_ALL_ID && !sortedWord(item);
+  return !!item && !item.sub && !!item.card && !isVirtualLesson() && currentLessonId !== VOCAB_ALL_ID && !sortedWord(item);
 }
 
 function cantMoveToLesson(item) {
   if (!item || canMoveToLesson(item)) return;
-  showToast(sortedWord(item) ? "A word with its translation is learnt here, in Vocabulary" : "Open the word's own lesson to move it to Lessons");
+  showToast(item.sub ? "A definition or example card stays in Vocabulary" : sortedWord(item) ? "A word with its translation is learnt here, in Vocabulary" : "Open the word's own lesson to move it to Lessons");
 }
 
 function canMoveToVocab(row) {
@@ -30252,7 +30252,8 @@ function weakWordKeys(items, n) {
 }
 
 function troubleWords(items) {
-  return items.filter(i => vocabStateOf(i).lapses > 0).sort((a, b) => vocabStateOf(b).lapses - vocabStateOf(a).lapses);
+  const seen = new Set;
+  return items.filter(i => vocabStateOf(i).lapses > 0).sort((a, b) => vocabStateOf(b).lapses - vocabStateOf(a).lapses).filter(i => !seen.has(i.tkey) && seen.add(i.tkey));
 }
 
 function openWordWorld(world, keys, title, since) {
