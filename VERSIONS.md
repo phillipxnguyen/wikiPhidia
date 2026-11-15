@@ -218,7 +218,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-79 | `d744281` | ☰ List: mọi phần trong khối cách đều 16px theo chữ thật, cả máy tính và điện thoại |
 | FLASH-80 | `a9046d0` | ☰ List: cắt khoảng trống riêng cho nghĩa, câu, từng thẻ con nên mọi khoảng đều 16px; nhãn loại từ cùng bề rộng |
 | FLASH-81 | `5290ec3` | Sửa: thẻ định nghĩa/ví dụ hiện ngay khi mở app, không đợi tới lần lưu bài sau |
-| FLASH-82 | `pending` | ☰ List: thẻ con gọn một dòng (đệm 12px, tên từ điển bên phải), nhãn/NEW/✕ căn giữa, cách nhau 6px |
+| FLASH-82 | `8fc15c1` | ☰ List: thẻ con gọn một dòng (đệm 12px, tên từ điển bên phải), nhãn/NEW/✕ căn giữa, cách nhau 6px |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
