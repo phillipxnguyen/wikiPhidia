@@ -92,6 +92,7 @@ textarea[hidden], .sent-view[hidden]{display:none;}
 .btn{flex:none;padding:8px 16px;border:0;border-radius:8px;background:var(--green);color:#fff;font:inherit;font-weight:700;cursor:pointer;}
 .btn:hover{filter:brightness(1.08);}
 .btn[disabled]{opacity:.5;cursor:default;filter:none;}
+.icon.on{background:var(--green-soft);color:var(--green);}
 .ghost{background:none;color:var(--ink-2);font-weight:600;}
 .ghost:hover{background:var(--bg-2);color:var(--ink);filter:none;}
 .tip{position:fixed;display:flex;flex-direction:column;gap:8px;width:380px;max-width:calc(100vw - 16px);padding:16px;border:1px solid var(--line);border-radius:16px;background:var(--bg);color:var(--ink);box-shadow:0 16px 40px rgba(10,20,40,.22);}
@@ -107,7 +108,39 @@ textarea[hidden], .sent-view[hidden]{display:none;}
 .tip-m{font-size:18px;line-height:26px;font-weight:700;color:var(--answer);overflow-wrap:anywhere;}
 .tip-ex{margin:8px 0 0;font-size:18px;line-height:26px;color:var(--ink);overflow-wrap:anywhere;}
 .tip-ex mark{padding:0 2px;border-radius:4px;background:var(--mark);color:inherit;font-weight:700;}
-.tip-l{font-size:13px;line-height:18px;color:var(--ink-2);}
+.tip-l{display:flex;justify-content:space-between;gap:12px;font-size:13px;line-height:18px;color:var(--ink-2);}
+.tip{max-height:calc(100vh - 16px);overflow-y:auto;overscroll-behavior:contain;}
+.tip-word{display:flex;align-items:center;flex-wrap:wrap;gap:8px;min-width:0;}
+.lv{flex:none;padding:2px 8px;border-radius:6px;background:var(--green-soft);color:var(--green);font-size:13px;line-height:18px;font-weight:700;white-space:nowrap;cursor:default;}
+.prs{display:flex;flex-wrap:wrap;gap:8px;}
+.prs:empty{display:none;}
+.pr{display:flex;align-items:center;gap:6px;height:32px;padding:0 10px;border:1px solid var(--line);border-radius:16px;background:var(--bg);color:var(--ink);font:inherit;font-size:15px;line-height:20px;cursor:pointer;}
+.pr:hover, .pr.on{border-color:var(--green);color:var(--green);}
+.pr b{font-size:12px;line-height:16px;font-weight:700;color:var(--ink-2);}
+.pr svg{width:16px;height:16px;}
+.pr path{fill:currentColor;}
+.pr path + path{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;}
+.defs{display:flex;flex-direction:column;gap:8px;margin-top:8px;}
+.defs:empty{display:none;}
+.dg{display:flex;align-items:baseline;gap:8px;}
+.dpos{flex:none;min-width:44px;padding:2px 6px;border-radius:6px;background:var(--bg-2);color:var(--ink-2);font-size:14px;line-height:20px;font-weight:700;text-align:center;}
+.dds{display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-width:0;}
+.dd{padding:2px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font:inherit;font-size:16px;line-height:24px;text-align:left;overflow-wrap:anywhere;}
+button.dd{cursor:pointer;}
+button.dd:hover{border-color:var(--green);color:var(--green);}
+.exs{display:flex;flex-direction:column;gap:8px;margin-top:8px;}
+.exs:empty{display:none;}
+.exs p{margin:0;font-size:16px;line-height:24px;color:var(--ink);overflow-wrap:anywhere;}
+.exs p:first-child.own{font-size:18px;line-height:26px;}
+.exs mark{padding:0 2px;border-radius:4px;background:var(--mark);color:inherit;font-weight:700;}
+.exs small{display:block;font-size:13px;line-height:18px;color:var(--ink-2);}
+.tnotes{margin-top:8px;padding:2px 0 2px 12px;border-left:4px solid color-mix(in srgb, var(--green) 45%, transparent);font-size:16px;line-height:24px;color:var(--ink);white-space:pre-line;overflow-wrap:anywhere;}
+.loading{font-size:13px;line-height:18px;color:var(--ink-2);}
+.meta{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px;}
+.meta:not(:has(.pr, .lv:not([hidden]))){display:none;}
+.card .defs, .card .exs{margin-top:0;}
+.card .foot{position:sticky;bottom:-20px;z-index:1;margin:0 -20px -20px;padding:12px 20px 20px;background:var(--bg);}
+.card{max-height:calc(100vh - 16px);overflow-y:auto;overscroll-behavior:contain;}
 .yt{position:fixed;left:16px;bottom:16px;display:flex;align-items:center;gap:8px;height:40px;padding:0 16px 0 6px;border:0;border-radius:20px;background:var(--green);color:#fff;font:700 14px/20px Inter, system-ui, sans-serif;box-shadow:0 6px 18px rgba(0,0,0,.3);cursor:pointer;}
 .yt:hover{filter:brightness(1.08);}
 .yt span{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:14px;background:rgba(255,255,255,.2);font-size:16px;line-height:20px;}
@@ -126,7 +159,7 @@ textarea[hidden], .sent-view[hidden]{display:none;}
 
   function rebuildKnown() {
     known = new Map();
-    app.words.forEach(w => known.set(norm(w.term), { term: w.term, meaning: w.meaning, sentence: w.sentence || "", lesson: w.lesson, state: "app" }));
+    app.words.forEach(w => known.set(norm(w.term), { term: w.term, meaning: w.meaning, sentence: w.sentence || "", notes: w.notes || "", lesson: w.lesson, state: "app" }));
     pending.forEach(w => {
       if (!known.has(norm(w.term))) known.set(norm(w.term), { term: w.term, meaning: w.meaning, sentence: w.sentence || "", lesson: w.lessonName || "", state: "pending" });
     });
@@ -272,12 +305,12 @@ textarea[hidden], .sent-view[hidden]{display:none;}
     const le = { zh: "zh", ja: "jap", ko: "ko" }[l];
     return le ? "https://dict.youdao.com/dictvoice?le=" + le + "&audio=" + encodeURIComponent(w) : "";
   }
-  function sayTip(term) {
-    const b = tip && tip.querySelector(".tip-say");
-    if (b && b.classList.contains("on")) return stopTipSound();
+  function sayTip(term, url, btn) {
+    btn = btn || (tip && tip.querySelector(".tip-say"));
+    if (btn && btn.classList.contains("on")) return stopTipSound();
     stopTipSound();
-    if (b) b.classList.add("on");
-    const done = () => b && b.classList.remove("on");
+    if (btn) btn.classList.add("on");
+    const done = () => btn && btn.classList.remove("on");
     const fallback = () => {
       tipAudio = null;
       if (!window.speechSynthesis) return done();
@@ -288,7 +321,7 @@ textarea[hidden], .sent-view[hidden]{display:none;}
         done();
       }, 200);
     };
-    const url = audioUrl(term);
+    url = url || audioUrl(term);
     if (!url) return fallback();
     const a = new Audio(url);
     tipAudio = a;
@@ -305,10 +338,57 @@ textarea[hidden], .sent-view[hidden]{display:none;}
     if (!s) return "";
     let at = -1, len = term.length;
     if (CJK.test(term) || KANA.test(term) || HANGUL.test(term)) at = s.indexOf(term); else {
-      const m = new RegExp("(?<![\\p{L}\\p{N}])" + term.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s+") + "(?![\\p{L}\\p{N}])", "iu").exec(s);
+      const m = new RegExp("(?<![\\p{L}\\p{N}])" + term.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s+") + "\\w*", "iu").exec(s);
       if (m) at = m.index, len = m[0].length;
     }
     return at < 0 ? esc(s) : esc(s.slice(0, at)) + "<mark>" + esc(s.slice(at, at + len)) + "</mark>" + esc(s.slice(at + len));
+  }
+  const dict = window.wkpDict;
+  function prsHtml(r, term) {
+    return (r && r.say || []).map(x => `<button type="button" class="pr" data-audio="${esc(x.audio)}" data-say="${esc(term)}" title="Listen${x.k ? " (" + x.k + ")" : ""}">${x.k ? `<b>${esc(x.k)}</b>` : ""}${x.ipa ? `<span>/${esc(x.ipa)}/</span>` : ""}${SPEAK_ICON}</button>`).join("");
+  }
+  function defsHtml(r, pick) {
+    return (r && r.defs || []).map(g => `<div class="dg"><span class="dpos">${esc(g.pos || dict.guessPos(g.d[0]))}</span><div class="dds">${g.d.map(t => pick ? `<button type="button" class="dd" data-m="${esc(t)}" title="Use this as the meaning">${esc(t)}</button>` : `<span class="dd">${esc(t)}</span>`).join("")}</div></div>`).join("");
+  }
+  function exsHtml(r, term, own, n) {
+    const list = (r && r.ex || []).filter(x => x.t !== own).slice(0, n);
+    return list.map(x => `<p>${markedSentence(x.t, term)}${x.tr ? `<small>${esc(x.tr)}</small>` : ""}</p>`).join("");
+  }
+  function fillDict(box, term, opts) {
+    if (!dict) return;
+    const lang = dict.langOf(term), defsEl = box.querySelector(".defs"), live = opts.live || (() => true);
+    if (defsEl && [ "en", "zh", "ja", "ko" ].includes(lang) && !dict.isLong(term)) defsEl.innerHTML = '<div class="loading">Looking it up…</div>';
+    dict.level(lang, term).then(lv => {
+      const el = box.querySelector(".lv");
+      if (!live() || !el || !lv || el.textContent) return;
+      el.textContent = lv.t;
+      el.title = lv.tip;
+      el.hidden = false;
+      opts.after && opts.after();
+    });
+    dict.lookup(lang, term).then(r => {
+      if (!live()) return;
+      if (defsEl) defsEl.innerHTML = defsHtml(r, opts.pick);
+      const prs = box.querySelector(".prs");
+      if (prs) prs.innerHTML = prsHtml(r, term);
+      const exs = box.querySelector(".exs");
+      if (exs && r) exs.insertAdjacentHTML("beforeend", exsHtml(r, term, opts.own || "", opts.own ? 2 : 3));
+      const src = box.querySelector(".src");
+      if (src && r) src.textContent = r.src;
+      const lvEl = box.querySelector(".lv");
+      if (lvEl && r && /^[ABC][12]$/.test(r.lv || "")) {
+        lvEl.textContent = r.lv;
+        lvEl.title = "CEFR " + r.lv;
+        lvEl.hidden = false;
+      }
+      const rd = box.querySelector(".tip-r, .reading");
+      if (rd && r && r.reading && !rd.textContent) rd.textContent = r.reading;
+      if (r) box.dataset.audio = (r.say.find(x => x.k === "US" && x.audio) || r.say.find(x => x.audio) || {}).audio || "";
+      opts.after && opts.after();
+    });
+  }
+  function placeTip() {
+    if (tip && tipMark) anchorBox(tip, tipMark.getBoundingClientRect(), 8, true);
   }
   function showTip(mark) {
     const k = known.get(norm(mark.textContent));
@@ -321,18 +401,23 @@ textarea[hidden], .sent-view[hidden]{display:none;}
       tip = document.createElement("div");
       tip.className = "tip";
       tip.addEventListener("click", e => {
+        const pr = e.target.closest(".pr");
+        if (pr) return sayTip(pr.dataset.say, pr.dataset.audio, pr);
         const b = e.target.closest(".tip-say");
-        if (b) sayTip(b.dataset.say);
+        if (b) sayTip(b.dataset.say, tip.dataset.audio, b);
       });
       wrap.appendChild(tip);
     }
     tipMark = mark;
+    tip.dataset.audio = "";
+    delete tip.dataset.side;
     const reading = langOf(k.term) === "zh" && window.pinyinPro ? pinyinPro.pinyin(k.term).replace(/\s+([，。？！、；：,.?!;:])/g, "$1") : "";
-    const ex = markedSentence(k.sentence, mark.textContent.trim() || k.term);
-    tip.innerHTML = `<div class="tip-top"><b>${esc(k.term)}</b><button type="button" class="tip-say" data-say="${esc(k.term)}" aria-label="Listen" title="Listen">${SPEAK_ICON}</button></div>${reading ? `<div class="tip-r">${esc(reading)}</div>` : ""}${k.meaning ? `<div class="tip-m">${esc(k.meaning)}</div>` : ""}${ex ? `<p class="tip-ex">${ex}</p>` : ""}${k.lesson ? `<div class="tip-l">${esc(k.lesson)}</div>` : ""}`;
-    const r = mark.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight;
-    tip.style.left = Math.round(Math.max(8, Math.min(innerWidth - w - 8, r.left))) + "px";
-    tip.style.top = Math.round(r.top - h - 8 > 8 ? r.top - h - 8 : Math.min(innerHeight - h - 8, r.bottom + 8)) + "px";
+    const own = k.sentence || "";
+    tip.innerHTML = `<div class="tip-top"><div class="tip-word"><b>${esc(k.term)}</b><span class="lv" hidden></span></div><button type="button" class="tip-say" data-say="${esc(k.term)}" aria-label="Listen" title="Listen">${SPEAK_ICON}</button></div><div class="prs"></div><div class="tip-r">${esc(reading)}</div>${k.meaning ? `<div class="tip-m">${esc(k.meaning)}</div>` : ""}<div class="defs"></div><div class="exs">${own ? `<p class="own">${markedSentence(own, mark.textContent.trim() || k.term)}</p>` : ""}</div>${k.notes ? `<div class="tnotes">${esc(k.notes)}</div>` : ""}<div class="tip-l"><span>${esc(k.lesson || "")}</span><span class="src"></span></div>`;
+    if (!reading) tip.querySelector(".tip-r").remove();
+    placeTip();
+    const me = mark;
+    fillDict(tip, k.term, { own, live: () => tip && tipMark === me, after: placeTip });
   }
   document.addEventListener("mouseover", e => {
     if (gone()) return;
@@ -424,6 +509,7 @@ textarea[hidden], .sent-view[hidden]{display:none;}
   let cardKeyDown = null;
 
   function closeCard() {
+    stopTipSound();
     if (card) card.remove();
     card = null;
     cardTranslate = null;
@@ -474,16 +560,29 @@ textarea[hidden], .sent-view[hidden]{display:none;}
     return html;
   }
 
+  function anchorBox(el, r, gap, above) {
+    el.style.maxHeight = "";
+    const w = el.offsetWidth, full = el.offsetHeight, edge = 8;
+    if (!r) {
+      el.style.left = Math.round((innerWidth - w) / 2) + "px";
+      el.style.top = "80px";
+      return;
+    }
+    const up = Math.floor(r.top - gap - edge), down = Math.floor(innerHeight - r.bottom - gap - edge);
+    let side = el.dataset.side || (above ? up >= full ? "up" : down >= full ? "down" : "" : down >= full ? "down" : up >= full ? "up" : "");
+    if (!side) side = up > down ? "up" : "down";
+    if (el.dataset.side && full > (side === "up" ? up : down) && (side === "up" ? down : up) >= full) side = side === "up" ? "down" : "up";
+    el.dataset.side = side;
+    const room = side === "up" ? up : down, h = Math.min(full, room);
+    if (h < full) el.style.maxHeight = Math.max(120, room) + "px";
+    el.style.left = Math.round(Math.max(edge, Math.min(innerWidth - w - edge, r.left))) + "px";
+    el.style.top = Math.round(side === "up" ? r.top - gap - h : r.bottom + gap) + "px";
+  }
+
   function place(el, range) {
     const r = range && range.getBoundingClientRect ? range.getBoundingClientRect() : null;
-    const w = el.offsetWidth, h = el.offsetHeight;
-    let left = r ? r.left : (innerWidth - w) / 2;
-    let top = r ? r.bottom + 10 : 80;
-    if (top + h > innerHeight - 12 && r) top = r.top - h - 10;
-    left = Math.max(12, Math.min(innerWidth - w - 12, left));
-    top = Math.max(12, Math.min(innerHeight - h - 12, top));
-    el.style.left = Math.round(left) + "px";
-    el.style.top = Math.round(top) + "px";
+    el.anchor = r;
+    anchorBox(el, r, 10, false);
   }
 
   function openCard(text, range) {
@@ -498,8 +597,9 @@ textarea[hidden], .sent-view[hidden]{display:none;}
     card.className = "card";
     card.innerHTML = `<div class="head"><span class="icons"><button class="icon say" title="Listen" aria-label="Listen">🔊</button><button class="icon tr-btn" title="Translate the sentence" aria-label="Translate the sentence"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M3 5h8M7 3v2M5 5c0 3 2 5 5 6M9 5c0 3-2 5-5 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 17l3-7 3 7M12 15h4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="icon close" title="Close (Esc)" aria-label="Close">✕</button></span><div class="term" contenteditable="plaintext-only" spellcheck="false" role="textbox" aria-label="Word"></div></div>
 <div class="reading"></div>
-<div class="body"><div class="field meaning" contenteditable="plaintext-only" role="textbox" data-placeholder="Translating…" aria-label="Meaning"></div><div class="alts"></div>
-<div class="sent-view"></div><textarea class="field sentence" rows="1" aria-label="Sentence" hidden></textarea><div class="sub sent-tr"></div>
+<div class="meta"><span class="lv" hidden></span><div class="prs"></div></div>
+<div class="body"><div class="field meaning" contenteditable="plaintext-only" role="textbox" data-placeholder="Translating…" aria-label="Meaning"></div><div class="alts"></div><div class="defs"></div>
+<div class="sent-view"></div><textarea class="field sentence" rows="1" aria-label="Sentence" hidden></textarea><div class="sub sent-tr"></div><div class="exs"></div><div class="sub src"></div>
 <div class="note"></div>
 <div class="foot"><select class="lesson" aria-label="Lesson">${lessonOptions()}</select><button class="btn add">Add</button></div></div>`;
     wrap.appendChild(card);
@@ -567,8 +667,19 @@ textarea[hidden], .sent-view[hidden]{display:none;}
         add.textContent = "Add";
       }
     };
+    let dictToken = 0;
+    const lookDict = () => {
+      const t = termEl.value.trim(), token = ++dictToken;
+      [ ".defs", ".prs", ".exs", ".src" ].forEach(sel => $(sel).innerHTML = "");
+      const lv = $(".lv");
+      lv.textContent = "";
+      lv.hidden = true;
+      card.dataset.audio = "";
+      if (t) fillDict(card, t, { pick: true, live: () => card && token === dictToken, after: () => card && anchorBox(card, card.anchor, 10, false) });
+    };
     const lookUp = () => {
       const t = termEl.value.trim();
+      lookDict();
       if (!t) return;
       const token = ++translateToken;
       meaningEl.placeholder = "Translating…";
@@ -606,7 +717,16 @@ textarea[hidden], .sent-view[hidden]{display:none;}
       meaningEl.dataset.typed = "1";
       meaningEl.focus();
     });
-    $(".say").addEventListener("click", () => speak(termEl.value.trim()));
+    $(".say").addEventListener("click", e => sayTip(termEl.value.trim(), card.dataset.audio, e.currentTarget));
+    card.addEventListener("click", e => {
+      const pr = e.target.closest(".pr");
+      if (pr) return sayTip(pr.dataset.say, pr.dataset.audio, pr);
+      const dd = e.target.closest("button.dd");
+      if (!dd) return;
+      meaningEl.value = dd.dataset.m;
+      meaningEl.dataset.typed = "1";
+      meaningEl.focus();
+    });
     $(".close").addEventListener("click", closeCard);
     cardTranslate = () => {
       const out = $(".sent-tr");

@@ -262,7 +262,76 @@ async function dictFetch(url) {
   return { ok: res.ok, status: res.status, url: res.url, text: text.slice(0, 3e6) };
 }
 
+async function googleDict(text) {
+  const res = await fetch("https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=en&dt=t&dt=bd&dj=1&q=" + encodeURIComponent(text));
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  const data = await res.json();
+  return (data.dict || []).map(d => ({ pos: String(d.pos || "").toLowerCase(), terms: (d.terms || []).map(String) }));
+}
+
+let levelMaps = null, levelJob = null;
+
+function loadLevels() {
+  if (levelMaps) return Promise.resolve(levelMaps);
+  if (!levelJob) levelJob = (async () => {
+    let raw = (await chrome.storage.local.get("levels")).levels;
+    if (!raw) {
+      const s = await settings();
+      const res = await fetch(new URL("levels.json", s.appUrl).href);
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      raw = await res.json();
+      chrome.storage.local.set({ levels: raw });
+    }
+    const all = {};
+    Object.entries(raw).forEach(([lang, levels]) => {
+      const map = new Map();
+      Object.entries(levels).forEach(([l, words]) => words.split("|").forEach(x => map.has(x) || map.set(x, l)));
+      all[lang] = map;
+    });
+    return levelMaps = all;
+  })().catch(() => {
+    levelJob = null;
+    return null;
+  });
+  return levelJob;
+}
+
+function enBases(k) {
+  const out = [];
+  if (/[^aeiou]ie[sd]$/.test(k)) out.push(k.slice(0, -3) + "y");
+  if (/es$/.test(k)) out.push(k.slice(0, -2));
+  if (/s$/.test(k)) out.push(k.slice(0, -1));
+  if (/ed$/.test(k)) out.push(k.slice(0, -2), k.slice(0, -1));
+  if (/ing$/.test(k)) out.push(k.slice(0, -3), k.slice(0, -3) + "e");
+  if (/([^aeiou])\1(ed|ing)$/.test(k)) out.push(k.replace(/([^aeiou])\1(ed|ing)$/, "$1"));
+  return out;
+}
+
+async function wordLevel(lang, w) {
+  const maps = await loadLevels();
+  const map = maps && maps[lang];
+  if (!map || !w) return null;
+  let l = map.get(w);
+  if (!l && lang === "en") {
+    const k = w.toLowerCase();
+    l = map.get(k) || enBases(k).map(x => map.get(x)).find(Boolean);
+  }
+  if (!l) return null;
+  if (lang === "zh") return { t: "HSK " + (l === "7" ? "7–9" : l), tip: "HSK 3.0, level " + (l === "7" ? "7–9" : l) };
+  if (lang === "ja") return { t: "N" + l, tip: "JLPT N" + l };
+  if (lang === "ko") return { t: "TOPIK " + (l === "1" ? "I" : "II"), tip: l === "1" ? "TOPIK I (beginner)" : "TOPIK II (intermediate and up)" };
+  return { t: l, tip: "CEFR " + l };
+}
+
 chrome.runtime.onMessage.addListener((msg, sender, reply) => {
+  if (msg && msg.type === "gdict") {
+    googleDict(String(msg.text || "")).then(r => reply({ ok: true, dict: r }), () => reply({ ok: false, dict: [] }));
+    return true;
+  }
+  if (msg && msg.type === "level") {
+    wordLevel(String(msg.lang || ""), String(msg.w || "").trim()).then(r => reply(r), () => reply(null));
+    return true;
+  }
   if (msg && msg.type === "dictFetch") {
     dictFetch(String(msg.url || "")).then(r => reply(r), e => reply({ ok: false, status: 0, error: String(e && e.message || e) }));
     return true;

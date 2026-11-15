@@ -19739,6 +19739,14 @@ function readerCards(l) {
   return l.id === currentLessonId ? vocabSource() : lessonCardsWithExtras(l);
 }
 
+function readerNotesText(i) {
+  const st = i.card.vocab && i.card.vocab[i.key], html = i.card.notesHtml || "";
+  if (!(st && st.notes) && !/<li[^>]*>(?:(?!<\/li>)[\s\S])*<(ul|ol)\b/i.test(html)) return "";
+  const box = document.createElement("div");
+  box.innerHTML = wordNotesOf(i).replace(/<br\s*\/?>/gi, "\n").replace(/<\/(div|p|li)>/gi, "\n");
+  return box.textContent.replace(/[ \t]+/g, " ").replace(/\n\s*\n+/g, "\n").trim().slice(0, 400);
+}
+
 function readerState() {
   const lessons = library.filter(l => !isVirtualId(l.id)).map(l => ({
     id: l.id,
@@ -19750,6 +19758,7 @@ function readerState() {
     term: i.term,
     meaning: i.meaning,
     sentence: (vocabContext(i).sentence || "").replace(/\s+/g, " ").trim().slice(0, 300),
+    notes: readerNotesText(i),
     lesson: l.name || "Untitled lesson"
   })));
   return {
