@@ -540,7 +540,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-58 | `3c72694` | Bỏ 🌐 Web riêng: các trang đọc nằm ở khối 🌐 From the web trong trang từng ngôn ngữ; extension 1.6.27 bỏ ô chọn bài, thẻ to hơn; nhóm adj/adv cách 6px |
 | LOOKUP-59 | `9f6f9b5` | Nhãn loại từ (verb…) ngang dòng đầu của ô định nghĩa, ở app và extension 1.6.28 |
 | LOOKUP-60 | `d710e9b` | Extension 1.6.32: thẻ trỏ từ cách đều 16px theo chữ thật (text-box trim) như popup app, cả dòng tên bài |
-| LOOKUP-61 | `pending` | Ô định nghĩa rộng bằng nhau (cả cột) ở popup app và extension 1.6.33 |
+| LOOKUP-61 | `c329f4b` | Ô định nghĩa rộng bằng nhau (cả cột) ở popup app và extension 1.6.33 |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
