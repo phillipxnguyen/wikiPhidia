@@ -212,7 +212,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-73 | `5b8c6e4` | Hai từ cùng câu cách nhau ít nhất 10 thẻ (trước chỉ cấm liền nhau), cả phiên flashcard lẫn task; không đủ thẻ thì giãn xa nhất |
 | FLASH-74 | `3a14adc` | Mỗi từ thêm thẻ định nghĩa và thẻ ví dụ (tất cả, mọi từ điển qua extension 1.6.29), lịch riêng; mặt trước Podcast đọc định nghĩa/ví dụ; sửa mất dấu web khi lưu bài |
 | FLASH-75 | `82f583e` | Sửa: tra từ điển rỗng không còn bị lưu (extension 1.6.30 + app tra lại); tia điện chờ tiếng ở mọi lần đọc giọng máy; Notes từ web không lặp câu và tên bài |
-| FLASH-76 | `pending` | ☰ List hiện thẻ định nghĩa/ví dụ của mỗi từ (mở/gập, xoá riêng); extension 1.6.31 tra dạng gốc tiếng Anh, khoảng cách thẻ đều 16px |
+| FLASH-76 | `c7c7911` | ☰ List hiện thẻ định nghĩa/ví dụ của mỗi từ (mở/gập, xoá riêng); extension 1.6.31 tra dạng gốc tiếng Anh, khoảng cách thẻ đều 16px |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
