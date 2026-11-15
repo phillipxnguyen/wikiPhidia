@@ -33,7 +33,8 @@
         title: w.title,
         url: w.url,
         lessonId: w.lessonId || "",
-        lessonName: w.lessonName || fallback
+        lessonName: w.lessonName || fallback,
+        dict: Array.isArray(w.dict) ? w.dict : undefined
       }))
     });
     setTimeout(() => {
@@ -68,7 +69,11 @@
 
   window.addEventListener("message", e => {
     if (e.source !== window || !alive() || !e.data || e.data.from !== "wikiphidia-app") return;
-    if (e.data.type === "ready") post({ type: "hello", caps: [ "dict" ] });
+    if (e.data.type === "ready") post({ type: "hello", caps: window.wkpDict ? [ "dict", "lookup" ] : [ "dict" ] });
+    if (e.data.type === "dictLookup" && window.wkpDict) {
+      const id = e.data.id;
+      window.wkpDict.lookup(String(e.data.lang || ""), String(e.data.w || "")).then(list => post({ type: "dictLooked", id, list: list || [] }), () => post({ type: "dictLooked", id, list: [] }));
+    }
     if (e.data.type === "dictFetch") {
       const id = e.data.id;
       chrome.runtime.sendMessage({ type: "dictFetch", url: e.data.url }).then(r => post(Object.assign({ type: "dictFetched", id: id }, r || { ok: false })), err => post({ type: "dictFetched", id: id, ok: false, error: String(err) }));

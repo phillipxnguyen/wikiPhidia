@@ -611,6 +611,8 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-card.fill .cloze-spy{margin:0 0 4px;font-size:.6em;font-size:round(.6em, 1px);line-height:1.4;line-height:round(1.4em, 1px);font-weight:600;}
   .vocab-card.fill:not(.flipped) :is(.cloze-head, .cloze-spy, .cloze-notes, .cloze-own){display:none;}
   .vocab-card.fill .cloze-own{margin-top:0;font-size:inherit;line-height:inherit;font-weight:inherit;}
+  .vc-def .vc-pos{display:inline-block;margin-right:8px;padding:0 8px;border-radius:6px;background:color-mix(in srgb, currentColor 10%, transparent);font-size:16px;line-height:24px;font-weight:700;font-style:normal;vertical-align:middle;}
+  .vc-def .vc-def-h{display:block;margin-bottom:4px;font-size:14px;line-height:20px;font-weight:700;font-style:normal;letter-spacing:.04em;text-transform:uppercase;opacity:.7;}
   .vocab-card.fill :is(.cloze-own, .cloze-notes) .py-line{margin:0 0 4px;font-size:.6em;font-size:round(.6em, 1px);line-height:1.4;line-height:round(1.4em, 1px);font-weight:600;opacity:1;}
   .vocab-card.fill :is(.cloze-own, .cloze-notes) .py-line{font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;font-style:normal;}
   .own-ts{position:relative;display:inline-flex;align-items:center;height:24px;margin-right:8px;padding:0 8px;vertical-align:4px;border:0;border-radius:12px;background:color-mix(in srgb, currentColor 12%, transparent);color:inherit;font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;font-size:13px;line-height:16px;font-weight:700;font-style:normal;cursor:pointer;}
@@ -10612,7 +10614,112 @@ async function enDictLookup(w) {
   }
 }
 
-let extDictOn = false, extFetchSeq = 0;
+let extDictOn = false, extFetchSeq = 0, extLookupOn = false;
+
+const extLookupWait = new Map;
+
+function extLookup(lang, w) {
+  if (!extLookupOn) return Promise.resolve(null);
+  const id = "l" + ++extFetchSeq;
+  return new Promise(done => {
+    const timer = setTimeout(() => {
+      extLookupWait.delete(id);
+      done(null);
+    }, 45e3);
+    extLookupWait.set(id, list => {
+      clearTimeout(timer);
+      done(list);
+    });
+    window.postMessage({
+      from: "wikiphidia-app",
+      type: "dictLookup",
+      id: id,
+      lang: lang,
+      w: w
+    }, "*");
+  });
+}
+
+function flattenDict(list) {
+  const defs = [], ex = [], seenD = new Set, seenE = new Set;
+  (list || []).forEach(r => {
+    if (!r || typeof r !== "object") return;
+    const src = String(r.src || "");
+    (r.defs || []).forEach(g => (g && g.d || []).forEach(x => {
+      const t = String(typeof x === "string" ? x : x && x.t || "").replace(/\s+/g, " ").trim(), k = t.toLowerCase();
+      if (!t || t.length > 300 || seenD.has(k)) return;
+      seenD.add(k);
+      defs.push({
+        s: src,
+        p: String(g.pos || ""),
+        t: t,
+        h: String(typeof x === "string" ? "" : x.h || "")
+      });
+    }));
+    (r.ex || []).forEach(x => {
+      const t = String(x && x.t || "").replace(/\s+/g, " ").trim(), k = t.toLowerCase();
+      if (!t || t.length > 300 || seenE.has(k)) return;
+      seenE.add(k);
+      ex.push({
+        s: src,
+        t: t,
+        tr: String(x.tr || "")
+      });
+    });
+  });
+  return {
+    at: Date.now(),
+    defs: defs,
+    ex: ex
+  };
+}
+
+function storeWordDict(lesson, tkey, entry) {
+  if (!lesson || !tkey || !entry) return;
+  lesson.wordDict = Object.assign({}, lesson.wordDict, {
+    [tkey]: entry
+  });
+  wordDictIdx = null;
+  if (lesson.id === currentLessonId) scheduleAutoSave(); else {
+    lesson.updatedAt = Date.now();
+    dbPut("lessons", lesson).catch(() => {});
+  }
+}
+
+const wordDictTried = new Set;
+
+let wordDictBusy = false, wordDictRepaint = 0;
+
+setInterval(() => wordDictPump(), 6e4);
+
+async function wordDictPump() {
+  if (!extLookupOn || wordDictBusy || tabPaused) return;
+  const idx = wordDictIndex(), worlds = wordWorldItems();
+  let pick = null;
+  for (const w of Object.keys(worlds)) {
+    if (![ "en", "zh", "ja", "ko" ].includes(w)) continue;
+    pick = worlds[w].find(i => !i.sub && (i.meaning || "").trim() && !idx.has(i.tkey) && !wordDictTried.has(w + "|" + i.tkey) && !odLong(i.term));
+    if (pick) {
+      pick.world = w;
+      break;
+    }
+  }
+  if (!pick) return;
+  wordDictBusy = true;
+  wordDictTried.add(pick.world + "|" + pick.tkey);
+  const list = await extLookup(pick.world, pick.term);
+  wordDictBusy = false;
+  const lesson = library.find(l => l.id === pick.lessonId);
+  if (list && lesson) {
+    storeWordDict(lesson, pick.tkey, flattenDict(list));
+    clearTimeout(wordDictRepaint);
+    wordDictRepaint = setTimeout(() => {
+      if (currentView === "words") renderWords();
+      if (!vocabStudying) renderLessonList();
+    }, 2e3);
+  }
+  setTimeout(wordDictPump, list ? 1500 : 4e3);
+}
 
 const extFetchWait = new Map;
 
@@ -15478,11 +15585,18 @@ function serializeCurrentLesson() {
     vocabOnly: !!(prev && prev.vocabOnly),
     ...(prev && prev.book ? {
       book: prev.book
+    } : {}),
+    ...(prev && prev.web ? {
+      web: prev.web
+    } : {}),
+    ...(prev && prev.wordDict ? {
+      wordDict: prev.wordDict
     } : {})
   };
 }
 
 function upsertLibrary(lesson) {
+  wordDictIdx = null;
   const i = library.findIndex(l => l.id === lesson.id);
   trackGone(i === -1 ? null : library[i], lesson);
   if (i === -1) library.push(lesson); else library[i] = lesson;
@@ -19770,7 +19884,7 @@ function readerState() {
     words: isVocabOnlyLesson(l)
   }));
   const words = [];
-  library.filter(l => !isVirtualId(l.id) && !bookHidden(l)).forEach(l => lessonVocabItems(readerCards(l)).forEach(i => words.push({
+  library.filter(l => !isVirtualId(l.id) && !bookHidden(l)).forEach(l => lessonVocabItems(readerCards(l)).forEach(i => !i.sub && words.push({
     term: i.term,
     meaning: i.meaning,
     sentence: (vocabContext(i).sentence || "").replace(/\s+/g, " ").trim().slice(0, 300),
@@ -19888,6 +20002,12 @@ function readerAdd(list) {
       lesson: known.get(key)
     });
     const lesson = readerTarget(w, made);
+    if (Array.isArray(w.dict) && w.dict.length) {
+      lesson.wordDict = Object.assign({}, lesson.wordDict, {
+        [normalizeVocabText(term)]: flattenDict(w.dict)
+      });
+      wordDictIdx = null;
+    }
     known.set(key, lesson.name || "Untitled lesson");
     if (!groups.has(lesson.id)) groups.set(lesson.id, []);
     groups.get(lesson.id).push({
@@ -19953,6 +20073,7 @@ function readerAdd(list) {
     dbPut("lessons", saved).catch(() => {});
   });
   if (groups.size) {
+    setTimeout(wordDictPump, 3e3);
     refreshSaveReminders();
     renderLessonList();
     if (currentView === "vocab") renderVocab(); else render();
@@ -19986,7 +20107,18 @@ function startReaderBridge() {
     if (e.source !== window || !e.data || e.data.from !== "wikiphidia-reader" || tabPaused) return;
     if (e.data.type === "hello") {
       if ((e.data.caps || []).includes("dict")) extDictOn = true;
+      if ((e.data.caps || []).includes("lookup") && !extLookupOn) {
+        extLookupOn = true;
+        setTimeout(wordDictPump, 4e3);
+      }
       window.postMessage(readerState(), "*");
+    }
+    if (e.data.type === "dictLooked") {
+      const done = extLookupWait.get(e.data.id);
+      if (done) {
+        extLookupWait.delete(e.data.id);
+        done(Array.isArray(e.data.list) ? e.data.list : null);
+      }
     }
     if (e.data.type === "dictFetched") {
       const done = extFetchWait.get(e.data.id);
@@ -20253,7 +20385,71 @@ function lessonVocabItems(cards) {
     });
   });
   const added = item => item.card.vocab && item.card.vocab[item.key] && item.card.vocab[item.key].added || 0;
-  return items.sort((a, b) => added(b) - added(a));
+  items.sort((a, b) => added(b) - added(a));
+  const idx = wordDictIndex();
+  if (!idx.size) return items;
+  const out = [];
+  items.forEach(item => {
+    out.push(item);
+    if (!(item.meaning || "").trim()) return;
+    const entry = idx.get(item.tkey || normalizeVocabText(item.term));
+    if (entry) subItemsOf(item, entry).forEach(x => out.push(x));
+  });
+  return out;
+}
+
+const SUB_GONE = 9e15;
+
+let wordDictIdx = null;
+
+const subCache = new Map;
+
+function wordDictIndex() {
+  if (!wordDictIdx) {
+    wordDictIdx = new Map;
+    library.forEach(l => l.wordDict && Object.keys(l.wordDict).forEach(k => {
+      const v = l.wordDict[k];
+      if (v && (v.defs || v.ex) && !wordDictIdx.has(k)) wordDictIdx.set(k, v);
+    }));
+  }
+  return wordDictIdx;
+}
+
+function textHash(t) {
+  let h = 5381;
+  for (let i = 0; i < t.length; i++) h = (h * 33 ^ t.charCodeAt(i)) >>> 0;
+  return h.toString(36);
+}
+
+function subItemsOf(item, entry) {
+  const ck = item.key + "|" + (entry.at || 0);
+  let tmpl = subCache.get(ck);
+  if (!tmpl) {
+    tmpl = [];
+    (entry.defs || []).forEach(d => d && d.t && tmpl.push({
+      key: "x:" + item.key + "|d" + textHash(d.t),
+      sub: {
+        kind: "def",
+        t: d.t,
+        p: d.p || "",
+        h: d.h || "",
+        s: d.s || ""
+      }
+    }));
+    (entry.ex || []).forEach(x => x && x.t && findWordForm(x.t, item.term) && tmpl.push({
+      key: "x:" + item.key + "|e" + textHash(x.t),
+      sub: {
+        kind: "ex",
+        t: x.t,
+        tr: x.tr || "",
+        s: x.s || ""
+      }
+    }));
+    if (subCache.size > 4000) subCache.clear();
+    subCache.set(ck, tmpl);
+  }
+  const v = item.card.vocab || {};
+  return tmpl.filter(x => !(v[x.key] && v[x.key].due >= SUB_GONE)).map(x => Object.assign({}, item, x));
 }
 
 let vocabAddClock = 0;
@@ -20336,7 +20532,7 @@ function vocabForSave(r) {
     if (r.vocab[e.key]) out[e.key] = r.vocab[e.key];
   });
   Object.keys(r.vocab).forEach(k => {
-    if (k.startsWith("w:")) out[k] = r.vocab[k];
+    if (k.startsWith("w:") || k.startsWith("x:")) out[k] = r.vocab[k];
   });
   return out;
 }
@@ -20836,22 +21032,22 @@ function fillVocabCard(el, item) {
   const sentence = vocabContext(item).sentence || "", gap = !viewOnly && sentence && !wholeSentenceCard(item, sentence) ? findTermIn(sentence, item.term) : null;
   const whole = !viewOnly && wholeSentenceCard(item, sentence);
   if (el.dataset.lookKey !== item.key) {
-    const other = viewOnly || whole ? "" : otherLessonSentence(item);
+    const other = item.sub ? item.sub.kind === "ex" ? item.sub.t : "" : viewOnly || whole ? "" : otherLessonSentence(item);
     const alt = other;
-    let ex = whole ? "sent" : alt ? "other" : gap ? "cloze" : "word";
+    let ex = item.sub && item.sub.kind === "def" ? "def" : whole ? "sent" : alt ? "other" : gap ? "cloze" : "word";
     el.dataset.other = ex === "other" ? alt : "";
     const look = "plain";
     el.dataset.lookKey = item.key;
     el.dataset.look = look;
     el.dataset.ex = ex;
-    el.dataset.listen = "speechSynthesis" in window && (whole || ex === "word" || Math.random() < 1 / 3) ? "1" : "";
+    el.dataset.listen = "speechSynthesis" in window && (item.sub || whole || ex === "word" || Math.random() < 1 / 3) ? "1" : "";
     el.dataset.scene = el.dataset.listen ? wordSceneFor(item, el.dataset.scene || null) : "";
     delete el.dataset.said;
     delete el.dataset.listenText;
     cardType(el, item);
   }
   el.classList.toggle("view-only", viewOnly);
-  const ex = el.dataset.ex, otherGap = ex === "other" && el.dataset.other ? findTermIn(el.dataset.other, item.term) : null;
+  const ex = el.dataset.ex, otherGap = ex === "other" && el.dataset.other ? (item.sub ? findWordForm : findTermIn)(el.dataset.other, item.term) : null;
   if (ex === "cloze" && gap || otherGap) {
     const text = otherGap ? el.dataset.other : sentence, span = otherGap || gap;
     const n = Math.max(3, Math.min(16, span[1] - span[0]));
@@ -20866,6 +21062,15 @@ function fillVocabCard(el, item) {
     el.querySelector(".vocab-term").insertAdjacentHTML("afterbegin", `<span class="cloze-more cloze-head"><span class="cloze-main">${rubyWord(item.term, item.card)}</span>${item.meaning ? `<span class="cloze-mean">${meaningHtml(item.meaning)}</span>` : ""}</span>`);
     el.classList.add("fill");
     el.classList.toggle("listen", !!el.dataset.listen);
+  } else if (ex === "def" && item.sub) {
+    const noted = noteSentence(item), notes = noted ? noted.rest.replace(/^(\s|<br\s*\/?>|<div>\s*<\/div>)+/i, "") : wordNotesOf(item);
+    const d = item.sub.t, span = findWordForm(d, item.term);
+    const defText = span ? `${escapeHtml(d.slice(0, span[0]))}<span class="cloze-gap" style="--gap:${Math.max(3, Math.min(16, span[1] - span[0]))}"><span class="cloze-word">${escapeHtml(d.slice(span[0], span[1]))}</span></span>${escapeHtml(d.slice(span[1]))}` : escapeHtml(d);
+    const defHtml = `<span class="vc-sent vc-def">${item.sub.h ? `<span class="vc-def-h">${escapeHtml(item.sub.h)}</span>` : ""}${item.sub.p ? `<span class="vc-pos">${escapeHtml(item.sub.p)}</span>` : ""}${defText}</span>`;
+    const ownHtml = sentence ? `<span class="cloze-more cloze-own">${withPill(linePillHtml(item, sentence, true), lookupOthers(vocabSentenceHtml(sentence, item.term, item.card), item))}</span>` : "";
+    el.querySelector(".vocab-term").innerHTML = `<span class="cloze-body"><span class="vc-stack"><span class="vc-art" aria-hidden="true">${sceneArt(el.dataset.scene)}<span class="vc-time"><i></i></span></span>${defHtml}</span>${ownHtml}${notes ? `<span class="cloze-more cloze-notes">${notesWithPinyin(brLines(notes), item.card)}</span>` : ""}</span>`;
+    el.querySelector(".vocab-term").insertAdjacentHTML("afterbegin", `<span class="cloze-more cloze-head"><span class="cloze-main">${rubyWord(item.term, item.card)}</span>${item.meaning ? `<span class="cloze-mean">${meaningHtml(item.meaning)}</span>` : ""}</span>`);
+    el.classList.add("fill", "listen");
   } else if (ex === "word" && el.dataset.listen && !viewOnly) {
     const noted = noteSentence(item), notes = noted ? noted.rest.replace(/^(\s|<br\s*\/?>|<div>\s*<\/div>)+/i, "") : wordNotesOf(item);
     const sent = sentence ? `<span class="vc-sent">${withPill(linePillHtml(item, sentence, true, "cloze-pill"), lookupOthers(vocabSentenceHtml(sentence, item.term, item.card), item))}</span>` : '<span class="vc-sent"></span>';
@@ -21270,10 +21475,11 @@ function renderVocab() {
     vocabListLessonId = currentLessonId;
     vocabListLimit = VOCAB_LIST_PAGE;
   }
-  const editingAt = vocabEditingInList ? items.findIndex(i => i.key === vocabEditingKey) : -1;
+  const words = items.filter(i => !i.sub);
+  const editingAt = vocabEditingInList ? words.findIndex(i => i.key === vocabEditingKey) : -1;
   if (editingAt >= vocabListLimit) vocabListLimit = editingAt + 1;
-  const shown = items.slice(0, vocabListLimit);
-  const more = items.length - shown.length;
+  const shown = words.slice(0, vocabListLimit);
+  const more = words.length - shown.length;
   const adder = canAdd && vocabEditingKey === NEW_WORD_KEY ? `<div class="vocab-list-row editing">${vocabEditorHtml({
     term: "",
     meaning: ""
@@ -21670,6 +21876,7 @@ function keepVocabEdit() {
 }
 
 function openVocabEditor(key, inList) {
+  if (key && key.startsWith("x:")) key = key.slice(2, key.lastIndexOf("|"));
   commitVocabEdit();
   stopVocabSound();
   vocabEditingKey = key;
@@ -21865,6 +22072,25 @@ function deleteVocabEntry(item, part) {
   if (!item) return;
   commitVocabEdit();
   const row = item.card;
+  if (item.sub) {
+    stopVocabSound();
+    pushDeleteUndo("Deleted card — " + item.term);
+    if (!row.vocab) row.vocab = {};
+    row.vocab[item.key] = Object.assign({}, vocabStateOf(item), {
+      due: SUB_GONE
+    });
+    if (vocabSession) {
+      if (vocabSession.queue[0] === item.key) vocabSession.flipped = false;
+      dropVocabSessionKey(item.key);
+    }
+    scheduleAutoSave();
+    swipe(part ? part.tagName === "TR" ? [ part ] : Array.from(part.children) : [ document.getElementById("vocabCard") ], -1, () => {
+      render();
+      renderVocab();
+      renderLessonList();
+    }, false, "Delete");
+    return;
+  }
   const next = rewrittenVocabNotes(row, item, null, null);
   if (!next) {
     showToast("Couldn't find this card in the notes");
@@ -22152,7 +22378,7 @@ function sayVocabWord(item) {
   }
   soundWaitOn(btn);
   const own = vocabContext(item).sentence || "", shown = card.dataset.ex === "other" && card.dataset.other || own;
-  const pool = [ shown ].concat(own && own !== shown ? [ own ] : []).filter(Boolean);
+  const pool = item.sub ? [ item.sub.t ] : [ shown ].concat(own && own !== shown ? [ own ] : []).filter(Boolean);
   if (!card.dataset.listenText || !pool.includes(card.dataset.listenText)) card.dataset.listenText = pool[Math.floor(Math.random() * pool.length)] || item.term;
   const text = card.dataset.listenText;
   const utter = trackSpeech(new SpeechSynthesisUtterance(cleanForSpeech(text)));

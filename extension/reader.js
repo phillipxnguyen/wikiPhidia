@@ -780,6 +780,7 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
         lessonName: settings.lessonName || articleTitle(),
         at: Date.now()
       };
+      if (dict) word.dict = await Promise.race([ dict.lookup(dict.langOf(t), t), new Promise(res => setTimeout(() => res(null), 4e3)) ]).catch(() => null) || undefined;
       const { pending: now } = await chrome.storage.local.get("pending");
       const list = now || [];
       if (list.some(w => norm(w.term) === norm(t))) return closeCard();
