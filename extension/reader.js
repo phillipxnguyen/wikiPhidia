@@ -136,9 +136,16 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
 .exs small{display:block;font-size:13px;line-height:18px;color:var(--ink-2);}
 .tnotes{margin-top:8px;padding:2px 0 2px 12px;border-left:4px solid color-mix(in srgb, var(--green) 45%, transparent);font-size:16px;line-height:24px;color:var(--ink);white-space:pre-line;overflow-wrap:anywhere;}
 .loading{font-size:13px;line-height:18px;color:var(--ink-2);}
+.srcs{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.srcs:empty{display:none;}
+.sp{padding:2px 10px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink-2);font:inherit;font-size:13px;line-height:20px;font-weight:600;cursor:pointer;}
+.sp:hover{border-color:var(--green);color:var(--green);}
+.sp.on{border-color:var(--green);background:var(--green);color:#fff;}
+.dd em{display:block;font-style:normal;font-size:12px;line-height:16px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--green);}
+.dnote{margin:0;font-size:14px;line-height:20px;color:var(--ink-2);font-style:italic;}
 .meta{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px;}
 .meta:not(:has(.pr, .lv:not([hidden]))){display:none;}
-.card .defs, .card .exs{margin-top:0;}
+.card .defs, .card .exs, .card .srcs{margin-top:0;}
 .card .foot{position:sticky;bottom:-20px;z-index:1;margin:0 -20px -20px;padding:12px 20px 20px;background:var(--bg);}
 .card{max-height:calc(100vh - 16px);overflow-y:auto;overscroll-behavior:contain;}
 .yt{position:fixed;left:16px;bottom:16px;display:flex;align-items:center;gap:8px;height:40px;padding:0 16px 0 6px;border:0;border-radius:20px;background:var(--green);color:#fff;font:700 14px/20px Inter, system-ui, sans-serif;box-shadow:0 6px 18px rgba(0,0,0,.3);cursor:pointer;}
@@ -348,43 +355,70 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
     return (r && r.say || []).map(x => `<button type="button" class="pr" data-audio="${esc(x.audio)}" data-say="${esc(term)}" title="Listen${x.k ? " (" + x.k + ")" : ""}">${x.k ? `<b>${esc(x.k)}</b>` : ""}${x.ipa ? `<span>/${esc(x.ipa)}/</span>` : ""}${SPEAK_ICON}</button>`).join("");
   }
   function defsHtml(r, pick) {
-    return (r && r.defs || []).map(g => `<div class="dg"><span class="dpos">${esc(g.pos || dict.guessPos(g.d[0]))}</span><div class="dds">${g.d.map(t => pick ? `<button type="button" class="dd" data-m="${esc(t)}" title="Use this as the meaning">${esc(t)}</button>` : `<span class="dd">${esc(t)}</span>`).join("")}</div></div>`).join("");
+    return (r && r.defs || []).map(g => `<div class="dg">${g.pos ? `<span class="dpos">${esc(g.pos)}</span>` : ""}<div class="dds">${g.d.map(x => {
+      const t = typeof x === "string" ? x : x.t, h = typeof x === "string" ? "" : x.h || "";
+      const inner = `${h ? `<em>${esc(h)}</em>` : ""}${esc(t)}`;
+      return pick ? `<button type="button" class="dd" data-m="${esc(t)}" title="Use this as the meaning">${inner}</button>` : `<span class="dd">${inner}</span>`;
+    }).join("")}</div></div>`).join("") + (r && r.note ? `<p class="dnote">${esc(r.note)}</p>` : "");
   }
-  function exsHtml(r, term, own, n) {
-    const list = (r && r.ex || []).filter(x => x.t !== own).slice(0, n);
-    return list.map(x => `<p>${markedSentence(x.t, term)}${x.tr ? `<small>${esc(x.tr)}</small>` : ""}</p>`).join("");
+  function exsHtml(list, term, own, n) {
+    return (list || []).filter(x => x.t !== own).slice(0, n).map(x => `<p>${markedSentence(x.t, term)}${x.tr ? `<small>${esc(x.tr)}</small>` : ""}</p>`).join("");
   }
   function fillDict(box, term, opts) {
     if (!dict) return;
-    const lang = dict.langOf(term), defsEl = box.querySelector(".defs"), live = opts.live || (() => true);
-    if (defsEl && [ "en", "zh", "ja", "ko" ].includes(lang) && !dict.isLong(term)) defsEl.innerHTML = '<div class="loading">Looking it up…</div>';
-    dict.level(lang, term).then(lv => {
+    const lang = dict.langOf(term), defsEl = box.querySelector(".defs"), srcsEl = box.querySelector(".srcs"), live = opts.live || (() => true);
+    const exsEl = box.querySelector(".exs"), ownHtml = exsEl ? exsEl.innerHTML : "";
+    let all = [], pick = "", lvSet = false;
+    const setLv = (t, tip) => {
       const el = box.querySelector(".lv");
-      if (!live() || !el || !lv || el.textContent) return;
-      el.textContent = lv.t;
-      el.title = lv.tip;
+      if (!el || !t || lvSet) return;
+      lvSet = true;
+      el.textContent = t;
+      el.title = tip || t;
       el.hidden = false;
+    };
+    const paint = () => {
+      if (!live()) return;
+      const cur = all.find(r => r.src === pick) || all[0];
+      if (srcsEl) srcsEl.innerHTML = all.length > 1 ? all.map(r => `<button type="button" class="sp${r === cur ? " on" : ""}" data-src="${esc(r.src)}">${esc(r.src)}</button>`).join("") : "";
+      if (defsEl) defsEl.innerHTML = cur ? defsHtml(cur, opts.pick) : all.length || !pendingNow ? "" : '<div class="loading">Looking it up…</div>';
+      const prs = box.querySelector(".prs"), voiced = all.find(r => r.say.some(x => x.k === "UK") && r.say.some(x => x.k === "US")) || all.find(r => r.say.length);
+      if (prs) prs.innerHTML = prsHtml(voiced, term);
+      if (exsEl) {
+        const exSrc = cur && cur.ex.length ? cur : all.find(r => r.ex.length);
+        exsEl.innerHTML = ownHtml + exsHtml(exSrc && exSrc.ex, term, opts.own || "", opts.own ? 2 : 3);
+      }
+      const src = box.querySelector(".src");
+      if (src) src.textContent = cur ? cur.src : "";
+      const lvd = all.find(r => /^([ABC][12]|N[1-5])$/.test(r.lv || ""));
+      if (lvd) setLv(lvd.lv, /^N/.test(lvd.lv) ? "JLPT " + lvd.lv : "CEFR " + lvd.lv);
+      const rd = box.querySelector(".tip-r, .reading"), rr = all.find(r => r.reading);
+      if (rd && rr && !rd.textContent) rd.textContent = rr.reading;
+      const au = voiced && (voiced.say.find(x => x.k === "US" && x.audio) || voiced.say.find(x => x.audio));
+      box.dataset.audio = au ? au.audio : "";
+      opts.after && opts.after();
+    };
+    let pendingNow = [ "en", "zh", "ja", "ko" ].includes(lang) && !dict.isLong(term);
+    if (srcsEl) srcsEl.onclick = e => {
+      const b = e.target.closest(".sp");
+      if (!b) return;
+      e.stopPropagation();
+      pick = b.dataset.src;
+      paint();
+    };
+    paint();
+    dict.level(lang, term).then(lv => {
+      if (!live() || !lv) return;
+      setLv(lv.t, lv.tip);
       opts.after && opts.after();
     });
-    dict.lookup(lang, term).then(r => {
-      if (!live()) return;
-      if (defsEl) defsEl.innerHTML = defsHtml(r, opts.pick);
-      const prs = box.querySelector(".prs");
-      if (prs) prs.innerHTML = prsHtml(r, term);
-      const exs = box.querySelector(".exs");
-      if (exs && r) exs.insertAdjacentHTML("beforeend", exsHtml(r, term, opts.own || "", opts.own ? 2 : 3));
-      const src = box.querySelector(".src");
-      if (src && r) src.textContent = r.src;
-      const lvEl = box.querySelector(".lv");
-      if (lvEl && r && /^[ABC][12]$/.test(r.lv || "")) {
-        lvEl.textContent = r.lv;
-        lvEl.title = "CEFR " + r.lv;
-        lvEl.hidden = false;
-      }
-      const rd = box.querySelector(".tip-r, .reading");
-      if (rd && r && r.reading && !rd.textContent) rd.textContent = r.reading;
-      if (r) box.dataset.audio = (r.say.find(x => x.k === "US" && x.audio) || r.say.find(x => x.audio) || {}).audio || "";
-      opts.after && opts.after();
+    dict.lookup(lang, term, (r, list) => {
+      all = list.slice();
+      paint();
+    }).then(list => {
+      pendingNow = false;
+      all = list.slice();
+      paint();
     });
   }
   function placeTip() {
@@ -413,7 +447,7 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
     delete tip.dataset.side;
     const reading = langOf(k.term) === "zh" && window.pinyinPro ? pinyinPro.pinyin(k.term).replace(/\s+([，。？！、；：,.?!;:])/g, "$1") : "";
     const own = k.sentence || "";
-    tip.innerHTML = `<div class="tip-top"><div class="tip-word"><b>${esc(k.term)}</b><span class="lv" hidden></span></div><button type="button" class="tip-say" data-say="${esc(k.term)}" aria-label="Listen" title="Listen">${SPEAK_ICON}</button></div><div class="prs"></div><div class="tip-r">${esc(reading)}</div>${k.meaning ? `<div class="tip-m">${esc(k.meaning)}</div>` : ""}<div class="defs"></div><div class="exs">${own ? `<p class="own">${markedSentence(own, mark.textContent.trim() || k.term)}</p>` : ""}</div>${k.notes ? `<div class="tnotes">${esc(k.notes)}</div>` : ""}<div class="tip-l"><span>${esc(k.lesson || "")}</span><span class="src"></span></div>`;
+    tip.innerHTML = `<div class="tip-top"><div class="tip-word"><b>${esc(k.term)}</b><span class="lv" hidden></span></div><button type="button" class="tip-say" data-say="${esc(k.term)}" aria-label="Listen" title="Listen">${SPEAK_ICON}</button></div><div class="prs"></div><div class="tip-r">${esc(reading)}</div>${k.meaning ? `<div class="tip-m">${esc(k.meaning)}</div>` : ""}<div class="srcs"></div><div class="defs"></div><div class="exs">${own ? `<p class="own">${markedSentence(own, mark.textContent.trim() || k.term)}</p>` : ""}</div>${k.notes ? `<div class="tnotes">${esc(k.notes)}</div>` : ""}<div class="tip-l"><span>${esc(k.lesson || "")}</span><span class="src"></span></div>`;
     if (!reading) tip.querySelector(".tip-r").remove();
     placeTip();
     const me = mark;
@@ -598,7 +632,7 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
     card.innerHTML = `<div class="head"><span class="icons"><button class="icon say" title="Listen" aria-label="Listen">🔊</button><button class="icon tr-btn" title="Translate the sentence" aria-label="Translate the sentence"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M3 5h8M7 3v2M5 5c0 3 2 5 5 6M9 5c0 3-2 5-5 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 17l3-7 3 7M12 15h4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="icon close" title="Close (Esc)" aria-label="Close">✕</button></span><div class="term" contenteditable="plaintext-only" spellcheck="false" role="textbox" aria-label="Word"></div></div>
 <div class="reading"></div>
 <div class="meta"><span class="lv" hidden></span><div class="prs"></div></div>
-<div class="body"><div class="field meaning" contenteditable="plaintext-only" role="textbox" data-placeholder="Translating…" aria-label="Meaning"></div><div class="alts"></div><div class="defs"></div>
+<div class="body"><div class="field meaning" contenteditable="plaintext-only" role="textbox" data-placeholder="Translating…" aria-label="Meaning"></div><div class="alts"></div><div class="srcs"></div><div class="defs"></div>
 <div class="sent-view"></div><textarea class="field sentence" rows="1" aria-label="Sentence" hidden></textarea><div class="sub sent-tr"></div><div class="exs"></div><div class="sub src"></div>
 <div class="note"></div>
 <div class="foot"><select class="lesson" aria-label="Lesson">${lessonOptions()}</select><button class="btn add">Add</button></div></div>`;
@@ -670,7 +704,7 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
     let dictToken = 0;
     const lookDict = () => {
       const t = termEl.value.trim(), token = ++dictToken;
-      [ ".defs", ".prs", ".exs", ".src" ].forEach(sel => $(sel).innerHTML = "");
+      [ ".defs", ".prs", ".exs", ".src", ".srcs" ].forEach(sel => $(sel).innerHTML = "");
       const lv = $(".lv");
       lv.textContent = "";
       lv.hidden = true;

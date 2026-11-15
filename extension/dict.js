@@ -1,10 +1,10 @@
 (() => {
   if (window.top !== window || window.wkpDict) return;
   const CJK = /[㐀-鿿豈-﫿]/, KANA = /[぀-ヿ]/, HANGUL = /[가-힯]/;
-  const POS = { noun: "noun", verb: "verb", adjective: "adj", adverb: "adv", pronoun: "pron", preposition: "prep", conjunction: "conj", interjection: "interj", abbreviation: "abbr", particle: "part", phrase: "phrase", prefix: "prefix", suffix: "suffix", "phrasal verb": "phrasal verb", idiom: "idiom", determiner: "det", exclamation: "excl", n: "noun", v: "verb", adj: "adj", adv: "adv", "명사": "noun", "동사": "verb", "형용사": "adj", "부사": "adv" };
-  const MAX = 300;
-  const mem = new Map(), pending = new Map(), miss = new Set();
-  let store = null, storeJob = null, queue = Promise.resolve();
+  const POS = { noun: "noun", verb: "verb", adjective: "adj", adverb: "adv", pronoun: "pron", preposition: "prep", conjunction: "conj", interjection: "interj", abbreviation: "abbr", particle: "part", phrase: "phrase", prefix: "prefix", suffix: "suffix", "phrasal verb": "phrasal verb", idiom: "idiom", determiner: "det", exclamation: "excl", numeral: "num", "proper noun": "noun", n: "noun", v: "verb", adj: "adj", adv: "adv", "명사": "noun", "동사": "verb", "형용사": "adj", "부사": "adv" };
+  const MAX = 600, KEY = "dictCache2";
+  const mem = new Map(), pending = new Map();
+  let store = null, storeJob = null;
 
   const langOf = s => KANA.test(s) ? "ja" : CJK.test(s) ? "zh" : HANGUL.test(s) ? "ko" : /^[a-z][a-z' -]*$/i.test((s || "").trim()) ? "en" : "";
   const isLong = w => (w || "").trim().length > 30 || /[.!?,;:。！？，；]/.test(w || "");
@@ -19,6 +19,14 @@
     const r = await send({ type: "dictFetch", url });
     return r && r.ok ? r.text : "";
   };
+  const getJson = async url => {
+    const t = await getText(url);
+    try {
+      return t ? JSON.parse(t) : null;
+    } catch {
+      return null;
+    }
+  };
   const doc = text => new DOMParser().parseFromString(text, "text/html");
   const line = (el, drop) => {
     if (!el) return "";
@@ -26,52 +34,183 @@
     if (drop) c.querySelectorAll(drop).forEach(n => n.remove());
     return c.textContent.replace(/\s+/g, " ").trim();
   };
+  const plain = html => line(doc("<div>" + (html || "") + "</div>").body);
   const pos = p => {
     p = (p || "").toLowerCase().replace(/[「」.]/g, "").trim();
     return POS[p] || p;
   };
   const guessPos = d => /^\s*to\s/i.test(d || "") ? "verb" : /^\s*(\(of|of|having|being|very|too|quite)\b/i.test(d || "") ? "adj" : "noun";
-  const pushDef = (defs, p, d) => {
-    d = (d || "").replace(/\s*:\s*$/, "").trim();
-    if (!d || d.length > 220) return;
+  const head = h => (h || "").replace(/^[\s(]+|[\s)]+$/g, "").trim();
+  const pushDef = (defs, p, d, h) => {
+    d = (d || "").replace(/^[:\s]+/, "").replace(/\s*:\s*$/, "").trim();
+    if (!d || d.length > 260) return;
     let g = defs.find(x => x.pos === p);
     if (!g) {
-      if (defs.length >= 4) return;
+      if (defs.length >= 6) return;
       g = { pos: p, d: [] };
       defs.push(g);
     }
-    if (g.d.length < 3 && !g.d.includes(d)) g.d.push(d);
+    if (g.d.length < 5 && !g.d.some(x => x.t === d)) g.d.push(h ? { t: d, h: head(h) } : { t: d });
   };
   const pushEx = (ex, t, tr) => {
     t = (t || "").replace(/\s+/g, " ").trim();
-    if (t && t.length <= 200 && ex.length < 8 && !ex.some(x => x.t === t)) ex.push(tr ? { t, tr } : { t });
+    if (t && t.length <= 220 && ex.length < 10 && !ex.some(x => x.t === t)) ex.push(tr ? { t, tr } : { t });
   };
+  const abs = (u, base) => {
+    try {
+      return u ? new URL(u, base).href : "";
+    } catch {
+      return "";
+    }
+  };
+  const slug = w => encodeURIComponent(w.toLowerCase().replace(/\s+/g, "-"));
 
   async function cambridge(w) {
-    const text = await getText("https://dictionary.cambridge.org/dictionary/english/" + encodeURIComponent(w.toLowerCase().replace(/\s+/g, "-")));
+    const text = await getText("https://dictionary.cambridge.org/dictionary/english/" + slug(w));
     if (!text) return null;
     const d = doc(text), defs = [], ex = [];
     d.querySelectorAll(".pr.entry-body__el, .pr.idiom-block").forEach(en => {
       const p = pos(line(en.querySelector(".pos-header .pos, .dpos")));
       en.querySelectorAll(".def-block").forEach(b => {
-        pushDef(defs, p, line(b.querySelector(".def")));
+        const sense = b.closest(".dsense");
+        pushDef(defs, p, line(b.querySelector(".def")), sense && line(sense.querySelector(".dsense_gw")));
         b.querySelectorAll(".examp .eg").forEach(e => pushEx(ex, line(e)));
       });
     });
     d.querySelectorAll(".degs .deg").forEach(e => pushEx(ex, line(e)));
     const src = sel => {
       const a = d.querySelector(sel + ' source[type="audio/mpeg"]');
-      return a ? new URL(a.getAttribute("src"), "https://dictionary.cambridge.org/").href : "";
+      return a ? abs(a.getAttribute("src"), "https://dictionary.cambridge.org/") : "";
     };
-    const ipa = sel => line(d.querySelector(sel + " .ipa"));
     const lv = d.querySelector(".epp-xref");
     return {
-      src: "Cambridge",
-      defs,
-      ex,
-      say: [ { k: "UK", ipa: ipa(".uk.dpron-i"), audio: src(".uk") }, { k: "US", ipa: ipa(".us.dpron-i"), audio: src(".us") } ].filter(x => x.ipa || x.audio),
+      defs, ex,
+      say: [ { k: "UK", ipa: line(d.querySelector(".uk.dpron-i .ipa")), audio: src(".uk") }, { k: "US", ipa: line(d.querySelector(".us.dpron-i .ipa")), audio: src(".us") } ].filter(x => x.ipa || x.audio),
       lv: lv ? lv.textContent.trim() : ""
     };
+  }
+
+  async function oxford(w) {
+    const text = await getText("https://www.oxfordlearnersdictionaries.com/definition/english/" + slug(w));
+    if (!text) return null;
+    const d = doc(text), defs = [], ex = [];
+    const entry = d.querySelector(".entry");
+    if (!entry) return null;
+    const p = pos(line(entry.querySelector(".webtop .pos")));
+    entry.querySelectorAll("li.sense").forEach(s => {
+      const g = s.closest(".shcut-g");
+      pushDef(defs, p, line(s.querySelector(".def")), g && line(g.querySelector(".shcut")) || line(s.querySelector(".cf")));
+      s.querySelectorAll(".examples .x").forEach(e => pushEx(ex, line(e)));
+    });
+    const phon = sel => line(entry.querySelector(sel + " .phon")).replace(/^\/|\/$/g, "");
+    const snd = sel => abs((entry.querySelector(sel + " .sound") || { getAttribute: () => "" }).getAttribute("data-src-mp3"), "https://www.oxfordlearnersdictionaries.com/");
+    const sym = entry.querySelector('.symbols [class*="sym_"]');
+    const lvm = sym && sym.className.match(/sym_([abc][12])/i);
+    return {
+      defs, ex,
+      say: [ { k: "UK", ipa: phon(".phons_br"), audio: snd(".phons_br") }, { k: "US", ipa: phon(".phons_n_am"), audio: snd(".phons_n_am") } ].filter(x => x.ipa || x.audio),
+      lv: lvm ? lvm[1].toUpperCase() : ""
+    };
+  }
+
+  async function longman(w) {
+    const text = await getText("https://www.ldoceonline.com/dictionary/" + slug(w));
+    if (!text) return null;
+    const d = doc(text), defs = [], ex = [];
+    const entries = [ ...d.querySelectorAll(".ldoceEntry") ];
+    if (!entries.length) return null;
+    entries.forEach(en => {
+      const p = pos(line(en.querySelector(".Head .POS")));
+      en.querySelectorAll(".Sense").forEach(s => {
+        pushDef(defs, p, line(s.querySelector(".DEF")), line(s.querySelector(".SIGNPOST")));
+        s.querySelectorAll(".EXAMPLE").forEach(e => pushEx(ex, line(e)));
+      });
+    });
+    const first = entries[0], a = sel => (first.querySelector(".Head " + sel) || { getAttribute: () => "" }).getAttribute("data-src-mp3") || "";
+    const ipa = line(first.querySelector(".Head .PRON"));
+    return { defs, ex, say: [ { k: "UK", ipa, audio: a(".brefile") }, { k: "US", ipa: "", audio: a(".amefile") } ].filter(x => x.ipa || x.audio) };
+  }
+
+  async function collins(w) {
+    const text = await getText("https://www.collinsdictionary.com/dictionary/english/" + slug(w));
+    if (!text) return null;
+    const d = doc(text), defs = [], ex = [];
+    d.querySelectorAll(".dictionary.Cob_Adv_Brit .hom, .dictionary .hom").forEach(h => {
+      const p = pos(line(h.querySelector(".gramGrp .pos, .pos")));
+      h.querySelectorAll(".sense").forEach(s => {
+        pushDef(defs, p, line(s.querySelector(".def")), line(s.querySelector(".lbl.type-subj, .lbl.type-syntax")));
+        s.querySelectorAll(".cit.type-example .quote").forEach(e => pushEx(ex, line(e)));
+      });
+    });
+    return defs.length ? { defs, ex, say: [] } : null;
+  }
+
+  async function webster(w) {
+    const text = await getText("https://www.merriam-webster.com/dictionary/" + encodeURIComponent(w.toLowerCase()));
+    if (!text) return null;
+    const d = doc(text), defs = [], ex = [];
+    d.querySelectorAll('[id^="dictionary-entry"]').forEach(en => {
+      const p = pos(line(en.querySelector(".parts-of-speech, .fl")));
+      en.querySelectorAll(".sense").forEach(s => {
+        pushDef(defs, p, line(s.querySelector(".dtText"), ".ex-sent, .wi"), line(s.querySelector(".sl, .sgram")));
+        s.querySelectorAll(".ex-sent").forEach(e => pushEx(ex, line(e)));
+      });
+    });
+    const pr = d.querySelector(".prons-entries-list-inline a[data-file]");
+    let audio = "";
+    if (pr) {
+      const f = pr.getAttribute("data-file"), dir = pr.getAttribute("data-dir") || (/^bix/.test(f) ? "bix" : /^gg/.test(f) ? "gg" : /^[0-9_]/.test(f) ? "number" : f[0]);
+      audio = "https://media.merriam-webster.com/audio/prons/en/us/mp3/" + dir + "/" + f + ".mp3";
+    }
+    const ipa = line(d.querySelector(".prons-entries-list-inline .pr, .prons-entries-list-inline a"));
+    return defs.length ? { defs, ex, say: audio || ipa ? [ { k: "US", ipa: "", audio } ] : [] } : null;
+  }
+
+  async function vocabularyCom(w) {
+    const text = await getText("https://www.vocabulary.com/dictionary/" + encodeURIComponent(w.toLowerCase()));
+    if (!text) return null;
+    const d = doc(text), defs = [], ex = [];
+    const blurb = line(d.querySelector(".word-area .short"));
+    d.querySelectorAll(".word-definitions li").forEach(li => {
+      const def = li.querySelector(".definition");
+      if (!def) return;
+      const p = pos(line(def.querySelector(".pos-icon")));
+      pushDef(defs, p, line(def, ".pos-icon"));
+      li.querySelectorAll(".example").forEach(e => pushEx(ex, line(e).replace(/^["“]|["”]$/g, "")));
+    });
+    return defs.length ? { defs, ex, say: [], note: blurb.slice(0, 400) } : null;
+  }
+
+  async function freeDict(w) {
+    const j = await getJson("https://api.dictionaryapi.dev/api/v2/entries/en/" + encodeURIComponent(w.toLowerCase()));
+    if (!Array.isArray(j)) return null;
+    const defs = [], ex = [], say = [];
+    j.forEach(en => {
+      (en.phonetics || []).forEach(ph => {
+        const k = /-uk\./.test(ph.audio || "") ? "UK" : /-us\./.test(ph.audio || "") ? "US" : "";
+        if ((ph.text || ph.audio) && !say.some(x => x.k === k)) say.push({ k, ipa: (ph.text || "").replace(/^\/|\/$/g, ""), audio: ph.audio || "" });
+      });
+      (en.meanings || []).forEach(m => (m.definitions || []).forEach(x => {
+        pushDef(defs, pos(m.partOfSpeech), x.definition);
+        if (x.example) pushEx(ex, x.example);
+      }));
+    });
+    return defs.length ? { defs, ex, say: say.filter(x => x.ipa || x.audio).slice(0, 2) } : null;
+  }
+
+  async function wiktionary(w, lang) {
+    const j = await getJson("https://en.wiktionary.org/api/rest_v1/page/definition/" + encodeURIComponent(w));
+    const list = j && j[lang];
+    if (!Array.isArray(list)) return null;
+    const defs = [], ex = [];
+    list.forEach(en => (en.definitions || []).forEach(x => {
+      const t = plain(x.definition);
+      const m = t.match(/^\(([^)]{1,40})\)\s*(.+)$/);
+      pushDef(defs, pos(en.partOfSpeech), m ? m[2] : t, m ? m[1] : "");
+      (x.parsedExamples || []).forEach(e => pushEx(ex, plain(e.example), plain(e.translation)));
+      if (!x.parsedExamples) (x.examples || []).forEach(e => pushEx(ex, plain(e)));
+    }));
+    return defs.length ? { defs, ex, say: [] } : null;
   }
 
   async function youdao(w) {
@@ -87,28 +226,39 @@
     const posOf = def => {
       const key = def.toLowerCase();
       for (const [t, p] of terms) if (key === t || key.split(/[;,]\s*/).includes(t)) return p;
-      return /^\s*to\s/i.test(def) ? "verb" : first || guessPos(def);
+      return /^\s*to\s/i.test(def) ? "verb" : first || "";
     };
     d.querySelectorAll(".basic .trans-ce").forEach(el => {
       const t = line(el);
       pushDef(defs, posOf(t), t);
     });
     d.querySelectorAll(".blng_sents_part li").forEach(li => pushEx(ex, line(li.querySelector(".sen-eng")), line(li.querySelector(".sen-ch"))));
-    return { src: "Youdao", defs, ex, say: [] };
+    return defs.length || ex.length ? { defs, ex, say: [] } : null;
+  }
+
+  async function mdbg(w) {
+    const text = await getText("https://www.mdbg.net/chinese/dictionary?page=worddict&wdrst=0&wdqb=" + encodeURIComponent(w));
+    if (!text) return null;
+    const d = doc(text), defs = [];
+    let reading = "";
+    d.querySelectorAll("tr.row").forEach(tr => {
+      const hz = line(tr.querySelector(".hanzi"));
+      if (hz.replace(/\s+/g, "") !== w && !hz.split(/\s+/).includes(w)) return;
+      if (!reading) reading = line(tr.querySelector(".pinyin"));
+      line(tr.querySelector(".defs")).split(/\s*\/\s*/).forEach(t => pushDef(defs, "", t));
+    });
+    return defs.length ? { defs, ex: [], say: [], reading } : null;
   }
 
   async function japanese(w) {
-    const [jt, text] = await Promise.all([ getText("https://jisho.org/api/v1/search/words?keyword=" + encodeURIComponent(w)), getText("https://ejje.weblio.jp/sentence/content/" + encodeURIComponent(w)) ]);
+    const [j, text] = await Promise.all([ getJson("https://jisho.org/api/v1/search/words?keyword=" + encodeURIComponent(w)), getText("https://ejje.weblio.jp/sentence/content/" + encodeURIComponent(w)) ]);
     const defs = [], ex = [];
-    let j = null;
-    try {
-      j = jt && JSON.parse(jt);
-    } catch {}
     const hit = j && (j.data || []).find(x => (x.japanese || []).some(y => y.word === w || y.reading === w));
-    if (hit) hit.senses.forEach(sn => pushDef(defs, pos((sn.parts_of_speech || [])[0] || ""), (sn.english_definitions || []).join("; ")));
+    if (hit) hit.senses.forEach(sn => pushDef(defs, pos((sn.parts_of_speech || [])[0] || ""), (sn.english_definitions || []).join("; "), (sn.tags || [])[0] || (sn.info || [])[0] || ""));
     if (text) doc(text).querySelectorAll(".qotC").forEach(q => pushEx(ex, line(q.querySelector(".qotCJJ"), ".addToSlBtnCntner"), line(q.querySelector(".qotCJE"), "span, i, audio")));
     const reading = hit && (hit.japanese || []).map(y => y.reading).find(r => r && r !== w) || "";
-    return hit || text ? { src: "Jisho · Weblio", defs, ex, say: [], reading } : null;
+    const lv = hit && (hit.jlpt || [])[0] || "";
+    return defs.length || ex.length ? { defs, ex, say: [], reading, lv: lv ? lv.replace(/^jlpt-n/i, "N") : "" } : null;
   }
 
   async function korean(w) {
@@ -128,14 +278,23 @@
       } catch {}
     });
     if (te) doc(te).querySelectorAll(".search_result li a").forEach(a => pushEx(ex, line(a).replace(/\((Word|단어)\s*:[^)]*\)\s*$/, "").trim()));
-    return { src: "krdict", defs, ex: ex.filter(x => x.t.includes(w)), say: /^https:\/\//.test(audio) ? [ { k: "", ipa: "", audio } ] : [] };
+    const out = { defs, ex: ex.filter(x => x.t.includes(w)), say: /^https:\/\//.test(audio) ? [ { k: "", ipa: "", audio } ] : [] };
+    return out.defs.length || out.ex.length ? out : null;
   }
+
+  const SOURCES = {
+    en: [ [ "Cambridge", cambridge ], [ "Oxford", oxford ], [ "Longman", longman ], [ "Collins", collins ], [ "Merriam-Webster", webster ], [ "Vocabulary.com", vocabularyCom ], [ "Free Dictionary", freeDict ], [ "Wiktionary", w => wiktionary(w, "en") ] ],
+    zh: [ [ "Youdao", youdao ], [ "MDBG", mdbg ], [ "Wiktionary", w => wiktionary(w, "zh") ] ],
+    ja: [ [ "Jisho · Weblio", japanese ], [ "Wiktionary", w => wiktionary(w, "ja") ] ],
+    ko: [ [ "krdict", korean ], [ "Wiktionary", w => wiktionary(w, "ko") ] ]
+  };
 
   function loadStore() {
     if (store) return Promise.resolve(store);
     if (!storeJob) storeJob = new Promise(res => {
       try {
-        chrome.storage.local.get("dictCache").then(d => res(store = d.dictCache || {}), () => res(store = {}));
+        chrome.storage.local.get(KEY).then(d => res(store = d[KEY] || {}), () => res(store = {}));
+        chrome.storage.local.remove("dictCache");
       } catch {
         res(store = {});
       }
@@ -143,37 +302,61 @@
     return storeJob;
   }
 
+  let saveTimer = 0;
   function saveStore() {
-    const keys = Object.keys(store);
-    if (keys.length > MAX) keys.sort((a, b) => (store[a].at || 0) - (store[b].at || 0)).slice(0, keys.length - MAX).forEach(k => delete store[k]);
-    try {
-      chrome.storage.local.set({ dictCache: store });
-    } catch {}
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      const keys = Object.keys(store);
+      if (keys.length > MAX) keys.sort((a, b) => (store[a].at || 0) - (store[b].at || 0)).slice(0, keys.length - MAX).forEach(k => delete store[k]);
+      try {
+        chrome.storage.local.set({ [KEY]: store });
+      } catch {}
+    }, 300);
   }
 
-  function lookup(lang, w) {
+  function lookup(lang, w, onEach) {
     w = (w || "").replace(/\s+/g, " ").trim();
     lang = lang || langOf(w);
+    const list = SOURCES[lang];
+    if (!w || isLong(w) || !list) return Promise.resolve([]);
     const key = lang + "|" + w.toLowerCase();
-    if (mem.has(key)) return Promise.resolve(mem.get(key));
-    if (!w || isLong(w) || miss.has(key) || ![ "en", "zh", "ja", "ko" ].includes(lang)) return Promise.resolve(null);
-    if (pending.has(key)) return pending.get(key);
-    const run = () => (lang === "en" ? cambridge(w) : lang === "zh" ? youdao(w) : lang === "ja" ? japanese(w) : korean(w)).catch(() => null);
+    if (mem.has(key)) {
+      const have = mem.get(key);
+      if (onEach) have.forEach(r => onEach(r, have));
+      return Promise.resolve(have);
+    }
+    if (pending.has(key)) {
+      const job = pending.get(key);
+      if (onEach) job.listeners.push(onEach);
+      return job;
+    }
+    const got = [], listeners = onEach ? [ onEach ] : [];
+    const order = name => list.findIndex(x => x[0] === name);
+    const add = r => {
+      got.push(r);
+      got.sort((a, b) => order(a.src) - order(b.src));
+      listeners.forEach(f => f(r, got));
+    };
     const job = loadStore().then(st => {
-      if (st[key]) return st[key];
-      const next = queue.then(run, run);
-      queue = next.catch(() => null);
-      return next.then(r => {
-        if (!r || !(r.defs.length || r.ex.length || r.say.length)) return null;
-        r.at = Date.now();
-        st[key] = r;
+      const saved = st[key];
+      if (saved && Date.now() - (saved.at || 0) < 30 * 864e5) {
+        saved.list.forEach(add);
+        return got;
+      }
+      return Promise.all(list.map(([ name, fn ]) => Promise.resolve().then(() => fn(w)).catch(() => null).then(r => {
+        if (!r || !(r.defs.length || r.ex.length || r.say.length)) return;
+        r.src = name;
+        add(r);
+      }))).then(() => {
+        st[key] = { at: Date.now(), list: got };
         saveStore();
-        return r;
+        return got;
       });
     }).then(r => {
-      if (r) mem.set(key, r); else miss.add(key);
+      mem.set(key, r);
       return r;
     }).finally(() => pending.delete(key));
+    job.listeners = listeners;
     pending.set(key, job);
     return job;
   }
@@ -185,5 +368,5 @@
     return levels.get(key);
   }
 
-  window.wkpDict = { lookup, level, langOf, isLong, guessPos };
+  window.wkpDict = { lookup, level, langOf, isLong, guessPos, sources: lang => (SOURCES[lang] || []).map(x => x[0]) };
 })();

@@ -530,6 +530,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-52 | `ea237a8` | Từ xanh không còn bị cắt mất nửa chữ: bỏ hẳn lớp mặt nạ đo theo phông (đo sai với phông khác), bỏ luôn bộ theo dõi DOM của nó |
 | LOOKUP-53 | `059836e` | Extension 1.6.23: trỏ vào từ đã có trên trang web hiện con trỏ kính lúp và thẻ giống popup của app (từ 28px, 🔊, nghĩa xanh, câu của bạn tô vàng, tên bài), sáng/tối theo trang |
 | LOOKUP-54 | `20e975d` | Extension 1.6.24: thẻ từ điển đầy đủ (cấp độ, UK/US IPA + tiếng thật, định nghĩa theo loại từ, ví dụ có dịch, Notes, nguồn); thẻ chọn từ mới cũng có, bấm định nghĩa thành nghĩa; thẻ không che chữ; nút cập nhật nằm dưới chữ |
+| LOOKUP-55 | `pending` | Extension 1.6.25: nhiều từ điển (Anh 8, Trung 3, Nhật 2, Hàn 2) có hàng tên để chuyển; đề mục cho từng nghĩa |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
