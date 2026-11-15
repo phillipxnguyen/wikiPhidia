@@ -535,7 +535,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-56 | `50d35a8` | 🌐 Web: chip cạnh 📚 mở trang liệt kê các trang đã đọc (tiêu đề, trang, ngày, số từ, 🆕 ⏳, ↗), bấm mở danh sách từ; ô định nghĩa thoáng hơn (8px 12px) ở app và extension 1.6.26 |
 | LOOKUP-57 | `f949400` | Phần đầu mặt sau flashcard (từ và nghĩa) không còn tra từ khi trỏ/chạm |
 | LOOKUP-58 | `3c72694` | Bỏ 🌐 Web riêng: các trang đọc nằm ở khối 🌐 From the web trong trang từng ngôn ngữ; extension 1.6.27 bỏ ô chọn bài, thẻ to hơn; nhóm adj/adv cách 6px |
-| LOOKUP-59 | `pending` | Nhãn loại từ (verb…) ngang dòng đầu của ô định nghĩa, ở app và extension 1.6.28 |
+| LOOKUP-59 | `9f6f9b5` | Nhãn loại từ (verb…) ngang dòng đầu của ô định nghĩa, ở app và extension 1.6.28 |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
