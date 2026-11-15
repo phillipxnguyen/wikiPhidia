@@ -59,7 +59,7 @@
 @media (prefers-color-scheme: dark){.wrap{--sel:#2a4f80;--green:#3cc48d;--green-soft:rgba(60,196,141,.16);--ink:#e8ecf3;--ink-2:#9aa4b4;--line:#323a48;--bg:#1b2029;--bg-2:#242a35;--answer:#6fd3a0;--mark:rgba(240,190,40,.38);}}
 .pick{position:fixed;display:flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border:0;border-radius:16px;background:var(--green);color:#fff;font:700 16px/20px system-ui, sans-serif;box-shadow:0 4px 12px rgba(0,0,0,.25);cursor:pointer;}
 .pick:hover{filter:brightness(1.08);}
-.card{position:fixed;width:440px;max-width:calc(100vw - 24px);padding:20px;border:1px solid var(--line);border-radius:12px;background:var(--bg);box-shadow:0 16px 40px rgba(10,20,40,.22);}
+.card{position:fixed;width:460px;max-width:calc(100vw - 24px);padding:20px;border:1px solid var(--line);border-radius:12px;background:var(--bg);box-shadow:0 16px 40px rgba(10,20,40,.22);}
 .head{display:flow-root;}
 .icons{float:right;display:flex;margin-left:8px;}
 .term{display:block;min-height:30px;padding:0;margin:0;border:0;border-radius:0;font-size:22px;line-height:30px;font-weight:700;color:var(--ink);background:none;outline:none;cursor:text;overflow-wrap:anywhere;}
@@ -575,7 +575,7 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
 
 
   // The lesson last picked on this website: the next words from it go there too, until another is picked.
-  function anchorBox(el, r, gap, above) {
+  function anchorBox(el, r, gap, above, cover) {
     el.style.maxHeight = "";
     const w = el.offsetWidth, full = el.offsetHeight, edge = 8;
     if (!r) {
@@ -586,8 +586,15 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
     const up = Math.floor(r.top - gap - edge), down = Math.floor(innerHeight - r.bottom - gap - edge);
     let side = el.dataset.side || (above ? up >= full ? "up" : down >= full ? "down" : "" : down >= full ? "down" : up >= full ? "up" : "");
     if (!side) side = up > down ? "up" : "down";
-    if (el.dataset.side && full > (side === "up" ? up : down) && (side === "up" ? down : up) >= full) side = side === "up" ? "down" : "up";
+    if (el.dataset.side && full > (side === "up" ? up : down) && (side === "up" ? down : up) > (side === "up" ? up : down)) side = side === "up" ? "down" : "up";
     el.dataset.side = side;
+    if (cover && full > Math.max(up, down)) {
+      const hh = Math.min(full, innerHeight - 2 * edge);
+      if (hh < full) el.style.maxHeight = hh + "px";
+      el.style.left = Math.round(Math.max(edge, Math.min(innerWidth - w - edge, r.left))) + "px";
+      el.style.top = Math.round(Math.max(edge, Math.min(innerHeight - hh - edge, side === "up" ? r.top - gap - hh : r.bottom + gap))) + "px";
+      return;
+    }
     const room = side === "up" ? up : down, h = Math.min(full, room);
     if (h < full) el.style.maxHeight = Math.max(120, room) + "px";
     el.style.left = Math.round(Math.max(edge, Math.min(innerWidth - w - edge, r.left))) + "px";
@@ -597,7 +604,7 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
   function place(el, range) {
     const r = range && range.getBoundingClientRect ? range.getBoundingClientRect() : null;
     el.anchor = r;
-    anchorBox(el, r, 10, false);
+    anchorBox(el, r, 10, false, true);
   }
 
   function openCard(text, range) {
@@ -690,7 +697,7 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
       lv.textContent = "";
       lv.hidden = true;
       card.dataset.audio = "";
-      if (t) fillDict(card, t, { pick: true, live: () => card && token === dictToken, after: () => card && anchorBox(card, card.anchor, 10, false) });
+      if (t) fillDict(card, t, { pick: true, live: () => card && token === dictToken, after: () => card && anchorBox(card, card.anchor, 10, false, true) });
     };
     const lookUp = () => {
       const t = termEl.value.trim();
