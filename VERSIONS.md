@@ -211,7 +211,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-72 | `e3bab19` | Giọng đọc: bỏ hẳn giọng vui/robot của Apple (Bubbles, Zarvox…), mặt trước nghe luôn đọc giọng ngẫu nhiên, không dùng clip YouTube |
 | FLASH-73 | `5b8c6e4` | Hai từ cùng câu cách nhau ít nhất 10 thẻ (trước chỉ cấm liền nhau), cả phiên flashcard lẫn task; không đủ thẻ thì giãn xa nhất |
 | FLASH-74 | `3a14adc` | Mỗi từ thêm thẻ định nghĩa và thẻ ví dụ (tất cả, mọi từ điển qua extension 1.6.29), lịch riêng; mặt trước Podcast đọc định nghĩa/ví dụ; sửa mất dấu web khi lưu bài |
-| FLASH-75 | `pending` | Sửa: tra từ điển rỗng không còn bị lưu (extension 1.6.30 + app tra lại); tia điện chờ tiếng ở mọi lần đọc giọng máy; Notes từ web không lặp câu và tên bài |
+| FLASH-75 | `82f583e` | Sửa: tra từ điển rỗng không còn bị lưu (extension 1.6.30 + app tra lại); tia điện chờ tiếng ở mọi lần đọc giọng máy; Notes từ web không lặp câu và tên bài |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
