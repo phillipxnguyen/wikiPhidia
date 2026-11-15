@@ -569,13 +569,12 @@ window.onYouTubeIframeAPIReady = function(){
   #viewStudy.offscreen .study-head{position:static;margin:0;padding:0;}
   #viewStudy.offscreen .media-container:not(.warming){width:356px;max-width:none;height:200px;aspect-ratio:auto;margin:0;}
   .vocab-list:not([hidden]){display:block;padding:0;overflow:hidden;}
-  .vocab-list-row[data-key]{display:grid;grid-template-columns:minmax(0, 1fr) auto;grid-template-areas:"term status" "meaning status";column-gap:16px;row-gap:16px;align-items:start;padding:16px 20px;border-top:1px solid var(--border);}
-  .vocab-list-row[data-key] > .vocab-list-term, .vocab-list-row[data-key] > .vocab-list-meaning:not(:has(> *)), .vocab-list-meaning > span:first-child, .vocab-list-meaning .card-notes, .vl-sub-t{text-box:trim-both cap alphabetic;}
+  .vocab-list-row[data-key]{display:grid;grid-template-columns:minmax(0, 1fr);grid-template-areas:"term" "meaning";column-gap:16px;row-gap:16px;align-items:start;padding:16px;border-top:1px solid var(--border);}
+  .vocab-list-row[data-key] > .vocab-list-term, .vocab-list-row[data-key] > .vocab-list-meaning:not(:has(> *)), .vocab-list-meaning > span:first-child, .vocab-list-meaning .card-notes{text-box:trim-both cap alphabetic;}
   .vocab-list-meaning > span:first-child{display:block;}
   .vocab-list-row[data-key] > *{display:block;min-width:0;padding:0;font-size:22px;line-height:30px;}
   .vocab-list-row[data-key] > .vocab-list-term{grid-area:term;}
   .vocab-list-row[data-key] > .vocab-list-meaning{grid-area:meaning;}
-  .vocab-list-row[data-key] > .vocab-list-status{grid-area:status;align-self:center;}
   .vocab-list-row[data-key]:nth-of-type(even){background:var(--row-alt);}
   @media (hover:hover){.vocab-list-row[data-key]:hover{background:var(--accent-soft);}}
   .vocab-list-row.row-selected[data-key]{background:var(--accent-soft);box-shadow:inset 4px 0 var(--accent);}
@@ -584,12 +583,12 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-list-meaning{min-width:0;overflow-wrap:break-word;}
   .vl-subs{display:flex;flex-direction:column;gap:8px;width:100%;margin-top:16px;}
   .vl-sub-list{display:flex;flex-direction:column;gap:6px;}
-  .vl-sub{display:flex;align-items:center;gap:12px;padding:12px 16px;border:1px solid var(--border);border-radius:10px;background:var(--surface);font-size:16px;line-height:24px;cursor:default;}
+  .vl-sub{display:flex;align-items:center;gap:12px;padding:8px;border:1px solid var(--border);border-radius:10px;background:var(--surface);font-size:16px;line-height:24px;cursor:default;}
   .vl-sub-k{flex:none;min-width:48px;padding:0 6px;border-radius:6px;background:color-mix(in srgb, var(--text) 7%, transparent);color:var(--text-2);font-size:13px;line-height:24px;font-weight:700;text-align:center;}
   .vl-sub-t{flex:1;min-width:0;color:var(--text);}
   .vl-sub-t mark{padding:0 2px;border-radius:4px;background:var(--word-mark);color:inherit;}
   .vl-sub-s{flex:none;font-size:13px;line-height:24px;color:var(--text-2);white-space:nowrap;}
-  .vl-sub > :not(.vl-sub-t){margin-block:-6px;align-self:center;}
+  .vl-sub > :not(.vl-sub-t){align-self:center;}
   .vl-sub-st{flex:none;font-size:16px;line-height:24px;}
   .vl-sub-del{flex:none;width:24px;height:24px;padding:0;border:0;border-radius:12px;background:none;color:var(--text-2);font-size:13px;line-height:24px;cursor:pointer;}
   @media (hover:hover){.vl-sub-del:hover{background:var(--danger-soft, rgba(220,60,60,.12));color:var(--danger, #c0392b);}}
@@ -19840,7 +19839,7 @@ function readerState() {
     words: isVocabOnlyLesson(l)
   }));
   const words = [];
-  library.filter(l => !isVirtualId(l.id) && !bookHidden(l)).forEach(l => lessonVocabItems(readerCards(l)).forEach(i => !i.sub && words.push({
+  library.filter(l => !isVirtualId(l.id) && !bookHidden(l)).forEach(l => wordHeads(lessonVocabItems(readerCards(l))).forEach(i => words.push({
     term: i.term,
     meaning: i.meaning,
     sentence: (vocabContext(i).sentence || "").replace(/\s+/g, " ").trim().slice(0, 300),
@@ -20342,10 +20341,11 @@ function lessonVocabItems(cards) {
   const added = item => item.card.vocab && item.card.vocab[item.key] && item.card.vocab[item.key].added || 0;
   items.sort((a, b) => added(b) - added(a));
   const idx = wordDictIndex();
-  if (!idx.size) return items;
+  const gone = item => item.card.vocab && item.card.vocab[item.key] && item.card.vocab[item.key].due >= SUB_GONE;
+  if (!idx.size) return items.filter(i => !gone(i));
   const out = [];
   items.forEach(item => {
-    out.push(item);
+    if (!gone(item)) out.push(item);
     if (!(item.meaning || "").trim()) return;
     const entry = idx.get(item.tkey || normalizeVocabText(item.term));
     if (entry) subItemsOf(item, entry).forEach(x => out.push(x));
@@ -20372,6 +20372,42 @@ function wordDictIndex() {
     }));
   }
   return wordDictIdx;
+}
+
+function subParentKey(key) {
+  return key.startsWith("x:") ? key.slice(2, key.lastIndexOf("|")) : key;
+}
+
+function wordHeads(items) {
+  const heads = [], seen = new Set;
+  items.forEach(i => {
+    const k = i.sub ? subParentKey(i.key) : i.key;
+    if (seen.has(k)) return;
+    seen.add(k);
+    heads.push(i.sub ? Object.assign({}, i, {
+      key: k,
+      sub: undefined,
+      gone: true
+    }) : i);
+  });
+  return heads;
+}
+
+function vocabPickTargets(key, items) {
+  if (!key) return null;
+  items = items || lessonVocabItems(vocabSource());
+  if (!key.startsWith("g:")) {
+    const one = items.find(i => i.key === key);
+    return one ? {
+      head: null,
+      items: [ one ]
+    } : null;
+  }
+  const k = key.slice(2), head = wordHeads(items).find(h => h.key === k);
+  return head ? {
+    head: head,
+    items: items.filter(i => i.key === k || i.sub && subParentKey(i.key) === k)
+  } : null;
 }
 
 function textHash(t) {
@@ -20626,9 +20662,11 @@ function currentVocabItem() {
   return null;
 }
 
-function subsListHtml(item, subs) {
-  if (!subs || !subs.length) return "";
-  return `<div class="vl-subs"><div class="vl-sub-list">${subs.map(x => `<div class="vl-sub" data-sub="${escapeAttr(x.key)}"><span class="vl-sub-k">${x.sub.kind === "def" ? escapeHtml(x.sub.p || "def") : "ex"}</span><span class="vl-sub-t">${x.sub.kind === "ex" ? vocabSentenceHtml(x.sub.t, item.term, item.card) : escapeHtml(x.sub.t)}</span>${x.sub.s ? `<span class="vl-sub-s">${escapeHtml(x.sub.s)}</span>` : ""}<span class="vl-sub-st">${vocabStatusIcon(vocabStateOf(x))}</span><button type="button" class="vl-sub-del" aria-label="Delete this card" title="Delete this card">✕</button></div>`).join("")}</div></div>`;
+function cardsListHtml(item, subs) {
+  const sentence = vocabContext(item).sentence || "";
+  const own = item.gone ? [] : [ `<div class="vl-sub vl-own" data-sub="${escapeAttr(item.key)}"><span class="vl-sub-k">${sentence ? "sent" : "word"}</span><span class="vl-sub-t">${sentence ? vocabSentenceHtml(sentence, item.term, item.card) : escapeHtml(item.term)}</span><span class="vl-sub-st">${vocabStatusIcon(vocabStateOf(item))}</span><button type="button" class="vl-sub-del" aria-label="Delete this card" title="Delete this card">✕</button></div>` ];
+  const lines = own.concat(subs.map(x => `<div class="vl-sub" data-sub="${escapeAttr(x.key)}"><span class="vl-sub-k">${x.sub.kind === "def" ? escapeHtml(x.sub.p || "def") : "ex"}</span><span class="vl-sub-t">${x.sub.kind === "ex" ? vocabSentenceHtml(x.sub.t, item.term, item.card) : escapeHtml(x.sub.t)}</span>${x.sub.s ? `<span class="vl-sub-s">${escapeHtml(x.sub.s)}</span>` : ""}<span class="vl-sub-st">${vocabStatusIcon(vocabStateOf(x))}</span><button type="button" class="vl-sub-del" aria-label="Delete this card" title="Delete this card">✕</button></div>`));
+  return lines.length ? `<div class="vl-subs"><div class="vl-sub-list">${lines.join("")}</div></div>` : "";
 }
 
 document.getElementById("vocabList").addEventListener("click", e => {
@@ -20637,7 +20675,7 @@ document.getElementById("vocabList").addEventListener("click", e => {
   e.stopPropagation();
   if (!t.matches(".vl-sub-del")) return;
   const row = t.closest(".vl-sub"), item = row && lessonVocabItems(vocabSource()).find(i => i.key === row.dataset.sub);
-  if (item) deleteVocabEntry(item, row);
+  if (item) deleteVocabEntry(item, row, true);
 }, true);
 
 function vocabStatusIcon(st) {
@@ -21231,11 +21269,6 @@ function showVocabDeck(stage, item) {
   setTimeout(fitVocabCards, 0);
 }
 
-function wordNotesView(item) {
-  const noted = noteSentence(item);
-  return noted ? `<div>${vocabSentenceHtml(noted.sentence, item.term, item.card, true)}</div>` + noted.rest : wordNotesOf(item);
-}
-
 function wordLiIn(box, key, tkey) {
   return [ ...box.querySelectorAll("li") ].find(li => {
     const e = liVocabEntry(li);
@@ -21448,7 +21481,7 @@ function renderVocab() {
     vocabListLessonId = currentLessonId;
     vocabListLimit = VOCAB_LIST_PAGE;
   }
-  const words = items.filter(i => !i.sub);
+  const words = wordHeads(items);
   const editingAt = vocabEditingInList ? words.findIndex(i => i.key === vocabEditingKey) : -1;
   if (editingAt >= vocabListLimit) vocabListLimit = editingAt + 1;
   const shown = words.slice(0, vocabListLimit);
@@ -21463,11 +21496,14 @@ function renderVocab() {
   const subsOf = new Map;
   items.forEach(i => {
     if (!i.sub) return;
-    const k = i.key.slice(2, i.key.lastIndexOf("|"));
+    const k = subParentKey(i.key);
     if (!subsOf.has(k)) subsOf.set(k, []);
     subsOf.get(k).push(i);
   });
-  list.innerHTML = adder + (list.hidden ? "" : shown.map(item => `<div class="vocab-list-row" data-key="${escapeAttr(item.key)}"><span class="vocab-list-term">${escapeHtml(item.term)}</span><span class="vocab-list-meaning">${wordNotesOf(item) || subsOf.has(item.key) ? `<span>${meaningHtml(item.meaning)}</span>${wordNotesOf(item) ? `<div class="card-notes">${wordNotesView(item)}</div>` : ""}${subsListHtml(item, subsOf.get(item.key))}` : meaningHtml(item.meaning)}</span><span class="vocab-list-status">${vocabStatusIcon(vocabStateOf(item))}</span></div>`).join("") + (more ? `<button id="vocabMore" class="vocab-more ghost">Show ${more} more</button>` : ""));
+  list.innerHTML = adder + (list.hidden ? "" : shown.map(item => {
+    const noted = noteSentence(item), rest = noted ? noted.rest.replace(/^(\s|<br\s*\/?>|<div>\s*<\/div>)+/i, "") : wordNotesOf(item);
+    return `<div class="vocab-list-row" data-key="${escapeAttr(item.key)}"><span class="vocab-list-term">${escapeHtml(item.term)}</span><span class="vocab-list-meaning"><span>${meaningHtml(item.meaning)}</span>${rest ? `<div class="card-notes">${rest}</div>` : ""}${cardsListHtml(item, subsOf.get(item.key) || [])}</span></div>`;
+  }).join("") + (more ? `<button id="vocabMore" class="vocab-more ghost">Show ${more} more</button>` : ""));
   watchVocabMore();
   if (emptyLesson) {
     vocabSession = null;
@@ -21835,7 +21871,8 @@ function keepVocabEdit() {
 }
 
 function openVocabEditor(key, inList) {
-  if (key && key.startsWith("x:")) key = key.slice(2, key.lastIndexOf("|"));
+  if (key && key.startsWith("g:")) key = key.slice(2);
+  if (key && key.startsWith("x:")) key = subParentKey(key);
   commitVocabEdit();
   stopVocabSound();
   vocabEditingKey = key;
@@ -21866,8 +21903,8 @@ document.getElementById("vocabList").addEventListener("click", e => {
 });
 
 document.getElementById("vocabList").addEventListener("mouseover", e => {
-  const row = e.target.closest(".vocab-list-row[data-key]");
-  vocabHoveredKey = row ? row.dataset.key : null;
+  const row = e.target.closest(".vocab-list-row[data-key]"), line = e.target.closest(".vl-sub[data-sub]");
+  vocabHoveredKey = line ? line.dataset.sub : row ? "g:" + row.dataset.key : null;
   if (isTouch()) return;
   const term = e.target.closest(".vocab-list-term");
   if (term && (!hoverTooltip || hoverTooltip.style.display !== "block" || hoverTooltip.anchor !== term)) showCellPinyin(term); else if (!term && !e.target.closest(PINYIN_SEL)) hideTooltip();
@@ -22027,11 +22064,11 @@ function vocabSoundOn() {
   return vocabTtsOn || vocabPendingKey !== null || loopingRowId !== null && loopingRowId === vocabShownRowId;
 }
 
-function deleteVocabEntry(item, part) {
+function deleteVocabEntry(item, part, only) {
   if (!item) return;
   commitVocabEdit();
   const row = item.card;
-  if (item.sub) {
+  if (item.sub || only && lessonVocabItems(vocabSource()).some(i => i.sub && subParentKey(i.key) === item.key)) {
     stopVocabSound();
     pushDeleteUndo("Deleted card — " + item.term);
     if (!row.vocab) row.vocab = {};
@@ -22497,14 +22534,15 @@ setInterval(() => {
 
 function vocabPickedKey() {
   const listRow = vocabView === "list" && document.querySelector("#vocabList .vocab-list-row.row-selected[data-key]");
-  const selected = listRow ? listRow.dataset.key : null;
+  const selected = listRow ? "g:" + listRow.dataset.key : null;
   return selected || (isTouch() ? null : vocabHoveredKey);
 }
 
 function vocabCopyAction() {
-  const pickedKey = vocabPickedKey();
-  const item = vocabView === "card" ? currentVocabItem() : pickedKey && lessonVocabItems(vocabSource()).find(i => i.key === pickedKey);
+  const picked = vocabView === "card" ? null : vocabPickTargets(vocabPickedKey());
+  const item = vocabView === "card" ? currentVocabItem() : picked && (picked.head || picked.items[0]);
   if (!item) return;
+  if (item.sub) return copyText(oneLine(item.sub.t));
   const own = oneLine(vocabContext(item).sentence || ""), vc = document.getElementById("vocabCard");
   const shown = vocabView === "card" && vc && vc.dataset.lookKey === item.key && vc.dataset.ex === "other" && vc.dataset.other ? oneLine(vc.dataset.other) : "";
   const lines = [ own, shown ].filter((t, i, a) => t && a.indexOf(t) === i);
@@ -22512,11 +22550,42 @@ function vocabCopyAction() {
 }
 
 function vocabDeleteAction() {
-  const pickedKey = vocabPickedKey();
-  const picked = pickedKey && lessonVocabItems(vocabSource()).find(i => i.key === pickedKey);
-  const target = picked || (vocabView === "card" ? currentVocabItem() : null);
-  if (!target) return;
-  deleteVocabEntry(target, picked ? document.querySelector(`#vocabList .vocab-list-row[data-key="${CSS.escape(picked.key)}"]`) : null);
+  const pickedKey = vocabPickedKey(), picked = vocabPickTargets(pickedKey);
+  if (picked && picked.head) return deleteVocabEntry(picked.head, document.querySelector(`#vocabList .vocab-list-row[data-key="${CSS.escape(picked.head.key)}"]`));
+  if (picked) return deleteVocabEntry(picked.items[0], document.querySelector(`#vocabList .vl-sub[data-sub="${CSS.escape(pickedKey)}"]`), true);
+  const target = vocabView === "card" ? currentVocabItem() : null;
+  if (target) deleteVocabEntry(target, null);
+}
+
+function gradeListItems(key, isAgain) {
+  const picked = vocabPickTargets(key);
+  if (!picked || !picked.items.length) return;
+  const head = picked.head || picked.items[0];
+  pushUndo((isAgain ? "Again" : "Good") + " — " + head.term + (picked.items.length > 1 ? " (" + countOf(picked.items.length, "card") + ")" : ""));
+  const now = Date.now(), grade = isAgain ? GRADE_AGAIN : GRADE_GOOD;
+  picked.items.forEach(item => {
+    const st = vocabStateOf(item), fresh = !st.reps;
+    scheduleReview(st, grade, now);
+    if (!item.card.vocab) item.card.vocab = {};
+    item.card.vocab[item.key] = st;
+    logReview(item.card, "Vocab", grade, now, fresh, item.key);
+    dropVocabSessionKey(item.key);
+  });
+  const el = picked.head ? document.querySelector(`#vocabList .vocab-list-row[data-key="${CSS.escape(picked.head.key)}"]`) : document.querySelector(`#vocabList .vl-sub[data-sub="${CSS.escape(key)}"]`);
+  if (el && !reducedMotion()) el.animate([ {
+    backgroundColor: isAgain ? "var(--danger-soft)" : "var(--a-bg)"
+  }, {
+    backgroundColor: "transparent"
+  } ], {
+    duration: 600,
+    easing: "ease-out"
+  });
+  scheduleAutoSave();
+  flushAutoSave();
+  setTimeout(() => {
+    renderVocab();
+    renderLessonList();
+  }, reducedMotion() ? 0 : 600);
 }
 
 function copyKey(e) {
@@ -22545,7 +22614,13 @@ function handleVocabKey(e) {
   }
   if (vocabView === "list") {
     const pickedKey = vocabPickedKey();
-    if (e.code !== "KeyE" || !pickedKey) return;
+    if (!pickedKey) return;
+    if (gradeKey(e)) {
+      e.preventDefault();
+      gradeListItems(pickedKey, gradeKey(e) === "again");
+      return;
+    }
+    if (e.code !== "KeyE") return;
     e.preventDefault();
     openVocabEditor(pickedKey, true);
     return;
