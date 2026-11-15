@@ -222,7 +222,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-83 | `1c53491` | ☰ List: thẻ câu là một thẻ như các thẻ khác; Delete/← → theo chỗ trỏ (một thẻ hay cả từ); lề đều 4 phía (khối 16px, thẻ 8px) |
 | FLASH-84 | `b45c65e` | ☰ List: một thang cỡ chữ (24/18/16/13) và nhịp 8px; trên điện thoại tên từ điển xuống dưới chữ |
 | FLASH-85 | `5870d2a` | ☰ List nhẹ (mỗi trang ~400 dòng thẻ, dựng lại 160→56ms); từ→nghĩa 16px; bài từ web có nút ‹ ngôn ngữ để quay lại |
-| FLASH-86 | `pending` | Hết lag với nhiều thẻ: giãn cách câu 15s→70ms (cùng kết quả), trạng thái thẻ con không quét lại, lưu/sidebar sau khi chấm chạy sau hiệu ứng, từ điển lưu gom 15s; dọn code thừa (ESLint); levels.json được đưa lên |
+| FLASH-86 | `13dbb53` | Hết lag với nhiều thẻ: giãn cách câu 15s→70ms (cùng kết quả), trạng thái thẻ con không quét lại, lưu/sidebar sau khi chấm chạy sau hiệu ứng, từ điển lưu gom 15s; dọn code thừa (ESLint); levels.json được đưa lên |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
