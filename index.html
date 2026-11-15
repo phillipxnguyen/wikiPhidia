@@ -7835,11 +7835,11 @@ function updateSequenceBtnUI() {
     return;
   }
   if (sequenceReadsAloud()) {
-    const on = ttsPlaying;
+    const on = ttsPlaying && soundHeard;
     show(true);
     speedSel.value = String(ttsSpeed);
-    btn.innerHTML = playFace(on ? "⏸" : "🔊");
-    setSequenceBtnState(btn, on, true);
+    btn.innerHTML = playFace(ttsPlaying ? "⏸" : "🔊");
+    setSequenceBtnState(btn, on, true, ttsPlaying && !soundHeard);
     return;
   }
   if (!ytPlayer || !ytReady || !ytHasVideo || ytHasError) {
@@ -10710,15 +10710,16 @@ async function wordDictPump() {
   const list = await extLookup(pick.world, pick.term);
   wordDictBusy = false;
   const lesson = library.find(l => l.id === pick.lessonId);
-  if (list && lesson) {
-    storeWordDict(lesson, pick.tkey, flattenDict(list));
+  const entry = list && flattenDict(list);
+  if (entry && lesson && (entry.defs.length || entry.ex.length)) {
+    storeWordDict(lesson, pick.tkey, entry);
     clearTimeout(wordDictRepaint);
     wordDictRepaint = setTimeout(() => {
       if (currentView === "words") renderWords();
       if (!vocabStudying) renderLessonList();
     }, 2e3);
   }
-  setTimeout(wordDictPump, list ? 1500 : 4e3);
+  setTimeout(wordDictPump, list ? 4e3 : 8e3);
 }
 
 const extFetchWait = new Map;
@@ -14253,7 +14254,7 @@ function startTts(field, onlyId = null) {
   }
   pauseVideoProgrammatically();
   ttsPlaying = true;
-  soundHeard = true;
+  soundHeard = false;
   ttsField = field;
   ttsOnlyId = onlyId;
   updateSequenceBtnUI();
@@ -19869,12 +19870,13 @@ function readerCards(l) {
   return l.id === currentLessonId ? vocabSource() : lessonCardsWithExtras(l);
 }
 
-function readerNotesText(i) {
+function readerNotesText(i, l) {
   const st = i.card.vocab && i.card.vocab[i.key], html = i.card.notesHtml || "";
   if (!(st && st.notes) && !/<li[^>]*>(?:(?!<\/li>)[\s\S])*<(ul|ol)\b/i.test(html)) return "";
   const box = document.createElement("div");
   box.innerHTML = wordNotesOf(i).replace(/<br\s*\/?>/gi, "\n").replace(/<\/(div|p|li)>/gi, "\n");
-  return box.textContent.replace(/[ \t]+/g, " ").replace(/\n\s*\n+/g, "\n").trim().slice(0, 400);
+  const same = t => (t || "").replace(/\s+/g, " ").trim().toLowerCase(), skip = new Set([ same(vocabContext(i).sentence), same(l && l.name), same(l && l.web && l.web.title) ]);
+  return box.textContent.replace(/[ \t]+/g, " ").split("\n").map(t => t.trim()).filter(t => t && !skip.has(same(t))).join("\n").slice(0, 400);
 }
 
 function readerState() {
@@ -19888,7 +19890,7 @@ function readerState() {
     term: i.term,
     meaning: i.meaning,
     sentence: (vocabContext(i).sentence || "").replace(/\s+/g, " ").trim().slice(0, 300),
-    notes: readerNotesText(i),
+    notes: readerNotesText(i, l),
     lesson: l.name || "Untitled lesson"
   })));
   return {
@@ -20002,9 +20004,10 @@ function readerAdd(list) {
       lesson: known.get(key)
     });
     const lesson = readerTarget(w, made);
-    if (Array.isArray(w.dict) && w.dict.length) {
+    const brought = Array.isArray(w.dict) && w.dict.length ? flattenDict(w.dict) : null;
+    if (brought && (brought.defs.length || brought.ex.length)) {
       lesson.wordDict = Object.assign({}, lesson.wordDict, {
-        [normalizeVocabText(term)]: flattenDict(w.dict)
+        [normalizeVocabText(term)]: brought
       });
       wordDictIdx = null;
     }
@@ -20409,7 +20412,7 @@ function wordDictIndex() {
     wordDictIdx = new Map;
     library.forEach(l => l.wordDict && Object.keys(l.wordDict).forEach(k => {
       const v = l.wordDict[k];
-      if (v && (v.defs || v.ex) && !wordDictIdx.has(k)) wordDictIdx.set(k, v);
+      if (v && ((v.defs || []).length || (v.ex || []).length) && !wordDictIdx.has(k)) wordDictIdx.set(k, v);
     }));
   }
   return wordDictIdx;
@@ -22320,7 +22323,7 @@ function playVocabSound(item, once, ownClip, thenRestart, fromClip) {
   const clipAfter = !!shown && vocabSession && vocabSession.flipped && !!own && !ytHasError && !!vocabVideoIdFor(row) && !(fromClip && once);
   const texts = shown ? vocabSession && vocabSession.flipped && own && own !== shown && !clipAfter && !fromClip ? [ own, shown ] : [ shown ] : [ own || item.term ];
   let at = 0;
-  soundHeard = true;
+  soundHeard = false;
   vocabTtsOn = true;
   const token = ++vocabTtsToken;
   const after = () => setTimeout(() => {
@@ -22392,12 +22395,14 @@ function sayVocabWord(item) {
     vocabTtsOn = false;
     syncVocabSound();
   };
-  soundHeard = true;
+  soundHeard = false;
   vocabTtsOn = true;
   syncVocabSound();
   utter.addEventListener("start", () => {
     document.documentElement.classList.add("zap-spent");
-    if (btn) btn.classList.remove("sound-wait");
+    if (token !== vocabTtsToken) return;
+    soundHeard = true;
+    syncVocabSound();
   });
   utter.onerror = done;
   utter.onend = () => {
@@ -22421,7 +22426,7 @@ function toggleVocabLine(item, text) {
   if (vocabLineOn(text)) return stopVocabSound();
   stopVocabSound();
   speechSynthesis.cancel();
-  soundHeard = true;
+  soundHeard = false;
   vocabTtsOn = true;
   vocabOnce = true;
   const token = ++vocabTtsToken;

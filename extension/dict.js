@@ -2,7 +2,7 @@
   if (window.top !== window || window.wkpDict) return;
   const CJK = /[㐀-鿿豈-﫿]/, KANA = /[぀-ヿ]/, HANGUL = /[가-힯]/;
   const POS = { noun: "noun", verb: "verb", adjective: "adj", adverb: "adv", pronoun: "pron", preposition: "prep", conjunction: "conj", interjection: "interj", abbreviation: "abbr", particle: "part", phrase: "phrase", prefix: "prefix", suffix: "suffix", "phrasal verb": "phrasal verb", idiom: "idiom", determiner: "det", exclamation: "excl", numeral: "num", "proper noun": "noun", n: "noun", v: "verb", adj: "adj", adv: "adv", "명사": "noun", "동사": "verb", "형용사": "adj", "부사": "adv" };
-  const MAX = 600, KEY = "dictCache2";
+  const MAX = 600, KEY = "dictCache3";
   const mem = new Map(), pending = new Map();
   let store = null, storeJob = null;
 
@@ -294,7 +294,7 @@
     if (!storeJob) storeJob = new Promise(res => {
       try {
         chrome.storage.local.get(KEY).then(d => res(store = d[KEY] || {}), () => res(store = {}));
-        chrome.storage.local.remove("dictCache");
+        chrome.storage.local.remove([ "dictCache", "dictCache2" ]);
       } catch {
         res(store = {});
       }
@@ -339,7 +339,7 @@
     };
     const job = loadStore().then(st => {
       const saved = st[key];
-      if (saved && Date.now() - (saved.at || 0) < 30 * 864e5) {
+      if (saved && saved.list.length && Date.now() - (saved.at || 0) < (saved.full ? 30 : 1) * 864e5) {
         saved.list.forEach(add);
         return got;
       }
@@ -348,12 +348,14 @@
         r.src = name;
         add(r);
       }))).then(() => {
-        st[key] = { at: Date.now(), list: got };
-        saveStore();
+        if (got.length) {
+          st[key] = { at: Date.now(), full: got.length === list.length, list: got };
+          saveStore();
+        }
         return got;
       });
     }).then(r => {
-      mem.set(key, r);
+      if (r.length) mem.set(key, r);
       return r;
     }).finally(() => pending.delete(key));
     job.listeners = listeners;
