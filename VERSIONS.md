@@ -356,6 +356,7 @@ Hàm chính: `dictLoad`, `dictSlot`, `dictFit`, `showDictSite`, `hideDictOverlay
 | DATA-21 | `de572ec` | Mỗi nghĩa một dòng trong mục của từ ở Notes (không dùng dấu phẩy để tách); dấu phẩy thuộc về nghĩa; tiến độ giữ nguyên |
 | DATA-22 | `330101e` | Ô sửa thẻ Lessons cùng kiểu thẻ: câu + bản dịch xanh, loa góc trên, Notes nền xám |
 | DATA-23 | `e8979d4` | Notes: Shift+Enter 1 lần trong mục từ = nghĩa tiếp (thẳng cột nghĩa đầu), 2 lần = mục mới |
+| DATA-24 | `pending` | Bỏ hẳn chuyển thẻ giữa Lessons và Vocabulary: phím W, nút 字 trên thanh chọn, W trong Words, tự chuyển khi điền nghĩa |
 
 Hàm chính: `newRow` (bản dịch vào notes khi tạo), `foldAnswer` + `keepsAnswer` (dòng thêm dưới câu khi sửa thẻ hoặc khi dán thì vào notes), `wordLike`, `belongsInVocab`, `isTranslationCard` (cho dòng `từ: nghĩa`), `autoSortLibrary`.
 
