@@ -528,6 +528,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-50 | `dd997de` | Rà soát: mọi từ màu mở popup từ (bỏ hẳn khung tối cũ và mã/CSS của nó), bỏ hàm thừa |
 | LOOKUP-51 | `39b560a` | Xoá/sửa từ trong popup không làm nhảy thẻ đang học; ✓ trên chính từ đang học = Delete (chém màn hình) |
 | LOOKUP-52 | `ea237a8` | Từ xanh không còn bị cắt mất nửa chữ: bỏ hẳn lớp mặt nạ đo theo phông (đo sai với phông khác), bỏ luôn bộ theo dõi DOM của nó |
+| LOOKUP-53 | `pending` | Extension 1.6.23: trỏ vào từ đã có trên trang web hiện con trỏ kính lúp và thẻ giống popup của app (từ 28px, 🔊, nghĩa xanh, câu của bạn tô vàng, tên bài), sáng/tối theo trang |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 

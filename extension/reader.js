@@ -55,8 +55,8 @@
   root.innerHTML = `<style>
 :host{all:initial;}
 *{box-sizing:border-box;}
-.wrap{--sel:#b9d4fb;--green:#1e9466;--green-soft:rgba(30,148,102,.12);--ink:#1d2330;--ink-2:#5e6878;--line:#dfe4ec;--bg:#fff;--bg-2:#f4f6fa;--answer:#1b6b44;font:14px/20px Inter, system-ui, -apple-system, "Segoe UI", sans-serif;color:var(--ink);}
-@media (prefers-color-scheme: dark){.wrap{--sel:#2a4f80;--green:#3cc48d;--green-soft:rgba(60,196,141,.16);--ink:#e8ecf3;--ink-2:#9aa4b4;--line:#323a48;--bg:#1b2029;--bg-2:#242a35;--answer:#6fd3a0;}}
+.wrap{--sel:#b9d4fb;--green:#1e9466;--green-soft:rgba(30,148,102,.12);--ink:#1d2330;--ink-2:#5e6878;--line:#dfe4ec;--bg:#fff;--bg-2:#f4f6fa;--answer:#1b6b44;--mark:rgba(255,206,40,.55);font:14px/20px Inter, system-ui, -apple-system, "Segoe UI", sans-serif;color:var(--ink);}
+@media (prefers-color-scheme: dark){.wrap{--sel:#2a4f80;--green:#3cc48d;--green-soft:rgba(60,196,141,.16);--ink:#e8ecf3;--ink-2:#9aa4b4;--line:#323a48;--bg:#1b2029;--bg-2:#242a35;--answer:#6fd3a0;--mark:rgba(240,190,40,.38);}}
 .pick{position:fixed;display:flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border:0;border-radius:16px;background:var(--green);color:#fff;font:700 16px/20px system-ui, sans-serif;box-shadow:0 4px 12px rgba(0,0,0,.25);cursor:pointer;}
 .pick:hover{filter:brightness(1.08);}
 .card{position:fixed;width:360px;max-width:calc(100vw - 24px);padding:20px;border:1px solid var(--line);border-radius:12px;background:var(--bg);box-shadow:0 16px 40px rgba(10,20,40,.22);}
@@ -94,11 +94,20 @@ textarea[hidden], .sent-view[hidden]{display:none;}
 .btn[disabled]{opacity:.5;cursor:default;filter:none;}
 .ghost{background:none;color:var(--ink-2);font-weight:600;}
 .ghost:hover{background:var(--bg-2);color:var(--ink);filter:none;}
-.tip{position:fixed;max-width:280px;padding:8px 10px;border-radius:8px;background:#1d2330;color:#fff;font-size:13px;line-height:18px;box-shadow:0 6px 18px rgba(0,0,0,.25);pointer-events:none;}
-.tip b{font-weight:700;}
-.tip .tip-r{margin-top:4px;color:#cfd6e2;}
-.tip .tip-m{margin-top:4px;}
-.tip small{display:block;margin-top:6px;color:#aab3c2;font-size:12px;line-height:16px;font-style:italic;}
+.tip{position:fixed;display:flex;flex-direction:column;gap:8px;width:380px;max-width:calc(100vw - 16px);padding:16px;border:1px solid var(--line);border-radius:16px;background:var(--bg);color:var(--ink);box-shadow:0 16px 40px rgba(10,20,40,.22);}
+.tip-top{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.tip-top b{min-width:0;font-size:28px;line-height:36px;font-weight:700;overflow-wrap:anywhere;}
+.tip-say{flex:none;display:flex;align-items:center;justify-content:center;width:40px;height:40px;padding:0;border:0;border-radius:20px;background:var(--bg-2);color:var(--ink-2);cursor:pointer;transition:background-color .4s ease, color .4s ease;}
+.tip-say:hover{color:var(--ink);}
+.tip-say.on{background:var(--green);color:#fff;}
+.tip-say svg{width:20px;height:20px;}
+.tip-say path{fill:currentColor;}
+.tip-say path + path{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;}
+.tip-r{font-size:16px;line-height:22px;color:var(--green);}
+.tip-m{font-size:18px;line-height:26px;font-weight:700;color:var(--answer);overflow-wrap:anywhere;}
+.tip-ex{margin:8px 0 0;font-size:18px;line-height:26px;color:var(--ink);overflow-wrap:anywhere;}
+.tip-ex mark{padding:0 2px;border-radius:4px;background:var(--mark);color:inherit;font-weight:700;}
+.tip-l{font-size:13px;line-height:18px;color:var(--ink-2);}
 .yt{position:fixed;left:16px;bottom:16px;display:flex;align-items:center;gap:8px;height:40px;padding:0 16px 0 6px;border:0;border-radius:20px;background:var(--green);color:#fff;font:700 14px/20px Inter, system-ui, sans-serif;box-shadow:0 6px 18px rgba(0,0,0,.3);cursor:pointer;}
 .yt:hover{filter:brightness(1.08);}
 .yt span{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:14px;background:rgba(255,255,255,.2);font-size:16px;line-height:20px;}
@@ -113,13 +122,13 @@ textarea[hidden], .sent-view[hidden]{display:none;}
   };
 
   const hlStyle = document.createElement("style");
-  hlStyle.textContent = "wkp-hl{all:unset;display:inline;cursor:help;color:#1e9466 !important;}wkp-hl[data-state=pending]{color:#8a919e !important;}";
+  hlStyle.textContent = "wkp-hl{all:unset;display:inline;cursor:url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cg%20fill%3D%22none%22%20stroke-linecap%3D%22round%22%3E%3Ccircle%20cx%3D%2210%22%20cy%3D%2210%22%20r%3D%226%22%20stroke%3D%22%23ffffff%22%20stroke-width%3D%225%22%2F%3E%3Cpath%20d%3D%22M14.5%2014.5L21%2021%22%20stroke%3D%22%23ffffff%22%20stroke-width%3D%226%22%2F%3E%3Ccircle%20cx%3D%2210%22%20cy%3D%2210%22%20r%3D%226%22%20stroke%3D%22%231f2633%22%20stroke-width%3D%222%22%2F%3E%3Cpath%20d%3D%22M14.5%2014.5L21%2021%22%20stroke%3D%22%231f2633%22%20stroke-width%3D%223%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E\") 10 10, zoom-in;color:#1e9466 !important;}wkp-hl[data-state=pending]{color:#8a919e !important;}";
 
   function rebuildKnown() {
     known = new Map();
-    app.words.forEach(w => known.set(norm(w.term), { term: w.term, meaning: w.meaning, lesson: w.lesson, state: "app" }));
+    app.words.forEach(w => known.set(norm(w.term), { term: w.term, meaning: w.meaning, sentence: w.sentence || "", lesson: w.lesson, state: "app" }));
     pending.forEach(w => {
-      if (!known.has(norm(w.term))) known.set(norm(w.term), { term: w.term, meaning: w.meaning, lesson: w.lessonName || "", state: "pending" });
+      if (!known.has(norm(w.term))) known.set(norm(w.term), { term: w.term, meaning: w.meaning, sentence: w.sentence || "", lesson: w.lessonName || "", state: "pending" });
     });
     matcher = matcherFor([ ...known.values() ].map(k => k.term));
   }
@@ -236,29 +245,103 @@ textarea[hidden], .sent-view[hidden]{display:none;}
     if (document.body && marking()) observer.observe(document.body, { childList: true, subtree: true });
   };
 
-  let tip = null;
-  document.addEventListener("mouseover", e => {
-    if (gone()) return;
-    const mark = e.target.closest && e.target.closest("wkp-hl");
-    if (!mark) {
-      if (tip) tip.remove(), tip = null;
-      return;
+  let tip = null, tipMark = null, tipHide = 0, tipAudio = null;
+  const SPEAK_ICON = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 8v4h3l4 3V5L7 8z"/><path d="M14 7.5a3.5 3.5 0 0 1 0 5M16 5.5a6.5 6.5 0 0 1 0 9"/></svg>';
+  function stopTipSound() {
+    if (tipAudio) {
+      tipAudio.onended = tipAudio.onerror = null;
+      try {
+        tipAudio.pause();
+      } catch {}
+      tipAudio = null;
     }
+    if (window.speechSynthesis) speechSynthesis.cancel();
+    const b = tip && tip.querySelector(".tip-say");
+    if (b) b.classList.remove("on");
+  }
+  function hideTip() {
+    clearTimeout(tipHide);
+    stopTipSound();
+    if (tip) tip.remove();
+    tip = tipMark = null;
+  }
+  function audioUrl(term) {
+    const w = term.trim(), l = langOf(w) || (/^[a-z' -]+$/i.test(w) ? "en" : "");
+    if (!w || w.length > 24) return "";
+    if (l === "en") return "https://dict.youdao.com/dictvoice?type=2&audio=" + encodeURIComponent(w.toLowerCase());
+    const le = { zh: "zh", ja: "jap", ko: "ko" }[l];
+    return le ? "https://dict.youdao.com/dictvoice?le=" + le + "&audio=" + encodeURIComponent(w) : "";
+  }
+  function sayTip(term) {
+    const b = tip && tip.querySelector(".tip-say");
+    if (b && b.classList.contains("on")) return stopTipSound();
+    stopTipSound();
+    if (b) b.classList.add("on");
+    const done = () => b && b.classList.remove("on");
+    const fallback = () => {
+      tipAudio = null;
+      if (!window.speechSynthesis) return done();
+      speak(term);
+      const check = setInterval(() => {
+        if (speechSynthesis.speaking) return;
+        clearInterval(check);
+        done();
+      }, 200);
+    };
+    const url = audioUrl(term);
+    if (!url) return fallback();
+    const a = new Audio(url);
+    tipAudio = a;
+    a.onended = () => {
+      tipAudio = null;
+      done();
+    };
+    a.onerror = () => tipAudio === a && fallback();
+    const p = a.play();
+    if (p && p.catch) p.catch(() => tipAudio === a && fallback());
+  }
+  function markedSentence(sentence, term) {
+    const s = sentence || "";
+    if (!s) return "";
+    let at = -1, len = term.length;
+    if (CJK.test(term) || KANA.test(term) || HANGUL.test(term)) at = s.indexOf(term); else {
+      const m = new RegExp("(?<![\\p{L}\\p{N}])" + term.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s+") + "(?![\\p{L}\\p{N}])", "iu").exec(s);
+      if (m) at = m.index, len = m[0].length;
+    }
+    return at < 0 ? esc(s) : esc(s.slice(0, at)) + "<mark>" + esc(s.slice(at, at + len)) + "</mark>" + esc(s.slice(at + len));
+  }
+  function showTip(mark) {
     const k = known.get(norm(mark.textContent));
     if (!k) return;
+    clearTimeout(tipHide);
+    if (tipMark === mark && tip) return;
+    stopTipSound();
     mount();
     if (!tip) {
       tip = document.createElement("div");
       tip.className = "tip";
+      tip.addEventListener("click", e => {
+        const b = e.target.closest(".tip-say");
+        if (b) sayTip(b.dataset.say);
+      });
       wrap.appendChild(tip);
     }
+    tipMark = mark;
     const reading = langOf(k.term) === "zh" && window.pinyinPro ? pinyinPro.pinyin(k.term).replace(/\s+([，。？！、；：,.?!;:])/g, "$1") : "";
-    // The same box as the app's: the word, its pinyin on a line of its own, the meaning when it has one, the lesson.
-    tip.innerHTML = `<b>${esc(k.term)}</b>${reading ? `<div class="tip-r">${esc(reading)}</div>` : ""}${k.meaning ? `<div class="tip-m">${esc(k.meaning)}</div>` : ""}${k.lesson ? `<small>${esc(k.lesson)}</small>` : ""}`;
-    const r = mark.getBoundingClientRect();
-    const w = Math.min(280, tip.offsetWidth);
+    const ex = markedSentence(k.sentence, mark.textContent.trim() || k.term);
+    tip.innerHTML = `<div class="tip-top"><b>${esc(k.term)}</b><button type="button" class="tip-say" data-say="${esc(k.term)}" aria-label="Listen" title="Listen">${SPEAK_ICON}</button></div>${reading ? `<div class="tip-r">${esc(reading)}</div>` : ""}${k.meaning ? `<div class="tip-m">${esc(k.meaning)}</div>` : ""}${ex ? `<p class="tip-ex">${ex}</p>` : ""}${k.lesson ? `<div class="tip-l">${esc(k.lesson)}</div>` : ""}`;
+    const r = mark.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight;
     tip.style.left = Math.round(Math.max(8, Math.min(innerWidth - w - 8, r.left))) + "px";
-    tip.style.top = Math.round(r.top - tip.offsetHeight - 8 > 8 ? r.top - tip.offsetHeight - 8 : r.bottom + 8) + "px";
+    tip.style.top = Math.round(r.top - h - 8 > 8 ? r.top - h - 8 : Math.min(innerHeight - h - 8, r.bottom + 8)) + "px";
+  }
+  document.addEventListener("mouseover", e => {
+    if (gone()) return;
+    if (e.target === host) return clearTimeout(tipHide);
+    const mark = e.target.closest && e.target.closest("wkp-hl");
+    if (mark) return showTip(mark);
+    if (!tip) return;
+    clearTimeout(tipHide);
+    tipHide = setTimeout(hideTip, 250);
   }, true);
 
   function selectedText() {
@@ -653,7 +736,7 @@ textarea[hidden], .sent-view[hidden]{display:none;}
   addEventListener("scroll", () => {
     if (gone()) return;
     hidePick();
-    if (tip) tip.remove(), tip = null;
+    if (tip) hideTip();
   }, { passive: true, capture: true });
 
   let ytBtn = null, ytWait = null, ytWaitTimer = 0, ytShown = null;
