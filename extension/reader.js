@@ -128,7 +128,7 @@ textarea[hidden], .sent-view[hidden]{display:none;}
 .dg{display:flex;align-items:flex-start;gap:8px;}
 .dg .dpos{margin-top:9px;}
 .dpos{flex:none;min-width:44px;padding:2px 6px;border-radius:6px;background:var(--bg-2);color:var(--ink-2);font-size:14px;line-height:20px;font-weight:700;text-align:center;}
-.dds{display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-width:0;}
+.dds{flex:1;display:flex;flex-direction:column;align-items:stretch;gap:6px;min-width:0;}
 .dd{padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font:inherit;font-size:16px;line-height:24px;text-align:left;overflow-wrap:anywhere;}
 button.dd{cursor:pointer;}
 button.dd:hover{border-color:var(--green);color:var(--green);}
