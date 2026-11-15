@@ -3465,7 +3465,7 @@ function watchWordsHtml(html, lang, pin) {
   return box.innerHTML;
 }
 
-function watchLineHtml(r, inList) {
+function watchLineHtml(r) {
   const p = watch.prefs, pin = p.pin && watchChinese() && typeof pinyinPro !== "undefined", tr = p.trans ? watchLineTr(r) : "";
   const lang = detectLang(r.q || "").split("-")[0];
   const text = watchWordsHtml(highlightVocabInHtml(r.qHtml || escapeHtml(r.q), r.id), lang, pin && /[\u3400-\u9fff]/.test(r.q || ""));
@@ -3964,7 +3964,7 @@ function paintWatchList() {
     const i = idx.get(id), r = watch.lines[i];
     let html = watch.rowHtml.get(r.id);
     if (html === undefined) {
-      html = watchLineHtml(r, true);
+      html = watchLineHtml(r);
       watch.rowHtml.set(r.id, html);
     }
     const ts = `<span class="w-t">${fmtTime(r.time)}<svg class="w-ring" aria-hidden="true"><path pathLength="100"/></svg></span>`;
@@ -8131,7 +8131,6 @@ function trimAfterBreak(br) {
 
 document.addEventListener("keydown", e => {
   if (e.key !== "Enter" || !e.shiftKey || e.isComposing) return;
-  const t = e.target;
   const sel = getSelection(), node = sel.rangeCount && sel.anchorNode, host = node && (node.nodeType === 1 ? node : node.parentElement);
   const box = host && host.closest(".od-mean-in, #vocabEditMain .vem-a");
   if (!box) return;
@@ -8780,7 +8779,7 @@ function ieltsHints(row) {
   }).sort((x, y) => x.at - y.at).map(h => h.meaning);
 }
 
-function ieltsPaperHtml(row, ahead = 0) {
+function ieltsPaperHtml(row) {
   const words = row.aHidden ? [] : cardWords(row);
   const hints = row.aHidden ? ieltsHints(row) : [], veiled = ieltsHintId !== row.id;
   const answer = row.aHidden ? hints.length ? `<div class="cell hidden paper-prompt paper-hint${veiled ? " paper-veil" : ""}" data-field="a"><ol>` + hints.map(m => `<li>${escapeHtml(m)}</li>`).join("") + "</ol></div>" : `<div class="cell hidden paper-lines paper-veil" data-field="a">${aCellContent(row)}</div>` : `<div class="cell shown paper-lines" data-field="a">${aCellContent(row)}</div>`;
@@ -10691,17 +10690,34 @@ function flattenDict(list) {
   };
 }
 
+const wordDictDirty = new Set;
+
+let wordDictSaveTimer = 0;
+
 function storeWordDict(lesson, tkey, entry) {
   if (!lesson || !tkey || !entry) return;
   lesson.wordDict = Object.assign({}, lesson.wordDict, {
     [tkey]: entry
   });
   wordDictIdx = null;
-  if (lesson.id === currentLessonId) scheduleAutoSave(); else {
+  wordDictDirty.add(lesson.id);
+  if (!wordDictSaveTimer) wordDictSaveTimer = setTimeout(saveWordDicts, 15e3);
+}
+
+function saveWordDicts() {
+  clearTimeout(wordDictSaveTimer);
+  wordDictSaveTimer = 0;
+  wordDictDirty.forEach(id => {
+    const lesson = library.find(l => l.id === id);
+    if (!lesson) return;
+    if (id === currentLessonId) return scheduleAutoSave();
     lesson.updatedAt = Date.now();
     dbPut("lessons", lesson).catch(() => {});
-  }
+  });
+  wordDictDirty.clear();
 }
+
+window.addEventListener("pagehide", () => wordDictDirty.size && saveWordDicts());
 
 const wordDictTried = new Set;
 
@@ -11395,7 +11411,7 @@ function openOwnDictFloat(el, mode, word, ctx) {
   if (!dictSrcOf(shown.lang, w)) dictSrcFetch(shown.lang, w).then(r => r && ownDictFloat === pop && paintOwnDictFloat());
 }
 
-function ownDictFloatPick(b) {
+function ownDictFloatPick() {
   const pop = ownDictFloat, shown = pop && pop.ctx;
   if (!pop || !shown) return;
   const input = pop.querySelector(".od-mean-in");
@@ -11502,7 +11518,7 @@ document.addEventListener("click", e => {
     return;
   }
   const pick = e.target.closest(".od-add, .od-save");
-  if (pick) ownDictFloatPick(pick);
+  if (pick) ownDictFloatPick();
 });
 
 document.addEventListener("keydown", e => {
@@ -11511,7 +11527,7 @@ document.addEventListener("keydown", e => {
   if (e.key !== "Enter" || e.shiftKey || e.isComposing || e.keyCode === 229) return;
   e.preventDefault();
   const save = ownDictFloat && ownDictFloat.querySelector(".od-save, .od-add");
-  if (save) ownDictFloatPick(save);
+  if (save) ownDictFloatPick();
 }, true);
 
 document.addEventListener("input", e => {
@@ -11711,7 +11727,7 @@ document.addEventListener("click", e => {
 document.addEventListener("pointerdown", e => {
   if (!ownDictFloat || !e.target.closest || e.target.closest(".od-float")) return;
   const save = ownDictFloat.querySelector(".od-save:not([hidden])");
-  if (save) ownDictFloatPick(save); else closeOwnDictFloat();
+  if (save) ownDictFloatPick(); else closeOwnDictFloat();
 }, true);
 
 function keepStudying(studying) {
@@ -11769,7 +11785,7 @@ window.addEventListener("keydown", e => {
   e.preventDefault();
   e.stopImmediatePropagation();
   const b = ownDictFloat.querySelector(".od-acts .od-add:not([hidden])");
-  if (b) ownDictFloatPick(b); else closeOwnDictFloat();
+  if (b) ownDictFloatPick(); else closeOwnDictFloat();
 }, true);
 
 window.addEventListener("keydown", e => {
@@ -14053,7 +14069,7 @@ function showNextUnderSwipe() {
   const next = (taskRun && taskRun.queue ? [ taskNextRow() ].filter(Boolean) : singleCardQueue().slice(1, 2)).map(entryCopy)[0];
   const body = document.getElementById("singleCardBody");
   Array.from(body.children).forEach(el => el.style.display = "none");
-  body.insertAdjacentHTML("beforeend", next ? ieltsPaperHtml(next, 1) : underDoneHtml());
+  body.insertAdjacentHTML("beforeend", next ? ieltsPaperHtml(next) : underDoneHtml());
   return () => {};
 }
 
@@ -20531,6 +20547,7 @@ function keepVocabAdded(vocab, at = Date.now()) {
 function vocabStateOf(item) {
   const card = item.card;
   if (!card.vocab) card.vocab = {};
+  if (item.sub) return card.vocab[item.key] || newSrsState();
   return card.vocab[item.key] || withWordKeys(card).vocab[item.key] || newSrsState();
 }
 
@@ -20602,24 +20619,38 @@ function vocabSentenceKey(item) {
 const SAME_SENTENCE_GAP = 10;
 
 function spreadSameSentence(list, keyOf, prev = "") {
-  const keys = new Map(list.map(x => [ x, keyOf(x) ])), out = [], rest = list.slice();
+  const order = new Map, groups = new Map, free = [], out = [], lastPos = new Map;
+  list.forEach((x, n) => {
+    order.set(x, n);
+    const k = keyOf(x);
+    if (!k) return free.push(x);
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(x);
+  });
   const recent = (Array.isArray(prev) ? prev : [ prev ]).filter(Boolean);
-  const lastAt = k => {
-    for (let n = out.length - 1; n >= 0; n--) if (keys.get(out[n]) === k) return out.length - 1 - n;
-    const r = recent.lastIndexOf(k);
-    return r < 0 ? Infinity : out.length + recent.length - 1 - r;
-  };
-  const left = new Map;
-  keys.forEach(k => k && left.set(k, (left.get(k) || 0) + 1));
-  while (rest.length) {
-    let best = -1, bestOk = false, bestLeft = -1, bestFar = -1;
-    for (let n = 0; n < rest.length; n++) {
-      const k = keys.get(rest[n]), d = k ? lastAt(k) : Infinity, ok = d >= SAME_SENTENCE_GAP, many = k ? left.get(k) : 0;
-      if (ok ? !bestOk || many > bestLeft : !bestOk && (d > bestFar || d === bestFar && many > bestLeft)) best = n, bestOk = ok, bestLeft = many, bestFar = d;
-    }
-    const [ x ] = rest.splice(best < 0 ? 0 : best, 1), k = keys.get(x);
-    if (k) left.set(k, left.get(k) - 1);
-    out.push(x);
+  recent.forEach((k, r) => lastPos.set(k, r - recent.length));
+  const heads = [ ...groups ].map(([k, q]) => ({
+    k: k,
+    q: q,
+    at: 0
+  }));
+  let freeAt = 0;
+  while (out.length < list.length) {
+    let best = null, bestOk = false, bestLeft = -1, bestFar = -1, bestOrder = Infinity;
+    const consider = (g, ok, many, d, n) => {
+      const better = ok ? !bestOk || many > bestLeft || many === bestLeft && n < bestOrder : !bestOk && (d > bestFar || d === bestFar && (many > bestLeft || many === bestLeft && n < bestOrder));
+      if (better) best = g, bestOk = ok, bestLeft = many, bestFar = d, bestOrder = n;
+    };
+    heads.forEach(g => {
+      if (g.at >= g.q.length) return;
+      const d = lastPos.has(g.k) ? out.length - 1 - lastPos.get(g.k) : Infinity;
+      consider(g, d >= SAME_SENTENCE_GAP, g.q.length - g.at, d, order.get(g.q[g.at]));
+    });
+    if (freeAt < free.length) consider(null, true, 0, Infinity, order.get(free[freeAt]));
+    if (best) {
+      out.push(best.q[best.at++]);
+      lastPos.set(best.k, out.length - 1);
+    } else out.push(free[freeAt++]);
   }
   return out;
 }
@@ -22520,12 +22551,17 @@ function gradeVocabItems(items, isAgain, label) {
   s.flipped = false;
   closeVocabList();
   scheduleAutoSave();
-  flushAutoSave();
   holdPageTo(window.scrollY + window.innerHeight);
   renderVocab();
   pinVocabArea(true);
-  renderLessonList();
+  clearTimeout(afterGradeTimer);
+  afterGradeTimer = setTimeout(() => {
+    flushAutoSave();
+    renderLessonList();
+  }, 350);
 }
+
+let afterGradeTimer = 0;
 
 function setVocabView(view) {
   if (view === "group") view = "card";
@@ -29044,7 +29080,7 @@ function bookPageHtml(book, unit, part) {
   });
   body += shut();
   const n = bookPartCounts(book, unit, part);
-  const tabs = parts.map(([p, icon, name]) => `<button class="bp-tab${p === part ? " on" : ""}" data-page="${p}" aria-pressed="${p === part}"><span aria-hidden="true">${icon}</span>${escapeHtml(bookPartLabel(book, p))}${bookRead.has(bookReadKey(book, unit.n, p)) && p !== part ? '<i aria-label="read">✓</i>' : ""}</button>`).join("");
+  const tabs = parts.map(([p, icon]) => `<button class="bp-tab${p === part ? " on" : ""}" data-page="${p}" aria-pressed="${p === part}"><span aria-hidden="true">${icon}</span>${escapeHtml(bookPartLabel(book, p))}${bookRead.has(bookReadKey(book, unit.n, p)) && p !== part ? '<i aria-label="read">✓</i>' : ""}</button>`).join("");
   return `<div class="bp-top" style="--c:${color}"><button class="bp-back" data-pageback="1">‹ ${bt(book, "unit", {n: unit.n})} · ${escapeHtml(unit.ko)}</button><button class="bp-gloss${bookGloss ? " on" : ""}" data-gloss="1" aria-pressed="${bookGloss}">${bt(book, bookGloss ? "shown" : "hidden")}</button></div><div class="bp-tabs">${tabs}</div><article class="bp-sheet${bookGloss ? "" : " nogloss"}" style="--c:${color}"><header class="bp-banner"><span class="bp-num">${bt(book, "unit", {n: unit.n})}</span><b>${escapeHtml(bookPartNative(book, meta))}</b><span>${escapeHtml(unit.ko)}</span></header><div class="bp-body">${body}</div></article><div class="bp-foot"><button class="bp-cards" data-part="${part}">${bt(book, "memo")}<span>${bt(book, "items", {n: n.total})}${n.due ? ` · ${bt(book, "due", {n: n.due})}` : ""}</span></button>${next ? `<button class="bp-next" data-page="${next[0]}">${bt(book, "next", {x: escapeHtml(bookPartLabel(book, next[0]))})}</button>` : `<button class="bp-next" data-pageback="1">${bt(book, "back", {n: unit.n})}</button>`}</div>`;
 }
 
