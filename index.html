@@ -6796,10 +6796,7 @@ function soundProgressLoop() {
       if (el.classList.contains("on") !== on) el.classList.toggle("on", on);
       add(el, on ? video != null ? video : speech : null);
     });
-    [ "btnPlaySequence", "vocabSpeak" ].forEach(id => {
-      const el = document.getElementById(id);
-      add(el, el && el.classList.contains("active") ? video != null ? video : speech : null);
-    });
+    const tops = [ "btnPlaySequence", "vocabSpeak" ].map(id => document.getElementById(id)).filter(Boolean).map(el => [ el, el.classList.contains("sound-wait") ? 1 : el.classList.contains("active") ? video != null ? video : speech : null ]);
     const listenRun = document.querySelector("#vocabCard.listen:not(.flipped) .vc-time i");
     if (listenRun) {
       const lp = video != null ? video : speech;
@@ -6817,7 +6814,13 @@ function soundProgressLoop() {
     all.forEach(([ el, p ]) => {
       if (chosen && chosen[0] === el) paintRing(el, p); else if (el === hold) paintRing(el, 1); else dropRing(el);
     });
-    soundFrame = video != null || speech != null || chosen && chosen[2] || hold ? requestAnimationFrame(tick) : 0;
+    let topWait = false;
+    tops.forEach(([ el, p ]) => {
+      if (p == null && el.classList.contains("active") && soundStillOn()) p = 1;
+      if (p != null && shownEl(el)) paintRing(el, p); else dropRing(el);
+      if (p != null && el.classList.contains("sound-wait")) topWait = true;
+    });
+    soundFrame = video != null || speech != null || chosen && chosen[2] || hold || topWait ? requestAnimationFrame(tick) : 0;
   };
   tick();
 }
@@ -21875,6 +21878,12 @@ function syncVocabSound() {
   btn.innerHTML = playFace(vocabShownIsVideo ? on ? YT_PAUSE_ICON : YT_ICON : on ? "⏸" : "🔊");
   btn.classList.toggle("active", on);
   btn.classList.toggle("sound-wait", vocabSoundOn() && !soundHeard);
+  if (vocabThenBack && !vocabSoundOn()) {
+    const item = vocabThenBack;
+    vocabThenBack = null;
+    const same = () => currentView === "vocab" && vocabSession && vocabSession.flipped && (currentVocabItem() || {}).key === item.key;
+    if (same()) setTimeout(() => !vocabSoundOn() && same() && playVocabSound(currentVocabItem()), 0);
+  }
   kickSoundLoop();
   if (currentView === "vocab") updateTouchBar();
 }
@@ -21892,7 +21901,10 @@ document.getElementById("vocabSpeed").onchange = e => {
   e.target.blur();
 };
 
+let vocabThenBack = null;
+
 function stopVocabSound() {
+  vocabThenBack = null;
   vocabRestart = null;
   vocabAfterClipOnce = false;
   stopWordAudio();
@@ -22164,7 +22176,7 @@ function flipVocab() {
     }, VOCAB_FLIP_MS) : null;
     card.querySelector(".vocab-back").scrollTop = 0;
   }
-  if (!vocabSoundOn()) playVocabSound(item);
+  if (vocabSoundOn()) vocabThenBack = item; else playVocabSound(item);
 }
 
 function flyVocab(isAgain) {
