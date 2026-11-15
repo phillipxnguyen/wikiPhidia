@@ -94,7 +94,7 @@ textarea[hidden], .sent-view[hidden]{display:none;}
 .icon.on{background:var(--green-soft);color:var(--green);}
 .ghost{background:none;color:var(--ink-2);font-weight:600;}
 .ghost:hover{background:var(--bg-2);color:var(--ink);filter:none;}
-.tip{position:fixed;display:flex;flex-direction:column;gap:8px;width:460px;max-width:calc(100vw - 16px);padding:16px;border:1px solid var(--line);border-radius:16px;background:var(--bg);color:var(--ink);box-shadow:0 16px 40px rgba(10,20,40,.22);}
+.tip{position:fixed;display:flex;flex-direction:column;gap:16px;width:460px;max-width:calc(100vw - 16px);padding:24px 16px 16px;border:1px solid var(--line);border-radius:16px;background:var(--bg);color:var(--ink);box-shadow:0 16px 40px rgba(10,20,40,.22);}
 .tip-top{display:flex;align-items:center;justify-content:space-between;gap:12px;}
 .tip-top b{min-width:0;font-size:28px;line-height:36px;font-weight:700;overflow-wrap:anywhere;}
 .tip-say{flex:none;display:flex;align-items:center;justify-content:center;width:40px;height:40px;padding:0;border:0;border-radius:20px;background:var(--bg-2);color:var(--ink-2);cursor:pointer;transition:background-color .4s ease, color .4s ease;}
@@ -109,6 +109,10 @@ textarea[hidden], .sent-view[hidden]{display:none;}
 .tip-ex mark{padding:0 2px;border-radius:4px;background:var(--mark);color:inherit;font-weight:700;}
 .tip-l{display:flex;justify-content:space-between;gap:12px;margin-top:8px;font-size:13px;line-height:18px;color:var(--ink-2);}
 .tip{max-height:calc(100vh - 16px);overflow-y:auto;overscroll-behavior:contain;}
+.tip :is(.tip-top b, .tip-r, .tip-m, .exs p, .tnotes, .tip-l span, .dnote){text-box:trim-both cap alphabetic;}
+.tip .tip-say{margin-block:-10px;}
+.tip :is(.defs, .exs, .srcs, .tnotes, .tip-l){margin-top:0;}
+.tip .exs{gap:16px;}
 .tip-word{display:flex;align-items:center;flex-wrap:wrap;gap:8px;min-width:0;}
 .lv{flex:none;padding:2px 8px;border-radius:6px;background:var(--green-soft);color:var(--green);font-size:13px;line-height:18px;font-weight:700;white-space:nowrap;cursor:default;}
 .prs{display:flex;flex-wrap:wrap;gap:8px;}
