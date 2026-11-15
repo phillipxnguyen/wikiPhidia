@@ -126,6 +126,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-70 | `e0b6605` | Danh sách dòng: nhãn giờ hiện lại khi bật pinyin (拼) |
 | THEATER-71 | `cae72ba` | Danh sách dòng: nhãn giờ căn giữa cụm pinyin + chữ khi bật 拼 |
 | THEATER-72 | `752baca` | Phím M lại chuyển chế độ: bài video ☰ Full ↔ theater, bài chữ ☰ Full ↔ Speaking |
+| THEATER-73 | `pending` | Nút âm thanh của theater khi đang phát tô trắng đặc (kèm vòng), như mọi công tắc đang bật |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
@@ -466,6 +467,7 @@ Hàm chính: `swipe`, `ghostFor`, `angelFly`, `cutLayer`, `playCut`.
 | RING-15 | `b211816` | Giọng đọc im lặng 3 giây (giọng online chưa tải, hay gặp ở thẻ đầu) thì đọc lại bằng giọng có sẵn trong máy; vẫn im thì dừng, không treo nút |
 | RING-16 | `18ffeb4` | Bài YouTube: giọng đọc tiếp từ mặt trước sau Show thì vòng nằm trên nhãn giờ của câu, không nhảy lên nút 🔊 trên cùng; nút 🔊 giống nhau ở hai mặt |
 | RING-17 | `80acc97` | Nút 🔊/YouTube trên cùng luôn có vòng khi đang phát (cả hai mặt, Lessons và Vocabulary); Show khi mặt trước chưa đọc xong: đọc nốt rồi phát mặt sau |
+| RING-18 | `pending` | Vòng nút trên cùng vẽ lại ngay khi nút vừa bật, không chờ nhịp sau |
 
 Hàm chính: `paintRing`, `dropRing`, `setDash`.
 
