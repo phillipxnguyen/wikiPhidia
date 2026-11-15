@@ -468,6 +468,7 @@ Hàm chính: `swipe`, `ghostFor`, `angelFly`, `cutLayer`, `playCut`.
 | RING-16 | `18ffeb4` | Bài YouTube: giọng đọc tiếp từ mặt trước sau Show thì vòng nằm trên nhãn giờ của câu, không nhảy lên nút 🔊 trên cùng; nút 🔊 giống nhau ở hai mặt |
 | RING-17 | `80acc97` | Nút 🔊/YouTube trên cùng luôn có vòng khi đang phát (cả hai mặt, Lessons và Vocabulary); Show khi mặt trước chưa đọc xong: đọc nốt rồi phát mặt sau |
 | RING-18 | `eb18bd5` | Vòng nút trên cùng vẽ lại ngay khi nút vừa bật, không chờ nhịp sau |
+| RING-19 | `pending` | Nhãn giờ của câu trên mặt sau chờ cùng nút trên cùng khi clip đang tải (sau Show), rồi chạy vòng khi phát |
 
 Hàm chính: `paintRing`, `dropRing`, `setDash`.
 

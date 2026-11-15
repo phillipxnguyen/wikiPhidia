@@ -58,7 +58,7 @@ The shared rules of the whole app, one line each. They hold in every mode (☰ F
 
 ### 6. Sound
 1. The card you work on plays its clip, or is read aloud with the best voice the browser has; if that voice stays silent for 3 seconds (an online voice that has not loaded yet, often on the first card), it is read again with a voice built into the device, and if that also stays silent the sound stops instead of hanging.
-2. Every sound button has the same ring: full at once, emptying as the sound plays, fading in and out over 0.4 s; the sound button at the top always has it while anything plays.
+2. Every sound button has the same ring: full at once, emptying as the sound plays, fading in and out over 0.4 s; the sound button at the top always has it while anything plays, and the badge of the sentence being heard on the card has it at the same time, waiting when the button waits (a clip still loading) and running when it runs, after Show too.
 3. Show while the front is still read finishes that sentence, then plays the back as Show always does.
 4. The speed sits beside the sound button; [ and ] change it.
 
