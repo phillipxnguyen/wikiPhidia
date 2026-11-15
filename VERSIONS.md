@@ -401,7 +401,7 @@ Hàm chính: `todayTasks`, `todayTaskCounts`, `taskQueue`, `startTaskSide`, `tas
 | LAYOUT-12 | `266b0f1` | Thẻ Vocabulary ở sidebar làm lại: nền gradient rực, ô số dạng kính, mỗi ngôn ngữ một thẻ màu riêng (tên đủ, 🆕⏳✅, bước), biểu đồ 7 ngày, nút Open trắng |
 | LAYOUT-13 | `673d6cc` | Bộ rule chung (README → Rules, 12 nhóm); màu ngôn ngữ Library = Vocabulary |
 | LAYOUT-14 | `f236d92` | Điện thoại: mọi popup chừa 64px trên và dưới (ô sửa, popup tra từ, popup từ, cài đặt, công cụ, thêm thẻ), phần dài cuộn bên trong |
-| LAYOUT-15 | `pending` | Bỏ nút giả "Open ›" ở ô Vocabulary trên sidebar (cả ô vốn bấm được) |
+| LAYOUT-15 | `f62a41f` | Bỏ nút giả "Open ›" ở ô Vocabulary trên sidebar (cả ô vốn bấm được) |
 
 Hàm chính: `switchToLesson`, `setAppMode`, `syncModeButtonHighlights`, `lessonInMode`, `lessonShown`, `bookHidden`.
 
