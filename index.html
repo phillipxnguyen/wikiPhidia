@@ -579,6 +579,18 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-list-row.editing{grid-column:1 / -1;padding:10px 16px;border-top:1px solid var(--border);}
   .vocab-list-term{font-weight:600;overflow-wrap:anywhere;}
   .vocab-list-meaning{min-width:0;overflow-wrap:break-word;}
+  .vocab-list-meaning:has(.vl-subs){flex-direction:column;align-items:flex-start;justify-content:center;}
+  .vl-subs{display:flex;flex-direction:column;gap:8px;width:100%;margin-top:8px;}
+  .vl-subs-toggle{align-self:flex-start;padding:2px 12px;border:1px solid var(--border);border-radius:14px;background:var(--surface);color:var(--text-2);font-size:14px;line-height:22px;font-weight:600;cursor:pointer;}
+  @media (hover:hover){.vl-subs-toggle:hover{border-color:var(--accent);color:var(--accent);}}
+  .vl-sub-list{display:flex;flex-direction:column;gap:6px;}
+  .vl-sub{display:flex;align-items:flex-start;gap:8px;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface);font-size:16px;line-height:24px;cursor:default;}
+  .vl-sub-k{flex:none;min-width:40px;padding:0 6px;border-radius:6px;background:color-mix(in srgb, var(--text) 7%, transparent);color:var(--text-2);font-size:13px;line-height:24px;font-weight:700;text-align:center;}
+  .vl-sub-t{flex:1;min-width:0;color:var(--text);}
+  .vl-sub-t small{display:block;font-size:12px;line-height:16px;color:var(--text-2);}
+  .vl-sub-st{flex:none;font-size:16px;line-height:24px;}
+  .vl-sub-del{flex:none;width:24px;height:24px;padding:0;border:0;border-radius:12px;background:none;color:var(--text-2);font-size:13px;line-height:24px;cursor:pointer;}
+  @media (hover:hover){.vl-sub-del:hover{background:var(--danger-soft, rgba(220,60,60,.12));color:var(--danger, #c0392b);}}
   .vocab-list-row[data-key] > .vocab-list-meaning{font-size:20px;}
   .vocab-list-row[data-key] > .vocab-list-term{font-weight:400;color:var(--accent);}
   @media (prefers-reduced-motion: reduce){.vocab-card-inner{transition:none;}}
@@ -20670,6 +20682,30 @@ function currentVocabItem() {
   return null;
 }
 
+const subsOpen = new Set;
+
+function subsListHtml(item, subs) {
+  if (!subs || !subs.length) return "";
+  const d = subs.filter(x => x.sub.kind === "def").length, e = subs.length - d, open = subsOpen.has(item.key);
+  const label = [ d ? countOf(d, "definition") : "", e ? countOf(e, "example") : "" ].filter(Boolean).join(" · ");
+  return `<div class="vl-subs"><button type="button" class="vl-subs-toggle" data-subs="${escapeAttr(item.key)}" aria-expanded="${open}">${open ? "▾" : "▸"} ${label}</button>${open ? `<div class="vl-sub-list">${subs.map(x => `<div class="vl-sub" data-sub="${escapeAttr(x.key)}"><span class="vl-sub-k">${x.sub.kind === "def" ? escapeHtml(x.sub.p || "def") : "ex"}</span><span class="vl-sub-t">${x.sub.kind === "ex" ? vocabSentenceHtml(x.sub.t, item.term, item.card) : escapeHtml(x.sub.t)}<small>${escapeHtml(x.sub.s || "")}</small></span><span class="vl-sub-st">${vocabStatusIcon(vocabStateOf(x))}</span><button type="button" class="vl-sub-del" aria-label="Delete this card" title="Delete this card">✕</button></div>`).join("")}</div>` : ""}</div>`;
+}
+
+document.getElementById("vocabList").addEventListener("click", e => {
+  const t = e.target.closest && e.target.closest(".vl-subs-toggle, .vl-sub-del, .vl-sub");
+  if (!t) return;
+  e.stopPropagation();
+  if (t.matches(".vl-subs-toggle")) {
+    const k = t.dataset.subs;
+    if (subsOpen.has(k)) subsOpen.delete(k); else subsOpen.add(k);
+    renderVocab();
+    return;
+  }
+  if (!t.matches(".vl-sub-del")) return;
+  const row = t.closest(".vl-sub"), item = row && lessonVocabItems(vocabSource()).find(i => i.key === row.dataset.sub);
+  if (item) deleteVocabEntry(item, row);
+}, true);
+
 function vocabStatusIcon(st) {
   if (!st.reps) return "🆕";
   if (isDoneState(st)) return "✅";
@@ -21490,7 +21526,14 @@ function renderVocab() {
   const open = !studyOnly && (vocabView === "list" || caughtUp) || !!vocabEditingKey && (vocabEditingInList || vocabEditingKey === NEW_WORD_KEY);
   list.hidden = items.length ? !open : vocabEditingKey !== NEW_WORD_KEY;
   queueMicrotask(() => fitHighlights(list));
-  list.innerHTML = adder + (list.hidden ? "" : shown.map(item => `<div class="vocab-list-row" data-key="${escapeAttr(item.key)}"><span class="vocab-list-term">${escapeHtml(item.term)}</span><span class="vocab-list-meaning">${wordNotesOf(item) ? `<span>${meaningHtml(item.meaning)}</span><div class="card-notes">${wordNotesView(item)}</div>` : meaningHtml(item.meaning)}</span><span class="vocab-list-status">${vocabStatusIcon(vocabStateOf(item))}</span></div>`).join("") + (more ? `<button id="vocabMore" class="vocab-more ghost">Show ${more} more</button>` : ""));
+  const subsOf = new Map;
+  items.forEach(i => {
+    if (!i.sub) return;
+    const k = i.key.slice(2, i.key.lastIndexOf("|"));
+    if (!subsOf.has(k)) subsOf.set(k, []);
+    subsOf.get(k).push(i);
+  });
+  list.innerHTML = adder + (list.hidden ? "" : shown.map(item => `<div class="vocab-list-row" data-key="${escapeAttr(item.key)}"><span class="vocab-list-term">${escapeHtml(item.term)}</span><span class="vocab-list-meaning">${wordNotesOf(item) || subsOf.has(item.key) ? `<span>${meaningHtml(item.meaning)}</span>${wordNotesOf(item) ? `<div class="card-notes">${wordNotesView(item)}</div>` : ""}${subsListHtml(item, subsOf.get(item.key))}` : meaningHtml(item.meaning)}</span><span class="vocab-list-status">${vocabStatusIcon(vocabStateOf(item))}</span></div>`).join("") + (more ? `<button id="vocabMore" class="vocab-more ghost">Show ${more} more</button>` : ""));
   watchVocabMore();
   if (emptyLesson) {
     vocabSession = null;

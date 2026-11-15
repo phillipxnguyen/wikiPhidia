@@ -314,7 +314,19 @@
     }, 300);
   }
 
-  function lookup(lang, w, onEach) {
+  function enBases(k) {
+    const out = [];
+    if (/[^aeiou]ie[sd]$/.test(k)) out.push(k.slice(0, -3) + "y");
+    if (/ies$/.test(k)) out.push(k.slice(0, -3) + "y");
+    if (/([^aeiou])\1(ed|ing)$/.test(k)) out.push(k.replace(/([^aeiou])\1(ed|ing)$/, "$1"));
+    if (/ed$/.test(k)) out.push(k.slice(0, -2), k.slice(0, -1));
+    if (/ing$/.test(k)) out.push(k.slice(0, -3), k.slice(0, -3) + "e");
+    if (/es$/.test(k)) out.push(k.slice(0, -2));
+    if (/s$/.test(k) && !/ss$/.test(k)) out.push(k.slice(0, -1));
+    return [ ...new Set(out) ].filter(x => x.length > 1 && x !== k).slice(0, 3);
+  }
+
+  function lookup(lang, w, onEach, base) {
     w = (w || "").replace(/\s+/g, " ").trim();
     lang = lang || langOf(w);
     const list = SOURCES[lang];
@@ -354,6 +366,17 @@
         }
         return got;
       });
+    }).then(async r => {
+      if (!r.length && lang === "en" && !base) {
+        for (const b of enBases(w.toLowerCase())) {
+          const via = await lookup(lang, b, null, true);
+          if (via.length) {
+            via.forEach(x => add(x));
+            return got;
+          }
+        }
+      }
+      return r;
     }).then(r => {
       if (r.length) mem.set(key, r);
       return r;

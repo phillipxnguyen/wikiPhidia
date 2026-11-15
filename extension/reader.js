@@ -107,7 +107,7 @@ textarea[hidden], .sent-view[hidden]{display:none;}
 .tip-m{font-size:18px;line-height:26px;font-weight:700;color:var(--answer);overflow-wrap:anywhere;}
 .tip-ex{margin:8px 0 0;font-size:18px;line-height:26px;color:var(--ink);overflow-wrap:anywhere;}
 .tip-ex mark{padding:0 2px;border-radius:4px;background:var(--mark);color:inherit;font-weight:700;}
-.tip-l{display:flex;justify-content:space-between;gap:12px;font-size:13px;line-height:18px;color:var(--ink-2);}
+.tip-l{display:flex;justify-content:space-between;gap:12px;margin-top:8px;font-size:13px;line-height:18px;color:var(--ink-2);}
 .tip{max-height:calc(100vh - 16px);overflow-y:auto;overscroll-behavior:contain;}
 .tip-word{display:flex;align-items:center;flex-wrap:wrap;gap:8px;min-width:0;}
 .lv{flex:none;padding:2px 8px;border-radius:6px;background:var(--green-soft);color:var(--green);font-size:13px;line-height:18px;font-weight:700;white-space:nowrap;cursor:default;}
