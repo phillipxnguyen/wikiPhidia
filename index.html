@@ -591,6 +591,12 @@ window.onYouTubeIframeAPIReady = function(){
   .vl-sub-k{flex:none;min-width:48px;padding:0 6px;border-radius:6px;background:color-mix(in srgb, var(--text) 7%, transparent);color:var(--text-2);font-size:13px;line-height:24px;font-weight:700;text-align:center;}
   .vl-sub-t{flex:1;min-width:0;color:var(--text);}
   .vl-sub-t mark{padding:0 2px;border-radius:4px;background:var(--word-mark);color:inherit;}
+  .vocab-list-meaning > .vl-subs:first-child{margin-top:0;}
+  .vl-sub-q, .vl-sub-m, .vl-sub-n{display:block;}
+  .vl-sub-m{color:var(--a-text);font-weight:600;}
+  .vl-sub-q + .vl-sub-m, .vl-sub-m + .vl-sub-n{margin-top:4px;}
+  .vl-sub-n{font-size:14px;line-height:20px;color:var(--text-2);}
+  .vl-sub-n > *{margin:0;}
   .vl-sub-s{flex:none;font-size:13px;line-height:24px;color:var(--text-2);white-space:nowrap;}
   .vl-sub > :not(.vl-sub-t){align-self:center;}
   .vl-sub-st{flex:none;font-size:16px;line-height:24px;}
@@ -20395,12 +20401,18 @@ function lessonVocabItems(cards) {
   const idx = wordDictIndex();
   const gone = item => item.card.vocab && item.card.vocab[item.key] && item.card.vocab[item.key].due >= SUB_GONE;
   if (!idx.size) return items.filter(i => !gone(i));
-  const out = [];
+  const out = [], owners = new Map, tkOf = i => i.tkey || normalizeVocabText(i.term);
+  items.forEach(item => {
+    if (!(item.meaning || "").trim()) return;
+    const tk = tkOf(item), o = owners.get(tk);
+    if (!o || (item.card.uid || "") + item.key < (o.card.uid || "") + o.key) owners.set(tk, item);
+  });
   items.forEach(item => {
     if (!gone(item)) out.push(item);
-    if (!(item.meaning || "").trim()) return;
-    const entry = idx.get(item.tkey || normalizeVocabText(item.term));
-    if (entry) subItemsOf(item, entry).forEach(x => out.push(x));
+    const tk = tkOf(item);
+    if (owners.get(tk) !== item) return;
+    const entry = idx.get(tk);
+    if (entry) subItemsOf(item, entry, tk).forEach(x => out.push(x));
   });
   return out;
 }
@@ -20430,17 +20442,34 @@ function subParentKey(key) {
   return key.startsWith("x:") ? key.slice(2, key.lastIndexOf("|")) : key;
 }
 
+function wordTk(i) {
+  return i.sub ? subParentKey(i.key) : i.tkey || normalizeVocabText(i.term);
+}
+
 function wordHeads(items) {
-  const heads = [], seen = new Set;
+  const heads = [], byTk = new Map;
   items.forEach(i => {
-    const k = i.sub ? subParentKey(i.key) : i.key;
-    if (seen.has(k)) return;
-    seen.add(k);
-    heads.push(i.sub ? Object.assign({}, i, {
-      key: k,
-      sub: undefined,
-      gone: true
-    }) : i);
+    const tk = wordTk(i);
+    let h = byTk.get(tk);
+    if (!h) {
+      h = i.sub ? Object.assign({}, i, {
+        key: i.base,
+        sub: undefined,
+        gone: true
+      }) : Object.assign({}, i);
+      h.tkey = tk;
+      h.entries = [];
+      byTk.set(tk, h);
+      heads.push(h);
+    }
+    if (!i.sub) {
+      if (h.gone) Object.assign(h, i, {
+        tkey: tk,
+        entries: h.entries,
+        gone: false
+      });
+      h.entries.push(i);
+    }
   });
   return heads;
 }
@@ -20458,7 +20487,7 @@ function vocabPickTargets(key, items) {
   const k = key.slice(2), head = wordHeads(items).find(h => h.key === k);
   return head ? {
     head: head,
-    items: items.filter(i => i.key === k || i.sub && subParentKey(i.key) === k)
+    items: items.filter(i => wordTk(i) === head.tkey)
   } : null;
 }
 
@@ -20468,13 +20497,15 @@ function textHash(t) {
   return h.toString(36);
 }
 
-function subItemsOf(item, entry) {
+function subItemsOf(item, entry, tk) {
   const ck = item.key + "|" + (entry.at || 0);
   let tmpl = subCache.get(ck);
   if (!tmpl) {
     tmpl = [];
     (entry.defs || []).forEach(d => d && d.t && tmpl.push({
-      key: "x:" + item.key + "|d" + textHash(d.t),
+      key: "x:" + tk + "|d" + textHash(d.t),
+      oldKey: "x:" + item.key + "|d" + textHash(d.t),
+      base: item.key,
       sub: {
         kind: "def",
         t: d.t,
@@ -20484,7 +20515,9 @@ function subItemsOf(item, entry) {
       }
     }));
     (entry.ex || []).forEach(x => x && x.t && findWordForm(x.t, item.term) && tmpl.push({
-      key: "x:" + item.key + "|e" + textHash(x.t),
+      key: "x:" + tk + "|e" + textHash(x.t),
+      oldKey: "x:" + item.key + "|e" + textHash(x.t),
+      base: item.key,
       sub: {
         kind: "ex",
         t: x.t,
@@ -20495,8 +20528,8 @@ function subItemsOf(item, entry) {
     if (subCache.size > 4000) subCache.clear();
     subCache.set(ck, tmpl);
   }
-  const v = item.card.vocab || {};
-  return tmpl.filter(x => !(v[x.key] && v[x.key].due >= SUB_GONE)).map(x => Object.assign({}, item, x));
+  const v = item.card.vocab || {}, st = x => v[x.key] || v[x.oldKey];
+  return tmpl.filter(x => !(st(x) && st(x).due >= SUB_GONE)).map(x => Object.assign({}, item, x));
 }
 
 let vocabAddClock = 0;
@@ -20547,7 +20580,7 @@ function keepVocabAdded(vocab, at = Date.now()) {
 function vocabStateOf(item) {
   const card = item.card;
   if (!card.vocab) card.vocab = {};
-  if (item.sub) return card.vocab[item.key] || newSrsState();
+  if (item.sub) return card.vocab[item.key] || item.oldKey && card.vocab[item.oldKey] || newSrsState();
   return card.vocab[item.key] || withWordKeys(card).vocab[item.key] || newSrsState();
 }
 
@@ -20729,10 +20762,13 @@ function currentVocabItem() {
   return null;
 }
 
-function cardsListHtml(item, subs) {
-  const sentence = vocabContext(item).sentence || "";
-  const own = item.gone ? [] : [ `<div class="vl-sub vl-own" data-sub="${escapeAttr(item.key)}"><span class="vl-sub-k">${sentence ? "sent" : "word"}</span><span class="vl-sub-t">${sentence ? vocabSentenceHtml(sentence, item.term, item.card) : escapeHtml(item.term)}</span><span class="vl-sub-st">${vocabStatusIcon(vocabStateOf(item))}</span><button type="button" class="vl-sub-del" aria-label="Delete this card" title="Delete this card">✕</button></div>` ];
-  const lines = own.concat(subs.map(x => `<div class="vl-sub" data-sub="${escapeAttr(x.key)}"><span class="vl-sub-k">${x.sub.kind === "def" ? escapeHtml(x.sub.p || "def") : "ex"}</span><span class="vl-sub-t">${x.sub.kind === "ex" ? vocabSentenceHtml(x.sub.t, item.term, item.card) : escapeHtml(x.sub.t)}</span>${x.sub.s ? `<span class="vl-sub-s">${escapeHtml(x.sub.s)}</span>` : ""}<span class="vl-sub-st">${vocabStatusIcon(vocabStateOf(x))}</span><button type="button" class="vl-sub-del" aria-label="Delete this card" title="Delete this card">✕</button></div>`));
+function cardsListHtml(head, subs) {
+  const own = head.entries.map(e => {
+    const sentence = vocabContext(e).sentence || "", noted = noteSentence(e), rest = noted ? noted.rest.replace(/^(\s|<br\s*\/?>|<div>\s*<\/div>)+/i, "") : wordNotesOf(e);
+    const mean = `<span class="vl-sub-m">${meaningHtml(e.meaning)}</span>`;
+    return `<div class="vl-sub vl-own" data-sub="${escapeAttr(e.key)}"><span class="vl-sub-k">${sentence ? "sent" : "word"}</span><span class="vl-sub-t">${sentence ? `<span class="vl-sub-q">${vocabSentenceHtml(sentence, e.term, e.card)}</span>` : ""}${mean}${rest ? `<span class="vl-sub-n card-notes">${rest}</span>` : ""}</span><span class="vl-sub-st">${vocabStatusIcon(vocabStateOf(e))}</span><button type="button" class="vl-sub-del" aria-label="Delete this card" title="Delete this card">✕</button></div>`;
+  });
+  const lines = own.concat(subs.map(x => `<div class="vl-sub" data-sub="${escapeAttr(x.key)}"><span class="vl-sub-k">${x.sub.kind === "def" ? escapeHtml(x.sub.p || "def") : "ex"}</span><span class="vl-sub-t">${x.sub.kind === "ex" ? vocabSentenceHtml(x.sub.t, head.term, head.card) : escapeHtml(x.sub.t)}${x.sub.kind === "ex" && x.sub.tr ? `<span class="vl-sub-m">${escapeHtml(x.sub.tr)}</span>` : ""}</span>${x.sub.s ? `<span class="vl-sub-s">${escapeHtml(x.sub.s)}</span>` : ""}<span class="vl-sub-st">${vocabStatusIcon(vocabStateOf(x))}</span><button type="button" class="vl-sub-del" aria-label="Delete this card" title="Delete this card">✕</button></div>`));
   return lines.length ? `<div class="vl-subs"><div class="vl-sub-list">${lines.join("")}</div></div>` : "";
 }
 
@@ -20955,7 +20991,7 @@ function vocabBackInner(item) {
   const inSentence = !whole && sentence && !!findWordForm(sentence.normalize("NFC"), item.term);
   const main = whole ? `<div class="vocab-ctx">${withPill(linePillHtml(item, item.term, true), lookupOthers(vocabSentenceHtml(item.term, "", card), item))}</div>` : inSentence ? `<div class="vocab-ctx">${withPill(linePillHtml(item, sentence, true), lookupOthers(vocabSentenceHtml(sentence, item.term, card), item))}</div>` : `<div class="vocab-ctx"><b class="vocab-word">${vocabSentenceHtml(item.term, "", card)}</b></div>` + (sentence ? `<div class="vocab-ctx small">${withPill(linePillHtml(item, sentence, true), lookupOthers(vocabSentenceHtml(sentence, "", card), item))}</div>` : "");
   const notes = rest ?? wordNotesOf(item);
-  return main + `<div class="vocab-meaning${whole ? "" : " word"}">${meaningHtml(item.meaning)}</div>` + (notes ? `<div class="vocab-word-notes">${brLines(notes)}</div>` : "");
+  return main + (headMeaning(item) ? `<div class="vocab-meaning${whole ? "" : " word"}">${meaningHtml(headMeaning(item))}</div>` : "") + (notes ? `<div class="vocab-word-notes">${brLines(notes)}</div>` : "");
 }
 
 function buildVocabCard(item) {
@@ -21105,6 +21141,10 @@ function notesWithPinyin(html, card) {
   return box.innerHTML;
 }
 
+function headMeaning(item) {
+  return item.sub ? item.sub.kind === "ex" ? item.sub.tr || "" : "" : item.meaning || "";
+}
+
 function fillVocabCard(el, item) {
   const viewOnly = vocabViewOnly(item);
   const sentence = vocabContext(item).sentence || "", gap = !viewOnly && sentence && !wholeSentenceCard(item, sentence) ? findTermIn(sentence, item.term) : null;
@@ -21137,7 +21177,7 @@ function fillVocabCard(el, item) {
     const ownTs = own ? linePillHtml(item, own, true) : "";
     const ownHtml = own ? `<span class="cloze-more cloze-own">${withPill(ownTs, lookupOthers(vocabSentenceHtml(own, item.term, item.card), item))}</span>` : "";
     el.querySelector(".vocab-term").innerHTML = `<span class="cloze-body">${el.dataset.listen ? `<span class="vc-stack"><span class="vc-art" aria-hidden="true">${sceneArt(el.dataset.scene)}<span class="vc-time"><i></i></span></span>${sent}</span>` : sent}${ownHtml}${notes ? `<span class="cloze-more cloze-notes">${notesWithPinyin(brLines(notes), item.card)}</span>` : ""}</span>`;
-    el.querySelector(".vocab-term").insertAdjacentHTML("afterbegin", `<span class="cloze-more cloze-head"><span class="cloze-main">${rubyWord(item.term, item.card)}</span>${item.meaning ? `<span class="cloze-mean">${meaningHtml(item.meaning)}</span>` : ""}</span>`);
+    el.querySelector(".vocab-term").insertAdjacentHTML("afterbegin", `<span class="cloze-more cloze-head"><span class="cloze-main">${rubyWord(item.term, item.card)}</span>${headMeaning(item) ? `<span class="cloze-mean">${meaningHtml(headMeaning(item))}</span>` : ""}</span>`);
     el.classList.add("fill");
     el.classList.toggle("listen", !!el.dataset.listen);
   } else if (ex === "def" && item.sub) {
@@ -21147,13 +21187,13 @@ function fillVocabCard(el, item) {
     const defHtml = `<span class="vc-sent vc-def">${item.sub.h ? `<span class="vc-def-h">${escapeHtml(item.sub.h)}</span>` : ""}${item.sub.p ? `<span class="vc-pos">${escapeHtml(item.sub.p)}</span>` : ""}${defText}</span>`;
     const ownHtml = sentence ? `<span class="cloze-more cloze-own">${withPill(linePillHtml(item, sentence, true), lookupOthers(vocabSentenceHtml(sentence, item.term, item.card), item))}</span>` : "";
     el.querySelector(".vocab-term").innerHTML = `<span class="cloze-body"><span class="vc-stack"><span class="vc-art" aria-hidden="true">${sceneArt(el.dataset.scene)}<span class="vc-time"><i></i></span></span>${defHtml}</span>${ownHtml}${notes ? `<span class="cloze-more cloze-notes">${notesWithPinyin(brLines(notes), item.card)}</span>` : ""}</span>`;
-    el.querySelector(".vocab-term").insertAdjacentHTML("afterbegin", `<span class="cloze-more cloze-head"><span class="cloze-main">${rubyWord(item.term, item.card)}</span>${item.meaning ? `<span class="cloze-mean">${meaningHtml(item.meaning)}</span>` : ""}</span>`);
+    el.querySelector(".vocab-term").insertAdjacentHTML("afterbegin", `<span class="cloze-more cloze-head"><span class="cloze-main">${rubyWord(item.term, item.card)}</span>${headMeaning(item) ? `<span class="cloze-mean">${meaningHtml(headMeaning(item))}</span>` : ""}</span>`);
     el.classList.add("fill", "listen");
   } else if (ex === "word" && el.dataset.listen && !viewOnly) {
     const noted = noteSentence(item), notes = noted ? noted.rest.replace(/^(\s|<br\s*\/?>|<div>\s*<\/div>)+/i, "") : wordNotesOf(item);
     const sent = sentence ? `<span class="vc-sent">${withPill(linePillHtml(item, sentence, true, "cloze-pill"), lookupOthers(vocabSentenceHtml(sentence, item.term, item.card), item))}</span>` : '<span class="vc-sent"></span>';
     el.querySelector(".vocab-term").innerHTML = `<span class="cloze-body"><span class="vc-stack"><span class="vc-art" aria-hidden="true">${sceneArt(el.dataset.scene)}<span class="vc-time"><i></i></span></span>${sent}</span>${notes ? `<span class="cloze-more cloze-notes">${notesWithPinyin(brLines(notes), item.card)}</span>` : ""}</span>`;
-    el.querySelector(".vocab-term").insertAdjacentHTML("afterbegin", `<span class="cloze-more cloze-head"><span class="cloze-main">${rubyWord(item.term, item.card)}</span>${item.meaning ? `<span class="cloze-mean">${meaningHtml(item.meaning)}</span>` : ""}</span>`);
+    el.querySelector(".vocab-term").insertAdjacentHTML("afterbegin", `<span class="cloze-more cloze-head"><span class="cloze-main">${rubyWord(item.term, item.card)}</span>${headMeaning(item) ? `<span class="cloze-mean">${meaningHtml(headMeaning(item))}</span>` : ""}</span>`);
     el.classList.add("fill", "listen");
   } else if (ex === "sent" && whole && el.dataset.listen) {
     const text = sentence || item.term, spy = cjkScriptFor(text, item.card) === "zh" ? pinyinLine(text) : "";
@@ -21561,7 +21601,7 @@ function renderVocab() {
   if (editingAt >= vocabListLimit) vocabListLimit = editingAt + 1;
   let lines = 0, cut = words.length;
   for (let i = 0; i < words.length; i++) {
-    lines += 1 + (subsOf.get(words[i].key) || []).length;
+    lines += 1 + words[i].entries.length + (subsOf.get(words[i].tkey) || []).length;
     if (i > editingAt && i > 0 && lines > vocabListLimit * 4) {
       cut = i;
       break;
@@ -21576,10 +21616,7 @@ function renderVocab() {
   const open = !studyOnly && (vocabView === "list" || caughtUp) || !!vocabEditingKey && (vocabEditingInList || vocabEditingKey === NEW_WORD_KEY);
   list.hidden = items.length ? !open : vocabEditingKey !== NEW_WORD_KEY;
   queueMicrotask(() => fitHighlights(list));
-  list.innerHTML = adder + (list.hidden ? "" : shown.map(item => {
-    const noted = noteSentence(item), rest = noted ? noted.rest.replace(/^(\s|<br\s*\/?>|<div>\s*<\/div>)+/i, "") : wordNotesOf(item);
-    return `<div class="vocab-list-row" data-key="${escapeAttr(item.key)}"><span class="vocab-list-term">${escapeHtml(item.term)}</span><span class="vocab-list-meaning"><span>${meaningHtml(item.meaning)}</span>${rest ? `<div class="card-notes">${rest}</div>` : ""}${cardsListHtml(item, subsOf.get(item.key) || [])}</span></div>`;
-  }).join("") + (more ? `<button id="vocabMore" class="vocab-more ghost">Show ${more} more</button>` : ""));
+  list.innerHTML = adder + (list.hidden ? "" : shown.map(item => `<div class="vocab-list-row" data-key="${escapeAttr(item.key)}"><span class="vocab-list-term">${escapeHtml(item.term)}</span><span class="vocab-list-meaning">${cardsListHtml(item, subsOf.get(item.tkey) || [])}</span></div>`).join("") + (more ? `<button id="vocabMore" class="vocab-more ghost">Show ${more} more</button>` : ""));
   watchVocabMore();
   if (emptyLesson) {
     vocabSession = null;
@@ -21948,7 +21985,10 @@ function keepVocabEdit() {
 
 function openVocabEditor(key, inList) {
   if (key && key.startsWith("g:")) key = key.slice(2);
-  if (key && key.startsWith("x:")) key = subParentKey(key);
+  if (key && key.startsWith("x:")) {
+    const it = lessonVocabItems(vocabSource()).find(i => i.key === key);
+    key = it ? it.base : key;
+  }
   commitVocabEdit();
   stopVocabSound();
   vocabEditingKey = key;
@@ -22140,11 +22180,35 @@ function vocabSoundOn() {
   return vocabTtsOn || vocabPendingKey !== null || loopingRowId !== null && loopingRowId === vocabShownRowId;
 }
 
+function deleteWordGroup(head, part) {
+  const entries = head.entries && head.entries.length ? head.entries : [ head ];
+  if (entries.length === 1) return deleteVocabEntry(entries[0], part);
+  commitVocabEdit();
+  stopVocabSound();
+  pushDeleteUndo("Deleted card — " + head.term);
+  entries.forEach(e => {
+    const next = rewrittenVocabNotes(e.card, e, null, null);
+    if (!next) return;
+    e.card.notes = next.notes;
+    e.card.notesHtml = next.notesHtml;
+    if (e.card.vocab) delete e.card.vocab[e.key];
+    if (vocabSession) dropVocabSessionKey(e.key);
+  });
+  vocabEditingKey = vocabHoveredKey = null;
+  scheduleAutoSave();
+  swipe(part ? [ part ] : [ document.getElementById("vocabCard") ], -1, () => {
+    render();
+    renderVocab();
+    renderLessonList();
+  }, false, "Delete");
+}
+
 function deleteVocabEntry(item, part, only) {
   if (!item) return;
   commitVocabEdit();
   const row = item.card;
-  if (item.sub || only && lessonVocabItems(vocabSource()).some(i => i.sub && subParentKey(i.key) === item.key)) {
+  const all = only && !item.sub ? lessonVocabItems(vocabSource()) : null, tk = item.tkey || normalizeVocabText(item.term);
+  if (item.sub || all && all.some(i => i.sub && subParentKey(i.key) === tk) && !all.some(i => !i.sub && i.key !== item.key && (i.tkey || normalizeVocabText(i.term)) === tk)) {
     stopVocabSound();
     pushDeleteUndo("Deleted card — " + item.term);
     if (!row.vocab) row.vocab = {};
@@ -22632,7 +22696,7 @@ function vocabCopyAction() {
 
 function vocabDeleteAction() {
   const pickedKey = vocabPickedKey(), picked = vocabPickTargets(pickedKey);
-  if (picked && picked.head) return deleteVocabEntry(picked.head, document.querySelector(`#vocabList .vocab-list-row[data-key="${CSS.escape(picked.head.key)}"]`));
+  if (picked && picked.head) return deleteWordGroup(picked.head, document.querySelector(`#vocabList .vocab-list-row[data-key="${CSS.escape(picked.head.key)}"]`));
   if (picked) return deleteVocabEntry(picked.items[0], document.querySelector(`#vocabList .vl-sub[data-sub="${CSS.escape(pickedKey)}"]`), true);
   const target = vocabView === "card" ? currentVocabItem() : null;
   if (target) deleteVocabEntry(target, null);
