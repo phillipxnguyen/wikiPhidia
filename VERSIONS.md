@@ -225,6 +225,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-86 | `13dbb53` | Hết lag với nhiều thẻ: giãn cách câu 15s→70ms (cùng kết quả), trạng thái thẻ con không quét lại, lưu/sidebar sau khi chấm chạy sau hiệu ứng, từ điển lưu gom 15s; dọn code thừa (ESLint); levels.json được đưa lên |
 | FLASH-87 | `306c8ae` | Nghĩa thuộc về câu: ☰ List gom theo từ, đầu khối chỉ có từ, mỗi thẻ câu mang nghĩa riêng; thẻ từ điển một bộ mỗi từ (giữ lịch cũ); mặt sau chỉ hiện nghĩa của chính thẻ |
 | FLASH-88 | `f91fa1e` | Mặt trước đọc đúng câu mặt sau xếp đầu; mặt sau phát từ trên xuống; giọng đọc đợi sau khi dừng + báo khi không chạy; từ thêm giữa phiên ngôn ngữ hiện ngay; tô/khoét mọi lần xuất hiện của từ |
+| FLASH-89 | `pending` | Không ghép câu theo chữ nữa: câu khác chỉ lấy nơi cùng từ cùng nghĩa; thẻ định nghĩa/ví dụ không kèm câu của mình; âm thanh và ⌘C theo đúng thứ tự hiển thị |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
@@ -556,6 +557,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-61 | `c329f4b` | Ô định nghĩa rộng bằng nhau (cả cột) ở popup app và extension 1.6.33 |
 | LOOKUP-62 | `d2ce6fa` | Extension 1.6.34: thẻ thêm từ không còn co nhỏ khi từ điển tải về (chuyển sang phía rộng, hoặc phủ lên chữ và cao bằng cửa sổ); rộng 460px |
 | LOOKUP-63 | `7834dc6` | 🌐 From the web lên trên Waiting for you trong trang ngôn ngữ |
+| LOOKUP-64 | `pending` | Sửa nghĩa trong ô tra từ: nút 🔊 và Save luôn cùng hàng với từ, từ dài tự xuống dòng |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 

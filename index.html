@@ -1598,7 +1598,7 @@ window.onYouTubeIframeAPIReady = function(){
   .od-float :is(.od-add, .od-done, .od-pos), .od-float .od-notes:empty::before{font-family:"Doto", system-ui, sans-serif;font-weight:800;}
   .od-float .od-term.od-cur{border-color:var(--a-label);color:var(--a-label);}
   .od-card{position:relative;display:flex;flex-direction:column;gap:8px;padding:16px;border:1px solid var(--od-line);border-radius:16px;background:var(--od-card);transition:border-color .2s, box-shadow .2s, background-color .2s;}
-  .od-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 12px;}
+  .od-top{display:flex;align-items:center;justify-content:space-between;gap:12px;}
   .od-word{display:flex;align-items:center;gap:8px;min-width:0;}
   .od-say:focus:not(:focus-visible){outline:none;}
   .od-word b{font-size:28px;line-height:36px;font-weight:700;color:var(--text);overflow-wrap:break-word;}
@@ -20985,19 +20985,22 @@ function appSentencesFor(term, row, n) {
 }
 
 function otherLessonSentence(item) {
-  const home = item.card.srcLessonId || currentLessonId, found = [];
+  const own = vocabContext(item).sentence, mean = normalizeVocabText(meaningLines(item.meaning || "").join("\n")), found = [];
+  if (!mean) return "";
   library.forEach(l => {
-    if (l.id === home || isVirtualId(l.id) || bookHidden(l)) return;
-    l.cards.forEach(c => {
-      if (found.length >= 30 || c.uid === EXTRA_UID) return;
-      splitIntoSentences(c.q || "").forEach(x => {
-        const t = (x.text || "").trim();
-        if (t && t.length <= 120 && findTermIn(t, item.term)) found.push(t);
+    if (isVirtualId(l.id) || bookHidden(l)) return;
+    lessonCardsWithExtras(l).forEach(c => {
+      if (found.length >= 30) return;
+      vocabEntriesOf(c).forEach(e => {
+        if (e.tkey !== item.tkey || normalizeVocabText(meaningLines(e.meaning || "").join("\n")) !== mean) return;
+        const t = (vocabContext(Object.assign({
+          card: c
+        }, e)).sentence || "").trim();
+        if (t && t !== own && t.length <= 120 && !found.includes(t)) found.push(t);
       });
     });
   });
-  dictSrcSentences(ownDictLang(item.term, item.card), item.term).forEach(t => t.length <= 120 && !found.includes(t) && found.push(t));
-  const own = vocabContext(item).sentence, roll = Math.random() * (found.length + (own ? 1 : 0));
+  const roll = Math.random() * (found.length + (own ? 1 : 0));
   if (own && roll < 1) return "";
   return found.length ? found[Math.floor(Math.random() * found.length)] : "";
 }
@@ -21210,7 +21213,7 @@ function fillVocabCard(el, item) {
     const noted = noteSentence(item), notes = noted ? noted.rest.replace(/^(\s|<br\s*\/?>|<div>\s*<\/div>)+/i, "") : wordNotesOf(item);
     const spy = cjkScriptFor(text, item.card) === "zh" ? pinyinLine(text) : "";
     const sent = `<span${el.dataset.listen ? ' class="vc-sent"' : ""}>${spy ? `<span class="cloze-more cloze-spy py-line">${linePillHtml(item, text, !otherGap)}${escapeHtml(spy)}</span>` : linePillHtml(item, text, !otherGap, "cloze-pill")}${gappedHtml(text, spans, item)}</span>`;
-    const own = otherGap && sentence && sentence !== text ? sentence : "";
+    const own = otherGap && !item.sub && sentence && sentence !== text ? sentence : "";
     const ownTs = own ? linePillHtml(item, own, true) : "";
     const ownHtml = own ? `<span class="cloze-more cloze-own">${withPill(ownTs, lookupOthers(vocabSentenceHtml(own, item.term, item.card), item))}</span>` : "";
     el.querySelector(".vocab-term").innerHTML = `<span class="cloze-body">${el.dataset.listen ? `<span class="vc-stack"><span class="vc-art" aria-hidden="true">${sceneArt(el.dataset.scene)}<span class="vc-time"><i></i></span></span>${sent}</span>` : sent}${ownHtml}${notes ? `<span class="cloze-more cloze-notes">${notesWithPinyin(brLines(notes), item.card)}</span>` : ""}</span>`;
@@ -21222,8 +21225,7 @@ function fillVocabCard(el, item) {
     const d = item.sub.t, span = findWordForm(d, item.term);
     const defText = span ? gappedHtml(d, wordSpans(d, item.term, span), item) : escapeHtml(d);
     const defHtml = `<span class="vc-sent vc-def">${item.sub.h ? `<span class="vc-def-h">${escapeHtml(item.sub.h)}</span>` : ""}${item.sub.p ? `<span class="vc-pos">${escapeHtml(item.sub.p)}</span>` : ""}${defText}</span>`;
-    const ownHtml = sentence ? `<span class="cloze-more cloze-own">${withPill(linePillHtml(item, sentence, true), lookupOthers(vocabSentenceHtml(sentence, item.term, item.card), item))}</span>` : "";
-    el.querySelector(".vocab-term").innerHTML = `<span class="cloze-body"><span class="vc-stack"><span class="vc-art" aria-hidden="true">${sceneArt(el.dataset.scene)}<span class="vc-time"><i></i></span></span>${defHtml}</span>${ownHtml}${notes ? `<span class="cloze-more cloze-notes">${notesWithPinyin(brLines(notes), item.card)}</span>` : ""}</span>`;
+    el.querySelector(".vocab-term").innerHTML = `<span class="cloze-body"><span class="vc-stack"><span class="vc-art" aria-hidden="true">${sceneArt(el.dataset.scene)}<span class="vc-time"><i></i></span></span>${defHtml}</span>${notes ? `<span class="cloze-more cloze-notes">${notesWithPinyin(brLines(notes), item.card)}</span>` : ""}</span>`;
     el.querySelector(".vocab-term").insertAdjacentHTML("afterbegin", `<span class="cloze-more cloze-head"><span class="cloze-main">${rubyWord(item.term, item.card)}</span>${headMeaning(item) ? `<span class="cloze-mean">${meaningHtml(headMeaning(item))}</span>` : ""}</span>`);
     el.classList.add("fill", "listen");
   } else if (ex === "word" && el.dataset.listen && !viewOnly) {
@@ -22391,7 +22393,7 @@ function playVocabSound(item, once, ownClip, thenRestart, fromClip) {
     return;
   }
   const row = item.card, vc = document.getElementById("vocabCard");
-  const shown = !ownClip && vc && vc.dataset.lookKey === item.key && vc.dataset.ex === "other" && vc.dataset.other || "";
+  const shown = item.sub ? item.sub.t : !ownClip && vc && vc.dataset.lookKey === item.key && vc.dataset.ex === "other" && vc.dataset.other || "";
   const videoId = shown || ytHasError && ownClip ? "" : vocabVideoIdFor(row);
   if (videoId) {
     if (row.srcLessonId && (vocabVideoId !== videoId || !ytHasVideo)) {
@@ -22416,7 +22418,7 @@ function playVocabSound(item, once, ownClip, thenRestart, fromClip) {
     return;
   }
   const ctx = vocabContext(item);
-  const own = ctx.sentence && findWordForm(ctx.sentence.normalize("NFC"), item.term) ? ctx.sentence : "";
+  const own = !item.sub && ctx.sentence && findWordForm(ctx.sentence.normalize("NFC"), item.term) ? ctx.sentence : "";
   const clipAfter = !!shown && vocabSession && vocabSession.flipped && !!own && !ytHasError && !!vocabVideoIdFor(row) && !(fromClip && once);
   const texts = shown ? vocabSession && vocabSession.flipped && own && own !== shown && !clipAfter && !fromClip ? [ shown, own ] : [ shown ] : [ own || item.term ];
   let at = 0;
@@ -22716,7 +22718,7 @@ function vocabCopyAction() {
   if (item.sub) return copyText(oneLine(item.sub.t));
   const own = oneLine(vocabContext(item).sentence || ""), vc = document.getElementById("vocabCard");
   const shown = vocabView === "card" && vc && vc.dataset.lookKey === item.key && vc.dataset.ex === "other" && vc.dataset.other ? oneLine(vc.dataset.other) : "";
-  const lines = [ own, shown ].filter((t, i, a) => t && a.indexOf(t) === i);
+  const lines = [ shown, own ].filter((t, i, a) => t && a.indexOf(t) === i);
   copyText(lines.join("\n") || oneLine(item.term));
 }
 
