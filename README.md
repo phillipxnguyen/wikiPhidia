@@ -22,7 +22,7 @@ The shared rules of the whole app, one line each. They hold in every mode (☰ F
 ### 2. Words, look-ups and notes
 1. Your words are every word of every lesson; between Chinese, Japanese and Korean, which share characters, only words of the same language count (a Japanese word may still be marked in a line of kanji alone).
 2. A word matches only the same text (capitals, spaces and punctuation ignored); other forms do not match.
-3. Your words are coloured in every sentence, in every mode and editor; pointing at one shows its meaning.
+3. Your words are coloured in every sentence, in every mode and editor; pointing at one shows its meaning. The head of a flashcard's back (the word itself and its meaning) is not a sentence and opens no look-up.
 4. A click on any word opens the one word popup; Shift on a selection opens it for a phrase; E opens the word editor.
 5. The popup and the editors share one card, in this order: the word (or a card's sentence) with the sound button, its meanings (or translation) in green, the dictionary's chips, the sentence with the word marked, and the Notes at the bottom.
 6. Each meaning has its own line: in a card's Notes the first sits after `word:` and each further one on the line right under it, inside the same item, lined up under the first meaning (not one step in, which is for the word's notes). Typing in Notes, Shift + Return once in a word's item starts its next meaning; Shift + Return twice in a row starts a new item; everywhere else (the word popup, the word editor, the flashcard, the word list) they show one per line, and a new line (Shift + Return) adds a meaning. A comma is just a comma, so one meaning can hold commas (`đi, về nhà`). A long phrase keeps one sentence.
