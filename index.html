@@ -6669,12 +6669,30 @@ function speechEvent(type, utter, e) {
   }
 }
 
+let speechCancelAt = 0;
+
+if (window.speechSynthesis) {
+  const cancelSpeech = speechSynthesis.cancel.bind(speechSynthesis);
+  speechSynthesis.cancel = () => {
+    speechCancelAt = performance.now();
+    cancelSpeech();
+  };
+}
+
 function speakSpeech(utter, origin) {
+  const wait = Math.round(speechCancelAt + 120 - performance.now());
+  if (wait > 0) {
+    const at = performance.now();
+    return setTimeout(() => speechCancelAt > at ? utter.dispatchEvent(speechEvent("error", utter, {
+      error: "canceled"
+    })) : speakSpeech(utter, origin), wait);
+  }
   let settled = false;
   const settle = () => settled = true;
   utter.addEventListener("start", settle);
   utter.addEventListener("end", settle);
   utter.addEventListener("error", settle);
+  if (speechSynthesis.paused) speechSynthesis.resume();
   speechSynthesis.speak(utter);
   setTimeout(() => {
     if (settled || !(speechSynthesis.speaking || speechSynthesis.pending)) return;
@@ -6686,7 +6704,10 @@ function speakSpeech(utter, origin) {
     utter.onend = utter.onerror = null;
     speechSynthesis.cancel();
     setTimeout(() => Object.assign(utter, keep), 60);
-    if (origin) return origin.dispatchEvent(speechEvent("error", origin));
+    if (origin) {
+      showToast("The voice didn't start — press the sound button to try again");
+      return origin.dispatchEvent(speechEvent("error", origin));
+    }
     const twin = new SpeechSynthesisUtterance(utter.text);
     twin.lang = utter.lang;
     twin.rate = utter.rate;
@@ -20389,7 +20410,7 @@ function lessonVocabItems(cards) {
   const items = [];
   cards.forEach(card => {
     vocabEntriesOf(card).forEach(e => {
-      if (seen.has(e.key) || card.wordWorld && wordWorldOf(e.term, card.wordLang) !== card.wordWorld || card.wordKeys && !card.wordKeys.includes(e.key)) return;
+      if (seen.has(e.key) || card.wordWorld && wordWorldOf(e.term, card.wordLang) !== card.wordWorld || card.wordKeys && !card.wordKeys.includes(e.key) && !((card.vocab && card.vocab[e.key] && card.vocab[e.key].added || 0) >= (card.wordSince || Infinity))) return;
       seen.add(e.key);
       items.push(Object.assign({
         card: card
@@ -20829,12 +20850,8 @@ function fitReadings(root) {
 function vocabSentenceHtml(sentence, term, row, bare) {
   const chars = Array.from((sentence || "").normalize("NFC"));
   const text = chars.join("");
-  const span = term ? findWordForm(text, term) : null;
-  let start = -1, end = -1;
-  if (span) {
-    start = Array.from(text.slice(0, span[0])).length;
-    end = Array.from(text.slice(0, span[1])).length;
-  }
+  const marks = (term ? wordSpans(text, term) : []).map(sp => [ Array.from(text.slice(0, sp[0])).length, Array.from(text.slice(0, sp[1])).length ]);
+  const inMark = (from, to) => marks.some(([a, b]) => from < b && to > a);
   const script = cjkScriptFor(text, row);
   if (script === "ja" && !bare) {
     const ja = japaneseFor(text);
@@ -20843,7 +20860,7 @@ function vocabSentenceHtml(sentence, term, row, bare) {
       let pos = 0, html = "", open = false;
       units.forEach(u => {
         const len = Array.from(u.s).length;
-        const inside = start !== -1 && pos < end && pos + len > start;
+        const inside = inMark(pos, pos + len);
         if (inside && !open) {
           html += "<mark>";
           open = true;
@@ -20860,11 +20877,32 @@ function vocabSentenceHtml(sentence, term, row, bare) {
   const py = script === "zh" && !bare ? pinyinLine(text) : "";
   let html = py ? `<span class="py-line">${escapeHtml(py)}</span>` : "";
   chars.forEach((ch, i) => {
-    if (i === start) html += "<mark>";
+    if (marks.some(([a]) => a === i)) html += "<mark>";
     html += escapeHtml(ch);
-    if (i === end - 1) html += "</mark>";
+    if (marks.some(([, b]) => b - 1 === i)) html += "</mark>";
   });
   return html;
+}
+
+function wordSpans(text, term, first) {
+  const out = [];
+  let at = 0, sp = first || (term ? findWordForm(text, term) : null);
+  while (sp && out.length < 20) {
+    out.push(sp);
+    at = sp[1];
+    const next = findWordForm(text.slice(at), term);
+    sp = next && next[1] > 0 ? [ next[0] + at, next[1] + at ] : null;
+  }
+  return out;
+}
+
+function gappedHtml(text, spans, item) {
+  let html = "", last = 0;
+  spans.forEach(([a, b]) => {
+    html += lookupOthers(escapeHtml(text.slice(last, a)), item) + `<span class="cloze-gap" style="--gap:${Math.max(3, Math.min(16, b - a))}"><span class="cloze-word">${escapeHtml(text.slice(a, b))}</span></span>`;
+    last = b;
+  });
+  return html + lookupOthers(escapeHtml(text.slice(last)), item);
 }
 
 function noteSentence(item) {
@@ -21168,11 +21206,10 @@ function fillVocabCard(el, item) {
   const ex = el.dataset.ex, otherGap = ex === "other" && el.dataset.other ? (item.sub ? findWordForm : findTermIn)(el.dataset.other, item.term) : null;
   if (ex === "cloze" && gap || otherGap) {
     const text = otherGap ? el.dataset.other : sentence, span = otherGap || gap;
-    const n = Math.max(3, Math.min(16, span[1] - span[0]));
-    const [ before, after ] = [ text.slice(0, span[0]), text.slice(span[1]) ];
+    const spans = wordSpans(text, item.term, span);
     const noted = noteSentence(item), notes = noted ? noted.rest.replace(/^(\s|<br\s*\/?>|<div>\s*<\/div>)+/i, "") : wordNotesOf(item);
     const spy = cjkScriptFor(text, item.card) === "zh" ? pinyinLine(text) : "";
-    const sent = `<span${el.dataset.listen ? ' class="vc-sent"' : ""}>${spy ? `<span class="cloze-more cloze-spy py-line">${linePillHtml(item, text, !otherGap)}${escapeHtml(spy)}</span>` : linePillHtml(item, text, !otherGap, "cloze-pill")}${lookupOthers(escapeHtml(before), item)}<span class="cloze-gap" style="--gap:${n}"><span class="cloze-word">${escapeHtml(text.slice(span[0], span[1]))}</span></span>${lookupOthers(escapeHtml(after), item)}</span>`;
+    const sent = `<span${el.dataset.listen ? ' class="vc-sent"' : ""}>${spy ? `<span class="cloze-more cloze-spy py-line">${linePillHtml(item, text, !otherGap)}${escapeHtml(spy)}</span>` : linePillHtml(item, text, !otherGap, "cloze-pill")}${gappedHtml(text, spans, item)}</span>`;
     const own = otherGap && sentence && sentence !== text ? sentence : "";
     const ownTs = own ? linePillHtml(item, own, true) : "";
     const ownHtml = own ? `<span class="cloze-more cloze-own">${withPill(ownTs, lookupOthers(vocabSentenceHtml(own, item.term, item.card), item))}</span>` : "";
@@ -21183,7 +21220,7 @@ function fillVocabCard(el, item) {
   } else if (ex === "def" && item.sub) {
     const noted = noteSentence(item), notes = noted ? noted.rest.replace(/^(\s|<br\s*\/?>|<div>\s*<\/div>)+/i, "") : wordNotesOf(item);
     const d = item.sub.t, span = findWordForm(d, item.term);
-    const defText = span ? `${escapeHtml(d.slice(0, span[0]))}<span class="cloze-gap" style="--gap:${Math.max(3, Math.min(16, span[1] - span[0]))}"><span class="cloze-word">${escapeHtml(d.slice(span[0], span[1]))}</span></span>${escapeHtml(d.slice(span[1]))}` : escapeHtml(d);
+    const defText = span ? gappedHtml(d, wordSpans(d, item.term, span), item) : escapeHtml(d);
     const defHtml = `<span class="vc-sent vc-def">${item.sub.h ? `<span class="vc-def-h">${escapeHtml(item.sub.h)}</span>` : ""}${item.sub.p ? `<span class="vc-pos">${escapeHtml(item.sub.p)}</span>` : ""}${defText}</span>`;
     const ownHtml = sentence ? `<span class="cloze-more cloze-own">${withPill(linePillHtml(item, sentence, true), lookupOthers(vocabSentenceHtml(sentence, item.term, item.card), item))}</span>` : "";
     el.querySelector(".vocab-term").innerHTML = `<span class="cloze-body"><span class="vc-stack"><span class="vc-art" aria-hidden="true">${sceneArt(el.dataset.scene)}<span class="vc-time"><i></i></span></span>${defHtml}</span>${ownHtml}${notes ? `<span class="cloze-more cloze-notes">${notesWithPinyin(brLines(notes), item.card)}</span>` : ""}</span>`;
@@ -22295,7 +22332,6 @@ let vocabThenBack = null;
 function stopVocabSound() {
   vocabThenBack = null;
   vocabRestart = null;
-  vocabAfterClipOnce = false;
   stopWordAudio();
   const wasTts = vocabTtsOn;
   vocabTtsOn = false;
@@ -22331,7 +22367,7 @@ function startPendingVocabVideo() {
   if (item && !ytHasError) startLoop(item.card, vocabContext(item).part);
   if (item && vocabOnce && loopingRowId === item.card.id) {
     const again = vocabRestart && vocabRestart.key === item.key ? vocabRestart : null;
-    passThen = () => again ? playVocabSound(again, vocabAfterClipOnce, false, false, true) : stopVocabSound();
+    passThen = () => again ? playVocabSound(again, false, false, false, true) : stopVocabSound();
     passThen.once = true;
   }
   syncVocabSound();
@@ -22345,8 +22381,6 @@ function preloadVocabVideo(item) {
 
 let vocabOnce = false;
 
-let vocabAfterClipOnce = false;
-
 function playVocabSound(item, once, ownClip, thenRestart, fromClip) {
   stopVocabSound();
   vocabRestart = thenRestart ? item : null;
@@ -22358,14 +22392,6 @@ function playVocabSound(item, once, ownClip, thenRestart, fromClip) {
   }
   const row = item.card, vc = document.getElementById("vocabCard");
   const shown = !ownClip && vc && vc.dataset.lookKey === item.key && vc.dataset.ex === "other" && vc.dataset.other || "";
-  if (shown && !fromClip && vocabSession && vocabSession.flipped && !ytHasError && vocabVideoIdFor(row)) {
-    const first = vocabContext(item).sentence;
-    if (first && findWordForm(first.normalize("NFC"), item.term)) {
-      playVocabSound(item, true, true, true);
-      vocabAfterClipOnce = !!once;
-      return;
-    }
-  }
   const videoId = shown || ytHasError && ownClip ? "" : vocabVideoIdFor(row);
   if (videoId) {
     if (row.srcLessonId && (vocabVideoId !== videoId || !ytHasVideo)) {
@@ -22392,7 +22418,7 @@ function playVocabSound(item, once, ownClip, thenRestart, fromClip) {
   const ctx = vocabContext(item);
   const own = ctx.sentence && findWordForm(ctx.sentence.normalize("NFC"), item.term) ? ctx.sentence : "";
   const clipAfter = !!shown && vocabSession && vocabSession.flipped && !!own && !ytHasError && !!vocabVideoIdFor(row) && !(fromClip && once);
-  const texts = shown ? vocabSession && vocabSession.flipped && own && own !== shown && !clipAfter && !fromClip ? [ own, shown ] : [ shown ] : [ own || item.term ];
+  const texts = shown ? vocabSession && vocabSession.flipped && own && own !== shown && !clipAfter && !fromClip ? [ shown, own ] : [ shown ] : [ own || item.term ];
   let at = 0;
   soundHeard = false;
   vocabTtsOn = true;
@@ -22452,7 +22478,7 @@ function sayVocabWord(item) {
   }
   soundWaitOn(btn);
   const own = vocabContext(item).sentence || "", shown = card.dataset.ex === "other" && card.dataset.other || own;
-  const pool = item.sub ? [ item.sub.t ] : [ shown ].concat(own && own !== shown ? [ own ] : []).filter(Boolean);
+  const pool = item.sub ? [ item.sub.t ] : [ shown ].filter(Boolean);
   if (!card.dataset.listenText || !pool.includes(card.dataset.listenText)) card.dataset.listenText = pool[Math.floor(Math.random() * pool.length)] || item.term;
   const text = card.dataset.listenText;
   const utter = trackSpeech(new SpeechSynthesisUtterance(cleanForSpeech(text)));

@@ -224,6 +224,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-85 | `5870d2a` | ☰ List nhẹ (mỗi trang ~400 dòng thẻ, dựng lại 160→56ms); từ→nghĩa 16px; bài từ web có nút ‹ ngôn ngữ để quay lại |
 | FLASH-86 | `13dbb53` | Hết lag với nhiều thẻ: giãn cách câu 15s→70ms (cùng kết quả), trạng thái thẻ con không quét lại, lưu/sidebar sau khi chấm chạy sau hiệu ứng, từ điển lưu gom 15s; dọn code thừa (ESLint); levels.json được đưa lên |
 | FLASH-87 | `306c8ae` | Nghĩa thuộc về câu: ☰ List gom theo từ, đầu khối chỉ có từ, mỗi thẻ câu mang nghĩa riêng; thẻ từ điển một bộ mỗi từ (giữ lịch cũ); mặt sau chỉ hiện nghĩa của chính thẻ |
+| FLASH-88 | `pending` | Mặt trước đọc đúng câu mặt sau xếp đầu; mặt sau phát từ trên xuống; giọng đọc đợi sau khi dừng + báo khi không chạy; từ thêm giữa phiên ngôn ngữ hiện ngay; tô/khoét mọi lần xuất hiện của từ |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
