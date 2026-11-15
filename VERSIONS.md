@@ -415,7 +415,7 @@ Hàm chính: `switchToLesson`, `setAppMode`, `syncModeButtonHighlights`, `lesson
 | FOCUS-6 | `1a9077c` | Điện thoại: chạm cờ để thoát, không có ✕ (máy tính giữ ✕) |
 | FOCUS-7 | `adac075` | Điện thoại: thanh trên sát mép, không chừa chỗ cho ✕ |
 | FOCUS-8 | `abc1ae4` | Thanh trên cân hai bên: cờ cách mép trái bằng ✕ cách mép phải |
-| FOCUS-9 | `pending` | Thông báo streak tắt ngay khi chạm, bấm hay gõ phím; ✕ thoát focus kèm tắt luôn thông báo |
+| FOCUS-9 | `2799b23` | Thông báo streak tắt ngay khi chạm, bấm hay gõ phím; ✕ thoát focus kèm tắt luôn thông báo |
 
 Hàm chính: `syncFocus`, `pickFocusScene`, `FOCUS_SCENES`, nút `#focusExit`.
 
