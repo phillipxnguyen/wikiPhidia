@@ -59,7 +59,7 @@
 @media (prefers-color-scheme: dark){.wrap{--sel:#2a4f80;--green:#3cc48d;--green-soft:rgba(60,196,141,.16);--ink:#e8ecf3;--ink-2:#9aa4b4;--line:#323a48;--bg:#1b2029;--bg-2:#242a35;--answer:#6fd3a0;--mark:rgba(240,190,40,.38);}}
 .pick{position:fixed;display:flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border:0;border-radius:16px;background:var(--green);color:#fff;font:700 16px/20px system-ui, sans-serif;box-shadow:0 4px 12px rgba(0,0,0,.25);cursor:pointer;}
 .pick:hover{filter:brightness(1.08);}
-.card{position:fixed;width:360px;max-width:calc(100vw - 24px);padding:20px;border:1px solid var(--line);border-radius:12px;background:var(--bg);box-shadow:0 16px 40px rgba(10,20,40,.22);}
+.card{position:fixed;width:440px;max-width:calc(100vw - 24px);padding:20px;border:1px solid var(--line);border-radius:12px;background:var(--bg);box-shadow:0 16px 40px rgba(10,20,40,.22);}
 .head{display:flow-root;}
 .icons{float:right;display:flex;margin-left:8px;}
 .term{display:block;min-height:30px;padding:0;margin:0;border:0;border-radius:0;font-size:22px;line-height:30px;font-weight:700;color:var(--ink);background:none;outline:none;cursor:text;overflow-wrap:anywhere;}
@@ -87,15 +87,14 @@ textarea[hidden], .sent-view[hidden]{display:none;}
 .link{align-self:flex-start;padding:0;border:0;background:none;color:var(--green);font:inherit;font-size:13px;line-height:18px;cursor:pointer;}
 .note{padding:8px 10px;border-radius:8px;background:var(--green-soft);color:var(--ink);font-size:13px;line-height:18px;}
 .note:empty{display:none;}
-.foot{display:flex;align-items:center;gap:10px;}
-.foot select{flex:1;min-width:0;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit;font-size:14px;line-height:20px;-webkit-appearance:none;appearance:none;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:pointer;}
+.foot{display:flex;align-items:center;justify-content:flex-end;gap:10px;}
 .btn{flex:none;padding:8px 16px;border:0;border-radius:8px;background:var(--green);color:#fff;font:inherit;font-weight:700;cursor:pointer;}
 .btn:hover{filter:brightness(1.08);}
 .btn[disabled]{opacity:.5;cursor:default;filter:none;}
 .icon.on{background:var(--green-soft);color:var(--green);}
 .ghost{background:none;color:var(--ink-2);font-weight:600;}
 .ghost:hover{background:var(--bg-2);color:var(--ink);filter:none;}
-.tip{position:fixed;display:flex;flex-direction:column;gap:8px;width:380px;max-width:calc(100vw - 16px);padding:16px;border:1px solid var(--line);border-radius:16px;background:var(--bg);color:var(--ink);box-shadow:0 16px 40px rgba(10,20,40,.22);}
+.tip{position:fixed;display:flex;flex-direction:column;gap:8px;width:460px;max-width:calc(100vw - 16px);padding:16px;border:1px solid var(--line);border-radius:16px;background:var(--bg);color:var(--ink);box-shadow:0 16px 40px rgba(10,20,40,.22);}
 .tip-top{display:flex;align-items:center;justify-content:space-between;gap:12px;}
 .tip-top b{min-width:0;font-size:28px;line-height:36px;font-weight:700;overflow-wrap:anywhere;}
 .tip-say{flex:none;display:flex;align-items:center;justify-content:center;width:40px;height:40px;padding:0;border:0;border-radius:20px;background:var(--bg-2);color:var(--ink-2);cursor:pointer;transition:background-color .4s ease, color .4s ease;}
@@ -120,7 +119,7 @@ textarea[hidden], .sent-view[hidden]{display:none;}
 .pr svg{width:16px;height:16px;}
 .pr path{fill:currentColor;}
 .pr path + path{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;}
-.defs{display:flex;flex-direction:column;gap:8px;margin-top:8px;}
+.defs{display:flex;flex-direction:column;gap:6px;margin-top:8px;}
 .defs:empty{display:none;}
 .dg{display:flex;align-items:baseline;gap:8px;}
 .dpos{flex:none;min-width:44px;padding:2px 6px;border-radius:6px;background:var(--bg-2);color:var(--ink-2);font-size:14px;line-height:20px;font-weight:700;text-align:center;}
@@ -569,31 +568,8 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
     return best.length > 120 ? best.slice(0, 117).trim() + "…" : best;
   }
 
-  const same = (a, b) => (a || "").trim().toLowerCase() === (b || "").trim().toLowerCase();
 
   // The lesson last picked on this website: the next words from it go there too, until another is picked.
-  let picks = {};
-  const site = () => location.hostname || location.href;
-  function rememberPick(value) {
-    if (!value || value === "new") return;
-    const name = value.startsWith("name:") ? value.slice(5) : (app.lessons.find(l => "id:" + l.id === value) || {}).name || "";
-    picks = Object.assign({}, picks, { [site()]: { id: value.startsWith("id:") ? value.slice(3) : "", name } });
-    chrome.storage.local.set({ picks });
-  }
-
-  function lessonOptions() {
-    const list = app.lessons.slice().sort((a, b) => (b.words ? 1 : 0) - (a.words ? 1 : 0) || a.name.localeCompare(b.name));
-    const last = picks[site()];
-    const lastLesson = last && (last.id && list.find(l => l.id === last.id) || last.name && list.find(l => same(l.name, last.name)));
-    const fixed = settings.lessonId && list.find(l => l.id === settings.lessonId) || settings.lessonName && list.find(l => same(l.name, settings.lessonName));
-    const wanted = lastLesson ? lastLesson.name : last && last.name ? last.name : fixed ? fixed.name : settings.lessonName || articleTitle();
-    const there = list.find(l => same(l.name, wanted));
-    let html = there ? "" : `<option value="name:${esc(wanted)}" selected>🆕 ${esc(wanted)}</option>`;
-    html += list.map(l => `<option value="id:${esc(l.id)}"${l === there ? " selected" : ""}>${esc(l.name)}</option>`).join("");
-    html += `<option value="new">New lesson…</option>`;
-    return html;
-  }
-
   function anchorBox(el, r, gap, above) {
     el.style.maxHeight = "";
     const w = el.offsetWidth, full = el.offsetHeight, edge = 8;
@@ -635,7 +611,7 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
 <div class="body"><div class="field meaning" contenteditable="plaintext-only" role="textbox" data-placeholder="Translating…" aria-label="Meaning"></div><div class="alts"></div><div class="srcs"></div><div class="defs"></div>
 <div class="sent-view"></div><textarea class="field sentence" rows="1" aria-label="Sentence" hidden></textarea><div class="sub sent-tr"></div><div class="exs"></div><div class="sub src"></div>
 <div class="note"></div>
-<div class="foot"><select class="lesson" aria-label="Lesson">${lessonOptions()}</select><button class="btn add">Add</button></div></div>`;
+<div class="foot"><button class="btn add">Add</button></div></div>`;
     wrap.appendChild(card);
     const $ = s => card.querySelector(s);
     const termEl = $(".term"), meaningEl = $(".meaning"), sentEl = $(".sentence"), readingEl = $(".reading"), note = $(".note");
@@ -772,20 +748,6 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
       });
     };
     $(".tr-btn").addEventListener("click", cardTranslate);
-    $(".lesson").addEventListener("change", e => {
-      if (e.target.value !== "new") return rememberPick(e.target.value);
-      const name = (prompt("Name of the new lesson", "") || "").trim();
-      if (!name) {
-        e.target.value = e.target.options[0].value;
-        return;
-      }
-      const opt = document.createElement("option");
-      opt.value = "name:" + name;
-      opt.textContent = "🆕 " + name;
-      e.target.insertBefore(opt, e.target.lastElementChild);
-      e.target.value = opt.value;
-      rememberPick(opt.value);
-    });
     $(".add").addEventListener("click", () => save());
     // Enter saves (a new line only in the sentence), Esc closes. Also called from guard.js, which takes the card's keys
     // away from the page before the page sees them; the target is then the card's focused box.
@@ -806,8 +768,6 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
     async function save() {
       const t = termEl.value.replace(/\s+/g, " ").trim();
       if (!t || $(".add").disabled) return;
-      const pick = $(".lesson").value;
-      rememberPick(pick);
       const word = {
         id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
         term: t,
@@ -815,8 +775,8 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
         sentence: sentEl.value.replace(/\s+/g, " ").trim(),
         url: cardWord.url,
         title: cardWord.title,
-        lessonId: pick.startsWith("id:") ? pick.slice(3) : "",
-        lessonName: pick.startsWith("name:") ? pick.slice(5) : (app.lessons.find(l => "id:" + l.id === pick) || {}).name || articleTitle(),
+        lessonId: settings.lessonId || "",
+        lessonName: settings.lessonName || articleTitle(),
         at: Date.now()
       };
       const { pending: now } = await chrome.storage.local.get("pending");
@@ -958,7 +918,6 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
     if (changes.settings) settings = Object.assign({}, DEFAULTS, changes.settings.newValue || {});
     if (changes.app) app = Object.assign({ lessons: [], words: [] }, changes.app.newValue || {});
     if (changes.pending) pending = changes.pending.newValue || [];
-    if (changes.picks) picks = changes.picks.newValue || {};
     const done = changes.ytDone && changes.ytDone.newValue, taken = changes.ytPending && !changes.ytPending.newValue && changes.ytPending.oldValue;
     if (done && ytWait && done.id === ytWait) ytFinish(done.ok, done.text);
     if (taken && ytWait && taken.id === ytWait) {
@@ -982,8 +941,7 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
     }
   });
 
-  chrome.storage.local.get([ "settings", "app", "pending", "picks" ]).then(data => {
-    picks = data.picks || {};
+  chrome.storage.local.get([ "settings", "app", "pending" ]).then(data => {
     settings = Object.assign({}, DEFAULTS, data.settings || {});
     app = Object.assign({ lessons: [], words: [] }, data.app || {});
     pending = data.pending || [];
