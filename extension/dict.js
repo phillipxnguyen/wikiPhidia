@@ -2,7 +2,7 @@
   if (window.top !== window || window.wkpDict) return;
   const CJK = /[㐀-鿿豈-﫿]/, KANA = /[぀-ヿ]/, HANGUL = /[가-힯]/;
   const POS = { noun: "noun", verb: "verb", adjective: "adj", adverb: "adv", pronoun: "pron", preposition: "prep", conjunction: "conj", interjection: "interj", abbreviation: "abbr", particle: "part", phrase: "phrase", prefix: "prefix", suffix: "suffix", "phrasal verb": "phrasal verb", idiom: "idiom", determiner: "det", exclamation: "excl", numeral: "num", "proper noun": "noun", n: "noun", v: "verb", adj: "adj", adv: "adv", "명사": "noun", "동사": "verb", "형용사": "adj", "부사": "adv" };
-  const MAX = 600, KEY = "dictCache3";
+  const MAX = 600, KEY = "dictCache4";
   const mem = new Map(), pending = new Map();
   let store = null, storeJob = null;
 
@@ -50,7 +50,15 @@
       g = { pos: p, d: [] };
       defs.push(g);
     }
-    if (g.d.length < 5 && !g.d.some(x => x.t === d)) g.d.push(h ? { t: d, h: head(h) } : { t: d });
+    const had = g.d.find(x => x.t === d);
+    if (had || g.d.length >= 5) return had || null;
+    const it = h ? { t: d, h: head(h) } : { t: d };
+    g.d.push(it);
+    return it;
+  };
+  const tie = (it, t, tr) => {
+    t = (t || "").replace(/\s+/g, " ").trim();
+    if (it && !it.x && t && t.length <= 220) it.x = tr ? { t, tr } : { t };
   };
   const pushEx = (ex, t, tr) => {
     t = (t || "").replace(/\s+/g, " ").trim();
@@ -73,8 +81,8 @@
       const p = pos(line(en.querySelector(".pos-header .pos, .dpos")));
       en.querySelectorAll(".def-block").forEach(b => {
         const sense = b.closest(".dsense");
-        pushDef(defs, p, line(b.querySelector(".def")), sense && line(sense.querySelector(".dsense_gw")));
-        b.querySelectorAll(".examp .eg").forEach(e => pushEx(ex, line(e)));
+        const it = pushDef(defs, p, line(b.querySelector(".def")), sense && line(sense.querySelector(".dsense_gw")));
+        b.querySelectorAll(".examp .eg").forEach(e => (pushEx(ex, line(e)), tie(it, line(e))));
       });
     });
     d.querySelectorAll(".degs .deg").forEach(e => pushEx(ex, line(e)));
@@ -99,8 +107,8 @@
     const p = pos(line(entry.querySelector(".webtop .pos")));
     entry.querySelectorAll("li.sense").forEach(s => {
       const g = s.closest(".shcut-g");
-      pushDef(defs, p, line(s.querySelector(".def")), g && line(g.querySelector(".shcut")) || line(s.querySelector(".cf")));
-      s.querySelectorAll(".examples .x").forEach(e => pushEx(ex, line(e)));
+      const it = pushDef(defs, p, line(s.querySelector(".def")), g && line(g.querySelector(".shcut")) || line(s.querySelector(".cf")));
+      s.querySelectorAll(".examples .x").forEach(e => (pushEx(ex, line(e)), tie(it, line(e))));
     });
     const phon = sel => line(entry.querySelector(sel + " .phon")).replace(/^\/|\/$/g, "");
     const snd = sel => abs((entry.querySelector(sel + " .sound") || { getAttribute: () => "" }).getAttribute("data-src-mp3"), "https://www.oxfordlearnersdictionaries.com/");
@@ -122,8 +130,8 @@
     entries.forEach(en => {
       const p = pos(line(en.querySelector(".Head .POS")));
       en.querySelectorAll(".Sense").forEach(s => {
-        pushDef(defs, p, line(s.querySelector(".DEF")), line(s.querySelector(".SIGNPOST")));
-        s.querySelectorAll(".EXAMPLE").forEach(e => pushEx(ex, line(e)));
+        const it = pushDef(defs, p, line(s.querySelector(".DEF")), line(s.querySelector(".SIGNPOST")));
+        s.querySelectorAll(".EXAMPLE").forEach(e => (pushEx(ex, line(e)), tie(it, line(e))));
       });
     });
     const first = entries[0], a = sel => (first.querySelector(".Head " + sel) || { getAttribute: () => "" }).getAttribute("data-src-mp3") || "";
@@ -138,8 +146,8 @@
     d.querySelectorAll(".dictionary.Cob_Adv_Brit .hom, .dictionary .hom").forEach(h => {
       const p = pos(line(h.querySelector(".gramGrp .pos, .pos")));
       h.querySelectorAll(".sense").forEach(s => {
-        pushDef(defs, p, line(s.querySelector(".def")), line(s.querySelector(".lbl.type-subj, .lbl.type-syntax")));
-        s.querySelectorAll(".cit.type-example .quote").forEach(e => pushEx(ex, line(e)));
+        const it = pushDef(defs, p, line(s.querySelector(".def")), line(s.querySelector(".lbl.type-subj, .lbl.type-syntax")));
+        s.querySelectorAll(".cit.type-example .quote").forEach(e => (pushEx(ex, line(e)), tie(it, line(e))));
       });
     });
     return defs.length ? { defs, ex, say: [] } : null;
@@ -152,8 +160,8 @@
     d.querySelectorAll('[id^="dictionary-entry"]').forEach(en => {
       const p = pos(line(en.querySelector(".parts-of-speech, .fl")));
       en.querySelectorAll(".sense").forEach(s => {
-        pushDef(defs, p, line(s.querySelector(".dtText"), ".ex-sent, .wi"), line(s.querySelector(".sl, .sgram")));
-        s.querySelectorAll(".ex-sent").forEach(e => pushEx(ex, line(e)));
+        const it = pushDef(defs, p, line(s.querySelector(".dtText"), ".ex-sent, .wi"), line(s.querySelector(".sl, .sgram")));
+        s.querySelectorAll(".ex-sent").forEach(e => (pushEx(ex, line(e)), tie(it, line(e))));
       });
     });
     const pr = d.querySelector(".prons-entries-list-inline a[data-file]");
@@ -175,8 +183,8 @@
       const def = li.querySelector(".definition");
       if (!def) return;
       const p = pos(line(def.querySelector(".pos-icon")));
-      pushDef(defs, p, line(def, ".pos-icon"));
-      li.querySelectorAll(".example").forEach(e => pushEx(ex, line(e).replace(/^["“]|["”]$/g, "")));
+      const it = pushDef(defs, p, line(def, ".pos-icon"));
+      li.querySelectorAll(".example").forEach(e => (pushEx(ex, line(e).replace(/^["“]|["”]$/g, "")), tie(it, line(e).replace(/^["“]|["”]$/g, ""))));
     });
     return defs.length ? { defs, ex, say: [], note: blurb.slice(0, 400) } : null;
   }
@@ -191,8 +199,8 @@
         if ((ph.text || ph.audio) && !say.some(x => x.k === k)) say.push({ k, ipa: (ph.text || "").replace(/^\/|\/$/g, ""), audio: ph.audio || "" });
       });
       (en.meanings || []).forEach(m => (m.definitions || []).forEach(x => {
-        pushDef(defs, pos(m.partOfSpeech), x.definition);
-        if (x.example) pushEx(ex, x.example);
+        const it = pushDef(defs, pos(m.partOfSpeech), x.definition);
+        if (x.example) pushEx(ex, x.example), tie(it, x.example);
       }));
     });
     return defs.length ? { defs, ex, say: say.filter(x => x.ipa || x.audio).slice(0, 2) } : null;
@@ -206,9 +214,9 @@
     list.forEach(en => (en.definitions || []).forEach(x => {
       const t = plain(x.definition);
       const m = t.match(/^\(([^)]{1,40})\)\s*(.+)$/);
-      pushDef(defs, pos(en.partOfSpeech), m ? m[2] : t, m ? m[1] : "");
-      (x.parsedExamples || []).forEach(e => pushEx(ex, plain(e.example), plain(e.translation)));
-      if (!x.parsedExamples) (x.examples || []).forEach(e => pushEx(ex, plain(e)));
+      const it = pushDef(defs, pos(en.partOfSpeech), m ? m[2] : t, m ? m[1] : "");
+      (x.parsedExamples || []).forEach(e => (pushEx(ex, plain(e.example), plain(e.translation)), tie(it, plain(e.example), plain(e.translation))));
+      if (!x.parsedExamples) (x.examples || []).forEach(e => (pushEx(ex, plain(e)), tie(it, plain(e))));
     }));
     return defs.length ? { defs, ex, say: [] } : null;
   }
@@ -294,7 +302,7 @@
     if (!storeJob) storeJob = new Promise(res => {
       try {
         chrome.storage.local.get(KEY).then(d => res(store = d[KEY] || {}), () => res(store = {}));
-        chrome.storage.local.remove([ "dictCache", "dictCache2" ]);
+        chrome.storage.local.remove([ "dictCache", "dictCache2", "dictCache3" ]);
       } catch {
         res(store = {});
       }

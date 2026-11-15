@@ -636,6 +636,7 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-card.fill:not(.flipped) :is(.cloze-head, .cloze-spy, .cloze-notes, .cloze-own){display:none;}
   .vocab-card.fill .cloze-own{margin-top:0;font-size:inherit;line-height:inherit;font-weight:inherit;}
   .vc-def .vc-pos{display:inline-block;margin-right:8px;padding:0 8px;border-radius:6px;background:color-mix(in srgb, currentColor 10%, transparent);font-size:16px;line-height:24px;font-weight:700;font-style:normal;vertical-align:middle;}
+  .cloze-own .vc-def-tr{display:block;margin-top:8px;font-size:18px;line-height:26px;font-style:normal;opacity:.7;}
   .vc-def .vc-def-h{display:block;margin-bottom:4px;font-size:14px;line-height:20px;font-weight:700;font-style:normal;letter-spacing:.04em;text-transform:uppercase;opacity:.7;}
   .vocab-card.fill :is(.cloze-own, .cloze-notes) .py-line{margin:0 0 4px;font-size:.6em;font-size:round(.6em, 1px);line-height:1.4;line-height:round(1.4em, 1px);font-weight:600;opacity:1;}
   .vocab-card.fill :is(.cloze-own, .cloze-notes) .py-line{font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;font-style:normal;}
@@ -10692,12 +10693,16 @@ function flattenDict(list) {
       const t = String(typeof x === "string" ? x : x && x.t || "").replace(/\s+/g, " ").trim(), k = t.toLowerCase();
       if (!t || t.length > 300 || seenD.has(k)) return;
       seenD.add(k);
-      defs.push({
+      const xt = String(x && x.x && x.x.t || "").replace(/\s+/g, " ").trim();
+      defs.push(Object.assign({
         s: src,
         p: String(g.pos || ""),
         t: t,
         h: String(typeof x === "string" ? "" : x.h || "")
-      });
+      }, xt && xt.length <= 300 ? {
+        x: xt,
+        xtr: String(x.x.tr || "")
+      } : {}));
     }));
     (r.ex || []).forEach(x => {
       const t = String(x && x.t || "").replace(/\s+/g, " ").trim(), k = t.toLowerCase();
@@ -10712,6 +10717,7 @@ function flattenDict(list) {
   });
   return {
     at: Date.now(),
+    v: 1,
     defs: defs,
     ex: ex
   };
@@ -10758,7 +10764,7 @@ async function wordDictPump() {
   let pick = null;
   for (const w of Object.keys(worlds)) {
     if (![ "en", "zh", "ja", "ko" ].includes(w)) continue;
-    pick = worlds[w].find(i => !i.sub && (i.meaning || "").trim() && !idx.has(i.tkey) && !wordDictTried.has(w + "|" + i.tkey) && !odLong(i.term));
+    pick = worlds[w].find(i => !i.sub && (i.meaning || "").trim() && !(idx.get(i.tkey) || {}).v && !wordDictTried.has(w + "|" + i.tkey) && !odLong(i.term));
     if (pick) {
       pick.world = w;
       break;
@@ -20453,7 +20459,7 @@ function wordDictIndex() {
     wordDictIdx = new Map;
     library.forEach(l => l.wordDict && Object.keys(l.wordDict).forEach(k => {
       const v = l.wordDict[k];
-      if (v && ((v.defs || []).length || (v.ex || []).length) && !wordDictIdx.has(k)) wordDictIdx.set(k, v);
+      if (v && ((v.defs || []).length || (v.ex || []).length) && (!wordDictIdx.has(k) || v.v && !wordDictIdx.get(k).v)) wordDictIdx.set(k, v);
     }));
   }
   return wordDictIdx;
@@ -20532,7 +20538,9 @@ function subItemsOf(item, entry, tk) {
         t: d.t,
         p: d.p || "",
         h: d.h || "",
-        s: d.s || ""
+        s: d.s || "",
+        x: d.x || "",
+        xtr: d.xtr || ""
       }
     }));
     (entry.ex || []).forEach(x => x && x.t && findWordForm(x.t, item.term) && tmpl.push({
@@ -21182,6 +21190,10 @@ function notesWithPinyin(html, card) {
   return box.innerHTML;
 }
 
+function defExample(item) {
+  return item.sub && item.sub.kind === "def" && item.sub.x && findWordForm(item.sub.x, item.term) ? item.sub.x : "";
+}
+
 function headMeaning(item) {
   return item.sub ? item.sub.kind === "ex" ? item.sub.tr || "" : "" : item.meaning || "";
 }
@@ -21225,7 +21237,8 @@ function fillVocabCard(el, item) {
     const d = item.sub.t, span = findWordForm(d, item.term);
     const defText = span ? gappedHtml(d, wordSpans(d, item.term, span), item) : escapeHtml(d);
     const defHtml = `<span class="vc-sent vc-def">${item.sub.h ? `<span class="vc-def-h">${escapeHtml(item.sub.h)}</span>` : ""}${item.sub.p ? `<span class="vc-pos">${escapeHtml(item.sub.p)}</span>` : ""}${defText}</span>`;
-    el.querySelector(".vocab-term").innerHTML = `<span class="cloze-body"><span class="vc-stack"><span class="vc-art" aria-hidden="true">${sceneArt(el.dataset.scene)}<span class="vc-time"><i></i></span></span>${defHtml}</span>${notes ? `<span class="cloze-more cloze-notes">${notesWithPinyin(brLines(notes), item.card)}</span>` : ""}</span>`;
+    const dx = defExample(item), exHtml = dx ? `<span class="cloze-more cloze-own">${withPill(linePillHtml(item, dx, false), lookupOthers(vocabSentenceHtml(dx, item.term, item.card), item))}${item.sub.xtr ? `<span class="vc-def-tr">${escapeHtml(item.sub.xtr)}</span>` : ""}</span>` : "";
+    el.querySelector(".vocab-term").innerHTML = `<span class="cloze-body"><span class="vc-stack"><span class="vc-art" aria-hidden="true">${sceneArt(el.dataset.scene)}<span class="vc-time"><i></i></span></span>${defHtml}</span>${exHtml}${notes ? `<span class="cloze-more cloze-notes">${notesWithPinyin(brLines(notes), item.card)}</span>` : ""}</span>`;
     el.querySelector(".vocab-term").insertAdjacentHTML("afterbegin", `<span class="cloze-more cloze-head"><span class="cloze-main">${rubyWord(item.term, item.card)}</span>${headMeaning(item) ? `<span class="cloze-mean">${meaningHtml(headMeaning(item))}</span>` : ""}</span>`);
     el.classList.add("fill", "listen");
   } else if (ex === "word" && el.dataset.listen && !viewOnly) {
@@ -22418,8 +22431,8 @@ function playVocabSound(item, once, ownClip, thenRestart, fromClip) {
     return;
   }
   const ctx = vocabContext(item);
-  const own = !item.sub && ctx.sentence && findWordForm(ctx.sentence.normalize("NFC"), item.term) ? ctx.sentence : "";
-  const clipAfter = !!shown && vocabSession && vocabSession.flipped && !!own && !ytHasError && !!vocabVideoIdFor(row) && !(fromClip && once);
+  const own = item.sub ? defExample(item) : ctx.sentence && findWordForm(ctx.sentence.normalize("NFC"), item.term) ? ctx.sentence : "";
+  const clipAfter = !item.sub && !!shown && vocabSession && vocabSession.flipped && !!own && !ytHasError && !!vocabVideoIdFor(row) && !(fromClip && once);
   const texts = shown ? vocabSession && vocabSession.flipped && own && own !== shown && !clipAfter && !fromClip ? [ shown, own ] : [ shown ] : [ own || item.term ];
   let at = 0;
   soundHeard = false;
@@ -22715,7 +22728,7 @@ function vocabCopyAction() {
   const picked = vocabView === "card" ? null : vocabPickTargets(vocabPickedKey());
   const item = vocabView === "card" ? currentVocabItem() : picked && (picked.head || picked.items[0]);
   if (!item) return;
-  if (item.sub) return copyText(oneLine(item.sub.t));
+  if (item.sub) return copyText([ item.sub.t, defExample(item) ].filter(Boolean).map(oneLine).join("\n"));
   const own = oneLine(vocabContext(item).sentence || ""), vc = document.getElementById("vocabCard");
   const shown = vocabView === "card" && vc && vc.dataset.lookKey === item.key && vc.dataset.ex === "other" && vc.dataset.other ? oneLine(vc.dataset.other) : "";
   const lines = [ shown, own ].filter((t, i, a) => t && a.indexOf(t) === i);

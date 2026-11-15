@@ -226,6 +226,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-87 | `306c8ae` | Nghĩa thuộc về câu: ☰ List gom theo từ, đầu khối chỉ có từ, mỗi thẻ câu mang nghĩa riêng; thẻ từ điển một bộ mỗi từ (giữ lịch cũ); mặt sau chỉ hiện nghĩa của chính thẻ |
 | FLASH-88 | `f91fa1e` | Mặt trước đọc đúng câu mặt sau xếp đầu; mặt sau phát từ trên xuống; giọng đọc đợi sau khi dừng + báo khi không chạy; từ thêm giữa phiên ngôn ngữ hiện ngay; tô/khoét mọi lần xuất hiện của từ |
 | FLASH-89 | `b40f9a5` | Không ghép câu theo chữ nữa: câu khác chỉ lấy nơi cùng từ cùng nghĩa; thẻ định nghĩa/ví dụ không kèm câu của mình; âm thanh và ⌘C theo đúng thứ tự hiển thị |
+| FLASH-90 | `pending` | Thẻ định nghĩa hiện ví dụ của chính định nghĩa đó (nếu từ điển có), đọc và ⌘C định nghĩa rồi ví dụ |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
@@ -558,6 +559,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-62 | `d2ce6fa` | Extension 1.6.34: thẻ thêm từ không còn co nhỏ khi từ điển tải về (chuyển sang phía rộng, hoặc phủ lên chữ và cao bằng cửa sổ); rộng 460px |
 | LOOKUP-63 | `7834dc6` | 🌐 From the web lên trên Waiting for you trong trang ngôn ngữ |
 | LOOKUP-64 | `b40f9a5` | Sửa nghĩa trong ô tra từ: nút 🔊 và Save luôn cùng hàng với từ, từ dài tự xuống dòng |
+| LOOKUP-65 | `pending` | Extension 1.6.35: mỗi định nghĩa giữ ví dụ đi kèm trong từ điển; bộ nhớ từ điển mới (dictCache4) |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
