@@ -221,6 +221,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-82 | `8fc15c1` | ☰ List: thẻ con gọn một dòng (đệm 12px, tên từ điển bên phải), nhãn/NEW/✕ căn giữa, cách nhau 6px |
 | FLASH-83 | `1c53491` | ☰ List: thẻ câu là một thẻ như các thẻ khác; Delete/← → theo chỗ trỏ (một thẻ hay cả từ); lề đều 4 phía (khối 16px, thẻ 8px) |
 | FLASH-84 | `b45c65e` | ☰ List: một thang cỡ chữ (24/18/16/13) và nhịp 8px; trên điện thoại tên từ điển xuống dưới chữ |
+| FLASH-85 | `pending` | ☰ List nhẹ (mỗi trang ~400 dòng thẻ, dựng lại 160→56ms); từ→nghĩa 16px; bài từ web có nút ‹ ngôn ngữ để quay lại |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 

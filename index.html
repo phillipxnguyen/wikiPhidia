@@ -582,10 +582,10 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-list-term{font-weight:600;overflow-wrap:anywhere;}
   .vocab-list-meaning{min-width:0;overflow-wrap:break-word;}
   .vl-subs{display:flex;flex-direction:column;gap:8px;width:100%;margin-top:16px;}
-  .vocab-list .vocab-list-row[data-key]{row-gap:8px;}
+  .vocab-list .vocab-list-row[data-key]{row-gap:16px;}
   .vocab-list .vocab-list-row[data-key] > .vocab-list-term{font-size:24px;line-height:32px;font-weight:600;}
   .vocab-list .vocab-list-row[data-key] > .vocab-list-meaning, .vocab-list .vocab-list-meaning > span:first-child{font-size:18px;line-height:26px;}
-  .vocab-list .vocab-list-meaning .card-notes{margin-top:8px;font-size:16px;line-height:24px;color:var(--text-2);}
+  .vocab-list .vocab-list-meaning .card-notes{margin-top:16px;font-size:16px;line-height:24px;color:var(--text-2);}
   .vl-sub-list{display:flex;flex-direction:column;gap:8px;}
   .vl-sub{display:flex;align-items:center;gap:12px;padding:8px;border:1px solid var(--border);border-radius:10px;background:var(--surface);font-size:16px;line-height:24px;cursor:default;}
   .vl-sub-k{flex:none;min-width:48px;padding:0 6px;border-radius:6px;background:color-mix(in srgb, var(--text) 7%, transparent);color:var(--text-2);font-size:13px;line-height:24px;font-weight:700;text-align:center;}
@@ -1981,6 +1981,9 @@ window.onYouTubeIframeAPIReady = function(){
   .web-open{flex:none;display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:20px;background:var(--surface-2, var(--accent-soft));color:var(--text-2);font-size:18px;line-height:20px;text-decoration:none;}
   @media (hover:hover){.web-open:hover{background:var(--accent-soft);color:var(--accent);}}
   .web-panel{margin-bottom:32px;}
+  .web-back{display:inline-flex;align-items:center;height:32px;margin:0 0 16px;padding:0 14px;border:1px solid var(--border);border-radius:16px;background:var(--surface);color:var(--text-2);font-size:14px;line-height:20px;font-weight:700;cursor:pointer;}
+  @media (hover:hover){.web-back:hover{border-color:var(--accent);color:var(--accent);}}
+  :is(#viewStudy, #viewVocab).focus-study > .web-back, html.in-task .web-back{display:none !important;}
   .web-panel .web-list{margin-top:16px;}
   @media (max-width:600px){.web-row{padding:14px 16px;gap:12px;}}
   .book-hero{display:flex;align-items:center;gap:24px;padding:24px;border-radius:20px;background:radial-gradient(circle at 85% 20%, color-mix(in srgb, var(--c2, #3db4e8) 45%, transparent), transparent 55%), linear-gradient(135deg, var(--c1, #1d4fa3), color-mix(in srgb, var(--c1, #1d4fa3) 45%, #0b1430));color:#fff;box-shadow:0 12px 32px rgba(15,47,110,.28);}
@@ -3077,6 +3080,7 @@ window.onYouTubeIframeAPIReady = function(){
 <section id="viewWords" hidden></section>
 
 <section id="viewVocab" hidden>
+  <button type="button" class="web-back" data-web-back hidden></button>
   <div class="lesson-header vocab-head">
     <label id="vocabLangPick" class="title-flag" title="Language"><span class="flag-set"></span><select id="vocabLang" aria-label="Language">
         <option value="auto">Auto-detect</option>
@@ -3116,6 +3120,7 @@ window.onYouTubeIframeAPIReady = function(){
 </section>
 
 <section id="viewStudy" hidden>
+  <button type="button" class="web-back" data-web-back hidden></button>
   <header class="lesson-header">
     <label class="title-flag" title="Language"><span class="flag-set"></span><select id="studyLang" aria-label="Language">
         <option value="auto" selected>Auto-detect</option>
@@ -8550,7 +8555,33 @@ function markFreshLesson() {
 
 [ "lessonName", "vocabTitle" ].forEach(id => document.getElementById(id).addEventListener("blur", markFreshLesson));
 
+function syncWebBack() {
+  const l = library.find(x => x.id === currentLessonId), web = l && l.web && !isVirtualLesson();
+  let world = "";
+  if (web) {
+    const item = lessonVocabItems(readerCards(l)).find(i => !i.sub);
+    world = item ? wordWorldOf(item.term, l.studyLang) : "";
+  }
+  document.querySelectorAll("[data-web-back]").forEach(b => {
+    b.hidden = !web || !WORD_WORLDS[world];
+    if (b.hidden) return;
+    b.dataset.world = world;
+    b.textContent = "‹ " + WORD_WORLDS[world][0];
+    b.title = "Back to " + WORD_WORLDS[world][0] + " (🌐 From the web)";
+  });
+}
+
+document.addEventListener("click", e => {
+  const b = e.target.closest && e.target.closest("[data-web-back]");
+  if (!b) return;
+  b.blur();
+  wordWorld = b.dataset.world;
+  if (appMode !== "vocab") setAppMode("vocab");
+  leaveLessonPage().then(() => showView("words"));
+});
+
 function updateLessonChrome() {
+  syncWebBack();
   markFreshLesson();
   const hasCards = rows.some(r => (r.q || "").trim() || (r.a || "").trim());
   const hasQuestion = rows.some(r => (r.q || "").trim());
@@ -21439,6 +21470,7 @@ function syncVocabEditMain(item) {
 const VOCAB_FLIP_MS = 450;
 
 function renderVocab() {
+  syncWebBack();
   markFreshLesson();
   if (currentView !== "vocab") return;
   document.getElementById("viewVocab").classList.remove("word-list-on");
@@ -21487,9 +21519,24 @@ function renderVocab() {
     vocabListLimit = VOCAB_LIST_PAGE;
   }
   const words = wordHeads(items);
+  const subsOf = new Map;
+  items.forEach(i => {
+    if (!i.sub) return;
+    const k = subParentKey(i.key);
+    if (!subsOf.has(k)) subsOf.set(k, []);
+    subsOf.get(k).push(i);
+  });
   const editingAt = vocabEditingInList ? words.findIndex(i => i.key === vocabEditingKey) : -1;
   if (editingAt >= vocabListLimit) vocabListLimit = editingAt + 1;
-  const shown = words.slice(0, vocabListLimit);
+  let lines = 0, cut = words.length;
+  for (let i = 0; i < words.length; i++) {
+    lines += 1 + (subsOf.get(words[i].key) || []).length;
+    if (i > editingAt && i > 0 && lines > vocabListLimit * 4) {
+      cut = i;
+      break;
+    }
+  }
+  const shown = words.slice(0, Math.min(vocabListLimit, cut));
   const more = words.length - shown.length;
   const adder = canAdd && vocabEditingKey === NEW_WORD_KEY ? `<div class="vocab-list-row editing">${vocabEditorHtml({
     term: "",
@@ -21498,13 +21545,6 @@ function renderVocab() {
   const open = !studyOnly && (vocabView === "list" || caughtUp) || !!vocabEditingKey && (vocabEditingInList || vocabEditingKey === NEW_WORD_KEY);
   list.hidden = items.length ? !open : vocabEditingKey !== NEW_WORD_KEY;
   queueMicrotask(() => fitHighlights(list));
-  const subsOf = new Map;
-  items.forEach(i => {
-    if (!i.sub) return;
-    const k = subParentKey(i.key);
-    if (!subsOf.has(k)) subsOf.set(k, []);
-    subsOf.get(k).push(i);
-  });
   list.innerHTML = adder + (list.hidden ? "" : shown.map(item => {
     const noted = noteSentence(item), rest = noted ? noted.rest.replace(/^(\s|<br\s*\/?>|<div>\s*<\/div>)+/i, "") : wordNotesOf(item);
     return `<div class="vocab-list-row" data-key="${escapeAttr(item.key)}"><span class="vocab-list-term">${escapeHtml(item.term)}</span><span class="vocab-list-meaning"><span>${meaningHtml(item.meaning)}</span>${rest ? `<div class="card-notes">${rest}</div>` : ""}${cardsListHtml(item, subsOf.get(item.key) || [])}</span></div>`;
