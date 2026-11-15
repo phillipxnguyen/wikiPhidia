@@ -216,6 +216,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-77 | `0a18dc9` | Thẻ định nghĩa/ví dụ không chuyển sang Lessons (W báo rõ); Words to work on không lặp từ |
 | FLASH-78 | `f7e87f3` | ☰ List thiết kế lại: mỗi từ một khối (từ trên, nghĩa/câu/notes dưới, trạng thái bên phải), thẻ định nghĩa/ví dụ hiện sẵn không cần mở |
 | FLASH-79 | `d744281` | ☰ List: mọi phần trong khối cách đều 16px theo chữ thật, cả máy tính và điện thoại |
+| FLASH-80 | `pending` | ☰ List: cắt khoảng trống riêng cho nghĩa, câu, từng thẻ con nên mọi khoảng đều 16px; nhãn loại từ cùng bề rộng |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
