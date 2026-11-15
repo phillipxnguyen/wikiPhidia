@@ -551,7 +551,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-60 | `d710e9b` | Extension 1.6.32: thẻ trỏ từ cách đều 16px theo chữ thật (text-box trim) như popup app, cả dòng tên bài |
 | LOOKUP-61 | `c329f4b` | Ô định nghĩa rộng bằng nhau (cả cột) ở popup app và extension 1.6.33 |
 | LOOKUP-62 | `d2ce6fa` | Extension 1.6.34: thẻ thêm từ không còn co nhỏ khi từ điển tải về (chuyển sang phía rộng, hoặc phủ lên chữ và cao bằng cửa sổ); rộng 460px |
-| LOOKUP-63 | `pending` | 🌐 From the web lên trên Waiting for you trong trang ngôn ngữ |
+| LOOKUP-63 | `7834dc6` | 🌐 From the web lên trên Waiting for you trong trang ngôn ngữ |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
