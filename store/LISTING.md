@@ -5,7 +5,7 @@ Everything the store asks for when wikiPhidia's extension is submitted at partne
 - **Package:** `store/Extension-store.zip` (built by `python3 extension/make-zip.py`; the files sit at the top of the zip, as the store wants).
 - **Name:** wikiPhidia
 - **Category:** Education
-- **Logo:** `extension/icons/128.png`
+- **Logo (300 × 300):** `store/logo-300.png`
 - **Screenshots (1280 × 800):** `store/screenshot-1.png`, `store/screenshot-2.png`
 - **Privacy policy:** https://phillipxnguyen.github.io/wikiPhidia/privacy.html
 - **Website:** https://phillipxnguyen.github.io/wikiPhidia/
