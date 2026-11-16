@@ -20086,6 +20086,54 @@ function readerAdd(list) {
     if (activeEdit) commitActiveEdit();
     if (vocabEditingKey) commitVocabEdit();
   }
+  groups.forEach((words, id) => {
+    const lesson = library.find(l => l.id === id);
+    if (id === currentLessonId) {
+      pushUndo("Added " + countOf(words.length, "card") + " from reading");
+      const row = ensureVocabExtras();
+      words.forEach(w => {
+        putVocabHtml(row, vocabLineHtml(row, w.term, w.meaning));
+        if (w.notes) setWordNotes(row, w.key, w.notes);
+        if (vocabSession) vocabSession.queue.push(w.key);
+        addLinkTo(lessonLinks, w.url, w.title);
+        added.push(w.id);
+      });
+      renderLinkList();
+      scheduleAutoSave();
+      return;
+    }
+    const row = lesson.extraWords ? normalizeExtras(lesson.extraWords) : {
+      uid: EXTRA_UID,
+      q: "",
+      a: "",
+      notes: "",
+      notesHtml: "",
+      time: null,
+      vocab: {}
+    };
+    words.forEach(w => {
+      putVocabHtml(row, vocabLineHtml(row, w.term, w.meaning));
+      if (w.notes) setWordNotes(row, w.key, w.notes);
+      added.push(w.id);
+    });
+    const links = normalizeLinks(lesson.links);
+    words.forEach(w => addLinkTo(links, w.url, w.title));
+    const saved = Object.assign({}, lesson, {
+      links: links,
+      extraWords: normalizeExtras(serializeExtras(row)),
+      updatedAt: Date.now(),
+      unseen: (Number(lesson.unseen) || 0) + words.length
+    });
+    upsertLibrary(saved);
+    if (id in virtualExtras) virtualExtras[id] = normalizeExtras(saved.extraWords);
+    const shown = isVirtualLesson() && rows.find(r => r.srcLessonId === id && r.uid === EXTRA_UID);
+    if (shown) Object.assign(shown, {
+      notes: row.notes,
+      notesHtml: row.notesHtml,
+      vocab: row.vocab
+    });
+    dbPut("lessons", saved).catch(() => {});
+  });
   if (groups.size) {
     setTimeout(wordDictPump, 3e3);
     refreshSaveReminders();
