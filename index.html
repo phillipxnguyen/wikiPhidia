@@ -591,6 +591,14 @@ window.onYouTubeIframeAPIReady = function(){
   .vl-sense > .vl-sub{padding:0 12px 0 4px;}
   .vl-sub{display:flex;align-items:center;gap:8px;font-size:16px;line-height:24px;cursor:default;}
   .vl-sub-k{display:inline-block;margin:2px 8px 0 0;padding:0 6px;border-radius:6px;background:color-mix(in srgb, var(--text) 7%, transparent);color:var(--text-2);font-size:13px;line-height:20px;font-weight:700;vertical-align:top;}
+  .vl-x.vl-editing{outline:none;border-radius:4px;box-shadow:0 0 0 2px var(--accent);}
+  .vl-add-sense{align-self:flex-start;height:32px;padding:0 12px;border:1px dashed var(--border);border-radius:16px;background:none;color:var(--text-2);font:inherit;font-size:14px;line-height:20px;font-weight:600;cursor:pointer;}
+  @media (hover:hover){.vl-add-sense:hover{border-color:var(--accent);color:var(--accent);}}
+  .vl-new{gap:8px;padding:12px;}
+  .vl-new > [contenteditable]{min-height:24px;padding:4px 8px;border:1px solid var(--border);border-radius:8px;font-size:16px;line-height:24px;outline:none;}
+  .vl-new > [contenteditable]:focus{border-color:var(--accent);}
+  .vl-new > [contenteditable]:empty::before{content:attr(data-ph);color:var(--text-2);}
+  .vl-new-btns{display:flex;justify-content:flex-end;gap:8px;}
   .vl-exs{display:flex;flex-direction:column;gap:4px;padding:8px 12px;border-radius:8px;background:color-mix(in srgb, var(--text) 4%, transparent);}
   .vl-exs.many .vl-ex{position:relative;padding-left:16px;}
   .vl-exs.many .vl-ex::before{content:"";position:absolute;left:2px;top:9px;width:6px;height:6px;border-radius:3px;background:var(--text-2);}
@@ -10747,8 +10755,32 @@ const wordDictDirty = new Set;
 
 let wordDictSaveTimer = 0;
 
-function storeWordDict(lesson, tkey, entry) {
+function keepOwnSenses(old, entry) {
+  if (!old) return entry;
+  const kOf = x => x.k || textHash(x.t), out = {
+    defs: (entry.defs || []).map(d => Object.assign({}, d)),
+    ex: (entry.ex || []).map(x => Object.assign({}, x))
+  };
+  [ "defs", "ex" ].forEach(f => (old[f] || []).forEach(o => {
+    if (!o || !o.t || !o.mine && !o.ed) return;
+    const at = out[f].findIndex(n => kOf(n) === kOf(o));
+    if (at >= 0) {
+      if (f === "defs" && out[f][at].t !== o.t) out.ex.forEach(x => x.of === out[f][at].t && (x.of = o.t));
+      out[f][at] = Object.assign(out[f][at], {
+        t: o.t,
+        k: kOf(o),
+        ed: true
+      }, o.p != null ? {
+        p: o.p
+      } : {});
+    } else if (o.mine) out[f].push(Object.assign({}, o));
+  }));
+  return Object.assign({}, entry, out);
+}
+
+function storeWordDict(lesson, tkey, entry, own) {
   if (!lesson || !tkey || !entry) return;
+  if (!own) entry = keepOwnSenses(wordDictIndex().get(tkey), keepOwnSenses(lesson.wordDict && lesson.wordDict[tkey], entry));
   lesson.wordDict = Object.assign({}, lesson.wordDict, {
     [tkey]: entry
   });
@@ -20603,8 +20635,8 @@ function subItemsOf(item, entry, tk) {
   if (!tmpl) {
     tmpl = [];
     (entry.defs || []).forEach(d => d && d.t && tmpl.push({
-      key: "x:" + tk + "|d" + textHash(d.t),
-      oldKey: "x:" + item.key + "|d" + textHash(d.t),
+      key: "x:" + tk + "|d" + (d.k || textHash(d.t)),
+      oldKey: "x:" + item.key + "|d" + (d.k || textHash(d.t)),
       base: item.key,
       sub: {
         kind: "def",
@@ -20613,12 +20645,13 @@ function subItemsOf(item, entry, tk) {
         h: d.h || "",
         s: d.s || "",
         x: d.x || "",
-        xtr: d.xtr || ""
+        xtr: d.xtr || "",
+        mine: !!d.mine
       }
     }));
     (entry.ex || []).forEach(x => x && x.t && findWordForm(x.t, item.term) && tmpl.push({
-      key: "x:" + tk + "|e" + textHash(x.t),
-      oldKey: "x:" + item.key + "|e" + textHash(x.t),
+      key: "x:" + tk + "|e" + (x.k || textHash(x.t)),
+      oldKey: "x:" + item.key + "|e" + (x.k || textHash(x.t)),
       base: item.key,
       sub: {
         kind: "ex",
@@ -20866,26 +20899,131 @@ function currentVocabItem() {
 }
 
 function cardsListHtml(head, subs) {
-  const tail = x => `${x.sub && x.sub.s && x.sub.kind === "def" ? `<span class="vl-sub-s">${escapeHtml(x.sub.s)}</span>` : ""}<span class="vl-sub-st">${vocabStatusIcon(vocabStateOf(x))}</span><button type="button" class="vl-sub-del" aria-label="Delete this card" title="Delete this card">✕</button>`;
+  const tail = x => `${x.sub && x.sub.s && x.sub.kind === "def" && !x.sub.mine ? `<span class="vl-sub-s">${escapeHtml(x.sub.s)}</span>` : ""}<span class="vl-sub-st">${vocabStatusIcon(vocabStateOf(x))}</span><button type="button" class="vl-sub-del" aria-label="Delete this card" title="Delete this card">✕</button>`;
   const tag = t => `<span class="vl-sub-k">${escapeHtml(t)}</span>`;
   const own = head.entries.map(e => {
     const sentence = vocabContext(e).sentence || "", noted = noteSentence(e), rest = noted ? noted.rest.replace(/^(\s|<br\s*\/?>|<div>\s*<\/div>)+/i, "") : wordNotesOf(e);
     const mean = `<span class="vl-sub-m">${sentence ? "" : tag("word")}${meaningHtml(e.meaning)}</span>`;
     return `<div class="vl-sense"><div class="vl-sub vl-own" data-sub="${escapeAttr(e.key)}"><span class="vl-sub-t">${sentence ? `<span class="vl-sub-q">${tag("sent")}${vocabSentenceHtml(sentence, e.term, e.card)}</span>` : ""}${mean}${rest ? `<span class="vl-sub-n card-notes">${rest}</span>` : ""}</span>${tail(e)}</div></div>`;
   });
-  const exRow = x => `<div class="vl-sub vl-ex" data-sub="${escapeAttr(x.key)}"><span class="vl-sub-t">${vocabSentenceHtml(x.sub.t, head.term, head.card)}${x.sub.tr ? `<span class="vl-sub-m">${escapeHtml(x.sub.tr)}</span>` : ""}</span>${tail(x)}</div>`;
+  const exRow = x => `<div class="vl-sub vl-ex" data-sub="${escapeAttr(x.key)}"><span class="vl-sub-t"><span class="vl-x">${vocabSentenceHtml(x.sub.t, head.term, head.card)}</span>${x.sub.tr ? `<span class="vl-sub-m">${escapeHtml(x.sub.tr)}</span>` : ""}</span>${tail(x)}</div>`;
   const exBox = list => list.length ? `<div class="vl-exs${list.length > 1 ? " many" : ""}">${list.map(exRow).join("")}</div>` : "";
   const defs = subs.filter(x => x.sub.kind === "def"), defT = new Set(defs.map(x => x.sub.t));
   const exs = subs.filter(x => x.sub.kind === "ex"), loose = exs.filter(x => !defT.has(x.sub.of));
-  const senses = defs.map(d => `<div class="vl-sense"><div class="vl-sub" data-sub="${escapeAttr(d.key)}"><span class="vl-sub-t">${tag(d.sub.p || "def")}${escapeHtml(d.sub.t)}</span>${tail(d)}</div>${exBox(exs.filter(x => x.sub.of === d.sub.t))}</div>`);
+  const senses = defs.map(d => `<div class="vl-sense"><div class="vl-sub" data-sub="${escapeAttr(d.key)}"><span class="vl-sub-t">${tag(d.sub.mine ? "meaning" : d.sub.p || "def")}<span class="vl-x">${escapeHtml(d.sub.t)}</span></span>${tail(d)}</div>${exBox(exs.filter(x => x.sub.of === d.sub.t))}</div>`);
   const lines = own.concat(senses, loose.length ? [ `<div class="vl-sense vl-loose">${exBox(loose)}</div>` ] : []);
-  return lines.length ? `<div class="vl-subs"><div class="vl-sub-list">${lines.join("")}</div></div>` : "";
+  const owner = head.entries.find(e => (e.meaning || "").trim());
+  const add = owner ? `<button type="button" class="vl-add-sense" data-add="${escapeAttr(owner.key)}">＋ Add a meaning</button>` : "";
+  return lines.length || add ? `<div class="vl-subs"><div class="vl-sub-list">${lines.join("")}${add}</div></div>` : "";
 }
 
+function senseHome(tk, item) {
+  const cur = wordDictIndex().get(tk);
+  return library.find(l => l.wordDict && cur && l.wordDict[tk] === cur) || library.find(l => l.id === (item.card.srcLessonId || currentLessonId));
+}
+
+function saveSenses(item, change) {
+  const tk = item.sub ? subParentKey(item.key) : item.tkey, home = senseHome(tk, item);
+  if (!home) return;
+  const old = home.wordDict && home.wordDict[tk] || {
+    at: 0,
+    defs: [],
+    ex: []
+  };
+  const entry = {
+    defs: (old.defs || []).map(d => Object.assign({}, d)),
+    ex: (old.ex || []).map(x => Object.assign({}, x))
+  };
+  change(entry);
+  storeWordDict(home, tk, Object.assign({}, old, entry, {
+    at: Date.now()
+  }), true);
+  saveWordDicts();
+  renderVocab();
+}
+
+function editSense(item, text) {
+  text = cleanPunct(cleanText(text)).replace(/\n/g, " ").trim();
+  if (!item || !item.sub || !text || text === item.sub.t) return renderVocab();
+  const k = item.key.slice(item.key.lastIndexOf("|") + 2), f = item.sub.kind === "def" ? "defs" : "ex";
+  saveSenses(item, entry => {
+    const it = entry[f].find(x => (x.k || textHash(x.t)) === k);
+    if (!it) return;
+    if (f === "defs") entry.ex.forEach(x => x.of === it.t && (x.of = text));
+    Object.assign(it, {
+      t: text,
+      k: k,
+      ed: true
+    });
+  });
+}
+
+function addSense(item, text, examples) {
+  text = cleanPunct(cleanText(text)).replace(/\n/g, " ").trim();
+  if (!item || !text) return renderVocab();
+  saveSenses(item, entry => {
+    if (!entry.defs.some(d => d.t === text)) entry.defs.push({
+      s: "",
+      p: "",
+      t: text,
+      mine: true
+    });
+    examples.map(x => cleanPunct(cleanText(x)).trim()).filter(x => x && !entry.ex.some(y => y.t === x)).forEach(x => entry.ex.push({
+      s: "",
+      t: x,
+      tr: "",
+      of: text,
+      mine: true
+    }));
+  });
+}
+
+function startSenseEdit(line) {
+  const x = line && line.querySelector(".vl-x"), item = x && lessonVocabItems(vocabSource()).find(i => i.key === line.dataset.sub);
+  if (!item || !item.sub || x.isContentEditable) return;
+  x.textContent = item.sub.t;
+  x.contentEditable = "plaintext-only";
+  x.classList.add("vl-editing");
+  x.focus();
+  getSelection().selectAllChildren(x);
+  let done = false;
+  const finish = keep => {
+    if (done) return;
+    done = true;
+    if (keep) editSense(item, x.textContent); else renderVocab();
+  };
+  x.addEventListener("keydown", e => {
+    e.stopPropagation();
+    if (e.key === "Enter") e.preventDefault(), finish(true);
+    if (e.key === "Escape") e.preventDefault(), finish(false);
+  });
+  x.addEventListener("blur", () => finish(true));
+}
+
+document.getElementById("vocabList").addEventListener("dblclick", e => {
+  const x = !isTouch() && e.target.closest && e.target.closest(".vl-sub:not(.vl-own) .vl-x");
+  if (x) startSenseEdit(x.closest(".vl-sub"));
+});
+
 document.getElementById("vocabList").addEventListener("click", e => {
+  const add = e.target.closest && e.target.closest(".vl-add-sense, .vl-new-save, .vl-new-cancel");
+  if (add) {
+    e.stopPropagation();
+    if (add.matches(".vl-add-sense")) {
+      add.insertAdjacentHTML("beforebegin", `<div class="vl-sense vl-new" data-add="${escapeAttr(add.dataset.add)}"><div class="vl-new-in" contenteditable="plaintext-only" data-ph="Meaning or definition"></div><div class="vl-new-ex" contenteditable="plaintext-only" data-ph="Examples, one per line (optional)"></div><div class="vl-new-btns"><button type="button" class="vl-new-cancel">Cancel</button><button type="button" class="primary vl-new-save">Save</button></div></div>`);
+      add.hidden = true;
+      add.previousElementSibling.querySelector(".vl-new-in").focus();
+      return;
+    }
+    const box = add.closest(".vl-new"), item = box && lessonVocabItems(vocabSource()).find(i => i.key === box.dataset.add);
+    if (add.matches(".vl-new-save") && item) return addSense(item, box.querySelector(".vl-new-in").innerText, box.querySelector(".vl-new-ex").innerText.split(/\n+/));
+    return renderVocab();
+  }
+  if (e.target.closest && e.target.closest(".vl-new, .vl-editing")) return e.stopPropagation();
   const t = e.target.closest && e.target.closest(".vl-sub-del, .vl-sub");
   if (!t) return;
   e.stopPropagation();
+  if (isTouch() && !t.matches(".vl-sub-del") && !t.matches(".vl-own") && isDoubleTap("s" + t.dataset.sub)) return startSenseEdit(t);
   if (!t.matches(".vl-sub-del")) return;
   const row = t.closest(".vl-sub"), item = row && lessonVocabItems(vocabSource()).find(i => i.key === row.dataset.sub);
   if (item) deleteVocabEntry(item, row, true);
