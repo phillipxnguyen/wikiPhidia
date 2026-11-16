@@ -74,8 +74,8 @@
 .sents.small .sents-foot{border-top:0;}
 .sents-foot .icon{width:36px;height:36px;padding:0;border-radius:8px;}
 .sents-foot .gap{flex:1;}
-.sents-foot .ghost{margin-right:8px;}
-.sents-foot .btn, .sents-foot .ghost{height:36px;padding:0 16px;line-height:20px;}
+.sents-foot .btn{height:36px;padding:0 16px;line-height:20px;}
+.sents-foot .icon[data-act=all]{font-size:18px;}
 .ghost{flex:none;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit;cursor:pointer;}
 .ghost:hover{border-color:var(--green);color:var(--green);}
 *{box-sizing:border-box;}
@@ -1028,7 +1028,7 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
     };
     const ed = (i, f, tag, html, ph) => `<${tag} class="ed" contenteditable="plaintext-only" spellcheck="false" data-i="${i}" data-f="${f}" data-ph="${ph}">${html}</${tag}>`;
     const row = (x, i) => x.kind === "word" ? ed(i, "term", "b", esc(x.term), "Word or phrase") + ed(i, "meaning", "small", esc(x.meaning), "Meaning") : `<span class="hd">${ed(i, "word", "b", esc(x.word), "Word")}${ed(i, "meaning", "small", esc(x.meaning), "Meaning")}</span>` + ed(i, "t", "span", marked(x.t, x.word), "Sentence") + ed(i, "tr", "small", esc(x.tr || ""), "Translation");
-    sentsEl.innerHTML = `${sents.length ? `<ul class="sents-list">${sents.map((x, i) => `<li><span class="st">${row(x, i)}</span><button type="button" class="sx" data-i="${i}" title="Leave this one out">✕</button></li>`).join("")}</ul>` : ""}<div class="sents-foot"><button type="button" class="icon" data-act="close" title="Clear and close" aria-label="Clear and close">✕</button><button type="button" class="icon" data-act="min" title="${sentsSmall ? "Show" : "Hide"} the cards" aria-label="${sentsSmall ? "Show" : "Hide"} the cards">${sentsSmall ? "▴" : "▾"}</button><span class="gap"></span><button type="button" class="ghost" data-act="all" title="Read the page again for new cards">Read again</button><button type="button" class="btn" data-act="send"${sents.length ? "" : " disabled"}>Add ${sents.length === 1 ? "1 card" : (sents.length || "") + " cards"}</button></div>`;
+    sentsEl.innerHTML = `${sents.length ? `<ul class="sents-list">${sents.map((x, i) => `<li><span class="st">${row(x, i)}</span><button type="button" class="sx" data-i="${i}" title="Leave this one out">✕</button></li>`).join("")}</ul>` : ""}<div class="sents-foot"><button type="button" class="icon" data-act="close" title="Clear and close" aria-label="Clear and close">✕</button><button type="button" class="icon" data-act="min" title="${sentsSmall ? "Show" : "Hide"} the cards" aria-label="${sentsSmall ? "Show" : "Hide"} the cards">${sentsSmall ? "▴" : "▾"}</button><button type="button" class="icon" data-act="all" title="Make cards from this page" aria-label="Make cards from this page">↻</button><span class="gap"></span><button type="button" class="btn" data-act="send"${sents.length ? "" : " disabled"}>Add ${sents.length === 1 ? "1 card" : (sents.length || "") + " cards"}</button></div>`;
     wrap.appendChild(sentsEl);
   }
   function pageItems() {
