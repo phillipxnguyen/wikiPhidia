@@ -242,7 +242,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-102 | `4b67849` | Nhãn từ loại trên thẻ thành nút phát định nghĩa; biển nhỏ trong cảnh Podcast (Definition/Example/Sentence); popup thẻ con như mặt thẻ, bỏ tên từ điển; popup tra từ cuộn được khi dài |
 | FLASH-103 | `227ba66` | Podcast chỉ đọc định nghĩa; câu (của bạn, ví dụ, bài khác) luôn đục lỗ; bỏ biển báo; popup thẻ con giãn đều 16px |
 | FLASH-104 | `1ce6cb1` | ☰ List như trang từ điển: dưới từ là nghĩa của bạn và các nghĩa tiếng Việt gợi ý (theo từ loại), rồi mới tới các thẻ; không cần bấm mở popup |
-| FLASH-105 | `pending` | ☰ List: phần nghĩa trong khung như các thẻ, chữ thẳng cột, cách đều 8px |
+| FLASH-105 | `84ef15b` | ☰ List: phần nghĩa trong khung như các thẻ, chữ thẳng cột, cách đều 8px |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
