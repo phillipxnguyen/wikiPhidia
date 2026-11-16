@@ -560,6 +560,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-63 | `7834dc6` | 🌐 From the web lên trên Waiting for you trong trang ngôn ngữ |
 | LOOKUP-64 | `b40f9a5` | Sửa nghĩa trong ô tra từ: nút 🔊 và Save luôn cùng hàng với từ, từ dài tự xuống dòng |
 | LOOKUP-65 | `d7a9ff2` | Extension 1.6.35: mỗi định nghĩa giữ ví dụ đi kèm trong từ điển; bộ nhớ từ điển mới (dictCache4) |
+| LOOKUP-66 | `pending` | Extension 1.6.36: bỏ hàng IPA/US-UK (đã có 🔊 riêng); cấp độ (A1…) lên hàng trên cùng của thẻ thêm từ |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 

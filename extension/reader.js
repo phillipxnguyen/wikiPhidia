@@ -61,7 +61,8 @@
 .pick:hover{filter:brightness(1.08);}
 .card{position:fixed;width:460px;max-width:calc(100vw - 24px);padding:20px;border:1px solid var(--line);border-radius:12px;background:var(--bg);box-shadow:0 16px 40px rgba(10,20,40,.22);}
 .head{display:flow-root;}
-.icons{float:right;display:flex;margin-left:8px;}
+.icons{float:right;display:flex;align-items:center;margin-left:8px;}
+.icons .lv{margin-right:6px;}
 .term{display:block;min-height:30px;padding:0;margin:0;border:0;border-radius:0;font-size:22px;line-height:30px;font-weight:700;color:var(--ink);background:none;outline:none;cursor:text;overflow-wrap:anywhere;}
 .icon{flex:none;display:flex;align-items:center;justify-content:center;height:30px;padding:0 6px;border:0;border-radius:8px;background:none;color:var(--ink-2);font-size:16px;line-height:20px;cursor:pointer;}
 .icon:hover{background:var(--bg-2);color:var(--ink);}
@@ -115,14 +116,6 @@ textarea[hidden], .sent-view[hidden]{display:none;}
 .tip .exs{gap:16px;}
 .tip-word{display:flex;align-items:center;flex-wrap:wrap;gap:8px;min-width:0;}
 .lv{flex:none;padding:2px 8px;border-radius:6px;background:var(--green-soft);color:var(--green);font-size:13px;line-height:18px;font-weight:700;white-space:nowrap;cursor:default;}
-.prs{display:flex;flex-wrap:wrap;gap:8px;}
-.prs:empty{display:none;}
-.pr{display:flex;align-items:center;gap:6px;height:32px;padding:0 10px;border:1px solid var(--line);border-radius:16px;background:var(--bg);color:var(--ink);font:inherit;font-size:15px;line-height:20px;cursor:pointer;}
-.pr:hover, .pr.on{border-color:var(--green);color:var(--green);}
-.pr b{font-size:12px;line-height:16px;font-weight:700;color:var(--ink-2);}
-.pr svg{width:16px;height:16px;}
-.pr path{fill:currentColor;}
-.pr path + path{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;}
 .defs{display:flex;flex-direction:column;gap:6px;margin-top:8px;}
 .defs:empty{display:none;}
 .dg{display:flex;align-items:flex-start;gap:8px;}
@@ -147,8 +140,6 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
 .sp.on{border-color:var(--green);background:var(--green);color:#fff;}
 .dd em{display:block;margin-bottom:2px;font-style:normal;font-size:12px;line-height:16px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--green);}
 .dnote{margin:0;font-size:14px;line-height:20px;color:var(--ink-2);font-style:italic;}
-.meta{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px;}
-.meta:not(:has(.pr, .lv:not([hidden]))){display:none;}
 .card .defs, .card .exs, .card .srcs{margin-top:0;}
 .card .foot{position:sticky;bottom:-20px;z-index:1;margin:0 -20px -20px;padding:12px 20px 20px;background:var(--bg);}
 .card{max-height:calc(100vh - 16px);overflow-y:auto;overscroll-behavior:contain;}
@@ -355,9 +346,6 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
     return at < 0 ? esc(s) : esc(s.slice(0, at)) + "<mark>" + esc(s.slice(at, at + len)) + "</mark>" + esc(s.slice(at + len));
   }
   const dict = window.wkpDict;
-  function prsHtml(r, term) {
-    return (r && r.say || []).map(x => `<button type="button" class="pr" data-audio="${esc(x.audio)}" data-say="${esc(term)}" title="Listen${x.k ? " (" + x.k + ")" : ""}">${x.k ? `<b>${esc(x.k)}</b>` : ""}${x.ipa ? `<span>/${esc(x.ipa)}/</span>` : ""}${SPEAK_ICON}</button>`).join("");
-  }
   function defsHtml(r, pick) {
     return (r && r.defs || []).map(g => `<div class="dg">${g.pos ? `<span class="dpos">${esc(g.pos)}</span>` : ""}<div class="dds">${g.d.map(x => {
       const t = typeof x === "string" ? x : x.t, h = typeof x === "string" ? "" : x.h || "";
@@ -386,8 +374,7 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
       const cur = all.find(r => r.src === pick) || all[0];
       if (srcsEl) srcsEl.innerHTML = all.length > 1 ? all.map(r => `<button type="button" class="sp${r === cur ? " on" : ""}" data-src="${esc(r.src)}">${esc(r.src)}</button>`).join("") : "";
       if (defsEl) defsEl.innerHTML = cur ? defsHtml(cur, opts.pick) : all.length || !pendingNow ? "" : '<div class="loading">Looking it up…</div>';
-      const prs = box.querySelector(".prs"), voiced = all.find(r => r.say.some(x => x.k === "UK") && r.say.some(x => x.k === "US")) || all.find(r => r.say.length);
-      if (prs) prs.innerHTML = prsHtml(voiced, term);
+      const voiced = all.find(r => r.say.some(x => x.k === "UK") && r.say.some(x => x.k === "US")) || all.find(r => r.say.length);
       if (exsEl) {
         const exSrc = cur && cur.ex.length ? cur : all.find(r => r.ex.length);
         exsEl.innerHTML = ownHtml + exsHtml(exSrc && exSrc.ex, term, opts.own || "", opts.own ? 2 : 3);
@@ -439,8 +426,6 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
       tip = document.createElement("div");
       tip.className = "tip";
       tip.addEventListener("click", e => {
-        const pr = e.target.closest(".pr");
-        if (pr) return sayTip(pr.dataset.say, pr.dataset.audio, pr);
         const b = e.target.closest(".tip-say");
         if (b) sayTip(b.dataset.say, tip.dataset.audio, b);
       });
@@ -451,7 +436,7 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
     delete tip.dataset.side;
     const reading = langOf(k.term) === "zh" && window.pinyinPro ? pinyinPro.pinyin(k.term).replace(/\s+([，。？！、；：,.?!;:])/g, "$1") : "";
     const own = k.sentence || "";
-    tip.innerHTML = `<div class="tip-top"><div class="tip-word"><b>${esc(k.term)}</b><span class="lv" hidden></span></div><button type="button" class="tip-say" data-say="${esc(k.term)}" aria-label="Listen" title="Listen">${SPEAK_ICON}</button></div><div class="prs"></div><div class="tip-r">${esc(reading)}</div>${k.meaning ? `<div class="tip-m">${esc(k.meaning)}</div>` : ""}<div class="srcs"></div><div class="defs"></div><div class="exs">${own ? `<p class="own">${markedSentence(own, mark.textContent.trim() || k.term)}</p>` : ""}</div>${(n => n ? `<div class="tnotes">${esc(n)}</div>` : "")((k.notes || "").split("\n").filter(t => norm(t) !== norm(own) && norm(t) !== norm(k.lesson)).join("\n"))}<div class="tip-l"><span>${esc(k.lesson || "")}</span><span class="src"></span></div>`;
+    tip.innerHTML = `<div class="tip-top"><div class="tip-word"><b>${esc(k.term)}</b><span class="lv" hidden></span></div><button type="button" class="tip-say" data-say="${esc(k.term)}" aria-label="Listen" title="Listen">${SPEAK_ICON}</button></div><div class="tip-r">${esc(reading)}</div>${k.meaning ? `<div class="tip-m">${esc(k.meaning)}</div>` : ""}<div class="srcs"></div><div class="defs"></div><div class="exs">${own ? `<p class="own">${markedSentence(own, mark.textContent.trim() || k.term)}</p>` : ""}</div>${(n => n ? `<div class="tnotes">${esc(n)}</div>` : "")((k.notes || "").split("\n").filter(t => norm(t) !== norm(own) && norm(t) !== norm(k.lesson)).join("\n"))}<div class="tip-l"><span>${esc(k.lesson || "")}</span><span class="src"></span></div>`;
     if (!reading) tip.querySelector(".tip-r").remove();
     placeTip();
     const me = mark;
@@ -617,9 +602,8 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
     const k = known.get(norm(term));
     card = document.createElement("div");
     card.className = "card";
-    card.innerHTML = `<div class="head"><span class="icons"><button class="icon say" title="Listen" aria-label="Listen">🔊</button><button class="icon tr-btn" title="Translate the sentence" aria-label="Translate the sentence"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M3 5h8M7 3v2M5 5c0 3 2 5 5 6M9 5c0 3-2 5-5 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 17l3-7 3 7M12 15h4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="icon close" title="Close (Esc)" aria-label="Close">✕</button></span><div class="term" contenteditable="plaintext-only" spellcheck="false" role="textbox" aria-label="Word"></div></div>
+    card.innerHTML = `<div class="head"><span class="icons"><span class="lv" hidden></span><button class="icon say" title="Listen" aria-label="Listen">🔊</button><button class="icon tr-btn" title="Translate the sentence" aria-label="Translate the sentence"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M3 5h8M7 3v2M5 5c0 3 2 5 5 6M9 5c0 3-2 5-5 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 17l3-7 3 7M12 15h4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="icon close" title="Close (Esc)" aria-label="Close">✕</button></span><div class="term" contenteditable="plaintext-only" spellcheck="false" role="textbox" aria-label="Word"></div></div>
 <div class="reading"></div>
-<div class="meta"><span class="lv" hidden></span><div class="prs"></div></div>
 <div class="body"><div class="field meaning" contenteditable="plaintext-only" role="textbox" data-placeholder="Translating…" aria-label="Meaning"></div><div class="alts"></div><div class="srcs"></div><div class="defs"></div>
 <div class="sent-view"></div><textarea class="field sentence" rows="1" aria-label="Sentence" hidden></textarea><div class="sub sent-tr"></div><div class="exs"></div><div class="sub src"></div>
 <div class="note"></div>
@@ -692,7 +676,7 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
     let dictToken = 0;
     const lookDict = () => {
       const t = termEl.value.trim(), token = ++dictToken;
-      [ ".defs", ".prs", ".exs", ".src", ".srcs" ].forEach(sel => $(sel).innerHTML = "");
+      [ ".defs", ".exs", ".src", ".srcs" ].forEach(sel => $(sel).innerHTML = "");
       const lv = $(".lv");
       lv.textContent = "";
       lv.hidden = true;
@@ -741,8 +725,6 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
     });
     $(".say").addEventListener("click", e => sayTip(termEl.value.trim(), card.dataset.audio, e.currentTarget));
     card.addEventListener("click", e => {
-      const pr = e.target.closest(".pr");
-      if (pr) return sayTip(pr.dataset.say, pr.dataset.audio, pr);
       const dd = e.target.closest("button.dd");
       if (!dd) return;
       meaningEl.value = dd.dataset.m;
