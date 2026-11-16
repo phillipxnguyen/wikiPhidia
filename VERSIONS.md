@@ -574,6 +574,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-74 | `ef3d7d8` | Sửa lỗi của LOOKUP-73: thêm từ từ extension vào app chạy lại |
 | LOOKUP-75 | `dc637f5` | Extension 1.6.44: Make cards from this page — cụm + nghĩa thành thẻ từ, câu chứa từ đã có thành thẻ từ đó trong câu (kèm bản dịch); xem trước trong khung, Add là xong |
 | LOOKUP-76 | `5df367e` | Extension 1.6.45: sửa được từ, nghĩa, câu, bản dịch của từng thẻ trong khung New cards trước khi Add |
+| LOOKUP-77 | `pending` | Extension 1.6.46: khung thẻ mới bỏ tiêu đề, thẻ cách nhau bằng đường kẻ, nút ✕ ▾ Read again Add N cards ở đáy, cân đối |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 

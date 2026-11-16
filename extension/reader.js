@@ -54,27 +54,28 @@
   const root = host.attachShadow({ mode: "closed" });
   root.innerHTML = `<style>
 :host{all:initial;}
-.sents{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;width:380px;max-width:calc(100vw - 32px);max-height:min(480px, calc(100vh - 32px));border:1px solid var(--line);border-radius:12px;background:var(--bg);box-shadow:0 16px 40px rgba(10,20,40,.22);}
-.sents-top{display:flex;align-items:center;gap:8px;padding:12px 12px 12px 16px;border-bottom:1px solid var(--line);}
-.sents-top b{flex:1;font-size:14px;line-height:20px;}
-.sents-list{flex:1;min-height:0;margin:0;padding:8px 0;overflow-y:auto;overscroll-behavior:contain;list-style:none;}
-.sents-list li{display:flex;align-items:flex-start;gap:8px;padding:6px 12px 6px 16px;}
-.sents-list li:hover{background:var(--bg-2);}
-.sents-list .st{flex:1;min-width:0;font-size:14px;line-height:20px;overflow-wrap:anywhere;}
+.sents{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;width:400px;max-width:calc(100vw - 32px);max-height:min(520px, calc(100vh - 32px));border:1px solid var(--line);border-radius:12px;background:var(--bg);box-shadow:0 16px 40px rgba(10,20,40,.22);overflow:hidden;}
+.sents-list{flex:1;min-height:0;margin:0;padding:0;overflow-y:auto;overscroll-behavior:contain;list-style:none;}
+.sents-list li{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;}
+.sents-list li + li{border-top:1px solid var(--line);}
+.sents-list .st{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;font-size:14px;line-height:20px;overflow-wrap:anywhere;}
 .sents-list mark{border-radius:3px;background:var(--mark);color:inherit;}
-.sents-list .st > *{display:block;}
 .sents-list .hd{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:8px;}
-.sents-list .st b{font-size:14px;line-height:20px;color:var(--green);}
+.sents-list .st b{font-size:14px;line-height:20px;font-weight:700;color:var(--green);}
 .sents-list .st small{font-size:13px;line-height:20px;color:var(--ink-2);}
 .sents-list .ed{min-width:24px;margin:0 -4px;padding:0 4px;border-radius:4px;outline:none;cursor:text;}
 .sents-list .ed:hover{box-shadow:inset 0 0 0 1px var(--line);}
 .sents-list .ed:focus{background:var(--bg);box-shadow:inset 0 0 0 2px var(--green);}
 .sents-list .ed:empty::before{content:attr(data-ph);color:var(--ink-2);opacity:.6;}
-.sents-list .sx{flex:none;width:20px;height:20px;padding:0;border:0;border-radius:10px;background:none;color:var(--ink-2);font-size:12px;line-height:20px;cursor:pointer;}
-.sents-list .sx:hover{background:var(--line);color:var(--ink);}
-.sents-foot{display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:12px;border-top:1px solid var(--line);}
-.sents.small .sents-list, .sents.small .sents-foot{display:none;}
-.sents.small .sents-top{border-bottom:0;}
+.sents-list .sx{flex:none;display:flex;align-items:center;justify-content:center;width:20px;height:20px;padding:0;border:0;border-radius:10px;background:none;color:var(--ink-2);font-size:12px;line-height:16px;cursor:pointer;}
+.sents-list .sx:hover{background:var(--bg-2);color:var(--ink);}
+.sents-foot{display:flex;align-items:center;gap:0;padding:12px 16px 12px 6px;border-top:1px solid var(--line);background:var(--bg);}
+.sents.small .sents-list{display:none;}
+.sents.small .sents-foot{border-top:0;}
+.sents-foot .icon{width:36px;height:36px;padding:0;border-radius:8px;}
+.sents-foot .gap{flex:1;}
+.sents-foot .ghost{margin-right:8px;}
+.sents-foot .btn, .sents-foot .ghost{height:36px;padding:0 16px;line-height:20px;}
 .ghost{flex:none;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit;cursor:pointer;}
 .ghost:hover{border-color:var(--green);color:var(--green);}
 *{box-sizing:border-box;}
@@ -1027,7 +1028,7 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
     };
     const ed = (i, f, tag, html, ph) => `<${tag} class="ed" contenteditable="plaintext-only" spellcheck="false" data-i="${i}" data-f="${f}" data-ph="${ph}">${html}</${tag}>`;
     const row = (x, i) => x.kind === "word" ? ed(i, "term", "b", esc(x.term), "Word or phrase") + ed(i, "meaning", "small", esc(x.meaning), "Meaning") : `<span class="hd">${ed(i, "word", "b", esc(x.word), "Word")}${ed(i, "meaning", "small", esc(x.meaning), "Meaning")}</span>` + ed(i, "t", "span", marked(x.t, x.word), "Sentence") + ed(i, "tr", "small", esc(x.tr || ""), "Translation");
-    sentsEl.innerHTML = `<div class="sents-top"><b>New cards · ${sents.length}</b><button type="button" class="icon" data-act="min" title="${sentsSmall ? "Show" : "Hide"} the list">${sentsSmall ? "▴" : "▾"}</button><button type="button" class="icon" data-act="close" title="Clear and close">✕</button></div>${sents.length ? `<ul class="sents-list">${sents.map((x, i) => `<li><span class="st">${row(x, i)}</span><button type="button" class="sx" data-i="${i}" title="Leave this one out">✕</button></li>`).join("")}</ul>` : ""}<div class="sents-foot"><button type="button" class="ghost" data-act="all">Collect again</button><button type="button" class="btn" data-act="send"${sents.length ? "" : " disabled"}>Add ${sents.length || ""} to wikiPhidia</button></div>`;
+    sentsEl.innerHTML = `${sents.length ? `<ul class="sents-list">${sents.map((x, i) => `<li><span class="st">${row(x, i)}</span><button type="button" class="sx" data-i="${i}" title="Leave this one out">✕</button></li>`).join("")}</ul>` : ""}<div class="sents-foot"><button type="button" class="icon" data-act="close" title="Clear and close" aria-label="Clear and close">✕</button><button type="button" class="icon" data-act="min" title="${sentsSmall ? "Show" : "Hide"} the cards" aria-label="${sentsSmall ? "Show" : "Hide"} the cards">${sentsSmall ? "▴" : "▾"}</button><span class="gap"></span><button type="button" class="ghost" data-act="all" title="Read the page again for new cards">Read again</button><button type="button" class="btn" data-act="send"${sents.length ? "" : " disabled"}>Add ${sents.length === 1 ? "1 card" : (sents.length || "") + " cards"}</button></div>`;
     wrap.appendChild(sentsEl);
   }
   function pageItems() {
