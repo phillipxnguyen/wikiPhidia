@@ -235,6 +235,11 @@ chrome.runtime.onInstalled.addListener(() => {
     contexts: [ "selection" ]
   });
   chrome.contextMenus.create({
+    id: "wkp-sents",
+    title: "Collect the sentences on this page",
+    contexts: [ "page" ]
+  });
+  chrome.contextMenus.create({
     id: "wkp-yt",
     title: "Make a wikiPhidia lesson from this video",
     contexts: [ "page", "video" ],
@@ -248,6 +253,7 @@ chrome.runtime.onStartup.addListener(checkUpdate);
 
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
+  if (info.menuItemId === "wkp-sents" && tab && tab.id != null) chrome.tabs.sendMessage(tab.id, { type: "collectAll" }).catch(() => {});
   if (info.menuItemId === "wkp-yt" && tab && tab.id != null) importYouTube(tab.id);
   if (info.menuItemId === "wkp-add" && tab && tab.id != null) chrome.tabs.sendMessage(tab.id, { type: "open", text: info.selectionText || "" }).catch(() => {});
 });

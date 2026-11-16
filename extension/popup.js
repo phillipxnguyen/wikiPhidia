@@ -40,7 +40,10 @@ function paintStatus() {
 function paintPending() {
   const list = $("pendingList");
   list.dataset.empty = "Nothing waiting. Select a word on a page and press Shift.";
-  list.innerHTML = state.pending.map(w => `<div class="item" data-id="${esc(w.id)}">
+  list.innerHTML = state.pending.map(w => w.kind === "sentence" ? `<div class="item" data-id="${esc(w.id)}">
+<div class="sentence">${esc(w.term)}</div>
+<div class="meta">${esc(w.lessonName || "")}</div>
+<button class="del" title="Remove" aria-label="Remove">✕</button></div>` : `<div class="item" data-id="${esc(w.id)}">
 <div class="term">${esc(w.term)}<span class="reading">${esc(reading(w.term))}</span></div>
 <input class="edit meaning" value="${esc(w.meaning)}" placeholder="Meaning" aria-label="Meaning">
 ${w.sentence ? `<div class="sentence">${esc(w.sentence)}</div>` : ""}
@@ -150,6 +153,10 @@ chrome.tabs.query({ active: true, currentWindow: true }).then(([ tab ]) => {
     const u = new URL(tab.url);
     video = /(^|\.)youtube\.com$/.test(u.hostname) && (!!u.searchParams.get("v") || /\/(shorts|live)\/[\w-]{11}/.test(u.pathname));
   } catch {}
+  if (/^https?:/.test(tab.url) && !/^https:\/\/phillipxnguyen\.github\.io\//.test(tab.url)) {
+    $("collect").hidden = false;
+    $("collect").onclick = () => chrome.tabs.sendMessage(tab.id, { type: "collectAll" }).catch(() => {}).finally(() => window.close());
+  }
   if (!video) return;
   $("ytTitle").textContent = (tab.title || "").replace(/ - YouTube$/, "");
   $("ytLesson").hidden = false;
