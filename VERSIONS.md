@@ -230,7 +230,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-90 | `d7a9ff2` | Thẻ định nghĩa hiện ví dụ của chính định nghĩa đó (nếu từ điển có), đọc và ⌘C định nghĩa rồi ví dụ |
 | FLASH-91 | `d12cf27` | Nhãn từ loại và đề mục trên thẻ định nghĩa không còn tra từ khi trỏ/nhấn |
 | FLASH-92 | `6464b8a` | ☰ List: nhãn (sent, verb, adj…) cách chữ 8px như ô tra từ, thẻ học và extension |
-| FLASH-93 | `pending` | ☰ List: ví dụ đứng ngay dưới định nghĩa của nó (từ điển đặt chung một cụm), ví dụ lẻ ở cuối; extension 1.6.50 giữ mọi ví dụ của từng định nghĩa |
+| FLASH-93 | `27d3931` | ☰ List: ví dụ đứng ngay dưới định nghĩa của nó (từ điển đặt chung một cụm), ví dụ lẻ ở cuối; extension 1.6.50 giữ mọi ví dụ của từng định nghĩa |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
