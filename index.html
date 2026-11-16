@@ -477,6 +477,10 @@ window.onYouTubeIframeAPIReady = function(){
   .ed-card + :is(.edit-actions, .vocab-editor-actions){margin-top:13px;}
   #editPopup .vocab-editor:has(> .ed-card){gap:0;}
   .ed-card :is(#vocabEditSentence, #vocabEditSubText){min-height:0;padding:0;border:0;border-radius:0;background:none;box-shadow:none;}
+  .ed-card .sub-card{padding:0;}
+  .ed-card .sub-card .ed-sub-kind{margin-top:8px;}
+  .ed-card .sub-card .vem-a:empty::before{content:attr(data-placeholder);color:var(--text-2);}
+  .ed-card .sub-card .vem-a{margin-top:8px;font-size:18px;line-height:26px;font-weight:600;color:var(--a-text);}
   .ed-card .q-mirror{overflow:visible;color:var(--text);}
   .ed-card .q-mirror.q-whole{color:var(--text);}
   .ed-card :is(#editQ, .q-mirror).q-whole{font-weight:400;}
@@ -21733,12 +21737,11 @@ function subEditorHtml(item) {
   const it = Object.assign({}, item, {
     meaning: item.sub.m || ""
   });
-  const area = `<textarea id="vocabEditTerm" class="autofit" rows="1" autocomplete="off" aria-label="Word" hidden>${escapeHtml(it.meaning ? Q_MARK + it.term + "\n" + it.meaning : it.term)}</textarea>`;
-  const main = `<div id="vocabEditMain" class="rich-editor" contenteditable="true" aria-label="The word, then this card's meanings, one per line"><div class="vem-t${odLong(it.term) ? " long" : ""}" data-placeholder="Word" contenteditable="false">${escapeHtml(it.term)}</div><div class="vem-a" data-placeholder="Meaning">${meaningLines(it.meaning).map(l => `<div>${escapeHtml(l)}</div>`).join("")}</div></div>`;
+  const area = `<textarea id="vocabEditTerm" class="autofit" rows="1" autocomplete="off" aria-label="Meaning" hidden>${escapeHtml(it.meaning)}</textarea>`;
   const kind = [ item.sub.kind === "def" ? item.sub.mine ? "meaning" : item.sub.p || "definition" : "example", item.sub.mine ? "" : item.sub.s ].filter(Boolean).join(" · ");
-  const text = `<div class="ed-sub-kind">${escapeHtml(kind)}</div><div id="vocabEditSubText" class="rich-editor vem-q" contenteditable="true" aria-label="${item.sub.kind === "def" ? "This card's definition" : "This card's example"}">${escapeHtml(item.sub.t)}</div>`;
+  const card = `<div id="vocabEditMain" class="rich-editor sub-card" contenteditable="true" aria-label="This card: its text, then its meaning"><div class="vem-t${odLong(it.term) ? " long" : ""}" data-placeholder="Word" contenteditable="false">${escapeHtml(it.term)}</div><div class="ed-sub-kind" contenteditable="false">${escapeHtml(kind)}</div><div id="vocabEditSubText" class="sub-text" contenteditable="true" aria-label="${item.sub.kind === "def" ? "The definition" : "The example"}">${escapeHtml(item.sub.t)}</div><div class="vem-a" data-placeholder="Your meaning">${it.meaning ? escapeHtml(it.meaning) : ""}</div></div>`;
   const say = `<button type="button" class="od-say ed-say" data-say="${escapeAttr(it.term)}" aria-label="Listen" title="Listen">${OD_SPEAK}</button>`;
-  return '<div class="vocab-editor">' + `<div class="od-card ed-card">${levelHtml(ownDictLang(it.term, it.card), it.term, "ed-lv")}${say}${area}${main}${text}<div class="notes-clip${item.sub.n ? "" : " sub-notes-off"}"><div id="vocabEditNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes" aria-label="Notes">${item.sub.n || ""}</div></div>${item.sub.n ? "" : '<button type="button" class="ed-add-notes">＋ Notes</button>'}</div>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
+  return '<div class="vocab-editor">' + `<div class="od-card ed-card">${levelHtml(ownDictLang(it.term, it.card), it.term, "ed-lv")}${say}${area}${card}</div>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
 }
 
 function vocabEditorHtml(item) {

@@ -237,6 +237,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-97 | `243ffab` | Mỗi thẻ (định nghĩa, ví dụ, câu) là thẻ riêng: bấm vào mở popup sửa của chính thẻ đó với nghĩa riêng, chữ và ghi chú; bỏ nút thêm nghĩa chung và bấm đúp sửa tại chỗ |
 | FLASH-98 | `66b6b72` | Popup phụ cho thẻ định nghĩa/ví dụ: chỉ nội dung của thẻ đó (từ, nghĩa riêng, loại + từ điển, chữ, ghi chú), không trang từ điển, không danh sách gợi ý |
 | FLASH-99 | `bf57d3c` | Popup phụ gọn: chữ của thẻ không đóng khung, ghi chú ẩn sau nút ＋ Notes |
+| FLASH-100 | `pending` | Popup thẻ con gọn: một khối (từ, loại · nguồn, chữ thẻ, nghĩa riêng), bỏ ghi chú và ô thừa |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
