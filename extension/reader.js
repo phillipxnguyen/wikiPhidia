@@ -62,8 +62,14 @@
 .sents-list li:hover{background:var(--bg-2);}
 .sents-list .st{flex:1;min-width:0;font-size:14px;line-height:20px;overflow-wrap:anywhere;}
 .sents-list mark{border-radius:3px;background:var(--mark);color:inherit;}
-.sents-list .st b{display:block;font-size:14px;line-height:20px;color:var(--green);}
-.sents-list .st small{display:block;font-size:13px;line-height:20px;color:var(--ink-2);}
+.sents-list .st > *{display:block;}
+.sents-list .hd{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:8px;}
+.sents-list .st b{font-size:14px;line-height:20px;color:var(--green);}
+.sents-list .st small{font-size:13px;line-height:20px;color:var(--ink-2);}
+.sents-list .ed{min-width:24px;margin:0 -4px;padding:0 4px;border-radius:4px;outline:none;cursor:text;}
+.sents-list .ed:hover{box-shadow:inset 0 0 0 1px var(--line);}
+.sents-list .ed:focus{background:var(--bg);box-shadow:inset 0 0 0 2px var(--green);}
+.sents-list .ed:empty::before{content:attr(data-ph);color:var(--ink-2);opacity:.6;}
 .sents-list .sx{flex:none;width:20px;height:20px;padding:0;border:0;border-radius:10px;background:none;color:var(--ink-2);font-size:12px;line-height:20px;cursor:pointer;}
 .sents-list .sx:hover{background:var(--line);color:var(--ink);}
 .sents-foot{display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:12px;border-top:1px solid var(--line);}
@@ -1000,6 +1006,18 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
           sentsEl = null;
         }
       });
+      sentsEl.addEventListener("input", e => {
+        const el = e.target.closest(".ed"), x = el && sents[Number(el.dataset.i)];
+        if (!x) return;
+        x[el.dataset.f] = el.textContent.replace(/\s+/g, " ").trim();
+        saveDraft();
+      });
+      sentsEl.addEventListener("keydown", e => {
+        if (e.key === "Enter" && e.target.closest && e.target.closest(".ed")) {
+          e.preventDefault();
+          e.target.blur();
+        }
+      });
       ["keydown", "keyup", "keypress", "mousedown", "mouseup"].forEach(t => sentsEl.addEventListener(t, e => e.stopPropagation()));
     }
     sentsEl.classList.toggle("small", sentsSmall);
@@ -1007,8 +1025,9 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
       const e = esc(w).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), edge = !(CJK.test(w) || KANA.test(w));
       return esc(t).replace(new RegExp((edge ? "(?<![\\p{L}\\p{N}])" : "") + e + (edge ? "(?![\\p{L}\\p{N}])" : ""), "giu"), "<mark>$&</mark>");
     };
-    const row = x => x.kind === "word" ? `<b>${esc(x.term)}</b><small>${esc(x.meaning)}</small>` : `<b>${esc(x.word)}</b><span>${marked(x.t, x.word)}</span>${x.tr ? `<small>${esc(x.tr)}</small>` : ""}`;
-    sentsEl.innerHTML = `<div class="sents-top"><b>New cards · ${sents.length}</b><button type="button" class="icon" data-act="min" title="${sentsSmall ? "Show" : "Hide"} the list">${sentsSmall ? "▴" : "▾"}</button><button type="button" class="icon" data-act="close" title="Clear and close">✕</button></div>${sents.length ? `<ul class="sents-list">${sents.map((x, i) => `<li><span class="st">${row(x)}</span><button type="button" class="sx" data-i="${i}" title="Leave this one out">✕</button></li>`).join("")}</ul>` : ""}<div class="sents-foot"><button type="button" class="ghost" data-act="all">Collect again</button><button type="button" class="btn" data-act="send"${sents.length ? "" : " disabled"}>Add ${sents.length || ""} to wikiPhidia</button></div>`;
+    const ed = (i, f, tag, html, ph) => `<${tag} class="ed" contenteditable="plaintext-only" spellcheck="false" data-i="${i}" data-f="${f}" data-ph="${ph}">${html}</${tag}>`;
+    const row = (x, i) => x.kind === "word" ? ed(i, "term", "b", esc(x.term), "Word or phrase") + ed(i, "meaning", "small", esc(x.meaning), "Meaning") : `<span class="hd">${ed(i, "word", "b", esc(x.word), "Word")}${ed(i, "meaning", "small", esc(x.meaning), "Meaning")}</span>` + ed(i, "t", "span", marked(x.t, x.word), "Sentence") + ed(i, "tr", "small", esc(x.tr || ""), "Translation");
+    sentsEl.innerHTML = `<div class="sents-top"><b>New cards · ${sents.length}</b><button type="button" class="icon" data-act="min" title="${sentsSmall ? "Show" : "Hide"} the list">${sentsSmall ? "▴" : "▾"}</button><button type="button" class="icon" data-act="close" title="Clear and close">✕</button></div>${sents.length ? `<ul class="sents-list">${sents.map((x, i) => `<li><span class="st">${row(x, i)}</span><button type="button" class="sx" data-i="${i}" title="Leave this one out">✕</button></li>`).join("")}</ul>` : ""}<div class="sents-foot"><button type="button" class="ghost" data-act="all">Collect again</button><button type="button" class="btn" data-act="send"${sents.length ? "" : " disabled"}>Add ${sents.length || ""} to wikiPhidia</button></div>`;
     wrap.appendChild(sentsEl);
   }
   function pageItems() {

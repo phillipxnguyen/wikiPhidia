@@ -41,7 +41,7 @@ A browser only updates an extension fully by itself when it comes from the Chrom
 - a phrase with its meaning (a table row such as *an important caveat | một lưu ý quan trọng*, or a list line such as *With one caveat: với một điều kiện cần lưu ý*) becomes a word card, the phrase with that meaning, as if you had saved it yourself; a phrase that is only a word you already have (*A caveat*) is left out;
 - a sentence holding a word you already have (and a meaning for) becomes that word's card in that sentence, as when you select the word in a sentence and save it: the word with its meaning, the sentence, and the translation when the page gives it on the next line (it is the card's answer). Its meaning is the one you gave the word; a sentence the lesson already has is not added twice.
 
-✕ leaves one out (the list stays where it was), ▾ folds the box away, ✕ at the top clears it, **Collect again** reads the page again after it has grown, and the box remembers what it found on that page until you add it. **Add to wikiPhidia** sends them like any word you save: into the lesson named after the page, ordinary cards studied by the usual rules.
+Every part of a card in the box can be corrected before it is added: click the word or phrase, its meaning, the sentence or its translation and type (Return ends the edit; a translation can be added where there is none). ✕ leaves one out (the list stays where it was), ▾ folds the box away, ✕ at the top clears it, **Collect again** reads the page again after it has grown, and the box remembers what it found on that page until you add it. **Add to wikiPhidia** sends them like any word you save: into the lesson named after the page, ordinary cards studied by the usual rules.
 
 ## Words you already have
 
