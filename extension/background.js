@@ -236,7 +236,7 @@ chrome.runtime.onInstalled.addListener(() => {
   });
   chrome.contextMenus.create({
     id: "wkp-sents",
-    title: "Collect the sentences on this page",
+    title: "Make wikiPhidia cards from this page",
     contexts: [ "page" ]
   });
   chrome.contextMenus.create({

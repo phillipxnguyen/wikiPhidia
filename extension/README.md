@@ -34,9 +34,14 @@ A browser only updates an extension fully by itself when it comes from the Chrom
 - What you type in the card stays in the card, on every site: pages that catch every key and pull it into their own box (ChatGPT's chat box, for one) never see the keys typed in the word, the meaning or the sentence, nor a paste there.
 - A word you already have says so on the card (which lesson, what it means) instead of adding it twice.
 
-## Collecting sentences
+## Making cards from a page
 
-**📝 Collect sentences on this page** in the popup (or the page's right-click menu) takes every line of the page's text (more rather than fewer, for you to sort out: each sentence of a paragraph, each list item whole, each table row as its cells joined with a colon; menus, headers and footers are left out). They wait in a small **Collected** box in the bottom right corner, with the words you already have marked: ✕ leaves one out (the list stays where it was), ▾ folds the box away, ✕ at the top clears it, **Collect all** takes them again after the page has grown, and the box remembers what you collected on that page until you send it. **Paste into wikiPhidia** opens the app on its Add page, in the lesson named after the page (a new one if there is none), with the lines in the **Paste here!** box: the app reads them exactly as if you had pasted them yourself, shows what card each line becomes, and nothing is added until you press Import, so you can still change or leave out lines there. No new kind of card and no new rule: they are ordinary cards.
+**📝 Make cards from this page** in the popup (or the page's right-click menu) reads the page and lists the cards it can make, in a small **New cards** box in the bottom right corner (menus, headers and footers are left out, and so are headings and lines in Vietnamese only):
+
+- a phrase with its meaning (a table row such as *an important caveat | một lưu ý quan trọng*, or a list line such as *With one caveat: với một điều kiện cần lưu ý*) becomes a word card, the phrase with that meaning, as if you had saved it yourself; a phrase that is only a word you already have (*A caveat*) is left out;
+- a sentence holding a word you already have (and a meaning for) becomes that word's card in that sentence, as when you select the word in a sentence and save it: the word with its meaning, the sentence, and the translation when the page gives it on the next line (it is the card's answer). Its meaning is the one you gave the word; a sentence the lesson already has is not added twice.
+
+✕ leaves one out (the list stays where it was), ▾ folds the box away, ✕ at the top clears it, **Collect again** reads the page again after it has grown, and the box remembers what it found on that page until you add it. **Add to wikiPhidia** sends them like any word you save: into the lesson named after the page, ordinary cards studied by the usual rules.
 
 ## Words you already have
 

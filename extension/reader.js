@@ -62,6 +62,8 @@
 .sents-list li:hover{background:var(--bg-2);}
 .sents-list .st{flex:1;min-width:0;font-size:14px;line-height:20px;overflow-wrap:anywhere;}
 .sents-list mark{border-radius:3px;background:var(--mark);color:inherit;}
+.sents-list .st b{display:block;font-size:14px;line-height:20px;color:var(--green);}
+.sents-list .st small{display:block;font-size:13px;line-height:20px;color:var(--ink-2);}
 .sents-list .sx{flex:none;width:20px;height:20px;padding:0;border:0;border-radius:10px;background:none;color:var(--ink-2);font-size:12px;line-height:20px;cursor:pointer;}
 .sents-list .sx:hover{background:var(--line);color:var(--ink);}
 .sents-foot{display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:12px;border-top:1px solid var(--line);}
@@ -927,11 +929,13 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
 
   let sents = [], sentsEl = null, sentsSmall = false;
   const draftKey = () => location.origin + location.pathname + location.search;
+  const VI = /[ăâđêôơưạảấầẩẫậắằẳẵặẹẻẽếềểễệỉịọỏốồổỗộớờởỡợụủứừửữựỳỵỷỹ]/i;
   const sentenceParts = text => (text.replace(/\s+/g, " ").match(/[^.!?。！？]+(?:[.!?。！？]+["'”’)\]]*|$)/g) || []).map(t => t.trim()).filter(t => t.length >= 12 && t.length <= 320 && /[\p{L}]{2}/u.test(t));
+  const itemKey = x => x.kind === "word" ? "w|" + norm(x.term) : "s|" + norm(x.word) + "|" + norm(x.t);
   function saveDraft() {
     chrome.storage.local.get("sentDrafts").then(({ sentDrafts }) => {
       const all = Object.assign({}, sentDrafts);
-      if (sents.length) all[draftKey()] = { list: sents, at: Date.now() }; else delete all[draftKey()];
+      if (sents.length) all[draftKey()] = { items: sents, at: Date.now() }; else delete all[draftKey()];
       const keep = Object.entries(all).sort((a, b) => b[1].at - a[1].at).slice(0, 20);
       chrome.storage.local.set({ sentDrafts: Object.fromEntries(keep) });
     });
@@ -947,19 +951,22 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
         continue;
       }
       const k = known.get(norm(m[0]));
-      if (k && !out.includes(k.term) && norm(k.sentence) !== norm(t)) out.push(k.term);
+      if (k && k.meaning && !out.some(x => x.term === k.term) && norm(k.sentence) !== norm(t)) out.push(k);
     }
     return out;
   }
-  function addSentences(list) {
+  function addItems(list) {
     let n = 0;
-    list.forEach(t => {
-      t = t.replace(/\s+/g, " ").trim();
-      if (t && /\p{L}/u.test(t) && !sents.some(x => norm(x.t) === norm(t))) sents.push({ t, words: wordsIn(t) }), n++;
+    list.forEach(x => {
+      if (!sents.some(y => itemKey(y) === itemKey(x))) sents.push(x), n++;
     });
     saveDraft();
     paintSents(true);
     return n;
+  }
+  function collect() {
+    const n = addItems(pageItems());
+    toast(n ? `${n} card${n === 1 ? "" : "s"} found` : "Nothing new to make cards from on this page");
   }
   function paintSents(open) {
     if (open) sentsSmall = false;
@@ -980,10 +987,7 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
           if (again) again.scrollTop = top;
           return;
         }
-        if (b.dataset.act === "all") {
-          const n = addSentences(pageSentences());
-          return toast(n ? `${n} sentence${n === 1 ? "" : "s"} collected` : "No new sentences on this page");
-        }
+        if (b.dataset.act === "all") return collect();
         if (b.dataset.act === "send") return sendSents();
         if (b.dataset.act === "min") {
           sentsSmall = !sentsSmall;
@@ -999,56 +1003,76 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
       ["keydown", "keyup", "keypress", "mousedown", "mouseup"].forEach(t => sentsEl.addEventListener(t, e => e.stopPropagation()));
     }
     sentsEl.classList.toggle("small", sentsSmall);
-    const marked = x => {
-      let html = esc(x.t);
-      x.words.forEach(w => {
-        const e = esc(w).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-        html = html.replace(new RegExp((CJK.test(w) || KANA.test(w) ? "" : "(?<![\\p{L}\\p{N}])") + e + (CJK.test(w) || KANA.test(w) ? "" : "(?![\\p{L}\\p{N}])"), "giu"), "<mark>$&</mark>");
-      });
-      return html;
+    const marked = (t, w) => {
+      const e = esc(w).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), edge = !(CJK.test(w) || KANA.test(w));
+      return esc(t).replace(new RegExp((edge ? "(?<![\\p{L}\\p{N}])" : "") + e + (edge ? "(?![\\p{L}\\p{N}])" : ""), "giu"), "<mark>$&</mark>");
     };
-    sentsEl.innerHTML = `<div class="sents-top"><b>Collected · ${sents.length}</b><button type="button" class="icon" data-act="min" title="${sentsSmall ? "Show" : "Hide"} the list">${sentsSmall ? "▴" : "▾"}</button><button type="button" class="icon" data-act="close" title="Clear and close">✕</button></div>${sents.length ? `<ul class="sents-list">${sents.map((t, i) => `<li><span class="st">${marked(t)}</span><button type="button" class="sx" data-i="${i}" title="Leave this one out">✕</button></li>`).join("")}</ul>` : ""}<div class="sents-foot"><button type="button" class="ghost" data-act="all">Collect all</button><button type="button" class="btn" data-act="send"${sents.length ? "" : " disabled"}>Paste ${sents.length || ""} into wikiPhidia</button></div>`;
+    const row = x => x.kind === "word" ? `<b>${esc(x.term)}</b><small>${esc(x.meaning)}</small>` : `<b>${esc(x.word)}</b><span>${marked(x.t, x.word)}</span>${x.tr ? `<small>${esc(x.tr)}</small>` : ""}`;
+    sentsEl.innerHTML = `<div class="sents-top"><b>New cards · ${sents.length}</b><button type="button" class="icon" data-act="min" title="${sentsSmall ? "Show" : "Hide"} the list">${sentsSmall ? "▴" : "▾"}</button><button type="button" class="icon" data-act="close" title="Clear and close">✕</button></div>${sents.length ? `<ul class="sents-list">${sents.map((x, i) => `<li><span class="st">${row(x)}</span><button type="button" class="sx" data-i="${i}" title="Leave this one out">✕</button></li>`).join("")}</ul>` : ""}<div class="sents-foot"><button type="button" class="ghost" data-act="all">Collect again</button><button type="button" class="btn" data-act="send"${sents.length ? "" : " disabled"}>Add ${sents.length || ""} to wikiPhidia</button></div>`;
     wrap.appendChild(sentsEl);
   }
-  function pageSentences() {
+  function pageItems() {
     const scope = document.querySelector("article, main, [role=main]") || document.body, out = [];
-    scope.querySelectorAll("p, li, h1, h2, h3, h4, blockquote, tr, dd, figcaption").forEach(el => {
-      if (el.closest("nav, header, footer, aside, form, wkp-reader") || el.querySelector("p, li, tr") || !el.getClientRects().length) return;
+    const blocks = [ ...scope.querySelectorAll("p, li, h1, h2, h3, h4, h5, h6, blockquote, tr, dd, figcaption") ].filter(el => !el.closest("nav, header, footer, aside, form, wkp-reader") && !el.querySelector("p, li, tr") && el.getClientRects().length);
+    const textOf = el => (el.innerText || el.textContent || "").replace(/\s+/g, " ").trim();
+    const bare = t => t.replace(/^\s*(?:\d+[.)]|[-•–])\s+/, "").trim();
+    const isWordLike = t => t && t.length <= 60 && t.split(/\s+/).length <= 6 && !VI.test(t) && /\p{L}/u.test(t);
+    const pushWord = (term, meaning) => {
+      term = bare(term).replace(/[.:;,]+$/, "");
+      meaning = meaning.replace(/\s+/g, " ").trim().replace(/[.:;]+$/, "");
+      const plain = norm(term).replace(/^(a|an|the)\s+/, "");
+      if (isWordLike(term) && meaning && !known.has(plain)) out.push({ kind: "word", term, meaning });
+    };
+    blocks.forEach((el, i) => {
+      if (/^H\d$/.test(el.tagName)) return;
       if (el.tagName === "TR") {
-        const cells = [ ...el.querySelectorAll("td") ].map(c => (c.innerText || c.textContent || "").replace(/\s+/g, " ").trim()).filter(Boolean);
-        if (cells.length) out.push(cells.join(": "));
+        const cells = [ ...el.querySelectorAll("td") ].map(textOf).filter(Boolean);
+        if (cells.length >= 2) pushWord(cells[0], cells[1]);
         return;
       }
-      const text = (el.innerText || el.textContent || "").replace(/\s+/g, " ").trim();
-      if (el.tagName === "LI" && text.length <= 320) out.push(text); else sentenceParts(text).forEach(t => out.push(t));
+      const text = bare(textOf(el));
+      if (!text || VI.test(text.split(/[:：]/)[0])) return;
+      const colon = text.match(/^([^:：]{1,60})[:：]\s*(.+)$/);
+      if (colon && isWordLike(colon[1]) && VI.test(colon[2])) return pushWord(colon[1], colon[2]);
+      const next = blocks[i + 1] && blocks[i + 1].tagName !== "TR" ? bare(textOf(blocks[i + 1])) : "";
+      const parts = sentenceParts(text), tr = parts.length === 1 && next && VI.test(next) && next.length <= 400 ? next : "";
+      parts.forEach(t => wordsIn(t).forEach(k => out.push({ kind: "sent", t, tr, word: k.term, meaning: k.meaning })));
     });
-    if (!out.length) sentenceParts(scope.innerText || "").forEach(t => out.push(t));
     return out;
   }
   async function sendSents() {
-    const list = sents.map(x => x.t).filter(Boolean);
-    if (!list.length) return;
-    await chrome.storage.local.set({ pastePending: { text: list.join("\n"), title: settings.lessonName || articleTitle(), url: location.href, at: Date.now() } });
+    if (!sents.length) return;
+    const at = Date.now(), title = settings.lessonName || articleTitle();
+    const { pending: now } = await chrome.storage.local.get("pending");
+    const next = (now || []).concat(sents.map((x, i) => Object.assign({
+      id: at.toString(36) + i.toString(36) + Math.random().toString(36).slice(2, 6),
+      url: location.href,
+      title: document.title,
+      lessonId: settings.lessonId || "",
+      lessonName: title,
+      at
+    }, x.kind === "word" ? { term: x.term, meaning: x.meaning, sentence: "" } : { kind: "wsent", term: x.word, meaning: x.meaning, sentence: x.t, translation: x.tr })));
+    const n = sents.length;
+    pending = next;
+    await chrome.storage.local.set({ pending: next });
     sents = [];
     saveDraft();
     if (sentsEl) sentsEl.remove();
     sentsEl = null;
-    chrome.runtime.sendMessage({ type: "openApp" }).catch(() => {});
+    toast(`${n} card${n === 1 ? "" : "s"} sent to wikiPhidia`);
   }
   chrome.storage.local.get("sentDrafts").then(({ sentDrafts }) => {
     const d = sentDrafts && sentDrafts[draftKey()];
-    if (d && d.list && d.list.some(x => x && x.t) && !gone()) {
-      sents = d.list.filter(x => x && typeof x === "object" && x.t && Array.isArray(x.words));
+    const items = d && Array.isArray(d.items) ? d.items.filter(x => x && (x.kind === "word" ? x.term : x.t && x.word)) : [];
+    if (items.length && !gone()) {
+      sents = items;
       sentsSmall = true;
       paintSents();
     }
   });
 
   chrome.runtime.onMessage.addListener(msg => {
-    if (msg && msg.type === "collectAll" && on()) {
-      const n = addSentences(pageSentences());
-      toast(n ? `${n} sentence${n === 1 ? "" : "s"} collected` : "No new sentences on this page");
-    }
+    if (msg && msg.type === "collectAll" && on()) collect();
     if (msg && msg.type === "collectOpen" && on()) paintSents(true);
     if (msg && msg.type === "toast") toast(msg.text);
     if (msg && msg.type === "ytFail") ytFinish(false, msg.text);

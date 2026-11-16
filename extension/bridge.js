@@ -27,8 +27,8 @@
       type: "add",
       words: list.map(w => ({
         id: w.id,
-        kind: w.kind === "sentence" ? "sentence" : undefined,
-        words: Array.isArray(w.words) ? w.words : undefined,
+        kind: w.kind === "sentence" || w.kind === "wsent" ? w.kind : undefined,
+        translation: w.kind === "wsent" ? String(w.translation || "") : undefined,
         term: w.term,
         meaning: w.meaning,
         sentence: w.sentence,
@@ -42,14 +42,6 @@
     setTimeout(() => {
       sending = null;
     }, 8e3);
-  }
-
-  async function sendPaste() {
-    if (!ready) return;
-    const { pastePending } = await chrome.storage.local.get("pastePending");
-    if (!pastePending || Date.now() - (pastePending.at || 0) > 36e5) return;
-    await chrome.storage.local.remove("pastePending");
-    post({ type: "paste", data: pastePending });
   }
 
   async function sendYouTube() {
@@ -99,7 +91,6 @@
       }).then(() => {
         send();
         sendYouTube();
-        sendPaste();
       });
     }
     if (e.data.type === "added") settle(e.data);
@@ -112,7 +103,6 @@
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area === "local" && changes.pending) send();
     if (area === "local" && changes.ytPending && changes.ytPending.newValue) sendYouTube();
-    if (area === "local" && changes.pastePending && changes.pastePending.newValue) sendPaste();
   });
 
   chrome.runtime.onMessage.addListener(msg => {

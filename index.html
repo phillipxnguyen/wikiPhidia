@@ -20043,13 +20043,44 @@ function readerTarget(w, made) {
 function readerAdd(list) {
   const known = new Map;
   library.filter(l => !isVirtualId(l.id) && !bookHidden(l)).forEach(l => lessonVocabItems(readerCards(l)).forEach(i => known.set(i.key, l.name || "Untitled lesson")));
-  const added = [], skipped = [], made = new Set, groups = new Map;
+  const added = [], skipped = [], made = new Set, groups = new Map, sentAdded = [];
   (Array.isArray(list) ? list : []).forEach(w => {
     if (!w || typeof w !== "object") return;
     if (w.kind === "sentence") return skipped.push({
       id: w.id,
       reason: "skipped"
     });
+    if (w.kind === "wsent") {
+      const term = cleanPunct(cleanText(String(w.term || "")).replace(/\n/g, " ")), meaning = cleanPunct(cleanText(String(w.meaning || "")).replace(/\n/g, " "));
+      const q = cleanPunct(cleanText(String(w.sentence || "")).replace(/\n/g, " ")), a = cleanPunct(cleanText(String(w.translation || "")).replace(/\n/g, " "));
+      if (!term || !meaning || !q || !findWordForm(q.normalize("NFC"), term)) return skipped.push({
+        id: w.id,
+        reason: "empty"
+      });
+      const lesson = readerTarget(w, made), cards = lesson.id === currentLessonId ? rows : lesson.cards;
+      if (cards.some(c => normalizeVocabText(c.q || "") === normalizeVocabText(q))) return skipped.push({
+        id: w.id,
+        reason: "exists",
+        lesson: lesson.name || "Untitled lesson"
+      });
+      const row = newRow(q, a);
+      row.notes = term + ": " + meaning;
+      row.notesHtml = "<ul><li><b>" + escapeHtml(term) + "</b>: " + escapeHtml(meaning) + "</li></ul>";
+      if (lesson.id === currentLessonId) {
+        rows.push(row);
+        scheduleAutoSave();
+      } else {
+        const saved = Object.assign({}, lesson, {
+          cards: lesson.cards.concat(serializeCard(row)),
+          updatedAt: Date.now(),
+          unseen: (Number(lesson.unseen) || 0) + 1
+        });
+        upsertLibrary(saved);
+        dbPut("lessons", saved).catch(() => {});
+      }
+      sentAdded.push(w.id);
+      return;
+    }
     const term = cleanPunct(cleanText(String(w.term || "")).replace(/\n/g, " "));
     const meaning = cleanPunct(cleanText(String(w.meaning || "")).replace(/\n/g, " "));
     const key = term && wordKey(term, meaning);
@@ -20134,12 +20165,18 @@ function readerAdd(list) {
     });
     dbPut("lessons", saved).catch(() => {});
   });
+  added.push(...sentAdded);
+  if (sentAdded.length && !groups.size) {
+    renderLessonList();
+    if (currentView === "vocab") renderVocab(); else render();
+    showToast(`${countOf(sentAdded.length, "card")} added from your reading`);
+  }
   if (groups.size) {
     setTimeout(wordDictPump, 3e3);
     refreshSaveReminders();
     renderLessonList();
     if (currentView === "vocab") renderVocab(); else render();
-    showToast(added.length === 1 ? `“${groups.values().next().value[0].term}” added from your reading` : `${added.length} words added from your reading`);
+    showToast(added.length === 1 ? `“${groups.values().next().value[0].term}” added from your reading` : `${countOf(added.length, "card")} added from your reading`);
   }
   return {
     from: "wikiphidia-app",
@@ -20147,32 +20184,6 @@ function readerAdd(list) {
     added: added,
     skipped: skipped
   };
-}
-
-async function readerPaste(d) {
-  const text = String(d.text || "").trim(), name = cleanText(String(d.title || "")).replace(/\n/g, " ").trim();
-  if (!text) return;
-  if (activeEdit) commitActiveEdit();
-  if (vocabEditingKey) commitVocabEdit();
-  const lesson = name && library.find(l => !isVirtualId(l.id) && !bookHidden(l) && (l.name || "").trim().toLowerCase() === name.toLowerCase());
-  if (lesson && lesson.id !== currentLessonId) {
-    await discardIfEmptyDraft();
-    await flushAutoSave();
-    noteRecentLesson(lesson.id);
-    openLesson(lesson);
-  } else if (!lesson) {
-    await createLesson();
-    if (name) {
-      setLessonTitle(name);
-      scheduleAutoSave();
-    }
-  }
-  showView("add");
-  const ta = document.getElementById("importText");
-  ta.value = text;
-  renderImportPreview();
-  ta.focus();
-  showToast("Check the cards below, leave out what you don't want, then Import");
 }
 
 function readerYouTube(d) {
@@ -20215,7 +20226,6 @@ function startReaderBridge() {
         done(e.data);
       }
     }
-    if (e.data.type === "paste" && e.data.data) readerPaste(e.data.data);
     if (e.data.type === "add") {
       window.postMessage(readerAdd(e.data.words), "*");
       window.postMessage(readerState(), "*");
