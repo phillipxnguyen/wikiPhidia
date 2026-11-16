@@ -245,6 +245,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-105 | `84ef15b` | ☰ List: phần nghĩa trong khung như các thẻ, chữ thẳng cột, cách đều 8px |
 | FLASH-106 | `3ee6b9b` | ☰ List: bỏ khung nghĩa riêng; nghĩa tiếng Việt gợi ý nằm trong thẻ câu của bạn, dưới nghĩa |
 | FLASH-107 | `08a1f6a` | Thêm chất liệu câu hỏi cho mọi ngôn ngữ: câu Tatoeba kèm bản dịch, đồng nghĩa/trái nghĩa, kết hợp từ (tiếng Anh), họ từ; luân phiên trong thẻ câu của bạn, không thêm thẻ |
+| FLASH-108 | `pending` | Popup thẻ con: mọi phần cách nhau và cách mép đúng 16px (đo theo nét vẽ), nhãn từ loại thấp lại cân với dòng chữ |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
