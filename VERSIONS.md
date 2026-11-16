@@ -234,6 +234,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-94 | `edcc029` | ☰ List kiểu helper: mỗi nghĩa một khối, nhãn ngay trước chữ, ví dụ trong ô xám không nhãn (một ví dụ không chấm, nhiều ví dụ có chấm) |
 | FLASH-95 | `6e9d75a` | ☰ List: bấm đúp sửa định nghĩa/ví dụ tại chỗ (giữ tiến độ), ＋ Add a meaning thêm nghĩa riêng kèm ví dụ; giữ lại khi tra từ điển lại |
 | FLASH-96 | `da51058` | ☰ List: bỏ nhãn sent/word ở thẻ câu của mình |
+| FLASH-97 | `pending` | Mỗi thẻ (định nghĩa, ví dụ, câu) là thẻ riêng: bấm vào mở popup sửa của chính thẻ đó với nghĩa riêng, chữ và ghi chú; bỏ nút thêm nghĩa chung và bấm đúp sửa tại chỗ |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 

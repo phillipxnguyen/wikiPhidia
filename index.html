@@ -591,14 +591,6 @@ window.onYouTubeIframeAPIReady = function(){
   .vl-sense > .vl-sub{padding:0 12px 0 4px;}
   .vl-sub{display:flex;align-items:center;gap:8px;font-size:16px;line-height:24px;cursor:default;}
   .vl-sub-k{display:inline-block;margin:2px 8px 0 0;padding:0 6px;border-radius:6px;background:color-mix(in srgb, var(--text) 7%, transparent);color:var(--text-2);font-size:13px;line-height:20px;font-weight:700;vertical-align:top;}
-  .vl-x.vl-editing{outline:none;border-radius:4px;box-shadow:0 0 0 2px var(--accent);}
-  .vl-add-sense{align-self:flex-start;height:32px;padding:0 12px;border:1px dashed var(--border);border-radius:16px;background:none;color:var(--text-2);font:inherit;font-size:14px;line-height:20px;font-weight:600;cursor:pointer;}
-  @media (hover:hover){.vl-add-sense:hover{border-color:var(--accent);color:var(--accent);}}
-  .vl-new{gap:8px;padding:12px;}
-  .vl-new > [contenteditable]{min-height:24px;padding:4px 8px;border:1px solid var(--border);border-radius:8px;font-size:16px;line-height:24px;outline:none;}
-  .vl-new > [contenteditable]:focus{border-color:var(--accent);}
-  .vl-new > [contenteditable]:empty::before{content:attr(data-ph);color:var(--text-2);}
-  .vl-new-btns{display:flex;justify-content:flex-end;gap:8px;}
   .vl-exs{display:flex;flex-direction:column;gap:4px;padding:8px 12px;border-radius:8px;background:color-mix(in srgb, var(--text) 4%, transparent);}
   .vl-exs.many .vl-ex{position:relative;padding-left:16px;}
   .vl-exs.many .vl-ex::before{content:"";position:absolute;left:2px;top:9px;width:6px;height:6px;border-radius:3px;background:var(--text-2);}
@@ -10769,6 +10761,8 @@ function keepOwnSenses(old, entry) {
       out[f][at] = Object.assign(out[f][at], {
         t: o.t,
         k: kOf(o),
+        m: o.m || "",
+        n: o.n || "",
         ed: true
       }, o.p != null ? {
         p: o.p
@@ -20646,7 +20640,9 @@ function subItemsOf(item, entry, tk) {
         s: d.s || "",
         x: d.x || "",
         xtr: d.xtr || "",
-        mine: !!d.mine
+        mine: !!d.mine,
+        m: d.m || "",
+        n: d.n || ""
       }
     }));
     (entry.ex || []).forEach(x => x && x.t && findWordForm(x.t, item.term) && tmpl.push({
@@ -20658,7 +20654,9 @@ function subItemsOf(item, entry, tk) {
         t: x.t,
         tr: x.tr || "",
         s: x.s || "",
-        of: x.of || ""
+        of: x.of || "",
+        m: x.m || "",
+        n: x.n || ""
       }
     }));
     if (subCache.size > 4000) subCache.clear();
@@ -20906,20 +20904,37 @@ function cardsListHtml(head, subs) {
     const mean = `<span class="vl-sub-m">${meaningHtml(e.meaning)}</span>`;
     return `<div class="vl-sense"><div class="vl-sub vl-own" data-sub="${escapeAttr(e.key)}"><span class="vl-sub-t">${sentence ? `<span class="vl-sub-q">${vocabSentenceHtml(sentence, e.term, e.card)}</span>` : ""}${mean}${rest ? `<span class="vl-sub-n card-notes">${rest}</span>` : ""}</span>${tail(e)}</div></div>`;
   });
-  const exRow = x => `<div class="vl-sub vl-ex" data-sub="${escapeAttr(x.key)}"><span class="vl-sub-t"><span class="vl-x">${vocabSentenceHtml(x.sub.t, head.term, head.card)}</span>${x.sub.tr ? `<span class="vl-sub-m">${escapeHtml(x.sub.tr)}</span>` : ""}</span>${tail(x)}</div>`;
+  const exRow = x => `<div class="vl-sub vl-ex" data-sub="${escapeAttr(x.key)}"><span class="vl-sub-t"><span class="vl-x">${vocabSentenceHtml(x.sub.t, head.term, head.card)}</span>${x.sub.m ? `<span class="vl-sub-m">${meaningHtml(x.sub.m)}</span>` : ""}${x.sub.tr ? `<span class="vl-sub-m">${escapeHtml(x.sub.tr)}</span>` : ""}</span>${tail(x)}</div>`;
   const exBox = list => list.length ? `<div class="vl-exs${list.length > 1 ? " many" : ""}">${list.map(exRow).join("")}</div>` : "";
   const defs = subs.filter(x => x.sub.kind === "def"), defT = new Set(defs.map(x => x.sub.t));
   const exs = subs.filter(x => x.sub.kind === "ex"), loose = exs.filter(x => !defT.has(x.sub.of));
-  const senses = defs.map(d => `<div class="vl-sense"><div class="vl-sub" data-sub="${escapeAttr(d.key)}"><span class="vl-sub-t">${tag(d.sub.mine ? "meaning" : d.sub.p || "def")}<span class="vl-x">${escapeHtml(d.sub.t)}</span></span>${tail(d)}</div>${exBox(exs.filter(x => x.sub.of === d.sub.t))}</div>`);
+  const senses = defs.map(d => `<div class="vl-sense"><div class="vl-sub" data-sub="${escapeAttr(d.key)}"><span class="vl-sub-t">${tag(d.sub.mine ? "meaning" : d.sub.p || "def")}<span class="vl-x">${escapeHtml(d.sub.t)}</span>${d.sub.m ? `<span class="vl-sub-m">${meaningHtml(d.sub.m)}</span>` : ""}</span>${tail(d)}</div>${exBox(exs.filter(x => x.sub.of === d.sub.t))}</div>`);
   const lines = own.concat(senses, loose.length ? [ `<div class="vl-sense vl-loose">${exBox(loose)}</div>` ] : []);
-  const owner = head.entries.find(e => (e.meaning || "").trim());
-  const add = owner ? `<button type="button" class="vl-add-sense" data-add="${escapeAttr(owner.key)}">＋ Add a meaning</button>` : "";
-  return lines.length || add ? `<div class="vl-subs"><div class="vl-sub-list">${lines.join("")}${add}</div></div>` : "";
+  return lines.length ? `<div class="vl-subs"><div class="vl-sub-list">${lines.join("")}</div></div>` : "";
 }
 
 function senseHome(tk, item) {
   const cur = wordDictIndex().get(tk);
   return library.find(l => l.wordDict && cur && l.wordDict[tk] === cur) || library.find(l => l.id === (item.card.srcLessonId || currentLessonId));
+}
+
+function saveSubEdit(item, text, meaning, notesHtml) {
+  text = cleanPunct(cleanText(text || "")).replace(/\n/g, " ").trim();
+  const m = meaningLines(cleanPunct(meaning || "")).join("\n"), n = sanitizeHtml(notesHtml || "").trim();
+  if ((!text || text === item.sub.t) && m === (item.sub.m || "") && n === (item.sub.n || "")) return;
+  const k = item.key.slice(item.key.lastIndexOf("|") + 2), f = item.sub.kind === "def" ? "defs" : "ex";
+  saveSenses(item, entry => {
+    const it = entry[f].find(x => (x.k || textHash(x.t)) === k);
+    if (!it) return;
+    if (text && text !== it.t && f === "defs") entry.ex.forEach(x => x.of === it.t && (x.of = text));
+    Object.assign(it, {
+      t: text || it.t,
+      k: k,
+      m: m,
+      n: n,
+      ed: true
+    });
+  });
 }
 
 function saveSenses(item, change) {
@@ -20942,89 +20957,14 @@ function saveSenses(item, change) {
   renderVocab();
 }
 
-function editSense(item, text) {
-  text = cleanPunct(cleanText(text)).replace(/\n/g, " ").trim();
-  if (!item || !item.sub || !text || text === item.sub.t) return renderVocab();
-  const k = item.key.slice(item.key.lastIndexOf("|") + 2), f = item.sub.kind === "def" ? "defs" : "ex";
-  saveSenses(item, entry => {
-    const it = entry[f].find(x => (x.k || textHash(x.t)) === k);
-    if (!it) return;
-    if (f === "defs") entry.ex.forEach(x => x.of === it.t && (x.of = text));
-    Object.assign(it, {
-      t: text,
-      k: k,
-      ed: true
-    });
-  });
-}
-
-function addSense(item, text, examples) {
-  text = cleanPunct(cleanText(text)).replace(/\n/g, " ").trim();
-  if (!item || !text) return renderVocab();
-  saveSenses(item, entry => {
-    if (!entry.defs.some(d => d.t === text)) entry.defs.push({
-      s: "",
-      p: "",
-      t: text,
-      mine: true
-    });
-    examples.map(x => cleanPunct(cleanText(x)).trim()).filter(x => x && !entry.ex.some(y => y.t === x)).forEach(x => entry.ex.push({
-      s: "",
-      t: x,
-      tr: "",
-      of: text,
-      mine: true
-    }));
-  });
-}
-
-function startSenseEdit(line) {
-  const x = line && line.querySelector(".vl-x"), item = x && lessonVocabItems(vocabSource()).find(i => i.key === line.dataset.sub);
-  if (!item || !item.sub || x.isContentEditable) return;
-  x.textContent = item.sub.t;
-  x.contentEditable = "plaintext-only";
-  x.classList.add("vl-editing");
-  x.focus();
-  getSelection().selectAllChildren(x);
-  let done = false;
-  const finish = keep => {
-    if (done) return;
-    done = true;
-    if (keep) editSense(item, x.textContent); else renderVocab();
-  };
-  x.addEventListener("keydown", e => {
-    e.stopPropagation();
-    if (e.key === "Enter") e.preventDefault(), finish(true);
-    if (e.key === "Escape") e.preventDefault(), finish(false);
-  });
-  x.addEventListener("blur", () => finish(true));
-}
-
-document.getElementById("vocabList").addEventListener("dblclick", e => {
-  const x = !isTouch() && e.target.closest && e.target.closest(".vl-sub:not(.vl-own) .vl-x");
-  if (x) startSenseEdit(x.closest(".vl-sub"));
-});
-
 document.getElementById("vocabList").addEventListener("click", e => {
-  const add = e.target.closest && e.target.closest(".vl-add-sense, .vl-new-save, .vl-new-cancel");
-  if (add) {
-    e.stopPropagation();
-    if (add.matches(".vl-add-sense")) {
-      add.insertAdjacentHTML("beforebegin", `<div class="vl-sense vl-new" data-add="${escapeAttr(add.dataset.add)}"><div class="vl-new-in" contenteditable="plaintext-only" data-ph="Meaning or definition"></div><div class="vl-new-ex" contenteditable="plaintext-only" data-ph="Examples, one per line (optional)"></div><div class="vl-new-btns"><button type="button" class="vl-new-cancel">Cancel</button><button type="button" class="primary vl-new-save">Save</button></div></div>`);
-      add.hidden = true;
-      add.previousElementSibling.querySelector(".vl-new-in").focus();
-      return;
-    }
-    const box = add.closest(".vl-new"), item = box && lessonVocabItems(vocabSource()).find(i => i.key === box.dataset.add);
-    if (add.matches(".vl-new-save") && item) return addSense(item, box.querySelector(".vl-new-in").innerText, box.querySelector(".vl-new-ex").innerText.split(/\n+/));
-    return renderVocab();
-  }
-  if (e.target.closest && e.target.closest(".vl-new, .vl-editing")) return e.stopPropagation();
   const t = e.target.closest && e.target.closest(".vl-sub-del, .vl-sub");
   if (!t) return;
   e.stopPropagation();
-  if (isTouch() && !t.matches(".vl-sub-del") && !t.matches(".vl-own") && isDoubleTap("s" + t.dataset.sub)) return startSenseEdit(t);
-  if (!t.matches(".vl-sub-del")) return;
+  if (!t.matches(".vl-sub-del")) {
+    if (!isTouch() ? clickOnContent(e, t) : isDoubleTap("s" + t.dataset.sub)) openVocabEditor(t.dataset.sub, true);
+    return;
+  }
   const row = t.closest(".vl-sub"), item = row && lessonVocabItems(vocabSource()).find(i => i.key === row.dataset.sub);
   if (item) deleteVocabEntry(item, row, true);
 }, true);
@@ -21414,7 +21354,7 @@ function defExample(item) {
 }
 
 function headMeaning(item) {
-  return item.sub ? item.sub.kind === "ex" ? item.sub.tr || "" : "" : item.meaning || "";
+  return item.sub ? item.sub.m || (item.sub.kind === "ex" ? item.sub.tr || "" : "") : item.meaning || "";
 }
 
 function fillVocabCard(el, item) {
@@ -21783,7 +21723,19 @@ function vocabEditChipsHtml(item) {
   return mine + groups.map(g => `<div class="od-group">${g.pos ? `<span class="od-pos">${escapeHtml(g.pos)}</span>` : ""}<div class="od-terms">${g.terms.map(t => `<button type="button" class="od-term" data-m="${escapeAttr(t)}">${escapeHtml(t)}</button>`).join("")}</div></div>`).join("") + odDefsHtml(dictDefsFor(ownDictLang(item.term, item.card), item.term, e));
 }
 
+function subEditorHtml(item) {
+  const it = Object.assign({}, item, {
+    meaning: item.sub.m || ""
+  });
+  const area = `<textarea id="vocabEditTerm" class="autofit" rows="1" autocomplete="off" aria-label="Word" hidden>${escapeHtml(it.meaning ? Q_MARK + it.term + "\n" + it.meaning : it.term)}</textarea>`;
+  const main = `<div id="vocabEditMain" class="rich-editor" contenteditable="true" aria-label="The word, then this card's meanings, one per line"><div class="vem-t${odLong(it.term) ? " long" : ""}" data-placeholder="Word" contenteditable="false">${escapeHtml(it.term)}</div><div class="vem-a" data-placeholder="Meaning">${meaningLines(it.meaning).map(l => `<div>${escapeHtml(l)}</div>`).join("")}</div></div>`;
+  const text = `<div id="vocabEditSubText" class="rich-editor vem-q" contenteditable="true" aria-label="${item.sub.kind === "def" ? "This card's definition" : "This card's example"}">${escapeHtml(item.sub.t)}</div>`;
+  const say = `<button type="button" class="od-say ed-say" data-say="${escapeAttr(it.term)}" aria-label="Listen" title="Listen">${OD_SPEAK}</button>`;
+  return '<div class="vocab-editor">' + `<div class="od-card ed-card">${levelHtml(ownDictLang(it.term, it.card), it.term, "ed-lv")}${say}${area}${main}<div class="ed-chips">${vocabEditChipsHtml(it)}</div>${text}<div class="notes-clip"><div id="vocabEditNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes" aria-label="Notes">${item.sub.n || ""}</div></div></div>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
+}
+
 function vocabEditorHtml(item) {
+  if (item.sub) return subEditorHtml(item);
   const sCard = vocabSentenceCard(item), span = vocabEditSpan(item), q = span ? sCard.q : "";
   const area = `<textarea id="vocabEditTerm" class="autofit" rows="1" autocomplete="off" aria-label="Word" placeholder="Word, then its meaning two lines below" hidden>${escapeHtml(item.meaning ? Q_MARK + item.term + "\n" + item.meaning : item.term)}</textarea>`;
   const main = `<div id="vocabEditMain" class="rich-editor" contenteditable="true" aria-label="The word, then its meanings, one per line"><div class="vem-t${odLong(item.term) ? " long" : ""}" data-placeholder="Word">${escapeHtml(item.term)}</div><div class="vem-a" data-placeholder="Meaning">${(odLong(item.term) ? [ item.meaning ] : meaningLines(item.meaning)).filter(Boolean).map(l => `<div>${escapeHtml(l)}</div>`).join("")}</div></div>`;
@@ -22049,6 +22001,11 @@ function wireVocabEditor(items) {
     vocabEditingKey = null;
     const now = lessonVocabItems(vocabSource()).find(i => i.key === key) || item;
     syncVocabEditMain(now);
+    if (now.sub) {
+      const sv = vocabEditValues(), st = document.getElementById("vocabEditSubText");
+      saveSubEdit(now, st ? st.innerText : "", sv.meaning, notes.innerHTML);
+      return renderVocab();
+    }
     saveVocabSentence(now, document.getElementById("vocabEditSentence"));
     const v = vocabEditValues();
     if (!saveVocabEditor(now, v.term, v.meaning, vocabEditNotesHtml(notes), true)) {
@@ -22199,6 +22156,12 @@ function commitVocabEdit() {
   const item = lessonVocabItems(vocabSource()).find(i => i.key === vocabEditingKey);
   const isNew = vocabEditingKey === NEW_WORD_KEY;
   vocabEditingKey = null;
+  if (item && item.sub) {
+    syncVocabEditMain(item);
+    const st = document.getElementById("vocabEditSubText");
+    saveSubEdit(item, st ? st.innerText : "", vocabEditValues().meaning, notes ? notes.innerHTML : "");
+    return true;
+  }
   if (item) {
     syncVocabEditMain(item);
     saveVocabSentence(item, document.getElementById("vocabEditSentence"));
@@ -22246,7 +22209,7 @@ function keepVocabEdit() {
   const term = document.getElementById("vocabEditTerm"), notes = document.getElementById("vocabEditNotes"), v = vocabEditValues();
   const item = lessonVocabItems(vocabSource()).find(i => i.key === vocabEditingKey);
   const text = term && cleanPunct(v.term).replace(/\s+/g, " ").trim();
-  if (!item || !text) return;
+  if (!item || !text || item.sub) return;
   const key = wordKey(text, cleanPunct(v.meaning));
   if (key !== item.key && lessonVocabItems(vocabSource()).some(i => i.key === key)) return;
   vocabEditingKey = null;
@@ -22257,10 +22220,6 @@ function keepVocabEdit() {
 
 function openVocabEditor(key, inList) {
   if (key && key.startsWith("g:")) key = key.slice(2);
-  if (key && key.startsWith("x:")) {
-    const it = lessonVocabItems(vocabSource()).find(i => i.key === key);
-    key = it ? it.base : key;
-  }
   commitVocabEdit();
   stopVocabSound();
   vocabEditingKey = key;
