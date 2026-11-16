@@ -233,6 +233,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-93 | `27d3931` | ☰ List: ví dụ đứng ngay dưới định nghĩa của nó (từ điển đặt chung một cụm), ví dụ lẻ ở cuối; extension 1.6.50 giữ mọi ví dụ của từng định nghĩa |
 | FLASH-94 | `edcc029` | ☰ List kiểu helper: mỗi nghĩa một khối, nhãn ngay trước chữ, ví dụ trong ô xám không nhãn (một ví dụ không chấm, nhiều ví dụ có chấm) |
 | FLASH-95 | `6e9d75a` | ☰ List: bấm đúp sửa định nghĩa/ví dụ tại chỗ (giữ tiến độ), ＋ Add a meaning thêm nghĩa riêng kèm ví dụ; giữ lại khi tra từ điển lại |
+| FLASH-96 | `pending` | ☰ List: bỏ nhãn sent/word ở thẻ câu của mình |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
