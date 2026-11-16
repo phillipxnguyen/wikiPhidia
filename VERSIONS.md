@@ -227,6 +227,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-88 | `f91fa1e` | Mặt trước đọc đúng câu mặt sau xếp đầu; mặt sau phát từ trên xuống; giọng đọc đợi sau khi dừng + báo khi không chạy; từ thêm giữa phiên ngôn ngữ hiện ngay; tô/khoét mọi lần xuất hiện của từ |
 | FLASH-89 | `b40f9a5` | Không ghép câu theo chữ nữa: câu khác chỉ lấy nơi cùng từ cùng nghĩa; thẻ định nghĩa/ví dụ không kèm câu của mình; âm thanh và ⌘C theo đúng thứ tự hiển thị |
 | FLASH-90 | `d7a9ff2` | Thẻ định nghĩa hiện ví dụ của chính định nghĩa đó (nếu từ điển có), đọc và ⌘C định nghĩa rồi ví dụ |
+| FLASH-91 | `pending` | Nhãn từ loại và đề mục trên thẻ định nghĩa không còn tra từ khi trỏ/nhấn |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
@@ -561,6 +562,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-64 | `b40f9a5` | Sửa nghĩa trong ô tra từ: nút 🔊 và Save luôn cùng hàng với từ, từ dài tự xuống dòng |
 | LOOKUP-65 | `d7a9ff2` | Extension 1.6.35: mỗi định nghĩa giữ ví dụ đi kèm trong từ điển; bộ nhớ từ điển mới (dictCache4) |
 | LOOKUP-66 | `c063728` | Extension 1.6.36: bỏ hàng IPA/US-UK (đã có 🔊 riêng); cấp độ (A1…) lên hàng trên cùng của thẻ thêm từ |
+| LOOKUP-67 | `pending` | Nhãn từ loại (verb, noun…) nằm giữa thanh định nghĩa đầu tiên, trong app và extension 1.6.37 |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
