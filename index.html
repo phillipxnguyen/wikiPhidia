@@ -587,6 +587,8 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-list .vocab-list-row[data-key] > .vocab-list-meaning, .vocab-list .vocab-list-meaning > span:first-child{font-size:18px;line-height:26px;}
   .vocab-list .vocab-list-meaning .card-notes{margin-top:16px;font-size:16px;line-height:24px;color:var(--text-2);}
   .vl-sub-list{display:flex;flex-direction:column;gap:8px;}
+  .ed-sub-kind{font-size:13px;line-height:20px;font-weight:700;color:var(--text-2);}
+  .ed-card .ed-sub-kind + .vem-q{margin-top:-8px;}
   .vl-sense{display:flex;flex-direction:column;gap:8px;padding:8px;border:1px solid var(--border);border-radius:10px;background:var(--surface);}
   .vl-sense > .vl-sub{padding:0 12px 0 4px;}
   .vl-sub{display:flex;align-items:center;gap:8px;font-size:16px;line-height:24px;cursor:default;}
@@ -12717,6 +12719,7 @@ function closeEditPopup() {
   editPopupAnchor = null;
   pop.hidden = true;
   delete pop.dataset.vocab;
+  pop.classList.remove("sub-edit");
   hideDictOverlay();
   pop.querySelector(".le-content").innerHTML = "";
   if (document.activeElement && document.activeElement.tagName === "IFRAME") document.activeElement.blur();
@@ -21729,9 +21732,10 @@ function subEditorHtml(item) {
   });
   const area = `<textarea id="vocabEditTerm" class="autofit" rows="1" autocomplete="off" aria-label="Word" hidden>${escapeHtml(it.meaning ? Q_MARK + it.term + "\n" + it.meaning : it.term)}</textarea>`;
   const main = `<div id="vocabEditMain" class="rich-editor" contenteditable="true" aria-label="The word, then this card's meanings, one per line"><div class="vem-t${odLong(it.term) ? " long" : ""}" data-placeholder="Word" contenteditable="false">${escapeHtml(it.term)}</div><div class="vem-a" data-placeholder="Meaning">${meaningLines(it.meaning).map(l => `<div>${escapeHtml(l)}</div>`).join("")}</div></div>`;
-  const text = `<div id="vocabEditSubText" class="rich-editor vem-q" contenteditable="true" aria-label="${item.sub.kind === "def" ? "This card's definition" : "This card's example"}">${escapeHtml(item.sub.t)}</div>`;
+  const kind = [ item.sub.kind === "def" ? item.sub.mine ? "meaning" : item.sub.p || "definition" : "example", item.sub.mine ? "" : item.sub.s ].filter(Boolean).join(" · ");
+  const text = `<div class="ed-sub-kind">${escapeHtml(kind)}</div><div id="vocabEditSubText" class="rich-editor vem-q" contenteditable="true" aria-label="${item.sub.kind === "def" ? "This card's definition" : "This card's example"}">${escapeHtml(item.sub.t)}</div>`;
   const say = `<button type="button" class="od-say ed-say" data-say="${escapeAttr(it.term)}" aria-label="Listen" title="Listen">${OD_SPEAK}</button>`;
-  return '<div class="vocab-editor">' + `<div class="od-card ed-card">${levelHtml(ownDictLang(it.term, it.card), it.term, "ed-lv")}${say}${area}${main}<div class="ed-chips">${vocabEditChipsHtml(it)}</div>${text}<div class="notes-clip"><div id="vocabEditNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes" aria-label="Notes">${item.sub.n || ""}</div></div></div>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
+  return '<div class="vocab-editor">' + `<div class="od-card ed-card">${levelHtml(ownDictLang(it.term, it.card), it.term, "ed-lv")}${say}${area}${main}${text}<div class="notes-clip"><div id="vocabEditNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes" aria-label="Notes">${item.sub.n || ""}</div></div></div>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
 }
 
 function vocabEditorHtml(item) {
@@ -21963,6 +21967,15 @@ function syncVocabEditPopup(items) {
   pop.querySelector(".le-box").classList.remove("edit-row");
   pop.querySelector(".le-content").innerHTML = vocabEditorHtml(item) + '<div id="vocabEditDict"></div>';
   pop.dataset.vocab = item.key;
+  pop.classList.toggle("sub-edit", !!item.sub);
+  if (item.sub) {
+    setEditPopupTab("edit");
+    pop.hidden = false;
+    hideDictOverlay();
+    placeEditPopup();
+    editPopupFromTop();
+    return true;
+  }
   setEditPopupTab(editPopupTab);
   pop.hidden = false;
   const dict = document.getElementById("vocabEditDict");
