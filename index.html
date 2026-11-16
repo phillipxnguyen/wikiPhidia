@@ -476,7 +476,7 @@ window.onYouTubeIframeAPIReady = function(){
   .ed-card{--od-bg:var(--surface);--od-card:var(--surface);--od-line:color-mix(in srgb, var(--text) 9%, transparent);--od-soft:var(--text-2);--od-mean:var(--a-text);position:relative;display:flex;flex-direction:column;gap:12px;padding:0;border:0;border-radius:0;background:none;box-shadow:none;}
   .ed-card + :is(.edit-actions, .vocab-editor-actions){margin-top:13px;}
   #editPopup .vocab-editor:has(> .ed-card){gap:0;}
-  .ed-card #vocabEditSentence{min-height:0;padding:0;border:0;border-radius:0;background:none;box-shadow:none;}
+  .ed-card :is(#vocabEditSentence, #vocabEditSubText){min-height:0;padding:0;border:0;border-radius:0;background:none;box-shadow:none;}
   .ed-card .q-mirror{overflow:visible;color:var(--text);}
   .ed-card .q-mirror.q-whole{color:var(--text);}
   .ed-card :is(#editQ, .q-mirror).q-whole{font-weight:400;}
@@ -503,8 +503,12 @@ window.onYouTubeIframeAPIReady = function(){
   .od-float .od-card:not(.od-long) .od-right .od-say{margin-block:-6px;}
   .od-float .od-card:not(.od-long) .od-right .od-lv{margin-block:-2px;}
   .od-right{display:flex;align-items:center;gap:8px;margin-left:auto;}
-  .ed-card :is(#editQ, .q-mirror) > div, .ed-card #vocabEditMain .vem-t, .ed-card #vocabEditMain .vem-a > div, .ed-card #vocabEditSentence, .od-float :is(.od-py, .od-mean-in > div, .od-ex p){text-box:trim-both cap alphabetic;}
-  .ed-card #vocabEditSentence{font-size:18px;line-height:26px;}
+  .ed-card :is(#editQ, .q-mirror) > div, .ed-card #vocabEditMain .vem-t, .ed-card #vocabEditMain .vem-a > div, .ed-card :is(#vocabEditSentence, #vocabEditSubText), .od-float :is(.od-py, .od-mean-in > div, .od-ex p){text-box:trim-both cap alphabetic;}
+  .ed-card :is(#vocabEditSentence, #vocabEditSubText){font-size:18px;line-height:26px;}
+  .ed-card #vocabEditSubText:focus{outline:none;}
+  .ed-card .notes-clip.sub-notes-off{display:none;}
+  .ed-add-notes{align-self:flex-start;height:28px;padding:0 10px;border:0;border-radius:14px;background:color-mix(in srgb, var(--text) 6%, transparent);color:var(--text-2);font:inherit;font-size:13px;line-height:20px;font-weight:600;cursor:pointer;}
+  @media (hover:hover){.ed-add-notes:hover{color:var(--accent);}}
   .ed-card #vocabEditSentence mark.vem-w{padding:0 2px;font-weight:700;}
   .ed-card :is(#editNotes, #vocabEditNotes, #qaNotes){font-size:18px;line-height:26px;}
   @media (max-width:600px){.ed-card #vocabEditMain .vem-t:not(.long){font-size:24px;line-height:32px;}}
@@ -588,7 +592,6 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-list .vocab-list-meaning .card-notes{margin-top:16px;font-size:16px;line-height:24px;color:var(--text-2);}
   .vl-sub-list{display:flex;flex-direction:column;gap:8px;}
   .ed-sub-kind{font-size:13px;line-height:20px;font-weight:700;color:var(--text-2);}
-  .ed-card .ed-sub-kind + .vem-q{margin-top:-8px;}
   .vl-sense{display:flex;flex-direction:column;gap:8px;padding:8px;border:1px solid var(--border);border-radius:10px;background:var(--surface);}
   .vl-sense > .vl-sub{padding:0 12px 0 4px;}
   .vl-sub{display:flex;align-items:center;gap:8px;font-size:16px;line-height:24px;cursor:default;}
@@ -21735,7 +21738,7 @@ function subEditorHtml(item) {
   const kind = [ item.sub.kind === "def" ? item.sub.mine ? "meaning" : item.sub.p || "definition" : "example", item.sub.mine ? "" : item.sub.s ].filter(Boolean).join(" · ");
   const text = `<div class="ed-sub-kind">${escapeHtml(kind)}</div><div id="vocabEditSubText" class="rich-editor vem-q" contenteditable="true" aria-label="${item.sub.kind === "def" ? "This card's definition" : "This card's example"}">${escapeHtml(item.sub.t)}</div>`;
   const say = `<button type="button" class="od-say ed-say" data-say="${escapeAttr(it.term)}" aria-label="Listen" title="Listen">${OD_SPEAK}</button>`;
-  return '<div class="vocab-editor">' + `<div class="od-card ed-card">${levelHtml(ownDictLang(it.term, it.card), it.term, "ed-lv")}${say}${area}${main}${text}<div class="notes-clip"><div id="vocabEditNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes" aria-label="Notes">${item.sub.n || ""}</div></div></div>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
+  return '<div class="vocab-editor">' + `<div class="od-card ed-card">${levelHtml(ownDictLang(it.term, it.card), it.term, "ed-lv")}${say}${area}${main}${text}<div class="notes-clip${item.sub.n ? "" : " sub-notes-off"}"><div id="vocabEditNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes" aria-label="Notes">${item.sub.n || ""}</div></div>${item.sub.n ? "" : '<button type="button" class="ed-add-notes">＋ Notes</button>'}</div>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
 }
 
 function vocabEditorHtml(item) {
@@ -22028,6 +22031,12 @@ function wireVocabEditor(items) {
     renderVocab();
   };
   document.getElementById("vocabEditSave").onclick = save;
+  const addNotes = term.closest(".vocab-editor").querySelector(".ed-add-notes");
+  if (addNotes) addNotes.onclick = () => {
+    addNotes.previousElementSibling.classList.remove("sub-notes-off");
+    addNotes.remove();
+    notes.focus();
+  };
   const main = document.getElementById("vocabEditMain"), sentence = document.getElementById("vocabEditSentence");
   if (main) main.addEventListener("input", () => syncVocabEditMain(item));
   const chips = term.closest(".vocab-editor").querySelector(".ed-chips");
