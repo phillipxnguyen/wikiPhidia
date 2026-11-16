@@ -60,7 +60,8 @@
 .sents-list{flex:1;min-height:0;margin:0;padding:8px 0;overflow-y:auto;overscroll-behavior:contain;list-style:none;}
 .sents-list li{display:flex;align-items:flex-start;gap:8px;padding:6px 12px 6px 16px;}
 .sents-list li:hover{background:var(--bg-2);}
-.sents-list .st{flex:1;min-width:0;font-size:14px;line-height:20px;outline:none;overflow-wrap:anywhere;}
+.sents-list .st{flex:1;min-width:0;font-size:14px;line-height:20px;overflow-wrap:anywhere;}
+.sents-list mark{border-radius:3px;background:var(--mark);color:inherit;}
 .sents-list .sx{flex:none;width:20px;height:20px;padding:0;border:0;border-radius:10px;background:none;color:var(--ink-2);font-size:12px;line-height:20px;cursor:pointer;}
 .sents-list .sx:hover{background:var(--line);color:var(--ink);}
 .sents-tip{padding:12px 16px;color:var(--ink-2);font-size:13px;line-height:20px;}
@@ -937,11 +938,27 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
       chrome.storage.local.set({ sentDrafts: Object.fromEntries(keep) });
     });
   }
+  function wordsIn(t) {
+    const out = [];
+    if (!matcher) return out;
+    matcher.lastIndex = 0;
+    let m;
+    while ((m = matcher.exec(t))) {
+      if (!m[0]) {
+        matcher.lastIndex++;
+        continue;
+      }
+      const k = known.get(norm(m[0]));
+      if (k && !out.includes(k.term) && norm(k.sentence) !== norm(t)) out.push(k.term);
+    }
+    return out;
+  }
   function addSentences(list) {
     let n = 0;
     list.forEach(t => {
       t = t.replace(/\s+/g, " ").trim();
-      if (t && !sents.some(x => norm(x) === norm(t))) sents.push(t), n++;
+      const words = t.length <= 320 ? wordsIn(t) : [];
+      if (words.length && !sents.some(x => norm(x.t) === norm(t))) sents.push({ t, words }), n++;
     });
     saveDraft();
     paintSents(true);
@@ -964,7 +981,7 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
         }
         if (b.dataset.act === "all") {
           const n = addSentences(pageSentences());
-          return toast(n ? `${n} sentence${n === 1 ? "" : "s"} collected` : "No new sentences on this page");
+          return toast(n ? `${n} sentence${n === 1 ? "" : "s"} collected` : "No new sentence with your words on this page");
         }
         if (b.dataset.act === "send") return sendSents();
         if (b.dataset.act === "min") {
@@ -978,14 +995,18 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
           sentsEl = null;
         }
       });
-      sentsEl.addEventListener("input", e => {
-        const el = e.target.closest(".st");
-        if (el) sents[Number(el.dataset.i)] = el.textContent.replace(/\s+/g, " ").trim(), saveDraft();
-      });
       ["keydown", "keyup", "keypress", "mousedown", "mouseup"].forEach(t => sentsEl.addEventListener(t, e => e.stopPropagation()));
     }
     sentsEl.classList.toggle("small", sentsSmall);
-    sentsEl.innerHTML = `<div class="sents-top"><b>Sentences · ${sents.length}</b><button type="button" class="icon" data-act="min" title="${sentsSmall ? "Show" : "Hide"} the list">${sentsSmall ? "▴" : "▾"}</button><button type="button" class="icon" data-act="close" title="Clear and close">✕</button></div>${sents.length ? `<ul class="sents-list">${sents.map((t, i) => `<li><span class="st" contenteditable="plaintext-only" data-i="${i}">${esc(t)}</span><button type="button" class="sx" data-i="${i}" title="Leave this one out">✕</button></li>`).join("")}</ul>` : ""}<div class="sents-tip">Alt + click a sentence to collect it, or collect them all.</div><div class="sents-foot"><button type="button" class="ghost" data-act="all">Collect all</button><button type="button" class="btn" data-act="send"${sents.length ? "" : " disabled"}>Send ${sents.length || ""} to wikiPhidia</button></div>`;
+    const marked = x => {
+      let html = esc(x.t);
+      x.words.forEach(w => {
+        const e = esc(w).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        html = html.replace(new RegExp((CJK.test(w) || KANA.test(w) ? "" : "(?<![\\p{L}\\p{N}])") + e + (CJK.test(w) || KANA.test(w) ? "" : "(?![\\p{L}\\p{N}])"), "giu"), "<mark>$&</mark>");
+      });
+      return html;
+    };
+    sentsEl.innerHTML = `<div class="sents-top"><b>Sentences for your words · ${sents.length}</b><button type="button" class="icon" data-act="min" title="${sentsSmall ? "Show" : "Hide"} the list">${sentsSmall ? "▴" : "▾"}</button><button type="button" class="icon" data-act="close" title="Clear and close">✕</button></div>${sents.length ? `<ul class="sents-list">${sents.map((t, i) => `<li><span class="st">${marked(t)}</span><button type="button" class="sx" data-i="${i}" title="Leave this one out">✕</button></li>`).join("")}</ul>` : ""}<div class="sents-tip">Alt + click a sentence that holds one of your words, or collect them all. Each becomes an example card of its word.</div><div class="sents-foot"><button type="button" class="ghost" data-act="all">Collect all</button><button type="button" class="btn" data-act="send"${sents.length ? "" : " disabled"}>Send ${sents.length || ""} to wikiPhidia</button></div>`;
     wrap.appendChild(sentsEl);
   }
   function pageSentences() {
@@ -998,16 +1019,17 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
     return out;
   }
   async function sendSents() {
-    const list = sents.map(t => t.trim()).filter(Boolean);
+    const list = sents.filter(x => x.t && x.words.length);
     if (!list.length) return;
     const title = articleTitle(), at = Date.now();
     const { pending: now } = await chrome.storage.local.get("pending");
-    const next = (now || []).concat(list.map((t, i) => ({
+    const next = (now || []).concat(list.map((x, i) => ({
       id: at.toString(36) + i.toString(36) + Math.random().toString(36).slice(2, 6),
       kind: "sentence",
-      term: t,
+      term: x.t,
+      words: x.words,
       meaning: "",
-      sentence: t,
+      sentence: x.t,
       url: location.href,
       title: document.title,
       lessonId: settings.lessonId || "",
@@ -1020,7 +1042,7 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
     saveDraft();
     if (sentsEl) sentsEl.remove();
     sentsEl = null;
-    toast(`${list.length} sentence${list.length === 1 ? "" : "s"} sent to wikiPhidia`);
+    toast(`${list.length} sentence${list.length === 1 ? "" : "s"} sent to your words`);
   }
   function flashRange(range) {
     mount();
@@ -1054,13 +1076,14 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
     if (!t || t.length < 2) return;
     e.preventDefault();
     e.stopPropagation();
+    if (!wordsIn(t).length) return toast("No word of yours in this sentence");
     flashRange(word);
     if (!addSentences([ t ])) toast("Already collected");
   }, true);
   chrome.storage.local.get("sentDrafts").then(({ sentDrafts }) => {
     const d = sentDrafts && sentDrafts[draftKey()];
-    if (d && d.list && d.list.length && !gone()) {
-      sents = d.list.slice();
+    if (d && d.list && d.list.some(x => x && x.t) && !gone()) {
+      sents = d.list.filter(x => x && typeof x === "object" && x.t && Array.isArray(x.words));
       sentsSmall = true;
       paintSents();
     }
@@ -1069,7 +1092,7 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
   chrome.runtime.onMessage.addListener(msg => {
     if (msg && msg.type === "collectAll" && on()) {
       const n = addSentences(pageSentences());
-      toast(n ? `${n} sentence${n === 1 ? "" : "s"} collected` : "No new sentences on this page");
+      toast(n ? `${n} sentence${n === 1 ? "" : "s"} collected` : "No new sentence with your words on this page");
     }
     if (msg && msg.type === "collectOpen" && on()) paintSents(true);
     if (msg && msg.type === "toast") toast(msg.text);

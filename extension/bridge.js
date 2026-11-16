@@ -28,6 +28,7 @@
       words: list.map(w => ({
         id: w.id,
         kind: w.kind === "sentence" ? "sentence" : undefined,
+        words: Array.isArray(w.words) ? w.words : undefined,
         term: w.term,
         meaning: w.meaning,
         sentence: w.sentence,

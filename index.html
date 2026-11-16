@@ -10734,6 +10734,12 @@ let wordDictSaveTimer = 0;
 
 function storeWordDict(lesson, tkey, entry) {
   if (!lesson || !tkey || !entry) return;
+  const web = [ lesson.wordDict && lesson.wordDict[tkey], wordDictIndex().get(tkey) ].flatMap(e => e && e.ex || []).filter(x => x.s === "Web");
+  const have = new Set((entry.ex || []).map(x => normalizeVocabText(x.t)));
+  const keep = web.filter(x => !have.has(normalizeVocabText(x.t)) && have.add(normalizeVocabText(x.t)));
+  if (keep.length) entry = Object.assign({}, entry, {
+    ex: (entry.ex || []).concat(keep)
+  });
   lesson.wordDict = Object.assign({}, lesson.wordDict, {
     [tkey]: entry
   });
@@ -20043,30 +20049,51 @@ function readerTarget(w, made) {
 function readerAdd(list) {
   const known = new Map;
   library.filter(l => !isVirtualId(l.id) && !bookHidden(l)).forEach(l => lessonVocabItems(readerCards(l)).forEach(i => known.set(i.key, l.name || "Untitled lesson")));
-  const added = [], skipped = [], made = new Set, groups = new Map, sentGroups = new Map, seenQ = new Map;
+  const added = [], skipped = [], made = new Set, groups = new Map;
+  let sentN = 0, owners = null;
+  const tkOwners = () => {
+    if (owners) return owners;
+    owners = new Map;
+    library.filter(l => !isVirtualId(l.id) && !bookHidden(l)).forEach(l => lessonVocabItems(readerCards(l)).forEach(i => !i.sub && (i.meaning || "").trim() && !owners.has(i.tkey) && owners.set(i.tkey, {
+      term: i.term,
+      lesson: l
+    })));
+    return owners;
+  };
   (Array.isArray(list) ? list : []).forEach(w => {
     if (!w || typeof w !== "object") return;
     if (w.kind === "sentence") {
-      const q = cleanPunct(cleanText(String(w.term || "")).replace(/\n/g, " "));
-      if (!q) return skipped.push({
-        id: w.id,
-        reason: "empty"
+      const t = cleanPunct(cleanText(String(w.term || "")).replace(/\n/g, " "));
+      const words = Array.isArray(w.words) ? w.words.map(x => normalizeVocabText(String(x || ""))).filter(Boolean) : [];
+      let took = false, had = false;
+      words.forEach(tk => {
+        const owner = tkOwners().get(tk);
+        if (!t || !owner || !findWordForm(t.normalize("NFC"), owner.term)) return;
+        const home = library.find(l => l.wordDict && l.wordDict[tk]) || owner.lesson;
+        const entry = home.wordDict && home.wordDict[tk] || {
+          at: 0,
+          defs: [],
+          ex: []
+        };
+        if ((entry.ex || []).some(x => normalizeVocabText(x.t) === normalizeVocabText(t))) return had = true;
+        storeWordDict(home, tk, Object.assign({}, entry, {
+          at: Date.now(),
+          ex: (entry.ex || []).concat({
+            s: "Web",
+            t: t,
+            tr: "",
+            u: typeof w.url === "string" ? w.url : ""
+          })
+        }));
+        took = true;
       });
-      const lesson = readerTarget(w, made);
-      if (!seenQ.has(lesson.id)) seenQ.set(lesson.id, new Set((lesson.id === currentLessonId ? rows : lesson.cards).map(c => normalizeVocabText(c.q || ""))));
-      const have = seenQ.get(lesson.id), k = normalizeVocabText(q);
-      if (have.has(k)) return skipped.push({
+      if (took) {
+        added.push(w.id);
+        sentN++;
+      } else skipped.push({
         id: w.id,
-        reason: "exists",
-        lesson: lesson.name || "Untitled lesson"
-      });
-      have.add(k);
-      if (!sentGroups.has(lesson.id)) sentGroups.set(lesson.id, []);
-      sentGroups.get(lesson.id).push({
-        id: w.id,
-        q: q,
-        url: typeof w.url === "string" ? w.url : "",
-        title: typeof w.title === "string" ? w.title : ""
+        reason: had ? "exists" : "skipped",
+        lesson: ""
       });
       return;
     }
@@ -20102,47 +20129,15 @@ function readerAdd(list) {
       title: typeof w.title === "string" ? w.title : ""
     });
   });
-  if (groups.size || sentGroups.size) {
+  if (groups.size) {
     if (activeEdit) commitActiveEdit();
     if (vocabEditingKey) commitVocabEdit();
   }
-  let sentN = 0;
-  sentGroups.forEach((list, id) => {
-    const lesson = library.find(l => l.id === id);
-    if (!lesson) return;
-    if (id === currentLessonId) {
-      pushUndo("Added " + countOf(list.length, "card") + " from reading");
-      list.forEach(x => {
-        rows.push(newRow(x.q, ""));
-        addLinkTo(lessonLinks, x.url, x.title);
-        added.push(x.id);
-      });
-      lesson.vocabOnly = false;
-      renderLinkList();
-      scheduleAutoSave();
-    } else {
-      const links = normalizeLinks(lesson.links);
-      list.forEach(x => {
-        addLinkTo(links, x.url, x.title);
-        added.push(x.id);
-      });
-      const saved = Object.assign({}, lesson, {
-        links: links,
-        cards: lesson.cards.concat(list.map(x => serializeCard(newRow(x.q, "")))),
-        vocabOnly: false,
-        updatedAt: Date.now(),
-        unseen: (Number(lesson.unseen) || 0) + list.length
-      });
-      upsertLibrary(saved);
-      dbPut("lessons", saved).catch(() => {});
-    }
-    sentN += list.length;
-  });
   if (sentN && !groups.size) {
-    refreshSaveReminders();
+    saveWordDicts();
     renderLessonList();
     if (currentView === "vocab") renderVocab(); else render();
-    showToast(`${countOf(sentN, "sentence")} added from your reading`);
+    showToast(`${countOf(sentN, "example")} added to your words from your reading`);
   }
   groups.forEach((words, id) => {
     const lesson = library.find(l => l.id === id);
@@ -20198,7 +20193,7 @@ function readerAdd(list) {
     renderLessonList();
     if (currentView === "vocab") renderVocab(); else render();
     const wordsN = added.length - sentN;
-    showToast(sentN ? `${countOf(wordsN, "word")} and ${countOf(sentN, "sentence")} added from your reading` : wordsN === 1 ? `“${groups.values().next().value[0].term}” added from your reading` : `${wordsN} words added from your reading`);
+    showToast(sentN ? `${countOf(wordsN, "word")} and ${countOf(sentN, "example")} added from your reading` : wordsN === 1 ? `“${groups.values().next().value[0].term}” added from your reading` : `${wordsN} words added from your reading`);
   }
   return {
     from: "wikiphidia-app",
