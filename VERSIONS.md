@@ -241,6 +241,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-101 | `5f0a154` | Nghĩa = định nghĩa, phân biệt theo ngôn ngữ: thẻ định nghĩa hỏi bằng Podcast định nghĩa hoặc đục lỗ một ví dụ của nó (ví dụ thuộc định nghĩa không còn là thẻ riêng); câu của bạn có dòng định nghĩa cùng ngôn ngữ cũng hỏi được bằng định nghĩa đó |
 | FLASH-102 | `4b67849` | Nhãn từ loại trên thẻ thành nút phát định nghĩa; biển nhỏ trong cảnh Podcast (Definition/Example/Sentence); popup thẻ con như mặt thẻ, bỏ tên từ điển; popup tra từ cuộn được khi dài |
 | FLASH-103 | `227ba66` | Podcast chỉ đọc định nghĩa; câu (của bạn, ví dụ, bài khác) luôn đục lỗ; bỏ biển báo; popup thẻ con giãn đều 16px |
+| FLASH-104 | `pending` | ☰ List như trang từ điển: dưới từ là nghĩa của bạn và các nghĩa tiếng Việt gợi ý (theo từ loại), rồi mới tới các thẻ; không cần bấm mở popup |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 

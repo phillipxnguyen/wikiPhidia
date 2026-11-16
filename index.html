@@ -596,6 +596,11 @@ window.onYouTubeIframeAPIReady = function(){
   .ed-sub-h + .ed-sub-row{margin-top:8px;}
   .ed-sub-pos{flex:none;margin-top:1px;padding:0 8px;border-radius:6px;background:color-mix(in srgb, var(--text) 7%, transparent);color:var(--text-2);font-size:14px;line-height:24px;font-weight:700;}
   .ed-sub-row .sub-text{flex:1;min-width:0;}
+  .vl-dict{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;}
+  .vl-dict-m{font-size:18px;line-height:26px;font-weight:700;color:var(--a-text);}
+  .vl-dict-g{display:flex;flex-wrap:wrap;align-items:center;gap:8px;}
+  .vl-dict-g .vl-sub-k{margin:0;}
+  .vl-dict-t{padding:0 10px;border:1px solid var(--border);border-radius:14px;font-size:15px;line-height:26px;color:var(--text);}
   .vl-sense{display:flex;flex-direction:column;gap:8px;padding:8px;border:1px solid var(--border);border-radius:10px;background:var(--surface);}
   .vl-sense > .vl-sub{padding:0 12px 0 4px;}
   .vl-sub{display:flex;align-items:center;gap:8px;font-size:16px;line-height:24px;cursor:default;}
@@ -20911,6 +20916,47 @@ function currentVocabItem() {
   return null;
 }
 
+const listDictWant = new Set;
+
+let listDictBusy = false, listDictRepaint = 0;
+
+function wordDictHeadHtml(head) {
+  const lang = detectLang(head.term).split("-")[0], e = ownDictEntry(lang, head.term);
+  if (!e && [ "en", "zh", "ja", "ko" ].includes(lang) && !odLong(head.term)) wantListDict(lang, head.term);
+  const mine = [ ...new Set(head.entries.flatMap(x => meaningLines(x.meaning || ""))) ];
+  const groups = e ? e.groups || (e.alts && e.alts.length ? [ {
+    pos: "",
+    terms: e.alts
+  } ] : []) : [];
+  const rows = groups.map(g => [ g.pos, g.terms.filter(t => !mine.includes(t)) ]).filter(g => g[1].length);
+  if (!mine.length && !rows.length) return "";
+  return `<div class="vl-dict">${mine.length ? `<div class="vl-dict-m">${mine.map(escapeHtml).join(" · ")}</div>` : ""}${rows.map(([pos, terms]) => `<div class="vl-dict-g">${pos ? `<span class="vl-sub-k">${escapeHtml(pos)}</span>` : ""}${terms.map(t => `<span class="vl-dict-t">${escapeHtml(t)}</span>`).join("")}</div>`).join("")}</div>`;
+}
+
+function wantListDict(lang, w) {
+  const k = lang + "|" + w;
+  if (listDictWant.has(k)) return;
+  listDictWant.add(k);
+  setTimeout(pumpListDict, 0);
+}
+
+async function pumpListDict() {
+  if (listDictBusy) return;
+  listDictBusy = true;
+  while (listDictWant.size) {
+    const k = listDictWant.values().next().value, at = k.indexOf("|");
+    listDictWant.delete(k);
+    const lang = k.slice(0, at), w = k.slice(at + 1);
+    if (!ownDictEntry(lang, w)) {
+      await ownDictFetch(lang, w).catch(() => null);
+      clearTimeout(listDictRepaint);
+      listDictRepaint = setTimeout(() => currentView === "vocab" && !vocabEditingKey && document.getElementById("vocabList").querySelector(".vocab-list-row") && renderVocab(), 600);
+      await new Promise(r => setTimeout(r, 250));
+    }
+  }
+  listDictBusy = false;
+}
+
 function cardsListHtml(head, subs) {
   const tail = x => `${x.sub && x.sub.s && x.sub.kind === "def" && !x.sub.mine ? `<span class="vl-sub-s">${escapeHtml(x.sub.s)}</span>` : ""}<span class="vl-sub-st">${vocabStatusIcon(vocabStateOf(x))}</span><button type="button" class="vl-sub-del" aria-label="Delete this card" title="Delete this card">✕</button>`;
   const tag = t => `<span class="vl-sub-k">${escapeHtml(t)}</span>`;
@@ -21888,7 +21934,7 @@ function renderVocab() {
   const open = !studyOnly && (vocabView === "list" || caughtUp) || !!vocabEditingKey && (vocabEditingInList || vocabEditingKey === NEW_WORD_KEY);
   list.hidden = items.length ? !open : vocabEditingKey !== NEW_WORD_KEY;
   queueMicrotask(() => fitHighlights(list));
-  list.innerHTML = adder + (list.hidden ? "" : shown.map(item => `<div class="vocab-list-row" data-key="${escapeAttr(item.key)}"><span class="vocab-list-term">${escapeHtml(item.term)}</span><span class="vocab-list-meaning">${cardsListHtml(item, subsOf.get(item.tkey) || [])}</span></div>`).join("") + (more ? `<button id="vocabMore" class="vocab-more ghost">Show ${more} more</button>` : ""));
+  list.innerHTML = adder + (list.hidden ? "" : shown.map(item => `<div class="vocab-list-row" data-key="${escapeAttr(item.key)}"><span class="vocab-list-term">${escapeHtml(item.term)}</span><span class="vocab-list-meaning">${wordDictHeadHtml(item)}${cardsListHtml(item, subsOf.get(item.tkey) || [])}</span></div>`).join("") + (more ? `<button id="vocabMore" class="vocab-more ghost">Show ${more} more</button>` : ""));
   watchVocabMore();
   if (emptyLesson) {
     vocabSession = null;
