@@ -238,7 +238,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-98 | `66b6b72` | Popup phụ cho thẻ định nghĩa/ví dụ: chỉ nội dung của thẻ đó (từ, nghĩa riêng, loại + từ điển, chữ, ghi chú), không trang từ điển, không danh sách gợi ý |
 | FLASH-99 | `bf57d3c` | Popup phụ gọn: chữ của thẻ không đóng khung, ghi chú ẩn sau nút ＋ Notes |
 | FLASH-100 | `81b0081` | Popup thẻ con gọn: một khối (từ, loại · nguồn, chữ thẻ, nghĩa riêng), bỏ ghi chú và ô thừa |
-| FLASH-101 | `pending` | Nghĩa = định nghĩa, phân biệt theo ngôn ngữ: thẻ định nghĩa hỏi bằng Podcast định nghĩa hoặc đục lỗ một ví dụ của nó (ví dụ thuộc định nghĩa không còn là thẻ riêng); câu của bạn có dòng định nghĩa cùng ngôn ngữ cũng hỏi được bằng định nghĩa đó |
+| FLASH-101 | `5f0a154` | Nghĩa = định nghĩa, phân biệt theo ngôn ngữ: thẻ định nghĩa hỏi bằng Podcast định nghĩa hoặc đục lỗ một ví dụ của nó (ví dụ thuộc định nghĩa không còn là thẻ riêng); câu của bạn có dòng định nghĩa cùng ngôn ngữ cũng hỏi được bằng định nghĩa đó |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
