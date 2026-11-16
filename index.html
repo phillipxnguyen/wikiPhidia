@@ -510,9 +510,6 @@ window.onYouTubeIframeAPIReady = function(){
   .ed-card :is(#editQ, .q-mirror) > div, .ed-card #vocabEditMain .vem-t, .ed-card #vocabEditMain .vem-a > div, .ed-card :is(#vocabEditSentence, #vocabEditSubText), .od-float :is(.od-py, .od-mean-in > div, .od-ex p){text-box:trim-both cap alphabetic;}
   .ed-card :is(#vocabEditSentence, #vocabEditSubText){font-size:18px;line-height:26px;}
   .ed-card #vocabEditSubText:focus{outline:none;}
-  .ed-card .notes-clip.sub-notes-off{display:none;}
-  .ed-add-notes{align-self:flex-start;height:28px;padding:0 10px;border:0;border-radius:14px;background:color-mix(in srgb, var(--text) 6%, transparent);color:var(--text-2);font:inherit;font-size:13px;line-height:20px;font-weight:600;cursor:pointer;}
-  @media (hover:hover){.ed-add-notes:hover{color:var(--accent);}}
   .ed-card #vocabEditSentence mark.vem-w{padding:0 2px;font-weight:700;}
   .ed-card :is(#editNotes, #vocabEditNotes, #qaNotes){font-size:18px;line-height:26px;}
   @media (max-width:600px){.ed-card #vocabEditMain .vem-t:not(.long){font-size:24px;line-height:32px;}}
@@ -601,6 +598,7 @@ window.onYouTubeIframeAPIReady = function(){
   .vl-sub{display:flex;align-items:center;gap:8px;font-size:16px;line-height:24px;cursor:default;}
   .vl-sub-k{display:inline-block;margin:2px 8px 0 0;padding:0 6px;border-radius:6px;background:color-mix(in srgb, var(--text) 7%, transparent);color:var(--text-2);font-size:13px;line-height:20px;font-weight:700;vertical-align:top;}
   .vl-exs{display:flex;flex-direction:column;gap:4px;padding:8px 12px;border-radius:8px;background:color-mix(in srgb, var(--text) 4%, transparent);}
+  .vl-exs .vl-ex:not(.vl-sub){font-size:16px;line-height:24px;}
   .vl-exs.many .vl-ex{position:relative;padding-left:16px;}
   .vl-exs.many .vl-ex::before{content:"";position:absolute;left:2px;top:9px;width:6px;height:6px;border-radius:3px;background:var(--text-2);}
   .vl-sub-t{flex:1;min-width:0;color:var(--text);}
@@ -649,9 +647,9 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-card.fill .cloze-spy{margin:0 0 4px;font-size:.6em;font-size:round(.6em, 1px);line-height:1.4;line-height:round(1.4em, 1px);font-weight:600;}
   .vocab-card.fill:not(.flipped) :is(.cloze-head, .cloze-spy, .cloze-notes, .cloze-own){display:none;}
   .vocab-card.fill .cloze-own{margin-top:0;font-size:inherit;line-height:inherit;font-weight:inherit;}
-  .vc-def .vc-pos{display:inline-block;margin-right:8px;padding:0 8px;border-radius:6px;background:color-mix(in srgb, currentColor 10%, transparent);font-size:16px;line-height:24px;font-weight:700;font-style:normal;vertical-align:middle;}
+  :is(.vc-def, .vc-def-more) .vc-pos{display:inline-block;margin-right:8px;padding:0 8px;border-radius:6px;background:color-mix(in srgb, currentColor 10%, transparent);font-size:16px;line-height:24px;font-weight:700;font-style:normal;vertical-align:middle;}
   .cloze-own .vc-def-tr{display:block;margin-top:8px;font-size:18px;line-height:26px;font-style:normal;opacity:.7;}
-  .vc-def .vc-def-h{display:block;margin-bottom:4px;font-size:14px;line-height:20px;font-weight:700;font-style:normal;letter-spacing:.04em;text-transform:uppercase;opacity:.7;}
+  :is(.vc-def, .vc-def-more) .vc-def-h{display:block;margin-bottom:4px;font-size:14px;line-height:20px;font-weight:700;font-style:normal;letter-spacing:.04em;text-transform:uppercase;opacity:.7;}
   .vocab-card.fill :is(.cloze-own, .cloze-notes) .py-line{margin:0 0 4px;font-size:.6em;font-size:round(.6em, 1px);line-height:1.4;line-height:round(1.4em, 1px);font-weight:600;opacity:1;}
   .vocab-card.fill :is(.cloze-own, .cloze-notes) .py-line{font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;font-style:normal;}
   .own-ts{position:relative;display:inline-flex;align-items:center;height:24px;margin-right:8px;padding:0 8px;vertical-align:4px;border:0;border-radius:12px;background:color-mix(in srgb, currentColor 12%, transparent);color:inherit;font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;font-size:13px;line-height:16px;font-weight:700;font-style:normal;cursor:pointer;}
@@ -20638,6 +20636,8 @@ function subItemsOf(item, entry, tk) {
   let tmpl = subCache.get(ck);
   if (!tmpl) {
     tmpl = [];
+    const defTs = new Set((entry.defs || []).filter(d => d && d.t).map(d => d.t));
+    const tiedXs = t => [ ...new Set((entry.ex || []).filter(x => x && x.of === t).map(x => x.t).concat(entry.defs.find(d => d && d.t === t).x || []).filter(x => x && findWordForm(x, item.term))) ];
     (entry.defs || []).forEach(d => d && d.t && tmpl.push({
       key: "x:" + tk + "|d" + (d.k || textHash(d.t)),
       oldKey: "x:" + item.key + "|d" + (d.k || textHash(d.t)),
@@ -20652,10 +20652,11 @@ function subItemsOf(item, entry, tk) {
         xtr: d.xtr || "",
         mine: !!d.mine,
         m: d.m || "",
-        n: d.n || ""
+        n: d.n || "",
+        xs: tiedXs(d.t)
       }
     }));
-    (entry.ex || []).forEach(x => x && x.t && findWordForm(x.t, item.term) && tmpl.push({
+    (entry.ex || []).forEach(x => x && x.t && !defTs.has(x.of) && findWordForm(x.t, item.term) && tmpl.push({
       key: "x:" + tk + "|e" + (x.k || textHash(x.t)),
       oldKey: "x:" + item.key + "|e" + (x.k || textHash(x.t)),
       base: item.key,
@@ -20916,9 +20917,10 @@ function cardsListHtml(head, subs) {
   });
   const exRow = x => `<div class="vl-sub vl-ex" data-sub="${escapeAttr(x.key)}"><span class="vl-sub-t"><span class="vl-x">${vocabSentenceHtml(x.sub.t, head.term, head.card)}</span>${x.sub.m ? `<span class="vl-sub-m">${meaningHtml(x.sub.m)}</span>` : ""}${x.sub.tr ? `<span class="vl-sub-m">${escapeHtml(x.sub.tr)}</span>` : ""}</span>${tail(x)}</div>`;
   const exBox = list => list.length ? `<div class="vl-exs${list.length > 1 ? " many" : ""}">${list.map(exRow).join("")}</div>` : "";
-  const defs = subs.filter(x => x.sub.kind === "def"), defT = new Set(defs.map(x => x.sub.t));
-  const exs = subs.filter(x => x.sub.kind === "ex"), loose = exs.filter(x => !defT.has(x.sub.of));
-  const senses = defs.map(d => `<div class="vl-sense"><div class="vl-sub" data-sub="${escapeAttr(d.key)}"><span class="vl-sub-t">${tag(d.sub.mine ? "meaning" : d.sub.p || "def")}<span class="vl-x">${escapeHtml(d.sub.t)}</span>${d.sub.m ? `<span class="vl-sub-m">${meaningHtml(d.sub.m)}</span>` : ""}</span>${tail(d)}</div>${exBox(exs.filter(x => x.sub.of === d.sub.t))}</div>`);
+  const defs = subs.filter(x => x.sub.kind === "def");
+  const loose = subs.filter(x => x.sub.kind === "ex");
+  const plainBox = list => list.length ? `<div class="vl-exs${list.length > 1 ? " many" : ""}">${list.map(t => `<div class="vl-ex"><span class="vl-sub-t">${vocabSentenceHtml(t, head.term, head.card)}</span></div>`).join("")}</div>` : "";
+  const senses = defs.map(d => `<div class="vl-sense"><div class="vl-sub" data-sub="${escapeAttr(d.key)}"><span class="vl-sub-t">${tag(d.sub.mine ? "meaning" : d.sub.p || "def")}<span class="vl-x">${escapeHtml(d.sub.t)}</span>${d.sub.m ? `<span class="vl-sub-m">${meaningHtml(d.sub.m)}</span>` : ""}</span>${tail(d)}</div>${plainBox(d.sub.xs || [])}</div>`);
   const lines = own.concat(senses, loose.length ? [ `<div class="vl-sense vl-loose">${exBox(loose)}</div>` ] : []);
   return lines.length ? `<div class="vl-subs"><div class="vl-sub-list">${lines.join("")}</div></div>` : "";
 }
@@ -21360,7 +21362,29 @@ function notesWithPinyin(html, card) {
 }
 
 function defExample(item) {
-  return item.sub && item.sub.kind === "def" && item.sub.x && findWordForm(item.sub.x, item.term) ? item.sub.x : "";
+  return item.sub && item.sub.kind === "def" ? (item.sub.xs || [])[0] || "" : "";
+}
+
+function defAsks(item) {
+  const vc = document.getElementById("vocabCard");
+  return vc && vc.dataset.lookKey === item.key && vc.dataset.defx || "";
+}
+
+function ownDefLines(item) {
+  if (!item || item.sub) return [];
+  const lang = detectLang(item.term).split("-")[0];
+  return meaningLines(item.meaning || "").filter(l => l.split(/\s+/).length >= 3 && detectLang(l).split("-")[0] === lang);
+}
+
+function ownDefAsked(item) {
+  const vc = document.getElementById("vocabCard");
+  return vc && vc.dataset.lookKey === item.key && vc.dataset.owndef || "";
+}
+
+function subPair(item) {
+  if (!item.sub || item.sub.kind !== "def") return item.sub ? [ item.sub.t, "" ] : [ "", "" ];
+  const asked = defAsks(item);
+  return asked ? [ asked, item.sub.t ] : [ item.sub.t, defExample(item) ];
 }
 
 function headMeaning(item) {
@@ -21374,13 +21398,17 @@ function fillVocabCard(el, item) {
   if (el.dataset.lookKey !== item.key) {
     const other = item.sub ? item.sub.kind === "ex" ? item.sub.t : "" : viewOnly || whole ? "" : otherLessonSentence(item);
     const alt = other;
-    let ex = item.sub && item.sub.kind === "def" ? "def" : whole ? "sent" : alt ? "other" : gap ? "cloze" : "word";
+    const od = !item.sub && !viewOnly && !whole && "speechSynthesis" in window ? ownDefLines(item) : [], useOd = od.length > 0 && Math.random() < .5;
+    let ex = item.sub && item.sub.kind === "def" || useOd ? "def" : whole ? "sent" : alt ? "other" : gap ? "cloze" : "word";
+    el.dataset.owndef = useOd ? od[Math.floor(Math.random() * od.length)] : "";
     el.dataset.other = ex === "other" ? alt : "";
+    const xs = ex === "def" && item.sub ? item.sub.xs || [] : [];
+    el.dataset.defx = xs.length && Math.random() < .5 ? xs[Math.floor(Math.random() * xs.length)] : "";
     const look = "plain";
     el.dataset.lookKey = item.key;
     el.dataset.look = look;
     el.dataset.ex = ex;
-    el.dataset.listen = "speechSynthesis" in window && (item.sub || whole || ex === "word" || Math.random() < 1 / 3) ? "1" : "";
+    el.dataset.listen = "speechSynthesis" in window && (item.sub || whole || ex === "word" || ex === "def" || Math.random() < 1 / 3) ? "1" : "";
     el.dataset.scene = el.dataset.listen ? wordSceneFor(item, el.dataset.scene || null) : "";
     delete el.dataset.said;
     delete el.dataset.listenText;
@@ -21401,14 +21429,18 @@ function fillVocabCard(el, item) {
     el.querySelector(".vocab-term").insertAdjacentHTML("afterbegin", `<span class="cloze-more cloze-head"><span class="cloze-main">${rubyWord(item.term, item.card)}</span>${headMeaning(item) ? `<span class="cloze-mean">${meaningHtml(headMeaning(item))}</span>` : ""}</span>`);
     el.classList.add("fill");
     el.classList.toggle("listen", !!el.dataset.listen);
-  } else if (ex === "def" && item.sub) {
+  } else if (ex === "def" && (item.sub || el.dataset.owndef)) {
     const noted = noteSentence(item), notes = noted ? noted.rest.replace(/^(\s|<br\s*\/?>|<div>\s*<\/div>)+/i, "") : wordNotesOf(item);
-    const d = item.sub.t, span = findWordForm(d, item.term);
+    const sub = item.sub || {}, d = item.sub ? sub.t : el.dataset.owndef, span = findWordForm(d, item.term);
     const defText = span ? gappedHtml(d, wordSpans(d, item.term, span), item) : escapeHtml(d);
-    const defHtml = `<span class="vc-sent vc-def">${item.sub.h ? `<span class="vc-def-h">${escapeHtml(item.sub.h)}</span>` : ""}${item.sub.p ? `<span class="vc-pos">${escapeHtml(item.sub.p)}</span>` : ""}${defText}</span>`;
-    const dx = defExample(item), exHtml = dx ? `<span class="cloze-more cloze-own">${withPill(linePillHtml(item, dx, false), lookupOthers(vocabSentenceHtml(dx, item.term, item.card), item))}${item.sub.xtr ? `<span class="vc-def-tr">${escapeHtml(item.sub.xtr)}</span>` : ""}</span>` : "";
-    el.querySelector(".vocab-term").innerHTML = `<span class="cloze-body"><span class="vc-stack"><span class="vc-art" aria-hidden="true">${sceneArt(el.dataset.scene)}<span class="vc-time"><i></i></span></span>${defHtml}</span>${exHtml}${notes ? `<span class="cloze-more cloze-notes">${notesWithPinyin(brLines(notes), item.card)}</span>` : ""}</span>`;
-    el.querySelector(".vocab-term").insertAdjacentHTML("afterbegin", `<span class="cloze-more cloze-head"><span class="cloze-main">${rubyWord(item.term, item.card)}</span>${headMeaning(item) ? `<span class="cloze-mean">${meaningHtml(headMeaning(item))}</span>` : ""}</span>`);
+    const defHead = `${sub.h ? `<span class="vc-def-h">${escapeHtml(sub.h)}</span>` : ""}${sub.p ? `<span class="vc-pos">${escapeHtml(sub.p)}</span>` : ""}`;
+    const asked = el.dataset.defx || "", ask = asked && findWordForm(asked, item.term);
+    const first = asked ? `<span class="vc-sent">${linePillHtml(item, asked, false, "cloze-pill")}${ask ? gappedHtml(asked, wordSpans(asked, item.term, ask), item) : escapeHtml(asked)}</span>` : `<span class="vc-sent vc-def">${defHead}${defText}</span>`;
+    const dx = asked ? "" : item.sub ? defExample(item) : sentence;
+    const second = asked ? `<span class="cloze-more cloze-own vc-def-more">${defHead}${escapeHtml(d)}</span>` : dx ? `<span class="cloze-more cloze-own">${withPill(linePillHtml(item, dx, false), lookupOthers(vocabSentenceHtml(dx, item.term, item.card), item))}</span>` : "";
+    const hm = item.sub ? headMeaning(item) : meaningLines(item.meaning || "").filter(l => l !== d).join("\n");
+    el.querySelector(".vocab-term").innerHTML = `<span class="cloze-body"><span class="vc-stack"><span class="vc-art" aria-hidden="true">${sceneArt(el.dataset.scene)}<span class="vc-time"><i></i></span></span>${first}</span>${second}${notes ? `<span class="cloze-more cloze-notes">${notesWithPinyin(brLines(notes), item.card)}</span>` : ""}</span>`;
+    el.querySelector(".vocab-term").insertAdjacentHTML("afterbegin", `<span class="cloze-more cloze-head"><span class="cloze-main">${rubyWord(item.term, item.card)}</span>${hm ? `<span class="cloze-mean">${meaningHtml(hm)}</span>` : ""}</span>`);
     el.classList.add("fill", "listen");
   } else if (ex === "word" && el.dataset.listen && !viewOnly) {
     const noted = noteSentence(item), notes = noted ? noted.rest.replace(/^(\s|<br\s*\/?>|<div>\s*<\/div>)+/i, "") : wordNotesOf(item);
@@ -22004,7 +22036,7 @@ function wireVocabEditor(items) {
   fitTextarea(term);
   const item = items.find(i => i.key === vocabEditingKey);
   const notes = document.getElementById("vocabEditNotes");
-  notes.querySelectorAll("li").forEach(li => {
+  if (notes) notes.querySelectorAll("li").forEach(li => {
     if (!li.querySelector(":scope > br")) return;
     const parts = [ [] ];
     [ ...li.childNodes ].forEach(n => n.nodeName === "BR" ? parts.push([]) : parts[parts.length - 1].push(n));
@@ -22022,7 +22054,7 @@ function wireVocabEditor(items) {
     syncVocabEditMain(now);
     if (now.sub) {
       const sv = vocabEditValues(), st = document.getElementById("vocabEditSubText");
-      saveSubEdit(now, st ? st.innerText : "", sv.meaning, notes.innerHTML);
+      saveSubEdit(now, st ? st.innerText : "", sv.meaning, notes ? notes.innerHTML : now.sub.n || "");
       return renderVocab();
     }
     saveVocabSentence(now, document.getElementById("vocabEditSentence"));
@@ -22034,12 +22066,7 @@ function wireVocabEditor(items) {
     renderVocab();
   };
   document.getElementById("vocabEditSave").onclick = save;
-  const addNotes = term.closest(".vocab-editor").querySelector(".ed-add-notes");
-  if (addNotes) addNotes.onclick = () => {
-    addNotes.previousElementSibling.classList.remove("sub-notes-off");
-    addNotes.remove();
-    notes.focus();
-  };
+
   const main = document.getElementById("vocabEditMain"), sentence = document.getElementById("vocabEditSentence");
   if (main) main.addEventListener("input", () => syncVocabEditMain(item));
   const chips = term.closest(".vocab-editor").querySelector(".ed-chips");
@@ -22184,7 +22211,7 @@ function commitVocabEdit() {
   if (item && item.sub) {
     syncVocabEditMain(item);
     const st = document.getElementById("vocabEditSubText");
-    saveSubEdit(item, st ? st.innerText : "", vocabEditValues().meaning, notes ? notes.innerHTML : "");
+    saveSubEdit(item, st ? st.innerText : "", vocabEditValues().meaning, notes ? notes.innerHTML : item.sub.n || "");
     return true;
   }
   if (item) {
@@ -22610,7 +22637,7 @@ function playVocabSound(item, once, ownClip, thenRestart, fromClip) {
     return;
   }
   const row = item.card, vc = document.getElementById("vocabCard");
-  const shown = item.sub ? item.sub.t : !ownClip && vc && vc.dataset.lookKey === item.key && vc.dataset.ex === "other" && vc.dataset.other || "";
+  const shown = item.sub ? subPair(item)[0] : ownDefAsked(item) || !ownClip && vc && vc.dataset.lookKey === item.key && vc.dataset.ex === "other" && vc.dataset.other || "";
   const videoId = shown || ytHasError && ownClip ? "" : vocabVideoIdFor(row);
   if (videoId) {
     if (row.srcLessonId && (vocabVideoId !== videoId || !ytHasVideo)) {
@@ -22635,7 +22662,7 @@ function playVocabSound(item, once, ownClip, thenRestart, fromClip) {
     return;
   }
   const ctx = vocabContext(item);
-  const own = item.sub ? defExample(item) : ctx.sentence && findWordForm(ctx.sentence.normalize("NFC"), item.term) ? ctx.sentence : "";
+  const own = item.sub ? subPair(item)[1] : ctx.sentence && findWordForm(ctx.sentence.normalize("NFC"), item.term) ? ctx.sentence : "";
   const clipAfter = !item.sub && !!shown && vocabSession && vocabSession.flipped && !!own && !ytHasError && !!vocabVideoIdFor(row) && !(fromClip && once);
   const texts = shown ? vocabSession && vocabSession.flipped && own && own !== shown && !clipAfter && !fromClip ? [ shown, own ] : [ shown ] : [ own || item.term ];
   let at = 0;
@@ -22696,8 +22723,8 @@ function sayVocabWord(item) {
     return;
   }
   soundWaitOn(btn);
-  const own = vocabContext(item).sentence || "", shown = card.dataset.ex === "other" && card.dataset.other || own;
-  const pool = item.sub ? [ item.sub.t ] : [ shown ].filter(Boolean);
+  const own = vocabContext(item).sentence || "", shown = card.dataset.owndef || card.dataset.ex === "other" && card.dataset.other || own;
+  const pool = item.sub ? [ subPair(item)[0] ] : [ shown ].filter(Boolean);
   if (!card.dataset.listenText || !pool.includes(card.dataset.listenText)) card.dataset.listenText = pool[Math.floor(Math.random() * pool.length)] || item.term;
   const text = card.dataset.listenText;
   const utter = trackSpeech(new SpeechSynthesisUtterance(cleanForSpeech(text)));
@@ -22932,9 +22959,9 @@ function vocabCopyAction() {
   const picked = vocabView === "card" ? null : vocabPickTargets(vocabPickedKey());
   const item = vocabView === "card" ? currentVocabItem() : picked && (picked.head || picked.items[0]);
   if (!item) return;
-  if (item.sub) return copyText([ item.sub.t, defExample(item) ].filter(Boolean).map(oneLine).join("\n"));
+  if (item.sub) return copyText(subPair(item).filter(Boolean).map(oneLine).join("\n"));
   const own = oneLine(vocabContext(item).sentence || ""), vc = document.getElementById("vocabCard");
-  const shown = vocabView === "card" && vc && vc.dataset.lookKey === item.key && vc.dataset.ex === "other" && vc.dataset.other ? oneLine(vc.dataset.other) : "";
+  const shown = vocabView === "card" && vc && vc.dataset.lookKey === item.key ? oneLine(vc.dataset.owndef || (vc.dataset.ex === "other" ? vc.dataset.other || "" : "")) : "";
   const lines = [ shown, own ].filter((t, i, a) => t && a.indexOf(t) === i);
   copyText(lines.join("\n") || oneLine(item.term));
 }
