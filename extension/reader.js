@@ -955,8 +955,7 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
     let n = 0;
     list.forEach(t => {
       t = t.replace(/\s+/g, " ").trim();
-      const words = t.length <= 320 ? wordsIn(t) : [];
-      if (words.length && !sents.some(x => norm(x.t) === norm(t))) sents.push({ t, words }), n++;
+      if (t && /\p{L}/u.test(t) && !sents.some(x => norm(x.t) === norm(t))) sents.push({ t, words: wordsIn(t) }), n++;
     });
     saveDraft();
     paintSents(true);
@@ -983,7 +982,7 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
         }
         if (b.dataset.act === "all") {
           const n = addSentences(pageSentences());
-          return toast(n ? `${n} sentence${n === 1 ? "" : "s"} collected` : "No new sentence with your words on this page");
+          return toast(n ? `${n} sentence${n === 1 ? "" : "s"} collected` : "No new sentences on this page");
         }
         if (b.dataset.act === "send") return sendSents();
         if (b.dataset.act === "min") {
@@ -1008,43 +1007,33 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
       });
       return html;
     };
-    sentsEl.innerHTML = `<div class="sents-top"><b>Sentences for your words · ${sents.length}</b><button type="button" class="icon" data-act="min" title="${sentsSmall ? "Show" : "Hide"} the list">${sentsSmall ? "▴" : "▾"}</button><button type="button" class="icon" data-act="close" title="Clear and close">✕</button></div>${sents.length ? `<ul class="sents-list">${sents.map((t, i) => `<li><span class="st">${marked(t)}</span><button type="button" class="sx" data-i="${i}" title="Leave this one out">✕</button></li>`).join("")}</ul>` : ""}<div class="sents-foot"><button type="button" class="ghost" data-act="all">Collect all</button><button type="button" class="btn" data-act="send"${sents.length ? "" : " disabled"}>Send ${sents.length || ""} to wikiPhidia</button></div>`;
+    sentsEl.innerHTML = `<div class="sents-top"><b>Collected · ${sents.length}</b><button type="button" class="icon" data-act="min" title="${sentsSmall ? "Show" : "Hide"} the list">${sentsSmall ? "▴" : "▾"}</button><button type="button" class="icon" data-act="close" title="Clear and close">✕</button></div>${sents.length ? `<ul class="sents-list">${sents.map((t, i) => `<li><span class="st">${marked(t)}</span><button type="button" class="sx" data-i="${i}" title="Leave this one out">✕</button></li>`).join("")}</ul>` : ""}<div class="sents-foot"><button type="button" class="ghost" data-act="all">Collect all</button><button type="button" class="btn" data-act="send"${sents.length ? "" : " disabled"}>Paste ${sents.length || ""} into wikiPhidia</button></div>`;
     wrap.appendChild(sentsEl);
   }
   function pageSentences() {
     const scope = document.querySelector("article, main, [role=main]") || document.body, out = [];
-    scope.querySelectorAll("p, li, h1, h2, h3, h4, blockquote, td, dd, figcaption").forEach(el => {
-      if (el.closest("nav, header, footer, aside, form, wkp-reader") || el.querySelector("p, li") || !el.getClientRects().length) return;
-      sentenceParts(el.innerText || el.textContent || "").forEach(t => out.push(t));
+    scope.querySelectorAll("p, li, h1, h2, h3, h4, blockquote, tr, dd, figcaption").forEach(el => {
+      if (el.closest("nav, header, footer, aside, form, wkp-reader") || el.querySelector("p, li, tr") || !el.getClientRects().length) return;
+      if (el.tagName === "TR") {
+        const cells = [ ...el.querySelectorAll("td") ].map(c => (c.innerText || c.textContent || "").replace(/\s+/g, " ").trim()).filter(Boolean);
+        if (cells.length) out.push(cells.join(": "));
+        return;
+      }
+      const text = (el.innerText || el.textContent || "").replace(/\s+/g, " ").trim();
+      if (el.tagName === "LI" && text.length <= 320) out.push(text); else sentenceParts(text).forEach(t => out.push(t));
     });
     if (!out.length) sentenceParts(scope.innerText || "").forEach(t => out.push(t));
     return out;
   }
   async function sendSents() {
-    const list = sents.filter(x => x.t && x.words.length);
+    const list = sents.map(x => x.t).filter(Boolean);
     if (!list.length) return;
-    const title = articleTitle(), at = Date.now();
-    const { pending: now } = await chrome.storage.local.get("pending");
-    const next = (now || []).concat(list.map((x, i) => ({
-      id: at.toString(36) + i.toString(36) + Math.random().toString(36).slice(2, 6),
-      kind: "sentence",
-      term: x.t,
-      words: x.words,
-      meaning: "",
-      sentence: x.t,
-      url: location.href,
-      title: document.title,
-      lessonId: settings.lessonId || "",
-      lessonName: settings.lessonName || title,
-      at
-    })));
-    pending = next;
-    await chrome.storage.local.set({ pending: next });
+    await chrome.storage.local.set({ pastePending: { text: list.join("\n"), title: settings.lessonName || articleTitle(), url: location.href, at: Date.now() } });
     sents = [];
     saveDraft();
     if (sentsEl) sentsEl.remove();
     sentsEl = null;
-    toast(`${list.length} sentence${list.length === 1 ? "" : "s"} sent to your words`);
+    chrome.runtime.sendMessage({ type: "openApp" }).catch(() => {});
   }
   chrome.storage.local.get("sentDrafts").then(({ sentDrafts }) => {
     const d = sentDrafts && sentDrafts[draftKey()];
@@ -1058,7 +1047,7 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
   chrome.runtime.onMessage.addListener(msg => {
     if (msg && msg.type === "collectAll" && on()) {
       const n = addSentences(pageSentences());
-      toast(n ? `${n} sentence${n === 1 ? "" : "s"} collected` : "No new sentence with your words on this page");
+      toast(n ? `${n} sentence${n === 1 ? "" : "s"} collected` : "No new sentences on this page");
     }
     if (msg && msg.type === "collectOpen" && on()) paintSents(true);
     if (msg && msg.type === "toast") toast(msg.text);

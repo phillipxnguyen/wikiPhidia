@@ -44,6 +44,14 @@
     }, 8e3);
   }
 
+  async function sendPaste() {
+    if (!ready) return;
+    const { pastePending } = await chrome.storage.local.get("pastePending");
+    if (!pastePending || Date.now() - (pastePending.at || 0) > 36e5) return;
+    await chrome.storage.local.remove("pastePending");
+    post({ type: "paste", data: pastePending });
+  }
+
   async function sendYouTube() {
     if (!ready) return;
     const { ytPending } = await chrome.storage.local.get("ytPending");
@@ -91,6 +99,7 @@
       }).then(() => {
         send();
         sendYouTube();
+        sendPaste();
       });
     }
     if (e.data.type === "added") settle(e.data);
@@ -103,6 +112,7 @@
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area === "local" && changes.pending) send();
     if (area === "local" && changes.ytPending && changes.ytPending.newValue) sendYouTube();
+    if (area === "local" && changes.pastePending && changes.pastePending.newValue) sendPaste();
   });
 
   chrome.runtime.onMessage.addListener(msg => {

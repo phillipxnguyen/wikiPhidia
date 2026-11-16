@@ -570,6 +570,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-70 | `bdd6ca3` | Extension 1.6.40: thu thập câu (Alt + click từng câu, Collect all cả trang), khung xem trước góc trang; câu thành thẻ trong bài mang tên trang |
 | LOOKUP-71 | `0ac2e05` | Extension 1.6.41: thu thập chỉ câu chứa từ đã có; mỗi câu thành thẻ ví dụ của từ đó (không thành thẻ Lessons), giữ lại khi tra từ điển lại |
 | LOOKUP-72 | `ed6dcc1` | Extension 1.6.42: bỏ Alt+click và dòng hướng dẫn, ✕ không nhảy về đầu danh sách, popup cách đều 16px, nút Collect hiện tên trang |
+| LOOKUP-73 | `pending` | Extension 1.6.43: Collect lấy mọi dòng của trang; Paste into wikiPhidia đưa vào ô Paste here! ở trang Add (bài theo tên trang) để xem trước và Import như dán tay; bỏ thẻ ví dụ từ web |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
