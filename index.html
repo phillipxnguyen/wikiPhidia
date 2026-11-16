@@ -680,6 +680,7 @@ window.onYouTubeIframeAPIReady = function(){
   .vc-stack{display:grid;}
   .vc-stack > *{grid-area:1 / 1;}
   .vc-art{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;font-size:16px;line-height:20px;font-style:normal;}
+  .vocab-card.fill .vc-fam{opacity:.75;}
   .vc-time{display:block;width:240px;max-width:100%;height:4px;border-radius:2px;background:color-mix(in srgb, var(--text) 14%, transparent);overflow:hidden;}
   .vc-time i{display:block;width:0;height:100%;border-radius:2px;background:var(--accent);}
   .vocab-card.listen:not(.flipped) .vc-sent{visibility:hidden;}
@@ -10789,7 +10790,13 @@ function keepOwnSenses(old, entry) {
 
 function storeWordDict(lesson, tkey, entry, own) {
   if (!lesson || !tkey || !entry) return;
-  if (!own) entry = keepOwnSenses(wordDictIndex().get(tkey), keepOwnSenses(lesson.wordDict && lesson.wordDict[tkey], entry));
+  if (!own) {
+    const before = lesson.wordDict && lesson.wordDict[tkey] || wordDictIndex().get(tkey);
+    entry = keepOwnSenses(wordDictIndex().get(tkey), keepOwnSenses(lesson.wordDict && lesson.wordDict[tkey], entry));
+    if (before && before.more && !entry.more) entry = Object.assign({}, entry, {
+      more: before.more
+    });
+  }
   lesson.wordDict = Object.assign({}, lesson.wordDict, {
     [tkey]: entry
   });
@@ -10831,7 +10838,7 @@ async function wordDictPump() {
       break;
     }
   }
-  if (!pick) return;
+  if (!pick) return wordMorePump();
   wordDictBusy = true;
   wordDictTried.add(pick.world + "|" + pick.tkey);
   const list = await extLookup(pick.world, pick.term);
@@ -10847,6 +10854,107 @@ async function wordDictPump() {
     }, 2e3);
   }
   setTimeout(wordDictPump, list ? 4e3 : 8e3);
+}
+
+const wordMoreTried = new Set;
+
+let wordMoreBusy = false;
+
+setInterval(() => wordMorePump(), 9e4);
+
+async function wordMorePump() {
+  if (!extLookupOn || wordMoreBusy || wordDictBusy || tabPaused) return;
+  const idx = wordDictIndex(), worlds = wordWorldItems();
+  let pick = null;
+  for (const w of Object.keys(worlds)) {
+    if (![ "en", "zh", "ja", "ko" ].includes(w)) continue;
+    pick = worlds[w].find(i => !i.sub && (i.meaning || "").trim() && !(idx.get(i.tkey) || {}).more && !wordMoreTried.has(w + "|" + i.tkey) && !odLong(i.term));
+    if (pick) {
+      pick.world = w;
+      break;
+    }
+  }
+  if (!pick) return;
+  wordMoreBusy = true;
+  wordMoreTried.add(pick.world + "|" + pick.tkey);
+  const more = await wordMoreFetch(pick.world, pick.term).catch(() => null);
+  wordMoreBusy = false;
+  if (more) {
+    const home = library.find(l => l.wordDict && l.wordDict[pick.tkey] && l.wordDict[pick.tkey] === idx.get(pick.tkey)) || library.find(l => l.id === pick.lessonId);
+    const old = home && home.wordDict && home.wordDict[pick.tkey];
+    if (home) storeWordDict(home, pick.tkey, Object.assign({
+      defs: [],
+      ex: []
+    }, old, {
+      at: Date.now(),
+      more: more
+    }), true);
+  }
+  setTimeout(wordMorePump, more ? 4e3 : 8e3);
+}
+
+async function wordMoreFetch(lang, w) {
+  const l3 = {
+    en: "eng",
+    zh: "cmn",
+    ja: "jpn",
+    ko: "kor"
+  }[lang], name = {
+    en: "English",
+    zh: "Chinese",
+    ja: "Japanese",
+    ko: "Korean"
+  }[lang];
+  const holds = t => lang === "en" ? !!findWordForm(t, w) : t.includes(w);
+  const json = t => {
+    try {
+      return t ? JSON.parse(t) : null;
+    } catch (e) {
+      return null;
+    }
+  };
+  const [ tat, wik, syn, ant, jja, jjb ] = await Promise.all([ extFetch(`https://tatoeba.org/en/api_v0/search?from=${l3}&query=${encodeURIComponent(w)}&to=vie&sort=relevance`), extFetch("https://en.wiktionary.org/api/rest_v1/page/html/" + encodeURIComponent(w)), lang === "en" ? extFetch("https://api.datamuse.com/words?max=8&rel_syn=" + encodeURIComponent(w)) : null, lang === "en" ? extFetch("https://api.datamuse.com/words?max=6&rel_ant=" + encodeURIComponent(w)) : null, lang === "en" ? extFetch("https://api.datamuse.com/words?max=6&rel_jja=" + encodeURIComponent(w)) : null, lang === "en" ? extFetch("https://api.datamuse.com/words?max=6&rel_jjb=" + encodeURIComponent(w)) : null ]);
+  if (tat == null && wik == null && syn == null) return null;
+  const sents = [];
+  ((json(tat) || {}).results || []).forEach(r => {
+    const t = String(r && r.text || "").trim(), trs = (r && r.translations || []).flat().filter(Boolean);
+    const tr = (trs.find(x => x.lang === "vie") || trs.find(x => x.lang === "eng") || {}).text || "";
+    if (t && t.length <= 160 && holds(t) && sents.length < 8 && !sents.some(x => x.t === t)) sents.push({
+      t: t,
+      tr: String(tr).trim()
+    });
+  });
+  const words = t => (json(t) || []).map(x => String(x && x.word || "").trim()).filter(Boolean);
+  const more = {
+    sents: sents,
+    syn: words(syn),
+    ant: words(ant),
+    col: words(jja).map(a => a + " " + w).concat(words(jjb).map(n => w + " " + n)).slice(0, 8),
+    fam: []
+  };
+  if (wik) {
+    const doc = new DOMParser().parseFromString(wik, "text/html"), h2 = [ ...doc.querySelectorAll("h2") ].find(h => h.textContent.trim() === name);
+    const sec = h2 && (h2.closest("section") || h2.parentElement);
+    if (sec) {
+      const take = (sel, into) => sec.querySelectorAll(sel).forEach(a => {
+        const t = a.textContent.trim();
+        if (t && t !== w && t.length <= 40 && !into.includes(t) && into.length < 10) into.push(t);
+      });
+      take(".nyms.synonym a, .nyms.synonym .Latn, .nyms.synonym [lang]", more.syn);
+      take(".nyms.antonym a, .nyms.antonym .Latn, .nyms.antonym [lang]", more.ant);
+      sec.querySelectorAll("h3, h4, h5").forEach(h => {
+        const k = h.textContent.trim(), box = (h.closest("section") || h.parentElement), list = k === "Synonyms" ? more.syn : k === "Antonyms" ? more.ant : /^(Derived terms|Related terms)$/.test(k) ? more.fam : null;
+        if (list) box.querySelectorAll("li a, li [lang]").forEach(a => {
+          const t = a.textContent.trim();
+          if (t && t !== w && t.length <= 40 && !list.includes(t) && list.length < 10) list.push(t);
+        });
+      });
+    }
+  }
+  more.syn = [ ...new Set(more.syn) ].slice(0, 8);
+  more.ant = [ ...new Set(more.ant) ].slice(0, 6);
+  more.fam = [ ...new Set(more.fam) ].slice(0, 8);
+  return more;
 }
 
 const extFetchWait = new Map;
@@ -20574,7 +20682,7 @@ function wordDictIndex() {
     wordDictIdx = new Map;
     library.forEach(l => l.wordDict && Object.keys(l.wordDict).forEach(k => {
       const v = l.wordDict[k];
-      if (v && ((v.defs || []).length || (v.ex || []).length) && (!wordDictIdx.has(k) || (v.v || 0) > (wordDictIdx.get(k).v || 0))) wordDictIdx.set(k, v);
+      if (v && ((v.defs || []).length || (v.ex || []).length || v.more) && (!wordDictIdx.has(k) || (v.v || 0) > (wordDictIdx.get(k).v || 0))) wordDictIdx.set(k, v);
     }));
   }
   return wordDictIdx;
@@ -21409,6 +21517,35 @@ function notesWithPinyin(html, card) {
   return box.innerHTML;
 }
 
+function extraQuestion(item) {
+  const more = (wordDictIndex().get(item.tkey) || {}).more;
+  if (!more || Math.random() < .4) return null;
+  const pool = [], speak = "speechSynthesis" in window;
+  (more.sents || []).forEach(x => findTermIn(x.t, item.term) && pool.push({
+    k: "tat",
+    t: x.t,
+    tr: x.tr || ""
+  }));
+  (more.col || []).forEach(t => findTermIn(t, item.term) && pool.push({
+    k: "col",
+    t: t
+  }));
+  if (speak && (more.syn || []).length) pool.push({
+    k: "syn",
+    t: more.syn.slice(0, 4).join(", ")
+  });
+  if (speak && (more.ant || []).length) pool.push({
+    k: "ant",
+    t: more.ant.slice(0, 4).join(", ")
+  });
+  return pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
+}
+
+function familyHtml(item) {
+  const more = !item.sub && (wordDictIndex().get(item.tkey) || {}).more, fam = more && more.fam || [];
+  return fam.length ? `<span class="cloze-more cloze-notes vc-fam">${fam.map(escapeHtml).join(" · ")}</span>` : "";
+}
+
 function defExample(item) {
   return item.sub && item.sub.kind === "def" ? (item.sub.xs || [])[0] || "" : "";
 }
@@ -21444,11 +21581,15 @@ function fillVocabCard(el, item) {
   const sentence = vocabContext(item).sentence || "", gap = !viewOnly && sentence && !wholeSentenceCard(item, sentence) ? findTermIn(sentence, item.term) : null;
   const whole = !viewOnly && wholeSentenceCard(item, sentence);
   if (el.dataset.lookKey !== item.key) {
-    const other = item.sub ? item.sub.kind === "ex" ? item.sub.t : "" : viewOnly || whole ? "" : otherLessonSentence(item);
+    const xq = !item.sub && !viewOnly && !whole ? extraQuestion(item) : null;
+    const other = xq ? xq.k === "tat" || xq.k === "col" ? xq.t : "" : item.sub ? item.sub.kind === "ex" ? item.sub.t : "" : viewOnly || whole ? "" : otherLessonSentence(item);
     const alt = other;
-    const od = !item.sub && !viewOnly && !whole && "speechSynthesis" in window ? ownDefLines(item) : [], useOd = od.length > 0 && Math.random() < .5;
-    let ex = item.sub && item.sub.kind === "def" || useOd ? "def" : whole ? "sent" : alt ? "other" : gap ? "cloze" : "word";
-    el.dataset.owndef = useOd ? od[Math.floor(Math.random() * od.length)] : "";
+    const od = !item.sub && !viewOnly && !whole && !xq && "speechSynthesis" in window ? ownDefLines(item) : [], useOd = od.length > 0 && Math.random() < .5;
+    const hint = xq && (xq.k === "syn" || xq.k === "ant");
+    let ex = item.sub && item.sub.kind === "def" || useOd || hint ? "def" : whole ? "sent" : alt ? "other" : gap ? "cloze" : "word";
+    el.dataset.owndef = hint ? xq.t : useOd ? od[Math.floor(Math.random() * od.length)] : "";
+    el.dataset.xk = xq ? xq.k : "";
+    el.dataset.xtr = xq && xq.tr || "";
     el.dataset.other = ex === "other" ? alt : "";
     const xs = ex === "def" && item.sub ? item.sub.xs || [] : [];
     el.dataset.defx = xs.length && Math.random() < .5 ? xs[Math.floor(Math.random() * xs.length)] : "";
@@ -21470,25 +21611,26 @@ function fillVocabCard(el, item) {
     const noted = noteSentence(item), notes = noted ? noted.rest.replace(/^(\s|<br\s*\/?>|<div>\s*<\/div>)+/i, "") : wordNotesOf(item);
     const spy = cjkScriptFor(text, item.card) === "zh" ? pinyinLine(text) : "";
     const sent = `<span${el.dataset.listen ? ' class="vc-sent"' : ""}>${spy ? `<span class="cloze-more cloze-spy py-line">${linePillHtml(item, text, !otherGap)}${escapeHtml(spy)}</span>` : linePillHtml(item, text, !otherGap, "cloze-pill")}${gappedHtml(text, spans, item)}</span>`;
-    const own = otherGap && !item.sub && sentence && sentence !== text ? sentence : "";
+    const own = otherGap && !item.sub && !el.dataset.xk && sentence && sentence !== text ? sentence : "";
     const ownTs = own ? linePillHtml(item, own, true) : "";
+    const xm = el.dataset.xk === "tat" ? el.dataset.xtr : headMeaning(item);
     const ownHtml = own ? `<span class="cloze-more cloze-own">${withPill(ownTs, lookupOthers(vocabSentenceHtml(own, item.term, item.card), item))}</span>` : "";
-    el.querySelector(".vocab-term").innerHTML = `<span class="cloze-body">${el.dataset.listen ? `<span class="vc-stack"><span class="vc-art" aria-hidden="true">${sceneArt(el.dataset.scene)}<span class="vc-time"><i></i></span></span>${sent}</span>` : sent}${ownHtml}${notes ? `<span class="cloze-more cloze-notes">${notesWithPinyin(brLines(notes), item.card)}</span>` : ""}</span>`;
-    el.querySelector(".vocab-term").insertAdjacentHTML("afterbegin", `<span class="cloze-more cloze-head"><span class="cloze-main">${rubyWord(item.term, item.card)}</span>${headMeaning(item) ? `<span class="cloze-mean">${meaningHtml(headMeaning(item))}</span>` : ""}</span>`);
+    el.querySelector(".vocab-term").innerHTML = `<span class="cloze-body">${el.dataset.listen ? `<span class="vc-stack"><span class="vc-art" aria-hidden="true">${sceneArt(el.dataset.scene)}<span class="vc-time"><i></i></span></span>${sent}</span>` : sent}${ownHtml}${notes ? `<span class="cloze-more cloze-notes">${notesWithPinyin(brLines(notes), item.card)}</span>` : ""}${familyHtml(item)}</span>`;
+    el.querySelector(".vocab-term").insertAdjacentHTML("afterbegin", `<span class="cloze-more cloze-head"><span class="cloze-main">${rubyWord(item.term, item.card)}</span>${xm ? `<span class="cloze-mean">${meaningHtml(xm)}</span>` : ""}</span>`);
     el.classList.add("fill");
     el.classList.toggle("listen", !!el.dataset.listen);
   } else if (ex === "def" && (item.sub || el.dataset.owndef)) {
     const noted = noteSentence(item), notes = noted ? noted.rest.replace(/^(\s|<br\s*\/?>|<div>\s*<\/div>)+/i, "") : wordNotesOf(item);
     const sub = item.sub || {}, d = item.sub ? sub.t : el.dataset.owndef, span = findWordForm(d, item.term);
     const defText = span ? gappedHtml(d, wordSpans(d, item.term, span), item) : escapeHtml(d);
-    const defHead = `${sub.h ? `<span class="vc-def-h">${escapeHtml(sub.h)}</span>` : ""}${sub.p ? `<button type="button" class="own-ts say-ts vc-pos-say" data-say="${escapeAttr(d)}" title="Play the definition" aria-label="Play the definition">${escapeHtml(sub.p)}</button>` : ""}`;
+    const xk = !item.sub && el.dataset.xk, defHead = `${xk ? `<span class="vc-def-h">${xk === "ant" ? "Opposite" : "Similar"}</span>` : ""}${sub.h ? `<span class="vc-def-h">${escapeHtml(sub.h)}</span>` : ""}${sub.p ? `<button type="button" class="own-ts say-ts vc-pos-say" data-say="${escapeAttr(d)}" title="Play the definition" aria-label="Play the definition">${escapeHtml(sub.p)}</button>` : ""}`;
     const asked = el.dataset.defx || "", ask = asked && findWordForm(asked, item.term);
     const first = asked ? `<span class="vc-sent">${linePillHtml(item, asked, false, "cloze-pill")}${ask ? gappedHtml(asked, wordSpans(asked, item.term, ask), item) : escapeHtml(asked)}</span>` : `<span class="vc-sent vc-def">${defHead}${defText}</span>`;
     const dx = asked ? "" : item.sub ? defExample(item) : sentence;
     const second = asked ? `<span class="cloze-more cloze-own vc-def-more">${defHead}${escapeHtml(d)}</span>` : dx ? `<span class="cloze-more cloze-own">${withPill(linePillHtml(item, dx, false), lookupOthers(vocabSentenceHtml(dx, item.term, item.card), item))}</span>` : "";
     const hm = item.sub ? headMeaning(item) : meaningLines(item.meaning || "").filter(l => l !== d).join("\n");
     const lead = el.dataset.listen ? `<span class="vc-stack"><span class="vc-art" aria-hidden="true">${sceneArt(el.dataset.scene)}<span class="vc-time"><i></i></span></span>${first}</span>` : first;
-    el.querySelector(".vocab-term").innerHTML = `<span class="cloze-body">${lead}${second}${notes ? `<span class="cloze-more cloze-notes">${notesWithPinyin(brLines(notes), item.card)}</span>` : ""}</span>`;
+    el.querySelector(".vocab-term").innerHTML = `<span class="cloze-body">${lead}${second}${notes ? `<span class="cloze-more cloze-notes">${notesWithPinyin(brLines(notes), item.card)}</span>` : ""}${familyHtml(item)}</span>`;
     el.querySelector(".vocab-term").insertAdjacentHTML("afterbegin", `<span class="cloze-more cloze-head"><span class="cloze-main">${rubyWord(item.term, item.card)}</span>${hm ? `<span class="cloze-mean">${meaningHtml(hm)}</span>` : ""}</span>`);
     el.classList.add("fill");
     el.classList.toggle("listen", !!el.dataset.listen);
@@ -22713,7 +22855,8 @@ function playVocabSound(item, once, ownClip, thenRestart, fromClip) {
     return;
   }
   const ctx = vocabContext(item);
-  const own = item.sub ? subPair(item)[1] : ctx.sentence && findWordForm(ctx.sentence.normalize("NFC"), item.term) ? ctx.sentence : "";
+  const lone = !item.sub && vc && vc.dataset.lookKey === item.key && /^(tat|col)$/.test(vc.dataset.xk || "");
+  const own = item.sub ? subPair(item)[1] : !lone && ctx.sentence && findWordForm(ctx.sentence.normalize("NFC"), item.term) ? ctx.sentence : "";
   const clipAfter = !item.sub && !!shown && vocabSession && vocabSession.flipped && !!own && !ytHasError && !!vocabVideoIdFor(row) && !(fromClip && once);
   const texts = shown ? vocabSession && vocabSession.flipped && own && own !== shown && !clipAfter && !fromClip ? [ shown, own ] : [ shown ] : [ own || item.term ];
   let at = 0;
@@ -23013,7 +23156,8 @@ function vocabCopyAction() {
   if (item.sub) return copyText(subPair(item).filter(Boolean).map(oneLine).join("\n"));
   const own = oneLine(vocabContext(item).sentence || ""), vc = document.getElementById("vocabCard");
   const shown = vocabView === "card" && vc && vc.dataset.lookKey === item.key ? oneLine(vc.dataset.owndef || (vc.dataset.ex === "other" ? vc.dataset.other || "" : "")) : "";
-  const lines = [ shown, own ].filter((t, i, a) => t && a.indexOf(t) === i);
+  const lone = vocabView === "card" && vc && vc.dataset.lookKey === item.key && /^(tat|col)$/.test(vc.dataset.xk || "");
+  const lines = [ shown, lone ? "" : own ].filter((t, i, a) => t && a.indexOf(t) === i);
   copyText(lines.join("\n") || oneLine(item.term));
 }
 

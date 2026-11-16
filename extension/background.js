@@ -262,7 +262,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
   if (area === "local" && (changes.pending || changes.update || changes.settings)) paintBadge();
 });
 
-const DICT_HOSTS = [ "dictionary.cambridge.org", "www.ldoceonline.com", "www.oxfordlearnersdictionaries.com", "www.collinsdictionary.com", "www.merriam-webster.com", "www.vocabulary.com", "api.dictionaryapi.dev", "en.wiktionary.org", "www.mdbg.net", "dict.youdao.com", "jisho.org", "ejje.weblio.jp", "krdict.korean.go.kr" ];
+const DICT_HOSTS = [ "dictionary.cambridge.org", "www.ldoceonline.com", "www.oxfordlearnersdictionaries.com", "www.collinsdictionary.com", "www.merriam-webster.com", "www.vocabulary.com", "api.dictionaryapi.dev", "en.wiktionary.org", "www.mdbg.net", "dict.youdao.com", "jisho.org", "ejje.weblio.jp", "krdict.korean.go.kr", "tatoeba.org", "api.datamuse.com" ];
 
 async function dictFetch(url) {
   const u = new URL(url);

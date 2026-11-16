@@ -71,7 +71,7 @@ Before a word or sentence is translated, stray marks (quotation marks of every k
 
 ## Dictionaries for the app
 
-While the extension is installed, wikiPhidia asks it for dictionary pages a web page cannot load itself: Cambridge (English), Youdao (Chinese, with its Oxford and other example sentences), Jisho and Weblio (Japanese) and the Korean Basic Dictionary (krdict, Korean). The extension only fetches pages from those sites, only for the app, and hands the page back; the app reads the definitions, example sentences and recordings out of it.
+While the extension is installed, wikiPhidia asks it for dictionary pages a web page cannot load itself: Cambridge (English), Youdao (Chinese, with its Oxford and other example sentences), Jisho and Weblio (Japanese) and the Korean Basic Dictionary (krdict, Korean). The extension only fetches pages from those sites, only for the app, and hands the page back; the app reads the definitions, example sentences and recordings out of it. It also fetches, for the app, Tatoeba's example sentences (with their translations) and Datamuse's synonyms, antonyms and common phrases, which the app uses as more questions for the words you study.
 
 ## Privacy
 

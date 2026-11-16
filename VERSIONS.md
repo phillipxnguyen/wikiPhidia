@@ -244,6 +244,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-104 | `1ce6cb1` | ☰ List như trang từ điển: dưới từ là nghĩa của bạn và các nghĩa tiếng Việt gợi ý (theo từ loại), rồi mới tới các thẻ; không cần bấm mở popup |
 | FLASH-105 | `84ef15b` | ☰ List: phần nghĩa trong khung như các thẻ, chữ thẳng cột, cách đều 8px |
 | FLASH-106 | `3ee6b9b` | ☰ List: bỏ khung nghĩa riêng; nghĩa tiếng Việt gợi ý nằm trong thẻ câu của bạn, dưới nghĩa |
+| FLASH-107 | `pending` | Thêm chất liệu câu hỏi cho mọi ngôn ngữ: câu Tatoeba kèm bản dịch, đồng nghĩa/trái nghĩa, kết hợp từ (tiếng Anh), họ từ; luân phiên trong thẻ câu của bạn, không thêm thẻ |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
@@ -594,6 +595,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-79 | `dca64e7` | Extension 1.6.48: Read again thành nút ↻ cạnh ✕ ▾, cùng một việc với nút Make cards của popup |
 | LOOKUP-80 | `386bcf0` | Extension 1.6.49: bỏ nút ▾ thu gọn; thẻ chưa thêm hiện lại khi tạo thẻ lần sau trên trang đó |
 | LOOKUP-81 | `4b67849` | Extension 1.6.51: bỏ viền khi rê chuột trên ô sửa của khung thẻ mới |
+| LOOKUP-82 | `pending` | Extension 1.6.52: cho phép tải Tatoeba và Datamuse cho app |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
