@@ -267,7 +267,7 @@ Hàm chính: `openBlind`, `closeBlind`, `blindItems`, `blindAutoItems`, `blindLi
 | Mã | Commit | Là gì |
 |---|---|---|
 | WORDS-1 | `961cf80` | Cửa sổ Words: dải tần suất, câu của từ, xoá/ẩn từ, bóng thiên thần |
-| WORDS-2 | `pending` | Trang ngôn ngữ: mọi khối cách nhau 32px; From the web bỏ khung, tiêu đề như Waiting for you |
+| WORDS-2 | `21c73f3` | Trang ngôn ngữ: mọi khối cách nhau 32px; From the web bỏ khung, tiêu đề như Waiting for you |
 
 Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `wordFly`.
 
