@@ -127,6 +127,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-71 | `cae72ba` | Danh sách dòng: nhãn giờ căn giữa cụm pinyin + chữ khi bật 拼 |
 | THEATER-72 | `752baca` | Phím M lại chuyển chế độ: bài video ☰ Full ↔ theater, bài chữ ☰ Full ↔ Speaking |
 | THEATER-73 | `eb18bd5` | Nút âm thanh của theater khi đang phát tô trắng đặc (kèm vòng), như mọi công tắc đang bật |
+| THEATER-74 | `pending` | Phụ đề trên video: bản dịch nằm trên câu (máy tính và điện thoại) |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
