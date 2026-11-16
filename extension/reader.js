@@ -118,7 +118,8 @@ textarea[hidden], .sent-view[hidden]{display:none;}
 .lv{flex:none;padding:2px 8px;border-radius:6px;background:var(--green-soft);color:var(--green);font-size:13px;line-height:18px;font-weight:700;white-space:nowrap;cursor:default;}
 .defs{display:flex;flex-direction:column;gap:6px;margin-top:8px;}
 .defs:empty{display:none;}
-.dg{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 8px;align-items:center;}
+.dg{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 8px;align-items:start;}
+.dg.one .dpos{align-self:center;}
 .dg:not(:has(.dpos)){grid-template-columns:minmax(0,1fr);}
 .dg .dpos{grid-row:1;grid-column:1;}
 .dg .dds{display:contents;}
@@ -349,6 +350,12 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
     return at < 0 ? esc(s) : esc(s.slice(0, at)) + "<mark>" + esc(s.slice(at, at + len)) + "</mark>" + esc(s.slice(at + len));
   }
   const dict = window.wkpDict;
+  const posFit = typeof ResizeObserver === "function" ? new ResizeObserver(list => list.forEach(e => {
+    const box = e.target, g = box.closest(".dg");
+    if (!g) return posFit.unobserve(box);
+    const cs = getComputedStyle(box), inner = box.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+    g.classList.toggle("one", inner <= parseFloat(cs.lineHeight) * 1.5);
+  })) : null;
   function defsHtml(r, pick) {
     return (r && r.defs || []).map(g => `<div class="dg">${g.pos ? `<span class="dpos">${esc(g.pos)}</span>` : ""}<div class="dds">${g.d.map(x => {
       const t = typeof x === "string" ? x : x.t, h = typeof x === "string" ? "" : x.h || "";
@@ -377,6 +384,7 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
       const cur = all.find(r => r.src === pick) || all[0];
       if (srcsEl) srcsEl.innerHTML = all.length > 1 ? all.map(r => `<button type="button" class="sp${r === cur ? " on" : ""}" data-src="${esc(r.src)}">${esc(r.src)}</button>`).join("") : "";
       if (defsEl) defsEl.innerHTML = cur ? defsHtml(cur, opts.pick) : all.length || !pendingNow ? "" : '<div class="loading">Looking it up…</div>';
+      if (defsEl && posFit) defsEl.querySelectorAll(".dg > .dds > .dd:first-child").forEach(b => posFit.observe(b));
       const voiced = all.find(r => r.say.some(x => x.k === "UK") && r.say.some(x => x.k === "US")) || all.find(r => r.say.length);
       if (exsEl) {
         const exSrc = cur && cur.ex.length ? cur : all.find(r => r.ex.length);

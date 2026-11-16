@@ -1642,7 +1642,8 @@ window.onYouTubeIframeAPIReady = function(){
   .od-group{display:flex;align-items:flex-start;gap:8px;}
   .od-group:not(.od-mine, .od-defs) > .od-pos{margin-top:1px;}
   .od-defs .od-terms{flex:1;flex-direction:column;align-items:stretch;}
-  .od-group.od-defs{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 8px;align-items:center;}
+  .od-group.od-defs{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 8px;align-items:start;}
+  .od-defs.od-one .od-pos{align-self:center;}
   .od-defs .od-terms{display:contents;}
   .od-defs .od-pos{grid-row:1;grid-column:1;}
   .od-defs .od-term{grid-column:2;}
@@ -11117,6 +11118,17 @@ function guessPos(d) {
   return /^\s*to\s/i.test(d || "") ? "verb" : /^\s*(\(of|of|having|being|very|too|quite)\b/i.test(d || "") ? "adj" : "noun";
 }
 
+const posFitObs = typeof ResizeObserver === "function" ? new ResizeObserver(list => list.forEach(e => {
+  const box = e.target, g = box.closest(".od-defs");
+  if (!g) return posFitObs.unobserve(box);
+  const cs = getComputedStyle(box), inner = box.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+  g.classList.toggle("od-one", inner <= parseFloat(cs.lineHeight) * 1.5);
+})) : null;
+
+function fitPosLabels(root) {
+  if (posFitObs) root.querySelectorAll(".od-defs .od-term").forEach(b => b === b.parentElement.firstElementChild && posFitObs.observe(b));
+}
+
 function odDefsHtml(defs) {
   return (defs || []).map(g => `<div class="od-group od-defs"><span class="od-pos">${escapeHtml(g.pos || guessPos(g.d[0]))}</span><div class="od-terms">${g.d.map(t => `<button type="button" class="od-term od-def" data-m="${escapeAttr(t)}" title="Add this meaning to the meaning line">${escapeHtml(t)}</button>`).join("")}</div></div>`).join("");
 }
@@ -11372,6 +11384,7 @@ function paintOwnDictFloat() {
   pop.notedLine = noted ? noted.lineHtml : "";
   const entry = ownDictEntry(shown.lang, w);
   pop.innerHTML = ownDictCardHtml(shown.lang, w, shown);
+  fitPosLabels(pop);
   const card = pop.querySelector(".od-card"), acts = card.querySelector(".od-acts");
   acts.innerHTML = have ? '<span class="od-done" role="button" title="In your words: click to delete it again">✓ In your words</span><button type="button" class="od-add od-save" hidden>Save</button>' : '<button type="button" class="od-add" title="Add" aria-label="Add"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg><span>Add</span></button>';
   const raw = have ? found ? found.meaning : "" : entry ? entry.m : "";
@@ -21846,6 +21859,7 @@ function wireVocabEditor(items) {
   if (main) main.addEventListener("input", () => syncVocabEditMain(item));
   const chips = term.closest(".vocab-editor").querySelector(".ed-chips");
   const paintChips = () => {
+    if (chips) fitPosLabels(chips);
     if (!chips || !item) return;
     const now = new Set(main ? meaningLines(main.querySelector(".vem-a").innerText) : meaningLines(vocabEditValues().meaning));
     chips.querySelectorAll(".od-term").forEach(b => b.classList.toggle("od-cur", now.has(b.dataset.m)));
