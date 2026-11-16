@@ -56,7 +56,7 @@
 :host{all:initial;}
 .sents{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;width:400px;max-width:calc(100vw - 32px);max-height:min(520px, calc(100vh - 32px));border:1px solid var(--line);border-radius:12px;background:var(--bg);box-shadow:0 16px 40px rgba(10,20,40,.22);overflow:hidden;}
 .sents-list{flex:1;min-height:0;margin:0;padding:0;overflow-y:auto;overscroll-behavior:contain;list-style:none;}
-.sents-list li{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;}
+.sents-list li{display:flex;align-items:flex-start;gap:12px;padding:16px;}
 .sents-list li + li{border-top:1px solid var(--line);}
 .sents-list .st{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;font-size:14px;line-height:20px;overflow-wrap:anywhere;}
 .sents-list mark{border-radius:3px;background:var(--mark);color:inherit;}
@@ -69,7 +69,7 @@
 .sents-list .ed:empty::before{content:attr(data-ph);color:var(--ink-2);opacity:.6;}
 .sents-list .sx{flex:none;display:flex;align-items:center;justify-content:center;width:20px;height:20px;padding:0;border:0;border-radius:10px;background:none;color:var(--ink-2);font-size:12px;line-height:16px;cursor:pointer;}
 .sents-list .sx:hover{background:var(--bg-2);color:var(--ink);}
-.sents-foot{display:flex;align-items:center;gap:0;padding:12px 16px 12px 6px;border-top:1px solid var(--line);background:var(--bg);}
+.sents-foot{display:flex;align-items:center;gap:0;padding:16px 16px 16px 6px;border-top:1px solid var(--line);background:var(--bg);}
 .sents.small .sents-list{display:none;}
 .sents.small .sents-foot{border-top:0;}
 .sents-foot .icon{width:36px;height:36px;padding:0;border-radius:8px;}
