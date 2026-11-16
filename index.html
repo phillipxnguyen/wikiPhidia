@@ -587,9 +587,13 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-list .vocab-list-row[data-key] > .vocab-list-meaning, .vocab-list .vocab-list-meaning > span:first-child{font-size:18px;line-height:26px;}
   .vocab-list .vocab-list-meaning .card-notes{margin-top:16px;font-size:16px;line-height:24px;color:var(--text-2);}
   .vl-sub-list{display:flex;flex-direction:column;gap:8px;}
-  .vl-sub.vl-tied{margin-left:24px;}
-  .vl-sub{display:flex;align-items:center;gap:8px;padding:8px;border:1px solid var(--border);border-radius:10px;background:var(--surface);font-size:16px;line-height:24px;cursor:default;}
-  .vl-sub-k{flex:none;min-width:48px;padding:0 6px;border-radius:6px;background:color-mix(in srgb, var(--text) 7%, transparent);color:var(--text-2);font-size:13px;line-height:24px;font-weight:700;text-align:center;}
+  .vl-sense{display:flex;flex-direction:column;gap:8px;padding:8px;border:1px solid var(--border);border-radius:10px;background:var(--surface);}
+  .vl-sense > .vl-sub{padding:0 12px 0 4px;}
+  .vl-sub{display:flex;align-items:center;gap:8px;font-size:16px;line-height:24px;cursor:default;}
+  .vl-sub-k{display:inline-block;margin:2px 8px 0 0;padding:0 6px;border-radius:6px;background:color-mix(in srgb, var(--text) 7%, transparent);color:var(--text-2);font-size:13px;line-height:20px;font-weight:700;vertical-align:top;}
+  .vl-exs{display:flex;flex-direction:column;gap:4px;padding:8px 12px;border-radius:8px;background:color-mix(in srgb, var(--text) 4%, transparent);}
+  .vl-exs.many .vl-ex{position:relative;padding-left:16px;}
+  .vl-exs.many .vl-ex::before{content:"";position:absolute;left:2px;top:9px;width:6px;height:6px;border-radius:3px;background:var(--text-2);}
   .vl-sub-t{flex:1;min-width:0;color:var(--text);}
   .vl-sub-t mark{padding:0 2px;border-radius:4px;background:var(--word-mark);color:inherit;}
   .vocab-list-meaning > .vl-subs:first-child{margin-top:0;}
@@ -603,7 +607,7 @@ window.onYouTubeIframeAPIReady = function(){
   .vl-sub-st{flex:none;font-size:16px;line-height:24px;}
   .vl-sub-del{flex:none;width:24px;height:24px;padding:0;border:0;border-radius:12px;background:none;color:var(--text-2);font-size:13px;line-height:24px;cursor:pointer;}
   @media (hover:hover){.vl-sub-del:hover{background:var(--danger-soft, rgba(220,60,60,.12));color:var(--danger, #c0392b);}}
-  @media (max-width:600px){.vl-sub{display:grid;grid-template-columns:auto minmax(0, 1fr) auto auto;column-gap:8px;row-gap:4px;}.vl-sub-k{grid-column:1;grid-row:1 / 3;}.vl-sub-t{grid-column:2;grid-row:1;}.vl-sub-s{grid-column:2;grid-row:2;line-height:16px;}.vl-sub-st{grid-column:3;grid-row:1 / 3;}.vl-sub-del{grid-column:4;grid-row:1 / 3;}}
+  @media (max-width:600px){.vl-sub{display:grid;grid-template-columns:minmax(0, 1fr) auto auto;column-gap:8px;row-gap:4px;}.vl-sub-t{grid-column:1;grid-row:1;}.vl-sub-s{grid-column:1;grid-row:2;line-height:16px;}.vl-sub-st{grid-column:2;grid-row:1 / 3;}.vl-sub-del{grid-column:3;grid-row:1 / 3;}}
   .vocab-list-row[data-key] > .vocab-list-meaning{font-size:20px;}
   .vocab-list-row[data-key] > .vocab-list-term{font-weight:400;color:var(--accent);}
   @media (prefers-reduced-motion: reduce){.vocab-card-inner{transition:none;}}
@@ -20862,14 +20866,19 @@ function currentVocabItem() {
 }
 
 function cardsListHtml(head, subs) {
+  const tail = x => `${x.sub && x.sub.s && x.sub.kind === "def" ? `<span class="vl-sub-s">${escapeHtml(x.sub.s)}</span>` : ""}<span class="vl-sub-st">${vocabStatusIcon(vocabStateOf(x))}</span><button type="button" class="vl-sub-del" aria-label="Delete this card" title="Delete this card">✕</button>`;
+  const tag = t => `<span class="vl-sub-k">${escapeHtml(t)}</span>`;
   const own = head.entries.map(e => {
     const sentence = vocabContext(e).sentence || "", noted = noteSentence(e), rest = noted ? noted.rest.replace(/^(\s|<br\s*\/?>|<div>\s*<\/div>)+/i, "") : wordNotesOf(e);
-    const mean = `<span class="vl-sub-m">${meaningHtml(e.meaning)}</span>`;
-    return `<div class="vl-sub vl-own" data-sub="${escapeAttr(e.key)}"><span class="vl-sub-k">${sentence ? "sent" : "word"}</span><span class="vl-sub-t">${sentence ? `<span class="vl-sub-q">${vocabSentenceHtml(sentence, e.term, e.card)}</span>` : ""}${mean}${rest ? `<span class="vl-sub-n card-notes">${rest}</span>` : ""}</span><span class="vl-sub-st">${vocabStatusIcon(vocabStateOf(e))}</span><button type="button" class="vl-sub-del" aria-label="Delete this card" title="Delete this card">✕</button></div>`;
+    const mean = `<span class="vl-sub-m">${sentence ? "" : tag("word")}${meaningHtml(e.meaning)}</span>`;
+    return `<div class="vl-sense"><div class="vl-sub vl-own" data-sub="${escapeAttr(e.key)}"><span class="vl-sub-t">${sentence ? `<span class="vl-sub-q">${tag("sent")}${vocabSentenceHtml(sentence, e.term, e.card)}</span>` : ""}${mean}${rest ? `<span class="vl-sub-n card-notes">${rest}</span>` : ""}</span>${tail(e)}</div></div>`;
   });
-  const defT = new Set(subs.filter(x => x.sub.kind === "def").map(x => x.sub.t)), tied = x => x.sub.kind === "ex" && defT.has(x.sub.of);
-  subs = subs.filter(x => !tied(x)).flatMap(x => x.sub.kind === "def" ? [ x ].concat(subs.filter(y => tied(y) && y.sub.of === x.sub.t)) : [ x ]);
-  const lines = own.concat(subs.map(x => `<div class="vl-sub${tied(x) ? " vl-tied" : ""}" data-sub="${escapeAttr(x.key)}"><span class="vl-sub-k">${x.sub.kind === "def" ? escapeHtml(x.sub.p || "def") : "ex"}</span><span class="vl-sub-t">${x.sub.kind === "ex" ? vocabSentenceHtml(x.sub.t, head.term, head.card) : escapeHtml(x.sub.t)}${x.sub.kind === "ex" && x.sub.tr ? `<span class="vl-sub-m">${escapeHtml(x.sub.tr)}</span>` : ""}</span>${x.sub.s ? `<span class="vl-sub-s">${escapeHtml(x.sub.s)}</span>` : ""}<span class="vl-sub-st">${vocabStatusIcon(vocabStateOf(x))}</span><button type="button" class="vl-sub-del" aria-label="Delete this card" title="Delete this card">✕</button></div>`));
+  const exRow = x => `<div class="vl-sub vl-ex" data-sub="${escapeAttr(x.key)}"><span class="vl-sub-t">${vocabSentenceHtml(x.sub.t, head.term, head.card)}${x.sub.tr ? `<span class="vl-sub-m">${escapeHtml(x.sub.tr)}</span>` : ""}</span>${tail(x)}</div>`;
+  const exBox = list => list.length ? `<div class="vl-exs${list.length > 1 ? " many" : ""}">${list.map(exRow).join("")}</div>` : "";
+  const defs = subs.filter(x => x.sub.kind === "def"), defT = new Set(defs.map(x => x.sub.t));
+  const exs = subs.filter(x => x.sub.kind === "ex"), loose = exs.filter(x => !defT.has(x.sub.of));
+  const senses = defs.map(d => `<div class="vl-sense"><div class="vl-sub" data-sub="${escapeAttr(d.key)}"><span class="vl-sub-t">${tag(d.sub.p || "def")}${escapeHtml(d.sub.t)}</span>${tail(d)}</div>${exBox(exs.filter(x => x.sub.of === d.sub.t))}</div>`);
+  const lines = own.concat(senses, loose.length ? [ `<div class="vl-sense vl-loose">${exBox(loose)}</div>` ] : []);
   return lines.length ? `<div class="vl-subs"><div class="vl-sub-list">${lines.join("")}</div></div>` : "";
 }
 
