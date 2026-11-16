@@ -563,6 +563,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-65 | `d7a9ff2` | Extension 1.6.35: mỗi định nghĩa giữ ví dụ đi kèm trong từ điển; bộ nhớ từ điển mới (dictCache4) |
 | LOOKUP-66 | `c063728` | Extension 1.6.36: bỏ hàng IPA/US-UK (đã có 🔊 riêng); cấp độ (A1…) lên hàng trên cùng của thẻ thêm từ |
 | LOOKUP-67 | `d12cf27` | Nhãn từ loại (verb, noun…) nằm giữa thanh định nghĩa đầu tiên, trong app và extension 1.6.37 |
+| LOOKUP-68 | `pending` | Extension 1.6.38: sẵn sàng cho Edge Add-ons (gói store/Extension-store.zip, privacy.html, ảnh, mô tả, workflow tự đẩy bản mới); bản cài từ cửa hàng không hiện banner cập nhật |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 

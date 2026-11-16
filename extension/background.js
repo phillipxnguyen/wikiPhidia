@@ -197,6 +197,10 @@ const newer = (a, b) => {
 };
 
 async function checkUpdate() {
+  if (chrome.runtime.getManifest().update_url) {
+    await chrome.storage.local.set({ update: null });
+    return paintBadge();
+  }
   try {
     const res = await fetch(MANIFEST_URL + "?t=" + Date.now(), { cache: "no-store" });
     if (!res.ok) return;

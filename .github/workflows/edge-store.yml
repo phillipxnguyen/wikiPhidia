@@ -1,0 +1,37 @@
+name: Edge Add-ons
+
+on:
+  push:
+    branches: [ main ]
+    paths: [ "extension/manifest.json" ]
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      PRODUCT_ID: ${{ secrets.EDGE_PRODUCT_ID }}
+      CLIENT_ID: ${{ secrets.EDGE_CLIENT_ID }}
+      API_KEY: ${{ secrets.EDGE_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Skip until the store keys are set
+        id: keys
+        run: |
+          if [ -z "$PRODUCT_ID" ] || [ -z "$CLIENT_ID" ] || [ -z "$API_KEY" ]; then echo "ready=no" >> "$GITHUB_OUTPUT"; else echo "ready=yes" >> "$GITHUB_OUTPUT"; fi
+      - name: Upload the new package
+        if: steps.keys.outputs.ready == 'yes'
+        run: |
+          python3 extension/make-zip.py
+          base="https://api.addons.microsoftedge.microsoft.com/v1/products/$PRODUCT_ID/submissions"
+          loc=$(curl -sS -D - -o /dev/null -X POST "$base/draft/package" -H "Authorization: ApiKey $API_KEY" -H "X-ClientID: $CLIENT_ID" -H "Content-Type: application/zip" --data-binary @store/Extension-store.zip | tr -d '\r' | awk 'tolower($1)=="location:"{print $2}')
+          test -n "$loc"
+          for i in $(seq 1 30); do
+            st=$(curl -sS "$base/draft/package/operations/$loc" -H "Authorization: ApiKey $API_KEY" -H "X-ClientID: $CLIENT_ID")
+            echo "$st"
+            echo "$st" | grep -q '"status":"Succeeded"' && break
+            echo "$st" | grep -q '"status":"Failed"' && exit 1
+            sleep 10
+          done
+          echo "$st" | grep -q '"status":"Succeeded"'
+          curl -sS -f -X POST "$base" -H "Authorization: ApiKey $API_KEY" -H "X-ClientID: $CLIENT_ID" -H "Content-Type: application/json" -d "{\"notes\":\"Version $(python3 -c "import json;print(json.load(open('extension/manifest.json'))['version'])")\"}"

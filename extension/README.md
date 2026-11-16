@@ -2,7 +2,11 @@
 
 A browser extension for reading on the web (news, articles, any page) that picks up new words and sends them straight into wikiPhidia's Vocabulary, with their meaning, the sentence they came from and the page's title, and that turns any YouTube video into a lesson with one click.
 
-## Install (Chrome, Edge, Brave, Arc)
+## Install from the Edge Add-ons store
+
+Once the store has approved it, wikiPhidia is installed from its Microsoft Edge Add-ons page with one click (Get), with nothing to download or unzip, and the store keeps it up to date by itself (the ↑ badge and the update banner below never show for it). Its listing, screenshots and package are in `store/`; `privacy.html` is its privacy policy.
+
+## Install by hand (Chrome, Edge, Brave, Arc)
 
 1. Download [Extension.zip](https://github.com/phillipxnguyen/wikiPhidia/raw/main/Extension.zip) and unzip it: it gives a folder named `Extension` (or pull this repository and use its `extension` folder).
 2. Open `chrome://extensions` (`edge://extensions` in Edge) and turn on **Developer mode**.
@@ -12,7 +16,7 @@ A browser extension for reading on the web (news, articles, any page) that picks
 
 ## Updating
 
-The extension checks GitHub for a newer version every time you open its popup (and when the browser starts). When there is one, the icon shows a blue **↑** and the popup a banner: **Download** gets Extension.zip, which unzips to a folder named `Extension`; put its files in place of those in the folder you loaded, then press **Reload** right there (no need to open `chrome://extensions`). **Settings** shows the version you have and has a **Reload extension** button too.
+A copy installed by hand checks GitHub for a newer version every time you open its popup (and when the browser starts). When there is one, the icon shows a blue **↑** and the popup a banner: **Download** gets Extension.zip, which unzips to a folder named `Extension`; put its files in place of those in the folder you loaded, then press **Reload** right there (no need to open `chrome://extensions`). **Settings** shows the version you have and has a **Reload extension** button too.
 
 After an update or a reload, pages that are already open pick up the new version by themselves (no need to reload them): saving words and marking them keep working at once.
 
