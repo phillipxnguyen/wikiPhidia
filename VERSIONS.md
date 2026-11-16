@@ -577,7 +577,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-77 | `32ae248` | Extension 1.6.46: khung thẻ mới bỏ tiêu đề, thẻ cách nhau bằng đường kẻ, nút ✕ ▾ Read again Add N cards ở đáy, cân đối |
 | LOOKUP-78 | `d38b8fa` | Extension 1.6.47: khung thẻ mới lề đều 16px mọi phía (thẻ đầu không sát viền trên) |
 | LOOKUP-79 | `dca64e7` | Extension 1.6.48: Read again thành nút ↻ cạnh ✕ ▾, cùng một việc với nút Make cards của popup |
-| LOOKUP-80 | `pending` | Extension 1.6.49: bỏ nút ▾ thu gọn; thẻ chưa thêm hiện lại khi tạo thẻ lần sau trên trang đó |
+| LOOKUP-80 | `386bcf0` | Extension 1.6.49: bỏ nút ▾ thu gọn; thẻ chưa thêm hiện lại khi tạo thẻ lần sau trên trang đó |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
