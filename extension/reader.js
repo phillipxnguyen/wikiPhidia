@@ -64,7 +64,6 @@
 .sents-list .st b{font-size:14px;line-height:20px;font-weight:700;color:var(--green);}
 .sents-list .st small{font-size:13px;line-height:20px;color:var(--ink-2);}
 .sents-list .ed{min-width:24px;margin:0 -4px;padding:0 4px;border-radius:4px;outline:none;cursor:text;}
-.sents-list .ed:hover{box-shadow:inset 0 0 0 1px var(--line);}
 .sents-list .ed:focus{background:var(--bg);box-shadow:inset 0 0 0 2px var(--green);}
 .sents-list .ed:empty::before{content:attr(data-ph);color:var(--ink-2);opacity:.6;}
 .sents-list .sx{flex:none;display:flex;align-items:center;justify-content:center;width:20px;height:20px;padding:0;border:0;border-radius:10px;background:none;color:var(--ink-2);font-size:12px;line-height:16px;cursor:pointer;}
