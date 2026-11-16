@@ -568,6 +568,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-69 | `2b0a0c0` | Nhãn từ loại: định nghĩa đầu 1 dòng thì nằm giữa, nhiều dòng thì ngang viền trên (app và extension 1.6.39) |
 | LOOKUP-70 | `bdd6ca3` | Extension 1.6.40: thu thập câu (Alt + click từng câu, Collect all cả trang), khung xem trước góc trang; câu thành thẻ trong bài mang tên trang |
 | LOOKUP-71 | `0ac2e05` | Extension 1.6.41: thu thập chỉ câu chứa từ đã có; mỗi câu thành thẻ ví dụ của từ đó (không thành thẻ Lessons), giữ lại khi tra từ điển lại |
+| LOOKUP-72 | `pending` | Extension 1.6.42: bỏ Alt+click và dòng hướng dẫn, ✕ không nhảy về đầu danh sách, popup cách đều 16px, nút Collect hiện tên trang |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 

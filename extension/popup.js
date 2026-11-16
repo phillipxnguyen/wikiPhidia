@@ -154,6 +154,7 @@ chrome.tabs.query({ active: true, currentWindow: true }).then(([ tab ]) => {
     video = /(^|\.)youtube\.com$/.test(u.hostname) && (!!u.searchParams.get("v") || /\/(shorts|live)\/[\w-]{11}/.test(u.pathname));
   } catch {}
   if (/^https?:/.test(tab.url) && !/^https:\/\/phillipxnguyen\.github\.io\//.test(tab.url)) {
+    $("collectTitle").textContent = tab.title || "";
     $("collect").hidden = false;
     $("collect").onclick = () => chrome.tabs.sendMessage(tab.id, { type: "collectAll" }).catch(() => {}).finally(() => window.close());
   }

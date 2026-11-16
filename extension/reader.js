@@ -64,13 +64,11 @@
 .sents-list mark{border-radius:3px;background:var(--mark);color:inherit;}
 .sents-list .sx{flex:none;width:20px;height:20px;padding:0;border:0;border-radius:10px;background:none;color:var(--ink-2);font-size:12px;line-height:20px;cursor:pointer;}
 .sents-list .sx:hover{background:var(--line);color:var(--ink);}
-.sents-tip{padding:12px 16px;color:var(--ink-2);font-size:13px;line-height:20px;}
 .sents-foot{display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:12px;border-top:1px solid var(--line);}
-.sents.small .sents-list, .sents.small .sents-foot, .sents.small .sents-tip{display:none;}
+.sents.small .sents-list, .sents.small .sents-foot{display:none;}
 .sents.small .sents-top{border-bottom:0;}
 .ghost{flex:none;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit;cursor:pointer;}
 .ghost:hover{border-color:var(--green);color:var(--green);}
-.flash{position:fixed;border-radius:4px;background:var(--green-soft);outline:2px solid var(--green);pointer-events:none;transition:opacity .6s ease;}
 *{box-sizing:border-box;}
 .wrap{--sel:#b9d4fb;--green:#1e9466;--green-soft:rgba(30,148,102,.12);--ink:#1d2330;--ink-2:#5e6878;--line:#dfe4ec;--bg:#fff;--bg-2:#f4f6fa;--answer:#1b6b44;--mark:rgba(255,206,40,.55);font:14px/20px Inter, system-ui, -apple-system, "Segoe UI", sans-serif;color:var(--ink);}
 @media (prefers-color-scheme: dark){.wrap{--sel:#2a4f80;--green:#3cc48d;--green-soft:rgba(60,196,141,.16);--ink:#e8ecf3;--ink-2:#9aa4b4;--line:#323a48;--bg:#1b2029;--bg-2:#242a35;--answer:#6fd3a0;--mark:rgba(240,190,40,.38);}}
@@ -975,9 +973,13 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
         const b = e.target.closest("button");
         if (!b) return;
         if (b.classList.contains("sx")) {
+          const list = sentsEl.querySelector(".sents-list"), top = list ? list.scrollTop : 0;
           sents.splice(Number(b.dataset.i), 1);
           saveDraft();
-          return paintSents();
+          paintSents();
+          const again = sentsEl && sentsEl.querySelector(".sents-list");
+          if (again) again.scrollTop = top;
+          return;
         }
         if (b.dataset.act === "all") {
           const n = addSentences(pageSentences());
@@ -1006,7 +1008,7 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
       });
       return html;
     };
-    sentsEl.innerHTML = `<div class="sents-top"><b>Sentences for your words · ${sents.length}</b><button type="button" class="icon" data-act="min" title="${sentsSmall ? "Show" : "Hide"} the list">${sentsSmall ? "▴" : "▾"}</button><button type="button" class="icon" data-act="close" title="Clear and close">✕</button></div>${sents.length ? `<ul class="sents-list">${sents.map((t, i) => `<li><span class="st">${marked(t)}</span><button type="button" class="sx" data-i="${i}" title="Leave this one out">✕</button></li>`).join("")}</ul>` : ""}<div class="sents-tip">Alt + click a sentence that holds one of your words, or collect them all. Each becomes an example card of its word.</div><div class="sents-foot"><button type="button" class="ghost" data-act="all">Collect all</button><button type="button" class="btn" data-act="send"${sents.length ? "" : " disabled"}>Send ${sents.length || ""} to wikiPhidia</button></div>`;
+    sentsEl.innerHTML = `<div class="sents-top"><b>Sentences for your words · ${sents.length}</b><button type="button" class="icon" data-act="min" title="${sentsSmall ? "Show" : "Hide"} the list">${sentsSmall ? "▴" : "▾"}</button><button type="button" class="icon" data-act="close" title="Clear and close">✕</button></div>${sents.length ? `<ul class="sents-list">${sents.map((t, i) => `<li><span class="st">${marked(t)}</span><button type="button" class="sx" data-i="${i}" title="Leave this one out">✕</button></li>`).join("")}</ul>` : ""}<div class="sents-foot"><button type="button" class="ghost" data-act="all">Collect all</button><button type="button" class="btn" data-act="send"${sents.length ? "" : " disabled"}>Send ${sents.length || ""} to wikiPhidia</button></div>`;
     wrap.appendChild(sentsEl);
   }
   function pageSentences() {
@@ -1044,42 +1046,6 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
     sentsEl = null;
     toast(`${list.length} sentence${list.length === 1 ? "" : "s"} sent to your words`);
   }
-  function flashRange(range) {
-    mount();
-    [ ...range.getClientRects() ].slice(0, 12).forEach(r => {
-      const f = document.createElement("div");
-      f.className = "flash";
-      Object.assign(f.style, { left: Math.round(r.left - 2) + "px", top: Math.round(r.top - 2) + "px", width: Math.round(r.width + 4) + "px", height: Math.round(r.height + 4) + "px" });
-      wrap.appendChild(f);
-      setTimeout(() => f.style.opacity = "0", 400);
-      setTimeout(() => f.remove(), 1100);
-    });
-  }
-  document.addEventListener("click", e => {
-    if (!e.altKey || e.metaKey || e.ctrlKey || e.shiftKey || gone() || !on() || e.composedPath().includes(host)) return;
-    const c = document.caretRangeFromPoint ? document.caretRangeFromPoint(e.clientX, e.clientY) : (p => {
-      if (!p) return null;
-      const r = document.createRange();
-      r.setStart(p.offsetNode, p.offset);
-      return r;
-    })(document.caretPositionFromPoint && document.caretPositionFromPoint(e.clientX, e.clientY));
-    if (!c || c.startContainer.nodeType !== 3 || c.startContainer.parentElement.closest("[contenteditable]:not([contenteditable=false]), textarea, input")) return;
-    const node = c.startContainer, text = node.nodeValue;
-    let a = c.startOffset, b = c.startOffset;
-    while (a > 0 && /\S/.test(text[a - 1])) a--;
-    while (b < text.length && /\S/.test(text[b])) b++;
-    if (a === b) return;
-    const word = document.createRange();
-    word.setStart(node, a);
-    word.setEnd(node, b);
-    const t = sentenceAround(word, text.slice(a, b));
-    if (!t || t.length < 2) return;
-    e.preventDefault();
-    e.stopPropagation();
-    if (!wordsIn(t).length) return toast("No word of yours in this sentence");
-    flashRange(word);
-    if (!addSentences([ t ])) toast("Already collected");
-  }, true);
   chrome.storage.local.get("sentDrafts").then(({ sentDrafts }) => {
     const d = sentDrafts && sentDrafts[draftKey()];
     if (d && d.list && d.list.some(x => x && x.t) && !gone()) {
