@@ -596,9 +596,7 @@ window.onYouTubeIframeAPIReady = function(){
   .ed-sub-h + .ed-sub-row{margin-top:8px;}
   .ed-sub-pos{flex:none;margin-top:1px;padding:0 8px;border-radius:6px;background:color-mix(in srgb, var(--text) 7%, transparent);color:var(--text-2);font-size:14px;line-height:24px;font-weight:700;}
   .ed-sub-row .sub-text{flex:1;min-width:0;}
-  .vl-dict + .vl-subs{margin-top:8px;}
-  .vl-dict{display:flex;flex-direction:column;gap:8px;margin-bottom:0;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface);}
-  .vl-dict-m{font-size:18px;line-height:26px;font-weight:700;color:var(--a-text);}
+  .vl-dict{display:flex;flex-direction:column;gap:8px;margin-top:8px;}
   .vl-dict-g{display:flex;flex-wrap:wrap;align-items:center;gap:8px;}
   .vl-dict-g .vl-sub-k{margin:0;}
   .vl-dict-t{padding:0 10px;border:1px solid var(--border);border-radius:14px;font-size:15px;line-height:26px;color:var(--text);}
@@ -20924,14 +20922,13 @@ let listDictBusy = false, listDictRepaint = 0;
 function wordDictHeadHtml(head) {
   const lang = detectLang(head.term).split("-")[0], e = ownDictEntry(lang, head.term);
   if (!e && [ "en", "zh", "ja", "ko" ].includes(lang) && !odLong(head.term)) wantListDict(lang, head.term);
-  const mine = [ ...new Set(head.entries.flatMap(x => meaningLines(x.meaning || ""))) ];
+  const mine = new Set(head.entries.flatMap(x => meaningLines(x.meaning || "")));
   const groups = e ? e.groups || (e.alts && e.alts.length ? [ {
     pos: "",
     terms: e.alts
   } ] : []) : [];
-  const rows = groups.map(g => [ g.pos, g.terms.filter(t => !mine.includes(t)) ]).filter(g => g[1].length);
-  if (!mine.length && !rows.length) return "";
-  return `<div class="vl-dict">${mine.length ? `<div class="vl-dict-m">${mine.map(escapeHtml).join(" · ")}</div>` : ""}${rows.map(([pos, terms]) => `<div class="vl-dict-g">${pos ? `<span class="vl-sub-k">${escapeHtml(pos)}</span>` : ""}${terms.map(t => `<span class="vl-dict-t">${escapeHtml(t)}</span>`).join("")}</div>`).join("")}</div>`;
+  const rows = groups.map(g => [ g.pos, g.terms.filter(t => !mine.has(t)) ]).filter(g => g[1].length);
+  return rows.length ? `<span class="vl-dict">${rows.map(([pos, terms]) => `<span class="vl-dict-g">${pos ? `<span class="vl-sub-k">${escapeHtml(pos)}</span>` : ""}${terms.map(t => `<span class="vl-dict-t">${escapeHtml(t)}</span>`).join("")}</span>`).join("")}</span>` : "";
 }
 
 function wantListDict(lang, w) {
@@ -20961,10 +20958,10 @@ async function pumpListDict() {
 function cardsListHtml(head, subs) {
   const tail = x => `${x.sub && x.sub.s && x.sub.kind === "def" && !x.sub.mine ? `<span class="vl-sub-s">${escapeHtml(x.sub.s)}</span>` : ""}<span class="vl-sub-st">${vocabStatusIcon(vocabStateOf(x))}</span><button type="button" class="vl-sub-del" aria-label="Delete this card" title="Delete this card">✕</button>`;
   const tag = t => `<span class="vl-sub-k">${escapeHtml(t)}</span>`;
-  const own = head.entries.map(e => {
+  const own = head.entries.map((e, i) => {
     const sentence = vocabContext(e).sentence || "", noted = noteSentence(e), rest = noted ? noted.rest.replace(/^(\s|<br\s*\/?>|<div>\s*<\/div>)+/i, "") : wordNotesOf(e);
     const mean = `<span class="vl-sub-m">${meaningHtml(e.meaning)}</span>`;
-    return `<div class="vl-sense"><div class="vl-sub vl-own" data-sub="${escapeAttr(e.key)}"><span class="vl-sub-t">${sentence ? `<span class="vl-sub-q">${vocabSentenceHtml(sentence, e.term, e.card)}</span>` : ""}${mean}${rest ? `<span class="vl-sub-n card-notes">${rest}</span>` : ""}</span>${tail(e)}</div></div>`;
+    return `<div class="vl-sense"><div class="vl-sub vl-own" data-sub="${escapeAttr(e.key)}"><span class="vl-sub-t">${sentence ? `<span class="vl-sub-q">${vocabSentenceHtml(sentence, e.term, e.card)}</span>` : ""}${mean}${i ? "" : wordDictHeadHtml(head)}${rest ? `<span class="vl-sub-n card-notes">${rest}</span>` : ""}</span>${tail(e)}</div></div>`;
   });
   const exRow = x => `<div class="vl-sub vl-ex" data-sub="${escapeAttr(x.key)}"><span class="vl-sub-t"><span class="vl-x">${vocabSentenceHtml(x.sub.t, head.term, head.card)}</span>${x.sub.m ? `<span class="vl-sub-m">${meaningHtml(x.sub.m)}</span>` : ""}${x.sub.tr ? `<span class="vl-sub-m">${escapeHtml(x.sub.tr)}</span>` : ""}</span>${tail(x)}</div>`;
   const exBox = list => list.length ? `<div class="vl-exs${list.length > 1 ? " many" : ""}">${list.map(exRow).join("")}</div>` : "";
@@ -21935,7 +21932,7 @@ function renderVocab() {
   const open = !studyOnly && (vocabView === "list" || caughtUp) || !!vocabEditingKey && (vocabEditingInList || vocabEditingKey === NEW_WORD_KEY);
   list.hidden = items.length ? !open : vocabEditingKey !== NEW_WORD_KEY;
   queueMicrotask(() => fitHighlights(list));
-  list.innerHTML = adder + (list.hidden ? "" : shown.map(item => `<div class="vocab-list-row" data-key="${escapeAttr(item.key)}"><span class="vocab-list-term">${escapeHtml(item.term)}</span><span class="vocab-list-meaning">${wordDictHeadHtml(item)}${cardsListHtml(item, subsOf.get(item.tkey) || [])}</span></div>`).join("") + (more ? `<button id="vocabMore" class="vocab-more ghost">Show ${more} more</button>` : ""));
+  list.innerHTML = adder + (list.hidden ? "" : shown.map(item => `<div class="vocab-list-row" data-key="${escapeAttr(item.key)}"><span class="vocab-list-term">${escapeHtml(item.term)}</span><span class="vocab-list-meaning">${cardsListHtml(item, subsOf.get(item.tkey) || [])}</span></div>`).join("") + (more ? `<button id="vocabMore" class="vocab-more ghost">Show ${more} more</button>` : ""));
   watchVocabMore();
   if (emptyLesson) {
     vocabSession = null;
