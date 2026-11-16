@@ -587,6 +587,7 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-list .vocab-list-row[data-key] > .vocab-list-meaning, .vocab-list .vocab-list-meaning > span:first-child{font-size:18px;line-height:26px;}
   .vocab-list .vocab-list-meaning .card-notes{margin-top:16px;font-size:16px;line-height:24px;color:var(--text-2);}
   .vl-sub-list{display:flex;flex-direction:column;gap:8px;}
+  .vl-sub.vl-tied{margin-left:24px;}
   .vl-sub{display:flex;align-items:center;gap:8px;padding:8px;border:1px solid var(--border);border-radius:10px;background:var(--surface);font-size:16px;line-height:24px;cursor:default;}
   .vl-sub-k{flex:none;min-width:48px;padding:0 6px;border-radius:6px;background:color-mix(in srgb, var(--text) 7%, transparent);color:var(--text-2);font-size:13px;line-height:24px;font-weight:700;text-align:center;}
   .vl-sub-t{flex:1;min-width:0;color:var(--text);}
@@ -10691,7 +10692,7 @@ function extLookup(lang, w) {
 }
 
 function flattenDict(list) {
-  const defs = [], ex = [], seenD = new Set, seenE = new Set;
+  const defs = [], ex = [], seenD = new Set, seenE = new Set, ties = new Map;
   (list || []).forEach(r => {
     if (!r || typeof r !== "object") return;
     const src = String(r.src || "");
@@ -10700,6 +10701,8 @@ function flattenDict(list) {
       if (!t || t.length > 300 || seenD.has(k)) return;
       seenD.add(k);
       const xt = String(x && x.x && x.x.t || "").replace(/\s+/g, " ").trim();
+      const xs = (x && Array.isArray(x.xs) ? x.xs : x && x.x ? [ x.x ] : []).map(y => String(y && y.t || "").replace(/\s+/g, " ").trim()).filter(y => y && y.length <= 300);
+      xs.forEach(y => ties.has(y.toLowerCase()) || ties.set(y.toLowerCase(), t));
       defs.push(Object.assign({
         s: src,
         p: String(g.pos || ""),
@@ -10719,11 +10722,18 @@ function flattenDict(list) {
         t: t,
         tr: String(x.tr || "")
       });
+      const own = ex[ex.length - 1];
+      own.k = k;
     });
+  });
+  ex.forEach(x => {
+    const of = ties.get(x.k);
+    delete x.k;
+    if (of) x.of = of;
   });
   return {
     at: Date.now(),
-    v: 1,
+    v: 2,
     defs: defs,
     ex: ex
   };
@@ -10770,7 +10780,7 @@ async function wordDictPump() {
   let pick = null;
   for (const w of Object.keys(worlds)) {
     if (![ "en", "zh", "ja", "ko" ].includes(w)) continue;
-    pick = worlds[w].find(i => !i.sub && (i.meaning || "").trim() && !(idx.get(i.tkey) || {}).v && !wordDictTried.has(w + "|" + i.tkey) && !odLong(i.term));
+    pick = worlds[w].find(i => !i.sub && (i.meaning || "").trim() && ((idx.get(i.tkey) || {}).v || 0) < 2 && !wordDictTried.has(w + "|" + i.tkey) && !odLong(i.term));
     if (pick) {
       pick.world = w;
       break;
@@ -20518,7 +20528,7 @@ function wordDictIndex() {
     wordDictIdx = new Map;
     library.forEach(l => l.wordDict && Object.keys(l.wordDict).forEach(k => {
       const v = l.wordDict[k];
-      if (v && ((v.defs || []).length || (v.ex || []).length) && (!wordDictIdx.has(k) || v.v && !wordDictIdx.get(k).v)) wordDictIdx.set(k, v);
+      if (v && ((v.defs || []).length || (v.ex || []).length) && (!wordDictIdx.has(k) || (v.v || 0) > (wordDictIdx.get(k).v || 0))) wordDictIdx.set(k, v);
     }));
   }
   return wordDictIdx;
@@ -20610,7 +20620,8 @@ function subItemsOf(item, entry, tk) {
         kind: "ex",
         t: x.t,
         tr: x.tr || "",
-        s: x.s || ""
+        s: x.s || "",
+        of: x.of || ""
       }
     }));
     if (subCache.size > 4000) subCache.clear();
@@ -20856,7 +20867,9 @@ function cardsListHtml(head, subs) {
     const mean = `<span class="vl-sub-m">${meaningHtml(e.meaning)}</span>`;
     return `<div class="vl-sub vl-own" data-sub="${escapeAttr(e.key)}"><span class="vl-sub-k">${sentence ? "sent" : "word"}</span><span class="vl-sub-t">${sentence ? `<span class="vl-sub-q">${vocabSentenceHtml(sentence, e.term, e.card)}</span>` : ""}${mean}${rest ? `<span class="vl-sub-n card-notes">${rest}</span>` : ""}</span><span class="vl-sub-st">${vocabStatusIcon(vocabStateOf(e))}</span><button type="button" class="vl-sub-del" aria-label="Delete this card" title="Delete this card">✕</button></div>`;
   });
-  const lines = own.concat(subs.map(x => `<div class="vl-sub" data-sub="${escapeAttr(x.key)}"><span class="vl-sub-k">${x.sub.kind === "def" ? escapeHtml(x.sub.p || "def") : "ex"}</span><span class="vl-sub-t">${x.sub.kind === "ex" ? vocabSentenceHtml(x.sub.t, head.term, head.card) : escapeHtml(x.sub.t)}${x.sub.kind === "ex" && x.sub.tr ? `<span class="vl-sub-m">${escapeHtml(x.sub.tr)}</span>` : ""}</span>${x.sub.s ? `<span class="vl-sub-s">${escapeHtml(x.sub.s)}</span>` : ""}<span class="vl-sub-st">${vocabStatusIcon(vocabStateOf(x))}</span><button type="button" class="vl-sub-del" aria-label="Delete this card" title="Delete this card">✕</button></div>`));
+  const defT = new Set(subs.filter(x => x.sub.kind === "def").map(x => x.sub.t)), tied = x => x.sub.kind === "ex" && defT.has(x.sub.of);
+  subs = subs.filter(x => !tied(x)).flatMap(x => x.sub.kind === "def" ? [ x ].concat(subs.filter(y => tied(y) && y.sub.of === x.sub.t)) : [ x ]);
+  const lines = own.concat(subs.map(x => `<div class="vl-sub${tied(x) ? " vl-tied" : ""}" data-sub="${escapeAttr(x.key)}"><span class="vl-sub-k">${x.sub.kind === "def" ? escapeHtml(x.sub.p || "def") : "ex"}</span><span class="vl-sub-t">${x.sub.kind === "ex" ? vocabSentenceHtml(x.sub.t, head.term, head.card) : escapeHtml(x.sub.t)}${x.sub.kind === "ex" && x.sub.tr ? `<span class="vl-sub-m">${escapeHtml(x.sub.tr)}</span>` : ""}</span>${x.sub.s ? `<span class="vl-sub-s">${escapeHtml(x.sub.s)}</span>` : ""}<span class="vl-sub-st">${vocabStatusIcon(vocabStateOf(x))}</span><button type="button" class="vl-sub-del" aria-label="Delete this card" title="Delete this card">✕</button></div>`));
   return lines.length ? `<div class="vl-subs"><div class="vl-sub-list">${lines.join("")}</div></div>` : "";
 }
 

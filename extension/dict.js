@@ -2,7 +2,7 @@
   if (window.top !== window || window.wkpDict) return;
   const CJK = /[㐀-鿿豈-﫿]/, KANA = /[぀-ヿ]/, HANGUL = /[가-힯]/;
   const POS = { noun: "noun", verb: "verb", adjective: "adj", adverb: "adv", pronoun: "pron", preposition: "prep", conjunction: "conj", interjection: "interj", abbreviation: "abbr", particle: "part", phrase: "phrase", prefix: "prefix", suffix: "suffix", "phrasal verb": "phrasal verb", idiom: "idiom", determiner: "det", exclamation: "excl", numeral: "num", "proper noun": "noun", n: "noun", v: "verb", adj: "adj", adv: "adv", "명사": "noun", "동사": "verb", "형용사": "adj", "부사": "adv" };
-  const MAX = 600, KEY = "dictCache4";
+  const MAX = 600, KEY = "dictCache5";
   const mem = new Map(), pending = new Map();
   let store = null, storeJob = null;
 
@@ -58,7 +58,11 @@
   };
   const tie = (it, t, tr) => {
     t = (t || "").replace(/\s+/g, " ").trim();
-    if (it && !it.x && t && t.length <= 220) it.x = tr ? { t, tr } : { t };
+    if (!it || !t || t.length > 220) return;
+    const x = tr ? { t, tr } : { t };
+    if (!it.x) it.x = x;
+    it.xs = it.xs || [];
+    if (it.xs.length < 5 && !it.xs.some(y => y.t === t)) it.xs.push(x);
   };
   const pushEx = (ex, t, tr) => {
     t = (t || "").replace(/\s+/g, " ").trim();
@@ -302,7 +306,7 @@
     if (!storeJob) storeJob = new Promise(res => {
       try {
         chrome.storage.local.get(KEY).then(d => res(store = d[KEY] || {}), () => res(store = {}));
-        chrome.storage.local.remove([ "dictCache", "dictCache2", "dictCache3" ]);
+        chrome.storage.local.remove([ "dictCache", "dictCache2", "dictCache3", "dictCache4" ]);
       } catch {
         res(store = {});
       }
