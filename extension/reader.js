@@ -70,8 +70,6 @@
 .sents-list .sx{flex:none;display:flex;align-items:center;justify-content:center;width:20px;height:20px;padding:0;border:0;border-radius:10px;background:none;color:var(--ink-2);font-size:12px;line-height:16px;cursor:pointer;}
 .sents-list .sx:hover{background:var(--bg-2);color:var(--ink);}
 .sents-foot{display:flex;align-items:center;gap:0;padding:16px 16px 16px 6px;border-top:1px solid var(--line);background:var(--bg);}
-.sents.small .sents-list{display:none;}
-.sents.small .sents-foot{border-top:0;}
 .sents-foot .icon{width:36px;height:36px;padding:0;border-radius:8px;}
 .sents-foot .gap{flex:1;}
 .sents-foot .btn{height:36px;padding:0 16px;line-height:20px;}
@@ -934,7 +932,7 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
   }, 800);
   document.addEventListener("yt-navigate-finish", syncYouTube);
 
-  let sents = [], sentsEl = null, sentsSmall = false;
+  let sents = [], sentsEl = null;
   const draftKey = () => location.origin + location.pathname + location.search;
   const VI = /[ăâđêôơưạảấầẩẫậắằẳẵặẹẻẽếềểễệỉịọỏốồổỗộớờởỡợụủứừửữựỳỵỷỹ]/i;
   const sentenceParts = text => (text.replace(/\s+/g, " ").match(/[^.!?。！？]+(?:[.!?。！？]+["'”’)\]]*|$)/g) || []).map(t => t.trim()).filter(t => t.length >= 12 && t.length <= 320 && /[\p{L}]{2}/u.test(t));
@@ -976,7 +974,6 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
     toast(n ? `${n} card${n === 1 ? "" : "s"} found` : "Nothing new to make cards from on this page");
   }
   function paintSents(open) {
-    if (open) sentsSmall = false;
     if (!sents.length && !open && !sentsEl) return;
     mount();
     if (!sentsEl) {
@@ -996,10 +993,6 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
         }
         if (b.dataset.act === "all") return collect();
         if (b.dataset.act === "send") return sendSents();
-        if (b.dataset.act === "min") {
-          sentsSmall = !sentsSmall;
-          return paintSents();
-        }
         if (b.dataset.act === "close") {
           sents = [];
           saveDraft();
@@ -1021,14 +1014,13 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
       });
       ["keydown", "keyup", "keypress", "mousedown", "mouseup"].forEach(t => sentsEl.addEventListener(t, e => e.stopPropagation()));
     }
-    sentsEl.classList.toggle("small", sentsSmall);
     const marked = (t, w) => {
       const e = esc(w).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), edge = !(CJK.test(w) || KANA.test(w));
       return esc(t).replace(new RegExp((edge ? "(?<![\\p{L}\\p{N}])" : "") + e + (edge ? "(?![\\p{L}\\p{N}])" : ""), "giu"), "<mark>$&</mark>");
     };
     const ed = (i, f, tag, html, ph) => `<${tag} class="ed" contenteditable="plaintext-only" spellcheck="false" data-i="${i}" data-f="${f}" data-ph="${ph}">${html}</${tag}>`;
     const row = (x, i) => x.kind === "word" ? ed(i, "term", "b", esc(x.term), "Word or phrase") + ed(i, "meaning", "small", esc(x.meaning), "Meaning") : `<span class="hd">${ed(i, "word", "b", esc(x.word), "Word")}${ed(i, "meaning", "small", esc(x.meaning), "Meaning")}</span>` + ed(i, "t", "span", marked(x.t, x.word), "Sentence") + ed(i, "tr", "small", esc(x.tr || ""), "Translation");
-    sentsEl.innerHTML = `${sents.length ? `<ul class="sents-list">${sents.map((x, i) => `<li><span class="st">${row(x, i)}</span><button type="button" class="sx" data-i="${i}" title="Leave this one out">✕</button></li>`).join("")}</ul>` : ""}<div class="sents-foot"><button type="button" class="icon" data-act="close" title="Clear and close" aria-label="Clear and close">✕</button><button type="button" class="icon" data-act="min" title="${sentsSmall ? "Show" : "Hide"} the cards" aria-label="${sentsSmall ? "Show" : "Hide"} the cards">${sentsSmall ? "▴" : "▾"}</button><button type="button" class="icon" data-act="all" title="Make cards from this page" aria-label="Make cards from this page">↻</button><span class="gap"></span><button type="button" class="btn" data-act="send"${sents.length ? "" : " disabled"}>Add ${sents.length === 1 ? "1 card" : (sents.length || "") + " cards"}</button></div>`;
+    sentsEl.innerHTML = `${sents.length ? `<ul class="sents-list">${sents.map((x, i) => `<li><span class="st">${row(x, i)}</span><button type="button" class="sx" data-i="${i}" title="Leave this one out">✕</button></li>`).join("")}</ul>` : ""}<div class="sents-foot"><button type="button" class="icon" data-act="close" title="Clear and close" aria-label="Clear and close">✕</button><button type="button" class="icon" data-act="all" title="Make cards from this page" aria-label="Make cards from this page">↻</button><span class="gap"></span><button type="button" class="btn" data-act="send"${sents.length ? "" : " disabled"}>Add ${sents.length === 1 ? "1 card" : (sents.length || "") + " cards"}</button></div>`;
     wrap.appendChild(sentsEl);
   }
   function pageItems() {
@@ -1086,8 +1078,6 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
     const items = d && Array.isArray(d.items) ? d.items.filter(x => x && (x.kind === "word" ? x.term : x.t && x.word)) : [];
     if (items.length && !gone()) {
       sents = items;
-      sentsSmall = true;
-      paintSents();
     }
   });
 
