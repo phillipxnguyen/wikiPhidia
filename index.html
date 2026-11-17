@@ -11805,7 +11805,13 @@ function sentenceWordCtx(hit) {
   if (vc) {
     const item = currentVocabItem();
     if (!item || !item.card) return null;
-    const world = vc.dataset.ex === "other" && vc.dataset.other && hit.zone.matches(".vocab-term") ? vc.dataset.other : "";
+    const line = item.sub && hit.range && hit.range.startContainer.parentElement && hit.range.startContainer.parentElement.closest(".vc-sent, .cloze-own");
+    const lineText = line ? (() => {
+      const c = line.cloneNode(true);
+      c.querySelectorAll("button, .vc-def-h, .vc-pos").forEach(x => x.remove());
+      return c.textContent.replace(/\s+/g, " ").trim();
+    })() : "";
+    const world = lineText || (vc.dataset.ex === "other" && vc.dataset.other && hit.zone.matches(".vocab-term") ? vc.dataset.other : "");
     return {
       lang: hit.lang,
       row: item.card,
