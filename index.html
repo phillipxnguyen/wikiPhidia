@@ -600,6 +600,8 @@ window.onYouTubeIframeAPIReady = function(){
   .vl-dict{display:flex;flex-direction:column;gap:8px;margin-top:8px;}
   .vl-dict-g{display:flex;flex-wrap:wrap;align-items:center;gap:8px;}
   .vl-dict-g .vl-sub-k{margin:0;}
+  .vl-dict-x{font-size:14px;line-height:20px;color:var(--text-2);}
+  .vl-dict-x b{margin-right:8px;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;}
   .vl-dict-t{padding:0 10px;border:1px solid var(--border);border-radius:14px;font-size:15px;line-height:26px;color:var(--text);}
   .vl-sense{display:flex;flex-direction:column;gap:8px;padding:8px;border:1px solid var(--border);border-radius:10px;background:var(--surface);}
   .vl-sense > .vl-sub{padding:0 12px 0 4px;}
@@ -21037,7 +21039,9 @@ function wordDictHeadHtml(head) {
     terms: e.alts
   } ] : []) : [];
   const rows = groups.map(g => [ g.pos, g.terms.filter(t => !mine.has(t)) ]).filter(g => g[1].length);
-  return rows.length ? `<span class="vl-dict">${rows.map(([pos, terms]) => `<span class="vl-dict-g">${pos ? `<span class="vl-sub-k">${escapeHtml(pos)}</span>` : ""}${terms.map(t => `<span class="vl-dict-t">${escapeHtml(t)}</span>`).join("")}</span>`).join("")}</span>` : "";
+  const more = (wordDictIndex().get(head.entries[0] && head.entries[0].tkey) || {}).more || {};
+  const extra = [ [ "Similar", more.syn ], [ "Opposite", more.ant ], [ "Phrases", more.col ], [ "Family", more.fam ] ].filter(x => x[1] && x[1].length);
+  return rows.length || extra.length ? `<span class="vl-dict">${rows.map(([pos, terms]) => `<span class="vl-dict-g">${pos ? `<span class="vl-sub-k">${escapeHtml(pos)}</span>` : ""}${terms.map(t => `<span class="vl-dict-t">${escapeHtml(t)}</span>`).join("")}</span>`).join("")}${extra.map(([k, list]) => `<span class="vl-dict-x"><b>${k}</b>${list.map(escapeHtml).join(" · ")}</span>`).join("")}</span>` : "";
 }
 
 function wantListDict(lang, w) {
@@ -21072,12 +21076,12 @@ function cardsListHtml(head, subs) {
     const mean = `<span class="vl-sub-m">${meaningHtml(e.meaning)}</span>`;
     return `<div class="vl-sense"><div class="vl-sub vl-own" data-sub="${escapeAttr(e.key)}"><span class="vl-sub-t">${sentence ? `<span class="vl-sub-q">${vocabSentenceHtml(sentence, e.term, e.card)}</span>` : ""}${mean}${i ? "" : wordDictHeadHtml(head)}${rest ? `<span class="vl-sub-n card-notes">${rest}</span>` : ""}</span>${tail(e)}</div></div>`;
   });
-  const exRow = x => `<div class="vl-sub vl-ex" data-sub="${escapeAttr(x.key)}"><span class="vl-sub-t"><span class="vl-x">${vocabSentenceHtml(x.sub.t, head.term, head.card)}</span>${x.sub.m ? `<span class="vl-sub-m">${meaningHtml(x.sub.m)}</span>` : ""}${x.sub.tr ? `<span class="vl-sub-m">${escapeHtml(x.sub.tr)}</span>` : ""}</span>${tail(x)}</div>`;
+  const exRow = x => `<div class="vl-sub vl-ex" data-sub="${escapeAttr(x.key)}"><span class="vl-sub-t"><span class="vl-x">${vocabSentenceHtml(x.sub.t, head.term, head.card)}</span>${headMeaning(x) ? `<span class="vl-sub-m">${meaningHtml(headMeaning(x))}</span>` : ""}</span>${tail(x)}</div>`;
   const exBox = list => list.length ? `<div class="vl-exs${list.length > 1 ? " many" : ""}">${list.map(exRow).join("")}</div>` : "";
   const defs = subs.filter(x => x.sub.kind === "def");
   const loose = subs.filter(x => x.sub.kind === "ex");
   const plainBox = list => list.length ? `<div class="vl-exs${list.length > 1 ? " many" : ""}">${list.map(t => `<div class="vl-ex"><span class="vl-sub-t">${vocabSentenceHtml(t, head.term, head.card)}</span></div>`).join("")}</div>` : "";
-  const senses = defs.map(d => `<div class="vl-sense"><div class="vl-sub" data-sub="${escapeAttr(d.key)}"><span class="vl-sub-t">${tag(d.sub.mine ? "meaning" : d.sub.p || "def")}<span class="vl-x">${escapeHtml(d.sub.t)}</span>${d.sub.m ? `<span class="vl-sub-m">${meaningHtml(d.sub.m)}</span>` : ""}</span>${tail(d)}</div>${plainBox(d.sub.xs || [])}</div>`);
+  const senses = defs.map(d => `<div class="vl-sense"><div class="vl-sub" data-sub="${escapeAttr(d.key)}"><span class="vl-sub-t">${tag(d.sub.mine ? "meaning" : d.sub.p || "def")}<span class="vl-x">${escapeHtml(d.sub.t)}</span>${headMeaning(d) ? `<span class="vl-sub-m">${meaningHtml(headMeaning(d))}</span>` : ""}</span>${tail(d)}</div>${plainBox(d.sub.xs || [])}</div>`);
   const lines = own.concat(senses, loose.length ? [ `<div class="vl-sense vl-loose">${exBox(loose)}</div>` ] : []);
   return lines.length ? `<div class="vl-subs"><div class="vl-sub-list">${lines.join("")}</div></div>` : "";
 }
@@ -21573,8 +21577,28 @@ function subPair(item) {
   return asked ? [ asked, item.sub.t ] : [ item.sub.t, defExample(item) ];
 }
 
+const subMtTried = new Set;
+
+let subMtTimer = 0;
+
+function subMt(t) {
+  const k = oneLine(t || "");
+  const got = k && machineTr(k);
+  if (got || !k || subMtTried.has(k)) return got || "";
+  subMtTried.add(k);
+  clearTimeout(subMtTimer);
+  subMtTimer = setTimeout(() => {
+    const need = [ ...subMtTried ].filter(x => !machineTr(x)).map(q => ({
+      q: q,
+      notes: ""
+    }));
+    if (need.length) mtFill(need).then(() => currentView === "vocab" && !vocabEditingKey && renderVocab());
+  }, 300);
+  return "";
+}
+
 function headMeaning(item) {
-  return item.sub ? item.sub.m || (item.sub.kind === "ex" ? item.sub.tr || "" : "") : item.meaning || "";
+  return item.sub ? item.sub.m || (item.sub.kind === "ex" ? item.sub.tr || subMt(item.sub.t) : subMt(item.sub.t)) : item.meaning || "";
 }
 
 function fillVocabCard(el, item) {
