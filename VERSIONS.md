@@ -266,7 +266,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-121 | `5bac607` | Mọi ô nghĩa trống đều ghi "Type the meaning" |
 | FLASH-122 | `dd8ab90` | ☰ List: đầu mục cách đều 24px trên và dưới |
 | FLASH-123 | `465f065` | ☰ List: một khoảng cách duy nhất 16px (đo trên chữ) cho mọi phần |
-| FLASH-124 | `pending` | Mặt sau: định nghĩa trước, ví dụ sau (chép, phát tiếng theo); biển báo cắm ngoài cảnh, không xuống dòng; mở popup không còn bị Backspace xóa thẻ; số thứ tự 10+ không xuống dòng; bỏ chữ rác mw-parser-output |
+| FLASH-124 | `5503758` | Mặt sau: định nghĩa trước, ví dụ sau (chép, phát tiếng theo); biển báo cắm ngoài cảnh, không xuống dòng; mở popup không còn bị Backspace xóa thẻ; số thứ tự 10+ không xuống dòng; bỏ chữ rác mw-parser-output |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
@@ -631,7 +631,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-81 | `4b67849` | Extension 1.6.51: bỏ viền khi rê chuột trên ô sửa của khung thẻ mới |
 | LOOKUP-82 | `08a1f6a` | Extension 1.6.52: cho phép tải Tatoeba và Datamuse cho app |
 | LOOKUP-83 | `785d552` | Rê chuột trong ☰ List chỉ hiện phiên âm của từ hoặc câu đang rê, không phải cả khung |
-| LOOKUP-84 | `pending` | Extension 1.6.53: bỏ CSS lẫn trong định nghĩa Wiktionary |
+| LOOKUP-84 | `5503758` | Extension 1.6.53: bỏ CSS lẫn trong định nghĩa Wiktionary |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
