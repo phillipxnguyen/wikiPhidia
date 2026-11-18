@@ -249,6 +249,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-109 | `9e0fd11` | Thẻ định nghĩa/ví dụ luôn có nghĩa tiếng Việt (dịch máy chính định nghĩa/câu đó) khi chưa gõ; danh sách hiện Similar/Opposite/Phrases/Family trong thẻ câu của bạn |
 | FLASH-110 | `fee922d` | Từ mới thêm từ chữ của thẻ định nghĩa/ví dụ mang theo chính định nghĩa/câu đó làm câu của nó |
 | FLASH-111 | `2c77858` | Soát trọn phần thẻ từ điển: bỏ tên từ điển trong danh sách, popup thẻ con gợi ý sẵn nghĩa đang hiện, README mô tả lại danh sách cho đúng |
+| FLASH-112 | `pending` | Tải sẵn và lưu cùng từ nghĩa Việt gợi ý và nghĩa dịch từng định nghĩa/ví dụ; mọi thẻ trong ☰ List mở popup nhỏ đủ nội dung khung (cả ví dụ đi kèm, câu tô màu tra được); Similar/Family bỏ tên nguồn; căn khoảng cách khung 10px |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
@@ -355,6 +356,7 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 | DICT-53 | `bda56fb` | Định nghĩa và câu ví dụ từ điển thật qua extension (Cambridge, Youdao, Jisho·Weblio, krdict): trong popup, ô sửa từ và làm câu "nơi khác" của flashcard; extension 1.6.22 |
 | DICT-54 | `720132a` | Rà soát: nhớ từ từ điển không có (không tải lại trong phiên), giảm bộ nhớ lưu (400 từ, 8 câu/từ) |
 | DICT-55 | `cae72ba` | Mọi hàng định nghĩa có nhãn từ loại; Youdao (Trung) không có thì lấy từ Google hoặc đoán từ định nghĩa |
+| DICT-56 | `pending` | Bỏ phần chọn nghĩa theo từ loại (noun, adj…) trong popup lớn và nhỏ vì đã hiện ngoài danh sách |
 
 Hàm chính: `showDictSite`, `hideDictOverlay`, `dictUrlFor`, `ownDictCardHtml`, `openWordFloat`, `sentenceWordAt`, `ownDictLookup`, `ownDictFetch`, `ownDictPrefetch`.
 
@@ -443,6 +445,7 @@ Hàm chính: `todayTasks`, `todayTaskCounts`, `taskQueue`, `startTaskSide`, `tas
 | LAYOUT-13 | `673d6cc` | Bộ rule chung (README → Rules, 12 nhóm); màu ngôn ngữ Library = Vocabulary |
 | LAYOUT-14 | `f236d92` | Điện thoại: mọi popup chừa 64px trên và dưới (ô sửa, popup tra từ, popup từ, cài đặt, công cụ, thêm thẻ), phần dài cuộn bên trong |
 | LAYOUT-15 | `f62a41f` | Bỏ nút giả "Open ›" ở ô Vocabulary trên sidebar (cả ô vốn bấm được) |
+| LAYOUT-16 | `pending` | Căn lại ô Vocabulary trên sidebar: lề 12px, các phần cách 12px, thẻ ngôn ngữ và ô số cách 8px |
 
 Hàm chính: `switchToLesson`, `setAppMode`, `syncModeButtonHighlights`, `lessonInMode`, `lessonShown`, `bookHidden`.
 
@@ -600,6 +603,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-80 | `386bcf0` | Extension 1.6.49: bỏ nút ▾ thu gọn; thẻ chưa thêm hiện lại khi tạo thẻ lần sau trên trang đó |
 | LOOKUP-81 | `4b67849` | Extension 1.6.51: bỏ viền khi rê chuột trên ô sửa của khung thẻ mới |
 | LOOKUP-82 | `08a1f6a` | Extension 1.6.52: cho phép tải Tatoeba và Datamuse cho app |
+| LOOKUP-83 | `pending` | Rê chuột trong ☰ List chỉ hiện phiên âm của từ hoặc câu đang rê, không phải cả khung |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
