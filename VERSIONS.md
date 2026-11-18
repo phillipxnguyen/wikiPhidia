@@ -131,7 +131,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-75 | `7e05282` | Bỏ gộp câu tự động khi nhập; thêm ô gộp cho cả bài (1 line, 15 s, 30 s, 1 min) tách lại được; dịch nhỏ hơn 2px |
 | THEATER-76 | `3db2710` | Khung bản dịch trên video giống khung câu gốc: bo góc 12px, cùng nền và lề |
 | THEATER-77 | `516773f` | Ô gộp câu có thêm ở thanh công cụ của bài (cạnh 🌐); phụ đề dài quá thì cuộn trong khung, không tràn lên trên |
-| THEATER-78 | `pending` | Ô gộp câu: đổi "1 line" thành "Off" |
+| THEATER-78 | `e627dc9` | Ô gộp câu: đổi "1 line" thành "Off" |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
@@ -367,7 +367,7 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 | DICT-56 | `785d552` | Bỏ phần chọn nghĩa theo từ loại (noun, adj…) trong popup lớn và nhỏ vì đã hiện ngoài danh sách |
 | DICT-57 | `f718cea` | Popup từ: bỏ định nghĩa tiếng Anh dài; từ không phải tiếng Anh có thêm hàng gợi ý tiếng Anh (giữ nhãn từ loại) |
 | DICT-58 | `516773f` | Popup sửa thẻ: Save, ô nét chữ và trang từ điển cách đều 16px |
-| DICT-59 | `pending` | Chữ trong pill gợi ý và nhãn từ loại căn giữa theo chữ hoa/chân chữ, đúng với mọi font |
+| DICT-59 | `e627dc9` | Chữ trong pill gợi ý và nhãn từ loại căn giữa theo chữ hoa/chân chữ, đúng với mọi font |
 
 Hàm chính: `showDictSite`, `hideDictOverlay`, `dictUrlFor`, `ownDictCardHtml`, `openWordFloat`, `sentenceWordAt`, `ownDictLookup`, `ownDictFetch`, `ownDictPrefetch`.
 
