@@ -133,6 +133,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-77 | `516773f` | Ô gộp câu có thêm ở thanh công cụ của bài (cạnh 🌐); phụ đề dài quá thì cuộn trong khung, không tràn lên trên |
 | THEATER-78 | `e627dc9` | Ô gộp câu: đổi "1 line" thành "Off" |
 | THEATER-79 | `b009d48` | Mức gộp Easy/Medium/Hard/Expert, mỗi mức giữ tiến độ riêng (hết lỗi thẻ đã chấm quay lại); đổi mức dừng tiếng, về mặt trước; bản dịch và câu cuộn riêng |
+| THEATER-80 | `pending` | Bỏ mức Expert (1 phút) |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
@@ -268,6 +269,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-123 | `465f065` | ☰ List: một khoảng cách duy nhất 16px (đo trên chữ) cho mọi phần |
 | FLASH-124 | `5503758` | Mặt sau: định nghĩa trước, ví dụ sau (chép, phát tiếng theo); biển báo cắm ngoài cảnh, không xuống dòng; mở popup không còn bị Backspace xóa thẻ; số thứ tự 10+ không xuống dòng; bỏ chữ rác mw-parser-output |
 | FLASH-125 | `01db2cf` | Chỗ trống đục lỗ có nghĩa nhỏ ngay dưới làm gợi ý (Vocabulary và tờ Speaking) |
+| FLASH-126 | `pending` | Dọn CSS và code thừa của các phần đã bỏ (khối định nghĩa dài, nhãn từ loại cũ) |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
