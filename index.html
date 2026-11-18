@@ -3417,6 +3417,16 @@ function mtRead() {
   return mtStore;
 }
 
+function rowParts(r) {
+  return r.parts && r.parts.length > 1 ? r.parts.map(pt => oneLine(pt.q || "")).filter(Boolean) : [ oneLine(r.q || "") ];
+}
+
+function rowMt(r) {
+  if (r.mt && r.mtq === oneLine(r.q || "")) return r.mt;
+  const got = rowParts(r).map(machineTr);
+  return got.length && got.every(Boolean) ? got.join(" ") : "";
+}
+
 function machineTr(text) {
   return mtRead()[text] || "";
 }
@@ -3426,7 +3436,7 @@ const LIST_TR_KEY = "flashcards.listTr";
 let listTrOn = readLocal(LIST_TR_KEY) === true;
 
 function rowTr(r) {
-  return hasAnswer(r) ? "" : watchTranslation(r) || machineTr(oneLine(r.q));
+  return hasAnswer(r) ? "" : watchTranslation(r) || rowMt(r);
 }
 
 function paintListTr() {
@@ -3441,8 +3451,24 @@ function preloadTranslations() {
   mtFill(rows.filter(r => r.uid !== EXTRA_UID && (r.q || "").trim() && !hasAnswer(r)));
 }
 
+function keepRowMt(lines) {
+  let changed = false;
+  lines.forEach(r => {
+    if (r.mt && r.mtq === oneLine(r.q || "") || watchTranslation(r)) return;
+    const got = rowMt(r);
+    if (got) {
+      r.mt = got;
+      r.mtq = oneLine(r.q || "");
+      changed = true;
+    }
+  });
+  if (changed && lines.some(r => rows.includes(r))) scheduleAutoSave();
+}
+
 async function mtFill(lines) {
-  const need = [ ...new Set(lines.filter(r => !watchTranslation(r)).map(r => oneLine(r.q)).filter(t => t && !machineTr(t) && !mtPending.has(t))) ];
+  const todo = lines.filter(r => !watchTranslation(r) && !(r.mt && r.mtq === oneLine(r.q || "")));
+  keepRowMt(todo);
+  const need = [ ...new Set(todo.filter(r => !rowMt(r)).flatMap(rowParts).filter(t => t && !machineTr(t) && !mtPending.has(t))) ];
   if (!need.length || !navigator.onLine) return;
   need.forEach(t => mtPending.add(t));
   const to = detectLang(need[0]) === "vi-VN" ? "en" : "vi";
@@ -3457,8 +3483,9 @@ async function mtFill(lines) {
     try {
       localStorage.setItem(MT_KEY, JSON.stringify(st));
     } catch (e) {}
+    keepRowMt(todo);
     if (watch) {
-      if (watch.rowHtml) watch.lines.forEach(r => part.includes(oneLine(r.q)) && watch.rowHtml.delete(r.id));
+      if (watch.rowHtml) watch.lines.forEach(r => rowParts(r).some(t => part.includes(t)) && watch.rowHtml.delete(r.id));
       paintWatchList();
     }
     if (listTrOn) paintListTr();
@@ -3466,7 +3493,7 @@ async function mtFill(lines) {
 }
 
 function watchLineTr(r) {
-  return oneLine(r.a || "").trim() || watchTranslation(r) || machineTr(oneLine(r.q));
+  return oneLine(r.a || "").trim() || watchTranslation(r) || rowMt(r);
 }
 
 document.getElementById("listJoin").onchange = e => {
@@ -3869,29 +3896,39 @@ async function cabinSay(r) {
   speechSynthesis.cancel();
   watch.waitSince = performance.now();
   const token = watch.sayToken = (watch.sayToken || 0) + 1;
-  let tr = watchLineTr(r), lang = tr ? detectLang(tr) : "";
+  let tr = watchLineTr(r);
   if (!tr) {
-    const text = oneLine(r.q), to = detectLang(text) === "vi-VN" ? "en" : "vi";
-    lang = to === "vi" ? "vi-VN" : "en-US";
-    try {
-      tr = (await translateText(text, to)).translated || "";
-    } catch (e) {
-      tr = "";
-    }
-    if (tr && tr !== text) {
-      mtRead()[text] = tr;
-      try {
-        localStorage.setItem(MT_KEY, JSON.stringify(mtRead()));
-      } catch (e) {}
-    }
+    await mtFill([ r ]);
+    tr = watchLineTr(r);
   }
   if (!watch || watch.sayToken !== token || !tr) return;
-  const utter = trackSpeech(new SpeechSynthesisUtterance(cleanForSpeech(tr)));
-  utter.lang = lang || detectLang(tr);
-  const voice = pickVoice(utter.lang);
-  if (voice) utter.voice = voice;
-  utter.rate = watch.prefs.rate || 1;
-  speakSpeech(utter);
+  const lang = detectLang(tr), parts = speechChunks(tr);
+  const say = k => {
+    if (!watch || watch.sayToken !== token || k >= parts.length) return;
+    const utter = trackSpeech(new SpeechSynthesisUtterance(cleanForSpeech(parts[k])));
+    utter.lang = lang;
+    const voice = pickVoice(utter.lang);
+    if (voice) utter.voice = voice;
+    utter.rate = watch.prefs.rate || 1;
+    utter.onend = () => say(k + 1);
+    speakSpeech(utter);
+  };
+  say(0);
+}
+
+function speechChunks(text) {
+  const out = [];
+  String(text || "").split(/(?<=[.!?。！？…])\s+/).forEach(sent => {
+    let cur = sent;
+    while (cur.length > 180) {
+      const cut = Math.max(cur.lastIndexOf(", ", 180), cur.lastIndexOf(" ", 180));
+      const at = cut > 40 ? cut + 1 : 180;
+      out.push(cur.slice(0, at).trim());
+      cur = cur.slice(at);
+    }
+    if (cur.trim()) out.push(cur.trim());
+  });
+  return out.length ? out : [ String(text || "") ];
 }
 
 function watchShownFront() {
@@ -15772,6 +15809,10 @@ function normalizeCard(c) {
     } : {}),
     ...(c.jsrs && typeof c.jsrs === "object" ? {
       jsrs: c.jsrs
+    } : {}),
+    ...(typeof c.mt === "string" && c.mt ? {
+      mt: c.mt,
+      mtq: typeof c.mtq === "string" ? c.mtq : ""
     } : {})
   };
   return withWordKeys(card);
@@ -15959,6 +16000,11 @@ function joinLessonLines(sec) {
       const m = Object.assign(newRow("", "", group[0].time), mergedCard(group), {
         join: sec
       }), kept = group[0].jsrs && group[0].jsrs[m.uid];
+      const trs = group.map(c => watchTranslation(c) || rowMt(c));
+      if (!watchTranslation(m) && trs.every(Boolean)) {
+        m.mt = trs.join(" ");
+        m.mtq = oneLine(m.q || "");
+      }
       if (kept) m.srs = mergeModeSrs(normalizeSrs(kept)); else if (group.every(c => srsOf(c).reps)) m.srs = mergeModeSrs(normalizeSrs(JSON.parse(JSON.stringify(group.reduce((a, c) => srsOf(c).due < srsOf(a).due ? c : a).srs))));
       list[list.indexOf(group[0])] = m;
       group.slice(1).forEach(c => list.splice(list.indexOf(c), 1));
@@ -16051,6 +16097,10 @@ function serializeCard(r) {
     } : {}),
     ...(r.jsrs ? {
       jsrs: r.jsrs
+    } : {}),
+    ...(r.mt ? {
+      mt: r.mt,
+      mtq: r.mtq || ""
     } : {})
   };
 }
