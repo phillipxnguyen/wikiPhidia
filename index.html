@@ -6366,7 +6366,7 @@ function openReadCard(found) {
     meaningEl.placeholder = "Translating…";
     const res = await translateWithAlts(t, to());
     if (token !== readToken || readCard !== card) return;
-    meaningEl.placeholder = "Meaning";
+    meaningEl.placeholder = "Type the meaning";
     if (!meaningEl.dataset.typed) meaningEl.value = res.text ? cleanPunct(res.text) : "";
     $(".rc-alts").innerHTML = res.alts.map(a => `<button class="rc-alt">${escapeHtml(a)}</button>`).join("");
   };
@@ -11703,7 +11703,7 @@ function paintOwnDictFloat() {
   acts.innerHTML = have ? '<span class="od-done" role="button" title="In your words: click to delete it again">✓ In your words</span><button type="button" class="od-add od-save" hidden>Save</button>' : '<button type="button" class="od-add" title="Add" aria-label="Add"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg><span>Add</span></button>';
   const raw = have ? found ? found.meaning : "" : entry ? entry.m : "";
   const value = typed != null ? typed : odLong(w) ? raw.replace(/\s+/g, " ").trim() : meaningLines(raw).join("\n");
-  const field = `<div class="od-mean-in" contenteditable="true" spellcheck="false" role="textbox" aria-multiline="true" aria-label="Meaning" title="One meaning per line; change it if it is not right" data-placeholder="${pop.loading && !value ? "Translating…" : "Meaning"}">${meanLinesHtml(value)}</div>`, main = card.querySelector(".od-main");
+  const field = `<div class="od-mean-in" contenteditable="true" spellcheck="false" role="textbox" aria-multiline="true" aria-label="Meaning" title="One meaning per line; change it if it is not right" data-placeholder="${pop.loading && !value ? "Translating…" : "Type the meaning"}">${meanLinesHtml(value)}</div>`, main = card.querySelector(".od-main");
   if (main) main.outerHTML = field; else card.querySelector(".od-body").insertAdjacentHTML("afterbegin", field);
   if (!have || item) card.insertAdjacentHTML("beforeend", `<div class="od-notes" contenteditable="true" data-placeholder="Notes" aria-label="Notes for this word">${typedNotes != null ? typedNotes : oldNotes}</div>`);
   const input = lineBox(card.querySelector(".od-mean-in")), save = card.querySelector(".od-save"), notes = card.querySelector(".od-notes"), title = card.querySelector(".od-word b");
@@ -22188,7 +22188,7 @@ function subEditorHtml(item) {
     return own || !span ? box.innerHTML : vocabEditLineHtml(item, t, span);
   };
   const pill = item.sub.kind === "def" && item.sub.p ? `<span class="ed-sub-pos" contenteditable="false">${escapeHtml(item.sub.p)}</span>` : "";
-  const card = `<div id="vocabEditMain" class="rich-editor sub-card" contenteditable="true" aria-label="This card: its text, then its meaning"><div class="vem-t${odLong(it.term) ? " long" : ""}" data-placeholder="Word" contenteditable="false">${escapeHtml(it.term)}</div>${head}<div class="ed-sub-row" contenteditable="false">${pill}<div id="vocabEditSubText" class="sub-text" lang="${detectLang(item.sub.t).split("-")[0]}" contenteditable="true" aria-label="${item.sub.kind === "def" ? "The definition" : "The example"}">${subLine(item.sub.t)}</div></div><div class="vem-a${!item.sub.m && headMeaning(item) ? " mt-ph" : ""}" data-placeholder="${escapeAttr(item.sub.m ? "Meaning" : headMeaning(item) || "Meaning")}">${it.meaning ? escapeHtml(it.meaning) : ""}</div></div>`;
+  const card = `<div id="vocabEditMain" class="rich-editor sub-card" contenteditable="true" aria-label="This card: its text, then its meaning"><div class="vem-t${odLong(it.term) ? " long" : ""}" data-placeholder="Word" contenteditable="false">${escapeHtml(it.term)}</div>${head}<div class="ed-sub-row" contenteditable="false">${pill}<div id="vocabEditSubText" class="sub-text" lang="${detectLang(item.sub.t).split("-")[0]}" contenteditable="true" aria-label="${item.sub.kind === "def" ? "The definition" : "The example"}">${subLine(item.sub.t)}</div></div><div class="vem-a${!item.sub.m && headMeaning(item) ? " mt-ph" : ""}" data-placeholder="${escapeAttr(item.sub.m ? "Type the meaning" : headMeaning(item) || "Type the meaning")}">${it.meaning ? escapeHtml(it.meaning) : ""}</div></div>`;
   const say = `<button type="button" class="od-say ed-say" data-say="${escapeAttr(it.term)}" aria-label="Listen" title="Listen">${OD_SPEAK}</button>`;
   return '<div class="vocab-editor">' + `<div class="od-card ed-card">${levelHtml(ownDictLang(it.term, it.card), it.term, "ed-lv")}${say}${area}${card}</div>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
 }
@@ -22196,7 +22196,7 @@ function subEditorHtml(item) {
 function vocabEditorHtml(item) {
   if (item.sub) return subEditorHtml(item);
   const area = `<textarea id="vocabEditTerm" class="autofit" rows="1" autocomplete="off" aria-label="Word" placeholder="Word, then its meaning two lines below" hidden>${escapeHtml(item.meaning ? Q_MARK + item.term + "\n" + item.meaning : item.term)}</textarea>`;
-  const main = `<div id="vocabEditMain" class="rich-editor" contenteditable="true" aria-label="The word, then its meanings, one per line"><div class="vem-t${odLong(item.term) ? " long" : ""}" data-placeholder="Word">${escapeHtml(item.term)}</div><div class="vem-a" data-placeholder="Meaning">${(odLong(item.term) ? [ item.meaning ] : meaningLines(item.meaning)).filter(Boolean).map(l => `<div>${escapeHtml(l)}</div>`).join("")}</div></div>`;
+  const main = `<div id="vocabEditMain" class="rich-editor" contenteditable="true" aria-label="The word, then its meanings, one per line"><div class="vem-t${odLong(item.term) ? " long" : ""}" data-placeholder="Word">${escapeHtml(item.term)}</div><div class="vem-a" data-placeholder="Type the meaning">${(odLong(item.term) ? [ item.meaning ] : meaningLines(item.meaning)).filter(Boolean).map(l => `<div>${escapeHtml(l)}</div>`).join("")}</div></div>`;
   const say = `<button type="button" class="od-say ed-say" data-say="${escapeAttr(item.term)}" aria-label="Listen" title="Listen">${OD_SPEAK}</button>`;
   return '<div class="vocab-editor">' + `<div class="od-card ed-card">${levelHtml(ownDictLang(item.term, item.card), item.term, "ed-lv")}${say}${area}${main}</div>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
 }
