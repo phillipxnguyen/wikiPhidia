@@ -360,7 +360,7 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 | DICT-54 | `720132a` | Rà soát: nhớ từ từ điển không có (không tải lại trong phiên), giảm bộ nhớ lưu (400 từ, 8 câu/từ) |
 | DICT-55 | `cae72ba` | Mọi hàng định nghĩa có nhãn từ loại; Youdao (Trung) không có thì lấy từ Google hoặc đoán từ định nghĩa |
 | DICT-56 | `785d552` | Bỏ phần chọn nghĩa theo từ loại (noun, adj…) trong popup lớn và nhỏ vì đã hiện ngoài danh sách |
-| DICT-57 | `pending` | Thống nhất ô sửa/thêm thẻ: câu hỏi chữ tối, đáp án/nghĩa xanh đậm vừa ở Lessons, ＋ và Vocabulary; khoảng cách đều |
+| DICT-57 | `adf1c10` | Thống nhất ô sửa/thêm thẻ: câu hỏi chữ tối, đáp án/nghĩa xanh đậm vừa ở Lessons, ＋ và Vocabulary; khoảng cách đều |
 
 Hàm chính: `showDictSite`, `hideDictOverlay`, `dictUrlFor`, `ownDictCardHtml`, `openWordFloat`, `sentenceWordAt`, `ownDictLookup`, `ownDictFetch`, `ownDictPrefetch`.
 
