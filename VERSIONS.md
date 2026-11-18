@@ -363,7 +363,7 @@ Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `w
 | DICT-54 | `720132a` | Rà soát: nhớ từ từ điển không có (không tải lại trong phiên), giảm bộ nhớ lưu (400 từ, 8 câu/từ) |
 | DICT-55 | `cae72ba` | Mọi hàng định nghĩa có nhãn từ loại; Youdao (Trung) không có thì lấy từ Google hoặc đoán từ định nghĩa |
 | DICT-56 | `785d552` | Bỏ phần chọn nghĩa theo từ loại (noun, adj…) trong popup lớn và nhỏ vì đã hiện ngoài danh sách |
-| DICT-57 | `pending` | Popup từ: bỏ định nghĩa tiếng Anh dài; từ không phải tiếng Anh có thêm hàng gợi ý tiếng Anh (giữ nhãn từ loại) |
+| DICT-57 | `f718cea` | Popup từ: bỏ định nghĩa tiếng Anh dài; từ không phải tiếng Anh có thêm hàng gợi ý tiếng Anh (giữ nhãn từ loại) |
 
 Hàm chính: `showDictSite`, `hideDictOverlay`, `dictUrlFor`, `ownDictCardHtml`, `openWordFloat`, `sentenceWordAt`, `ownDictLookup`, `ownDictFetch`, `ownDictPrefetch`.
 
