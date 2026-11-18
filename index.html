@@ -619,12 +619,11 @@ window.onYouTubeIframeAPIReady = function(){
   .vl-sub-q + .vl-sub-m, .vl-sub-m + .vl-sub-n{margin-top:4px;}
   .vl-sub-n{font-size:14px;line-height:20px;color:var(--text-2);}
   .vl-sub-n > *{margin:0;}
-  .vl-sub-s{flex:none;font-size:13px;line-height:24px;color:var(--text-2);white-space:nowrap;}
   .vl-sub > :not(.vl-sub-t){align-self:center;}
   .vl-sub-st{flex:none;font-size:16px;line-height:24px;}
   .vl-sub-del{flex:none;width:24px;height:24px;padding:0;border:0;border-radius:12px;background:none;color:var(--text-2);font-size:13px;line-height:24px;cursor:pointer;}
   @media (hover:hover){.vl-sub-del:hover{background:var(--danger-soft, rgba(220,60,60,.12));color:var(--danger, #c0392b);}}
-  @media (max-width:600px){.vl-sub{display:grid;grid-template-columns:minmax(0, 1fr) auto auto;column-gap:8px;row-gap:4px;}.vl-sub-t{grid-column:1;grid-row:1;}.vl-sub-s{grid-column:1;grid-row:2;line-height:16px;}.vl-sub-st{grid-column:2;grid-row:1 / 3;}.vl-sub-del{grid-column:3;grid-row:1 / 3;}}
+  @media (max-width:600px){.vl-sub{display:grid;grid-template-columns:minmax(0, 1fr) auto auto;column-gap:8px;row-gap:4px;}.vl-sub-t{grid-column:1;grid-row:1;}.vl-sub-st{grid-column:2;grid-row:1 / 3;}.vl-sub-del{grid-column:3;grid-row:1 / 3;}}
   .vocab-list-row[data-key] > .vocab-list-meaning{font-size:20px;}
   .vocab-list-row[data-key] > .vocab-list-term{font-weight:400;color:var(--accent);}
   @media (prefers-reduced-motion: reduce){.vocab-card-inner{transition:none;}}
@@ -21075,7 +21074,7 @@ async function pumpListDict() {
 }
 
 function cardsListHtml(head, subs) {
-  const tail = x => `${x.sub && x.sub.s && x.sub.kind === "def" && !x.sub.mine ? `<span class="vl-sub-s">${escapeHtml(x.sub.s)}</span>` : ""}<span class="vl-sub-st">${vocabStatusIcon(vocabStateOf(x))}</span><button type="button" class="vl-sub-del" aria-label="Delete this card" title="Delete this card">✕</button>`;
+  const tail = x => `<span class="vl-sub-st">${vocabStatusIcon(vocabStateOf(x))}</span><button type="button" class="vl-sub-del" aria-label="Delete this card" title="Delete this card">✕</button>`;
   const tag = t => `<span class="vl-sub-k">${escapeHtml(t)}</span>`;
   const own = head.entries.map((e, i) => {
     const sentence = vocabContext(e).sentence || "", noted = noteSentence(e), rest = noted ? noted.rest.replace(/^(\s|<br\s*\/?>|<div>\s*<\/div>)+/i, "") : wordNotesOf(e);
@@ -21995,7 +21994,7 @@ function subEditorHtml(item) {
   const area = `<textarea id="vocabEditTerm" class="autofit" rows="1" autocomplete="off" aria-label="Meaning" hidden>${escapeHtml(it.meaning)}</textarea>`;
   const head = item.sub.kind === "def" && item.sub.h ? `<div class="ed-sub-h" contenteditable="false">${escapeHtml(item.sub.h)}</div>` : "";
   const pill = item.sub.kind === "def" && item.sub.p ? `<span class="ed-sub-pos" contenteditable="false">${escapeHtml(item.sub.p)}</span>` : "";
-  const card = `<div id="vocabEditMain" class="rich-editor sub-card" contenteditable="true" aria-label="This card: its text, then its meaning"><div class="vem-t${odLong(it.term) ? " long" : ""}" data-placeholder="Word" contenteditable="false">${escapeHtml(it.term)}</div>${head}<div class="ed-sub-row" contenteditable="false">${pill}<div id="vocabEditSubText" class="sub-text" contenteditable="true" aria-label="${item.sub.kind === "def" ? "The definition" : "The example"}">${escapeHtml(item.sub.t)}</div></div><div class="vem-a" data-placeholder="Your meaning">${it.meaning ? escapeHtml(it.meaning) : ""}</div></div>`;
+  const card = `<div id="vocabEditMain" class="rich-editor sub-card" contenteditable="true" aria-label="This card: its text, then its meaning"><div class="vem-t${odLong(it.term) ? " long" : ""}" data-placeholder="Word" contenteditable="false">${escapeHtml(it.term)}</div>${head}<div class="ed-sub-row" contenteditable="false">${pill}<div id="vocabEditSubText" class="sub-text" contenteditable="true" aria-label="${item.sub.kind === "def" ? "The definition" : "The example"}">${escapeHtml(item.sub.t)}</div></div><div class="vem-a" data-placeholder="${escapeAttr(item.sub.m ? "Your meaning" : headMeaning(item) || "Your meaning")}">${it.meaning ? escapeHtml(it.meaning) : ""}</div></div>`;
   const say = `<button type="button" class="od-say ed-say" data-say="${escapeAttr(it.term)}" aria-label="Listen" title="Listen">${OD_SPEAK}</button>`;
   return '<div class="vocab-editor">' + `<div class="od-card ed-card">${levelHtml(ownDictLang(it.term, it.card), it.term, "ed-lv")}${say}${area}${card}</div>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
 }

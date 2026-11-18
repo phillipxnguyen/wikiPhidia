@@ -248,6 +248,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-108 | `d0b25a9` | Popup thẻ con: mọi phần cách nhau và cách mép đúng 16px (đo theo nét vẽ), nhãn từ loại thấp lại cân với dòng chữ |
 | FLASH-109 | `9e0fd11` | Thẻ định nghĩa/ví dụ luôn có nghĩa tiếng Việt (dịch máy chính định nghĩa/câu đó) khi chưa gõ; danh sách hiện Similar/Opposite/Phrases/Family trong thẻ câu của bạn |
 | FLASH-110 | `fee922d` | Từ mới thêm từ chữ của thẻ định nghĩa/ví dụ mang theo chính định nghĩa/câu đó làm câu của nó |
+| FLASH-111 | `pending` | Soát trọn phần thẻ từ điển: bỏ tên từ điển trong danh sách, popup thẻ con gợi ý sẵn nghĩa đang hiện, README mô tả lại danh sách cho đúng |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
