@@ -523,11 +523,6 @@ window.onYouTubeIframeAPIReady = function(){
   .ed-card .ed-chips{display:flex;flex-direction:column;gap:16px;}
   .ed-card .ed-chips:empty{display:none;}
   .ed-card .od-term.od-cur{border-color:var(--a-label);color:var(--a-label);}
-  li.wm-li{position:relative;display:grid;grid-template-columns:max-content max-content minmax(0, 1fr);list-style:none;}
-  li.wm-li > .wm{min-width:0;padding-left:5px;}
-  .rich-editor li.wm-li > .wm{padding-left:0;}
-  li.wm-li > :is(ul, ol){grid-column:1 / -1;}
-  .rich-editor li.wm-li::before, .card-notes li.wm-li::before{content:"";position:absolute;left:-15px;top:calc(.5lh - 3px);width:6px;height:6px;border-radius:3px;background:currentColor;}
   .ed-card .od-pos{font-family:"Doto", system-ui, sans-serif;font-weight:800;}
   .ed-card :is(#editNotes, #vocabEditNotes, #qaNotes):empty::before{font-family:"Doto", system-ui, sans-serif;font-weight:800;}
   :is(#vocabEditSentence, #vocabEditSubText, .ed-sub-x) mark.vem-w{border-radius:4px;background:var(--word-mark);color:inherit;}
@@ -1224,7 +1219,8 @@ window.onYouTubeIframeAPIReady = function(){
   :is(.rich-editor, .q-mirror, .cell, .vocab-ctx, .vocab-term, .wl-sent) mark.vocab-hit{background:none;color:var(--vocab-ink);cursor:pointer;}
   .rich-editor ul{margin:2px 0;padding-left:20px;}
   .rich-editor :is(ul, ol){padding-left:24px;}
-  .rich-editor li{margin:2px 0;}
+  .rich-editor li{margin:0;}
+  li > .mn-row{display:block;margin-top:6px;}
   .rich-editor > :first-child, .rich-editor > :first-child > li:first-child{margin-top:0;}
   .rich-editor > :last-child, .rich-editor > :last-child > li:last-child{margin-bottom:0;}
   .hover-tooltip{
@@ -8168,28 +8164,31 @@ function flatVocabLists(html) {
   return box.innerHTML;
 }
 
-function alignLi(li, force) {
+function alignLi(li) {
   if (!isVocabItem(li)) return;
-  const own = [ ...li.childNodes ].filter(n => !(n.nodeType === 1 && /^(UL|OL)$/.test(n.nodeName)));
   const has = li.querySelector(":scope > .wm");
-  if (!force && !own.some(n => n.nodeName === "BR") && !(has && has.querySelector("br"))) {
-    if (has) has.replaceWith(...has.childNodes);
-    li.classList.remove("wm-li");
-    return;
-  }
-  li.classList.add("wm-li");
-  if (has) return;
-  const colon = li.firstChild.nextSibling, m = colon.nodeValue.match(/^\s*[:：]\s*/);
-  const rest = m && m[0].length < colon.nodeValue.length ? colon.splitText(m[0].length) : colon.nextSibling;
-  const span = document.createElement("span");
-  span.className = "wm";
-  let n = rest;
-  while (n && !(n.nodeType === 1 && /^(UL|OL)$/.test(n.nodeName))) {
-    const next = n.nextSibling;
-    span.appendChild(n);
-    n = next;
-  }
-  li.insertBefore(span, n);
+  if (has) has.replaceWith(...has.childNodes);
+}
+
+function meaningRows(html) {
+  if (!html || !/<br/i.test(html)) return html;
+  const box = document.createElement("div");
+  box.innerHTML = html;
+  box.querySelectorAll("li").forEach(li => {
+    if (!isVocabItem(li)) return;
+    [ ...li.childNodes ].filter(n => n.nodeName === "BR").forEach(br => {
+      const row = document.createElement("span");
+      row.className = "mn-row";
+      let n = br.nextSibling;
+      while (n && n.nodeName !== "BR" && !/^(UL|OL)$/.test(n.nodeName)) {
+        const next = n.nextSibling;
+        row.appendChild(n);
+        n = next;
+      }
+      br.replaceWith(row);
+    });
+  });
+  return box.innerHTML;
 }
 
 function alignMeanings(html) {
@@ -8260,23 +8259,6 @@ function meaningBreak(li) {
     c = word.childNodes[o - 1];
     o = c.nodeValue.length;
   }
-  if (!word.querySelector(":scope > .wm")) {
-    const mark = document.createElement("i");
-    r.setStart(c, o);
-    r.collapse(true);
-    r.insertNode(mark);
-    alignLi(word, true);
-    r = document.createRange();
-    r.setStartBefore(mark);
-    r.collapse(true);
-    mark.remove();
-    word.normalize();
-    sel.removeAllRanges();
-    sel.addRange(r);
-    r = sel.getRangeAt(0);
-    c = r.startContainer;
-    o = r.startOffset;
-  }
   const before = c.nodeType === 3 ? c.nodeValue.slice(0, o) : "", prevNode = c.nodeType === 3 ? o === 0 ? c.previousSibling : null : c.childNodes[o - 1];
   const tail = document.createRange();
   tail.setStart(c, o);
@@ -8300,6 +8282,7 @@ function meaningBreak(li) {
   r.insertNode(br);
   trimAfterBreak(br);
   if (empty) br.after(document.createElement("br"));
+  alignLi(word);
   const at = document.createRange();
   at.setStartAfter(br);
   sel.removeAllRanges();
@@ -8308,7 +8291,7 @@ function meaningBreak(li) {
 }
 
 function cardNotesHtml(row) {
-  const html = alignMeanings(flatVocabLists(notesEditorHtml(row)));
+  const html = meaningRows(alignMeanings(flatVocabLists(notesEditorHtml(row))));
   return html && plainTextOf(html, "\n").trim() ? `<div class="card-notes">${blockNotesHtml(html)}</div>` : "";
 }
 
