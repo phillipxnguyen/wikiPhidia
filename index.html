@@ -497,6 +497,7 @@ window.onYouTubeIframeAPIReady = function(){
   .ed-card :is(#editQ, #vocabEditMain, #vocabEditTerm, #qaQ):focus{border:0;box-shadow:none;}
   .ed-card #vocabEditMain .vem-t{font-size:28px;line-height:36px;font-weight:700;}
   .ed-card #vocabEditMain :is(.vem-t, .vem-a):empty::before{content:attr(data-placeholder);font-family:"Doto", system-ui, sans-serif;font-weight:800;color:var(--placeholder);}
+  .ed-card #vocabEditMain .vem-a.mt-ph:empty::before{font-family:inherit;font-weight:600;}
   .ed-card #vocabEditMain .vem-t.long{font-size:20px;line-height:28px;font-weight:600;}
   .ed-card #vocabEditMain .vem-a{margin-top:16px;font-size:18px;line-height:26px;font-weight:700;}
   .ed-card :is(#editQ, .q-mirror) > div:nth-child(n+2), .ed-card #vocabEditMain .vem-a > div + div, .od-float .od-mean-in > div + div{margin-top:16px;}
@@ -582,7 +583,8 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-list-meaning{min-width:0;overflow-wrap:break-word;}
   .vl-subs{display:flex;flex-direction:column;gap:12px;width:100%;margin-top:0;}
   .vocab-list .vocab-list-row[data-key]{row-gap:12px;}
-  .vocab-list .vocab-list-row[data-key] > .vocab-list-term{font-size:24px;line-height:32px;font-weight:600;}
+  .vocab-list .vocab-list-row[data-key] > .vocab-list-term{font-size:32px;line-height:40px;font-weight:600;}
+  .vocab-list-row[data-key] > .vocab-list-term:is(:lang(zh), :lang(ja), :lang(ko)){margin:4px 0;}
   .vocab-list .vocab-list-row[data-key] > .vocab-list-meaning, .vocab-list .vocab-list-meaning > span:first-child{font-size:18px;line-height:26px;}
   .vocab-list .vocab-list-meaning .card-notes{margin-top:16px;font-size:16px;line-height:24px;color:var(--text-2);}
   .ed-sub-h{margin-top:16px;font-size:13px;line-height:16px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-2);}
@@ -671,6 +673,7 @@ window.onYouTubeIframeAPIReady = function(){
   .say-ts{justify-content:center;min-width:40px;}
   .own-ts.vc-pos-say{min-width:0;height:28px;padding:0 10px;font-size:15px;line-height:20px;vertical-align:middle;}
   .py-line .own-ts{vertical-align:middle;}
+  .py-line.py-below{margin:4px 0 0;}
   .own-ts.on{background:color-mix(in srgb, currentColor 28%, transparent);}
   .loop-time.say-ts{display:inline-flex;align-items:center;box-sizing:border-box;min-width:36px;height:22px;padding:0 8px;}
   .loop-time.say-ts.on{background:var(--accent);color:var(--on-accent);}
@@ -21301,10 +21304,10 @@ function wordViHtml(head) {
 function cardsListHtml(head, subs) {
   const tail = x => `<span class="vl-sub-st">${vocabStatusIcon(vocabStateOf(x))}</span><button type="button" class="vl-sub-del" aria-label="Delete this card" title="Delete this card">✕</button>`;
   const mean = x => headMeaning(x) ? `<span class="vl-sub-m">${meaningHtml(headMeaning(x))}</span>` : "";
-  const exList = list => list.length ? `<div class="vl-exs${list.length > 1 ? " many" : ""}">${list.map(t => `<div class="vl-ex">${vocabSentenceHtml(t, head.term, head.card)}</div>`).join("")}</div>` : "";
+  const exList = list => list.length ? `<div class="vl-exs${list.length > 1 ? " many" : ""}">${list.map(t => `<div class="vl-ex">${vocabSentenceHtml(t, head.term, head.card, false, true)}</div>`).join("")}</div>` : "";
   const own = head.entries.map(e => {
     const sentence = vocabContext(e).sentence || "", noted = noteSentence(e), rest = noted ? noted.rest.replace(/^(\s|<br\s*\/?>|<div>\s*<\/div>)+/i, "") : wordNotesOf(e);
-    return `<div class="vl-sub vl-own" data-sub="${escapeAttr(e.key)}"><span class="vl-sub-t">${sentence ? `<span class="vl-sub-q">${vocabSentenceHtml(sentence, e.term, e.card)}</span>` : ""}<span class="vl-sub-m">${meaningHtml(e.meaning)}</span>${rest ? `<span class="vl-sub-n card-notes">${rest}</span>` : ""}</span>${tail(e)}</div>`;
+    return `<div class="vl-sub vl-own" data-sub="${escapeAttr(e.key)}"><span class="vl-sub-t">${sentence ? `<span class="vl-sub-q">${vocabSentenceHtml(sentence, e.term, e.card, false, true)}</span>` : ""}<span class="vl-sub-m">${meaningHtml(e.meaning)}</span>${rest ? `<span class="vl-sub-n card-notes">${rest}</span>` : ""}</span>${tail(e)}</div>`;
   });
   const groups = new Map;
   subs.filter(x => x.sub.kind === "def").forEach(d => {
@@ -21314,7 +21317,7 @@ function cardsListHtml(head, subs) {
   });
   const senses = [ ...groups ].map(([pos, list]) => `<div class="vl-blk">${pos ? `<span class="vl-pos">${escapeHtml(pos)}</span>` : ""}${list.map((d, n) => `<div class="vl-sub vl-def" data-sub="${escapeAttr(d.key)}"><span class="vl-num">${list.length > 1 ? n + 1 : ""}</span><span class="vl-sub-t"><span class="vl-x">${escapeHtml(d.sub.t)}</span>${mean(d)}${exList(d.sub.xs || [])}</span>${tail(d)}</div>`).join("")}</div>`);
   const loose = subs.filter(x => x.sub.kind === "ex");
-  const looseHtml = loose.length ? `<div class="vl-blk${loose.length > 1 ? " many" : ""}"><span class="vl-pos">Other examples</span>${loose.map(x => `<div class="vl-sub vl-loose-ex" data-sub="${escapeAttr(x.key)}"><span class="vl-sub-t"><span class="vl-x">${vocabSentenceHtml(x.sub.t, head.term, head.card)}</span>${mean(x)}</span>${tail(x)}</div>`).join("")}</div>` : "";
+  const looseHtml = loose.length ? `<div class="vl-blk${loose.length > 1 ? " many" : ""}"><span class="vl-pos">Other examples</span>${loose.map(x => `<div class="vl-sub vl-loose-ex" data-sub="${escapeAttr(x.key)}"><span class="vl-sub-t"><span class="vl-x">${vocabSentenceHtml(x.sub.t, head.term, head.card, false, true)}</span>${mean(x)}</span>${tail(x)}</div>`).join("")}</div>` : "";
   const parts = [ wordViHtml(head), own.length ? `<div class="vl-mine">${own.join("")}</div>` : "", ...senses, looseHtml, wordExtrasHtml(head.entries[0] && head.entries[0].tkey, head.term) ].filter(Boolean);
   return parts.length ? `<div class="vl-subs">${parts.join("")}</div>` : "";
 }
@@ -21421,7 +21424,7 @@ function fitReadings(root) {
   });
 }
 
-function vocabSentenceHtml(sentence, term, row, bare) {
+function vocabSentenceHtml(sentence, term, row, bare, pyBelow) {
   const chars = Array.from((sentence || "").normalize("NFC"));
   const text = chars.join("");
   const marks = (term ? wordSpans(text, term) : []).map(sp => [ Array.from(text.slice(0, sp[0])).length, Array.from(text.slice(0, sp[1])).length ]);
@@ -21449,13 +21452,13 @@ function vocabSentenceHtml(sentence, term, row, bare) {
     }
   }
   const py = script === "zh" && !bare ? pinyinLine(text) : "";
-  let html = py ? `<span class="py-line">${escapeHtml(py)}</span>` : "";
+  let html = py && !pyBelow ? `<span class="py-line">${escapeHtml(py)}</span>` : "";
   chars.forEach((ch, i) => {
     if (marks.some(([a]) => a === i)) html += "<mark>";
     html += escapeHtml(ch);
     if (marks.some(([, b]) => b - 1 === i)) html += "</mark>";
   });
-  return html;
+  return py && pyBelow ? html + `<span class="py-line py-below">${escapeHtml(py)}</span>` : html;
 }
 
 function wordSpans(text, term, first) {
@@ -22186,7 +22189,7 @@ function subEditorHtml(item) {
     return own || !span ? box.innerHTML : vocabEditLineHtml(item, t, span);
   };
   const pill = item.sub.kind === "def" && item.sub.p ? `<span class="ed-sub-pos" contenteditable="false">${escapeHtml(item.sub.p)}</span>` : "";
-  const card = `<div id="vocabEditMain" class="rich-editor sub-card" contenteditable="true" aria-label="This card: its text, then its meaning"><div class="vem-t${odLong(it.term) ? " long" : ""}" data-placeholder="Word" contenteditable="false">${escapeHtml(it.term)}</div>${head}<div class="ed-sub-row" contenteditable="false">${pill}<div id="vocabEditSubText" class="sub-text" lang="${detectLang(item.sub.t).split("-")[0]}" contenteditable="true" aria-label="${item.sub.kind === "def" ? "The definition" : "The example"}">${subLine(item.sub.t)}</div></div><div class="vem-a" data-placeholder="${escapeAttr(item.sub.m ? "Meaning" : headMeaning(item) || "Meaning")}">${it.meaning ? escapeHtml(it.meaning) : ""}</div></div>`;
+  const card = `<div id="vocabEditMain" class="rich-editor sub-card" contenteditable="true" aria-label="This card: its text, then its meaning"><div class="vem-t${odLong(it.term) ? " long" : ""}" data-placeholder="Word" contenteditable="false">${escapeHtml(it.term)}</div>${head}<div class="ed-sub-row" contenteditable="false">${pill}<div id="vocabEditSubText" class="sub-text" lang="${detectLang(item.sub.t).split("-")[0]}" contenteditable="true" aria-label="${item.sub.kind === "def" ? "The definition" : "The example"}">${subLine(item.sub.t)}</div></div><div class="vem-a${!item.sub.m && headMeaning(item) ? " mt-ph" : ""}" data-placeholder="${escapeAttr(item.sub.m ? "Meaning" : headMeaning(item) || "Meaning")}">${it.meaning ? escapeHtml(it.meaning) : ""}</div></div>`;
   const say = `<button type="button" class="od-say ed-say" data-say="${escapeAttr(it.term)}" aria-label="Listen" title="Listen">${OD_SPEAK}</button>`;
   return '<div class="vocab-editor">' + `<div class="od-card ed-card">${levelHtml(ownDictLang(it.term, it.card), it.term, "ed-lv")}${say}${area}${card}</div>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
 }
@@ -22286,7 +22289,7 @@ function renderVocab() {
   const open = !studyOnly && (vocabView === "list" || caughtUp) || !!vocabEditingKey && (vocabEditingInList || vocabEditingKey === NEW_WORD_KEY);
   list.hidden = items.length ? !open : vocabEditingKey !== NEW_WORD_KEY;
   queueMicrotask(() => fitHighlights(list));
-  list.innerHTML = adder + (list.hidden ? "" : shown.map(item => `<div class="vocab-list-row" data-key="${escapeAttr(item.key)}"><span class="vocab-list-term">${escapeHtml(item.term)}</span><span class="vl-tools">${levelHtml(ownDictLang(item.term, item.card), item.term, "vl-lv")}<button type="button" class="od-say ed-say vl-say" data-say="${escapeAttr(item.term)}" aria-label="Listen" title="Listen">${OD_SPEAK}</button></span><span class="vocab-list-meaning">${cardsListHtml(item, subsOf.get(item.tkey) || [])}</span></div>`).join("") + (more ? `<button id="vocabMore" class="vocab-more ghost">Show ${more} more</button>` : ""));
+  list.innerHTML = adder + (list.hidden ? "" : shown.map(item => `<div class="vocab-list-row" data-key="${escapeAttr(item.key)}"><span class="vocab-list-term" lang="${detectLang(item.term).split("-")[0]}">${escapeHtml(item.term)}</span><span class="vl-tools">${levelHtml(ownDictLang(item.term, item.card), item.term, "vl-lv")}<button type="button" class="od-say ed-say vl-say" data-say="${escapeAttr(item.term)}" aria-label="Listen" title="Listen">${OD_SPEAK}</button></span><span class="vocab-list-meaning">${cardsListHtml(item, subsOf.get(item.tkey) || [])}</span></div>`).join("") + (more ? `<button id="vocabMore" class="vocab-more ghost">Show ${more} more</button>` : ""));
   watchVocabMore();
   if (emptyLesson) {
     vocabSession = null;
