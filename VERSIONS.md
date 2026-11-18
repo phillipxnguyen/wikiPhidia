@@ -273,6 +273,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-126 | `91d10b4` | Dọn CSS và code thừa của các phần đã bỏ (khối định nghĩa dài, nhãn từ loại cũ) |
 | FLASH-127 | `65c9ec4` | Gợi ý nghĩa nằm ngay trên gạch chỗ trống (kiểu A), gạch dài vừa nội dung |
 | FLASH-128 | `e43b0ca` | Bấm/chạm vào chữ chính hoặc nghĩa ở mặt sau mở popup sửa |
+| FLASH-129 | `pending` | Mặt sau quá dài (đã thu chữ nhỏ nhất) thì bắt đầu từ trên và cuộn trong thẻ |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
@@ -638,6 +639,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-82 | `08a1f6a` | Extension 1.6.52: cho phép tải Tatoeba và Datamuse cho app |
 | LOOKUP-83 | `785d552` | Rê chuột trong ☰ List chỉ hiện phiên âm của từ hoặc câu đang rê, không phải cả khung |
 | LOOKUP-84 | `5503758` | Extension 1.6.53: bỏ CSS lẫn trong định nghĩa Wiktionary |
+| LOOKUP-85 | `pending` | Họ từ, từ đồng/trái nghĩa ở mặt sau tra được như mọi câu: ngôn ngữ đoán theo chính khối chữ, không theo cả thẻ |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 

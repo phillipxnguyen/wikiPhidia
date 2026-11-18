@@ -644,6 +644,7 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-card:not([data-look]) .vocab-back > .vocab-back-main :is(.vocab-ctx:not(:has(.rd)), .vocab-meaning){font-size:32px;line-height:40px;}
   .vocab-card .vocab-front > .vocab-term.word{font-weight:700;}
   .vocab-card .vocab-front{overflow:visible;}
+  .vocab-card.fill .vocab-front.tall{justify-content:flex-start;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;}
   .vocab-card[data-look] .vocab-front > .vocab-term{position:relative;box-sizing:border-box;font-family:var(--tf);font-weight:var(--tw);font-style:var(--ts);text-transform:var(--tt);letter-spacing:var(--tk);font-size:var(--tz);line-height:var(--tl);}
   .vocab-card[data-look] .vocab-front > .vocab-term.word{font-weight:var(--tw);}
   .vocab-card:is([data-ex="cloze"], [data-ex="other"]) .vocab-front > .vocab-term{max-width:min(900px, 100%);font-size:var(--bz);line-height:var(--bl);text-transform:none;letter-spacing:0;}
@@ -9993,7 +9994,7 @@ function lookupHtml(html, row) {
 
 function openMarkFloat(mk, row) {
   const zone = mk.closest("[data-id], .vocab-card, .wl-sent, #watchPop, #editPopup") || mk.parentElement;
-  const term = (mk.dataset.own || mk.dataset.terms || mk.textContent).split("\n")[0].trim(), lang = detectLang(zone.textContent).split("-")[0], found = ownDictFindWord(term, lang);
+  const term = (mk.dataset.own || mk.dataset.terms || mk.textContent).split("\n")[0].trim(), lang = detectLang((mk.closest(".vc-sent, .cloze-more, .vocab-ctx, .vocab-word-notes, .cell, .w-text, .w-row") || zone).textContent).split("-")[0], found = ownDictFindWord(term, lang);
   const card = row || found && found.item && found.item.card || null;
   openWordFloat(mk.getBoundingClientRect(), found ? found.term : term, {
     lang: lang,
@@ -11949,11 +11950,11 @@ function sentenceWordAt(x, y) {
       word: gold.textContent.replace(/\s+/g, " ").trim(),
       range: range,
       zone: zone,
-      lang: detectLang(zone.textContent).split("-")[0]
+      lang: detectLang((host.closest(".vc-sent, .cloze-more, .vocab-ctx, .vocab-word-notes, .cell") || zone).textContent).split("-")[0]
     };
   }
   if (!zone || host.closest("mark, rt, button, a, input, textarea, [contenteditable=true], .loop-time, .py-line, .wr > i, .cell.hidden, .vocab-cloze, .vc-blank")) return null;
-  const text = node.nodeValue, lang = detectLang(zone.textContent).split("-")[0];
+  const text = node.nodeValue, lang = detectLang((host.closest(".vc-sent, .cloze-more, .vocab-ctx, .vocab-word-notes, .cell") || zone).textContent).split("-")[0];
   let segs;
   try {
     segs = cutWords(text, lang);
@@ -12033,7 +12034,7 @@ function markWordAt(target) {
     word: (mk.dataset.own || mk.dataset.terms || mk.textContent).split("\n")[0].trim(),
     range: range,
     zone: zone,
-    lang: detectLang(zone.textContent).split("-")[0],
+    lang: detectLang((mk.closest(".vc-sent, .cloze-more, .vocab-ctx, .vocab-word-notes, .cell, .w-text, .w-row") || zone).textContent).split("-")[0],
     mark: true
   };
 }
@@ -22067,6 +22068,7 @@ function fitFillText(card) {
   const term = card.querySelector(".vocab-front > .vocab-term"), front = card.querySelector(".vocab-front");
   if (!term || !front) return;
   term.style.fontSize = term.style.lineHeight = "";
+  front.classList.remove("tall");
   if (!card.classList.contains("fill")) return;
   const cs = getComputedStyle(front), room = front.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
   let size = Math.round(parseFloat(getComputedStyle(term).fontSize));
@@ -22076,6 +22078,7 @@ function fitFillText(card) {
     term.style.fontSize = size + "px";
     term.style.lineHeight = Math.round(size * 1.35) + "px";
   }
+  front.classList.toggle("tall", term.scrollHeight > room + 1);
 }
 
 window.addEventListener("resize", fitVocabCards);
