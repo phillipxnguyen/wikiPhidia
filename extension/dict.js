@@ -31,6 +31,7 @@
   const line = (el, drop) => {
     if (!el) return "";
     const c = el.cloneNode(true);
+    c.querySelectorAll("style, script").forEach(n => n.remove());
     if (drop) c.querySelectorAll(drop).forEach(n => n.remove());
     return c.textContent.replace(/\s+/g, " ").trim();
   };
