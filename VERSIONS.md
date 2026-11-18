@@ -402,7 +402,7 @@ Hàm chính: `dictLoad`, `dictSlot`, `dictFit`, `showDictSite`, `hideDictOverlay
 | DATA-24 | `a6644c1` | Bỏ hẳn chuyển thẻ giữa Lessons và Vocabulary: phím W, nút 字 trên thanh chọn, W trong Words, tự chuyển khi điền nghĩa |
 | DATA-25 | `c2fad5c` | Shift+Enter trong ghi chú không còn làm khoảng sau dấu ":" rộng gấp đôi |
 | DATA-26 | `b67d006` | Notes: bỏ căn cột nghĩa; nghĩa thêm và mục mới cách đều nhau (ô gõ và danh sách); README viết gọn luật 2.10, 3.10, 7.2 và dọn luật lỗi thời |
-| DATA-27 | `pending` | Ghi chú: mọi dòng (dòng xuống, nghĩa thêm, mục mới) cách đúng một giãn dòng, bỏ khoảng 6px thêm |
+| DATA-27 | `de174f9` | Ghi chú: mọi dòng (dòng xuống, nghĩa thêm, mục mới) cách đúng một giãn dòng, bỏ khoảng 6px thêm |
 
 Hàm chính: `newRow` (bản dịch vào notes khi tạo), `foldAnswer` + `keepsAnswer` (dòng thêm dưới câu khi sửa thẻ hoặc khi dán thì vào notes), `wordLike`, `belongsInVocab`, `isTranslationCard` (cho dòng `từ: nghĩa`), `autoSortLibrary`.
 
