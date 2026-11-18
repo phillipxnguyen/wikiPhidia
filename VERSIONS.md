@@ -261,6 +261,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-117 | `39e53b2` | Bỏ hẳn phần còn sót của popup lớn bên Vocabulary; mọi chỗ chỉ mở popup nhỏ kèm nét chữ |
 | FLASH-118 | `a24dfd5` | Dọn code thừa của popup Vocabulary (ghi chú, câu, ô chọn nghĩa) và không tải trước trang từ điển cho flashcard nữa |
 | FLASH-119 | `2d51e46` | ☰ List: chữ đầu mục 32px cân đối (cả chữ Hán), pinyin xuống dưới câu; bản dịch máy trong popup dùng font thường |
+| FLASH-120 | `pending` | Đồng bộ chữ gợi ý ô trống (cùng font pixel, cùng màu, "Meaning" thay "Type the meaning"); "Other examples" → "Examples" |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
