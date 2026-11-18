@@ -21645,10 +21645,7 @@ function buildVocabCard(item) {
       return editOwnWord(ownItem.card, ownItem, own.getBoundingClientRect());
     }
     if (!getSelection().isCollapsed) return;
-    if (!isTouch() ? clickOnContent(e, el) : isDoubleTap("c" + item.key)) {
-      hideTooltip();
-      openVocabEditor(item.key);
-    } else if (isTouch()) toggleVocabSound(item);
+    if (isTouch() && !isDoubleTap("c" + item.key)) toggleVocabSound(item);
   });
   return el;
 }
@@ -22444,6 +22441,12 @@ function syncVocabEditPopup(items) {
   setEditPopupTab("edit");
   pop.hidden = false;
   hideDictOverlay();
+  if (/[\p{Script=Han}]/u.test(item.term)) {
+    const stroke = document.createElement("div");
+    stroke.className = "edit-stroke";
+    document.getElementById("vocabEditDict").before(stroke);
+    drawStrokeOrder(stroke, item.term, cjkScriptFor(item.term, item.card) === "ja");
+  }
   placeEditPopup();
   editPopupFromTop();
   return true;
