@@ -129,7 +129,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-73 | `eb18bd5` | Nút âm thanh của theater khi đang phát tô trắng đặc (kèm vòng), như mọi công tắc đang bật |
 | THEATER-74 | `e365c01` | Phụ đề trên video: bản dịch nằm trên câu (máy tính và điện thoại) |
 | THEATER-75 | `7e05282` | Bỏ gộp câu tự động khi nhập; thêm ô gộp cho cả bài (1 line, 15 s, 30 s, 1 min) tách lại được; dịch nhỏ hơn 2px |
-| THEATER-76 | `pending` | Khung bản dịch trên video giống khung câu gốc: bo góc 12px, cùng nền và lề |
+| THEATER-76 | `3db2710` | Khung bản dịch trên video giống khung câu gốc: bo góc 12px, cùng nền và lề |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
