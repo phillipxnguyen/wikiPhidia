@@ -258,6 +258,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-114 | `aa6098c` | Popup Vocabulary chỉ còn Q và A (bỏ Notes, câu, ví dụ), chữ gợi ý Meaning; biển báo giao thông cắm xuống đất cho thẻ hỏi bằng Definition/Similar/Opposite |
 | FLASH-115 | `ddea96b` | ☰ List thiết kế lại kiểu từ điển (mẫu A): đầu mục, khối nền thay gạch ngang, nghĩa theo từ loại đánh số, một ví dụ thì không chấm |
 | FLASH-116 | `d47c746` | Bấm vào thẻ đã lật không mở popup nữa (E vẫn sửa); popup nhỏ Vocabulary có lại thứ tự nét chữ |
+| FLASH-117 | `pending` | Bỏ hẳn phần còn sót của popup lớn bên Vocabulary; mọi chỗ chỉ mở popup nhỏ kèm nét chữ |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
