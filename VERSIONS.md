@@ -449,7 +449,7 @@ Hàm chính: `todayTasks`, `todayTaskCounts`, `taskQueue`, `startTaskSide`, `tas
 | LAYOUT-14 | `f236d92` | Điện thoại: mọi popup chừa 64px trên và dưới (ô sửa, popup tra từ, popup từ, cài đặt, công cụ, thêm thẻ), phần dài cuộn bên trong |
 | LAYOUT-15 | `f62a41f` | Bỏ nút giả "Open ›" ở ô Vocabulary trên sidebar (cả ô vốn bấm được) |
 | LAYOUT-16 | `785d552` | Căn lại ô Vocabulary trên sidebar: lề 12px, các phần cách 12px, thẻ ngôn ngữ và ô số cách 8px |
-| LAYOUT-17 | `pending` | Bỏ viền tím quanh ô Vocabulary trên sidebar khi đang ở Vocabulary |
+| LAYOUT-17 | `487ad4a` | Bỏ viền tím quanh ô Vocabulary trên sidebar khi đang ở Vocabulary |
 
 Hàm chính: `switchToLesson`, `setAppMode`, `syncModeButtonHighlights`, `lessonInMode`, `lessonShown`, `bookHidden`.
 
