@@ -655,6 +655,9 @@ window.onYouTubeIframeAPIReady = function(){
   .cloze-gap.blank-fill{width:auto;height:auto;margin:0;padding:0 2px;vertical-align:baseline;border-bottom:0;border-radius:0;box-shadow:inset 0 -2px 0 color-mix(in srgb, currentColor 55%, transparent);opacity:1;}
   .cloze-gap.blank-fill:not(.open) .cloze-word{visibility:hidden;}
   .cloze-gap.blank-fill.open{box-shadow:none;background:var(--word-mark);}
+  .cloze-gap:has(> .cloze-hint){position:relative;}
+  .cloze-hint{position:absolute;left:50%;top:100%;margin-top:2px;transform:translateX(-50%);white-space:nowrap;font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;font-size:max(12px, round(.45em, 1px));line-height:1.2;font-weight:600;font-style:normal;letter-spacing:0;color:var(--a-text);pointer-events:none;}
+  :is(.vocab-card.flipped, .cloze-gap.open) .cloze-hint{display:none;}
   .vocab-card.fill .cloze-more{display:block;visibility:hidden;margin-top:16px;font-size:.6em;font-size:round(.6em, 1px);line-height:1.4;line-height:round(1.4em, 1px);font-weight:600;}
   .vocab-card.fill .cloze-notes{margin-top:0;font-weight:400;font-size:inherit;line-height:inherit;opacity:.85;}
   .vocab-card.fill.flipped .cloze-gap{box-shadow:none;background:var(--word-mark);}
@@ -8882,13 +8885,21 @@ function sentenceEx(row) {
   return out;
 }
 
-function sentenceBlankHtml(q, ex, open) {
-  return `<div class="cell shown paper-lines" data-field="q">${escapeHtml(q.slice(0, ex.span[0]))}<span class="cloze-gap blank-fill${open ? " open" : ""}"><span class="cloze-word">${escapeHtml(q.slice(ex.span[0], ex.span[1]))}</span></span>${escapeHtml(q.slice(ex.span[1]))}</div>`;
+function blankHint(row, word) {
+  const key = normalizeVocabText(word), own = vocabEntriesOf(row).find(e => e.tkey === key);
+  if (own) return own.meaning;
+  const lang = detectLang(word).split("-")[0], e = ownDictEntry(lang, word);
+  if (!e && navigator.onLine) ownDictFetch(lang, word);
+  return e ? e.m : "";
+}
+
+function sentenceBlankHtml(q, ex, open, row) {
+  return `<div class="cell shown paper-lines" data-field="q">${escapeHtml(q.slice(0, ex.span[0]))}<span class="cloze-gap blank-fill${open ? " open" : ""}"><span class="cloze-word">${escapeHtml(q.slice(ex.span[0], ex.span[1]))}</span>${open || !row ? "" : clozeHintHtml(blankHint(row, q.slice(ex.span[0], ex.span[1])))}</span>${escapeHtml(q.slice(ex.span[1]))}</div>`;
 }
 
 function ieltsFrontHtml(row) {
   const ex = sentenceEx(row), q = (row.q || "").normalize("NFC");
-  if (ex.kind === "blank") return sentenceBlankHtml(q, ex, false);
+  if (ex.kind === "blank") return sentenceBlankHtml(q, ex, false, row);
   if (ex.kind === "recall") return `<div class="cell shown paper-lines paper-key" data-field="q">${escapeHtml(q.slice(ex.span[0], ex.span[1]))}</div>`;
   return `<div class="cell shown paper-lines" data-field="q">${qCellContent(row)}</div>`;
 }
@@ -21501,10 +21512,16 @@ function wordSpans(text, term, first) {
   return out;
 }
 
+function clozeHintHtml(meaning) {
+  const m = meaningLines(meaning || "").join(" / ");
+  return m ? `<span class="cloze-hint" aria-hidden="true">${escapeHtml(m)}</span>` : "";
+}
+
 function gappedHtml(text, spans, item) {
   let html = "", last = 0;
-  spans.forEach(([a, b]) => {
-    html += lookupOthers(escapeHtml(text.slice(last, a)), item) + `<span class="cloze-gap" style="--gap:${Math.max(3, Math.min(16, b - a))}"><span class="cloze-word">${escapeHtml(text.slice(a, b))}</span></span>`;
+  const hint = item ? clozeHintHtml(item.sub ? headMeaning(item) : item.meaning) : "";
+  spans.forEach(([a, b], n) => {
+    html += lookupOthers(escapeHtml(text.slice(last, a)), item) + `<span class="cloze-gap" style="--gap:${Math.max(3, Math.min(16, b - a))}"><span class="cloze-word">${escapeHtml(text.slice(a, b))}</span>${n ? "" : hint}</span>`;
     last = b;
   });
   return html + lookupOthers(escapeHtml(text.slice(last)), item);

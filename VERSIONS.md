@@ -267,6 +267,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-122 | `dd8ab90` | ☰ List: đầu mục cách đều 24px trên và dưới |
 | FLASH-123 | `465f065` | ☰ List: một khoảng cách duy nhất 16px (đo trên chữ) cho mọi phần |
 | FLASH-124 | `5503758` | Mặt sau: định nghĩa trước, ví dụ sau (chép, phát tiếng theo); biển báo cắm ngoài cảnh, không xuống dòng; mở popup không còn bị Backspace xóa thẻ; số thứ tự 10+ không xuống dòng; bỏ chữ rác mw-parser-output |
+| FLASH-125 | `pending` | Chỗ trống đục lỗ có nghĩa nhỏ ngay dưới làm gợi ý (Vocabulary và tờ Speaking) |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
