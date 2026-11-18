@@ -8258,7 +8258,7 @@ document.addEventListener("keydown", e => {
   }));
 }, true);
 
-let freshLi = null;
+let freshLine = null;
 
 function caretLi() {
   const n = getSelection().anchorNode, h = n && (n.nodeType === 1 ? n : n.parentElement);
@@ -8266,7 +8266,7 @@ function caretLi() {
 }
 
 function stripTrailingBr(li) {
-  if (!li || li.nodeName !== "LI") return;
+  if (!li || li.nodeName !== "LI") return null;
   const sub = [ ...li.children ].find(el => /^(UL|OL)$/.test(el.tagName)) || null;
   let last = sub ? sub.previousSibling : li.lastChild;
   while (last && (last.nodeName === "BR" || last.nodeType === 3 && !last.nodeValue.trim())) {
@@ -8278,29 +8278,79 @@ function stripTrailingBr(li) {
 }
 
 function markFreshLi() {
-  freshLi = caretLi();
-  if (freshLi && freshLi.previousElementSibling && freshLi.previousElementSibling.textContent.trim()) stripTrailingBr(freshLi.previousElementSibling);
+  const li = caretLi();
+  freshLine = li ? {
+    kind: "li",
+    li: li
+  } : null;
+  if (li && li.previousElementSibling && li.previousElementSibling.textContent.trim()) stripTrailingBr(li.previousElementSibling);
 }
 
 document.addEventListener("input", e => {
-  if (freshLi && !(e.inputType === "insertParagraph")) freshLi = null;
+  if (freshLine && e.inputType !== "insertParagraph") freshLine = null;
 }, true);
 
-function meaningBreak(li) {
-  const prev = li.previousElementSibling, sel = getSelection();
-  if (li !== freshLi || !prev || prev.nodeName !== "LI" || li.textContent.trim() || li.querySelector("img, li") || !sel.rangeCount) return false;
-  freshLi = null;
-  li.remove();
-  const sub = stripTrailingBr(prev);
-  const br = document.createElement("br"), hold = document.createElement("br");
-  prev.insertBefore(br, sub);
-  prev.insertBefore(hold, sub);
-  const at = document.createRange();
-  at.setStartAfter(br);
+function placeCaretAfter(node) {
+  const sel = getSelection(), at = document.createRange();
+  at.setStartAfter(node);
   at.collapse(true);
   sel.removeAllRanges();
   sel.addRange(at);
-  alignLi(prev);
+}
+
+function addMeaningLine(li, before, range) {
+  const br = document.createElement("br");
+  if (range) range.insertNode(br); else li.insertBefore(br, before);
+  const next = br.nextSibling;
+  if (!next || next.nodeName === "UL" || next.nodeName === "OL" || next.nodeType === 3 && !next.nodeValue.length) br.after(document.createElement("br"));
+  placeCaretAfter(br);
+  freshLine = {
+    kind: "br",
+    li: li,
+    br: br
+  };
+  alignLi(li);
+}
+
+function meaningBreak(li) {
+  const sel = getSelection();
+  if (!sel.rangeCount) return false;
+  const f = freshLine;
+  if (f && f.kind === "li" && f.li === li && !li.textContent.trim() && !li.querySelector("img, li")) {
+    const prev = li.previousElementSibling;
+    if (!prev || prev.nodeName !== "LI") return false;
+    li.remove();
+    addMeaningLine(prev, stripTrailingBr(prev));
+    return true;
+  }
+  if (f && f.kind === "br" && f.li === li && f.br.isConnected) {
+    const after = f.br.nextSibling;
+    const empty = !after || after.nodeName === "BR" || after.nodeName === "UL" || after.nodeName === "OL";
+    if (empty) {
+      if (after && after.nodeName === "BR") after.remove();
+      f.br.remove();
+      stripTrailingBr(li);
+      const next = document.createElement("li");
+      next.appendChild(document.createElement("br"));
+      li.after(next);
+      const at = document.createRange();
+      at.setStart(next, 0);
+      sel.removeAllRanges();
+      sel.addRange(at);
+      freshLine = {
+        kind: "li",
+        li: next
+      };
+      alignLi(li);
+      return true;
+    }
+  }
+  const r = sel.getRangeAt(0), pre = document.createRange();
+  pre.setStart(li, 0);
+  pre.setEnd(r.startContainer, r.startOffset);
+  if (!pre.cloneContents().querySelector("br")) return false;
+  r.deleteContents();
+  addMeaningLine(li, null, r);
   return true;
 }
 
