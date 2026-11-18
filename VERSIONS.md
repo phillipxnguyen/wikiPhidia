@@ -253,6 +253,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-111 | `2c77858` | Soát trọn phần thẻ từ điển: bỏ tên từ điển trong danh sách, popup thẻ con gợi ý sẵn nghĩa đang hiện, README mô tả lại danh sách cho đúng |
 | FLASH-112 | `785d552` | Tải sẵn và lưu cùng từ nghĩa Việt gợi ý và nghĩa dịch từng định nghĩa/ví dụ; mọi thẻ trong ☰ List mở popup nhỏ đủ nội dung khung (cả ví dụ đi kèm, câu tô màu tra được); Similar/Family bỏ tên nguồn; căn khoảng cách khung 10px |
 | FLASH-113 | `060f6a7` | Chỉ lấy định nghĩa đúng ngôn ngữ của từ (định nghĩa tiếng khác chỉ giữ khi có ví dụ đúng ngôn ngữ); popup Vocabulary xếp Q trên, câu/ví dụ/ghi chú giữa, A dưới cùng, bỏ ô Notes trống |
+| FLASH-114 | `aa6098c` | Popup Vocabulary chỉ còn Q và A (bỏ Notes, câu, ví dụ), chữ gợi ý Meaning; biển báo giao thông cắm xuống đất cho thẻ hỏi bằng Definition/Similar/Opposite |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
