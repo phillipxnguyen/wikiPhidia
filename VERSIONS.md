@@ -264,7 +264,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-120 | `605113a` | Đồng bộ chữ gợi ý ô trống (cùng font pixel, cùng màu, "Meaning" thay "Type the meaning"); "Other examples" → "Examples" |
 | FLASH-121 | `5bac607` | Mọi ô nghĩa trống đều ghi "Type the meaning" |
 | FLASH-122 | `dd8ab90` | ☰ List: đầu mục cách đều 24px trên và dưới |
-| FLASH-123 | `pending` | ☰ List: một khoảng cách duy nhất 16px (đo trên chữ) cho mọi phần |
+| FLASH-123 | `465f065` | ☰ List: một khoảng cách duy nhất 16px (đo trên chữ) cho mọi phần |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
