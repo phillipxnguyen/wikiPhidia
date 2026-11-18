@@ -8220,16 +8220,6 @@ function alignMeanings(html) {
   return box.innerHTML;
 }
 
-function trimAfterBreak(br) {
-  let n = br.nextSibling;
-  while (n && n.nodeType === 3 && !n.nodeValue.replace(/^[ \t\u00a0]+/, "")) {
-    const next = n.nextSibling;
-    n.remove();
-    n = next;
-  }
-  if (n && n.nodeType === 3) n.nodeValue = n.nodeValue.replace(/^[ \t\u00a0]+/, "");
-}
-
 document.addEventListener("keydown", e => {
   if (e.key !== "Enter" || !e.shiftKey || e.isComposing) return;
   const sel = getSelection(), node = sel.rangeCount && sel.anchorNode, host = node && (node.nodeType === 1 ? node : node.parentElement);
@@ -8268,46 +8258,49 @@ document.addEventListener("keydown", e => {
   }));
 }, true);
 
+let freshLi = null;
+
+function caretLi() {
+  const n = getSelection().anchorNode, h = n && (n.nodeType === 1 ? n : n.parentElement);
+  return h && h.closest("li");
+}
+
+function stripTrailingBr(li) {
+  if (!li || li.nodeName !== "LI") return;
+  const sub = [ ...li.children ].find(el => /^(UL|OL)$/.test(el.tagName)) || null;
+  let last = sub ? sub.previousSibling : li.lastChild;
+  while (last && (last.nodeName === "BR" || last.nodeType === 3 && !last.nodeValue.trim())) {
+    const back = last.previousSibling;
+    last.remove();
+    last = back;
+  }
+  return sub;
+}
+
+function markFreshLi() {
+  freshLi = caretLi();
+  if (freshLi && freshLi.previousElementSibling && freshLi.previousElementSibling.textContent.trim()) stripTrailingBr(freshLi.previousElementSibling);
+}
+
+document.addEventListener("input", e => {
+  if (freshLi && !(e.inputType === "insertParagraph")) freshLi = null;
+}, true);
+
 function meaningBreak(li) {
-  const word = isVocabItem(li) ? li : null;
-  if (!word) return false;
-  const sel = getSelection();
-  if (!sel.rangeCount) return false;
-  let r = sel.getRangeAt(0);
-  r.deleteContents();
-  let c = r.startContainer, o = r.startOffset;
-  if (c.nodeType === 1 && c === word && o > 0 && word.childNodes[o - 1] && word.childNodes[o - 1].nodeType === 3) {
-    c = word.childNodes[o - 1];
-    o = c.nodeValue.length;
-  }
-  const before = c.nodeType === 3 ? c.nodeValue.slice(0, o) : "", prevNode = c.nodeType === 3 ? o === 0 ? c.previousSibling : null : c.childNodes[o - 1];
-  const tail = document.createRange();
-  tail.setStart(c, o);
-  const sub = [ ...word.children ].find(el => /^(UL|OL)$/.test(el.tagName));
-  if (sub) tail.setEndBefore(sub); else tail.setEnd(word, word.childNodes.length);
-  const empty = !tail.toString().trim();
-  if (empty && (/\n$/.test(before) || prevNode && prevNode.nodeName === "BR")) {
-    if (/\n$/.test(before)) c.nodeValue = before.slice(0, -1) + c.nodeValue.slice(o); else prevNode.remove();
-    tail.deleteContents();
-    const next = document.createElement("li");
-    next.appendChild(document.createElement("br"));
-    word.after(next);
-    const at = document.createRange();
-    at.setStart(next, 0);
-    sel.removeAllRanges();
-    sel.addRange(at);
-    alignLi(word);
-    return true;
-  }
-  const br = document.createElement("br");
-  r.insertNode(br);
-  trimAfterBreak(br);
-  if (empty) br.after(document.createElement("br"));
-  alignLi(word);
+  const prev = li.previousElementSibling, sel = getSelection();
+  if (li !== freshLi || !prev || prev.nodeName !== "LI" || li.textContent.trim() || li.querySelector("img, li") || !sel.rangeCount) return false;
+  freshLi = null;
+  li.remove();
+  const sub = stripTrailingBr(prev);
+  const br = document.createElement("br"), hold = document.createElement("br");
+  prev.insertBefore(br, sub);
+  prev.insertBefore(hold, sub);
   const at = document.createRange();
   at.setStartAfter(br);
+  at.collapse(true);
   sel.removeAllRanges();
   sel.addRange(at);
+  alignLi(prev);
   return true;
 }
 
@@ -12855,6 +12848,7 @@ document.addEventListener("keydown", e => {
   e.preventDefault();
   if (meaningBreak(li)) return;
   document.execCommand("insertParagraph");
+  markFreshLi();
   if (el.id === "qaNotes" && li.isConnected && !li.contains(window.getSelection().anchorNode) && !isVocabItem(li) && !underWordLine(li) && NOTE_VOCAB_ITEM_RE.test(ownLiTextNodes(li).map(n => n.nodeValue).join(""))) {
     if (noteItemIsDuplicate(li, noteVocabKeys(el, [ li ]))) warnVocabDuplicates([ noteItemTerm(li) ]); else boldVocabItem(li);
   }
@@ -13376,6 +13370,7 @@ function wireEditBox(host, row) {
         e.preventDefault();
         if (meaningBreak(li)) return;
         document.execCommand("insertParagraph");
+        markFreshLi();
         if (el === editNotes && li.isConnected && !li.contains(window.getSelection().anchorNode) && !isVocabItem(li) && !underWordLine(li) && NOTE_VOCAB_ITEM_RE.test(ownLiTextNodes(li).map(n => n.nodeValue).join(""))) {
           if (noteItemIsDuplicate(li, noteVocabKeys(el, [ li ]))) warnVocabDuplicates([ noteItemTerm(li) ]); else boldVocabItem(li);
         }
