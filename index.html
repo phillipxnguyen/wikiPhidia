@@ -11286,17 +11286,24 @@ function dictSrcSentences(lang, w) {
 }
 
 function ownDictFetch(lang, w, full) {
-  const key = lang + "|" + normalizeVocabText(w), have = ownDictEntry(lang, w), wantDefs = !!full && lang === "en" && !odLong(w) && !/\s/.test(w.trim());
-  if (have && have.groups && (!wantDefs || have.defs)) return Promise.resolve(have);
+  const key = lang + "|" + normalizeVocabText(w), have = ownDictEntry(lang, w), wantDefs = !!full && lang === "en" && !odLong(w) && !/\s/.test(w.trim()), wantEn = lang !== "en" && lang !== "vi";
+  if (have && have.groups && (!wantDefs || have.defs) && (!wantEn || have.en)) return Promise.resolve(have);
   const pkey = key + (wantDefs ? "+" : "");
   if (ownDictPending.has(pkey)) return ownDictPending.get(pkey);
   const to = lang === "vi" ? "en" : "vi";
   const base = have && have.groups ? Promise.resolve(have) : ownDictLookup(w, to).then(entry => ownDictEcho(entry, w) ? ownDictLookup(w, to === "vi" ? "en" : "vi") : entry);
-  const job = Promise.all([ base, wantDefs ? enDictLookup(w) : null ]).then(([entry, extra]) => {
+  const job = Promise.all([ base, wantDefs ? enDictLookup(w) : null, wantEn && !(have && have.en) ? ownDictLookup(w, "en").catch(() => null) : null ]).then(([entry, extra, en]) => {
     if (ownDictEcho(entry, w)) entry = {
       m: "",
       groups: []
     };
+    if (wantEn) entry.en = en ? (en.groups || []).map((g, i) => ({
+      pos: g.pos,
+      terms: (i || !en.m || g.terms.includes(en.m) ? g.terms : [ en.m ].concat(g.terms)).filter(t => normalizeVocabText(t) !== normalizeVocabText(w))
+    })).filter(g => g.terms.length).concat(en.m && !(en.groups || []).length && normalizeVocabText(en.m) !== normalizeVocabText(w) ? [ {
+      pos: "",
+      terms: [ en.m ]
+    } ] : []) : have && have.en || entry.en;
     if (extra) {
       entry.defs = extra.defs;
       if (extra.audio) entry.audio = extra.audio;
@@ -11373,11 +11380,6 @@ function myMeaningsHtml(w, lang, skip) {
   return list.length ? `<div class="od-group od-mine"><span class="od-pos od-lens" title="Meanings you gave this word on your cards">${OD_LENS}</span><div class="od-terms">${list.map(t => `<button type="button" class="od-term" data-m="${escapeAttr(t)}" title="Add this meaning to the meaning line">${escapeHtml(t)}</button>`).join("")}</div></div>` : "";
 }
 
-function dictDefsFor(lang, w, e) {
-  const r = dictSrcOf(lang, w);
-  return r && r.defs.length ? r.defs : e && e.defs || [];
-}
-
 function guessPos(d) {
   return /^\s*to\s/i.test(d || "") ? "verb" : /^\s*(\(of|of|having|being|very|too|quite)\b/i.test(d || "") ? "adj" : "noun";
 }
@@ -11391,10 +11393,6 @@ const posFitObs = typeof ResizeObserver === "function" ? new ResizeObserver(list
 
 function fitPosLabels(root) {
   if (posFitObs) root.querySelectorAll(".od-defs .od-term").forEach(b => b === b.parentElement.firstElementChild && posFitObs.observe(b));
-}
-
-function odDefsHtml(defs) {
-  return (defs || []).map(g => `<div class="od-group od-defs"><span class="od-pos">${escapeHtml(g.pos || guessPos(g.d[0]))}</span><div class="od-terms">${g.d.map(t => `<button type="button" class="od-term od-def" data-m="${escapeAttr(t)}" title="Add this meaning to the meaning line">${escapeHtml(t)}</button>`).join("")}</div></div>`).join("");
 }
 
 let wordLevels = null, wordLevelsJob = null, irregularBase = null;
@@ -11480,7 +11478,7 @@ function ownDictCardHtml(lang, w, ctx) {
     pos: "",
     terms: e.alts
   } ] : []) : [];
-  const body = (!e ? "" : `<button type="button" class="od-main" data-m="${escapeAttr(e.m)}" title="Add with this meaning">${escapeHtml(e.m)}</button>`) + myMeaningsHtml(w, lang, (ownDictFindWord(w, lang) || {}).meaning) + groups.map(g => `<div class="od-group">${g.pos ? `<span class="od-pos">${escapeHtml(g.pos)}</span>` : ""}<div class="od-terms">${g.terms.map(t => `<button type="button" class="od-term" data-m="${escapeAttr(t)}" title="Add this meaning to the meaning line">${escapeHtml(t)}</button>`).join("")}</div></div>`).join("") + odDefsHtml(dictDefsFor(lang, w, e));
+  const body = (!e ? "" : `<button type="button" class="od-main" data-m="${escapeAttr(e.m)}" title="Add with this meaning">${escapeHtml(e.m)}</button>`) + myMeaningsHtml(w, lang, (ownDictFindWord(w, lang) || {}).meaning) + groups.map(g => `<div class="od-group">${g.pos ? `<span class="od-pos">${escapeHtml(g.pos)}</span>` : ""}<div class="od-terms">${g.terms.map(t => `<button type="button" class="od-term" data-m="${escapeAttr(t)}" title="Add this meaning to the meaning line">${escapeHtml(t)}</button>`).join("")}</div></div>`).join("") + (e && e.en || []).map(g => `<div class="od-group">${g.pos ? `<span class="od-pos">${escapeHtml(g.pos)}</span>` : ""}<div class="od-terms">${g.terms.map(t => `<button type="button" class="od-term" data-m="${escapeAttr(t)}" title="Add this meaning to the meaning line">${escapeHtml(t)}</button>`).join("")}</div></div>`).join("");
   const act = '<span class="od-acts"></span>';
   const pool = appSentencesFor(w, ctx && ctx.row, 30), zt = ctx && ctx.zoneText || "", spot = t => zt.indexOf(oneLine(t));
   const seen = zt ? pool.filter(t => spot(t) >= 0).sort((a, b) => spot(a) - spot(b)) : [];
