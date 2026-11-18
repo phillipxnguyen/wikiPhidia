@@ -400,7 +400,7 @@ Hàm chính: `dictLoad`, `dictSlot`, `dictFit`, `showDictSite`, `hideDictOverlay
 | DATA-22 | `330101e` | Ô sửa thẻ Lessons cùng kiểu thẻ: câu + bản dịch xanh, loa góc trên, Notes nền xám |
 | DATA-23 | `e8979d4` | Notes: Shift+Enter 1 lần trong mục từ = nghĩa tiếp (thẳng cột nghĩa đầu), 2 lần = mục mới |
 | DATA-24 | `a6644c1` | Bỏ hẳn chuyển thẻ giữa Lessons và Vocabulary: phím W, nút 字 trên thanh chọn, W trong Words, tự chuyển khi điền nghĩa |
-| DATA-25 | `pending` | Shift+Enter trong ghi chú không còn làm khoảng sau dấu ":" rộng gấp đôi |
+| DATA-25 | `c2fad5c` | Shift+Enter trong ghi chú không còn làm khoảng sau dấu ":" rộng gấp đôi |
 
 Hàm chính: `newRow` (bản dịch vào notes khi tạo), `foldAnswer` + `keepsAnswer` (dòng thêm dưới câu khi sửa thẻ hoặc khi dán thì vào notes), `wordLike`, `belongsInVocab`, `isTranslationCard` (cho dòng `từ: nghĩa`), `autoSortLibrary`.
 
