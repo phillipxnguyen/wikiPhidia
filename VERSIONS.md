@@ -271,7 +271,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-124 | `5503758` | Mặt sau: định nghĩa trước, ví dụ sau (chép, phát tiếng theo); biển báo cắm ngoài cảnh, không xuống dòng; mở popup không còn bị Backspace xóa thẻ; số thứ tự 10+ không xuống dòng; bỏ chữ rác mw-parser-output |
 | FLASH-125 | `01db2cf` | Chỗ trống đục lỗ có nghĩa nhỏ ngay dưới làm gợi ý (Vocabulary và tờ Speaking) |
 | FLASH-126 | `91d10b4` | Dọn CSS và code thừa của các phần đã bỏ (khối định nghĩa dài, nhãn từ loại cũ) |
-| FLASH-127 | `pending` | Gợi ý nghĩa nằm ngay trên gạch chỗ trống (kiểu A), gạch dài vừa nội dung |
+| FLASH-127 | `65c9ec4` | Gợi ý nghĩa nằm ngay trên gạch chỗ trống (kiểu A), gạch dài vừa nội dung |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
