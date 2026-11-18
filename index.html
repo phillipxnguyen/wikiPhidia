@@ -2660,8 +2660,6 @@ window.onYouTubeIframeAPIReady = function(){
   .b2-flames i:nth-child(2){animation-delay:-.15s;}
   .b2-flames i:nth-child(3){animation-delay:-.3s;}
   @keyframes b2Flick{to{transform:scaleY(1.06) skewX(2deg);}}
-  .b2-train{animation:b2Ride 10s linear infinite;}
-  @keyframes b2Ride{to{left:calc(100% - 20px);}}
   .b2-cars{animation:b2Train 8s ease-in-out infinite alternate;}
   @keyframes b2Train{to{transform:translateX(88px);}}
   .b2-orbit{animation:b2Spin 12s linear infinite;}
@@ -6921,6 +6919,7 @@ function soundProgressLoop() {
       if (lp != null) {
         listenRun.style.transition = "none";
         listenRun.style.width = (lp * 100).toFixed(2) + "%";
+        listenTrain(listenRun.closest("#vocabCard"), lp);
       }
     }
     const chosen = listenRun ? null : all.find(([ el, p ]) => p != null && shownEl(el));
@@ -23058,7 +23057,13 @@ function playVocabSound(item, once, ownClip, thenRestart, fromClip) {
   syncVocabSound();
 }
 
+function listenTrain(card, part) {
+  const train = card && card.querySelector(".b2-train");
+  if (train) train.style.left = `calc((100% - 20px) * ${Math.max(0, Math.min(1, part)).toFixed(4)})`;
+}
+
 function listenBar(card, ms) {
+  listenTrain(card, 0);
   const bar = card && card.querySelector(".vc-time i");
   if (!bar) return;
   bar.style.transition = "none";
@@ -23114,6 +23119,7 @@ function sayVocabWord(item) {
       bar.style.transition = "width .2s linear";
       bar.style.width = "100%";
     }
+    listenTrain(card, 1);
   };
   speakSpeech(utter);
 }
