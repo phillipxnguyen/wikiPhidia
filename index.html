@@ -479,7 +479,7 @@ window.onYouTubeIframeAPIReady = function(){
   .ed-card :is(#vocabEditSentence, #vocabEditSubText){min-height:0;padding:0;border:0;border-radius:0;background:none;box-shadow:none;}
   .ed-card .sub-card{padding:0;}
   .ed-card .sub-card .vem-a:empty::before{content:attr(data-placeholder);color:var(--text-2);}
-  .ed-card #vocabEditMain.sub-card .vem-a{margin-top:7px;font-size:18px;line-height:26px;font-weight:600;color:var(--a-text);}
+  .ed-card #vocabEditMain.sub-card .vem-a{margin-top:4px;font-size:18px;line-height:26px;font-weight:600;color:var(--a-text);}
   .ed-card .q-mirror{overflow:visible;color:var(--text);}
   .ed-card .q-mirror.q-whole{color:var(--text);}
   .ed-card :is(#editQ, .q-mirror).q-whole{font-weight:400;}
@@ -597,6 +597,9 @@ window.onYouTubeIframeAPIReady = function(){
   .ed-sub-h + .ed-sub-row{margin-top:8px;}
   .ed-sub-pos{flex:none;margin-top:3px;padding:0 8px;border-radius:6px;background:color-mix(in srgb, var(--text) 7%, transparent);color:var(--text-2);font-size:14px;line-height:20px;font-weight:700;}
   .ed-sub-row .sub-text{flex:1;min-width:0;}
+  .ed-card #vocabEditMain .ed-rel{display:flex;flex-direction:column;gap:16px;margin-top:16px;font-weight:400;}
+  .ed-card #vocabEditMain .ed-rel + .vem-a{margin-top:12px;}
+  .ed-card :is(#vocabEditSentence, #vocabEditSubText, .ed-sub-x):lang(ko){word-break:keep-all;}
   .ed-card #vocabEditMain.sub-card .ed-sub-xs{display:flex;flex-direction:column;gap:4px;margin-top:16px;padding:8px 12px;border-radius:8px;background:color-mix(in srgb, var(--text) 4%, transparent);font-size:16px;line-height:24px;font-weight:400;color:var(--text);}
   .ed-sub-xs .ed-sub-x mark{padding:0 2px;border-radius:4px;}
   .vl-dict{display:flex;flex-direction:column;gap:8px;margin-top:8px;}
@@ -20837,14 +20840,24 @@ function textHash(t) {
   return h.toString(36);
 }
 
+function inWordLang(text, lang) {
+  const re = {
+    ko: /\p{Script=Hangul}/u,
+    zh: /\p{Script=Han}/u,
+    ja: /[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}]/u
+  }[lang];
+  return !re || re.test(text);
+}
+
 function subItemsOf(item, entry, tk) {
   const ck = item.key + "|" + (entry.at || 0);
   let tmpl = subCache.get(ck);
   if (!tmpl) {
     tmpl = [];
-    const defTs = new Set((entry.defs || []).filter(d => d && d.t).map(d => d.t));
     const tiedXs = t => [ ...new Set((entry.ex || []).filter(x => x && x.of === t).map(x => x.t).concat(entry.defs.find(d => d && d.t === t).x || []).filter(x => x && findWordForm(x, item.term))) ];
-    (entry.defs || []).forEach(d => d && d.t && tmpl.push({
+    const lang = detectLang(item.term).split("-")[0], defs = (entry.defs || []).filter(d => d && d.t && (d.mine || inWordLang(d.t, lang) || tiedXs(d.t).length));
+    const defTs = new Set((entry.defs || []).filter(d => d && d.t).map(d => d.t));
+    defs.forEach(d => tmpl.push({
       key: "x:" + tk + "|d" + (d.k || textHash(d.t)),
       oldKey: "x:" + item.key + "|d" + (d.k || textHash(d.t)),
       base: item.key,
@@ -22051,9 +22064,9 @@ function subEditorHtml(item) {
     if (own) own.classList.add("vem-w");
     return own || !span ? box.innerHTML : vocabEditLineHtml(item, t, span);
   };
-  const xs = item.sub.kind === "def" && (item.sub.xs || []).length ? `<div class="ed-sub-xs" contenteditable="false">${item.sub.xs.map(t => `<div class="ed-sub-x">${subLine(t)}</div>`).join("")}</div>` : "";
+  const xs = item.sub.kind === "def" && (item.sub.xs || []).length ? `<div class="ed-sub-xs" contenteditable="false">${item.sub.xs.map(t => `<div class="ed-sub-x" lang="${detectLang(t).split("-")[0]}">${subLine(t)}</div>`).join("")}</div>` : "";
   const pill = item.sub.kind === "def" && item.sub.p ? `<span class="ed-sub-pos" contenteditable="false">${escapeHtml(item.sub.p)}</span>` : "";
-  const card = `<div id="vocabEditMain" class="rich-editor sub-card" contenteditable="true" aria-label="This card: its text, then its meaning"><div class="vem-t${odLong(it.term) ? " long" : ""}" data-placeholder="Word" contenteditable="false">${escapeHtml(it.term)}</div>${head}<div class="ed-sub-row" contenteditable="false">${pill}<div id="vocabEditSubText" class="sub-text" contenteditable="true" aria-label="${item.sub.kind === "def" ? "The definition" : "The example"}">${subLine(item.sub.t)}</div></div><div class="vem-a" data-placeholder="${escapeAttr(item.sub.m ? "Your meaning" : headMeaning(item) || "Your meaning")}">${it.meaning ? escapeHtml(it.meaning) : ""}</div>${xs}</div>`;
+  const card = `<div id="vocabEditMain" class="rich-editor sub-card" contenteditable="true" aria-label="This card: its text, then its meaning"><div class="vem-t${odLong(it.term) ? " long" : ""}" data-placeholder="Word" contenteditable="false">${escapeHtml(it.term)}</div>${head}<div class="ed-sub-row" contenteditable="false">${pill}<div id="vocabEditSubText" class="sub-text" lang="${detectLang(item.sub.t).split("-")[0]}" contenteditable="true" aria-label="${item.sub.kind === "def" ? "The definition" : "The example"}">${subLine(item.sub.t)}</div></div>${xs}<div class="vem-a" data-placeholder="${escapeAttr(item.sub.m ? "Your meaning" : headMeaning(item) || "Your meaning")}">${it.meaning ? escapeHtml(it.meaning) : ""}</div></div>`;
   const say = `<button type="button" class="od-say ed-say" data-say="${escapeAttr(it.term)}" aria-label="Listen" title="Listen">${OD_SPEAK}</button>`;
   return '<div class="vocab-editor">' + `<div class="od-card ed-card">${levelHtml(ownDictLang(it.term, it.card), it.term, "ed-lv")}${say}${area}${card}</div>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
 }
@@ -22062,11 +22075,13 @@ function vocabEditorHtml(item) {
   if (item.sub) return subEditorHtml(item);
   const sCard = vocabSentenceCard(item), span = vocabEditSpan(item), q = span ? sCard.q : "";
   const area = `<textarea id="vocabEditTerm" class="autofit" rows="1" autocomplete="off" aria-label="Word" placeholder="Word, then its meaning two lines below" hidden>${escapeHtml(item.meaning ? Q_MARK + item.term + "\n" + item.meaning : item.term)}</textarea>`;
-  const main = `<div id="vocabEditMain" class="rich-editor" contenteditable="true" aria-label="The word, then its meanings, one per line"><div class="vem-t${odLong(item.term) ? " long" : ""}" data-placeholder="Word">${escapeHtml(item.term)}</div><div class="vem-a" data-placeholder="Meaning">${(odLong(item.term) ? [ item.meaning ] : meaningLines(item.meaning)).filter(Boolean).map(l => `<div>${escapeHtml(l)}</div>`).join("")}</div></div>`;
   const noted = !span && item.card ? noteSentence(item) : null, nspan = noted && findTermIn(noted.sentence, item.term);
-  const sentence = span ? `<div id="vocabEditSentence" class="rich-editor vem-q" contenteditable="true" aria-label="The sentence this word comes from" title="The card's own sentence: changing it changes the card everywhere">${vocabEditLineHtml(item, q, span)}</div>` : nspan ? `<div id="vocabEditSentence" class="rich-editor vem-q" contenteditable="true" data-noted="1" aria-label="The sentence this word was saved with">${vocabEditLineHtml(item, noted.sentence, nspan)}</div>` : "";
+  const qlang = detectLang(span ? q : noted && noted.sentence || item.term).split("-")[0], sentence = span ? `<div id="vocabEditSentence" lang="${qlang}" class="rich-editor vem-q" contenteditable="true" aria-label="The sentence this word comes from" title="The card's own sentence: changing it changes the card everywhere">${vocabEditLineHtml(item, q, span)}</div>` : nspan ? `<div id="vocabEditSentence" lang="${qlang}" class="rich-editor vem-q" contenteditable="true" data-noted="1" aria-label="The sentence this word was saved with">${vocabEditLineHtml(item, noted.sentence, nspan)}</div>` : "";
+  const nhtml = (noted && nspan ? noted.rest : wordNotesOf(item)) || "", hasNotes = !!plainTextOf(nhtml, "\n").trim();
+  const rel = sentence || hasNotes ? `<div class="ed-rel" contenteditable="false">${sentence}${hasNotes ? `<div id="vocabEditNotes" class="rich-editor" contenteditable="true" aria-label="Notes">${nhtml}</div>` : ""}</div>` : "";
+  const main = `<div id="vocabEditMain" class="rich-editor" contenteditable="true" aria-label="The word, then its meanings, one per line"><div class="vem-t${odLong(item.term) ? " long" : ""}" data-placeholder="Word">${escapeHtml(item.term)}</div>${rel}<div class="vem-a" data-placeholder="Meaning">${(odLong(item.term) ? [ item.meaning ] : meaningLines(item.meaning)).filter(Boolean).map(l => `<div>${escapeHtml(l)}</div>`).join("")}</div></div>`;
   const say = `<button type="button" class="od-say ed-say" data-say="${escapeAttr(item.term)}" aria-label="Listen" title="Listen">${OD_SPEAK}</button>`;
-  return '<div class="vocab-editor">' + `<div class="od-card ed-card">${levelHtml(ownDictLang(item.term, item.card), item.term, "ed-lv")}${say}${area}${main}<div class="ed-chips">${vocabEditChipsHtml(item)}</div>${sentence}<div class="notes-clip"><div id="vocabEditNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes" aria-label="Notes">${noted && nspan ? noted.rest : wordNotesOf(item)}</div></div></div>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
+  return '<div class="vocab-editor">' + `<div class="od-card ed-card">${levelHtml(ownDictLang(item.term, item.card), item.term, "ed-lv")}${say}${area}${main}<div class="ed-chips">${vocabEditChipsHtml(item)}</div></div>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
 }
 
 function vocabEditNotesHtml(notes) {
