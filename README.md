@@ -60,7 +60,7 @@ The shared rules of the whole app, one line each. They hold in every mode (☰ F
 1. The same keys work in every mode: Space or S shows, then plays; → or Return is Good; ← or Shift + Return is Again; E edits; Delete deletes; M switches list and study (in a video lesson ☰ Full and the theater, in a text lesson ☰ Full and Speaking, in Vocabulary the list and the flashcards); ⌘Z and ⇧⌘Z undo and redo.
 2. In any popup or editor: Return saves, Shift + Return starts a new line, Esc closes; while one is open Delete and Backspace only edit its text, never delete the card, and the Vocabulary popup opens with the caret already at the end of its meaning; Delete, when you are not typing in a box, deletes its card or word.
 3. A click outside a popup or editor saves and closes it, and does nothing else.
-4. A click on a card that is not shown shows it; a click on a shown card edits it, except a Vocabulary flashcard, where a click on the turned card does nothing (E edits it).
+4. A click on a card that is not shown shows it; a click on a shown card edits it, except a Vocabulary flashcard, where only a click (a tap on a phone) on the turned card's word or its meaning opens its editor, E too; anywhere else on the card it does nothing.
 5. Undo and Redo go back to exactly where you were, for the last 20 steps of the open lesson.
 6. Every screen you can enter has a visible way back (✕, ‹ Back, the sidebar).
 
