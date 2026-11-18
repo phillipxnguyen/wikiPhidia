@@ -587,7 +587,12 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-list .vocab-list-row[data-key] > .vocab-list-meaning, .vocab-list .vocab-list-meaning > span:first-child{font-size:18px;line-height:26px;}
   .vocab-list .vocab-list-meaning .card-notes{margin-top:16px;font-size:16px;line-height:24px;color:var(--text-2);}
   .ed-sub-h{margin-top:16px;font-size:13px;line-height:16px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-2);}
-  #editPopup.sub-edit .le-box{padding-top:17px;padding-bottom:17px;}
+  #editPopup.sub-edit .le-box{padding:16px;}
+  #editPopup.sub-edit #vocabEditMain :is(.vem-t, .vem-a){text-box:trim-both cap alphabetic;}
+  #editPopup.sub-edit #vocabEditMain .vem-a{margin-top:16px;}
+  #editPopup.sub-edit .ed-card > .ed-say{top:-6px;}
+  #editPopup.sub-edit .ed-card:has(.vem-t.long) > .ed-say{top:-9px;}
+  #editPopup.sub-edit .ed-card + :is(.edit-actions, .vocab-editor-actions){margin-top:16px;}
   .ed-sub-row{display:flex;align-items:flex-start;gap:8px;margin-top:14px;}
   .ed-sub-h + .ed-sub-row{margin-top:8px;}
   .ed-sub-pos{flex:none;margin-top:3px;padding:0 8px;border-radius:6px;background:color-mix(in srgb, var(--text) 7%, transparent);color:var(--text-2);font-size:14px;line-height:20px;font-weight:700;}
@@ -717,7 +722,8 @@ window.onYouTubeIframeAPIReady = function(){
   .vc-time i{display:block;width:0;height:100%;border-radius:2px;background:var(--accent);}
   .vocab-card.listen:not(.flipped) .vc-sent{visibility:hidden;}
   .vocab-card.listen.flipped .vc-art{display:none;}
-  .vocab-card.flipped .cloze-body > .vc-def-more{order:-1;}
+  .vocab-card.flipped .cloze-body > :is(.vc-def-more, .vc-def-more + .vc-sub-tr){order:-1;}
+  .vocab-card.fill .cloze-notes.vc-sub-tr{font-size:calc(1em - 2px);}
   .vocab-card.fill .cloze-head{display:flex;flex-direction:column;align-items:center;gap:.25em;gap:round(.25em, 1px);margin:0 0 .6em;margin:0 0 round(.6em, 1px);font-size:inherit;line-height:inherit;font-weight:inherit;font-style:normal;}
   .vocab-card.fill .cloze-main ruby{ruby-position:over;}
   .vocab-card.fill .cloze-main rt{padding-bottom:2px;font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;font-size:.3em;font-size:round(.3em, 1px);font-weight:600;font-style:normal;line-height:1;opacity:.75;}
@@ -11737,7 +11743,7 @@ function paintOwnDictFloat() {
   const value = typed != null ? typed : odLong(w) ? raw.replace(/\s+/g, " ").trim() : meaningLines(raw).join("\n");
   const field = `<div class="od-mean-in" contenteditable="true" spellcheck="false" role="textbox" aria-multiline="true" aria-label="Meaning" title="One meaning per line; change it if it is not right" data-placeholder="${pop.loading && !value ? "Translating…" : "Type the meaning"}">${meanLinesHtml(value)}</div>`, main = card.querySelector(".od-main");
   if (main) main.outerHTML = field; else card.querySelector(".od-body").insertAdjacentHTML("afterbegin", field);
-  if (!have || item) card.insertAdjacentHTML("beforeend", `<div class="od-notes" contenteditable="true" data-placeholder="Notes" aria-label="Notes for this word">${typedNotes != null ? typedNotes : oldNotes}</div>`);
+  if ((!have || item) && appMode !== "vocab") card.insertAdjacentHTML("beforeend", `<div class="od-notes" contenteditable="true" data-placeholder="Notes" aria-label="Notes for this word">${typedNotes != null ? typedNotes : oldNotes}</div>`);
   const input = lineBox(card.querySelector(".od-mean-in")), save = card.querySelector(".od-save"), notes = card.querySelector(".od-notes"), title = card.querySelector(".od-word b");
   title.contentEditable = "true";
   title.spellcheck = false;
@@ -11950,11 +11956,11 @@ function sentenceWordAt(x, y) {
       word: gold.textContent.replace(/\s+/g, " ").trim(),
       range: range,
       zone: zone,
-      lang: detectLang((host.closest(".vc-sent, .cloze-more, .vocab-ctx, .vocab-word-notes, .cell") || zone).textContent).split("-")[0]
+      lang: detectLang((host.closest(".vc-sent, .vc-sub-tr, .cloze-more, .vocab-ctx, .vocab-word-notes, .cell") || zone).textContent).split("-")[0]
     };
   }
   if (!zone || host.closest("mark, rt, button, a, input, textarea, [contenteditable=true], .loop-time, .py-line, .wr > i, .cell.hidden, .vocab-cloze, .vc-blank")) return null;
-  const text = node.nodeValue, lang = detectLang((host.closest(".vc-sent, .cloze-more, .vocab-ctx, .vocab-word-notes, .cell") || zone).textContent).split("-")[0];
+  const text = node.nodeValue, lang = detectLang((host.closest(".vc-sent, .vc-sub-tr, .cloze-more, .vocab-ctx, .vocab-word-notes, .cell") || zone).textContent).split("-")[0];
   let segs;
   try {
     segs = cutWords(text, lang);
@@ -21549,7 +21555,7 @@ function clozeHintHtml(meaning) {
 
 function gappedHtml(text, spans, item) {
   let html = "", last = 0;
-  const hint = item ? clozeHintHtml(item.sub ? headMeaning(item) : item.meaning) : "";
+  const hint = item ? clozeHintHtml(item.meaning || (item.sub ? headMeaning(item) : "")) : "";
   spans.forEach(([a, b], n) => {
     html += lookupOthers(escapeHtml(text.slice(last, a)), item) + `<span class="cloze-gap" style="--gap:${Math.max(3, Math.min(16, b - a))}"><span class="cloze-word">${escapeHtml(text.slice(a, b))}</span>${n ? "" : hint}</span>`;
     last = b;
@@ -21862,12 +21868,12 @@ function extraQuestion(item) {
 
 function familyHtml(item) {
   const more = !item.sub && (wordDictIndex().get(item.tkey) || {}).more, fam = moreWords(more && more.fam, item.term);
-  return fam.length ? `<span class="cloze-more cloze-notes vc-fam">${fam.map(escapeHtml).join(" · ")}</span>` : "";
+  return fam.length ? `<span class="cloze-more cloze-notes vc-fam">${lookupOthers(fam.map(escapeHtml).join(" · "), item)}</span>` : "";
 }
 
 function askSignHtml(kind) {
   const face = kind === "syn" ? '<span class="vs-face vs-diamond"><b>≈</b></span><span class="vs-label">Similar</span>' : kind === "ant" ? '<span class="vs-face vs-no"><b>⇄</b></span><span class="vs-label">Opposite</span>' : '<span class="vs-face vs-info"><b>i</b><small>Definition</small></span>';
-  return `<span class="vc-sign vs-${kind}" title="${kind === "syn" ? "Similar" : kind === "ant" ? "Opposite" : "Definition"}">${face}<span class="vs-pole"></span></span>`;
+  return `<span class="vc-sign vs-${kind}">${face}<span class="vs-pole"></span></span>`;
 }
 
 function defExample(item) {
@@ -21903,6 +21909,11 @@ function backPair(item) {
 
 function headMeaning(item) {
   return item.sub ? item.sub.m || item.sub.kind === "ex" && item.sub.tr || item.sub.mt || machineTr(oneLine(item.sub.t)) : item.meaning || "";
+}
+
+function subTrHtml(item) {
+  const tr = item.sub ? headMeaning(item) : "";
+  return tr && tr !== item.meaning ? `<span class="cloze-more cloze-notes vc-sub-tr">${meaningHtml(tr)}</span>` : "";
 }
 
 function fillVocabCard(el, item) {
@@ -21942,24 +21953,25 @@ function fillVocabCard(el, item) {
     const sent = `<span${el.dataset.listen ? ' class="vc-sent"' : ""}>${spy ? `<span class="cloze-more cloze-spy py-line">${linePillHtml(item, text, !otherGap)}${escapeHtml(spy)}</span>` : linePillHtml(item, text, !otherGap, "cloze-pill")}${gappedHtml(text, spans, item)}</span>`;
     const own = otherGap && !item.sub && !el.dataset.xk && sentence && sentence !== text ? sentence : "";
     const ownTs = own ? linePillHtml(item, own, true) : "";
-    const xm = el.dataset.xk === "tat" ? el.dataset.xtr : headMeaning(item);
+    const xm = el.dataset.xk === "tat" ? el.dataset.xtr : item.meaning || "";
     const ownHtml = own ? `<span class="cloze-more cloze-own">${withPill(ownTs, lookupOthers(vocabSentenceHtml(own, item.term, item.card), item))}</span>` : "";
-    el.querySelector(".vocab-term").innerHTML = `<span class="cloze-body">${el.dataset.listen ? `<span class="vc-stack"><span class="vc-art" aria-hidden="true">${sceneArt(el.dataset.scene)}<span class="vc-time"><i></i></span></span>${sent}</span>` : sent}${ownHtml}${notes ? `<span class="cloze-more cloze-notes">${notesWithPinyin(brLines(notes), item.card)}</span>` : ""}${familyHtml(item)}</span>`;
+    el.querySelector(".vocab-term").innerHTML = `<span class="cloze-body">${el.dataset.listen ? `<span class="vc-stack"><span class="vc-art" aria-hidden="true">${sceneArt(el.dataset.scene)}<span class="vc-time"><i></i></span></span>${sent}</span>` : sent}${subTrHtml(item)}${ownHtml}${notes ? `<span class="cloze-more cloze-notes">${notesWithPinyin(brLines(notes), item.card)}</span>` : ""}${familyHtml(item)}</span>`;
     el.querySelector(".vocab-term").insertAdjacentHTML("afterbegin", `<span class="cloze-more cloze-head"><span class="cloze-main">${rubyWord(item.term, item.card)}</span>${xm ? `<span class="cloze-mean">${meaningHtml(xm)}</span>` : ""}</span>`);
     el.classList.add("fill");
     el.classList.toggle("listen", !!el.dataset.listen);
   } else if (ex === "def" && (item.sub || el.dataset.owndef)) {
     const noted = noteSentence(item), notes = noted ? noted.rest.replace(/^(\s|<br\s*\/?>|<div>\s*<\/div>)+/i, "") : wordNotesOf(item);
     const sub = item.sub || {}, d = item.sub ? sub.t : el.dataset.owndef, span = findWordForm(d, item.term);
-    const defText = span ? gappedHtml(d, wordSpans(d, item.term, span), item) : escapeHtml(d);
+    const defText = span ? gappedHtml(d, wordSpans(d, item.term, span), item) : lookupOthers(escapeHtml(d), item);
     const xk = !item.sub && el.dataset.xk, defHead = `${xk ? `<span class="vc-def-h">${xk === "ant" ? "Opposite" : "Similar"}</span>` : ""}${sub.h ? `<span class="vc-def-h">${escapeHtml(sub.h)}</span>` : ""}${sub.p ? `<button type="button" class="own-ts say-ts vc-pos-say" data-say="${escapeAttr(d)}" title="Play the definition" aria-label="Play the definition">${escapeHtml(sub.p)}</button>` : ""}`;
     const asked = el.dataset.defx || "", ask = asked && findWordForm(asked, item.term);
     const first = asked ? `<span class="vc-sent">${linePillHtml(item, asked, false, "cloze-pill")}${ask ? gappedHtml(asked, wordSpans(asked, item.term, ask), item) : escapeHtml(asked)}</span>` : `<span class="vc-sent vc-def">${defHead}${defText}</span>`;
     const dx = asked ? "" : item.sub ? defExample(item) : sentence;
-    const second = asked ? `<span class="cloze-more cloze-own vc-def-more">${defHead}${escapeHtml(d)}</span>` : dx ? `<span class="cloze-more cloze-own">${withPill(linePillHtml(item, dx, false), lookupOthers(vocabSentenceHtml(dx, item.term, item.card), item))}</span>` : "";
-    const hm = item.sub ? headMeaning(item) : meaningLines(item.meaning || "").filter(l => l !== d).join("\n");
+    const second = asked ? `<span class="cloze-more cloze-own vc-def-more">${defHead}${lookupOthers(escapeHtml(d), item)}</span>${subTrHtml(item)}` : dx ? `<span class="cloze-more cloze-own">${withPill(linePillHtml(item, dx, false), lookupOthers(vocabSentenceHtml(dx, item.term, item.card), item))}</span>` : "";
+    const hm = meaningLines(item.meaning || "").filter(l => l !== d).join("\n");
     const lead = el.dataset.listen ? `<span class="vc-stack"><span class="vc-art" aria-hidden="true">${asked ? sceneArt(el.dataset.scene) : `<span class="vc-sign-row">${askSignHtml(xk || "def")}${sceneArt(el.dataset.scene)}</span>`}<span class="vc-time"><i></i></span></span>${first}</span>` : first;
-    el.querySelector(".vocab-term").innerHTML = `<span class="cloze-body">${lead}${second}${notes ? `<span class="cloze-more cloze-notes">${notesWithPinyin(brLines(notes), item.card)}</span>` : ""}${familyHtml(item)}</span>`;
+    const firstTr = asked ? "" : subTrHtml(item);
+    el.querySelector(".vocab-term").innerHTML = `<span class="cloze-body">${lead}${firstTr}${second}${notes ? `<span class="cloze-more cloze-notes">${notesWithPinyin(brLines(notes), item.card)}</span>` : ""}${familyHtml(item)}</span>`;
     el.querySelector(".vocab-term").insertAdjacentHTML("afterbegin", `<span class="cloze-more cloze-head"><span class="cloze-main">${rubyWord(item.term, item.card)}</span>${hm ? `<span class="cloze-mean">${meaningHtml(hm)}</span>` : ""}</span>`);
     el.classList.add("fill");
     el.classList.toggle("listen", !!el.dataset.listen);
