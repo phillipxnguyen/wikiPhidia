@@ -2399,6 +2399,8 @@ window.onYouTubeIframeAPIReady = function(){
   .watch-pop[data-size="150"] .w-cap .w-tr{font-size:33px;line-height:46px;}
   .w-cap{position:absolute;left:round(8%, 1px);right:round(8%, 1px);bottom:round(8%, 1px);top:round(8%, 1px);z-index:2;display:flex;justify-content:center;align-items:flex-end;pointer-events:none;text-align:center;}
   .w-cap .w-capline{max-height:100%;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;}
+  .w-cap .w-capline:has(> .w-tr){display:flex;flex-direction:column;overflow:hidden;}
+  .w-cap .w-capline:has(> .w-tr) > *{flex:0 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;}
   .w-cap .w-capline{padding:8px 16px;border-radius:12px;background:rgba(0,0,0,.66);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);}
   .watch-pop.cabin .w-cap{pointer-events:auto;}
   .w-cap .w-capline{pointer-events:auto;cursor:pointer;}
@@ -3236,7 +3238,7 @@ window.onYouTubeIframeAPIReady = function(){
     </div>
     <span id="studyFlag" class="flag-set toolbar-flag" hidden></span>
     <div class="toolbar-right">
-      <select id="listJoin" class="list-join" aria-label="Join lines" title="Join the lesson's lines into stretches of this length" hidden><option value="0">Off</option><option value="15">15 s</option><option value="30">30 s</option><option value="60">1 min</option></select>
+      <select id="listJoin" class="list-join" aria-label="Join lines" title="How long a stretch you study at once: Easy one line, Medium 15 s, Hard 30 s, Expert 1 min" hidden><option value="0">Easy</option><option value="15">Medium</option><option value="30">Hard</option><option value="60">Expert</option></select>
       <button id="listTrans" class="list-trans" aria-label="Translations" aria-pressed="false" title="Show each sentence's translation (its own, or a machine translation)"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M3 10h14M10 3c2.6 2.6 2.6 11.4 0 14M10 3c-2.6 2.6-2.6 11.4 0 14"/></svg></button>
       <button id="btnPlaySequence" aria-label="Play"></button>
       <select id="playbackSpeed" style="visibility:hidden;">
@@ -3995,7 +3997,7 @@ function paintWatch() {
   if (p.trans || p.cabin) mtFill(watch.lines);
   watch.countSig = "";
   const pill = (k, title, label) => `<button type="button" class="w-pill${p[k] ? " on" : ""}" data-w="${k}" aria-pressed="${!!p[k]}" title="${title}">${label}</button>`;
-  const tools = `${pill("loop", "Loop the line being said", '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 9V8a3 3 0 0 1 3-3h8M13 3l2 2-2 2M16 11v1a3 3 0 0 1-3 3H5M7 17l-2-2 2-2"/></svg>')}${pill("blur", "Blur the writing until you point at it", '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 10s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/><path d="M4 16L16 4"/></svg>')}${watchChinese() ? pill("pin", "Pinyin", "拼") : ""}${pill("trans", "The translation (the lesson's own, or a machine translation when the line has none)", '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M3 10h14M10 3c2.6 2.6 2.6 11.4 0 14M10 3c-2.6 2.6-2.6 11.4 0 14"/></svg>')}<select class="w-join" aria-label="Join lines" title="Join the lesson's lines into stretches of this length">${[ [ 0, "Off" ], [ 15, "15 s" ], [ 30, "30 s" ], [ 60, "1 min" ] ].map(([v, t]) => `<option value="${v}"${v === joinedSeconds() ? " selected" : ""}>${t}</option>`).join("")}</select><select class="w-size" aria-label="Subtitle size" title="Subtitle size">${[ 100, 125, 150 ].map(v => `<option value="${v}"${v === (p.size || 100) ? " selected" : ""}>${v}%</option>`).join("")}</select><select class="w-rate" aria-label="Speed" title="Speed">${[ ...document.getElementById("playbackSpeed").options ].map(o => `<option value="${o.value}"${Number(o.value) === p.rate ? " selected" : ""}>${o.textContent}</option>`).join("")}</select>`;
+  const tools = `${pill("loop", "Loop the line being said", '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 9V8a3 3 0 0 1 3-3h8M13 3l2 2-2 2M16 11v1a3 3 0 0 1-3 3H5M7 17l-2-2 2-2"/></svg>')}${pill("blur", "Blur the writing until you point at it", '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 10s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/><path d="M4 16L16 4"/></svg>')}${watchChinese() ? pill("pin", "Pinyin", "拼") : ""}${pill("trans", "The translation (the lesson's own, or a machine translation when the line has none)", '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M3 10h14M10 3c2.6 2.6 2.6 11.4 0 14M10 3c-2.6 2.6-2.6 11.4 0 14"/></svg>')}<select class="w-join" aria-label="Join lines" title="How long a stretch you study at once: Easy one line, Medium 15 s, Hard 30 s, Expert 1 min">${[ [ 0, "Easy" ], [ 15, "Medium" ], [ 30, "Hard" ], [ 60, "Expert" ] ].map(([v, t]) => `<option value="${v}"${v === joinedSeconds() ? " selected" : ""}>${t}</option>`).join("")}</select><select class="w-size" aria-label="Subtitle size" title="Subtitle size">${[ 100, 125, 150 ].map(v => `<option value="${v}"${v === (p.size || 100) ? " selected" : ""}>${v}%</option>`).join("")}</select><select class="w-rate" aria-label="Speed" title="Speed">${[ ...document.getElementById("playbackSpeed").options ].map(o => `<option value="${o.value}"${Number(o.value) === p.rate ? " selected" : ""}>${o.textContent}</option>`).join("")}</select>`;
   box.querySelector(".w-ctl-l").innerHTML = tools;
   syncWatchPills();
   box.querySelector(".w-ctl-c").innerHTML = "";
@@ -15777,6 +15779,9 @@ function normalizeCard(c) {
     } : {}),
     ...(c.join ? {
       join: Number(c.join) || 0
+    } : {}),
+    ...(c.jsrs && typeof c.jsrs === "object" ? {
+      jsrs: c.jsrs
     } : {})
   };
   return withWordKeys(card);
@@ -15911,8 +15916,11 @@ function joinedSeconds() {
 }
 
 function splitJoinedCard(c) {
-  if (c.src && c.src.length) return c.src.map(raw => {
+  if (c.src && c.src.length) return c.src.map((raw, i) => {
     const r = Object.assign(newRow(raw.q, raw.a, raw.time), normalizeCard(raw));
+    if (!i && c.srs && Object.values(c.srs).some(st => st && st.reps)) r.jsrs = Object.assign({}, r.jsrs, {
+      [c.uid]: c.srs
+    });
     Object.keys(c.vocab || {}).forEach(k => {
       if (vocabEntriesOf(r).some(e => e.key === k) || /^[wx]:/.test(k) && findWordForm(r.q || "", k.slice(2).split("|")[0].split("\u0001")[0])) r.vocab[k] = c.vocab[k];
     });
@@ -15960,7 +15968,8 @@ function joinLessonLines(sec) {
       if (group.length < 2) continue;
       const m = Object.assign(newRow("", "", group[0].time), mergedCard(group), {
         join: sec
-      });
+      }), kept = group[0].jsrs && group[0].jsrs[m.uid];
+      if (kept) m.srs = mergeModeSrs(normalizeSrs(kept)); else if (group.every(c => srsOf(c).reps)) m.srs = mergeModeSrs(normalizeSrs(JSON.parse(JSON.stringify(group.reduce((a, c) => srsOf(c).due < srsOf(a).due ? c : a).srs))));
       list[list.indexOf(group[0])] = m;
       group.slice(1).forEach(c => list.splice(list.indexOf(c), 1));
     }
@@ -15969,11 +15978,22 @@ function joinLessonLines(sec) {
   rows = list;
   scheduleAutoSave();
   if (watch) {
+    const was = watch.lines[watch.at], t = was ? was.time : 0;
+    speechSynthesis.cancel();
+    try {
+      watch.player.pauseVideo();
+    } catch (e) {}
     watch.lines = watchLines();
     watch.sig = watchSig();
     watch.queue = null;
+    watch.graded = new Set;
     watch.at = 0;
     paintWatch();
+    let at = 0;
+    watch.lines.forEach((r, i) => {
+      if (r.time <= t) at = i;
+    });
+    watchSeek(at);
   }
 }
 
@@ -16038,6 +16058,9 @@ function serializeCard(r) {
     } : {}),
     ...(r.join ? {
       join: r.join
+    } : {}),
+    ...(r.jsrs ? {
+      jsrs: r.jsrs
     } : {})
   };
 }
