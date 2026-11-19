@@ -298,7 +298,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-146 | `f084d9d` | ☰ Full: bản dịch 🌐 nằm ở chỗ Answer (cùng cỡ, cùng vị trí, màu xanh) thay vì dòng đầu notes |
 | FLASH-147 | `299ade6` | Khoảng cách đều 16px (đo theo chữ) giữa câu, Answer/bản dịch và notes, trong ☰ Full và card editor, máy tính và điện thoại |
 | FLASH-148 | `c02cb23` | Vocabulary: thẻ câu đổi mặt trước thành cả câu dịch (Answer / notes / Tatoeba / máy dịch), nghĩa của từ tô vàng, nói lại cả câu; nút loa đọc bản dịch; không có bản dịch mới còn chỗ trống |
-| FLASH-149 | `pending` | Từ của mình trong câu hỏi màu xanh đổi sang mực thường (editor, ☰ Full kẻ dòng, Speaking); card editor hiện placeholder Answer khi chưa có Answer |
+| FLASH-149 | `7ff70bb` | Từ của mình trong câu hỏi màu xanh đổi sang mực thường (editor, ☰ Full kẻ dòng, Speaking); card editor hiện placeholder Answer khi chưa có Answer |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
