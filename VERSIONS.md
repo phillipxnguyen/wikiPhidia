@@ -651,6 +651,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-85 | `82c9c96` | Họ từ, từ đồng/trái nghĩa ở mặt sau tra được như mọi câu: ngôn ngữ đoán theo chính khối chữ, không theo cả thẻ |
 | LOOKUP-86 | `089a9d8` | Popup từ bên Vocabulary không còn ô Notes |
 | LOOKUP-87 | `0d05a09` | Popup tra từ: chữ cách mép trên 17px như popup sửa (trước 24px), nút vẫn giữa dòng |
+| LOOKUP-88 | `pending` | Popup tra từ và popup sửa: từ chính cách nghĩa 17px (17/17) |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
