@@ -600,7 +600,6 @@ window.onYouTubeIframeAPIReady = function(){
   .ed-card #vocabEditSubText:lang(ko){word-break:keep-all;}
   .vocab-list-row[data-key] > .vl-tools{grid-area:tools;display:flex;align-items:center;gap:8px;height:0;align-self:center;}
   .vl-say{flex:none;}
-  .vl-root{padding-right:16px;}
   .vl-root > .vl-sub-t{display:flex;flex-wrap:wrap;gap:8px;}
   .vl-dict-t.vl-my{border-color:transparent;background:color-mix(in srgb, var(--accent) 8%, transparent);color:var(--a-text);font-weight:600;}
   .vl-mine, .vl-blk{display:flex;flex-direction:column;gap:16px;padding:16px;border-radius:12px;}
@@ -21382,7 +21381,7 @@ function cardsListHtml(head, subs) {
   const mean = x => headMeaning(x) ? `<span class="vl-sub-m">${meaningHtml(headMeaning(x))}</span>` : "";
   const exList = list => list.length ? `<div class="vl-exs${list.length > 1 ? " many" : ""}">${list.map(t => `<div class="vl-ex">${vocabSentenceHtml(t, head.term, head.card, false, true)}</div>`).join("")}</div>` : "";
   const vi = wordViTerms(head), pill = (t, my) => `<span class="vl-dict-t${my ? " vl-my" : ""}">${escapeHtml(t)}</span>`;
-  const roots = head.entries.map((e, n) => `<div class="vl-sub vl-root" data-sub="${escapeAttr(e.key)}"><span class="vl-sub-t">${meaningLines(e.meaning || "").map(t => pill(t, true)).join("")}${n ? "" : vi.map(t => pill(t)).join("")}</span>${tail(e)}</div>`);
+  const roots = head.entries.map((e, n) => `<div class="vl-sub vl-root" data-sub="${escapeAttr(e.key)}"><span class="vl-sub-t">${meaningLines(e.meaning || "").map(t => pill(t, true)).join("")}${n ? "" : vi.map((t, k) => pill(t, !k && !meaningLines(e.meaning || "").length)).join("")}</span>${tail(e)}</div>`);
   const own = head.entries.map(e => {
     const sentence = vocabContext(e).sentence || "", noted = noteSentence(e), rest = noted ? noted.rest.replace(/^(\s|<br\s*\/?>|<div>\s*<\/div>)+/i, "") : wordNotesOf(e);
     return sentence || rest ? `<div class="vl-sub" data-sub="${escapeAttr(e.key)}"><span class="vl-sub-t">${sentence ? `<span class="vl-sub-q">${vocabSentenceHtml(sentence, e.term, e.card, false, true)}</span>` : ""}${rest ? `<span class="vl-sub-n card-notes">${rest}</span>` : ""}</span></div>` : "";
@@ -22314,10 +22313,46 @@ function syncVocabEditMain(item) {
 
 const VOCAB_FLIP_MS = 450;
 
+let junkSweepClock = 0;
+
+const junkStuck = new Set;
+
+function junkVocabWord(item) {
+  if (item.sub || odLong(item.term) || meaningLines(item.meaning || "").length) return false;
+  const st = item.tkey && wordDictIndex().get(item.tkey);
+  return !!st && !!st.vd && !(st.vg || []).some(g => (g.terms || []).length) && !(st.defs || []).some(d => d && d.t);
+}
+
+function sweepJunkWords() {
+  if (currentView !== "vocab" || vocabEditingKey || editorOpen()) return;
+  const junk = lessonVocabItems(vocabSource()).filter(i => !junkStuck.has(i.key) && junkVocabWord(i)).map(item => ({item: item, next: rewrittenVocabNotes(item.card, item, null, null)})).filter(x => x.next || junkStuck.add(x.item.key) && false);
+  if (!junk.length) return;
+  pushDeleteUndo(junk.length === 1 ? "Deleted word without a meaning — " + junk[0].item.term : "Deleted " + junk.length + " words without a meaning");
+  junk.forEach(({item: item}) => {
+    const row = item.card, next = rewrittenVocabNotes(row, item, null, null);
+    if (!next) return junkStuck.add(item.key);
+    junkStuck.add(item.key);
+    row.notes = next.notes;
+    row.notesHtml = next.notesHtml;
+    if (row.vocab) delete row.vocab[item.key];
+    if (vocabSession) {
+      if (vocabSession.queue[0] === item.key) vocabSession.flipped = false;
+      dropVocabSessionKey(item.key);
+    }
+    if (vocabHoveredKey === item.key) vocabHoveredKey = null;
+  });
+  scheduleAutoSave();
+  render();
+  renderVocab();
+  renderLessonList();
+}
+
 function renderVocab() {
   syncWebBack();
   markFreshLesson();
   if (currentView !== "vocab") return;
+  clearTimeout(junkSweepClock);
+  junkSweepClock = setTimeout(sweepJunkWords, 600);
   document.getElementById("viewVocab").classList.remove("word-list-on");
   document.getElementById("wordListHead").hidden = true;
   if (taskRun && vocabView === "card" && !vocabEditingKey && vocabSession && vocabSession.lessonId === currentLessonId && (taskRun.opening || taskRun.current && taskRun.current.k === "v") && !currentVocabItem()) {

@@ -276,6 +276,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-129 | `82c9c96` | Mặt sau quá dài (đã thu chữ nhỏ nhất) thì bắt đầu từ trên và cuộn trong thẻ |
 | FLASH-130 | `089a9d8` | Thẻ định nghĩa/ví dụ: dòng nghĩa là nghĩa của từ, bản dịch nằm dưới định nghĩa; biển báo bỏ tooltip; dòng đồng nghĩa/họ từ tô màu từ đã có; popup nhỏ đều 16px |
 | FLASH-131 | `4d4acec` | ☰ List: hàng pill là nghĩa gốc của từ (nghĩa của bạn xanh lá, rồi máy dịch), NEW và ✕ cuối hàng; khối xanh chỉ còn câu, có câu mới hiện |
+| FLASH-132 | `pending` | Từ không có nghĩa nào (sau khi tra) tự xóa, Undo được; hàng pill thẳng mép với từ và nút loa; không có nghĩa của bạn thì nghĩa đầu của máy dịch thành pill xanh |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
