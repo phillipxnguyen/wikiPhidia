@@ -24132,8 +24132,19 @@ function todayLimit() {
   return TODAY_LIMITS.includes(todayPlan.limit) ? todayPlan.limit : 20;
 }
 
+function lessonAgain(l) {
+  const now = Date.now(), out = { now: 0, later: 0 };
+  const add = st => {
+    if (st.lastGrade !== GRADE_AGAIN || !st.reps || st.last < todayStart()) return;
+    if (st.due <= now) out.now++; else out.later++;
+  };
+  l.cards.forEach(c => add(srsOf(c)));
+  lessonVocabItems(lessonCardsWithExtras(l)).forEach(i => add(vocabStateOf(i)));
+  return out;
+}
+
 function todayOpenTasks(tasks) {
-  return tasks.filter(t => !t.done && t.lesson && (n => n.due + n.fresh > 0)(todayTaskCounts(t)));
+  return tasks.filter(t => t.lesson && !todayPlan.done[t.key] && (!t.done && (n => n.due + n.fresh > 0)(todayTaskCounts(t)) || lessonAgain(t.lesson).now > 0));
 }
 
 function todayGoalHtml(tasks) {
@@ -24145,7 +24156,7 @@ function todayGoalHtml(tasks) {
     const lang = todayLangOf(t.lesson.id, cache) || "", n = todayTaskCounts(t);
     byLang[lang] = (byLang[lang] || 0) + n.due + n.fresh;
   });
-  const head = !planned.length ? "Light a flag to study" : left ? `${left} card${left === 1 ? "" : "s"} today · ~${mins} min` : sum.did ? "Today is done 🎉" : "Nothing to study today";
+  const head = !planned.length ? "Light a flag to study" : left ? `${left} card${left === 1 ? "" : "s"} today · ~${mins} min` : open.length ? "A few cards are back to review" : tasks.some(t => t.lesson && !todayPlan.done[t.key] && lessonAgain(t.lesson).later) ? "Done for now ✓ Cards marked Again come back soon" : sum.did ? "Today is done 🎉" : "Nothing to study today";
   const parts = [ sum.due ? `${sum.due} to review` : "", sum.fresh ? `${sum.fresh} new` : "", sum.did ? `${sum.did} done` : "", streak ? `🔥 ${streak} day${streak === 1 ? "" : "s"} in a row` : "" ].filter(Boolean).join(" · ");
   const langRow = `<div class="hero-langs">${[ "en", "zh-CN", "ko", "ja", "vi" ].map(l => {
     const n = Object.entries(byLang).filter(([k]) => k && k.split("-")[0] === l.split("-")[0]).reduce((a, [, v]) => a + v, 0);
@@ -24269,20 +24280,24 @@ function startDayRun() {
   const lim = todayLimit();
   dayRun = {
     until: lim ? Date.now() + lim * 6e4 : 0,
-    did: 0
+    skip: new Set
   };
   return nextDayTask();
 }
 
-function nextDayTask() {
-  const t = dayRun && todayOpenTasks(routeTasks(todayTasks()))[0];
+async function nextDayTask() {
+  const t = dayRun && todayOpenTasks(routeTasks(todayTasks())).find(x => !dayRun.skip.has(x.key));
   if (!t) {
     dayRun = null;
     return false;
   }
-  openTodayTask(t);
-  if (taskRun) taskRun.day = true;
-  return true;
+  await openTodayTask(t, true);
+  return !!taskRun;
+}
+
+function celebrateDayDone() {
+  showToast("Today is done 🎉");
+  renderToday();
 }
 
 function dayRunOver() {
@@ -24330,7 +24345,7 @@ function resumeTaskToUndo() {
   renderTaskBar();
 }
 
-async function openTodayTask(t) {
+async function openTodayTask(t, day) {
   taskResume = null;
   if (!t.lesson) {
     todayPlan.done[t.key] = !t.done;
@@ -24347,7 +24362,8 @@ async function openTodayTask(t) {
     rem: t.plan ? t.rem : null,
     onC: t.plan ? t.plan.onC : undefined,
     onV: t.plan ? t.plan.onV : undefined,
-    homeMode: taskRun && taskRun.homeMode || appMode
+    homeMode: taskRun && taskRun.homeMode || appMode,
+    day: !!day
   };
   document.documentElement.classList.add("in-task");
   document.documentElement.classList.toggle("home-vocab", taskRun.homeMode === "vocab");
@@ -24393,6 +24409,11 @@ async function startTaskSide() {
   run.queue = taskQueue(l, run);
   run.current = null;
   if (!run.queue.some(taskShowable)) {
+    if (run.day && dayRun) {
+      dayRun.skip.add(run.key);
+      await leaveLessonPage();
+      if (await nextDayTask()) return;
+    }
     if (!run.book) return openToday();
     await openBooks();
     return showToast("Nothing to study here right now");
@@ -24495,10 +24516,15 @@ function taskRefillDue(run) {
 }
 
 async function finishTask(run) {
-  if (run.day && dayRun && !dayRunOver() && !taskComesBack(run)) {
-    flushAutoSave();
-    markTaskDone(run);
-    if (nextDayTask()) return showToast("Next: " + taskRun.title);
+  if (run.day && dayRun && !dayRunOver()) {
+    if (taskComesBack(run)) dayRun.skip.add(run.key); else markTaskDone(run);
+    const waiting = dayRun.skip.size;
+    await leaveLessonPage();
+    if (await nextDayTask()) return showToast("Next: " + taskRun.title);
+    if (dayRun === null) {
+      await openToday();
+      return waiting ? showToast("Done for now ✓ Cards marked Again come back in 30 min: press Start again then") : celebrateDayDone();
+    }
   }
   if (run.day) dayRun = null;
   if (run.book) {
@@ -24766,7 +24792,10 @@ function taskSideDone() {
   return true;
 }
 
-document.getElementById("taskClose").onclick = () => taskRun && taskRun.book ? openBooks() : openToday();
+document.getElementById("taskClose").onclick = () => {
+  dayRun = null;
+  return taskRun && taskRun.book ? openBooks() : openToday();
+};
 
 document.getElementById("focusExit").onclick = e => {
   e.currentTarget.blur();

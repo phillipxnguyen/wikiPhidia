@@ -468,6 +468,7 @@ Hàm chính: `updateTouchBar`, `sizeTouchBar`, `#tbSound`, `#tbMore`, `tools-ope
 | TODAY-7 | `dcdd678` | Điện thoại: tranh nền thẻ Today neo ở trên, mây không còn đè lên hàng cờ và chữ |
 | TODAY-8 | `529db14` | Thông báo 🔥 streak chỉ hiện một lần mỗi ngày (undo rồi chấm lại không hiện nữa) |
 | TODAY-9 | `35070ac` | Cải cách: một nút ▶ Start học cả ngày (nối các bài theo kế hoạch), chọn 10/20/30 phút hoặc All; cờ kèm số thẻ; dải 30 ngày thay lịch; bỏ preset Balanced, danh sách task, task tự thêm, ổ khóa và lịch |
+| TODAY-10 | `pending` | Sửa lỗi Start: sang bài kế đúng (mở lại bài mới), bài có thẻ Again chờ thì bỏ qua và mở lại khi tới giờ, báo Done for now thay vì Today is done, ✕ dừng lượt học |
 
 Hàm chính: `todayTasks`, `todayTaskCounts`, `taskQueue`, `startTaskSide`, `taskAdvance`, `leftToday`, `limitStudy`, `limitRows`.
 
