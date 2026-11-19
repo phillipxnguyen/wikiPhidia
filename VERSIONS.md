@@ -286,7 +286,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-137 | `7e9edb7` | Biển báo căn giữa: chữ và ký hiệu (vẽ lại bằng SVG) đúng tâm, ba mặt biển cùng đường tâm, cùng cao, cột cùng chạm đất |
 | FLASH-138 | `0d05a09` | ☰ List: hàng pill cách từ 17px (17/17) |
 | FLASH-139 | `28f7c5e` | Mặt trước Podcast: nút âm thanh bấm khi đang phát thì tắt (trước đó phát lại từ đầu); chân biển báo cắm ngang thanh thời lượng |
-| FLASH-140 | `pending` | Gợi ý nghĩa trong chỗ trống cùng cỡ, cùng kiểu chữ với câu (chỉ khác màu); bỏ quy tắc cũ “mặt trước theo cỡ mặt sau” |
+| FLASH-140 | `955a6c1` | Gợi ý nghĩa trong chỗ trống cùng cỡ, cùng kiểu chữ với câu (chỉ khác màu); bỏ quy tắc cũ “mặt trước theo cỡ mặt sau” |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
@@ -322,7 +322,7 @@ Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWor
 | POD-27 | `36a5da7` | Cảnh tàu điện: chấm tàu chạy theo đúng tiếng đọc như thanh thời gian, không tự chạy vòng 10 giây |
 | POD-28 | `f447d89` | Cảnh tàu điện: tàu đứng tại chỗ, các toa nhún nhẹ, vệt gió phía sau; đường đỏ có ga thành đường ray đứng yên |
 | POD-29 | `59c10dc` | Cảnh tàu: bỏ thanh thời gian chạy bên dưới, đường ray thay chỗ nó, không còn gì chuyển động dọc theo |
-| POD-30 | `pending` | Điện thoại: biển báo nhỏ lại (70%) cắm ở đầu trái thanh thời lượng ngắn hơn, không đè cảnh, không lòi ra khỏi thẻ; tàu thu toa cho vừa |
+| POD-30 | `955a6c1` | Điện thoại: biển báo nhỏ lại (70%) cắm ở đầu trái thanh thời lượng ngắn hơn, không đè cảnh, không lòi ra khỏi thẻ; tàu thu toa cho vừa |
 
 Hàm chính: `openBlind`, `closeBlind`, `blindItems`, `blindAutoItems`, `blindLines`, `blindNext`, `paintBlind`, `paintBlindLive`, `blindPlay`, `blindPlayOne`, `blindPlayLine`, `blindPlayer`, `blindSpeak`, `blindGrade`, `blindUndo`, `blindEdit`, `blindAct`, `blindFly`, `blindArt`, `blindSceneFor`, `blindCountsHtml`, `withLeadTime`, `blindTime`, `BLIND_SCENES`.
 
