@@ -744,7 +744,7 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-card.listen:not(.flipped) .vc-sent{visibility:hidden;}
   .vocab-card.listen.flipped .vc-art{display:none;}
   .vocab-card.flipped .cloze-body > :is(.vc-def-more, .vc-def-more + .vc-sub-tr){order:-1;}
-  .vocab-card.fill .cloze-notes.vc-sub-tr{font-size:calc(1em - 2px);}
+  .vocab-card.fill .cloze-notes.vc-sub-tr{font-size:calc(1em - 2px);margin-top:round(calc(-.6 * (1em + 2px)), 1px);}
   .vocab-card.fill .cloze-head{display:flex;flex-direction:column;align-items:center;gap:.25em;gap:round(.25em, 1px);margin:0 0 .6em;margin:0 0 round(.6em, 1px);font-size:inherit;line-height:inherit;font-weight:inherit;font-style:normal;}
   .vocab-card.fill .cloze-main ruby{ruby-position:over;}
   .vocab-card.fill .cloze-main rt{padding-bottom:2px;font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;font-size:.3em;font-size:round(.3em, 1px);font-weight:600;font-style:normal;line-height:1;opacity:.75;}
@@ -3621,10 +3621,15 @@ async function mtFill(lines) {
   }
 }
 
+const mtTried = new Set;
+
 async function mtFetch(texts) {
-  const need = [ ...new Set(texts) ].filter(t => t && !machineTr(t) && !mtPending.has(t));
+  const need = [ ...new Set(texts) ].filter(t => t && !machineTr(t) && !mtPending.has(t) && !mtTried.has(t));
   if (!need.length || !navigator.onLine) return false;
-  need.forEach(t => mtPending.add(t));
+  need.forEach(t => {
+    mtPending.add(t);
+    mtTried.add(t);
+  });
   const res = await translateBatch(need, detectLang(need[0]) === "vi-VN" ? "en" : "vi").catch(() => []), st = mtRead();
   need.forEach((t, k) => {
     mtPending.delete(t);
@@ -22128,6 +22133,15 @@ function sentenceTrFor(item, text, el) {
   return machineTr(text) || machineTr(oneLine(text));
 }
 
+function sentTrHtml(item, text, el) {
+  const tr = text ? sentenceTrFor(item, text, el) : "";
+  if (!tr) {
+    if (text && navigator.onLine) mtFetch([ text ]).then(got => got && el.isConnected && el.dataset.lookKey === item.key && fillVocabCard(el, item));
+    return "";
+  }
+  return `<span class="cloze-more cloze-notes vc-sub-tr">${escapeHtml(tr)}</span>`;
+}
+
 function markedTrHtml(tr, item) {
   const fold = t => t.normalize("NFC").toLowerCase(), low = fold(tr);
   const hit = meaningLines(item.meaning || (item.sub ? headMeaning(item) : "")).flatMap(m => m.split(/\s*[,;\/]\s*/)).map(m => m.trim()).filter(m => m.length > 1).sort((a, b) => b.length - a.length).map(m => [ low.indexOf(fold(m)), m.length ]).find(([ i ]) => i >= 0);
@@ -22174,16 +22188,17 @@ function fillVocabCard(el, item) {
     const noted = noteSentence(item), notes = noted ? noted.rest.replace(/^(\s|<br\s*\/?>|<div>\s*<\/div>)+/i, "") : wordNotesOf(item);
     const spy = cjkScriptFor(text, item.card) === "zh" ? pinyinLine(text) : "";
     const tr = el.dataset.listen ? "" : sentenceTrFor(item, text, el);
-    if (!tr && !el.dataset.listen && navigator.onLine) mtFetch([ text ]).then(got => got && el.isConnected && el.dataset.lookKey === item.key && !el.classList.contains("flipped") && fillVocabCard(el, item));
+    if (!tr && navigator.onLine) mtFetch([ text ]).then(got => got && el.isConnected && el.dataset.lookKey === item.key && fillVocabCard(el, item));
     el.dataset.trfront = tr;
     el.classList.toggle("tr-front", !!tr);
     const trf = tr ? `<span class="cloze-trf">${markedTrHtml(tr, item)}</span>` : "";
+    const backTr = el.dataset.listen ? sentTrHtml(item, text, el) : tr ? `<span class="cloze-more cloze-notes vc-sub-tr">${escapeHtml(tr)}</span>` : "";
     const sent = trf + `<span class="cloze-src${el.dataset.listen ? " vc-sent" : ""}">${spy ? `<span class="cloze-more cloze-spy py-line">${linePillHtml(item, text, !otherGap)}${escapeHtml(spy)}</span>` : linePillHtml(item, text, !otherGap, "cloze-pill")}${gappedHtml(text, spans, item)}</span>`;
     const own = otherGap && !item.sub && !el.dataset.xk && sentence && sentence !== text ? sentence : "";
     const ownTs = own ? linePillHtml(item, own, true) : "";
     const xm = el.dataset.xk === "tat" ? el.dataset.xtr : item.meaning || "";
-    const ownHtml = own ? `<span class="cloze-more cloze-own">${withPill(ownTs, lookupOthers(vocabSentenceHtml(own, item.term, item.card), item))}</span>` : "";
-    el.querySelector(".vocab-term").innerHTML = `<span class="cloze-body">${el.dataset.listen ? `<span class="vc-stack"><span class="vc-art" aria-hidden="true">${sceneArt(el.dataset.scene)}<span class="vc-time"><i></i></span></span>${sent}</span>` : sent}${subTrHtml(item)}${ownHtml}${notes ? `<span class="cloze-more cloze-notes">${notesWithPinyin(brLines(notes), item.card)}</span>` : ""}${familyHtml(item)}</span>`;
+    const ownHtml = own ? `<span class="cloze-more cloze-own">${withPill(ownTs, lookupOthers(vocabSentenceHtml(own, item.term, item.card), item))}</span>${sentTrHtml(item, own, el)}` : "";
+    el.querySelector(".vocab-term").innerHTML = `<span class="cloze-body">${el.dataset.listen ? `<span class="vc-stack"><span class="vc-art" aria-hidden="true">${sceneArt(el.dataset.scene)}<span class="vc-time"><i></i></span></span>${sent}</span>` : sent}${backTr}${subTrHtml(item)}${ownHtml}${notes ? `<span class="cloze-more cloze-notes">${notesWithPinyin(brLines(notes), item.card)}</span>` : ""}${familyHtml(item)}</span>`;
     el.querySelector(".vocab-term").insertAdjacentHTML("afterbegin", `<span class="cloze-more cloze-head"><span class="cloze-main">${rubyWord(item.term, item.card)}</span>${xm ? `<span class="cloze-mean">${meaningHtml(xm)}</span>` : ""}</span>`);
     el.classList.add("fill");
     el.classList.toggle("listen", !!el.dataset.listen);
@@ -22195,7 +22210,7 @@ function fillVocabCard(el, item) {
     const asked = el.dataset.defx || "", ask = asked && findWordForm(asked, item.term);
     const first = asked ? `<span class="vc-sent">${linePillHtml(item, asked, false, "cloze-pill")}${ask ? gappedHtml(asked, wordSpans(asked, item.term, ask), item) : escapeHtml(asked)}</span>` : `<span class="vc-sent vc-def">${defHead}${defText}</span>`;
     const dx = asked ? "" : item.sub ? defExample(item) : sentence;
-    const second = asked ? `<span class="cloze-more cloze-own vc-def-more">${defHead}${lookupOthers(escapeHtml(d), item)}</span>${subTrHtml(item)}` : dx ? `<span class="cloze-more cloze-own">${withPill(linePillHtml(item, dx, false), lookupOthers(vocabSentenceHtml(dx, item.term, item.card), item))}</span>` : "";
+    const second = asked ? `<span class="cloze-more cloze-own vc-def-more">${defHead}${lookupOthers(escapeHtml(d), item)}</span>${subTrHtml(item)}` : dx ? `<span class="cloze-more cloze-own">${withPill(linePillHtml(item, dx, false), lookupOthers(vocabSentenceHtml(dx, item.term, item.card), item))}</span>${sentTrHtml(item, dx, el)}` : "";
     const hm = meaningLines(item.meaning || "").filter(l => l !== d).join("\n");
     const lead = el.dataset.listen ? `<span class="vc-stack"><span class="vc-art" aria-hidden="true">${asked ? sceneArt(el.dataset.scene) : `<span class="vc-sign-row">${askSignHtml(xk || "def")}${sceneArt(el.dataset.scene)}</span>`}<span class="vc-time"><i></i></span></span>${first}</span>` : first;
     const firstTr = asked ? "" : subTrHtml(item);
@@ -22205,8 +22220,8 @@ function fillVocabCard(el, item) {
     el.classList.toggle("listen", !!el.dataset.listen);
   } else if (ex === "word" && el.dataset.listen && !viewOnly) {
     const noted = noteSentence(item), notes = noted ? noted.rest.replace(/^(\s|<br\s*\/?>|<div>\s*<\/div>)+/i, "") : wordNotesOf(item);
-    const sent = sentence ? `<span class="vc-sent">${withPill(linePillHtml(item, sentence, true, "cloze-pill"), lookupOthers(vocabSentenceHtml(sentence, item.term, item.card), item))}</span>` : '<span class="vc-sent"></span>';
-    el.querySelector(".vocab-term").innerHTML = `<span class="cloze-body"><span class="vc-stack"><span class="vc-art" aria-hidden="true">${sceneArt(el.dataset.scene)}<span class="vc-time"><i></i></span></span>${sent}</span>${notes ? `<span class="cloze-more cloze-notes">${notesWithPinyin(brLines(notes), item.card)}</span>` : ""}</span>`;
+    const sent = (sentence ? `<span class="vc-sent">${withPill(linePillHtml(item, sentence, true, "cloze-pill"), lookupOthers(vocabSentenceHtml(sentence, item.term, item.card), item))}</span>` : '<span class="vc-sent"></span>');
+    el.querySelector(".vocab-term").innerHTML = `<span class="cloze-body"><span class="vc-stack"><span class="vc-art" aria-hidden="true">${sceneArt(el.dataset.scene)}<span class="vc-time"><i></i></span></span>${sent}</span>${sentTrHtml(item, sentence, el)}${notes ? `<span class="cloze-more cloze-notes">${notesWithPinyin(brLines(notes), item.card)}</span>` : ""}</span>`;
     el.querySelector(".vocab-term").insertAdjacentHTML("afterbegin", `<span class="cloze-more cloze-head"><span class="cloze-main">${rubyWord(item.term, item.card)}</span>${headMeaning(item) ? `<span class="cloze-mean">${meaningHtml(headMeaning(item))}</span>` : ""}</span>`);
     el.classList.add("fill", "listen");
   } else if (ex === "sent" && whole && el.dataset.listen) {
