@@ -136,7 +136,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-80 | `91d10b4` | Bỏ mức Expert (1 phút) |
 | THEATER-81 | `14b9d0b` | Medium/Hard: dịch theo từng câu rồi ghép, đọc theo từng câu (hết lỗi không dịch/không đọc); bản dịch máy lưu vào bài để xem offline |
 | THEATER-82 | `c482dc8` | Interpreter: vòng âm thanh chạy một lượt trên cả đoạn ghép, không quay lại sau mỗi câu nhỏ |
-| THEATER-83 | `pending` | Sửa lỗi mất thẻ: đổi Easy/Medium/Hard khi học từ Today giờ ghép câu trong từng bài, thẻ ghép giữ đúng bài của nó (trước đó bài bị xóa sạch thẻ) |
+| THEATER-83 | `3a2502a` | Sửa lỗi mất thẻ: đổi Easy/Medium/Hard khi học từ Today giờ ghép câu trong từng bài, thẻ ghép giữ đúng bài của nó (trước đó bài bị xóa sạch thẻ) |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
@@ -470,7 +470,7 @@ Hàm chính: `updateTouchBar`, `sizeTouchBar`, `#tbSound`, `#tbMore`, `tools-ope
 | TODAY-8 | `529db14` | Thông báo 🔥 streak chỉ hiện một lần mỗi ngày (undo rồi chấm lại không hiện nữa) |
 | TODAY-9 | `35070ac` | Cải cách: một nút ▶ Start học cả ngày (nối các bài theo kế hoạch), chọn 10/20/30 phút hoặc All; cờ kèm số thẻ; dải 30 ngày thay lịch; bỏ preset Balanced, danh sách task, task tự thêm, ổ khóa và lịch |
 | TODAY-10 | `4e4c8f8` | Sửa lỗi Start: sang bài kế đúng (mở lại bài mới), bài có thẻ Again chờ thì bỏ qua và mở lại khi tới giờ, báo Done for now thay vì Today is done, ✕ dừng lượt học |
-| TODAY-11 | `pending` | Start với bài video: hết giờ thì dừng ngay sau thẻ đang chấm trong theater (không đợi hết video) |
+| TODAY-11 | `3a2502a` | Start với bài video: hết giờ thì dừng ngay sau thẻ đang chấm trong theater (không đợi hết video) |
 
 Hàm chính: `todayTasks`, `todayTaskCounts`, `taskQueue`, `startTaskSide`, `taskAdvance`, `leftToday`, `limitStudy`, `limitRows`.
 
