@@ -282,6 +282,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-135 | `5c884ca` | ☰ List: pill nghĩa không trùng (gộp chữ hoa/mã dấu), ✕ góc phải trên khi rê/chạm để xóa nghĩa hoặc bỏ gợi ý; popup nhỏ lùi chữ chính 1px |
 | FLASH-136 | `c8d3e3a` | Biển Definition bỏ chữ i (tooltip để lại); ✕ pill tròn xám 16px gọn; nghĩa trong mọi popup cùng 18px đậm vừa, gợi ý cũng vậy |
 | FLASH-137 | `7e9edb7` | Biển báo căn giữa: chữ và ký hiệu (vẽ lại bằng SVG) đúng tâm, ba mặt biển cùng đường tâm, cùng cao, cột cùng chạm đất |
+| FLASH-138 | `pending` | ☰ List: hàng pill cách từ 17px (17/17) |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
@@ -649,6 +650,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-84 | `5503758` | Extension 1.6.53: bỏ CSS lẫn trong định nghĩa Wiktionary |
 | LOOKUP-85 | `82c9c96` | Họ từ, từ đồng/trái nghĩa ở mặt sau tra được như mọi câu: ngôn ngữ đoán theo chính khối chữ, không theo cả thẻ |
 | LOOKUP-86 | `089a9d8` | Popup từ bên Vocabulary không còn ô Notes |
+| LOOKUP-87 | `pending` | Popup tra từ: chữ cách mép trên 17px như popup sửa (trước 24px), nút vẫn giữa dòng |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
