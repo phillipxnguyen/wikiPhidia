@@ -683,6 +683,8 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-card.fill.flipped .cloze-gap{box-shadow:none;background:var(--word-mark);}
   .vocab-card.fill.flipped :is(.cloze-word, .cloze-more){visibility:visible;}
   .cloze-more{display:none;}
+  .vocab-card.tr-front:not(.flipped) .cloze-body > .cloze-src, .vocab-card.flipped .cloze-body > .cloze-trf{display:none;}
+  .cloze-trm{padding:0 2px;border-radius:4px;background:var(--word-mark);color:inherit;}
   .vocab-card.fill :is(.cloze-spy, .cloze-notes){font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;font-style:normal;}
   .vocab-card.fill .cloze-spy{margin:0 0 4px;font-size:.6em;font-size:round(.6em, 1px);line-height:1.4;line-height:round(1.4em, 1px);font-weight:600;}
   .vocab-card.fill:not(.flipped) :is(.cloze-head, .cloze-spy, .cloze-notes, .cloze-own){display:none;}
@@ -3609,6 +3611,23 @@ async function mtFill(lines) {
     }
     if (listTrOn) paintListTr();
   }
+}
+
+async function mtFetch(texts) {
+  const need = [ ...new Set(texts) ].filter(t => t && !machineTr(t) && !mtPending.has(t));
+  if (!need.length || !navigator.onLine) return false;
+  need.forEach(t => mtPending.add(t));
+  const res = await translateBatch(need, detectLang(need[0]) === "vi-VN" ? "en" : "vi").catch(() => []), st = mtRead();
+  need.forEach((t, k) => {
+    mtPending.delete(t);
+    if (res[k] && res[k] !== t) st[t] = res[k];
+  });
+  const keys = Object.keys(st);
+  if (keys.length > MT_MAX) keys.slice(0, keys.length - MT_MAX).forEach(k => delete st[k]);
+  try {
+    localStorage.setItem(MT_KEY, JSON.stringify(st));
+  } catch (e) {}
+  return need.some(t => st[t]);
 }
 
 function watchLineTr(r) {
@@ -22091,6 +22110,24 @@ function subTrHtml(item) {
   return tr && tr !== item.meaning ? `<span class="cloze-more cloze-notes vc-sub-tr">${meaningHtml(tr)}</span>` : "";
 }
 
+function sentenceTrFor(item, text, el) {
+  const card = item.card, same = t => oneLine(t || "").normalize("NFC") === oneLine(text).normalize("NFC");
+  if (el.dataset.xk === "tat" && el.dataset.xtr && same(el.dataset.other)) return el.dataset.xtr;
+  if (same(card.q)) {
+    const own = oneLine(card.a || "").trim() || watchTranslation(card);
+    if (own) return own;
+  }
+  return machineTr(text) || machineTr(oneLine(text));
+}
+
+function markedTrHtml(tr, item) {
+  const fold = t => t.normalize("NFC").toLowerCase(), low = fold(tr);
+  const hit = meaningLines(item.meaning || (item.sub ? headMeaning(item) : "")).flatMap(m => m.split(/\s*[,;\/]\s*/)).map(m => m.trim()).filter(m => m.length > 1).sort((a, b) => b.length - a.length).map(m => [ low.indexOf(fold(m)), m.length ]).find(([ i ]) => i >= 0);
+  if (!hit) return escapeHtml(tr);
+  const [ i, n ] = hit, t = tr.normalize("NFC");
+  return escapeHtml(t.slice(0, i)) + `<mark class="cloze-trm">${escapeHtml(t.slice(i, i + n))}</mark>` + escapeHtml(t.slice(i + n));
+}
+
 function fillVocabCard(el, item) {
   const viewOnly = vocabViewOnly(item);
   const sentence = vocabContext(item).sentence || "", gap = !viewOnly && sentence && !wholeSentenceCard(item, sentence) ? findTermIn(sentence, item.term) : null;
@@ -22121,12 +22158,19 @@ function fillVocabCard(el, item) {
   }
   el.classList.toggle("view-only", viewOnly);
   const ex = el.dataset.ex, otherGap = ex === "other" && el.dataset.other ? (item.sub || el.dataset.dictx ? findWordForm : findTermIn)(el.dataset.other, item.term) : null;
+  el.classList.remove("tr-front");
+  el.dataset.trfront = "";
   if (ex === "cloze" && gap || otherGap) {
     const text = otherGap ? el.dataset.other : sentence, span = otherGap || gap;
     const spans = wordSpans(text, item.term, span);
     const noted = noteSentence(item), notes = noted ? noted.rest.replace(/^(\s|<br\s*\/?>|<div>\s*<\/div>)+/i, "") : wordNotesOf(item);
     const spy = cjkScriptFor(text, item.card) === "zh" ? pinyinLine(text) : "";
-    const sent = `<span${el.dataset.listen ? ' class="vc-sent"' : ""}>${spy ? `<span class="cloze-more cloze-spy py-line">${linePillHtml(item, text, !otherGap)}${escapeHtml(spy)}</span>` : linePillHtml(item, text, !otherGap, "cloze-pill")}${gappedHtml(text, spans, item)}</span>`;
+    const tr = el.dataset.listen ? "" : sentenceTrFor(item, text, el);
+    if (!tr && !el.dataset.listen && navigator.onLine) mtFetch([ text ]).then(got => got && el.isConnected && el.dataset.lookKey === item.key && !el.classList.contains("flipped") && fillVocabCard(el, item));
+    el.dataset.trfront = tr;
+    el.classList.toggle("tr-front", !!tr);
+    const trf = tr ? `<span class="cloze-trf">${markedTrHtml(tr, item)}</span>` : "";
+    const sent = trf + `<span class="cloze-src${el.dataset.listen ? " vc-sent" : ""}">${spy ? `<span class="cloze-more cloze-spy py-line">${linePillHtml(item, text, !otherGap)}${escapeHtml(spy)}</span>` : linePillHtml(item, text, !otherGap, "cloze-pill")}${gappedHtml(text, spans, item)}</span>`;
     const own = otherGap && !item.sub && !el.dataset.xk && sentence && sentence !== text ? sentence : "";
     const ownTs = own ? linePillHtml(item, own, true) : "";
     const xm = el.dataset.xk === "tat" ? el.dataset.xtr : item.meaning || "";
@@ -23396,7 +23440,7 @@ function sayVocabWord(item) {
   }
   soundWaitOn(btn);
   const own = vocabContext(item).sentence || "", shown = card.dataset.owndef || card.dataset.ex === "other" && card.dataset.other || own;
-  const pool = item.sub ? [ subPair(item)[0] ] : [ shown ].filter(Boolean);
+  const pool = card.dataset.trfront && !card.dataset.listen ? [ card.dataset.trfront ] : item.sub ? [ subPair(item)[0] ] : [ shown ].filter(Boolean);
   if (!card.dataset.listenText || !pool.includes(card.dataset.listenText)) card.dataset.listenText = pool[Math.floor(Math.random() * pool.length)] || item.term;
   const text = card.dataset.listenText;
   const utter = trackSpeech(new SpeechSynthesisUtterance(cleanForSpeech(text)));
@@ -23465,7 +23509,7 @@ function toggleVocabSound(item) {
   if (commitVocabEdit()) renderVocab();
   const card = document.getElementById("vocabCard");
   if (vocabSoundOn() && soundHeard) return stopVocabSound();
-  if (card && card.dataset.listen && !vocabSession.flipped) return sayVocabWord(item);
+  if (card && (card.dataset.listen || card.dataset.trfront) && !vocabSession.flipped) return sayVocabWord(item);
   playVocabSound(item, cardFrontShowing(null));
 }
 
