@@ -589,9 +589,10 @@ window.onYouTubeIframeAPIReady = function(){
   .ed-sub-h{margin-top:16px;font-size:13px;line-height:16px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-2);}
   #editPopup.sub-edit .le-box{padding:16px;}
   #editPopup.sub-edit #vocabEditMain :is(.vem-t, .vem-a){text-box:trim-both cap alphabetic;}
+  #editPopup.sub-edit #vocabEditMain .vem-t{margin-top:1px;}
   #editPopup.sub-edit #vocabEditMain .vem-a{margin-top:16px;}
-  #editPopup.sub-edit .ed-card > .ed-say{top:-6px;}
-  #editPopup.sub-edit .ed-card:has(.vem-t.long) > .ed-say{top:-9px;}
+  #editPopup.sub-edit .ed-card > .ed-say{top:-5px;}
+  #editPopup.sub-edit .ed-card:has(.vem-t.long) > .ed-say{top:-8px;}
   #editPopup.sub-edit .ed-card + :is(.edit-actions, .vocab-editor-actions){margin-top:16px;}
   .ed-sub-row{display:flex;align-items:flex-start;gap:8px;margin-top:14px;}
   .ed-sub-h + .ed-sub-row{margin-top:8px;}
@@ -620,6 +621,11 @@ window.onYouTubeIframeAPIReady = function(){
   .vl-more{display:grid;grid-template-columns:max-content minmax(0, 1fr);gap:8px 16px;font-size:15px;line-height:22px;}
   .vl-more b{font-size:12px;line-height:22px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--text-2);}
   .vl-more span{color:var(--text);}
+  .vl-root .vl-dict-t{position:relative;}
+  .vl-pill-x{position:absolute;top:-10px;right:-10px;display:none;width:18px;height:18px;padding:0;border:1px solid var(--border);border-radius:9px;background:var(--surface);color:var(--text-2);font-size:10px;line-height:16px;cursor:pointer;}
+  .vl-pill-x::before{content:"✕";}
+  @media (hover:hover){.vl-root .vl-dict-t:hover > .vl-pill-x{display:block;}.vl-pill-x:hover{background:var(--danger-soft, rgba(220,60,60,.12));color:var(--danger, #c0392b);}}
+  .vl-root .vl-dict-t.picked > .vl-pill-x{display:block;}
   .vl-dict-t{padding:7px 10px;text-box:trim-both cap alphabetic;border:1px solid var(--border);border-radius:14px;font-size:15px;line-height:26px;color:var(--text);}
   .vl-sub{display:flex;align-items:center;gap:8px;font-size:16px;line-height:24px;cursor:default;}
   .vl-sub-t{flex:1;min-width:0;color:var(--text);}
@@ -21371,16 +21377,38 @@ function wordExtrasHtml(tkey, term) {
   return rows.length ? `<div class="vl-blk vl-more">${rows.map(([k, list]) => `<b>${k}</b><span>${list.map(escapeHtml).join(" · ")}</span>`).join("")}</div>` : "";
 }
 
+function foldMeaning(t) {
+  return String(t || "").normalize("NFC").replace(/\s+/g, " ").trim().toLocaleLowerCase();
+}
+
 function wordViTerms(head) {
-  const tk = head.entries[0] && head.entries[0].tkey, fold = t => t.toLocaleLowerCase(), mine = new Set(head.entries.flatMap(x => meaningLines(x.meaning || "")).map(fold)), seen = new Set;
-  return wordViGroups(tk, head.term).flatMap(g => g.terms).filter(t => !mine.has(fold(t)) && !seen.has(fold(t)) && seen.add(fold(t)));
+  const tk = head.entries[0] && head.entries[0].tkey, seen = new Set(head.entries.flatMap(x => meaningLines(x.meaning || "").concat(x.card.viHide && x.card.viHide[tk] || [])).map(foldMeaning));
+  return wordViGroups(tk, head.term).flatMap(g => g.terms).filter(t => t && !seen.has(foldMeaning(t)) && seen.add(foldMeaning(t)));
+}
+
+function removeMeaningPill(pill) {
+  const row = pill.closest(".vl-root"), item = row && lessonVocabItems(vocabSource()).find(i => i.key === row.dataset.sub), m = pill.dataset.m;
+  if (!item || !m) return;
+  if (pill.classList.contains("vl-my") && meaningLines(item.meaning || "").some(t => foldMeaning(t) === foldMeaning(m))) {
+    updateVocabEntry(item, item.term, meaningLines(item.meaning || "").filter(t => foldMeaning(t) !== foldMeaning(m)).join("\n"));
+    renderVocab();
+    return;
+  }
+  const tk = item.tkey;
+  if (!tk) return;
+  pushUndo("Removed meaning — " + m);
+  const card = item.card, hide = Object.assign({}, card.viHide);
+  hide[tk] = [ ...new Set((hide[tk] || []).concat(foldMeaning(m))) ];
+  card.viHide = hide;
+  scheduleAutoSave();
+  renderVocab();
 }
 
 function cardsListHtml(head, subs) {
   const tail = x => `<span class="vl-sub-st">${vocabStatusIcon(vocabStateOf(x))}</span><button type="button" class="vl-sub-del" aria-label="Delete this card" title="Delete this card">✕</button>`;
   const mean = x => headMeaning(x) ? `<span class="vl-sub-m">${meaningHtml(headMeaning(x))}</span>` : "";
   const exList = list => list.length ? `<div class="vl-exs${list.length > 1 ? " many" : ""}">${list.map(t => `<div class="vl-ex">${vocabSentenceHtml(t, head.term, head.card, false, true)}</div>`).join("")}</div>` : "";
-  const vi = wordViTerms(head), pill = (t, my) => `<span class="vl-dict-t${my ? " vl-my" : ""}">${escapeHtml(t)}</span>`;
+  const vi = wordViTerms(head), pill = (t, my) => `<span class="vl-dict-t${my ? " vl-my" : ""}" data-m="${escapeAttr(t)}">${escapeHtml(t)}<button type="button" class="vl-pill-x" aria-label="Remove this meaning"></button></span>`;
   const roots = head.entries.map((e, n) => `<div class="vl-sub vl-root" data-sub="${escapeAttr(e.key)}"><span class="vl-sub-t">${meaningLines(e.meaning || "").map(t => pill(t, true)).join("")}${n ? "" : vi.map((t, k) => pill(t, !k && !meaningLines(e.meaning || "").length)).join("")}</span>${tail(e)}</div>`);
   const own = head.entries.map(e => {
     const sentence = vocabContext(e).sentence || "", noted = noteSentence(e), rest = noted ? noted.rest.replace(/^(\s|<br\s*\/?>|<div>\s*<\/div>)+/i, "") : wordNotesOf(e);
@@ -21445,6 +21473,14 @@ function saveSenses(item, change) {
 }
 
 document.getElementById("vocabList").addEventListener("click", e => {
+  const px = e.target.closest && e.target.closest(".vl-pill-x"), pp = !px && isTouch() && e.target.closest && e.target.closest(".vl-root .vl-dict-t");
+  if (px || pp && !pp.classList.contains("picked")) {
+    e.stopPropagation();
+    e.preventDefault();
+    document.querySelectorAll(".vl-dict-t.picked").forEach(x => x.classList.remove("picked"));
+    if (px) removeMeaningPill(px.closest(".vl-dict-t")); else pp.classList.add("picked");
+    return;
+  }
   const t = e.target.closest && e.target.closest(".vl-sub-del, .vl-sub");
   if (!t) return;
   e.stopPropagation();

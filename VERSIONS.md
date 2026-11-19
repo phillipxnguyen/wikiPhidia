@@ -279,6 +279,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-132 | `69df50f` | Từ không có nghĩa nào (sau khi tra) tự xóa, Undo được; hàng pill thẳng mép với từ và nút loa; không có nghĩa của bạn thì nghĩa đầu của máy dịch thành pill xanh |
 | FLASH-133 | `2e82c3a` | ☰ List: từ chính lùi xuống 2px |
 | FLASH-134 | `d2c6eae` | ☰ List: từ chính chỉ lùi 1px (máy tính và điện thoại) |
+| FLASH-135 | `pending` | ☰ List: pill nghĩa không trùng (gộp chữ hoa/mã dấu), ✕ góc phải trên khi rê/chạm để xóa nghĩa hoặc bỏ gợi ý; popup nhỏ lùi chữ chính 1px |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
