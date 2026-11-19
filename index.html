@@ -1121,6 +1121,11 @@ window.onYouTubeIframeAPIReady = function(){
   .toolbar #listTrans[hidden]{display:none;}
   .toolbar #listJoin{box-sizing:border-box;height:var(--tb-h);padding:0 12px 0 36px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%237a8494' stroke-width='1.8' stroke-linecap='round'%3E%3Cpath d='M3 5h14M3 10h14M3 15h9'/%3E%3C/svg%3E") 12px 50% / 18px 18px no-repeat;color:var(--text);font:inherit;font-size:15px;cursor:pointer;}
   .toolbar #listJoin[hidden]{display:none;}
+  .tr-wait{font-family:"Doto", system-ui, sans-serif;font-weight:800;color:var(--placeholder);}
+  .tr-menu{position:fixed;z-index:2100;padding:4px;border:1px solid var(--border);border-radius:12px;background:var(--surface);box-shadow:var(--shadow-md);}
+  .tr-menu button{display:block;height:36px;padding:0 14px;border:0;border-radius:8px;background:none;color:var(--text);font-size:14px;line-height:20px;font-weight:600;white-space:nowrap;}
+  @media (hover:hover){.tr-menu button:hover{background:var(--surface-2);}}
+  #vocabTrans svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;}
   #listTrans svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;}
   #listTrans.active{background:var(--accent);color:var(--on-accent, #ffffff);border-color:var(--accent);}
   .card-notes .row-tr{color:var(--a-text);}
@@ -3094,6 +3099,7 @@ window.onYouTubeIframeAPIReady = function(){
     </div>
     <span id="vocabFlag" class="flag-set toolbar-flag" hidden></span>
     <div class="toolbar-right">
+      <button id="vocabTrans" class="list-trans" aria-label="Translate words without a meaning" title="Translate the words that have no meaning yet" hidden><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M3 10h14M10 3c2.6 2.6 2.6 11.4 0 14M10 3c-2.6 2.6-2.6 11.4 0 14"/></svg></button>
       <button id="vocabSpeak" aria-label="Play the sentence">🔊</button>
       <select id="vocabSpeed" aria-label="Playback speed" hidden></select>
     </div>
@@ -3373,6 +3379,166 @@ function paintListTr() {
     if (el.textContent !== t) el.textContent = t;
   });
 }
+
+let answerFill = null, wordFill = null;
+
+async function translateIntoAnswers() {
+  if (answerFill || !currentLessonId || isVirtualLesson()) return;
+  const todo = rows.filter(r => r.uid !== EXTRA_UID && (r.q || "").trim() && !hasAnswer(r));
+  if (!todo.length) return showToast("Every card has its answer already");
+  answerFill = new Set(todo.map(r => r.id));
+  render();
+  if (watch) paintWatchList();
+  showToast("Translating…");
+  try {
+    await mtFill(todo);
+  } catch (e) {}
+  for (let w = 0; w < 120 && todo.some(r => rowParts(r).some(t => mtPending.has(t))); w++) await new Promise(ok => setTimeout(ok, 250));
+  keepRowMt(todo);
+  const got = todo.map(r => [ r, watchTranslation(r) || rowMt(r) ]).filter(([, t]) => t);
+  answerFill = null;
+  if (got.length) {
+    pushUndo("Translated into answers");
+    got.forEach(([r, t]) => {
+      r.a = t;
+      r.aHtml = textHtml(t);
+    });
+    scheduleAutoSave();
+  }
+  render();
+  if (watch) {
+    watch.rowHtml = null;
+    paintWatchList();
+    paintWatchLine();
+  }
+  renderLessonList();
+  showToast(got.length ? `Translated ${got.length} card${got.length === 1 ? "" : "s"} into answers${got.length < todo.length ? ` · ${todo.length - got.length} could not be translated` : ""}` : navigator.onLine ? "Couldn't translate them" : "Translating needs a connection");
+}
+
+async function translateIntoMeanings() {
+  if (wordFill) return;
+  const todo = lessonVocabItems(vocabSource()).filter(i => !i.sub && !meaningLines(i.meaning || "").length);
+  if (!todo.length) return showToast("Every word has its meaning already");
+  wordFill = new Set(todo.map(i => i.key));
+  renderVocab();
+  showToast("Translating…");
+  const pick = i => (wordViGroups(i.tkey, i.term).flatMap(g => g.terms)[0] || machineTr(i.term) || "").trim();
+  const need = todo.filter(i => !pick(i)).map(i => i.term);
+  if (need.length && navigator.onLine) {
+    for (let k = 0; k < need.length; k += 8) {
+      const part = need.slice(k, k + 8), res = await translateBatch(part, detectLang(part[0]) === "vi-VN" ? "en" : "vi").catch(() => []), st = mtRead();
+      part.forEach((t, n) => {
+        if (res[n] && res[n] !== t) st[t] = res[n];
+      });
+      try {
+        localStorage.setItem(MT_KEY, JSON.stringify(st));
+      } catch (e) {}
+    }
+  }
+  wordFill = null;
+  const got = todo.map(i => [ i, pick(i) ]).filter(([, m]) => m);
+  if (got.length) {
+    pushUndo("Translated into meanings");
+    got.forEach(([item, m]) => {
+      const row = item.card, next = rewrittenVocabNotes(row, item, item.term, m);
+      if (!next) return;
+      row.notes = next.notes;
+      row.notesHtml = next.notesHtml;
+      const key = wordKey(item.term, m);
+      if (key !== item.key && row.vocab && row.vocab[item.key]) {
+        row.vocab[key] = row.vocab[item.key];
+        delete row.vocab[item.key];
+      }
+      renameVocabSessionKey(item.key, key);
+    });
+    scheduleAutoSave();
+  }
+  renderVocab();
+  renderLessonList();
+  showToast(got.length ? `Translated ${got.length} word${got.length === 1 ? "" : "s"}${got.length < todo.length ? ` · ${todo.length - got.length} could not be translated` : ""}` : navigator.onLine ? "Couldn't translate them" : "Translating needs a connection");
+}
+
+let trMenuEl = null;
+
+function closeTrMenu() {
+  if (trMenuEl) trMenuEl.remove();
+  trMenuEl = null;
+}
+
+function openTrMenu(anchor, label, run) {
+  closeTrMenu();
+  const m = document.createElement("div");
+  m.className = "tr-menu";
+  m.innerHTML = `<button type="button">${escapeHtml(label)}</button>`;
+  document.body.appendChild(m);
+  const r = anchor.getBoundingClientRect();
+  m.style.left = Math.round(Math.max(8, Math.min(r.left, innerWidth - m.offsetWidth - 8))) + "px";
+  m.style.top = Math.round(r.bottom + 8 + m.offsetHeight > innerHeight ? r.top - 8 - m.offsetHeight : r.bottom + 8) + "px";
+  m.querySelector("button").onclick = () => {
+    closeTrMenu();
+    run();
+  };
+  trMenuEl = m;
+}
+
+document.addEventListener("pointerdown", e => {
+  if (trMenuEl && !trMenuEl.contains(e.target)) closeTrMenu();
+}, true);
+
+function holdForMenu(el, open) {
+  let timer = 0, held = false;
+  el.addEventListener("pointerdown", e => {
+    held = false;
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      held = true;
+      open(e.currentTarget || el);
+    }, 500);
+  });
+  [ "pointerup", "pointerleave", "pointercancel" ].forEach(k => el.addEventListener(k, () => clearTimeout(timer)));
+  el.addEventListener("contextmenu", e => {
+    e.preventDefault();
+    held = true;
+    open(el);
+  });
+  el.addEventListener("click", e => {
+    if (!held) return;
+    held = false;
+    e.stopImmediatePropagation();
+    e.preventDefault();
+  }, true);
+}
+
+holdForMenu(document.getElementById("listTrans"), b => openTrMenu(b, "Translate into answers", translateIntoAnswers));
+
+let watchTrHold = { timer: 0, held: false };
+
+document.addEventListener("pointerdown", e => {
+  const b = e.target.closest && e.target.closest('#watchPop .w-pill[data-w="trans"]');
+  clearTimeout(watchTrHold.timer);
+  watchTrHold.held = false;
+  if (b) watchTrHold.timer = setTimeout(() => {
+    watchTrHold.held = true;
+    openTrMenu(b, "Translate into answers", translateIntoAnswers);
+  }, 500);
+}, true);
+
+[ "pointerup", "pointercancel" ].forEach(k => document.addEventListener(k, () => clearTimeout(watchTrHold.timer), true));
+
+document.addEventListener("contextmenu", e => {
+  const b = e.target.closest && e.target.closest('#watchPop .w-pill[data-w="trans"]');
+  if (!b) return;
+  e.preventDefault();
+  watchTrHold.held = true;
+  openTrMenu(b, "Translate into answers", translateIntoAnswers);
+}, true);
+
+document.addEventListener("click", e => {
+  if (!watchTrHold.held || !(e.target.closest && e.target.closest('#watchPop .w-pill[data-w="trans"]'))) return;
+  watchTrHold.held = false;
+  e.stopImmediatePropagation();
+  e.preventDefault();
+}, true);
 
 function preloadTranslations() {
   if (!currentLessonId || isVirtualLesson() || appMode === "vocab") return;
@@ -8417,7 +8583,8 @@ function buildRowTr(r) {
   if (loopingRowId === r.id) tr.classList.add("row-playing");
   if (selectedRowId === r.id) tr.classList.add("row-selected");
   const q = `<div class="cell ${r.qHidden ? "hidden" : "shown"}" data-field="q">${qCellContent(r)}</div>`;
-  const trLine = listTrOn && !groupState && !hasAnswer(r) ? `<div class="row-tr" data-id="${r.id}">${escapeHtml(rowTr(r))}</div>` : "";
+  const wait = !!answerFill && answerFill.has(r.id) && !hasAnswer(r);
+  const trLine = (listTrOn || wait) && !groupState && !hasAnswer(r) ? `<div class="row-tr" data-id="${r.id}">${wait && !rowTr(r) ? '<span class="tr-wait">Translating…</span>' : escapeHtml(rowTr(r))}</div>` : "";
   const own = !r.aHidden && !r.qHidden ? cardNotesHtml(r) : "";
   const notes = !trLine ? own : own ? own.replace('<div class="card-notes">', '<div class="card-notes">' + trLine) : `<div class="card-notes tr-only">${trLine}</div>`;
   const a = `<div class="cell ${r.aHidden ? "hidden" : "shown"}" data-field="a">${aCellContent(r)}</div>`;
@@ -21340,8 +21507,8 @@ function cardsListHtml(head, subs) {
   const tail = x => `<span class="vl-sub-st">${vocabStatusIcon(vocabStateOf(x))}</span><button type="button" class="vl-sub-del" aria-label="Delete this card" title="Delete this card">✕</button>`;
   const mean = x => headMeaning(x) ? `<span class="vl-sub-m">${meaningHtml(headMeaning(x))}</span>` : "";
   const exList = list => list.length ? `<div class="vl-exs${list.length > 1 ? " many" : ""}">${list.map(t => `<div class="vl-ex">${vocabSentenceHtml(t, head.term, head.card, false, true)}</div>`).join("")}</div>` : "";
-  const vi = wordViTerms(head), pill = (t, my) => `<span class="vl-dict-t${my ? " vl-my" : ""}" data-m="${escapeAttr(t)}">${escapeHtml(t)}<button type="button" class="vl-pill-x" aria-label="Remove this meaning"></button></span>`;
-  const roots = head.entries.map((e, n) => `<div class="vl-sub vl-root" data-sub="${escapeAttr(e.key)}"><span class="vl-sub-t">${meaningLines(e.meaning || "").map(t => pill(t, true)).join("")}${n ? "" : vi.map((t, k) => pill(t, !k && !meaningLines(e.meaning || "").length)).join("")}</span>${tail(e)}</div>`);
+  const vi = wordViTerms(head), wait = e => wordFill && wordFill.has(e.key) && !meaningLines(e.meaning || "").length ? '<span class="vl-dict-t tr-wait">Translating…</span>' : "", pill = (t, my) => `<span class="vl-dict-t${my ? " vl-my" : ""}" data-m="${escapeAttr(t)}">${escapeHtml(t)}<button type="button" class="vl-pill-x" aria-label="Remove this meaning"></button></span>`;
+  const roots = head.entries.map((e, n) => `<div class="vl-sub vl-root" data-sub="${escapeAttr(e.key)}"><span class="vl-sub-t">${wait(e)}${meaningLines(e.meaning || "").map(t => pill(t, true)).join("")}${n ? "" : vi.map((t, k) => pill(t, !k && !meaningLines(e.meaning || "").length)).join("")}</span>${tail(e)}</div>`);
   const own = head.entries.map(e => {
     const sentence = vocabContext(e).sentence || "", noted = noteSentence(e), rest = noted ? noted.rest.replace(/^(\s|<br\s*\/?>|<div>\s*<\/div>)+/i, "") : wordNotesOf(e);
     return sentence || rest ? `<div class="vl-sub" data-sub="${escapeAttr(e.key)}"><span class="vl-sub-t">${sentence ? `<span class="vl-sub-q">${vocabSentenceHtml(sentence, e.term, e.card, false, true)}</span>` : ""}${rest ? `<span class="vl-sub-n card-notes">${rest}</span>` : ""}</span></div>` : "";
@@ -22330,6 +22497,7 @@ function renderVocab() {
   if (currentView !== "vocab") return;
   clearTimeout(junkSweepClock);
   junkSweepClock = setTimeout(sweepJunkWords, 600);
+  document.getElementById("vocabTrans").hidden = vocabView !== "list" || !lessonVocabItems(vocabSource()).some(i => !i.sub && !meaningLines(i.meaning || "").length);
   document.getElementById("viewVocab").classList.remove("word-list-on");
   document.getElementById("wordListHead").hidden = true;
   if (taskRun && vocabView === "card" && !vocabEditingKey && vocabSession && vocabSession.lessonId === currentLessonId && (taskRun.opening || taskRun.current && taskRun.current.k === "v") && !currentVocabItem()) {
@@ -23030,6 +23198,8 @@ document.getElementById("vocabSpeak").onclick = e => {
   if (item) toggleVocabSound(item);
   e.currentTarget.blur();
 };
+
+document.getElementById("vocabTrans").onclick = e => openTrMenu(e.currentTarget, "Translate into meanings", translateIntoMeanings);
 
 document.getElementById("vocabSpeed").onchange = e => {
   const main = document.getElementById("playbackSpeed");

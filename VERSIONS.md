@@ -137,6 +137,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-81 | `14b9d0b` | Medium/Hard: dịch theo từng câu rồi ghép, đọc theo từng câu (hết lỗi không dịch/không đọc); bản dịch máy lưu vào bài để xem offline |
 | THEATER-82 | `c482dc8` | Interpreter: vòng âm thanh chạy một lượt trên cả đoạn ghép, không quay lại sau mỗi câu nhỏ |
 | THEATER-83 | `3a2502a` | Sửa lỗi mất thẻ: đổi Easy/Medium/Hard khi học từ Today giờ ghép câu trong từng bài, thẻ ghép giữ đúng bài của nó (trước đó bài bị xóa sạch thẻ) |
+| THEATER-84 | `pending` | Dịch muộn vào Answer: nhấn giữ (hoặc chuột phải) 🌐 ở ☰ Full / theater → Translate into answers, ghi bản dịch vào Answer các thẻ chưa có, hiện Translating… khi đang dịch, Undo được |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
@@ -290,6 +291,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-141 | `3e64ea2` | Từ không có câu riêng được đục lỗ trong câu ví dụ từ điển (không còn mặt trước chỉ có từ); từ tạo bằng cách bấm trên mặt sau thẻ giữ dòng nơi bấm làm câu của nó |
 | FLASH-142 | `c0372de` | Từ có câu riêng ghi trong Notes (không phải câu của video) giờ được đọc đúng câu đó và có nút loa, không phát đoạn video của dòng khác nữa |
 | FLASH-143 | `b734fcc` | ☰ List: số thứ tự nghĩa có dấu chấm (1. 2. 3.) |
+| FLASH-144 | `pending` | ☰ List: nút 🌐 → Translate into meanings, ghi nghĩa máy dịch cho các từ chưa có nghĩa, pill Translating… khi đang dịch, Undo được |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
