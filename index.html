@@ -3383,12 +3383,21 @@ function paintListTr() {
 let answerFill = null, wordFill = null;
 
 async function translateIntoAnswers() {
-  if (answerFill || !currentLessonId || isVirtualLesson()) return;
+  if (answerFill || !currentLessonId) return;
   const todo = rows.filter(r => r.uid !== EXTRA_UID && (r.q || "").trim() && !hasAnswer(r));
   if (!todo.length) return showToast("Every card has its answer already");
   answerFill = new Set(todo.map(r => r.id));
   render();
-  if (watch) paintWatchList();
+  if (watch) {
+    if (!watch.prefs.trans) {
+      watch.prefs.trans = true;
+      watchPrefChanged("trans");
+    } else {
+      watch.rowHtml = null;
+      paintWatchList();
+      paintWatchLine();
+    }
+  }
   showToast("Translating…");
   try {
     await mtFill(todo);
@@ -3483,6 +3492,13 @@ function openTrMenu(anchor, label, run) {
 
 document.addEventListener("pointerdown", e => {
   if (trMenuEl && !trMenuEl.contains(e.target)) closeTrMenu();
+}, true);
+
+window.addEventListener("keydown", e => {
+  if (e.key !== "Escape" || !trMenuEl) return;
+  e.preventDefault();
+  e.stopImmediatePropagation();
+  closeTrMenu();
 }, true);
 
 function holdForMenu(el, open) {
@@ -3655,10 +3671,10 @@ function watchWordsHtml(html, lang, pin) {
 }
 
 function watchLineHtml(r) {
-  const p = watch.prefs, pin = p.pin && watchChinese() && typeof pinyinPro !== "undefined", tr = p.trans ? watchLineTr(r) : "";
+  const p = watch.prefs, pin = p.pin && watchChinese() && typeof pinyinPro !== "undefined", tr = p.trans ? watchLineTr(r) : "", wait = p.trans && !tr && !!answerFill && answerFill.has(r.id);
   const lang = detectLang(r.q || "").split("-")[0];
   const text = watchWordsHtml(highlightVocabInHtml(r.qHtml || escapeHtml(r.q), r.id), lang, pin && /[\u3400-\u9fff]/.test(r.q || ""));
-  return `<div class="w-text${pin ? " w-ruby" : ""}">${text}</div>` + (tr ? `<div class="w-tr">${escapeHtml(tr)}</div>` : "");
+  return `<div class="w-text${pin ? " w-ruby" : ""}">${text}</div>` + (wait ? '<div class="w-tr tr-wait">Translating…</div>' : tr ? `<div class="w-tr">${escapeHtml(tr)}</div>` : "");
 }
 
 function watchWordMeaning(w) {

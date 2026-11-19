@@ -138,6 +138,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-82 | `c482dc8` | Interpreter: vòng âm thanh chạy một lượt trên cả đoạn ghép, không quay lại sau mỗi câu nhỏ |
 | THEATER-83 | `3a2502a` | Sửa lỗi mất thẻ: đổi Easy/Medium/Hard khi học từ Today giờ ghép câu trong từng bài, thẻ ghép giữ đúng bài của nó (trước đó bài bị xóa sạch thẻ) |
 | THEATER-84 | `adaec17` | Dịch muộn vào Answer: nhấn giữ (hoặc chuột phải) 🌐 ở ☰ Full / theater → Translate into answers, ghi bản dịch vào Answer các thẻ chưa có, hiện Translating… khi đang dịch, Undo được |
+| THEATER-85 | `pending` | Translate into answers trong theater: tự bật bản dịch để thấy Translating… và Answer mới, chạy được trong Today task, Esc chỉ đóng menu |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
