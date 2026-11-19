@@ -467,6 +467,7 @@ Hàm chính: `updateTouchBar`, `sizeTouchBar`, `#tbSound`, `#tbMore`, `tools-ope
 | TODAY-6 | `bfcec26` | Bỏ luật thẻ chờ từ: thẻ câu và từ học độc lập (bỏ màn Words first, vuốt ⏳ Waiting) |
 | TODAY-7 | `dcdd678` | Điện thoại: tranh nền thẻ Today neo ở trên, mây không còn đè lên hàng cờ và chữ |
 | TODAY-8 | `529db14` | Thông báo 🔥 streak chỉ hiện một lần mỗi ngày (undo rồi chấm lại không hiện nữa) |
+| TODAY-9 | `pending` | Cải cách: một nút ▶ Start học cả ngày (nối các bài theo kế hoạch), chọn 10/20/30 phút hoặc All; cờ kèm số thẻ; dải 30 ngày thay lịch; bỏ preset Balanced, danh sách task, task tự thêm, ổ khóa và lịch |
 
 Hàm chính: `todayTasks`, `todayTaskCounts`, `taskQueue`, `startTaskSide`, `taskAdvance`, `leftToday`, `limitStudy`, `limitRows`.
 
