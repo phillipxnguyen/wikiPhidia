@@ -280,7 +280,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-133 | `2e82c3a` | ☰ List: từ chính lùi xuống 2px |
 | FLASH-134 | `d2c6eae` | ☰ List: từ chính chỉ lùi 1px (máy tính và điện thoại) |
 | FLASH-135 | `5c884ca` | ☰ List: pill nghĩa không trùng (gộp chữ hoa/mã dấu), ✕ góc phải trên khi rê/chạm để xóa nghĩa hoặc bỏ gợi ý; popup nhỏ lùi chữ chính 1px |
-| FLASH-136 | `pending` | Biển Definition bỏ chữ i (tooltip để lại); ✕ pill tròn xám 16px gọn; nghĩa trong mọi popup cùng 18px đậm vừa, gợi ý cũng vậy |
+| FLASH-136 | `c8d3e3a` | Biển Definition bỏ chữ i (tooltip để lại); ✕ pill tròn xám 16px gọn; nghĩa trong mọi popup cùng 18px đậm vừa, gợi ý cũng vậy |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
