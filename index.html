@@ -11922,13 +11922,15 @@ function sentenceWordCtx(hit) {
   if (vc) {
     const item = currentVocabItem();
     if (!item || !item.card) return null;
-    const line = item.sub && hit.range && hit.range.startContainer.parentElement && hit.range.startContainer.parentElement.closest(".vc-sent, .cloze-own");
+    let line = hit.range && hit.range.startContainer.parentElement && hit.range.startContainer.parentElement.closest(".vc-sent, .cloze-own, .vc-def-more");
+    if (line && line.matches(".vc-def") && vc.dataset.xk) line = null;
     const lineText = line ? (() => {
       const c = line.cloneNode(true);
       c.querySelectorAll("button, .vc-def-h, .vc-pos").forEach(x => x.remove());
       return c.textContent.replace(/\s+/g, " ").trim();
     })() : "";
-    const world = lineText || (vc.dataset.ex === "other" && vc.dataset.other && hit.zone.matches(".vocab-term") ? vc.dataset.other : "");
+    const own = (vocabContext(item).sentence || "").replace(/\s+/g, " ").trim();
+    const world = (lineText !== own ? lineText : "") || (vc.dataset.ex === "other" && vc.dataset.other && hit.zone.matches(".vocab-term") ? vc.dataset.other : "");
     return {
       lang: hit.lang,
       row: item.card,
@@ -21610,6 +21612,13 @@ function appSentencesFor(term, row, n) {
   return found.sort(() => Math.random() - .5).slice(0, n);
 }
 
+function dictExampleFor(item) {
+  const st = item.tkey && wordDictIndex().get(item.tkey);
+  if (!st) return "";
+  const list = [ ...new Set((st.ex || []).map(x => x && x.t).concat(...(st.defs || []).map(d => d && d.x || [])).filter(t => t && t.length <= 160 && findWordForm(t, item.term))) ];
+  return list.length ? list[Math.floor(Math.random() * list.length)] : "";
+}
+
 function otherLessonSentence(item) {
   const own = vocabContext(item).sentence, mean = normalizeVocabText(meaningLines(item.meaning || "").join("\n")), found = [];
   if (!mean) return "";
@@ -21891,7 +21900,7 @@ function fillVocabCard(el, item) {
   if (el.dataset.lookKey !== item.key) {
     const xq = !item.sub && !viewOnly && !whole ? extraQuestion(item) : null;
     const other = xq ? xq.k === "tat" || xq.k === "col" ? xq.t : "" : item.sub ? item.sub.kind === "ex" ? item.sub.t : "" : viewOnly || whole ? "" : otherLessonSentence(item);
-    const alt = other;
+    const alt = other || (!item.sub && !viewOnly && !whole && !xq && !gap ? dictExampleFor(item) : "");
     const od = !item.sub && !viewOnly && !whole && !xq && "speechSynthesis" in window ? ownDefLines(item) : [], useOd = od.length > 0 && Math.random() < .5;
     const hint = xq && (xq.k === "syn" || xq.k === "ant");
     let ex = item.sub && item.sub.kind === "def" || useOd || hint ? "def" : whole ? "sent" : alt ? "other" : gap ? "cloze" : "word";
@@ -21899,6 +21908,7 @@ function fillVocabCard(el, item) {
     el.dataset.xk = xq ? xq.k : "";
     el.dataset.xtr = xq && xq.tr || "";
     el.dataset.other = ex === "other" ? alt : "";
+    el.dataset.dictx = ex === "other" && !other ? "1" : "";
     const xs = ex === "def" && item.sub ? item.sub.xs || [] : [];
     el.dataset.defx = xs.length && Math.random() < .5 ? xs[Math.floor(Math.random() * xs.length)] : "";
     const look = "plain";
@@ -21912,7 +21922,7 @@ function fillVocabCard(el, item) {
     cardType(el, item);
   }
   el.classList.toggle("view-only", viewOnly);
-  const ex = el.dataset.ex, otherGap = ex === "other" && el.dataset.other ? (item.sub ? findWordForm : findTermIn)(el.dataset.other, item.term) : null;
+  const ex = el.dataset.ex, otherGap = ex === "other" && el.dataset.other ? (item.sub || el.dataset.dictx ? findWordForm : findTermIn)(el.dataset.other, item.term) : null;
   if (ex === "cloze" && gap || otherGap) {
     const text = otherGap ? el.dataset.other : sentence, span = otherGap || gap;
     const spans = wordSpans(text, item.term, span);

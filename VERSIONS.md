@@ -287,6 +287,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-138 | `0d05a09` | ☰ List: hàng pill cách từ 17px (17/17) |
 | FLASH-139 | `28f7c5e` | Mặt trước Podcast: nút âm thanh bấm khi đang phát thì tắt (trước đó phát lại từ đầu); chân biển báo cắm ngang thanh thời lượng |
 | FLASH-140 | `955a6c1` | Gợi ý nghĩa trong chỗ trống cùng cỡ, cùng kiểu chữ với câu (chỉ khác màu); bỏ quy tắc cũ “mặt trước theo cỡ mặt sau” |
+| FLASH-141 | `pending` | Từ không có câu riêng được đục lỗ trong câu ví dụ từ điển (không còn mặt trước chỉ có từ); từ tạo bằng cách bấm trên mặt sau thẻ giữ dòng nơi bấm làm câu của nó |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
