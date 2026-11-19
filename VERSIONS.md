@@ -135,7 +135,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-79 | `b009d48` | Mức gộp Easy/Medium/Hard/Expert, mỗi mức giữ tiến độ riêng (hết lỗi thẻ đã chấm quay lại); đổi mức dừng tiếng, về mặt trước; bản dịch và câu cuộn riêng |
 | THEATER-80 | `91d10b4` | Bỏ mức Expert (1 phút) |
 | THEATER-81 | `14b9d0b` | Medium/Hard: dịch theo từng câu rồi ghép, đọc theo từng câu (hết lỗi không dịch/không đọc); bản dịch máy lưu vào bài để xem offline |
-| THEATER-82 | `pending` | Interpreter: vòng âm thanh chạy một lượt trên cả đoạn ghép, không quay lại sau mỗi câu nhỏ |
+| THEATER-82 | `c482dc8` | Interpreter: vòng âm thanh chạy một lượt trên cả đoạn ghép, không quay lại sau mỗi câu nhỏ |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
