@@ -319,7 +319,7 @@ Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWor
 | POD-26 | `2161393` | Cảnh cuộc gọi cân đối: hai nút đỏ/xanh tỏa vòng thay phiên, cùng cỡ; avatar vòng nhẹ ở giữa |
 | POD-27 | `36a5da7` | Cảnh tàu điện: chấm tàu chạy theo đúng tiếng đọc như thanh thời gian, không tự chạy vòng 10 giây |
 | POD-28 | `f447d89` | Cảnh tàu điện: tàu đứng tại chỗ, các toa nhún nhẹ, vệt gió phía sau; đường đỏ có ga thành đường ray đứng yên |
-| POD-29 | `pending` | Cảnh tàu: bỏ thanh thời gian chạy bên dưới, đường ray thay chỗ nó, không còn gì chuyển động dọc theo |
+| POD-29 | `59c10dc` | Cảnh tàu: bỏ thanh thời gian chạy bên dưới, đường ray thay chỗ nó, không còn gì chuyển động dọc theo |
 
 Hàm chính: `openBlind`, `closeBlind`, `blindItems`, `blindAutoItems`, `blindLines`, `blindNext`, `paintBlind`, `paintBlindLive`, `blindPlay`, `blindPlayOne`, `blindPlayLine`, `blindPlayer`, `blindSpeak`, `blindGrade`, `blindUndo`, `blindEdit`, `blindAct`, `blindFly`, `blindArt`, `blindSceneFor`, `blindCountsHtml`, `withLeadTime`, `blindTime`, `BLIND_SCENES`.
 
