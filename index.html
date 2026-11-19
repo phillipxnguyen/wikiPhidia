@@ -600,7 +600,9 @@ window.onYouTubeIframeAPIReady = function(){
   .ed-card #vocabEditSubText:lang(ko){word-break:keep-all;}
   .vocab-list-row[data-key] > .vl-tools{grid-area:tools;display:flex;align-items:center;gap:8px;height:0;align-self:center;}
   .vl-say{flex:none;}
-  .vl-vi{display:flex;flex-wrap:wrap;gap:8px;}
+  .vl-root{padding-right:16px;}
+  .vl-root > .vl-sub-t{display:flex;flex-wrap:wrap;gap:8px;}
+  .vl-dict-t.vl-my{border-color:transparent;background:color-mix(in srgb, var(--accent) 8%, transparent);color:var(--a-text);font-weight:600;}
   .vl-mine, .vl-blk{display:flex;flex-direction:column;gap:16px;padding:16px;border-radius:12px;}
   .vl-mine{background:color-mix(in srgb, var(--accent) 8%, transparent);}
   :is(.vl-mine, .vl-blk) :is(.vl-sub-t, .vl-num), .vl-pos, .vl-more > *{text-box:trim-both cap alphabetic;}
@@ -626,7 +628,7 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-list-meaning > .vl-subs:first-child{margin-top:0;}
   .vl-sub-q, .vl-sub-m, .vl-sub-n{display:block;}
   .vl-sub-m{color:var(--a-text);font-weight:600;}
-  .vl-sub-q + .vl-sub-m, .vl-x + .vl-sub-m, .vl-sub-m + .vl-sub-n{margin-top:4px;}
+  .vl-sub-q + .vl-sub-m, .vl-x + .vl-sub-m, .vl-sub-m + .vl-sub-n, .vl-sub-q + .vl-sub-n{margin-top:4px;}
   .vl-sub-n{font-size:14px;line-height:20px;color:var(--text-2);}
   .vl-sub-n > *{margin:0;}
   .vl-sub > :not(.vl-sub-t){align-self:center;}
@@ -21370,20 +21372,21 @@ function wordExtrasHtml(tkey, term) {
   return rows.length ? `<div class="vl-blk vl-more">${rows.map(([k, list]) => `<b>${k}</b><span>${list.map(escapeHtml).join(" · ")}</span>`).join("")}</div>` : "";
 }
 
-function wordViHtml(head) {
-  const tk = head.entries[0] && head.entries[0].tkey, mine = new Set(head.entries.flatMap(x => meaningLines(x.meaning || ""))), seen = new Set;
-  const terms = wordViGroups(tk, head.term).flatMap(g => g.terms).filter(t => !mine.has(t) && !seen.has(t) && seen.add(t));
-  return terms.length ? `<div class="vl-vi">${terms.map(t => `<span class="vl-dict-t">${escapeHtml(t)}</span>`).join("")}</div>` : "";
+function wordViTerms(head) {
+  const tk = head.entries[0] && head.entries[0].tkey, fold = t => t.toLocaleLowerCase(), mine = new Set(head.entries.flatMap(x => meaningLines(x.meaning || "")).map(fold)), seen = new Set;
+  return wordViGroups(tk, head.term).flatMap(g => g.terms).filter(t => !mine.has(fold(t)) && !seen.has(fold(t)) && seen.add(fold(t)));
 }
 
 function cardsListHtml(head, subs) {
   const tail = x => `<span class="vl-sub-st">${vocabStatusIcon(vocabStateOf(x))}</span><button type="button" class="vl-sub-del" aria-label="Delete this card" title="Delete this card">✕</button>`;
   const mean = x => headMeaning(x) ? `<span class="vl-sub-m">${meaningHtml(headMeaning(x))}</span>` : "";
   const exList = list => list.length ? `<div class="vl-exs${list.length > 1 ? " many" : ""}">${list.map(t => `<div class="vl-ex">${vocabSentenceHtml(t, head.term, head.card, false, true)}</div>`).join("")}</div>` : "";
+  const vi = wordViTerms(head), pill = (t, my) => `<span class="vl-dict-t${my ? " vl-my" : ""}">${escapeHtml(t)}</span>`;
+  const roots = head.entries.map((e, n) => `<div class="vl-sub vl-root" data-sub="${escapeAttr(e.key)}"><span class="vl-sub-t">${meaningLines(e.meaning || "").map(t => pill(t, true)).join("")}${n ? "" : vi.map(t => pill(t)).join("")}</span>${tail(e)}</div>`);
   const own = head.entries.map(e => {
     const sentence = vocabContext(e).sentence || "", noted = noteSentence(e), rest = noted ? noted.rest.replace(/^(\s|<br\s*\/?>|<div>\s*<\/div>)+/i, "") : wordNotesOf(e);
-    return `<div class="vl-sub vl-own" data-sub="${escapeAttr(e.key)}"><span class="vl-sub-t">${sentence ? `<span class="vl-sub-q">${vocabSentenceHtml(sentence, e.term, e.card, false, true)}</span>` : ""}<span class="vl-sub-m">${meaningHtml(e.meaning)}</span>${rest ? `<span class="vl-sub-n card-notes">${rest}</span>` : ""}</span>${tail(e)}</div>`;
-  });
+    return sentence || rest ? `<div class="vl-sub" data-sub="${escapeAttr(e.key)}"><span class="vl-sub-t">${sentence ? `<span class="vl-sub-q">${vocabSentenceHtml(sentence, e.term, e.card, false, true)}</span>` : ""}${rest ? `<span class="vl-sub-n card-notes">${rest}</span>` : ""}</span></div>` : "";
+  }).filter(Boolean);
   const groups = new Map;
   subs.filter(x => x.sub.kind === "def").forEach(d => {
     const k = d.sub.mine ? "meaning" : d.sub.p || "";
@@ -21393,7 +21396,7 @@ function cardsListHtml(head, subs) {
   const senses = [ ...groups ].map(([pos, list]) => `<div class="vl-blk">${pos ? `<span class="vl-pos">${escapeHtml(pos)}</span>` : ""}${list.map((d, n) => `<div class="vl-sub vl-def" data-sub="${escapeAttr(d.key)}"><span class="vl-num">${list.length > 1 ? n + 1 : ""}</span><span class="vl-sub-t"><span class="vl-x">${escapeHtml(d.sub.t)}</span>${mean(d)}${exList(d.sub.xs || [])}</span>${tail(d)}</div>`).join("")}</div>`);
   const loose = subs.filter(x => x.sub.kind === "ex");
   const looseHtml = loose.length ? `<div class="vl-blk${loose.length > 1 ? " many" : ""}"><span class="vl-pos">Examples</span>${loose.map(x => `<div class="vl-sub vl-loose-ex" data-sub="${escapeAttr(x.key)}"><span class="vl-sub-t"><span class="vl-x">${vocabSentenceHtml(x.sub.t, head.term, head.card, false, true)}</span>${mean(x)}</span>${tail(x)}</div>`).join("")}</div>` : "";
-  const parts = [ wordViHtml(head), own.length ? `<div class="vl-mine">${own.join("")}</div>` : "", ...senses, looseHtml, wordExtrasHtml(head.entries[0] && head.entries[0].tkey, head.term) ].filter(Boolean);
+  const parts = [ ...roots, own.length ? `<div class="vl-mine">${own.join("")}</div>` : "", ...senses, looseHtml, wordExtrasHtml(head.entries[0] && head.entries[0].tkey, head.term) ].filter(Boolean);
   return parts.length ? `<div class="vl-subs">${parts.join("")}</div>` : "";
 }
 
