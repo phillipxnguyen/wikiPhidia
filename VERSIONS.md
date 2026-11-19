@@ -139,7 +139,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-83 | `3a2502a` | Sửa lỗi mất thẻ: đổi Easy/Medium/Hard khi học từ Today giờ ghép câu trong từng bài, thẻ ghép giữ đúng bài của nó (trước đó bài bị xóa sạch thẻ) |
 | THEATER-84 | `adaec17` | Dịch muộn vào Answer: nhấn giữ (hoặc chuột phải) 🌐 ở ☰ Full / theater → Translate into answers, ghi bản dịch vào Answer các thẻ chưa có, hiện Translating… khi đang dịch, Undo được |
 | THEATER-85 | `3ce1e51` | Translate into answers trong theater: tự bật bản dịch để thấy Translating… và Answer mới, chạy được trong Today task, Esc chỉ đóng menu |
-| THEATER-86 | `pending` | Card editor hiện bản dịch (khi 🌐 bật) ở chỗ Answer, dưới câu, màu xanh, chỉ đọc |
+| THEATER-86 | `cd78bd9` | Card editor hiện bản dịch (khi 🌐 bật) ở chỗ Answer, dưới câu, màu xanh, chỉ đọc |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
@@ -294,7 +294,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-142 | `c0372de` | Từ có câu riêng ghi trong Notes (không phải câu của video) giờ được đọc đúng câu đó và có nút loa, không phát đoạn video của dòng khác nữa |
 | FLASH-143 | `b734fcc` | ☰ List: số thứ tự nghĩa có dấu chấm (1. 2. 3.) |
 | FLASH-144 | `adaec17` | ☰ List: nút 🌐 → Translate into meanings, ghi nghĩa máy dịch cho các từ chưa có nghĩa, pill Translating… khi đang dịch, Undo được |
-| FLASH-145 | `pending` | Chỗ trống cloze rộng vừa nghĩa đang hiện (front), vừa từ khi lật (back), không giữ chỗ cho nhau |
+| FLASH-145 | `cd78bd9` | Chỗ trống cloze rộng vừa nghĩa đang hiện (front), vừa từ khi lật (back), không giữ chỗ cho nhau |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
@@ -485,7 +485,7 @@ Hàm chính: `updateTouchBar`, `sizeTouchBar`, `#tbSound`, `#tbMore`, `tools-ope
 | TODAY-10 | `4e4c8f8` | Sửa lỗi Start: sang bài kế đúng (mở lại bài mới), bài có thẻ Again chờ thì bỏ qua và mở lại khi tới giờ, báo Done for now thay vì Today is done, ✕ dừng lượt học |
 | TODAY-11 | `3a2502a` | Start với bài video: hết giờ thì dừng ngay sau thẻ đang chấm trong theater (không đợi hết video) |
 | TODAY-12 | `f342b2a` | Today v2: vòng tròn quay lại (thẻ còn lại, phút, cung tiến độ) với Start ngay dưới; ô NEW / TO REVIEW; Up next (thứ tự Start, bấm bài nào bắt đầu từ bài đó); 30 ngày, 7 ngày tới, chuỗi ngày, thẻ tháng này, % nhớ; ô sidebar có vòng nhỏ, cờ, Up next, lúc xong báo thẻ ngày mai |
-| TODAY-13 | `pending` | Sidebar Today: bỏ "cards today · N min", số NEW / TO REVIEW kiểu pixel, nút bài tiếp theo chỉ ghi tên bài; trang Today bỏ tiêu đề Up next |
+| TODAY-13 | `cd78bd9` | Sidebar Today: bỏ "cards today · N min", số NEW / TO REVIEW kiểu pixel, nút bài tiếp theo chỉ ghi tên bài; trang Today bỏ tiêu đề Up next |
 
 Hàm chính: `todayTasks`, `todayTaskCounts`, `taskQueue`, `startTaskSide`, `taskAdvance`, `leftToday`, `limitStudy`, `limitRows`.
 
