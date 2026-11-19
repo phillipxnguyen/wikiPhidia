@@ -472,6 +472,7 @@ Hàm chính: `updateTouchBar`, `sizeTouchBar`, `#tbSound`, `#tbMore`, `tools-ope
 | TODAY-9 | `35070ac` | Cải cách: một nút ▶ Start học cả ngày (nối các bài theo kế hoạch), chọn 10/20/30 phút hoặc All; cờ kèm số thẻ; dải 30 ngày thay lịch; bỏ preset Balanced, danh sách task, task tự thêm, ổ khóa và lịch |
 | TODAY-10 | `4e4c8f8` | Sửa lỗi Start: sang bài kế đúng (mở lại bài mới), bài có thẻ Again chờ thì bỏ qua và mở lại khi tới giờ, báo Done for now thay vì Today is done, ✕ dừng lượt học |
 | TODAY-11 | `3a2502a` | Start với bài video: hết giờ thì dừng ngay sau thẻ đang chấm trong theater (không đợi hết video) |
+| TODAY-12 | `pending` | Today v2: vòng tròn quay lại (thẻ còn lại, phút, cung tiến độ) với Start ngay dưới; ô NEW / TO REVIEW; Up next (thứ tự Start, bấm bài nào bắt đầu từ bài đó); 30 ngày, 7 ngày tới, chuỗi ngày, thẻ tháng này, % nhớ; ô sidebar có vòng nhỏ, cờ, Up next, lúc xong báo thẻ ngày mai |
 
 Hàm chính: `todayTasks`, `todayTaskCounts`, `taskQueue`, `startTaskSide`, `taskAdvance`, `leftToday`, `limitStudy`, `limitRows`.
 
