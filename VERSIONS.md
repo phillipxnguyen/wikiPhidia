@@ -289,6 +289,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-140 | `955a6c1` | Gợi ý nghĩa trong chỗ trống cùng cỡ, cùng kiểu chữ với câu (chỉ khác màu); bỏ quy tắc cũ “mặt trước theo cỡ mặt sau” |
 | FLASH-141 | `3e64ea2` | Từ không có câu riêng được đục lỗ trong câu ví dụ từ điển (không còn mặt trước chỉ có từ); từ tạo bằng cách bấm trên mặt sau thẻ giữ dòng nơi bấm làm câu của nó |
 | FLASH-142 | `c0372de` | Từ có câu riêng ghi trong Notes (không phải câu của video) giờ được đọc đúng câu đó và có nút loa, không phát đoạn video của dòng khác nữa |
+| FLASH-143 | `pending` | ☰ List: số thứ tự nghĩa có dấu chấm (1. 2. 3.) |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
