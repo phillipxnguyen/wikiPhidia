@@ -21571,7 +21571,8 @@ function vocabContext(item) {
   if (noted) return {
     card: item.card,
     sentence: noted.sentence,
-    notes: noted.rest
+    notes: noted.rest,
+    noted: true
   };
   return {
     card: item.card,
@@ -21653,7 +21654,7 @@ function withPill(pill, html) {
 
 function linePillHtml(item, text, own, cls) {
   const c = cls ? " " + cls : "";
-  if (own && item.card.time != null && vocabVideoIdFor(item.card)) return `<button type="button" class="own-ts${c}" data-line="${escapeAttr(text)}" title="Play this line">${fmtTime((vocabContext(item).part || item.card).t ?? item.card.time)}</button>`;
+  if (own && item.card.time != null && vocabClipFor(item)) return `<button type="button" class="own-ts${c}" data-line="${escapeAttr(text)}" title="Play this line">${fmtTime((vocabContext(item).part || item.card).t ?? item.card.time)}</button>`;
   return `<button type="button" class="own-ts say-ts${c}" data-say="${escapeAttr(text)}" title="Play this sentence" aria-label="Play this sentence">${SAY_ICONS}</button>`;
 }
 
@@ -22118,7 +22119,7 @@ function showVocabDeck(stage, item) {
     card.dataset.said = item.key;
     sayVocabWord(item);
   }
-  if (vocabVideoIdFor(item.card)) preloadVocabVideo(item); else if (next) preloadVocabVideo(next);
+  if (vocabClipFor(item)) preloadVocabVideo(item); else if (next) preloadVocabVideo(next);
   [ item, next ].forEach(preloadVocabDict);
   if (vocabViewOnly(item) && !vocabSession.flipped) {
     vocabSession.flipped = true;
@@ -22473,7 +22474,7 @@ function renderVocab() {
     return;
   }
   vocabShownRowId = item.card.id;
-  vocabShownIsVideo = !!vocabVideoIdFor(item.card);
+  vocabShownIsVideo = !!vocabClipFor(item);
   const doneScreen = stage.querySelector(".session-complete");
   if (doneScreen) {
     blinkOut(doneScreen);
@@ -23058,6 +23059,10 @@ function vocabVideoUrlFor(row) {
   return (lesson ? lesson.mediaUrl : row.srcLessonId ? "" : document.getElementById("mediaUrl").value).trim();
 }
 
+function vocabClipFor(item) {
+  return vocabContext(item).noted ? "" : vocabVideoIdFor(item.card);
+}
+
 function vocabVideoIdFor(row) {
   const url = vocabVideoUrlFor(row);
   return url ? extractYouTubeId(url) : null;
@@ -23103,7 +23108,7 @@ function playVocabSound(item, once, ownClip, thenRestart, fromClip) {
   const row = item.card, vc = document.getElementById("vocabCard");
   const pair = item.sub ? vocabSession && vocabSession.flipped ? backPair(item) : subPair(item) : null;
   const shown = item.sub ? pair[0] : ownDefAsked(item) || !ownClip && vc && vc.dataset.lookKey === item.key && vc.dataset.ex === "other" && vc.dataset.other || "";
-  const videoId = shown || ytHasError && ownClip ? "" : vocabVideoIdFor(row);
+  const videoId = shown || ytHasError && ownClip ? "" : vocabClipFor(item);
   if (videoId) {
     if (row.srcLessonId && (vocabVideoId !== videoId || !ytHasVideo)) {
       vocabVideoId = videoId;
@@ -23129,7 +23134,7 @@ function playVocabSound(item, once, ownClip, thenRestart, fromClip) {
   const ctx = vocabContext(item);
   const lone = !item.sub && vc && vc.dataset.lookKey === item.key && /^(tat|col)$/.test(vc.dataset.xk || "");
   const own = item.sub ? pair[1] : !lone && ctx.sentence && findWordForm(ctx.sentence.normalize("NFC"), item.term) ? ctx.sentence : "";
-  const clipAfter = !item.sub && !!shown && vocabSession && vocabSession.flipped && !!own && !ytHasError && !!vocabVideoIdFor(row) && !(fromClip && once);
+  const clipAfter = !item.sub && !!shown && vocabSession && vocabSession.flipped && !!own && !ytHasError && !!vocabClipFor(item) && !(fromClip && once);
   const texts = shown ? vocabSession && vocabSession.flipped && own && own !== shown && !clipAfter && !fromClip ? [ shown, own ] : [ shown ] : [ own || item.term ];
   let at = vocabSkipText && texts.length > 1 && cleanForSpeech(texts[0]) === vocabSkipText ? 1 : 0;
   vocabSkipText = null;
