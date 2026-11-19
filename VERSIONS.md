@@ -295,6 +295,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-143 | `b734fcc` | ☰ List: số thứ tự nghĩa có dấu chấm (1. 2. 3.) |
 | FLASH-144 | `adaec17` | ☰ List: nút 🌐 → Translate into meanings, ghi nghĩa máy dịch cho các từ chưa có nghĩa, pill Translating… khi đang dịch, Undo được |
 | FLASH-145 | `cd78bd9` | Chỗ trống cloze rộng vừa nghĩa đang hiện (front), vừa từ khi lật (back), không giữ chỗ cho nhau |
+| FLASH-146 | `pending` | ☰ Full: bản dịch 🌐 nằm ở chỗ Answer (cùng cỡ, cùng vị trí, màu xanh) thay vì dòng đầu notes |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
