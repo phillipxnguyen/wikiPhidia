@@ -689,6 +689,7 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-card.fill.flipped .cloze-gap{box-shadow:none;background:var(--word-mark);}
   .vocab-card.fill.flipped :is(.cloze-word, .cloze-more){visibility:visible;}
   .cloze-more{display:none;}
+  .cloze-glue{white-space:nowrap;}
   .vocab-card.tr-front:not(.flipped) .cloze-body > .cloze-src, .vocab-card.flipped .cloze-body > .cloze-trf{display:none;}
   .cloze-trm{padding:0 2px;border-radius:4px;background:var(--word-mark);color:inherit;}
   .vocab-card.fill :is(.cloze-spy, .cloze-notes){font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;font-style:normal;}
@@ -21762,8 +21763,10 @@ function gappedHtml(text, spans, item) {
   let html = "", last = 0;
   const hint = item ? clozeHintHtml(item.meaning || (item.sub ? headMeaning(item) : "")) : "";
   spans.forEach(([a, b], n) => {
-    html += lookupOthers(escapeHtml(text.slice(last, a)), item) + `<span class="cloze-gap" style="--gap:${Math.max(3, Math.min(16, b - a))}"><span class="cloze-word">${escapeHtml(text.slice(a, b))}</span>${n ? "" : hint}</span>`;
-    last = b;
+    const tail = (text.slice(b).match(/^[\p{Pe}\p{Pf}\p{Po}]+/u) || [ "" ])[0];
+    const gap = `<span class="cloze-gap" style="--gap:${Math.max(3, Math.min(16, b - a))}"><span class="cloze-word">${escapeHtml(text.slice(a, b))}</span>${n ? "" : hint}</span>`;
+    html += lookupOthers(escapeHtml(text.slice(last, a)), item) + (tail ? `<span class="cloze-glue">${gap}${escapeHtml(tail)}</span>` : gap);
+    last = b + tail.length;
   });
   return html + lookupOthers(escapeHtml(text.slice(last)), item);
 }
@@ -22198,7 +22201,7 @@ function fillVocabCard(el, item) {
     el.dataset.trfront = tr;
     el.classList.toggle("tr-front", !!tr);
     const trf = tr ? `<span class="cloze-trf">${markedTrHtml(tr, item)}</span>` : "";
-    const backTr = el.dataset.listen ? sentTrHtml(item, text, el) : tr ? `<span class="cloze-more cloze-notes vc-sub-tr">${escapeHtml(tr)}</span>` : "";
+    const backTr = subTrHtml(item) ? "" : el.dataset.listen ? sentTrHtml(item, text, el) : tr ? `<span class="cloze-more cloze-notes vc-sub-tr">${escapeHtml(tr)}</span>` : "";
     const sent = trf + `<span class="cloze-src${el.dataset.listen ? " vc-sent" : ""}">${spy ? `<span class="cloze-more cloze-spy py-line">${linePillHtml(item, text, !otherGap)}${escapeHtml(spy)}</span>` : linePillHtml(item, text, !otherGap, "cloze-pill")}${gappedHtml(text, spans, item)}</span>`;
     const own = otherGap && !item.sub && !el.dataset.xk && sentence && sentence !== text ? sentence : "";
     const ownTs = own ? linePillHtml(item, own, true) : "";
@@ -22219,7 +22222,7 @@ function fillVocabCard(el, item) {
     const second = asked ? `<span class="cloze-more cloze-own vc-def-more">${defHead}${lookupOthers(escapeHtml(d), item)}</span>${subTrHtml(item)}` : dx ? `<span class="cloze-more cloze-own">${withPill(linePillHtml(item, dx, false), lookupOthers(vocabSentenceHtml(dx, item.term, item.card), item))}</span>${sentTrHtml(item, dx, el)}` : "";
     const hm = meaningLines(item.meaning || "").filter(l => l !== d).join("\n");
     const lead = el.dataset.listen ? `<span class="vc-stack"><span class="vc-art" aria-hidden="true">${asked ? sceneArt(el.dataset.scene) : `<span class="vc-sign-row">${askSignHtml(xk || "def")}${sceneArt(el.dataset.scene)}</span>`}<span class="vc-time"><i></i></span></span>${first}</span>` : first;
-    const firstTr = asked ? "" : subTrHtml(item);
+    const firstTr = asked ? sentTrHtml(item, asked, el) : subTrHtml(item);
     el.querySelector(".vocab-term").innerHTML = `<span class="cloze-body">${lead}${firstTr}${second}${notes ? `<span class="cloze-more cloze-notes">${notesWithPinyin(brLines(notes), item.card)}</span>` : ""}${familyHtml(item)}</span>`;
     el.querySelector(".vocab-term").insertAdjacentHTML("afterbegin", `<span class="cloze-more cloze-head"><span class="cloze-main">${rubyWord(item.term, item.card)}</span>${hm ? `<span class="cloze-mean">${meaningHtml(hm)}</span>` : ""}</span>`);
     el.classList.add("fill");
