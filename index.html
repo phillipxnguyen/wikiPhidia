@@ -1951,6 +1951,11 @@ window.onYouTubeIframeAPIReady = function(){
   @media (max-width:600px){.today-next{padding:16px;}}
   .up-row{display:flex;align-items:center;gap:12px;padding:8px;border-radius:12px;cursor:pointer;}
   .up-row + .up-row{margin-top:4px;}
+  .up-row.side-c{background:color-mix(in srgb, var(--mode-blue) 7%, transparent);}
+  .up-row.side-v{background:color-mix(in srgb, var(--new-color) 9%, transparent);}
+  .up-row.side-c .up-go, .pad-next.side-c i{background:var(--mode-blue);}
+  .up-row.side-v .up-go, .pad-next.side-v i{background:var(--new-color);}
+  @media (hover:hover){#todayGoal .hero-limit:not(.on):hover, #todayGoal .hero-lang:hover{background:rgba(251,243,228,.28);}#todayGoal :is(.hero-limit.on, .hero-go):hover{background:var(--hero-card);filter:brightness(1.04);}.up-row .up-go:hover{filter:brightness(1.12);}.up-row.side-c .up-go:hover{background:var(--mode-blue);}.up-row.side-v .up-go:hover{background:var(--new-color);}}
   @media (hover:hover){.up-row:hover{background:var(--surface-2);}}
   .up-thumb{flex:none;display:flex;align-items:center;justify-content:center;width:64px;height:36px;overflow:hidden;border-radius:8px;background:var(--surface-2);color:var(--text-2);font-size:14px;line-height:20px;font-weight:800;}
   .up-thumb img{display:block;width:100%;height:100%;object-fit:cover;}
@@ -1972,12 +1977,6 @@ window.onYouTubeIframeAPIReady = function(){
   .st-box{display:flex;flex-direction:column;gap:2px;padding:8px 10px;border-radius:10px;background:var(--surface-2);}
   .st-box b{font-size:20px;line-height:24px;font-weight:800;color:var(--text);}
   .st-box span{font-size:12px;line-height:16px;color:var(--text-2);}
-  .hero-tiles{display:flex;flex-wrap:wrap;gap:12px;}
-  .hero-tile{display:flex;align-items:center;gap:8px;padding:4px 12px 4px 10px;border-radius:12px;background:rgba(255,252,246,.14);box-shadow:inset 0 0 0 1px rgba(255,252,246,.24);}
-  .hero-tile b{font-family:"Doto", system-ui, sans-serif;font-size:30px;line-height:32px;font-weight:800;font-variant-numeric:tabular-nums;}
-  .hero-tile span{font-size:12px;line-height:16px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--hero-ink-2);}
-  .hero-tile.new b{color:#a6ecbf;}
-  .hero-tile.due b{color:#ffc98f;}
   .hero-side{flex:none;display:flex;flex-direction:column;align-items:center;gap:16px;}
   .hero-ring{position:relative;width:168px;height:168px;}
   :is(.hero-ring, .pad-ring) svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg);}
@@ -1997,10 +1996,6 @@ window.onYouTubeIframeAPIReady = function(){
   .pad-text{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;font-family:"Doto", system-ui, sans-serif;font-weight:800;color:var(--hero-ink);}
   .pad-text b{font-size:16px;line-height:20px;font-weight:800;}
   .pad-text span{font-size:13px;line-height:16px;color:var(--hero-ink-2);}
-  .pad-text .pad-stat{display:flex;align-items:center;gap:6px;text-transform:uppercase;letter-spacing:1px;}
-  .pad-text .pad-stat b{font-size:22px;line-height:24px;letter-spacing:0;font-variant-numeric:tabular-nums;}
-  .pad-stat.new b{color:#a6ecbf;}
-  .pad-stat.due b{color:#ffc98f;}
   .pad-flags{display:flex;flex-wrap:wrap;gap:4px 8px;font-family:system-ui, sans-serif;font-weight:700;}
   .pad-flags > span{display:inline-flex;align-items:center;gap:4px;}
   .pad-flags .flag-dot{margin:0;}
@@ -24757,28 +24752,31 @@ function todayLangCount(info, l) {
 
 function todayGoalHtml(tasks) {
   const x = todayInfo(tasks), lim = todayLimit();
-  const tile = (n, label, cls) => n ? `<div class="hero-tile ${cls}"><b>${n}</b><span>${label}</span></div>` : "";
-  const tiles = x.left ? `<div class="hero-tiles">${tile(x.sum.fresh, "new", "new")}${tile(x.sum.due, "to review", "due")}</div>` : `<div class="hero-sum">${!x.planned.length ? "Light a flag to study" : x.done ? "Today is done 🎉" : x.waiting ? "Done for now ✓ Cards marked Again come back soon" : x.open.length ? "A few cards are back to review" : "Nothing to study today"}</div>`;
+  const tiles = x.left ? "" : `<div class="hero-sum">${!x.planned.length ? "Light a flag to study" : x.done ? "Today is done 🎉" : x.waiting ? "Done for now ✓ Cards marked Again come back soon" : x.open.length ? "A few cards are back to review" : "Nothing to study today"}</div>`;
   const langRow = `<div class="hero-langs">${[ "en", "zh-CN", "ko", "ja", "vi" ].map(l => {
     const on = x.planned.includes(l), n = todayLangCount(x, l);
     return `<button class="hero-lang${on ? " on" : ""}" data-lang="${l}" title="${LANG_NAMES[l]}" aria-pressed="${on}">${flagChip(l)}${on && n ? `<b>${n}</b>` : ""}</button>`;
   }).join("")}</div>`;
   const chips = x.open.length ? `<div class="hero-limits" role="group" aria-label="How long">${TODAY_LIMITS.map(m => `<button class="hero-limit${m === lim ? " on" : ""}" data-limit="${m}" aria-pressed="${m === lim}">${m ? m + " min" : "All"}</button>`).join("")}</div>` : "";
   const full = x.done;
-  const ring = `<div class="hero-ring${full ? " full" : ""}" title="${x.sum.did} of ${x.sum.did + x.left} cards studied today">${todayRingSvg(78, 10, full ? 100 : x.pct, 168)}<div class="hero-ring-in">${x.left ? `<b>${x.left}</b><span>cards</span><small>~${x.mins} min</small>` : full ? '<b class="ring-done">✓</b><span>All done</span>' : `<b>${x.sum.did}</b><span>done</span>`}</div></div>`;
+  const ring = `<div class="hero-ring${full ? " full" : ""}" title="${x.sum.did} of ${x.sum.did + x.left} cards studied today">${todayRingSvg(78, 10, full ? 100 : x.pct, 168)}<div class="hero-ring-in">${x.left ? `<b>${x.left}</b><span>cards</span>` : full ? '<b class="ring-done">✓</b><span>All done</span>' : `<b>${x.sum.did}</b><span>done</span>`}</div></div>`;
   const go = x.open.length ? '<button class="hero-go" aria-label="Start today\'s study"><i aria-hidden="true">▶</i><b>Start</b></button>' : "";
   return `<div class="hero-main"><div class="hero-kicker">${new Date().toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" })}</div>${tiles}${langRow}${chips}</div><div class="hero-side">${ring}${go}</div>`;
+}
+
+function todayTaskSide(t) {
+  return t && t.left && t.left.cards && t.left.cards.due + t.left.cards.fresh === 0 && t.left.vocab && t.left.vocab.due + t.left.vocab.fresh > 0 ? "v" : "c";
 }
 
 function todayUpNextHtml(tasks) {
   const open = todayOpenTasks(tasks);
   const row = (t, i) => {
     const n = todayTaskCounts(t), again = lessonAgain(t.lesson).now, did = t.did || 0, left = n.due + n.fresh + (n.due + n.fresh ? 0 : again);
-    const mins = Math.round(n.due * MIN_DUE + n.fresh * MIN_NEW + (n.due + n.fresh ? 0 : again * MIN_DUE));
     const id = t.lesson.mediaUrl ? extractYouTubeId(t.lesson.mediaUrl) : null;
     const thumb = id ? `<span class="up-thumb"><img src="https://i.ytimg.com/vi/${encodeURIComponent(id)}/mqdefault.jpg" alt="" loading="lazy"></span>` : `<span class="up-thumb words" aria-hidden="true">${escapeHtml(Array.from((t.lesson.name || "?").trim()).slice(0, 2).join(""))}</span>`;
-    const bits = [ n.due ? `<em class="due">${n.due} to review</em>` : "", n.fresh ? `<em class="new">${n.fresh} new</em>` : "", !n.due && !n.fresh && again ? `<em class="due">${again} back to review</em>` : "", mins < 1 ? "&lt;1 min" : `${mins} min` ].filter(Boolean).join(" · ");
-    return `<div class="up-row" data-key="${escapeAttr(t.key)}">${thumb}<div class="up-body"><b>${escapeHtml(todayTaskName(t))}</b><span>${bits}</span><div class="up-bar"><i style="width:${did + left ? Math.round(did / (did + left) * 100) : 0}%"></i></div></div><button class="up-go" aria-label="Start from this lesson" title="Start from this lesson">▶</button></div>`;
+    const bits = [ n.due ? `<em class="due">${n.due} to review</em>` : "", n.fresh ? `<em class="new">${n.fresh} new</em>` : "", !n.due && !n.fresh && again ? `<em class="due">${again} back to review</em>` : "" ].filter(Boolean).join(" · ");
+    const side = todayTaskSide(t);
+    return `<div class="up-row side-${side}" data-key="${escapeAttr(t.key)}">${thumb}<div class="up-body"><b>${escapeHtml(todayTaskName(t))}</b><span>${bits}</span><div class="up-bar"><i style="width:${did + left ? Math.round(did / (did + left) * 100) : 0}%"></i></div></div><button class="up-go" aria-label="Start from this lesson" title="Start from this lesson">▶</button></div>`;
   };
   return `${open.length ? open.map(row).join("") : '<p class="up-empty">Every lesson planned for today is studied.</p>'}`;
 }
@@ -24901,9 +24899,8 @@ function todayItemHtml() {
   const label = x.left ? `${x.left} card${x.left === 1 ? "" : "s"} today` : x.done ? "Today is done" : "Nothing waiting today";
   const flags = x.planned.map(l => [ l, todayLangCount(x, l) ]).filter(([, n]) => n).map(([l, n]) => `<span>${flagChip(l)}${n}</span>`).join("");
   const tomorrow = dueForecast(2)[1];
-  const stat = (n, label, cls) => n ? `<span class="pad-stat ${cls}"><b>${n}</b>${label}</span>` : "";
-  const head = x.left ? `${stat(x.sum.fresh, "new", "new")}${stat(x.sum.due, "to review", "due")}${flags ? `<span class="pad-flags">${flags}</span>` : ""}` : `<b>${x.done ? "Today is done 🎉" : x.waiting ? "Done for now ✓" : "Nothing waiting"}</b><span>${[ x.sum.did ? x.sum.did + " cards" : "", x.streak ? "🔥 " + x.streak : "" ].filter(Boolean).join(" · ")}</span>`;
-  const foot = next ? `<div class="pad-next" data-pad-go="1"><span>${escapeHtml(todayTaskName(next))}</span><i aria-hidden="true">▶</i></div>` : `<div class="pad-next quiet"><span>${tomorrow ? `Tomorrow: ${tomorrow} to review` : "Nothing due tomorrow"}</span></div>`;
+  const head = x.left ? `${flags ? `<span class="pad-flags">${flags}</span>` : ""}` : `<b>${x.done ? "Today is done 🎉" : x.waiting ? "Done for now ✓" : "Nothing waiting"}</b><span>${[ x.sum.did ? x.sum.did + " cards" : "", x.streak ? "🔥 " + x.streak : "" ].filter(Boolean).join(" · ")}</span>`;
+  const foot = next ? `<div class="pad-next side-${todayTaskSide(next)}" data-pad-go="1"><span>${escapeHtml(todayTaskName(next))}</span><i aria-hidden="true">▶</i></div>` : `<div class="pad-next quiet"><span>${tomorrow ? `Tomorrow: ${tomorrow} to review` : "Nothing due tomorrow"}</span></div>`;
   return `<div class="today-pad${active ? " active" : ""}${x.done ? " done" : ""}" data-today-pad="1" role="button" tabindex="0" aria-label="${escapeAttr(label)}" title="${escapeAttr(label)}"${active ? ' aria-current="page"' : ""}><div class="pad-row"><div class="pad-ring">${todayRingSvg(28, 6, x.done ? 100 : x.pct, 64)}<b>${x.left || (x.done ? "✓" : x.sum.did || 0)}</b></div><div class="pad-text">${head}</div></div>${foot}</div>`;
 }
 

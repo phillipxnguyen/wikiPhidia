@@ -516,6 +516,7 @@ Hàm chính: `updateTouchBar`, `sizeTouchBar`, `#tbSound`, `#tbMore`, `tools-ope
 | TODAY-12 | `f342b2a` | Today v2: vòng tròn quay lại (thẻ còn lại, phút, cung tiến độ) với Start ngay dưới; ô NEW / TO REVIEW; Up next (thứ tự Start, bấm bài nào bắt đầu từ bài đó); 30 ngày, 7 ngày tới, chuỗi ngày, thẻ tháng này, % nhớ; ô sidebar có vòng nhỏ, cờ, Up next, lúc xong báo thẻ ngày mai |
 | TODAY-13 | `cd78bd9` | Sidebar Today: bỏ "cards today · N min", số NEW / TO REVIEW kiểu pixel, nút bài tiếp theo chỉ ghi tên bài; trang Today bỏ tiêu đề Up next |
 | TODAY-14 | `7aef152` | Thẻ Today: ngày cách ô to review 12px như các hàng khác; sidebar: số (148) căn giữa theo chiều dọc với nhãn TO REVIEW |
+| TODAY-15 | `pending` | Bỏ ô NEW/TO REVIEW (trùng vòng), bỏ ~phút ở vòng và ở danh sách; dòng Up next và nút ▶ (cả sidebar) tô màu theo phía: Lessons xanh dương, Vocabulary xanh lá; hover không còn chuyển trắng |
 
 Hàm chính: `todayTasks`, `todayTaskCounts`, `taskQueue`, `startTaskSide`, `taskAdvance`, `leftToday`, `limitStudy`, `limitRows`.
 
