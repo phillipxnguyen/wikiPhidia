@@ -314,7 +314,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-162 | `e77d668` | Mặt trước câu dịch: nghĩa không có trong câu dịch thì hiện thành dòng gợi ý tô vàng ngay trên câu; khớp nghĩa bỏ chữ đầu (bị chiếm đóng → chiếm đóng); các từ cùng câu không còn mặt trước giống nhau |
 | FLASH-163 | `894209b` | Dọn dẹp: bỏ đồng hồ Speaking còn chạy ngầm mỗi giây (đã bỏ khỏi giao diện từ trước), bỏ lớp .tall không còn dùng; README bỏ mô tả đồng hồ/tiêu đề cũ |
 | FLASH-164 | `8a33e18` | Dán nhập (Auto-detect, đoạn trộn): dòng `câu? : bản dịch` thành một thẻ có Answer, không còn bị tách đôi ở dấu ? thành hai thẻ sai |
-| FLASH-165 | `pending` | Bấm khoảng trống cạnh từ không còn mở editor (chỉ bấm đúng chữ); bấm ra ngoài editor lưu cả bản dịch và nghĩa của từ như Save; thông báo nghĩa tách bằng · |
+| FLASH-165 | `7799201` | Bấm khoảng trống cạnh từ không còn mở editor (chỉ bấm đúng chữ); bấm ra ngoài editor lưu cả bản dịch và nghĩa của từ như Save; thông báo nghĩa tách bằng · |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
