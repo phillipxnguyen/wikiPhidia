@@ -351,6 +351,7 @@ Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWor
 | POD-29 | `59c10dc` | Cảnh tàu: bỏ thanh thời gian chạy bên dưới, đường ray thay chỗ nó, không còn gì chuyển động dọc theo |
 | POD-30 | `955a6c1` | Điện thoại: biển báo nhỏ lại (70%) cắm ở đầu trái thanh thời lượng ngắn hơn, không đè cảnh, không lòi ra khỏi thẻ; tàu thu toa cho vừa |
 | POD-31 | `d155043` | Subway: tàu chạy trái → phải, đầu tàu bên phải có kính lái, gió thổi phía sau (bên trái); điện thoại: tàu dạt phải để gió không đè biển báo |
+| POD-32 | `pending` | Điện thoại: biển báo không còn đè lên cảnh — biển đứng riêng bên trái, cảnh thu 72% bên cạnh, cách 12px |
 
 Hàm chính: `openBlind`, `closeBlind`, `blindItems`, `blindAutoItems`, `blindLines`, `blindNext`, `paintBlind`, `paintBlindLive`, `blindPlay`, `blindPlayOne`, `blindPlayLine`, `blindPlayer`, `blindSpeak`, `blindGrade`, `blindUndo`, `blindEdit`, `blindAct`, `blindFly`, `blindArt`, `blindSceneFor`, `blindCountsHtml`, `withLeadTime`, `blindTime`, `BLIND_SCENES`.
 
