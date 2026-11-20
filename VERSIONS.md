@@ -140,7 +140,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-84 | `adaec17` | Dịch muộn vào Answer: nhấn giữ (hoặc chuột phải) 🌐 ở ☰ Full / theater → Translate into answers, ghi bản dịch vào Answer các thẻ chưa có, hiện Translating… khi đang dịch, Undo được |
 | THEATER-85 | `3ce1e51` | Translate into answers trong theater: tự bật bản dịch để thấy Translating… và Answer mới, chạy được trong Today task, Esc chỉ đóng menu |
 | THEATER-86 | `cd78bd9` | Card editor hiện bản dịch (khi 🌐 bật) ở chỗ Answer, dưới câu, màu xanh, chỉ đọc |
-| THEATER-87 | `pending` | Interpreter (PC): phụ đề không còn đè thanh trên, trên/dưới cách đều 16px; phụ đề dài cuộn bên trong, không thanh cuộn, mép mờ dần báo còn chữ |
+| THEATER-87 | `6c507d0` | Interpreter (PC): phụ đề không còn đè thanh trên, trên/dưới cách đều 16px; phụ đề dài cuộn bên trong, không thanh cuộn, mép mờ dần báo còn chữ |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
