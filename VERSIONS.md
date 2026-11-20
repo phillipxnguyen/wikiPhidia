@@ -333,7 +333,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-175 | `04a6d26` | Thẻ định nghĩa hỏi bằng ví dụ: mặt trước là bản dịch câu ví dụ, hết đục lỗ; pill căn theo giữa chữ thường (x-height), căn lại sau khi font tải; editor: pill noun cùng baseline với định nghĩa |
 | FLASH-176 | `3e2fd1c` | Mặt sau thẻ: bấm bất kỳ chỗ nào không phải từ mở popup nhỏ (kể cả vùng trống) đều mở editor như E; nút ▶/giờ giữ việc riêng |
 | FLASH-177 | `c3b27c4` | Từ tô vàng của thẻ mà cũng là từ riêng đã tạo (adherents): ô tô chia vàng + xanh (1 từ chia đôi, 2 từ chia ba), bấm phần xanh mở popup từ đó |
-| FLASH-178 | `pending` | Mặt trước đọc bản dịch (tiếng Việt): lật thì dừng ngay, mặt sau đọc từ đầu; chỉ nối tiếp khi hai mặt đọc cùng một thứ |
+| FLASH-178 | `32bc1d0` | Mặt trước đọc bản dịch (tiếng Việt): lật thì dừng ngay, mặt sau đọc từ đầu; chỉ nối tiếp khi hai mặt đọc cùng một thứ |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
