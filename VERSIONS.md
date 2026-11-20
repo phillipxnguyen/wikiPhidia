@@ -332,7 +332,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-174 | `1c3f1eb` | Mặt sau thẻ: bấm chữ của từ chính, nghĩa, bản dịch, tiêu đề định nghĩa, notes, hay từ tô trong câu đều mở editor như E; từ khác trong câu mở popup; khoảng trống không làm gì. Theater điện thoại: nối dòng ghi Easy/Med/Hard |
 | FLASH-175 | `04a6d26` | Thẻ định nghĩa hỏi bằng ví dụ: mặt trước là bản dịch câu ví dụ, hết đục lỗ; pill căn theo giữa chữ thường (x-height), căn lại sau khi font tải; editor: pill noun cùng baseline với định nghĩa |
 | FLASH-176 | `3e2fd1c` | Mặt sau thẻ: bấm bất kỳ chỗ nào không phải từ mở popup nhỏ (kể cả vùng trống) đều mở editor như E; nút ▶/giờ giữ việc riêng |
-| FLASH-177 | `pending` | Từ tô vàng của thẻ mà cũng là từ riêng đã tạo (adherents): ô tô chia vàng + xanh (1 từ chia đôi, 2 từ chia ba), bấm phần xanh mở popup từ đó |
+| FLASH-177 | `c3b27c4` | Từ tô vàng của thẻ mà cũng là từ riêng đã tạo (adherents): ô tô chia vàng + xanh (1 từ chia đôi, 2 từ chia ba), bấm phần xanh mở popup từ đó |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
