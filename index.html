@@ -11997,7 +11997,7 @@ function ownDictFloatPick() {
     const found = ownDictFindWord(w), studying = currentView === "vocab" && vocabView === "card" && vocabSession ? currentVocabItem() : null;
     closeOwnDictFloat();
     const renamed = found && term !== found.term && found.item && !found.lesson;
-    if (renamed ? updateVocabEntry(found.item, term, meaning) : ownDictSetMeaning(found, meaning)) showToast(`“${renamed ? term : found.term}”: ${meaning}`);
+    if (renamed ? updateVocabEntry(found.item, term, meaning) : ownDictSetMeaning(found, meaning)) showToast(`“${renamed ? term : found.term}”: ${meaningLines(meaning).join(" · ")}`);
     w = renamed ? term : w;
     putNotes();
     keepStudying(studying);
@@ -12316,8 +12316,10 @@ window.addEventListener("click", e => {
 
 window.addEventListener("click", e => {
   if (e.button || e.shiftKey || !e.target.closest || !getSelection().isCollapsed || currentView !== "vocab" || vocabView !== "card") return;
-  const own = e.target.closest("#vocabCard.flipped :is(.cloze-main, .cloze-gap, mark:not(.vocab-hit):not(.vocab-own))");
-  const item = own && currentVocabItem();
+  const own = e.target.closest("#vocabCard.flipped :is(.cloze-main, .cloze-gap, mark:not(.vocab-hit):not(.vocab-own))"), r = document.createRange();
+  if (own) r.selectNodeContents(own);
+  const onText = own && [ ...r.getClientRects() ].some(q => e.clientX >= q.left && e.clientX <= q.right && e.clientY >= q.top && e.clientY <= q.bottom);
+  const item = onText && currentVocabItem();
   if (!item) return;
   e.preventDefault();
   e.stopImmediatePropagation();
@@ -22636,6 +22638,14 @@ function saveEditCtx(item) {
   } catch (e) {}
 }
 
+function saveEditExtras(item) {
+  saveEditCtx(item);
+  const wm = document.querySelector("#editPopup .vem-wm"), parent = item.sub && subParentItem(item);
+  if (!wm || !parent) return;
+  const m = wm.innerText.split("\n").map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n");
+  if (m !== meaningLines(wm.dataset.was || "").join("\n")) updateVocabEntry(parent, parent.term, m);
+}
+
 function vocabEditorHtml(item) {
   if (item.sub) return subEditorHtml(item);
   const area = `<textarea id="vocabEditTerm" class="autofit" rows="1" autocomplete="off" aria-label="Word" placeholder="Word, then its meaning two lines below" hidden>${escapeHtml(item.meaning ? Q_MARK + item.term + "\n" + item.meaning : item.term)}</textarea>`;
@@ -22930,16 +22940,11 @@ function wireVocabEditor(items) {
     if (now.sub) {
       const sv = vocabEditValues(), st = document.getElementById("vocabEditSubText");
       saveSubEdit(now, st ? st.innerText : "", sv.meaning, now.sub.n || "");
-      saveEditCtx(now);
-      const wm = document.querySelector("#editPopup .vem-wm"), parent = subParentItem(now);
-      if (wm && parent) {
-        const m = wm.innerText.split("\n").map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n");
-        if (m !== meaningLines(wm.dataset.was || "").join("\n")) updateVocabEntry(parent, parent.term, m);
-      }
+      saveEditExtras(now);
       return renderVocab();
     }
     const v = vocabEditValues();
-    saveEditCtx(now);
+    saveEditExtras(now);
     if (!saveVocabEditor(now, v.term, v.meaning, null, true)) {
       vocabEditingKey = key;
       return;
@@ -23055,9 +23060,11 @@ function commitVocabEdit() {
     syncVocabEditMain(item);
     const st = document.getElementById("vocabEditSubText");
     saveSubEdit(item, st ? st.innerText : "", vocabEditValues().meaning, item.sub.n || "");
+    saveEditExtras(item);
     return true;
   }
   if (item) syncVocabEditMain(item);
+  if (item) saveEditExtras(item);
   const v = vocabEditValues();
   if (term && (isNew || item)) saveVocabEditor(isNew ? null : item, v.term, v.meaning, null, false);
   return true;
