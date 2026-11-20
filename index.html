@@ -68,6 +68,7 @@ window.onYouTubeIframeAPIReady = function(){
     --ring-left:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2232%22%20height%3D%2236%22%3E%3Crect%20x%3D%221%22%20y%3D%2214%22%20width%3D%2225%22%20height%3D%228%22%20rx%3D%224%22%20fill%3D%22%23fff%22%20stroke%3D%22%231f2633%22%20stroke-width%3D%222%22/%3E%3C/svg%3E");
     --paper-mark:rgba(245,205,70,.45);
     --word-mark:rgba(255,206,40,.55);
+    --also-mark:rgba(60,180,110,.4);
     --paper-shadow:rgba(20,30,50,.08);
     --danger:#cc3d3d;
     --danger-soft:rgba(204,61,61,.1);
@@ -104,6 +105,7 @@ window.onYouTubeIframeAPIReady = function(){
       --paper-margin:rgba(220,120,120,.38);
       --paper-mark:rgba(240,195,70,.28);
       --word-mark:rgba(240,190,40,.38);
+      --also-mark:rgba(80,200,130,.28);
       --paper-shadow:rgba(0,0,0,.4);
       --surface:#171c25;
       --surface-2:#1d2430;
@@ -146,6 +148,7 @@ window.onYouTubeIframeAPIReady = function(){
     --paper-margin:rgba(220,120,120,.38);
     --paper-mark:rgba(240,195,70,.28);
     --word-mark:rgba(240,190,40,.38);
+    --also-mark:rgba(80,200,130,.28);
     --paper-shadow:rgba(0,0,0,.4);
     --surface:#171c25;
     --surface-2:#1d2430;
@@ -725,6 +728,8 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-card.fill:not(.flipped) .cloze-pill{display:none;}
   @media (hover:hover){.own-ts:hover{background:color-mix(in srgb, currentColor 20%, transparent);}}
   .vocab-card.fill .cloze-own mark:not(.vocab-hit):not(.vocab-own){padding:0 2px;border-radius:4px;background:var(--word-mark);color:inherit;}
+  .vocab-card mark.mark-also, .vocab-card.fill .cloze-own mark.mark-also{background:var(--split);cursor:pointer;}
+  .vocab-card .vocab-ctx mark.mark-also{background:var(--split) 0 72% / 100% 86% no-repeat;}
   .vocab-card.fill :is(.cloze-body > span:not(.vc-stack), .vc-sent, .cloze-own, .cloze-notes){line-height:1.25;line-height:round(1.25em, 1px);}
   .vocab-card.fill .cloze-body{display:flex;flex-direction:column;align-items:stretch;row-gap:.6em;row-gap:round(.6em, 1px);box-sizing:border-box;width:fit-content;max-width:100%;margin:0 auto;text-align:left;}
   .vocab-card.fill .cloze-body > span, .vocab-card.fill .vc-sent{display:block;}
@@ -10184,9 +10189,9 @@ function lookupHtml(html, row) {
   return lookupCache.get(key);
 }
 
-function openMarkFloat(mk, row) {
+function openMarkFloat(mk, row, pick) {
   const zone = mk.closest("[data-id], .vocab-card, .wl-sent, #watchPop, #editPopup") || mk.parentElement;
-  const term = (mk.dataset.own || mk.dataset.terms || mk.textContent).split("\n")[0].trim(), lang = detectLang((mk.closest(".vc-sent, .cloze-more, .vocab-ctx, .vocab-word-notes, .cell, .w-text, .w-row") || zone).textContent).split("-")[0], found = ownDictFindWord(term, lang);
+  const term = pick || (mk.dataset.own || mk.dataset.terms || mk.textContent).split("\n")[0].trim(), lang = detectLang((mk.closest(".vc-sent, .cloze-more, .vocab-ctx, .vocab-word-notes, .cell, .w-text, .w-row") || zone).textContent).split("-")[0], found = ownDictFindWord(term, lang);
   const card = row || found && found.item && found.item.card || null;
   openWordFloat(mk.getBoundingClientRect(), found ? found.term : term, {
     lang: lang,
@@ -12370,6 +12375,12 @@ window.addEventListener("click", e => {
   e.preventDefault();
   e.stopImmediatePropagation();
   hideTooltip();
+  const split = onText && own.closest("mark[data-also]");
+  if (split) {
+    const box = [ ...split.getClientRects() ].find(q => e.clientX >= q.left && e.clientX <= q.right && e.clientY >= q.top && e.clientY <= q.bottom), also = split.dataset.also.split("\n");
+    const k = box ? Math.min(also.length, Math.floor((e.clientX - box.left) * (also.length + 1) / box.width)) : 0;
+    if (k) return openMarkFloat(split, null, also[k - 1]);
+  }
   openVocabEditor(item.key);
 }, true);
 
@@ -21908,15 +21919,26 @@ function lookupOthers(html, item) {
   const bare = t => foldVocab(t || "").replace(/[\p{P}\s]+/gu, "");
   const own = bare(item.term);
   tmp.querySelectorAll("mark.vocab-hit, mark.vocab-own").forEach(m => {
-    if (m.parentElement.closest("mark")) return m.replaceWith(...m.childNodes);
     const list = k => (m.dataset[k] || "").split("\n").filter(Boolean);
     const terms = list("terms").filter(t => bare(t) !== own), mine = list("own").filter(t => bare(t) !== own);
+    const gold = m.parentElement.closest("mark");
+    if (gold) {
+      const also = (gold.dataset.also || "").split("\n").filter(Boolean);
+      terms.concat(mine).forEach(t => also.some(x => bare(x) === bare(t)) || also.push(t));
+      if (also.length) gold.dataset.also = also.join("\n");
+      return m.replaceWith(...m.childNodes);
+    }
     if (!m.dataset.terms && !m.dataset.own && bare(m.textContent) === own || !terms.length && !mine.length && (m.dataset.terms || m.dataset.own)) return m.replaceWith(...m.childNodes);
     if (terms.length) m.dataset.terms = terms.join("\n"); else delete m.dataset.terms;
     if (mine.length) m.dataset.own = mine.join("\n"); else delete m.dataset.own;
     m.classList.toggle("vocab-hit", !!terms.length);
     m.classList.toggle("vocab-own", !!mine.length);
     m.classList.toggle("vocab-stack", terms.length + mine.length > 1);
+  });
+  tmp.querySelectorAll("mark[data-also]").forEach(m => {
+    const n = m.dataset.also.split("\n").length + 1, at = k => Math.round(k * 1000 / n) / 10 + "%";
+    m.classList.add("mark-also");
+    m.style.setProperty("--split", `linear-gradient(to right, var(--word-mark) 0 ${at(1)}, ${Array.from({length: n - 1}, (_, k) => (k ? `transparent ${at(k + 1)} calc(${at(k + 1)} + 2px), var(--also-mark) calc(${at(k + 1)} + 2px)` : `var(--also-mark) ${at(1)}`) + ` ${at(k + 2)}`).join(", ")})`);
   });
   return tmp.innerHTML;
 }
@@ -22426,7 +22448,7 @@ function fitHighlights(root) {
     const padTop = Math.round(size * .08) + 2, padBottom = padTop, h = box.height;
     const top = Math.max(0, Math.round(base - box.top - m.actualBoundingBoxAscent - padTop));
     const bottom = Math.min(Math.round(h), Math.round(base - box.top + m.actualBoundingBoxDescent + padBottom));
-    mark.style.background = `linear-gradient(transparent ${top}px, var(--word-mark) ${top}px, var(--word-mark) ${bottom}px, transparent ${bottom}px)`;
+    mark.style.background = mark.dataset.also ? `var(--split) 0 ${top}px / 100% ${bottom - top}px no-repeat` : `linear-gradient(transparent ${top}px, var(--word-mark) ${top}px, var(--word-mark) ${bottom}px, transparent ${bottom}px)`;
   }));
 }
 
