@@ -326,6 +326,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-169 | `bf95554` | Bỏ hẳn họ từ (related words) khỏi thẻ, editor, ☰ List và không thu thập nữa; tiêu đề định nghĩa (adherent to something) thành dòng thường phía trên; editor định nghĩa: bản dịch là chữ thật sửa được thay cho chữ mờ; font câu/định nghĩa và bản dịch luôn cùng một (đủ dấu Việt) |
 | FLASH-170 | `3f67947` | Card editor: thanh notes chỉ dài đúng phần chữ, cách dòng trên 16px theo chữ (trước dính sát bản dịch); notes → Save 16px |
 | FLASH-171 | `2f465d1` | Bỏ kiểu mặt trước 'chỉ nghe' (cảnh Podcast + gợi ý): mặt trước dịch luôn hiện đúng câu tiếng Việt đang đọc |
+| FLASH-172 | `pending` | Editor E: câu trong editor giữ đều giãn dòng, không phần tử nào trong câu (đánh dấu, gạch chân khi chọn từ) làm giãn một dòng |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
