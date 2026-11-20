@@ -719,7 +719,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-87 | `0d05a09` | Popup tra từ: chữ cách mép trên 17px như popup sửa (trước 24px), nút vẫn giữa dòng |
 | LOOKUP-88 | `1e51275` | Popup tra từ và popup sửa: từ chính cách nghĩa 17px (17/17) |
 | LOOKUP-89 | `9121634` | Popup từ: mỗi câu ví dụ nằm trong ô nền nhạt (12px trong, bo 12, cách 8), đáy popup không còn sát chữ |
-| LOOKUP-90 | `pending` | Ô câu ví dụ trong popup: nền xanh xám rõ hơn |
+| LOOKUP-90 | `832f81c` | Ô câu ví dụ trong popup: nền xanh xám rõ hơn |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
