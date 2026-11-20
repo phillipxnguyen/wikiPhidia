@@ -317,6 +317,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-165 | `7799201` | Bấm khoảng trống cạnh từ không còn mở editor (chỉ bấm đúng chữ); bấm ra ngoài editor lưu cả bản dịch và nghĩa của từ như Save; thông báo nghĩa tách bằng · |
 | FLASH-166 | `1d5cf07` | Pill (noun/Opposite/▶/giờ) căn giữa theo chữ với mọi font; bản dịch mặt sau cùng font với câu (font câu luôn đủ dấu tiếng Việt); từ biến thể (adherents) nhận là từ đã có: popup hiện từ đó, trên thẻ mở editor |
 | FLASH-167 | `13ff497` | Mặt trước câu dịch tự đọc tiếng Việt, 2 kiểu ngẫu nhiên (chữ + đọc, hoặc chỉ nghe trên cảnh Podcast kèm gợi ý nghĩa); thẻ cả câu cũng dùng mặt trước bản dịch; thẻ chưa dịch xong nhường cho thẻ đã sẵn sàng, dịch trước 5 thẻ kế |
+| FLASH-168 | `pending` | Thẻ khi học: mặt trước không còn giữ chỗ ẩn cho phần mặt sau nên không bị đẩy dính lên trên; lật thẻ tính lại chiều cao, nội dung luôn cân giữa thanh trên và hàng nút |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
