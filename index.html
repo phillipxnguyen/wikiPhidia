@@ -12322,10 +12322,31 @@ document.addEventListener("click", e => {
   openWordFloat(hit.range.getBoundingClientRect(), hit.word, ctx);
 }, true);
 
+let floatClosedAt = 0;
+
 document.addEventListener("pointerdown", e => {
   if (!ownDictFloat || !e.target.closest || e.target.closest(".od-float")) return;
   const save = ownDictFloat.querySelector(".od-save:not([hidden])");
+  floatClosedAt = Date.now();
   if (save) ownDictFloatPick(); else closeOwnDictFloat();
+}, true);
+
+window.addEventListener("click", e => {
+  if (Date.now() - floatClosedAt > 800) return;
+  floatClosedAt = 0;
+  e.preventDefault();
+  e.stopImmediatePropagation();
+}, true);
+
+window.addEventListener("click", e => {
+  if (e.button || e.shiftKey || !e.target.closest || !getSelection().isCollapsed || currentView !== "vocab" || vocabView !== "card") return;
+  const own = e.target.closest("#vocabCard.flipped :is(.cloze-main, .cloze-gap, mark:not(.vocab-hit):not(.vocab-own))");
+  const item = own && currentVocabItem();
+  if (!item) return;
+  e.preventDefault();
+  e.stopImmediatePropagation();
+  hideTooltip();
+  openVocabEditor(item.key);
 }, true);
 
 function keepStudying(studying) {
