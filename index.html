@@ -515,6 +515,7 @@ window.onYouTubeIframeAPIReady = function(){
   .ed-card #vocabEditSubText{font-size:18px;line-height:26px;}
   .ed-card :is(.ed-ctx, .ed-ctx-n){margin-top:4px;font-size:18px;line-height:26px;text-box-trim:trim-both;text-box-edge:cap alphabetic;}
   .ed-card .ed-ctx-tr{font-weight:600;color:var(--a-text);outline:none;}
+  .ed-card .ed-ctx-s{outline:none;}
   .ed-card .ed-ctx-s *{display:inline;line-height:inherit;vertical-align:baseline;padding-top:0;padding-bottom:0;margin-top:0;margin-bottom:0;font-size:inherit;}
   .ed-card .ed-ctx-tr:empty::before{content:attr(data-placeholder);font-family:"Doto", system-ui, sans-serif;font-weight:800;color:var(--placeholder);}
   .ed-card .ed-ctx-n{color:var(--text);}
@@ -3658,6 +3659,7 @@ async function mtFetch(texts) {
     const job = translateBatch(need, detectLang(need[0]) === "vi-VN" ? "en" : "vi").catch(() => []).then(res => {
       const st = mtRead();
       need.forEach((t, k) => {
+        if (st[t]) return;
         if (res[k] && res[k] !== t) st[t] = res[k]; else setTimeout(() => mtTried.delete(t), 6e4);
       });
       const keys = Object.keys(st);
@@ -22702,24 +22704,64 @@ function editCtxHtml(item) {
     dataset: {}
   }) : "";
   const noted = noteSentence(item), notes = noted ? noted.rest.replace(/^(\s|<br\s*\/?>|<div>\s*<\/div>)+/i, "") : wordNotesOf(item);
-  return (text ? `<div class="ed-ctx" contenteditable="false"><div class="ed-ctx-s">${lookupOthers(vocabSentenceHtml(text, item.term, item.card), item)}</div><div class="ed-ctx-tr" contenteditable="true" data-placeholder="Translation" data-was="${escapeAttr(tr)}">${escapeHtml(tr)}</div></div>` : "") + (notes ? `<div class="ed-ctx-n" contenteditable="false">${notesWithPinyin(brLines(notes), item.card)}</div>` : "");
+  return (text ? `<div class="ed-ctx" contenteditable="false"><div class="ed-ctx-s" contenteditable="true">${lookupOthers(vocabSentenceHtml(text, item.term, item.card), item)}</div><div class="ed-ctx-tr" contenteditable="true" data-placeholder="Translation" data-was="${escapeAttr(tr)}">${escapeHtml(tr)}</div></div>` : "") + (notes ? `<div class="ed-ctx-n" contenteditable="false">${notesWithPinyin(brLines(notes), item.card)}</div>` : "");
+}
+
+function updateCtxSource(item, from, to) {
+  const same = t => oneLine(t || "").normalize("NFC") === oneLine(from).normalize("NFC");
+  const row = vocabSource().find(r => r.uid !== EXTRA_UID && same(r.q));
+  if (row) {
+    pushUndo("Edited the sentence — " + item.term);
+    row.q = to;
+    row.qHtml = textHtml(to);
+    scheduleAutoSave();
+    return "row";
+  }
+  saveSenses(item.sub ? item : Object.assign({}, item, {
+    sub: null
+  }), entry => {
+    entry.defs.forEach(d => {
+      if (same(d.t)) d.t = to;
+      if (same(d.x)) d.x = to;
+      if (Array.isArray(d.xs)) d.xs = d.xs.map(x => typeof x === "string" ? same(x) ? to : x : x && same(x.t) ? Object.assign({}, x, {
+        t: to
+      }) : x);
+    });
+    entry.ex.forEach(x => {
+      if (same(x.t)) x.t = to;
+    });
+  });
+  return "dict";
 }
 
 function saveEditCtx(item) {
-  const el = document.querySelector("#editPopup .ed-ctx-tr"), text = editCtxText(item);
+  const el = document.querySelector("#editPopup .ed-ctx-tr"), sEl = document.querySelector("#editPopup .ed-ctx-s"), text = editCtxText(item);
   if (!el || !text) return;
-  const value = el.innerText.replace(/\s+/g, " ").trim();
-  if (value === (el.dataset.was || "")) return;
-  const row = item.card;
-  if (oneLine(row.q || "").normalize("NFC") === oneLine(text).normalize("NFC")) {
-    pushUndo("Edited the translation — " + item.term);
-    row.a = value;
-    row.aHtml = value ? textHtml(value) : "";
+  const value = el.innerText.replace(/\s+/g, " ").trim(), next = sEl ? sEl.innerText.replace(/\s+/g, " ").trim() : text;
+  const trChanged = value !== (el.dataset.was || ""), sChanged = !!next && next !== oneLine(text).trim();
+  const own = oneLine(item.card.q || "").normalize("NFC") === oneLine(text).normalize("NFC");
+  if (sChanged) {
+    updateCtxSource(item, text, next);
+    const vc = document.getElementById("vocabCard");
+    if (vc) [ "other", "defx", "owndef" ].forEach(k => {
+      if (vc.dataset[k] === text) vc.dataset[k] = next;
+    });
+    if (own && !trChanged) {
+      item.card.a = "";
+      item.card.aHtml = "";
+    }
+  }
+  if (!trChanged) return;
+  const target = sChanged ? next : text;
+  if (own) {
+    if (!sChanged) pushUndo("Edited the translation — " + item.term);
+    item.card.a = value;
+    item.card.aHtml = value ? textHtml(value) : "";
     scheduleAutoSave();
     return;
   }
   const st = mtRead();
-  if (value) st[text] = value; else delete st[text];
+  if (value) st[target] = value; else delete st[target];
   try {
     localStorage.setItem(MT_KEY, JSON.stringify(st));
   } catch (e) {}
