@@ -306,7 +306,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-154 | `cf1f6c3` | Sửa bug Vocabulary: câu ví dụ từ điển hiện bản dịch 2 lần; dấu câu (。 . ,) sau từ được tô rớt xuống dòng riêng; câu ví dụ được hỏi ở thẻ định nghĩa thiếu bản dịch mặt sau |
 | FLASH-155 | `ebe98c3` | Thanh trên khi học (PC): cờ trái, New/Due/Done chính giữa, nút phải (Lessons + Vocabulary); thẻ câu hiện Translating… khi đang dịch thay vì đục lỗ, dịch trước cho thẻ kế, thử lại sau 1 phút nếu lỗi |
 | FLASH-156 | `e6a561f` | Vocabulary E: editor hiện như thẻ — từ, nghĩa, câu/định nghĩa đang hỏi + bản dịch (sửa được), notes, họ từ; khoảng cách theo 7.2, từ cách mép trên 17 |
-| FLASH-157 | `d155043` | Thẻ khi học (Vocabulary, máy tính): không còn khung cuộn riêng, không giới hạn cao; thẻ trải từ thanh trên tới hàng nút, nội dung cân giữa; dài thì cả trang cuộn |
+| FLASH-157 | `e7b3a20` | Thẻ khi học (Vocabulary, máy tính): không còn khung cuộn riêng, không giới hạn cao; thẻ trải từ thanh trên tới hàng nút, nội dung cân giữa; dài thì cả trang cuộn |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
@@ -343,7 +343,7 @@ Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWor
 | POD-28 | `f447d89` | Cảnh tàu điện: tàu đứng tại chỗ, các toa nhún nhẹ, vệt gió phía sau; đường đỏ có ga thành đường ray đứng yên |
 | POD-29 | `59c10dc` | Cảnh tàu: bỏ thanh thời gian chạy bên dưới, đường ray thay chỗ nó, không còn gì chuyển động dọc theo |
 | POD-30 | `955a6c1` | Điện thoại: biển báo nhỏ lại (70%) cắm ở đầu trái thanh thời lượng ngắn hơn, không đè cảnh, không lòi ra khỏi thẻ; tàu thu toa cho vừa |
-| POD-31 | `e7b3a20` | Subway: tàu chạy trái → phải, đầu tàu bên phải có kính lái, gió thổi phía sau (bên trái); điện thoại: tàu dạt phải để gió không đè biển báo |
+| POD-31 | `d155043` | Subway: tàu chạy trái → phải, đầu tàu bên phải có kính lái, gió thổi phía sau (bên trái); điện thoại: tàu dạt phải để gió không đè biển báo |
 
 Hàm chính: `openBlind`, `closeBlind`, `blindItems`, `blindAutoItems`, `blindLines`, `blindNext`, `paintBlind`, `paintBlindLive`, `blindPlay`, `blindPlayOne`, `blindPlayLine`, `blindPlayer`, `blindSpeak`, `blindGrade`, `blindUndo`, `blindEdit`, `blindAct`, `blindFly`, `blindArt`, `blindSceneFor`, `blindCountsHtml`, `withLeadTime`, `blindTime`, `BLIND_SCENES`.
 
