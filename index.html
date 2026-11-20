@@ -4224,7 +4224,7 @@ function paintWatch() {
   if (p.trans || p.cabin) mtFill(watch.lines);
   watch.countSig = "";
   const pill = (k, title, label) => `<button type="button" class="w-pill${p[k] ? " on" : ""}" data-w="${k}" aria-pressed="${!!p[k]}" title="${title}">${label}</button>`;
-  const tools = `${pill("loop", "Loop the line being said", '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 9V8a3 3 0 0 1 3-3h8M13 3l2 2-2 2M16 11v1a3 3 0 0 1-3 3H5M7 17l-2-2 2-2"/></svg>')}${pill("blur", "Blur the writing until you point at it", '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 10s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/><path d="M4 16L16 4"/></svg>')}${watchChinese() ? pill("pin", "Pinyin", "拼") : ""}${pill("trans", "The translation (the lesson's own, or a machine translation when the line has none)", '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M3 10h14M10 3c2.6 2.6 2.6 11.4 0 14M10 3c-2.6 2.6-2.6 11.4 0 14"/></svg>')}<select class="w-join" aria-label="Join lines" title="How long a stretch you study at once: Easy one line, Medium 15 s, Hard 30 s">${(watchPhone() ? [ [ 0, "1 line" ], [ 15, "15s" ], [ 30, "30s" ] ] : [ [ 0, "Easy" ], [ 15, "Medium" ], [ 30, "Hard" ] ]).map(([v, t]) => `<option value="${v}"${v === Math.min(30, joinedSeconds()) ? " selected" : ""}>${t}</option>`).join("")}</select><select class="w-size" aria-label="Subtitle size" title="Subtitle size">${[ 100, 125, 150 ].map(v => `<option value="${v}"${v === (p.size || 100) ? " selected" : ""}>${v}%</option>`).join("")}</select><select class="w-rate" aria-label="Speed" title="Speed">${[ ...document.getElementById("playbackSpeed").options ].map(o => `<option value="${o.value}"${Number(o.value) === p.rate ? " selected" : ""}>${o.textContent}</option>`).join("")}</select>`;
+  const tools = `${pill("loop", "Loop the line being said", '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 9V8a3 3 0 0 1 3-3h8M13 3l2 2-2 2M16 11v1a3 3 0 0 1-3 3H5M7 17l-2-2 2-2"/></svg>')}${pill("blur", "Blur the writing until you point at it", '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 10s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/><path d="M4 16L16 4"/></svg>')}${watchChinese() ? pill("pin", "Pinyin", "拼") : ""}${pill("trans", "The translation (the lesson's own, or a machine translation when the line has none)", '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M3 10h14M10 3c2.6 2.6 2.6 11.4 0 14M10 3c-2.6 2.6-2.6 11.4 0 14"/></svg>')}<select class="w-join" aria-label="Join lines" title="How long a stretch you study at once: Easy one line, Medium 15 s, Hard 30 s">${(watchPhone() ? [ [ 0, "Easy" ], [ 15, "Med" ], [ 30, "Hard" ] ] : [ [ 0, "Easy" ], [ 15, "Medium" ], [ 30, "Hard" ] ]).map(([v, t]) => `<option value="${v}"${v === Math.min(30, joinedSeconds()) ? " selected" : ""}>${t}</option>`).join("")}</select><select class="w-size" aria-label="Subtitle size" title="Subtitle size">${[ 100, 125, 150 ].map(v => `<option value="${v}"${v === (p.size || 100) ? " selected" : ""}>${v}%</option>`).join("")}</select><select class="w-rate" aria-label="Speed" title="Speed">${[ ...document.getElementById("playbackSpeed").options ].map(o => `<option value="${o.value}"${Number(o.value) === p.rate ? " selected" : ""}>${o.textContent}</option>`).join("")}</select>`;
   box.querySelector(".w-ctl-l").innerHTML = tools;
   syncWatchPills();
   box.querySelector(".w-ctl-c").innerHTML = "";
@@ -12353,9 +12353,17 @@ window.addEventListener("click", e => {
   if (e.button || e.shiftKey || !e.target.closest || !getSelection().isCollapsed || currentView !== "vocab" || vocabView !== "card") return;
   const cur = currentVocabItem(), mk = e.target.closest("#vocabCard.flipped mark");
   const same = mk && cur && (normalizeVocabText(mk.textContent) === cur.tkey || wordStems(normalizeVocabText(mk.textContent)).includes(cur.tkey) || !!findWordForm(mk.textContent.normalize("NFC"), cur.term));
-  const own = e.target.closest("#vocabCard.flipped :is(.cloze-main, .cloze-gap, mark:not(.vocab-hit):not(.vocab-own))") || (same ? mk : null), r = document.createRange();
-  if (own) r.selectNodeContents(own);
-  const onText = own && [ ...r.getClientRects() ].some(q => e.clientX >= q.left && e.clientX <= q.right && e.clientY >= q.top && e.clientY <= q.bottom);
+  const own = e.target.closest("#vocabCard.flipped :is(.cloze-head, .cloze-gap, .vc-sub-tr, .vc-def-g, .cloze-notes, mark:not(.vocab-hit):not(.vocab-own))") || (same ? mk : null), r = document.createRange();
+  let onText = false;
+  if (own) {
+    const w = document.createTreeWalker(own, NodeFilter.SHOW_TEXT);
+    let n;
+    while (!onText && (n = w.nextNode())) {
+      if (!n.textContent.trim()) continue;
+      r.selectNodeContents(n);
+      onText = [ ...r.getClientRects() ].some(q => e.clientX >= q.left && e.clientX <= q.right && e.clientY >= q.top && e.clientY <= q.bottom);
+    }
+  }
   const item = onText && currentVocabItem();
   if (!item) return;
   e.preventDefault();

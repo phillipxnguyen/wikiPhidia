@@ -328,6 +328,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-171 | `2f465d1` | Bỏ kiểu mặt trước 'chỉ nghe' (cảnh Podcast + gợi ý): mặt trước dịch luôn hiện đúng câu tiếng Việt đang đọc |
 | FLASH-172 | `b9edc7b` | Editor E: câu trong editor giữ đều giãn dòng, không phần tử nào trong câu (đánh dấu, gạch chân khi chọn từ) làm giãn một dòng |
 | FLASH-173 | `f10184e` | Editor E: sửa được câu/định nghĩa/ví dụ (cả của từ điển), ghi đúng nguồn; sửa câu thì bản dịch tự dịch lại, bản dịch tự gõ thì giữ nguyên không bị máy dịch đè |
+| FLASH-174 | `pending` | Mặt sau thẻ: bấm chữ của từ chính, nghĩa, bản dịch, tiêu đề định nghĩa, notes, hay từ tô trong câu đều mở editor như E; từ khác trong câu mở popup; khoảng trống không làm gì. Theater điện thoại: nối dòng ghi Easy/Med/Hard |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
