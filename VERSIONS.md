@@ -303,7 +303,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-151 | `7b9e308` | Mặt sau Vocabulary: mọi câu (của mình, ví dụ từ điển) có bản dịch ngay dưới, cách bằng giãn dòng thay vì khoảng giữa các phần |
 | FLASH-152 | `aa8d2c0` | Popup sửa định nghĩa/ví dụ: nghĩa (và chữ mờ bản dịch) sát dưới dòng định nghĩa, cách bằng giãn dòng |
 | FLASH-153 | `70713d8` | Mặt sau Vocabulary: giãn dòng của câu, khoảng câu → bản dịch và giãn dòng bản dịch bằng nhau (đo theo chữ, theo font của thẻ) |
-| FLASH-154 | `pending` | Sửa bug Vocabulary: câu ví dụ từ điển hiện bản dịch 2 lần; dấu câu (。 . ,) sau từ được tô rớt xuống dòng riêng; câu ví dụ được hỏi ở thẻ định nghĩa thiếu bản dịch mặt sau |
+| FLASH-154 | `cf1f6c3` | Sửa bug Vocabulary: câu ví dụ từ điển hiện bản dịch 2 lần; dấu câu (。 . ,) sau từ được tô rớt xuống dòng riêng; câu ví dụ được hỏi ở thẻ định nghĩa thiếu bản dịch mặt sau |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
