@@ -22228,6 +22228,7 @@ function backPair(item) {
 }
 
 function headMeaning(item) {
+  if (item.sub && item.sub.kind === "def") return "";
   return item.sub ? item.sub.m || item.sub.kind === "ex" && item.sub.tr || item.sub.mt || machineTr(oneLine(item.sub.t)) : item.meaning || "";
 }
 
@@ -22720,7 +22721,7 @@ function subEditorHtml(item) {
   const pill = item.sub.kind === "def" && item.sub.p ? `<span class="ed-sub-pos" contenteditable="false">${escapeHtml(item.sub.p)}</span>` : "";
   const parent = subParentItem(item);
   const wm = parent ? `<div class="vem-wm" contenteditable="true" data-placeholder="Type the meaning" data-was="${escapeAttr(parent.meaning || "")}">${meaningLines(parent.meaning || "").map(l => `<div>${escapeHtml(l)}</div>`).join("")}</div>` : "";
-  const card = `<div id="vocabEditMain" class="rich-editor sub-card" contenteditable="true" aria-label="This card: its text, then its meaning"><div class="vem-t${odLong(it.term) ? " long" : ""}" data-placeholder="Word" contenteditable="false">${escapeHtml(it.term)}</div>${wm}${head}<div class="ed-sub-row" contenteditable="false">${pill}<div id="vocabEditSubText" class="sub-text" lang="${detectLang(item.sub.t).split("-")[0]}" contenteditable="true" aria-label="${item.sub.kind === "def" ? "The definition" : "The example"}">${subLine(item.sub.t)}</div></div><div class="vem-a" data-placeholder="Type the meaning"${!item.sub.m && headMeaning(item) ? ` data-mt="${escapeAttr(headMeaning(item))}"` : ""}>${escapeHtml(it.meaning || headMeaning(item) || "")}</div></div>`;
+  const card = `<div id="vocabEditMain" class="rich-editor sub-card" contenteditable="true" aria-label="This card: its text, then its meaning"><div class="vem-t${odLong(it.term) ? " long" : ""}" data-placeholder="Word" contenteditable="false">${escapeHtml(it.term)}</div>${wm}${head}<div class="ed-sub-row" contenteditable="false">${pill}<div id="vocabEditSubText" class="sub-text" lang="${detectLang(item.sub.t).split("-")[0]}" contenteditable="true" aria-label="${item.sub.kind === "def" ? "The definition" : "The example"}">${subLine(item.sub.t)}</div></div>${item.sub.kind === "def" ? "" : `<div class="vem-a" data-placeholder="Type the meaning"${!item.sub.m && headMeaning(item) ? ` data-mt="${escapeAttr(headMeaning(item))}"` : ""}>${escapeHtml(it.meaning || headMeaning(item) || "")}</div>`}</div>`;
   const say = `<button type="button" class="od-say ed-say" data-say="${escapeAttr(it.term)}" aria-label="Listen" title="Listen">${OD_SPEAK}</button>`;
   return '<div class="vocab-editor">' + `<div class="od-card ed-card">${levelHtml(ownDictLang(it.term, it.card), it.term, "ed-lv")}${say}${area}${card}${editCtxHtml(item)}</div>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
 }
@@ -22806,6 +22807,7 @@ function saveEditCtx(item) {
 }
 
 function subMeaningValue(item, m) {
+  if (item.sub.kind === "def") return item.sub.m || "";
   const a = document.querySelector("#editPopup #vocabEditMain .vem-a");
   return a && a.dataset.mt && (m || "").replace(/\s+/g, " ").trim() === a.dataset.mt.replace(/\s+/g, " ").trim() ? item.sub.m || "" : m;
 }
