@@ -307,6 +307,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-155 | `ebe98c3` | Thanh trên khi học (PC): cờ trái, New/Due/Done chính giữa, nút phải (Lessons + Vocabulary); thẻ câu hiện Translating… khi đang dịch thay vì đục lỗ, dịch trước cho thẻ kế, thử lại sau 1 phút nếu lỗi |
 | FLASH-156 | `e6a561f` | Vocabulary E: editor hiện như thẻ — từ, nghĩa, câu/định nghĩa đang hỏi + bản dịch (sửa được), notes, họ từ; khoảng cách theo 7.2, từ cách mép trên 17 |
 | FLASH-157 | `e7b3a20` | Thẻ khi học (Vocabulary, máy tính): không còn khung cuộn riêng, không giới hạn cao; thẻ trải từ thanh trên tới hàng nút, nội dung cân giữa; dài thì cả trang cuộn |
+| FLASH-158 | `pending` | Mặt sau thẻ: chỉ 3 cỡ (từ, nghĩa, còn lại), bản dịch cùng cỡ câu, nhãn Similar/Opposite thành pill; mỗi phần một màu riêng (câu thứ hai, notes, họ từ có màu mới) |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 

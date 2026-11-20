@@ -88,7 +88,7 @@ The shared rules of the whole app, one line each. They hold in every mode (☰ F
 7. Things line up: the texts of one block start at the same left edge.
 
 ### 8. Colour
-1. Each kind of text has its own colour (sentence, answer or meaning, notes, your words), never two parts in one colour.
+1. Each kind of text has its own colour (sentence, answer or meaning, notes, your words), never two parts in one colour. On a flashcard's back every part has an ink of its own, never shared: the word, its meaning, the line asked (definition, synonyms, the sentence), a second sentence, translations, notes and the word family. Sizes there are three only: the word, its meaning, and one size for everything else (translations included); a label such as Similar or a word class is a small pill like the time badge.
 2. No grey text for anything you read while studying.
 3. A switch that is on is filled; pointing at one that is off only rings it.
 4. Each language has one pair of colours everywhere (English purple to pink, 中文 red to orange, 한국어 teal to blue, 日本語 navy to rose, Tiếng Việt green), for Vocabulary, the Library and every banner or badge of that language.
