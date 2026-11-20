@@ -2360,7 +2360,7 @@ window.onYouTubeIframeAPIReady = function(){
   @media (hover:hover){.w-modes button:not(.active):hover{color:#ffffff;}}
   .watch-pop.cabin .w-listbox{display:none;}
   .watch-pop.cabin .w-pill:is([data-w="loop"], [data-w="blur"]){display:none;}
-  @media (min-width:821px), (hover:hover){.watch-pop.cabin{--cw:max(100vw, calc(100dvh * 16 / 9));grid-template-columns:100vw;align-content:start;padding:0;overflow:hidden;}.watch-pop.cabin .w-main{position:relative;}.watch-pop.cabin .w-video{height:100dvh;aspect-ratio:auto;border-radius:0;}.watch-pop.cabin .w-video > iframe{left:calc((100vw - var(--cw)) / 2);top:calc((100dvh - var(--cw) * 9 / 16) / 2 - 64px);width:var(--cw);height:calc(var(--cw) * 9 / 16 + 128px);}.watch-pop.cabin .w-ctl{position:absolute;left:0;right:0;bottom:16px;z-index:3;height:44px;pointer-events:none;}.watch-pop.cabin .w-ctl > *{pointer-events:auto;}.watch-pop.cabin .w-ctl-l{gap:4px;padding:4px;border-radius:22px;background:rgba(0,0,0,.66);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);}.watch-pop.cabin .w-cap{bottom:76px;}}
+  @media (min-width:821px), (hover:hover){.watch-pop.cabin{--cw:max(100vw, calc(100dvh * 16 / 9));grid-template-columns:100vw;align-content:start;padding:0;overflow:hidden;}.watch-pop.cabin .w-main{position:relative;}.watch-pop.cabin .w-video{height:100dvh;aspect-ratio:auto;border-radius:0;}.watch-pop.cabin .w-video > iframe{left:calc((100vw - var(--cw)) / 2);top:calc((100dvh - var(--cw) * 9 / 16) / 2 - 64px);width:var(--cw);height:calc(var(--cw) * 9 / 16 + 128px);}.watch-pop.cabin .w-ctl{position:absolute;left:0;right:0;bottom:16px;z-index:3;height:44px;pointer-events:none;}.watch-pop.cabin .w-ctl > *{pointer-events:auto;}.watch-pop.cabin .w-ctl-l{gap:4px;padding:4px;border-radius:22px;background:rgba(0,0,0,.66);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);}.watch-pop.cabin .w-cap{top:72px;bottom:76px;}}
   .w-main{display:flex;flex-direction:column;gap:8px;min-width:0;container-type:inline-size;}
   .w-video{position:relative;width:100%;aspect-ratio:16 / 9;overflow:hidden;border-radius:12px;background:#000000;}
   .w-video > *{position:absolute;inset:0;width:100%;height:100%;}
@@ -2402,6 +2402,8 @@ window.onYouTubeIframeAPIReady = function(){
   .w-cap .w-capline{pointer-events:auto;cursor:pointer;}
   .w-stage.w-edge, .w-stage.w-edge *{cursor:ns-resize;}
   .w-cap .w-capline{position:relative;}
+  .w-cap :is(.w-capline, .w-capline > *).cap-over{scrollbar-width:none;-webkit-mask-image:linear-gradient(to bottom, transparent, #000 var(--ft, 0px), #000 calc(100% - var(--fb, 0px)), transparent);mask-image:linear-gradient(to bottom, transparent, #000 var(--ft, 0px), #000 calc(100% - var(--fb, 0px)), transparent);}
+  .w-cap :is(.w-capline, .w-capline > *).cap-over::-webkit-scrollbar{display:none;}
   @media (min-width:821px), (hover:hover){.w-cap .w-capline:has(> .w-tr){gap:8px;padding:0;background:none;-webkit-backdrop-filter:none;backdrop-filter:none;}.w-cap .w-capline:has(> .w-tr) > :not(.w-tr){padding:8px 16px;border-radius:12px;background:rgba(0,0,0,.66);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);}.w-cap .w-capline > .w-tr{width:fit-content;max-width:100%;box-sizing:border-box;padding:8px 16px;border-radius:12px;background:rgba(0,0,0,.66);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);color:#ffffff;}}
   .watch-pop.cut-hold .w-cap{visibility:hidden;}
   .w-main[data-swipe="good"] :is(.w-text, .w-tr){color:#5fd38d;}
@@ -4567,6 +4569,23 @@ document.getElementById("watchPop").addEventListener("mouseleave", () => {
   saveWatchPrefs();
 }));
 
+function capFade(line) {
+  if (!line) return;
+  [ line, ...line.children ].forEach(el => {
+    const over = el.scrollHeight > el.clientHeight + 1 && /auto|scroll/.test(getComputedStyle(el).overflowY);
+    el.classList.toggle("cap-over", over);
+    el.style.setProperty("--ft", over && el.scrollTop > 1 ? "24px" : "0px");
+    el.style.setProperty("--fb", over && el.scrollTop + el.clientHeight < el.scrollHeight - 1 ? "24px" : "0px");
+  });
+}
+
+document.addEventListener("scroll", e => {
+  const line = e.target && e.target.closest && e.target.closest(".w-capline");
+  if (line) capFade(line);
+}, true);
+
+new ResizeObserver(() => capFade(document.querySelector("#watchPop .w-capline"))).observe(document.getElementById("watchPop"));
+
 function paintWatchLine(scroll) {
   const box = document.getElementById("watchPop"), r = watch.lines[watch.at];
   const line = box.querySelector(".w-capline");
@@ -4598,6 +4617,7 @@ function paintWatchLine(scroll) {
     top: Math.round(on.offsetTop - list.clientHeight / 2 + on.offsetHeight / 2),
     behavior: reducedMotion() ? "auto" : "smooth"
   });
+  requestAnimationFrame(() => capFade(document.querySelector("#watchPop .w-capline")));
 }
 
 function fmtTime(t) {
