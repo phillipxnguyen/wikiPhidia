@@ -319,7 +319,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-167 | `13ff497` | Mặt trước câu dịch tự đọc tiếng Việt, 2 kiểu ngẫu nhiên (chữ + đọc, hoặc chỉ nghe trên cảnh Podcast kèm gợi ý nghĩa); thẻ cả câu cũng dùng mặt trước bản dịch; thẻ chưa dịch xong nhường cho thẻ đã sẵn sàng, dịch trước 5 thẻ kế |
 | FLASH-168 | `ff0fe61` | Thẻ khi học: mặt trước không còn giữ chỗ ẩn cho phần mặt sau nên không bị đẩy dính lên trên; lật thẻ tính lại chiều cao, nội dung luôn cân giữa thanh trên và hàng nút |
 | FLASH-169 | `bf95554` | Bỏ hẳn họ từ (related words) khỏi thẻ, editor, ☰ List và không thu thập nữa; tiêu đề định nghĩa (adherent to something) thành dòng thường phía trên; editor định nghĩa: bản dịch là chữ thật sửa được thay cho chữ mờ; font câu/định nghĩa và bản dịch luôn cùng một (đủ dấu Việt) |
-| FLASH-170 | `pending` | Card editor: thanh notes chỉ dài đúng phần chữ, cách dòng trên 16px theo chữ (trước dính sát bản dịch); notes → Save 16px |
+| FLASH-170 | `3f67947` | Card editor: thanh notes chỉ dài đúng phần chữ, cách dòng trên 16px theo chữ (trước dính sát bản dịch); notes → Save 16px |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
