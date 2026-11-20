@@ -302,7 +302,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-150 | `d97a890` | Một rule khoảng cách chung cho mọi box (7.2): dòng chính 17 từ mép trên và 17 tới phần sau, còn lại 16; card editor (câu không Answer, Answer, bản dịch, placeholder, Save) và ☰ Full chỉnh theo |
 | FLASH-151 | `7b9e308` | Mặt sau Vocabulary: mọi câu (của mình, ví dụ từ điển) có bản dịch ngay dưới, cách bằng giãn dòng thay vì khoảng giữa các phần |
 | FLASH-152 | `aa8d2c0` | Popup sửa định nghĩa/ví dụ: nghĩa (và chữ mờ bản dịch) sát dưới dòng định nghĩa, cách bằng giãn dòng |
-| FLASH-153 | `pending` | Mặt sau Vocabulary: giãn dòng của câu, khoảng câu → bản dịch và giãn dòng bản dịch bằng nhau (đo theo chữ, theo font của thẻ) |
+| FLASH-153 | `70713d8` | Mặt sau Vocabulary: giãn dòng của câu, khoảng câu → bản dịch và giãn dòng bản dịch bằng nhau (đo theo chữ, theo font của thẻ) |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
