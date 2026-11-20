@@ -522,6 +522,8 @@ window.onYouTubeIframeAPIReady = function(){
   .ed-card .ed-ctx-s *{display:inline;line-height:inherit;vertical-align:baseline;padding-top:0;padding-bottom:0;margin-top:0;margin-bottom:0;font-size:inherit;}
   .ed-card .ed-ctx-tr:empty::before{content:attr(data-placeholder);font-family:"Doto", system-ui, sans-serif;font-weight:800;color:var(--placeholder);}
   .ed-card .ed-ctx-n{color:var(--text);}
+  .ed-card .ed-ctx-d{margin-top:4px;font-size:18px;line-height:26px;}
+  .ed-card .ed-ctx-d > div{text-box:trim-both cap alphabetic;}
   .ed-card #vocabEditSubText:focus{outline:none;}
   .ed-card #vocabEditSubText mark.vem-w{padding:0 2px;font-weight:700;}
   .ed-card :is(#editNotes, #qaNotes){font-size:18px;line-height:26px;}
@@ -22735,7 +22737,7 @@ function subParentItem(item) {
 function editCtxText(item) {
   const vc = document.getElementById("vocabCard"), on = vc && vc.dataset.lookKey === item.key;
   if (item.sub) return item.sub.kind === "def" ? on && vc.dataset.defx || defExample(item) : "";
-  return on && vc.dataset.owndef || on && vc.dataset.ex === "other" && vc.dataset.other || vocabContext(item).sentence || "";
+  return on && vc.dataset.ex === "other" && vc.dataset.other || vocabContext(item).sentence || "";
 }
 
 function editCtxHtml(item) {
@@ -22744,7 +22746,8 @@ function editCtxHtml(item) {
     dataset: {}
   }) : "";
   const noted = noteSentence(item), notes = noted ? noted.rest.replace(/^(\s|<br\s*\/?>|<div>\s*<\/div>)+/i, "") : wordNotesOf(item);
-  return (text ? `<div class="ed-ctx" contenteditable="false"><div class="ed-ctx-s" contenteditable="true">${lookupOthers(vocabSentenceHtml(text, item.term, item.card), item)}</div><div class="ed-ctx-tr" contenteditable="true" data-placeholder="Translation" data-was="${escapeAttr(tr)}">${escapeHtml(tr)}</div></div>` : "") + (notes ? `<div class="ed-ctx-n" contenteditable="false">${notesWithPinyin(brLines(notes), item.card)}</div>` : "");
+  const od = !item.sub && on && vc.dataset.owndef, xk = od && vc.dataset.xk;
+  return (od ? `<div class="ed-sub-row ed-ctx-d" contenteditable="false">${xk === "syn" || xk === "ant" ? `<span class="ed-sub-pos">${xk === "ant" ? "Opposite" : "Similar"}</span>` : ""}<div>${lookupOthers(escapeHtml(od), item)}</div></div>` : "") + (text && text !== od ? `<div class="ed-ctx" contenteditable="false"><div class="ed-ctx-s" contenteditable="true">${lookupOthers(vocabSentenceHtml(text, item.term, item.card), item)}</div><div class="ed-ctx-tr" contenteditable="true" data-placeholder="Translation" data-was="${escapeAttr(tr)}">${escapeHtml(tr)}</div></div>` : "") + (notes ? `<div class="ed-ctx-n" contenteditable="false">${notesWithPinyin(brLines(notes), item.card)}</div>` : "");
 }
 
 function updateCtxSource(item, from, to) {

@@ -335,6 +335,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-177 | `c3b27c4` | Từ tô vàng của thẻ mà cũng là từ riêng đã tạo (adherents): ô tô chia vàng + xanh (1 từ chia đôi, 2 từ chia ba), bấm phần xanh mở popup từ đó |
 | FLASH-178 | `32bc1d0` | Mặt trước đọc bản dịch (tiếng Việt): lật thì dừng ngay, mặt sau đọc từ đầu; chỉ nối tiếp khi hai mặt đọc cùng một thứ |
 | FLASH-179 | `6d129d3` | Định nghĩa không còn dịch (thẻ, danh sách, editor); chỉ câu ví dụ giữ bản dịch |
+| FLASH-180 | `pending` | Editor của thẻ từ hỏi bằng định nghĩa/Similar: hiện dòng đó (không dịch, không ô Translation) rồi câu của thẻ kèm bản dịch, như thẻ |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
