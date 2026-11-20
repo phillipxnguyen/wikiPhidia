@@ -143,6 +143,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-87 | `6c507d0` | Interpreter (PC): phụ đề không còn đè thanh trên, trên/dưới cách đều 16px; phụ đề dài cuộn bên trong, không thanh cuộn, mép mờ dần báo còn chữ |
 | THEATER-88 | `344f2ed` | Bản dịch phụ đề to hơn: 22/28/35px (100/125/150%); bản dịch trong danh sách dòng có màu xanh Answer (sáng hơn ở dòng đang nói) |
 | THEATER-89 | `4b9e660` | Chuyển Interpreter → Watch: video tự phát lại từ dòng đang ở, giọng đọc bản dịch dừng hẳn (không đọc tiếp câu sau) |
+| THEATER-90 | `pending` | Điện thoại: theater chỉ còn Interpreter (bỏ Watch); công cụ luôn hiện, chỉ biểu tượng; chạm video là play/pause; cắt khung để không thấy tiêu đề/thẻ của YouTube |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
