@@ -672,7 +672,7 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-card:not([data-look]) .vocab-back > .vocab-back-main :is(.vocab-ctx:not(:has(.rd)), .vocab-meaning){font-size:32px;line-height:40px;}
   .vocab-card .vocab-front > .vocab-term.word{font-weight:700;}
   .vocab-card .vocab-front{overflow:visible;}
-  .vocab-card.fill .vocab-front.tall{justify-content:flex-start;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;}
+  .vocab-card.fill .vocab-front.tall{justify-content:flex-start;}
   .vocab-card[data-look] .vocab-front > .vocab-term{position:relative;box-sizing:border-box;font-family:var(--tf);font-weight:var(--tw);font-style:var(--ts);text-transform:var(--tt);letter-spacing:var(--tk);font-size:var(--tz);line-height:var(--tl);}
   .vocab-card[data-look] .vocab-front > .vocab-term.word{font-weight:var(--tw);}
   .vocab-card:is([data-ex="cloze"], [data-ex="other"]) .vocab-front > .vocab-term{max-width:min(900px, 100%);font-size:var(--bz);line-height:var(--bl);text-transform:none;letter-spacing:0;}
@@ -22341,6 +22341,10 @@ function fitVocabCards() {
     fit = Math.min(fit, room);
   }
   fit = Math.max(taskRun ? VOCAB_CARD_MIN : min, fit);
+  const focus = document.documentElement.classList.contains("focus-on") && floor < window.innerHeight;
+  const lift = focus ? Math.round(toolbar.getBoundingClientRect().bottom - (card.getBoundingClientRect().top - (parseFloat(card.style.marginTop) || 0) + window.scrollY)) : 0;
+  if (focus) fit = Math.max(VOCAB_CARD_MIN, Math.round(floor - toolbar.getBoundingClientRect().bottom));
+  cards.forEach(el => el.style.marginTop = lift ? lift + "px" : "");
   cards.forEach(el => el.style.setProperty("--fit-h", (el.classList.contains("fill") ? wholePx(fit) : Math.min(wholePx(fit), wholePx(Math.max(VOCAB_CARD_MIN, vocabCardNeed(el)), true))) + "px"));
   cards.forEach(fitFillText);
 }
@@ -22359,7 +22363,8 @@ function fitFillText(card) {
     term.style.fontSize = size + "px";
     term.style.lineHeight = Math.round(size * 1.35) + "px";
   }
-  front.classList.toggle("tall", term.scrollHeight > room + 1);
+  const over = term.scrollHeight - room;
+  if (over > 1) card.style.setProperty("--fit-h", Math.ceil(card.getBoundingClientRect().height + over) + "px");
 }
 
 window.addEventListener("resize", fitVocabCards);
