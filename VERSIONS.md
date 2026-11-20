@@ -145,6 +145,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-89 | `4b9e660` | Chuyển Interpreter → Watch: video tự phát lại từ dòng đang ở, giọng đọc bản dịch dừng hẳn (không đọc tiếp câu sau) |
 | THEATER-90 | `c78bdc4` | Điện thoại: theater chỉ còn Interpreter (bỏ Watch); công cụ luôn hiện, chỉ biểu tượng; chạm video là play/pause; cắt khung để không thấy tiêu đề/thẻ của YouTube |
 | THEATER-91 | `cc79fc5` | Điện thoại: công cụ hiện giá trị ngắn (1 line/15s/30s, 125%, 1.25x); video khi dừng bị làm mờ để không lộ màn hình dừng của YouTube |
+| THEATER-92 | `pending` | Điện thoại: nút nối dòng là icon 1/2/3 vạch (Easy/Medium/Hard), không còn chữ |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
@@ -330,6 +331,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-173 | `f10184e` | Editor E: sửa được câu/định nghĩa/ví dụ (cả của từ điển), ghi đúng nguồn; sửa câu thì bản dịch tự dịch lại, bản dịch tự gõ thì giữ nguyên không bị máy dịch đè |
 | FLASH-174 | `1c3f1eb` | Mặt sau thẻ: bấm chữ của từ chính, nghĩa, bản dịch, tiêu đề định nghĩa, notes, hay từ tô trong câu đều mở editor như E; từ khác trong câu mở popup; khoảng trống không làm gì. Theater điện thoại: nối dòng ghi Easy/Med/Hard |
 | FLASH-175 | `04a6d26` | Thẻ định nghĩa hỏi bằng ví dụ: mặt trước là bản dịch câu ví dụ, hết đục lỗ; pill căn theo giữa chữ thường (x-height), căn lại sau khi font tải; editor: pill noun cùng baseline với định nghĩa |
+| FLASH-176 | `pending` | Mặt sau thẻ: bấm bất kỳ chỗ nào không phải từ mở popup nhỏ (kể cả vùng trống) đều mở editor như E; nút ▶/giờ giữ việc riêng |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
