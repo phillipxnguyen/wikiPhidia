@@ -497,6 +497,7 @@ Hàm chính: `updateTouchBar`, `sizeTouchBar`, `#tbSound`, `#tbMore`, `tools-ope
 | TODAY-11 | `3a2502a` | Start với bài video: hết giờ thì dừng ngay sau thẻ đang chấm trong theater (không đợi hết video) |
 | TODAY-12 | `f342b2a` | Today v2: vòng tròn quay lại (thẻ còn lại, phút, cung tiến độ) với Start ngay dưới; ô NEW / TO REVIEW; Up next (thứ tự Start, bấm bài nào bắt đầu từ bài đó); 30 ngày, 7 ngày tới, chuỗi ngày, thẻ tháng này, % nhớ; ô sidebar có vòng nhỏ, cờ, Up next, lúc xong báo thẻ ngày mai |
 | TODAY-13 | `cd78bd9` | Sidebar Today: bỏ "cards today · N min", số NEW / TO REVIEW kiểu pixel, nút bài tiếp theo chỉ ghi tên bài; trang Today bỏ tiêu đề Up next |
+| TODAY-14 | `pending` | Thẻ Today: ngày cách ô to review 12px như các hàng khác; sidebar: số (148) căn giữa theo chiều dọc với nhãn TO REVIEW |
 
 Hàm chính: `todayTasks`, `todayTaskCounts`, `taskQueue`, `startTaskSide`, `taskAdvance`, `leftToday`, `limitStudy`, `limitRows`.
 
