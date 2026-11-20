@@ -677,7 +677,6 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-card:not([data-look]) .vocab-back > .vocab-back-main :is(.vocab-ctx:not(:has(.rd)), .vocab-meaning){font-size:32px;line-height:40px;}
   .vocab-card .vocab-front > .vocab-term.word{font-weight:700;}
   .vocab-card .vocab-front{overflow:visible;}
-  .vocab-card.fill .vocab-front.tall{justify-content:flex-start;}
   .vocab-card[data-look] .vocab-front > .vocab-term{position:relative;box-sizing:border-box;font-family:var(--tf);font-weight:var(--tw);font-style:var(--ts);text-transform:var(--tt);letter-spacing:var(--tk);font-size:var(--tz);line-height:var(--tl);}
   .vocab-card[data-look] .vocab-front > .vocab-term.word{font-weight:var(--tw);}
   .vocab-card:is([data-ex="cloze"], [data-ex="other"]) .vocab-front > .vocab-term{max-width:min(900px, 100%);font-size:var(--bz);line-height:var(--bl);text-transform:none;letter-spacing:0;}
@@ -7666,19 +7665,6 @@ function isYouTubeLesson() {
 
 let ieltsAnswered = 0;
 
-let ieltsClock = null;
-
-function ieltsClockText() {
-  if (!ieltsClock) return "0:00";
-  const sec = Math.floor(((ieltsClock.stopped || Date.now()) - ieltsClock.start) / 1e3);
-  return Math.floor(sec / 60) + ":" + String(sec % 60).padStart(2, "0");
-}
-
-setInterval(() => {
-  const el = document.getElementById("ieltsTimer");
-  if (el) el.textContent = ieltsClockText();
-}, 1e3);
-
 function hasAnswer(r) {
   return !!(r && r.a && r.a.trim());
 }
@@ -9182,17 +9168,6 @@ function renderSingleCard(visibleRows) {
     row.qHidden = entryHidden(row).q;
     row.aHidden = entryHidden(row).a;
   }
-  if (firstShow || !ieltsClock || ieltsClock.id !== row.id) ieltsClock = {
-    id: row.id,
-    start: Date.now(),
-    stopped: null
-  };
-  if (!row.aHidden && !ieltsClock.stopped) ieltsClock.stopped = Date.now();
-  if (row.aHidden && ieltsClock.stopped) ieltsClock = {
-    id: row.id,
-    start: Date.now(),
-    stopped: null
-  };
   if (activeEdit && activeEdit.row.id === row.id) return;
   bodyEl.dataset.id = row.id;
   bodyEl.classList.remove("edit-row");
@@ -22392,7 +22367,6 @@ function fitFillText(card) {
   const term = card.querySelector(".vocab-front > .vocab-term"), front = card.querySelector(".vocab-front");
   if (!term || !front) return;
   term.style.fontSize = term.style.lineHeight = "";
-  front.classList.remove("tall");
   if (!card.classList.contains("fill")) return;
   const cs = getComputedStyle(front), room = front.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
   let size = Math.round(parseFloat(getComputedStyle(term).fontSize));
