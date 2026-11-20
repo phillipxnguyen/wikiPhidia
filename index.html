@@ -761,6 +761,7 @@ window.onYouTubeIframeAPIReady = function(){
   @property --tr-rg{syntax:"<length>";inherits:true;initial-value:0px;}
   .vocab-card.fill .cloze-body{--tr-lg:round(calc(round(1.25em, 1px) - 1cap), 1px);--tr-rg:round(.6em, 1px);}
   .vocab-card.fill.flipped .cloze-body > :has(+ .vc-sub-tr){text-box-trim:trim-end;text-box-edge:cap alphabetic;}
+  .vocab-card[data-look].fill .cloze-body > .cloze-notes.vc-sub-tr{font-family:var(--bf);}
   .vocab-card.fill .cloze-body > .cloze-notes.vc-sub-tr{line-height:round(calc(var(--tr-lg) + 1cap), 1px);margin-top:calc(var(--tr-lg) - var(--tr-rg));text-box-trim:trim-start;text-box-edge:cap alphabetic;}
   .vocab-card.fill .cloze-head{display:flex;flex-direction:column;align-items:center;gap:.25em;gap:round(.25em, 1px);margin:0 0 .6em;margin:0 0 round(.6em, 1px);font-size:inherit;line-height:inherit;font-weight:inherit;font-style:normal;}
   .vocab-card.fill .cloze-main ruby{ruby-position:over;}
@@ -11751,8 +11752,20 @@ function ownDictCardHtml(lang, w, ctx) {
   return `<article class="od-card${odLong(w) ? " od-long" : ""}" data-w="${escapeAttr(w)}"><header class="od-top">${top}</header>${py ? `<div class="od-py">${py}</div>` : ""}<div class="od-body">${body}</div>${exHtml}</article>`;
 }
 
-function ownDictFindWord(w, lang) {
-  const key = normalizeVocabText(w);
+function wordStems(key) {
+  const out = [];
+  if (!/^[a-z' -]+$/.test(key) || key.length < 4) return out;
+  [ [ /ies$/, "y" ], [ /ied$/, "y" ], [ /es$/, "" ], [ /s$/, "" ], [ /ed$/, "" ], [ /ed$/, "e" ], [ /ing$/, "" ], [ /ing$/, "e" ], [ /ly$/, "" ] ].forEach(([ re, to ]) => {
+    if (re.test(key)) {
+      const k = key.replace(re, to);
+      if (k.length > 2 && k !== key && !out.includes(k)) out.push(k);
+    }
+  });
+  return out;
+}
+
+function ownDictFindWord(w, lang, stem) {
+  const key = stem || normalizeVocabText(w);
   const world = worldOf(lang || ownDictFloat && ownDictFloat.ctx && ownDictFloat.ctx.lang || "");
   const fits = (it, l) => !world || !WORD_WORLDS[world] || worldFits(wordWorldOf(it.term, l ? l.studyLang : studyLang), world);
   const li = [ ...document.querySelectorAll("#editPopup #editNotes li") ].find(el => normalizeVocabText((el.querySelector("b") || el).textContent.split(/[:：]/)[0]) === key);
@@ -11779,6 +11792,10 @@ function ownDictFindWord(w, lang) {
       term: it.term,
       meaning: it.meaning || ""
     };
+  }
+  if (!stem) for (const k of wordStems(key)) {
+    const f = ownDictFindWord(w, lang, k);
+    if (f) return f;
   }
   return null;
 }
@@ -12316,7 +12333,9 @@ window.addEventListener("click", e => {
 
 window.addEventListener("click", e => {
   if (e.button || e.shiftKey || !e.target.closest || !getSelection().isCollapsed || currentView !== "vocab" || vocabView !== "card") return;
-  const own = e.target.closest("#vocabCard.flipped :is(.cloze-main, .cloze-gap, mark:not(.vocab-hit):not(.vocab-own))"), r = document.createRange();
+  const cur = currentVocabItem(), mk = e.target.closest("#vocabCard.flipped mark");
+  const same = mk && cur && (normalizeVocabText(mk.textContent) === cur.tkey || wordStems(normalizeVocabText(mk.textContent)).includes(cur.tkey) || !!findWordForm(mk.textContent.normalize("NFC"), cur.term));
+  const own = e.target.closest("#vocabCard.flipped :is(.cloze-main, .cloze-gap, mark:not(.vocab-hit):not(.vocab-own))") || (same ? mk : null), r = document.createRange();
   if (own) r.selectNodeContents(own);
   const onText = own && [ ...r.getClientRects() ].some(q => e.clientX >= q.left && e.clientX <= q.right && e.clientY >= q.top && e.clientY <= q.bottom);
   const item = onText && currentVocabItem();
@@ -21995,6 +22014,8 @@ function vocabViewOnly(item) {
 
 const TYPE_LATIN = [ "Playfair Display", "Merriweather", "Roboto Slab", "Patrick Hand", "Mali", "Josefin Sans", "Comfortaa", "Lexend", "Oswald", "Montserrat", "Nunito", "Quicksand", "Lora", "Bitter", "Alegreya", "Baloo 2", "Prata", "Arima", "Philosopher", "Signika", "Exo 2", "Vollkorn", "Raleway", "Work Sans", "Source Serif 4", "Crimson Pro", "Literata", "Manrope", "Be Vietnam Pro", "Inter" ];
 
+const TYPE_NO_VI = [ "Gill Sans", "Futura", "Baskerville" ];
+
 const TYPE_LOCAL = [ "Georgia", "Avenir Next", "Trebuchet MS", "Palatino", "Gill Sans", "Futura", "Optima", "Baskerville", "Verdana", "Helvetica Neue" ];
 
 const TYPE_CJK = {
@@ -22010,9 +22031,9 @@ function cardType(el, item) {
   const text = (item.term || "") + (item.meaning || "");
   const all = text + " " + ((item.card && item.card.q) || "");
   const cjk = /[\u3040-\u30ff]/.test(all) ? TYPE_CJK.ja : /[\uac00-\ud7af]/.test(all) ? TYPE_CJK.ko : /[\u3400-\u9fff]/.test(all) ? TYPE_CJK.zh : null;
-  const font = () => {
+  const font = vi => {
     let latin;
-    if (Math.random() < .3) latin = pick(TYPE_LOCAL); else {
+    if (Math.random() < .3) latin = pick(vi ? TYPE_LOCAL.filter(f => !TYPE_NO_VI.includes(f)) : TYPE_LOCAL); else {
       latin = pick(TYPE_LATIN);
       loadStudyFont(latin);
     }
@@ -22037,7 +22058,7 @@ function cardType(el, item) {
   set("--tc", textInk);
   const bz = pick(phone ? [ 22, 24, 26 ] : [ 32, 36, 40 ]), mz = pick(phone ? [ 18, 20, 22, 26 ] : [ 22, 26, 30, 36, 44 ]);
   const align = pick([ "left", "center", "center", "left" ]);
-  set("--bf", font());
+  set("--bf", font(true));
   set("--bw", pick([ "400", "400", "500", "600" ]));
   set("--bs", Math.random() < .2 ? "italic" : "normal");
   set("--bz", bz + "px");
@@ -22305,6 +22326,32 @@ const HIGHLIGHT_SEL = ".vocab-ctx mark:not(.vocab-hit, .vocab-own), .vocab-list-
 
 let highlightCanvas = null;
 
+function alignPills(card) {
+  if (!card || !card.isConnected) return;
+  card.querySelectorAll(".cloze-body :is(.own-ts, .vc-def-h, .vc-pos)").forEach(pill => {
+    pill.style.verticalAlign = "baseline";
+    if (!pill.getClientRects().length) return;
+    const w = document.createTreeWalker(pill.parentElement, NodeFilter.SHOW_TEXT);
+    let n = null, t;
+    w.currentNode = pill;
+    while (t = w.nextNode()) if (!pill.contains(t) && t.textContent.trim()) {
+      n = t;
+      break;
+    }
+    if (!n) return;
+    const r = document.createRange(), i = n.textContent.search(/\S/);
+    r.setStart(n, i);
+    r.setEnd(n, i + 1);
+    const q = r.getClientRects()[0];
+    if (!q) return;
+    const cs = getComputedStyle(n.parentElement), c = document.createElement("canvas").getContext("2d");
+    c.font = cs.fontStyle + " " + cs.fontWeight + " " + cs.fontSize + " " + cs.fontFamily;
+    const m = c.measureText("H"), base = q.top + (q.height - (m.fontBoundingBoxAscent + m.fontBoundingBoxDescent)) / 2 + m.fontBoundingBoxAscent;
+    const p = pill.getBoundingClientRect(), shift = Math.round(p.top + p.height / 2 - (base - m.actualBoundingBoxAscent / 2));
+    pill.style.verticalAlign = shift + "px";
+  });
+}
+
 function fitHighlights(root) {
   requestAnimationFrame(() => (root || document).querySelectorAll(HIGHLIGHT_SEL).forEach(mark => {
     if (!mark.isConnected || mark.querySelector(".rd")) return;
@@ -22329,6 +22376,7 @@ function fitHighlights(root) {
 document.fonts && document.fonts.ready.then(() => fitHighlights());
 
 if (document.fonts) document.fonts.addEventListener("loadingdone", () => {
+  document.querySelectorAll(".vocab-deck > .vocab-card").forEach(alignPills);
   fitHighlights();
 });
 
@@ -22377,6 +22425,7 @@ function fitVocabCards() {
   cards.forEach(el => el.style.marginTop = lift ? lift + "px" : "");
   cards.forEach(el => el.style.setProperty("--fit-h", (el.classList.contains("fill") ? wholePx(fit) : Math.min(wholePx(fit), wholePx(Math.max(VOCAB_CARD_MIN, vocabCardNeed(el)), true))) + "px"));
   cards.forEach(fitFillText);
+  cards.forEach(alignPills);
 }
 
 function fitFillText(card) {
