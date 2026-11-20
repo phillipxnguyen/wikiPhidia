@@ -15243,6 +15243,20 @@ function analyzeMixed(text) {
       });
       return;
     }
+    const halves = l.s.split(/\s[:：]\s/);
+    if (halves.length === 2 && halves[0].trim() && halves[1].trim() && (halves[0].trim().split(/\s+/).length >= 3 || /[.!?。！？]$/.test(halves[0].trim())) && detectLang(halves[0]) !== detectLang(halves[1])) {
+      items.push({
+        kind: "card",
+        text: l.s,
+        entry: {
+          time: null,
+          q: halves[0].trim(),
+          a: halves[1].trim(),
+          notes: ""
+        }
+      });
+      return;
+    }
     const next = info[i + 1], prev = info[i - 1];
     const short = isShort(l);
     const inList = prev && !prev.pair && !prev.bulleted && isShort(prev);
