@@ -311,6 +311,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-159 | `41b87ed` | Editor Vocabulary: con trỏ gõ chữ trong ô nghĩa còn trống (có chữ mờ) không còn dài và lệch, cao đúng một dòng như khi đã có chữ |
 | FLASH-160 | `e8c38af` | Editor định nghĩa: thêm nghĩa của từ (sửa được), câu ví dụ thẻ đang hiện + bản dịch (sửa được), notes; khi học toàn màn hình thanh cuộn trong suốt, nền phủ cả dưới thanh cuộn |
 | FLASH-161 | `149d94c` | Mặt sau thẻ: bấm vào chính từ của thẻ (từ chính hoặc từ tô trong câu) mở editor như E; bấm ra ngoài popup chỉ đóng popup, không lật/chấm/sang thẻ |
+| FLASH-162 | `pending` | Mặt trước câu dịch: nghĩa không có trong câu dịch thì hiện thành dòng gợi ý tô vàng ngay trên câu; khớp nghĩa bỏ chữ đầu (bị chiếm đóng → chiếm đóng); các từ cùng câu không còn mặt trước giống nhau |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 

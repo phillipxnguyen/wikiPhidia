@@ -702,6 +702,7 @@ window.onYouTubeIframeAPIReady = function(){
   .cloze-glue{white-space:nowrap;}
   .vocab-card.tr-front:not(.flipped) .cloze-body > .cloze-src, .vocab-card.flipped .cloze-body > .cloze-trf{display:none;}
   .cloze-trm{padding:0 2px;border-radius:4px;background:var(--word-mark);color:inherit;}
+  .cloze-cue{display:table;margin:0 0 .4em;padding:0 4px;border-radius:4px;background:var(--word-mark);color:inherit;font-style:normal;}
   .vocab-card.fill :is(.cloze-spy, .cloze-notes){font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;font-style:normal;}
   .vocab-card.fill .cloze-spy{margin:0 0 4px;font-size:.6em;font-size:round(.6em, 1px);line-height:1.4;line-height:round(1.4em, 1px);font-weight:600;}
   .vocab-card.fill:not(.flipped) :is(.cloze-head, .cloze-spy, .cloze-notes, .cloze-own){display:none;}
@@ -22201,8 +22202,14 @@ function sentTrHtml(item, text, el) {
 
 function markedTrHtml(tr, item) {
   const fold = t => t.normalize("NFC").toLowerCase(), low = fold(tr);
-  const hit = meaningLines(item.meaning || (item.sub ? headMeaning(item) : "")).flatMap(m => m.split(/\s*[,;\/]\s*/)).map(m => m.trim()).filter(m => m.length > 1).sort((a, b) => b.length - a.length).map(m => [ low.indexOf(fold(m)), m.length ]).find(([ i ]) => i >= 0);
-  if (!hit) return escapeHtml(tr);
+  const hit = meaningLines(item.meaning || (item.sub ? headMeaning(item) : "")).flatMap(m => m.split(/\s*[,;\/]\s*/)).map(m => m.trim()).flatMap(m => {
+    const w = m.split(/\s+/);
+    return w.length > 2 ? [ m, w.slice(1).join(" ") ] : [ m ];
+  }).filter(m => m.length > 1).sort((a, b) => b.length - a.length).map(m => [ low.indexOf(fold(m)), m.length ]).find(([ i ]) => i >= 0);
+  if (!hit) {
+    const m = meaningLines(item.meaning || (item.sub ? headMeaning(item) : "")).join(" / ");
+    return (m ? `<span class="cloze-cue">${escapeHtml(m)}</span>` : "") + escapeHtml(tr);
+  }
   const [ i, n ] = hit, t = tr.normalize("NFC");
   return escapeHtml(t.slice(0, i)) + `<mark class="cloze-trm">${escapeHtml(t.slice(i, i + n))}</mark>` + escapeHtml(t.slice(i + n));
 }
