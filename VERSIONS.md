@@ -144,6 +144,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-88 | `344f2ed` | Bản dịch phụ đề to hơn: 22/28/35px (100/125/150%); bản dịch trong danh sách dòng có màu xanh Answer (sáng hơn ở dòng đang nói) |
 | THEATER-89 | `4b9e660` | Chuyển Interpreter → Watch: video tự phát lại từ dòng đang ở, giọng đọc bản dịch dừng hẳn (không đọc tiếp câu sau) |
 | THEATER-90 | `c78bdc4` | Điện thoại: theater chỉ còn Interpreter (bỏ Watch); công cụ luôn hiện, chỉ biểu tượng; chạm video là play/pause; cắt khung để không thấy tiêu đề/thẻ của YouTube |
+| THEATER-91 | `pending` | Điện thoại: công cụ hiện giá trị ngắn (1 line/15s/30s, 125%, 1.25x); video khi dừng bị làm mờ để không lộ màn hình dừng của YouTube |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
@@ -519,6 +520,7 @@ Hàm chính: `updateTouchBar`, `sizeTouchBar`, `#tbSound`, `#tbMore`, `tools-ope
 | TODAY-13 | `cd78bd9` | Sidebar Today: bỏ "cards today · N min", số NEW / TO REVIEW kiểu pixel, nút bài tiếp theo chỉ ghi tên bài; trang Today bỏ tiêu đề Up next |
 | TODAY-14 | `7aef152` | Thẻ Today: ngày cách ô to review 12px như các hàng khác; sidebar: số (148) căn giữa theo chiều dọc với nhãn TO REVIEW |
 | TODAY-15 | `3449e4f` | Bỏ ô NEW/TO REVIEW (trùng vòng), bỏ ~phút ở vòng và ở danh sách; dòng Up next và nút ▶ (cả sidebar) tô màu theo phía: Lessons xanh dương, Vocabulary xanh lá; hover không còn chuyển trắng |
+| TODAY-16 | `pending` | Up next: mỗi dòng ghi N cards (xanh dương) / M words (xanh lá); nền và ▶ xanh dương, xanh lá, hoặc nửa-nửa khi có cả hai (bài học xen kẽ thẻ và từ) |
 
 Hàm chính: `todayTasks`, `todayTaskCounts`, `taskQueue`, `startTaskSide`, `taskAdvance`, `leftToday`, `limitStudy`, `limitRows`.
 
