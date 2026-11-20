@@ -612,10 +612,10 @@ window.onYouTubeIframeAPIReady = function(){
   #editPopup.sub-edit .ed-card > .ed-say{top:-5px;}
   #editPopup.sub-edit .ed-card:has(.vem-t.long) > .ed-say{top:-8px;}
   #editPopup.sub-edit .ed-card + :is(.edit-actions, .vocab-editor-actions){margin-top:16px;}
-  .ed-sub-row{display:flex;align-items:flex-start;gap:8px;margin-top:14px;}
+  .ed-sub-row{display:flex;align-items:baseline;gap:8px;margin-top:14px;}
   .ed-sub-h + .ed-sub-row{margin-top:8px;}
   #editPopup.sub-edit #vocabEditMain .vem-wm + .ed-sub-row{margin-top:11px;}
-  .ed-sub-pos{flex:none;margin-top:3px;padding:0 8px;border-radius:6px;background:color-mix(in srgb, var(--text) 7%, transparent);color:var(--text-2);font-size:14px;line-height:20px;font-weight:700;}
+  .ed-sub-pos{flex:none;padding:0 8px;border-radius:6px;background:color-mix(in srgb, var(--text) 7%, transparent);color:var(--text-2);font-size:14px;line-height:20px;font-weight:700;}
   .ed-sub-row .sub-text{flex:1;min-width:0;}
   .ed-card #vocabEditSubText:lang(ko){word-break:keep-all;}
   .vocab-list-row[data-key] > .vl-tools{grid-area:tools;display:flex;align-items:center;gap:8px;height:0;align-self:center;}
@@ -22326,7 +22326,14 @@ function fillVocabCard(el, item) {
     const defText = span ? gappedHtml(d, wordSpans(d, item.term, span), item) : lookupOthers(escapeHtml(d), item);
     const xk = !item.sub && el.dataset.xk, defHead = `${xk ? `<span class="vc-def-h">${xk === "ant" ? "Opposite" : "Similar"}</span>` : ""}${sub.h ? `<span class="vc-def-g">${escapeHtml(sub.h)}</span>` : ""}${sub.p ? `<button type="button" class="own-ts say-ts vc-pos-say" data-say="${escapeAttr(d)}" title="Play the definition" aria-label="Play the definition">${escapeHtml(sub.p)}</button>` : ""}`;
     const asked = el.dataset.defx || "", ask = asked && findWordForm(asked, item.term);
-    const first = asked ? `<span class="vc-sent">${linePillHtml(item, asked, false, "cloze-pill")}${ask ? gappedHtml(asked, wordSpans(asked, item.term, ask), item) : escapeHtml(asked)}</span>` : `<span class="vc-sent vc-def">${defHead}${defText}</span>`;
+    let askTr = asked ? sentenceTrFor(item, asked, el) : "";
+    if (asked && !askTr && navigator.onLine) mtFetch([ asked ]).then(done => done !== null && el.isConnected && el.dataset.lookKey === item.key && fillVocabCard(el, item));
+    const askWait = asked && !askTr && mtJobs.has(asked);
+    if (askTr || askWait) {
+      el.dataset.trfront = askTr;
+      el.classList.add("tr-front");
+    }
+    const first = asked ? (askTr ? trFrontHtml(item, el, markedTrHtml(askTr, item)) : askWait ? '<span class="cloze-trf"><span class="tr-wait">Translating…</span></span>' : "") + `<span class="vc-sent${askTr || askWait ? " cloze-src" : ""}">${linePillHtml(item, asked, false, "cloze-pill")}${askTr || askWait ? lookupOthers(vocabSentenceHtml(asked, item.term, item.card), item) : ask ? gappedHtml(asked, wordSpans(asked, item.term, ask), item) : escapeHtml(asked)}</span>` : `<span class="vc-sent vc-def">${defHead}${defText}</span>`;
     const dx = asked ? "" : item.sub ? defExample(item) : sentence;
     const second = asked ? `<span class="cloze-more cloze-own vc-def-more">${defHead}${lookupOthers(escapeHtml(d), item)}</span>${subTrHtml(item)}` : dx ? `<span class="cloze-more cloze-own">${withPill(linePillHtml(item, dx, false), lookupOthers(vocabSentenceHtml(dx, item.term, item.card), item))}</span>${sentTrHtml(item, dx, el)}` : "";
     const hm = meaningLines(item.meaning || "").filter(l => l !== d).join("\n");
@@ -22395,7 +22402,7 @@ function alignPills(card) {
     if (!q) return;
     const cs = getComputedStyle(n.parentElement), c = document.createElement("canvas").getContext("2d");
     c.font = cs.fontStyle + " " + cs.fontWeight + " " + cs.fontSize + " " + cs.fontFamily;
-    const m = c.measureText("H"), base = q.top + (q.height - (m.fontBoundingBoxAscent + m.fontBoundingBoxDescent)) / 2 + m.fontBoundingBoxAscent;
+    const m = c.measureText("x"), base = q.top + (q.height - (m.fontBoundingBoxAscent + m.fontBoundingBoxDescent)) / 2 + m.fontBoundingBoxAscent;
     const p = pill.getBoundingClientRect(), shift = Math.round(p.top + p.height / 2 - (base - m.actualBoundingBoxAscent / 2));
     pill.style.verticalAlign = shift + "px";
   });
@@ -23847,6 +23854,7 @@ function flipVocab() {
     settleVocabCard(card, false);
     card.classList.toggle("flipped", vocabSession.flipped);
     fitVocabCards();
+    [ 300, 1200 ].forEach(t => setTimeout(() => alignPills(card), t));
     card.settleTimer = vocabSession.flipped ? setTimeout(() => {
       card.settleTimer = null;
       settleVocabCard(card, true);
