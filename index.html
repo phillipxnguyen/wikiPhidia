@@ -701,6 +701,8 @@ window.onYouTubeIframeAPIReady = function(){
   .cloze-glue{white-space:nowrap;}
   .vocab-card.tr-front:not(.flipped) .cloze-body > .cloze-src, .vocab-card.flipped .cloze-body > .cloze-trf{display:none;}
   .cloze-trm{padding:0 2px;border-radius:4px;background:var(--word-mark);color:inherit;}
+  .vc-ear{display:flex;flex-direction:column;align-items:center;gap:24px;}
+  .vc-ear .cloze-cue{margin:0;}
   .cloze-cue{display:table;margin:0 0 .4em;padding:0 4px;border-radius:4px;background:var(--word-mark);color:inherit;font-style:normal;}
   .vocab-card.fill :is(.cloze-spy, .cloze-notes){font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;font-style:normal;}
   .vocab-card.fill .cloze-spy{margin:0 0 4px;font-size:.6em;font-size:round(.6em, 1px);line-height:1.4;line-height:round(1.4em, 1px);font-weight:600;}
@@ -22203,6 +22205,14 @@ function sentenceTrFor(item, text, el) {
   return machineTr(text) || machineTr(oneLine(text));
 }
 
+function trReady(item) {
+  if (item.sub || !navigator.onLine) return true;
+  const s = vocabContext(item).sentence;
+  return !s || !!sentenceTrFor(item, s, {
+    dataset: {}
+  }) || !!item.meaning && wholeSentenceCard(item, s);
+}
+
 function sentTrHtml(item, text, el) {
   const tr = text ? sentenceTrFor(item, text, el) : "";
   if (!tr) {
@@ -22210,6 +22220,13 @@ function sentTrHtml(item, text, el) {
     return "";
   }
   return `<span class="cloze-more cloze-notes vc-sub-tr">${escapeHtml(tr)}</span>`;
+}
+
+function trFrontHtml(item, el, html, cue) {
+  if (el.dataset.trmode !== "ear") return `<span class="cloze-trf">${html}</span>`;
+  if (!el.dataset.scene) el.dataset.scene = wordSceneFor(item, null);
+  const m = cue ? meaningLines(item.meaning || (item.sub ? headMeaning(item) : "")).join(" / ") : "";
+  return `<span class="cloze-trf vc-ear"><span class="vc-art" aria-hidden="true">${sceneArt(el.dataset.scene)}</span>${m ? `<span class="cloze-cue">${escapeHtml(m)}</span>` : ""}</span>`;
 }
 
 function markedTrHtml(tr, item) {
@@ -22248,7 +22265,10 @@ function fillVocabCard(el, item) {
     el.dataset.lookKey = item.key;
     el.dataset.look = look;
     el.dataset.ex = ex;
-    el.dataset.listen = "speechSynthesis" in window && (whole || ex === "def" && !el.dataset.defx) ? "1" : "";
+    const wholeTr = whole && !!(meaningLines(item.meaning || "").length || sentenceTrFor(item, sentence, el));
+    if (whole && !wholeTr && sentence) mtFetch([ sentence ]);
+    el.dataset.listen = "speechSynthesis" in window && (whole && !wholeTr || ex === "def" && !el.dataset.defx) ? "1" : "";
+    el.dataset.trmode = "speechSynthesis" in window && Math.random() < .5 ? "ear" : "eye";
     el.dataset.scene = el.dataset.listen ? wordSceneFor(item, el.dataset.scene || null) : "";
     delete el.dataset.said;
     delete el.dataset.listenText;
@@ -22264,11 +22284,18 @@ function fillVocabCard(el, item) {
     const noted = noteSentence(item), notes = noted ? noted.rest.replace(/^(\s|<br\s*\/?>|<div>\s*<\/div>)+/i, "") : wordNotesOf(item);
     const spy = cjkScriptFor(text, item.card) === "zh" ? pinyinLine(text) : "";
     const tr = el.dataset.listen ? "" : sentenceTrFor(item, text, el);
-    if (!tr && navigator.onLine) mtFetch([ text ]).then(done => done !== null && el.isConnected && el.dataset.lookKey === item.key && fillVocabCard(el, item));
+    if (!tr && navigator.onLine) mtFetch([ text ]).then(done => {
+      if (done === null || !el.isConnected || el.dataset.lookKey !== item.key) return;
+      fillVocabCard(el, item);
+      if (el.id === "vocabCard" && el.dataset.trfront && el.dataset.said !== item.key && vocabSession && !vocabSession.flipped) {
+        el.dataset.said = item.key;
+        sayVocabWord(item);
+      }
+    });
     const waiting = !tr && !el.dataset.listen && mtJobs.has(text);
     el.dataset.trfront = tr;
     el.classList.toggle("tr-front", !!tr || waiting);
-    const trf = tr ? `<span class="cloze-trf">${markedTrHtml(tr, item)}</span>` : waiting ? '<span class="cloze-trf"><span class="tr-wait">Translating…</span></span>' : "";
+    const trf = tr ? trFrontHtml(item, el, markedTrHtml(tr, item), true) : waiting ? '<span class="cloze-trf"><span class="tr-wait">Translating…</span></span>' : "";
     const backTr = subTrHtml(item) ? "" : el.dataset.listen ? sentTrHtml(item, text, el) : tr ? `<span class="cloze-more cloze-notes vc-sub-tr">${escapeHtml(tr)}</span>` : "";
     const sent = trf + `<span class="cloze-src${el.dataset.listen ? " vc-sent" : ""}">${spy ? `<span class="cloze-more cloze-spy py-line">${linePillHtml(item, text, !otherGap)}${escapeHtml(spy)}</span>` : linePillHtml(item, text, !otherGap, "cloze-pill")}${gappedHtml(text, spans, item)}</span>`;
     const own = otherGap && !item.sub && !el.dataset.xk && sentence && sentence !== text ? sentence : "";
@@ -22301,6 +22328,14 @@ function fillVocabCard(el, item) {
     el.querySelector(".vocab-term").innerHTML = `<span class="cloze-body"><span class="vc-stack"><span class="vc-art" aria-hidden="true">${sceneArt(el.dataset.scene)}<span class="vc-time"><i></i></span></span>${sent}</span>${sentTrHtml(item, sentence, el)}${notes ? `<span class="cloze-more cloze-notes">${notesWithPinyin(brLines(notes), item.card)}</span>` : ""}</span>`;
     el.querySelector(".vocab-term").insertAdjacentHTML("afterbegin", `<span class="cloze-more cloze-head"><span class="cloze-main">${rubyWord(item.term, item.card)}</span>${headMeaning(item) ? `<span class="cloze-mean">${meaningHtml(headMeaning(item))}</span>` : ""}</span>`);
     el.classList.add("fill", "listen");
+  } else if (ex === "sent" && whole && !el.dataset.listen) {
+    const text = sentence || item.term, tr = meaningLines(item.meaning || "").join(" ") || sentenceTrFor(item, text, el);
+    el.dataset.trfront = tr;
+    el.classList.add("tr-front");
+    const src = `<span class="cloze-src">${linePillHtml(item, text, true, "cloze-pill")}${lookupOthers(escapeHtml(text), item)}</span>`;
+    el.querySelector(".vocab-term").innerHTML = `<span class="cloze-body">${trFrontHtml(item, el, escapeHtml(tr))}${src}<span class="cloze-more cloze-notes vc-sub-tr">${escapeHtml(tr)}</span></span>`;
+    el.classList.add("fill");
+    el.classList.remove("listen");
   } else if (ex === "sent" && whole && el.dataset.listen) {
     const text = sentence || item.term, spy = cjkScriptFor(text, item.card) === "zh" ? pinyinLine(text) : "";
     const sent = `<span class="vc-sent">${spy ? `<span class="cloze-more cloze-spy py-line">${linePillHtml(item, text, true)}${escapeHtml(spy)}</span>` : linePillHtml(item, text, true, "cloze-pill")}${lookupOthers(escapeHtml(text), item)}</span>`;
@@ -22488,7 +22523,7 @@ function showVocabDeck(stage, item) {
   });
   card.id = "vocabCard";
   fillVocabCard(card, item);
-  if (card.dataset.listen && !vocabSession.flipped && card.dataset.said !== item.key) {
+  if ((card.dataset.listen || card.dataset.trfront) && !vocabSession.flipped && card.dataset.said !== item.key) {
     card.dataset.said = item.key;
     sayVocabWord(item);
   }
@@ -22792,7 +22827,22 @@ function renderVocab() {
   const emptyLesson = canAdd && !items.length;
   if (items.length && (!vocabSession || vocabSession.lessonId !== currentLessonId)) startVocabSession();
   if (vocabView === "group") vocabView = "card";
-  const item = items.length && vocabView === "card" ? currentVocabItem() : null;
+  let item = items.length && vocabView === "card" ? currentVocabItem() : null;
+  if (item && vocabSession && !taskRun && !vocabSession.flipped && vocabSession.shownKey !== item.key && !trReady(item)) {
+    const q = vocabSession.queue, at = q.slice(1, 12).findIndex(k => {
+      const it = items.find(i => i.key === k);
+      return it && vocabStateOf(it).due <= Date.now() && trReady(it);
+    });
+    if (at >= 0) {
+      q.splice(at + 2, 0, q.shift());
+      item = currentVocabItem();
+    }
+  }
+  if (item && vocabSession) {
+    vocabSession.shownKey = item.key;
+    const ahead = vocabSession.queue.slice(1, 6).map(k => items.find(i => i.key === k)).filter(it => it && !it.sub).map(it => vocabContext(it).sentence).filter(Boolean);
+    if (ahead.length) mtFetch(ahead);
+  }
   const studying = item ? [ item ] : [];
   syncVocabLang(item);
   const caughtUp = items.length > 0 && !studying.length;
