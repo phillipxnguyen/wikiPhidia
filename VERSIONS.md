@@ -304,6 +304,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-152 | `aa8d2c0` | Popup sửa định nghĩa/ví dụ: nghĩa (và chữ mờ bản dịch) sát dưới dòng định nghĩa, cách bằng giãn dòng |
 | FLASH-153 | `70713d8` | Mặt sau Vocabulary: giãn dòng của câu, khoảng câu → bản dịch và giãn dòng bản dịch bằng nhau (đo theo chữ, theo font của thẻ) |
 | FLASH-154 | `cf1f6c3` | Sửa bug Vocabulary: câu ví dụ từ điển hiện bản dịch 2 lần; dấu câu (。 . ,) sau từ được tô rớt xuống dòng riêng; câu ví dụ được hỏi ở thẻ định nghĩa thiếu bản dịch mặt sau |
+| FLASH-155 | `pending` | Thanh trên khi học (PC): cờ trái, New/Due/Done chính giữa, nút phải (Lessons + Vocabulary); thẻ câu hiện Translating… khi đang dịch thay vì đục lỗ, dịch trước cho thẻ kế, thử lại sau 1 phút nếu lỗi |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
