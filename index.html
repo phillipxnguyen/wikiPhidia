@@ -4066,8 +4066,11 @@ function watchSeek(i, play) {
     if (!(now >= target - 1.5 && now <= target + .6)) watch.player.seekTo(target, true);
     if (cabin) watch.player.pauseVideo(); else watch.player.playVideo();
   } catch (e) {}
-  if (cabin) cabinSay(watch.lines[i]); else speechSynthesis.cancel();
-  if (cabin) updateTouchBar();
+  if (cabin) cabinSay(watch.lines[i]); else {
+    watch.sayToken = (watch.sayToken || 0) + 1;
+    speechSynthesis.cancel();
+  }
+  updateTouchBar();
 }
 
 async function cabinSay(r) {
@@ -4689,12 +4692,12 @@ document.getElementById("watchPop").addEventListener("click", e => {
     if (capl) capl.classList.remove("reveal");
     hideTooltip();
     watchPrefChanged("cabin");
-    return watch.prefs.cabin ? watchSeek(Math.max(0, watch.at)) : speechSynthesis.cancel();
+    return watchSeek(Math.max(0, watch.at), !watch.prefs.cabin);
   }
   watch.prefs[k] = !watch.prefs[k];
   saveWatchPrefs();
   watchPrefChanged(k);
-  if (k === "cabin") watch.prefs.cabin ? watchSeek(Math.max(0, watch.at)) : speechSynthesis.cancel();
+  if (k === "cabin") watchSeek(Math.max(0, watch.at), !watch.prefs.cabin);
 });
 
 function watchControls(on) {
