@@ -158,6 +158,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-98 | `c0fce84` | List Watch giữ nguyên mọi câu khi chấm điểm, câu đã chấm có dấu ✓/✕ ở góc trên phải |
 | THEATER-99 | `908b6f0` | Thay dấu góc bằng màu ô thời gian: xanh lá = Good, đỏ = Again, không chiếm chỗ chữ |
 | THEATER-100 | `c1b115a` | Phím M: ☰ Full → Interpreter → Watch → ☰ Full |
+| THEATER-101 | `pending` | Watch: chấm điểm/xoá chỉ tác động lên đúng câu (nháy màu dòng, ô thời gian bật màu; xoá thành bóng ma có cánh), không quét cả màn hình |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
