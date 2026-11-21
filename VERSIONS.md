@@ -336,7 +336,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-178 | `32bc1d0` | Mặt trước đọc bản dịch (tiếng Việt): lật thì dừng ngay, mặt sau đọc từ đầu; chỉ nối tiếp khi hai mặt đọc cùng một thứ |
 | FLASH-179 | `6d129d3` | Định nghĩa không còn dịch (thẻ, danh sách, editor); chỉ câu ví dụ giữ bản dịch |
 | FLASH-180 | `7339442` | Editor của thẻ từ hỏi bằng định nghĩa/Similar: hiện dòng đó (không dịch, không ô Translation) rồi câu của thẻ kèm bản dịch, như thẻ |
-| FLASH-181 | `pending` | Thẻ chỉ hiện đúng cụm của nó (từ, nghĩa, định nghĩa, ví dụ); bỏ hỏi bằng câu bài khác, ví dụ từ điển, Similar/Opposite, câu Tatoeba (không tải nữa) |
+| FLASH-181 | `68530e5` | Thẻ chỉ hiện đúng cụm của nó (từ, nghĩa, định nghĩa, ví dụ); bỏ hỏi bằng câu bài khác, ví dụ từ điển, Similar/Opposite, câu Tatoeba (không tải nữa) |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
@@ -383,7 +383,7 @@ Hàm chính: `openBlind`, `closeBlind`, `blindItems`, `blindAutoItems`, `blindLi
 |---|---|---|
 | WORDS-1 | `961cf80` | Cửa sổ Words: dải tần suất, câu của từ, xoá/ẩn từ, bóng thiên thần |
 | WORDS-2 | `21c73f3` | Trang ngôn ngữ: mọi khối cách nhau 32px; From the web bỏ khung, tiêu đề như Waiting for you |
-| WORDS-3 | `pending` | List: dòng Similar/Opposite/Phrases có ✕ xoá; bóng xoá bọc đúng hàng và mang nội dung hàng bay đi |
+| WORDS-3 | `68530e5` | List: dòng Similar/Opposite/Phrases có ✕ xoá; bóng xoá bọc đúng hàng và mang nội dung hàng bay đi |
 
 Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `wordFly`.
 
@@ -722,7 +722,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-88 | `1e51275` | Popup tra từ và popup sửa: từ chính cách nghĩa 17px (17/17) |
 | LOOKUP-89 | `9121634` | Popup từ: mỗi câu ví dụ nằm trong ô nền nhạt (12px trong, bo 12, cách 8), đáy popup không còn sát chữ |
 | LOOKUP-90 | `832f81c` | Ô câu ví dụ trong popup: nền xanh xám rõ hơn |
-| LOOKUP-91 | `pending` | Editor của từ: pill nghĩa của máy dịch theo từ loại để chọn/bỏ nghĩa; ô nghĩa tự gõ có placeholder kính lúp |
+| LOOKUP-91 | `68530e5` | Editor của từ: pill nghĩa của máy dịch theo từ loại để chọn/bỏ nghĩa; ô nghĩa tự gõ có placeholder kính lúp |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
