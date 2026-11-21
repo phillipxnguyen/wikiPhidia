@@ -519,6 +519,7 @@ window.onYouTubeIframeAPIReady = function(){
   .ed-card :is(.ed-ctx, .ed-ctx-n){margin-top:4px;font-size:18px;line-height:26px;text-box-trim:trim-both;text-box-edge:cap alphabetic;}
   .ed-card .ed-ctx-tr{font-weight:600;color:var(--a-text);outline:none;}
   .ed-card .ed-ctx-s{outline:none;}
+  .ed-card .ed-ctx-s mark:not(.vocab-hit):not(.vocab-own){border-radius:4px;background:var(--word-mark);color:inherit;}
   .ed-card .ed-ctx-s *{display:inline;line-height:inherit;vertical-align:baseline;padding-top:0;padding-bottom:0;margin-top:0;margin-bottom:0;font-size:inherit;}
   .ed-card .ed-ctx-tr:empty::before{content:attr(data-placeholder);font-family:"Doto", system-ui, sans-serif;font-weight:800;color:var(--placeholder);}
   .ed-card .ed-ctx-n{color:var(--text);}
@@ -1281,9 +1282,9 @@ window.onYouTubeIframeAPIReady = function(){
   .rich-editor.yt-ph:empty::before{content:"";display:inline-block;width:28px;height:20px;vertical-align:-3px;background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2028%2020%22%3E%3Crect%20width%3D%2228%22%20height%3D%2220%22%20rx%3D%225%22%20fill%3D%22%23FF0000%22%2F%3E%3Cpath%20d%3D%22M11%205.5v9l8-4.5z%22%20fill%3D%22%23fff%22%2F%3E%3C%2Fsvg%3E") center / 28px 20px no-repeat;opacity:.45;}
   #qaQ.yt-ph:placeholder-shown{background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2028%2020%22%3E%3Crect%20width%3D%2228%22%20height%3D%2220%22%20rx%3D%225%22%20fill%3D%22%23FF0000%22%2F%3E%3Cpath%20d%3D%22M11%205.5v9l8-4.5z%22%20fill%3D%22%23fff%22%2F%3E%3C%2Fsvg%3E");background-repeat:no-repeat;background-size:28px 20px;background-position:12px center;}
   .q-mirror mark{background:none;color:inherit;}
-  :is(.rich-editor, .q-mirror, .cell, .vocab-ctx, .vocab-term, .wl-sent) mark.vocab-own{background:none;color:var(--vocab-own-ink);}
-  @media (hover:hover){:is(.rich-editor, .cell, .vocab-ctx, .vocab-term, .wl-sent) mark.vocab-own{cursor:pointer;}}
-  :is(.rich-editor, .q-mirror, .cell, .vocab-ctx, .vocab-term, .wl-sent) mark.vocab-hit{background:none;color:var(--vocab-ink);cursor:pointer;}
+  :is(.rich-editor, .q-mirror, .cell, .vocab-ctx, .vocab-term, .wl-sent, .ed-ctx-s) mark.vocab-own{background:none;color:var(--vocab-own-ink);}
+  @media (hover:hover){:is(.rich-editor, .cell, .vocab-ctx, .vocab-term, .wl-sent, .ed-ctx-s) mark.vocab-own{cursor:pointer;}}
+  :is(.rich-editor, .q-mirror, .cell, .vocab-ctx, .vocab-term, .wl-sent, .ed-ctx-s) mark.vocab-hit{background:none;color:var(--vocab-ink);cursor:pointer;}
   .rich-editor ul{margin:2px 0;padding-left:20px;}
   .rich-editor :is(ul, ol){padding-left:24px;}
   .rich-editor li{margin:0;}
@@ -22868,15 +22869,20 @@ function renderVocab() {
   if (items.length && (!vocabSession || vocabSession.lessonId !== currentLessonId)) startVocabSession();
   if (vocabView === "group") vocabView = "card";
   let item = items.length && vocabView === "card" ? currentVocabItem() : null;
-  if (item && vocabSession && !taskRun && !vocabSession.flipped && vocabSession.shownKey !== item.key && !trReady(item)) {
-    const q = vocabSession.queue, at = q.slice(1, 12).findIndex(k => {
+  if (item && vocabSession && !taskRun) {
+    const q = vocabSession.queue, seen = new Set([ ...document.querySelectorAll(".vocab-deck > .vocab-card") ].map(el => el.dataset.lookKey));
+    const ready = k => {
       const it = items.find(i => i.key === k);
-      return it && vocabStateOf(it).due <= Date.now() && trReady(it);
-    });
-    if (at >= 0) {
-      q.splice(at + 2, 0, q.shift());
-      item = currentVocabItem();
-    }
+      return !!it && vocabStateOf(it).due <= Date.now() && trReady(it);
+    };
+    const lift = at => {
+      if (!q[at] || seen.has(q[at]) || ready(q[at])) return;
+      const j = q.slice(at + 1, at + 12).findIndex(k => !seen.has(k) && ready(k));
+      if (j >= 0) q.splice(at, 0, q.splice(at + 1 + j, 1)[0]);
+    };
+    if (!vocabSession.flipped && vocabSession.shownKey !== item.key) lift(0);
+    lift(1);
+    item = currentVocabItem();
   }
   if (item && vocabSession) {
     vocabSession.shownKey = item.key;
@@ -23077,9 +23083,9 @@ function wireVocabEditor(items) {
     const now = lessonVocabItems(vocabSource()).find(i => i.key === key) || item;
     syncVocabEditMain(now);
     if (now.sub) {
-      const sv = vocabEditValues(), st = document.getElementById("vocabEditSubText");
-      saveSubEdit(now, st ? st.innerText : "", subMeaningValue(now, sv.meaning), now.sub.n || "");
+      const sv = vocabEditValues(), st = document.getElementById("vocabEditSubText"), text = st ? st.innerText : "", m = subMeaningValue(now, sv.meaning);
       saveEditExtras(now);
+      saveSubEdit(now, text, m, now.sub.n || "");
       return renderVocab();
     }
     const v = vocabEditValues();
@@ -23123,7 +23129,8 @@ function wireVocabEditor(items) {
     fitLevel();
   });
   fitLevel();
-  [ term, main ].filter(Boolean).forEach(input => {
+  const boxes = [ ...(term.closest(".vocab-editor") || document).querySelectorAll('.ed-card [contenteditable="true"]') ].filter(x => !main || !main.contains(x));
+  [ term, main, ...boxes ].filter(Boolean).forEach(input => {
     input.addEventListener("keydown", e => {
       e.stopPropagation();
       if (e.isComposing || e.keyCode === 229) return;
@@ -23215,14 +23222,14 @@ function commitVocabEdit() {
   vocabEditingKey = null;
   if (item && item.sub) {
     syncVocabEditMain(item);
-    const st = document.getElementById("vocabEditSubText");
-    saveSubEdit(item, st ? st.innerText : "", subMeaningValue(item, vocabEditValues().meaning), item.sub.n || "");
+    const st = document.getElementById("vocabEditSubText"), text = st ? st.innerText : "", m = subMeaningValue(item, vocabEditValues().meaning);
     saveEditExtras(item);
+    saveSubEdit(item, text, m, item.sub.n || "");
     return true;
   }
   if (item) syncVocabEditMain(item);
-  if (item) saveEditExtras(item);
   const v = vocabEditValues();
+  if (item) saveEditExtras(item);
   if (term && (isNew || item)) saveVocabEditor(isNew ? null : item, v.term, v.meaning, null, false);
   return true;
 }
