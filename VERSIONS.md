@@ -36,7 +36,7 @@ Hàm chính: `isListenMode`, `listenBatch`, `startSequenceLoop`, `stopSequenceLo
 | SPEAK-9 | `b62d155` | Chưa Show thì ← →, Return, nút Again/Good đều Show (Hint) trước, lần sau mới chấm |
 | SPEAK-10 | `bf2ae84` | Điện thoại: khi đáp án còn ẩn, chạm vào câu hỏi luôn là Hint/Show, không bị đổi thành tra từ |
 | SPEAK-11 | `7e11c45` | Về Speaking cũ: mặt trước luôn là câu nguyên vẹn (câu hỏi, Hint, Show); bỏ hẳn câu khoét từ và dạng chỉ từ khoá |
-| SPEAK-12 | `pending` | Sửa lỗi: danh sách từ bên phải tờ Speaking lặp một từ nhiều lần khi nhiều thẻ cùng lưu từ đó; giờ mỗi từ một lần |
+| SPEAK-12 | `8e2c0f1` | Sửa lỗi: danh sách từ bên phải tờ Speaking lặp một từ nhiều lần khi nhiều thẻ cùng lưu từ đó; giờ mỗi từ một lần |
 
 Hàm chính: `ieltsPaperHtml`, `ieltsFrontHtml`, `entryHidden`, `revealAction`, `render` (nhánh `groupViewStyle === "ielts"`). Cùng `ieltsHints`, `ieltsHintNext`, `ieltsHintId` (Hint).
 
