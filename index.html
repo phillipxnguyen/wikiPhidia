@@ -13280,6 +13280,32 @@ document.addEventListener("input", e => {
     pre.setEnd(r0.startContainer, r0.startOffset);
     was = pre.toString().length;
   }
+  if (el.id === "editQ" && activeEdit) {
+    const skip = activeEdit.row && activeEdit.row.id, lit = t => t ? highlightVocabInHtml(escapeHtml(t), skip) : "<br>", lines = next.text.split("\n");
+    const split = lines[0].startsWith(Q_MARK);
+    el.innerHTML = split ? `<div>${Q_MARK}${lit(lines[0].slice(1))}</div>` + lines.slice(1).map(l => `<div>${lit(l)}</div>`).join("") : lit(next.text);
+    const r = document.createRange();
+    if (split) {
+      const line = el.children[1] || el.lastChild;
+      r.setStart(line, 0);
+    } else {
+      const walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+      let left = Math.max(0, was - 1), n, placed = false;
+      while (n = walk.nextNode()) {
+        if (left <= n.nodeValue.length) {
+          r.setStart(n, left);
+          placed = true;
+          break;
+        }
+        left -= n.nodeValue.length;
+      }
+      if (!placed) r.selectNodeContents(el), r.collapse(false);
+    }
+    r.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(r);
+    return;
+  }
   el.textContent = next.text + (next.text.endsWith("\n") ? "\n" : "");
   const node = el.firstChild, at = Math.min(next.caret < 0 ? Math.max(0, was - 1) : next.caret, node ? node.nodeValue.length : 0);
   if (node) {
