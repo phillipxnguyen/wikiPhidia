@@ -340,7 +340,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-179 | `6d129d3` | Định nghĩa không còn dịch (thẻ, danh sách, editor); chỉ câu ví dụ giữ bản dịch |
 | FLASH-180 | `7339442` | Editor của thẻ từ hỏi bằng định nghĩa/Similar: hiện dòng đó (không dịch, không ô Translation) rồi câu của thẻ kèm bản dịch, như thẻ |
 | FLASH-181 | `68530e5` | Thẻ chỉ hiện đúng cụm của nó (từ, nghĩa, định nghĩa, ví dụ); bỏ hỏi bằng câu bài khác, ví dụ từ điển, Similar/Opposite, câu Tatoeba (không tải nữa) |
-| FLASH-182 | `pending` | Swipe: thẻ đã lộ bên dưới luôn là thẻ hiện tiếp (không bị đổi sang thẻ đã dịch xong); editor: Return ở mọi ô (câu, ví dụ, bản dịch) là Save, ví dụ của định nghĩa lưu được, màu từ trong câu đúng như thẻ |
+| FLASH-182 | `79b45ff` | Swipe: thẻ đã lộ bên dưới luôn là thẻ hiện tiếp (không bị đổi sang thẻ đã dịch xong); editor: Return ở mọi ô (câu, ví dụ, bản dịch) là Save, ví dụ của định nghĩa lưu được, màu từ trong câu đúng như thẻ |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
