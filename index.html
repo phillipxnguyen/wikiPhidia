@@ -109,9 +109,6 @@ window.onYouTubeIframeAPIReady = function(){
       --paper-margin:rgba(220,120,120,.38);
       --paper-mark:rgba(240,195,70,.28);
       --word-mark:rgba(240,190,40,.38);
-      --ghost-bg:#6b5413;
-      --ghost-bd:#a8841f;
-      --ghost-ink:#fcd34d;
       --also-mark:rgba(80,200,130,.28);
       --paper-shadow:rgba(0,0,0,.4);
       --surface:#171c25;
@@ -156,9 +153,6 @@ window.onYouTubeIframeAPIReady = function(){
     --paper-margin:rgba(220,120,120,.38);
     --paper-mark:rgba(240,195,70,.28);
     --word-mark:rgba(240,190,40,.38);
-    --ghost-bg:#6b5413;
-    --ghost-bd:#a8841f;
-    --ghost-ink:#fcd34d;
     --also-mark:rgba(80,200,130,.28);
     --paper-shadow:rgba(0,0,0,.4);
     --surface:#171c25;
@@ -3350,13 +3344,11 @@ function watchPrefs() {
     pin: true,
     trans: false,
     auto: false,
-    blur: false,
     loop: false,
-    cabin: false,
+    cabin: true,
     size: 100,
     rate: 1
   }, p, {
-    pin: true,
     capY: null
   }, [ 1, 1.25, 1.5, 1.75, 2 ].includes(Number(p.rate)) ? {} : {
     rate: 1
@@ -3840,10 +3832,7 @@ function openWatch() {
   watch = {
     lessonId: currentLessonId,
     lines: lines,
-    prefs: Object.assign(watchPrefs(), {
-      cabin: true,
-      loop: false
-    }),
+    prefs: watchPrefs(),
     at: 0,
     player: null,
     timer: 0,
@@ -4013,7 +4002,7 @@ function watchTick() {
   }
   let i = 0;
   for (let k = 0; k < L.length; k++) if (L[k].time <= t + .15) i = k; else break;
-  if (i > watch.at && (watch.prefs.loop || watchShownFront()) && L[watch.at]) {
+  if (i > watch.at && (watch.prefs.loop && !watch.prefs.cabin || watchShownFront()) && L[watch.at]) {
     watchArm(watch.at);
     try {
       watch.player.seekTo(L[watch.at].time, true);
@@ -4220,7 +4209,6 @@ function syncWatchPills() {
 
 function watchPrefChanged(k) {
   const p = watch.prefs, box = document.getElementById("watchPop");
-  if (k === "cabin" && p.cabin) p.loop = false;
   saveWatchPrefs();
   syncWatchPills();
   box.classList.toggle("cabin", !!p.cabin);

@@ -162,6 +162,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-101 | `c32a7f7` | Watch: chấm điểm/xoá chỉ tác động lên đúng câu (nháy màu dòng, ô thời gian bật màu; xoá thành bóng ma có cánh), không quét cả màn hình |
 | THEATER-102 | `8b5fcbc` | Watch: khung phụ đề trên video cũng nháy xanh/đỏ khi chấm điểm |
 | THEATER-103 | `18b6375` | Watch: chấm điểm làm viền khung video sáng xanh/đỏ (thay cho hộp phụ đề) |
+| THEATER-104 | `pending` | Theater nhớ chế độ (Interpreter/Watch) và mọi công tắc (loop, pinyin, dịch, tốc độ, cỡ chữ) từ lần trước, không còn mặc định |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
@@ -662,6 +663,7 @@ Hàm chính: `studyingNow`, `placeStudyClock`, `STUDY_TIME_KEY`, `#focusClock`.
 | MOVE-17 | `7d5df65` | Bóng ma khi xoá đổi từ xám sang tông vàng (nền vàng nhạt, ✕ hổ phách) hợp với cánh vàng |
 | MOVE-18 | `261f3e0` | Dọn tàn dư của thẻ ⏳ Waiting đã bỏ (lớp waiting trên bóng ma vuốt) |
 | MOVE-19 | `f6de400` | Bóng ma xoá: nền vàng đặc, đậm hơn (không trong suốt), có màu riêng cho giao diện tối |
+| MOVE-20 | `pending` | Bóng ma xoá cùng một màu vàng sáng ở cả giao diện sáng và tối (như xanh/đỏ của Good/Again) |
 
 Hàm chính: `swipe`, `ghostFor`, `angelFly`, `cutLayer`, `playCut`.
 
