@@ -609,7 +609,7 @@ Hàm chính: `studyingNow`, `placeStudyClock`, `STUDY_TIME_KEY`, `#focusClock`.
 | MOVE-12 | `7667158` | Bật giảm chuyển động trong hệ thống thì mọi hiệu ứng (CSS và JS) đều bỏ, mọi thứ hiện ngay |
 | MOVE-13 | `0a3f333` | Viền khi vuốt luôn bo ít nhất 12px (flashcard kiểu trơn trước đây vuông 0px) |
 | MOVE-14 | `caa33dc` | Khi vuốt, thẻ hiện tại ẩn hẳn (trong suốt), không còn chữ điền chỗ trống/chữ lớn lọt ra chồng lên thẻ kế tiếp |
-| MOVE-15 | `pending` | Vuốt: phía sau để trống ở mọi chế độ, thẻ kế tiếp chỉ hiện khi vuốt xong (bỏ xem trước thẻ sau và xem trước trong task) |
+| MOVE-15 | `43c3e79` | Vuốt: phía sau để trống ở mọi chế độ, thẻ kế tiếp chỉ hiện khi vuốt xong (bỏ xem trước thẻ sau và xem trước trong task) |
 
 Hàm chính: `swipe`, `ghostFor`, `angelFly`, `cutLayer`, `playCut`.
 
