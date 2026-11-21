@@ -359,7 +359,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-198 | `0e7de13` | Thanh Notes trong editor thẻ ôm trọn chữ (dấu trên, chữ thòng), khoảng cách vẫn đo trên chữ |
 | FLASH-199 | `188afab` | Trả lại màu cũ khi Enter 2 lần: câu hỏi màu bài, trả lời màu chữ thường, từ của bạn trong câu hỏi màu chữ thường; vẫn giữ đánh dấu/tra từ |
 | FLASH-200 | `f8676f7` | Dòng trả lời vừa hiện (Enter 2 lần) mà còn trống: gợi ý Type the answer (ô từ: Type the meaning) |
-| FLASH-201 | `pending` | Editor thẻ: thanh Notes cách chữ phía trên (câu hỏi, trả lời, bản dịch) và nút Save đúng 16px, không còn dính sát |
+| FLASH-201 | `652c041` | Editor thẻ: thanh Notes cách chữ phía trên (câu hỏi, trả lời, bản dịch) và nút Save đúng 16px, không còn dính sát |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
