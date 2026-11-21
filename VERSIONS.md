@@ -353,7 +353,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-192 | `eb21b63` | Dọn 1 lần (tải backup trước): xoá dòng notes tự chép (câu, bản dịch, phiên âm IPA), giữ ghi chú tự viết |
 | FLASH-193 | `b5e261c` | Editor: dòng câu hỏi màu chữ thường (không còn xanh trùng màu từ), trả lời xanh lá; gợi ý Answer → Translation…; câu + bản dịch trong editor từ nằm trong ô nền như ví dụ popup |
 | FLASH-194 | `f52510c` | Ô câu trong editor từ: lề đều 12px quanh chữ, 16px giữa câu và bản dịch |
-| FLASH-195 | `pending` | Tách thẻ: video = câu + bản dịch (có thì hiện, không thì thôi) + notes; Speaking = Q, A, notes, bỏ hết bản dịch; gợi ý Answer chỉ ở Speaking |
+| FLASH-195 | `b12952b` | Tách thẻ: video = câu + bản dịch (có thì hiện, không thì thôi) + notes; Speaking = Q, A, notes, bỏ hết bản dịch; gợi ý Answer chỉ ở Speaking |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
