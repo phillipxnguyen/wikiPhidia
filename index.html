@@ -2030,15 +2030,11 @@ window.onYouTubeIframeAPIReady = function(){
   @media (hover:hover){.set-font:hover{background:color-mix(in srgb, var(--accent) 7%, transparent);}}
   .set-font:focus-within{background:color-mix(in srgb, var(--accent) 7%, transparent);box-shadow:inset 0 0 0 2px color-mix(in srgb, var(--accent) 40%, transparent);}
   .set-sample{flex:none;display:flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg, color-mix(in srgb, var(--accent) 10%, var(--surface)), color-mix(in srgb, var(--accent) 22%, var(--surface)));box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent);color:var(--text-2);font-size:20px;line-height:28px;white-space:nowrap;}
-  .set-font.picked .set-sample{background:linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 60%, #8b5cf6));box-shadow:0 6px 16px color-mix(in srgb, var(--accent) 30%, transparent);color:#fff;}
   .set-meta{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
   .set-meta b{font-size:15px;line-height:20px;font-weight:600;}
   .set-meta span{overflow:hidden;font-size:13px;line-height:18px;color:var(--text-2);white-space:nowrap;text-overflow:ellipsis;}
-  .set-font.picked .set-meta span{color:var(--accent);font-weight:600;}
   .set-chev{flex:none;width:12px;height:12px;fill:none;stroke:var(--text-2);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
-  button.set-font{width:100%;margin:0;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer;}
-  .set-font.open .set-chev{transform:rotate(180deg);}
-  .set-font-opts{display:flex;flex-wrap:wrap;gap:8px;padding:0 8px 8px;}
+  .set-font-opts{display:flex;flex-wrap:wrap;gap:8px;padding:0 8px;}
   .set-font-opt{display:flex;align-items:center;justify-content:center;width:40px;height:40px;padding:0;border:0;border-radius:10px;background:color-mix(in srgb, var(--accent) 7%, transparent);color:var(--text);font-size:24px;line-height:1;cursor:pointer;}
   @media (hover:hover){.set-font-opt:hover{background:color-mix(in srgb, var(--accent) 7%, transparent);}}
   .set-font-opt.picked{background:color-mix(in srgb, var(--accent) 12%, transparent);box-shadow:inset 0 0 0 2px color-mix(in srgb, var(--accent) 40%, transparent);}
@@ -18902,8 +18898,9 @@ function settingsPopHtml() {
     ja: "勉"
   };
   const fonts = STUDY_FONT_LANGS.map(([ k, name, sample, list ]) => {
-    const open = fontPickOpen === k, opt = f => `<button type="button" class="set-font-opt${(studyFonts[k] || "") === f ? " picked" : ""}" data-font-pick="${k}" data-font="${escapeAttr(f)}" title="${escapeAttr(f || "System")}" aria-label="${escapeAttr(f || "System")}" style="font-family:${f ? `'${escapeAttr(f)}', ` : ""}${escapeAttr(UI_FONT)}">${one[k]}</button>`;
-    return `<button type="button" class="set-font${studyFonts[k] ? " picked" : ""}${open ? " open" : ""}" data-font-open="${k}" aria-expanded="${open}"><span class="set-sample" data-sl="${k}">${sample}</span><span class="set-meta"><b>${name}</b><span>${escapeHtml(studyFonts[k] || "System")}</span></span><svg class="set-chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3"/></svg></button>` + (open ? `<div class="set-font-opts">${[ "" ].concat(list).map(opt).join("")}</div>` : "");
+    const opt = f => `<button type="button" class="set-font-opt${(studyFonts[k] || "") === f ? " picked" : ""}" data-font-pick="${k}" data-font="${escapeAttr(f)}" title="${escapeAttr(f || "System")}" aria-label="${escapeAttr(f || "System")}" style="font-family:${f ? `'${escapeAttr(f)}', ` : ""}${escapeAttr(UI_FONT)}">${one[k]}</button>`;
+    list.forEach(loadStudyFont);
+    return `<div class="set-font-opts" role="group" aria-label="${name} font">${[ "" ].concat(list).map(opt).join("")}</div>`;
   }).join("");
   const books = `<label class="set-font set-switch"><span class="set-sample">📚</span><span class="set-meta"><b>Library</b></span><input type="checkbox" data-library-on${readLocal(LIBRARY_ON_KEY) === true ? " checked" : ""} aria-label="Show the Library"></label>`;
   const pixel = document.documentElement.classList.contains("pixel");
@@ -19681,11 +19678,9 @@ function toggleSettingsPop(open) {
   pop.hidden = open === undefined ? !pop.hidden : !open;
   document.getElementById("btnSettings").setAttribute("aria-expanded", String(!pop.hidden));
   document.getElementById("btnSettings").classList.toggle("active", !pop.hidden);
-  if (pop.hidden) return fontPickOpen = null;
+  if (pop.hidden) return;
   paintSettingsPop();
 }
-
-let fontPickOpen = null;
 
 function paintSettingsPop() {
   const pop = document.getElementById("settingsPop");
@@ -19698,14 +19693,6 @@ document.getElementById("btnSettings").onclick = () => toggleSettingsPop();
 document.getElementById("settingsPop").addEventListener("click", e => {
   const b = e.target.closest("[data-theme-pick]");
   if (b) switchTheme(b.dataset.themePick, b);
-  const openRow = e.target.closest("[data-font-open]");
-  if (openRow) {
-    const k = openRow.dataset.fontOpen;
-    fontPickOpen = fontPickOpen === k ? null : k;
-    if (fontPickOpen) (STUDY_FONT_LANGS.find(x => x[0] === k) || [ , , , [] ])[3].forEach(loadStudyFont);
-    paintSettingsPop();
-    return;
-  }
   const pick = e.target.closest("[data-font-pick]");
   if (pick) {
     const k = pick.dataset.fontPick, f = pick.dataset.font;
