@@ -10678,9 +10678,14 @@ function updateSelBar() {
   bar.hidden = !target;
   document.documentElement.classList.toggle("sel-on", !!target);
   if (!target) return;
+  const r = touchBar.getBoundingClientRect();
   bar.style.setProperty("--tb-h", touchBar.offsetHeight + "px");
+  bar.style.left = Math.round(r.left) + "px";
+  bar.style.right = Math.round(window.innerWidth - r.right) + "px";
   document.documentElement.style.setProperty("--sel-h", Math.round(window.innerHeight - bar.querySelector(".segmented").getBoundingClientRect().top) + "px");
 }
+
+window.addEventListener("resize", () => document.getElementById("selBar").hidden || requestAnimationFrame(updateSelBar));
 
 document.getElementById("selCopy").onclick = e => {
   e.currentTarget.blur();
@@ -14777,10 +14782,22 @@ window.addEventListener("pointerup", endDrag);
 window.addEventListener("pointercancel", endDrag);
 
 document.addEventListener("click", e => {
-  if (!isTouch() || currentView !== "study" || !groupState || activeEdit || !studyCardsHidden() || !(e.target instanceof Element)) return;
-  if (!e.target.closest("#viewStudy") || e.target.closest(".lesson-header, #fileStatus, .lesson-meta, .study-head, button, a, input, select, textarea, [contenteditable], .loop-time, .edit-row")) return;
-  revealAction();
-});
+  const t = e.target;
+  if (!isTouch() || !(t instanceof Element) || t.closest("#touchBar, #selBar, .toolbar, .w-topbar, .w-ctl, .lesson-header, #fileStatus, .lesson-meta, .study-head, input, select, textarea, [contenteditable=true], .edit-row, .od-float, #editPopup")) return;
+  const pop = document.getElementById("watchPop"), cap = pop && document.querySelector("#watchPop .w-capline");
+  let act = null;
+  if (watch && pop && !pop.hidden) {
+    if (watch.prefs.cabin && t.closest(".w-cap") && cap && !cap.classList.contains("reveal")) act = cabinReveal;
+  } else if (currentView === "vocab" && vocabView === "card" && !vocabEditingKey && t.closest("#viewVocab")) {
+    const item = currentVocabItem();
+    if (item && vocabSession && !vocabSession.flipped && !vocabViewOnly(item)) act = flipVocab;
+  } else if (currentView === "study" && groupState && !activeEdit && studyCardsHidden() && t.closest("#viewStudy")) act = revealAction;
+  if (!act) return;
+  e.preventDefault();
+  e.stopPropagation();
+  hideTooltip();
+  act();
+}, true);
 
 window.addEventListener("click", e => {
   if (!dragSuppressClick) return;

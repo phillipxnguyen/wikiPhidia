@@ -519,6 +519,7 @@ Hàm chính: `newRow` (bản dịch vào notes khi tạo), `foldAnswer` + `keeps
 | BAR-7 | `acf2457` | Popup giới hạn mỗi ngày mở từ bộ đếm 🆕 ⏳ ✅ của mọi mode học (cả theater), ngay dưới bộ đếm; ô 🔥 chỉ hiện streak |
 | BAR-8 | `f266b4e` | Hiệu ứng bộ đếm khi đổi giới hạn: một nhịp phồng nhẹ + vòng mờ, bỏ nảy đàn hồi và xoay; số lăn trong 1 giây |
 | BAR-9 | `e9eb02a` | 🆕 ⏳ ✅ chỉ đếm thẻ/từ đến lượt học ngay lúc đó (trong giới hạn ngày), mọi mode, theater, Vocabulary; Again mặc định 30 phút |
+| BAR-10 | `pending` | Điện thoại: thanh Copy/Delete luôn thẳng giữa thanh đáy, cả khi xoay dọc/ngang |
 
 Hàm chính: `updateTouchBar`, `sizeTouchBar`, `#tbSound`, `#tbMore`, `tools-open`.
 
@@ -610,6 +611,7 @@ Hàm chính: `studyingNow`, `placeStudyClock`, `STUDY_TIME_KEY`, `#focusClock`.
 | MOVE-13 | `0a3f333` | Viền khi vuốt luôn bo ít nhất 12px (flashcard kiểu trơn trước đây vuông 0px) |
 | MOVE-14 | `caa33dc` | Khi vuốt, thẻ hiện tại ẩn hẳn (trong suốt), không còn chữ điền chỗ trống/chữ lớn lọt ra chồng lên thẻ kế tiếp |
 | MOVE-15 | `43c3e79` | Vuốt: phía sau để trống ở mọi chế độ, thẻ kế tiếp chỉ hiện khi vuốt xong (bỏ xem trước thẻ sau và xem trước trong task) |
+| MOVE-16 | `pending` | Điện thoại: chạm bất kỳ đâu trên trang học khi đang ở mặt trước là Show, mọi chế độ (kể cả pill giờ/▶, vùng câu Interpreter) |
 
 Hàm chính: `swipe`, `ghostFor`, `angelFly`, `cutLayer`, `playCut`.
 
