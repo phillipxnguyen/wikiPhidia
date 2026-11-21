@@ -1675,7 +1675,7 @@ window.onYouTubeIframeAPIReady = function(){
   .paper-notes .card-notes{padding:0;font-size:inherit;line-height:inherit;}
   .paper-notes li{padding-left:0;}
   .paper-notes li::before{content:none;}
-  .paper-notes .pn{display:inline-block;min-width:24px;}
+  .paper-notes .pn{display:inline-block;min-width:round(up, calc(var(--pnd, 1) * 1ch + .5ch), 1px);margin-right:8px;text-align:right;font-variant-numeric:tabular-nums;}
   @media (max-width:600px){
     .ielts-paper.with-notes .paper-body{grid-template-columns:minmax(0, 1fr);}
     .paper-notes{margin-top:24px;padding:0;border:0;}
@@ -9164,7 +9164,7 @@ function ieltsPaperHtml(row) {
   const hints = row.aHidden ? ieltsHints(row) : [], veiled = ieltsHintId !== row.id;
   const answer = row.aHidden ? hints.length ? `<div class="cell hidden paper-prompt paper-hint${veiled ? " paper-veil" : ""}" data-field="a"><ol>` + hints.map(m => `<li>${escapeHtml(m)}</li>`).join("") + "</ol></div>" : `<div class="cell hidden paper-lines paper-veil" data-field="a">${aCellContent(row)}</div>` : `<div class="cell shown paper-lines" data-field="a">${aCellContent(row)}</div>`;
   const own = row.aHidden || words.length ? "" : cardNotesHtml(row);
-  const list = words.length ? "<ol>" + words.map((i, n) => `<li><span class="pn">${n + 1}.</span><b>${escapeHtml(i.term)}</b>${i.meaning ? " — " + meaningHtml(i.meaning) : ""}</li>`).join("") + "</ol>" : own;
+  const list = words.length ? `<ol style="--pnd:${String(words.length).length}">` + words.map((i, n) => `<li><span class="pn">${n + 1}.</span><b>${escapeHtml(i.term)}</b>${i.meaning ? " — " + meaningHtml(i.meaning) : ""}</li>`).join("") + "</ol>" : own;
   const notes = list ? `<aside class="paper-notes">${list}</aside>` : "";
   const extras = "";
   if (!hasAnswer(row)) return `<article class="ielts-paper top-rings${notes ? " with-notes" : ""}"><div class="paper-body"><div class="paper-main"><div class="paper-answer">${ieltsFrontHtml(row)}</div></div>${notes}</div>` + extras + "</article>";
