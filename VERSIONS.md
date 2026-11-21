@@ -354,7 +354,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-193 | `b5e261c` | Editor: dòng câu hỏi màu chữ thường (không còn xanh trùng màu từ), trả lời xanh lá; gợi ý Answer → Translation…; câu + bản dịch trong editor từ nằm trong ô nền như ví dụ popup |
 | FLASH-194 | `f52510c` | Ô câu trong editor từ: lề đều 12px quanh chữ, 16px giữa câu và bản dịch |
 | FLASH-195 | `b12952b` | Tách thẻ: video = câu + bản dịch (có thì hiện, không thì thôi) + notes; Speaking = Q, A, notes, bỏ hết bản dịch; gợi ý Answer chỉ ở Speaking |
-| FLASH-196 | `pending` | Editor thẻ: tách Q/A (Shift+Enter 2 lần) hay gộp lại vẫn giữ màu và tra từ của các từ trong câu |
+| FLASH-196 | `69b2a53` | Editor thẻ: tách Q/A (Shift+Enter 2 lần) hay gộp lại vẫn giữ màu và tra từ của các từ trong câu |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
