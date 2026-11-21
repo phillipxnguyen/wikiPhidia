@@ -153,7 +153,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-93 | `fb7f3ee` | Điện thoại: bỏ làm mờ video khi dừng; dải tối dưới nút chạm đáy video (hết hở viền); nút nối dòng là 1/2/3 vạch ngang bằng nhau xếp chồng |
 | THEATER-94 | `052ff6f` | Điện thoại: nút đè lên đáy video như máy tính, bỏ dải tối phía sau |
 | THEATER-95 | `0417e42` | Video dừng thì phủ lớp tối (không mờ) để che ô của YouTube, cả điện thoại và máy tính |
-| THEATER-96 | `pending` | Watch: bỏ nút làm mờ chữ |
+| THEATER-96 | `05350a9` | Watch: bỏ nút làm mờ chữ |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
@@ -375,7 +375,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-209 | `d2863cb` | Trong câu hỏi xanh, mọi từ (của bạn và tra được) hiện xanh lá |
 | FLASH-210 | `6d7c3df` | Sửa lỗi: chữ hiển thị trong ô ＋ và ô từ Vocabulary bị lệch lên so với con trỏ/bôi đen (cách căn của ô thẻ lan sang) |
 | FLASH-211 | `587aa7c` | Bỏ 7 font thẻ quá nghiêng, khó đọc: Sriracha, Pacifico, Lobster, Dancing Script, Charm, Sedgwick Ave, Mynerve |
-| FLASH-212 | `pending` | Settings: chọn font Trung/Hàn/Nhật thấy trước câu mẫu viết bằng từng font; nút công cụ gọn 1 dòng (🔁 Replace, 🧹 Clean up) |
+| FLASH-212 | `05350a9` | Settings: chọn font Trung/Hàn/Nhật thấy trước câu mẫu viết bằng từng font; nút công cụ gọn 1 dòng (🔁 Replace, 🧹 Clean up) |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
