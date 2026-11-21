@@ -710,6 +710,7 @@ window.onYouTubeIframeAPIReady = function(){
   .cloze-glue{white-space:nowrap;}
   .vocab-card.tr-front:not(.flipped) .cloze-body > .cloze-src, .vocab-card.flipped .cloze-body > .cloze-trf{display:none;}
   .cloze-trm{padding:0 2px;border-radius:4px;background:var(--word-mark);color:inherit;}
+  .vocab-tr-wait{display:flex;align-items:center;justify-content:center;min-height:240px;}
   .cloze-cue{display:table;margin:0 0 .4em;padding:0 4px;border-radius:4px;background:var(--word-mark);color:inherit;font-style:normal;}
   .vocab-card.fill :is(.cloze-spy, .cloze-notes){font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;font-style:normal;}
   .vocab-card.fill .cloze-spy{margin:0 0 4px;font-size:.6em;font-size:round(.6em, 1px);line-height:1.4;line-height:round(1.4em, 1px);font-weight:600;}
@@ -20471,6 +20472,7 @@ document.getElementById("cloudForm").onsubmit = e => {
 document.getElementById("cloudSignUp").onclick = () => cloudEmailAuth(true);
 
 window.addEventListener("online", () => {
+  if (trWaiting && currentView === "vocab") renderVocab();
   if (cloudSignedIn() && (cloudPendingLessons.size || cloudPendingReviews.size)) scheduleCloudFlush(0);
 });
 
@@ -22250,7 +22252,7 @@ document.addEventListener("input", e => {
   });
 }, true);
 
-let trPumping = false;
+let trPumping = false, trWaiting = false;
 
 async function trPump() {
   if (trPumping || !navigator.onLine) return;
@@ -22259,8 +22261,12 @@ async function trPump() {
     for (let round = 0; round < 50 && currentView === "vocab" && vocabSession && navigator.onLine; round++) {
       const items = lessonVocabItems(vocabSource()), byKey = new Map(items.map(i => [ i.key, i ]));
       const need = [ ...new Set(vocabSession.queue.map(k => byKey.get(k)).filter(it => it && !trReady(it)).flatMap(trTexts)) ].filter(t => !trOff(t) && !machineTr(t) && !mtJobs.has(t) && !mtTried.has(t)).slice(0, 8);
-      if (!need.length) break;
+      if (!need.length) {
+        if (trWaiting) setTimeout(() => trWaiting && currentView === "vocab" && renderVocab(), 15e3);
+        break;
+      }
       await mtFetch(need);
+      if (trWaiting && currentView === "vocab") renderVocab();
     }
   } finally {
     trPumping = false;
@@ -22268,7 +22274,6 @@ async function trPump() {
 }
 
 function trReady(item) {
-  if (!navigator.onLine) return true;
   if (item.sub) return trTexts(item).every(t => trOff(t) || !!sentenceTrFor(item, t, {
     dataset: {}
   }));
@@ -22349,8 +22354,8 @@ function fillVocabCard(el, item) {
     });
     const waiting = !tr && !el.dataset.listen && mtJobs.has(text);
     el.dataset.trfront = tr;
-    el.classList.toggle("tr-front", !!tr || waiting);
-    const trf = tr ? trFrontHtml(item, el, markedTrHtml(tr, item)) : waiting ? '<span class="cloze-trf"><span class="tr-wait">Translating…</span></span>' : "";
+    el.classList.toggle("tr-front", !el.dataset.listen);
+    const trf = el.dataset.listen ? "" : waiting ? '<span class="cloze-trf"><span class="tr-wait">Translating…</span></span>' : trFrontHtml(item, el, markedTrHtml(tr, item));
     const backTr = subTrHtml(item) ? "" : el.dataset.listen ? sentTrHtml(item, text, el) : tr ? `<span class="cloze-more cloze-notes vc-sub-tr">${escapeHtml(tr)}</span>` : "";
     const sent = trf + `<span class="cloze-src${el.dataset.listen ? " vc-sent" : ""}">${spy ? `<span class="cloze-more cloze-spy py-line">${linePillHtml(item, text, !otherGap)}${escapeHtml(spy)}</span>` : linePillHtml(item, text, !otherGap, "cloze-pill")}${gappedHtml(text, spans, item)}</span>`;
     const xm = item.meaning || "";
@@ -22360,18 +22365,18 @@ function fillVocabCard(el, item) {
     el.classList.toggle("listen", !!el.dataset.listen);
   } else if (ex === "def" && (item.sub || el.dataset.owndef)) {
     const noted = noteSentence(item), notes = noted ? noted.rest.replace(/^(\s|<br\s*\/?>|<div>\s*<\/div>)+/i, "") : wordNotesOf(item);
-    const sub = item.sub || {}, d = item.sub ? sub.t : el.dataset.owndef, span = findWordForm(d, item.term);
-    const defText = span ? gappedHtml(d, wordSpans(d, item.term, span), item) : lookupOthers(escapeHtml(d), item);
+    const sub = item.sub || {}, d = item.sub ? sub.t : el.dataset.owndef;
+    const defText = lookupOthers(escapeHtml(d), item);
     const defHead = `${sub.h ? `<span class="vc-def-g">${escapeHtml(sub.h)}</span>` : ""}${sub.p ? `<button type="button" class="own-ts say-ts vc-pos-say" data-say="${escapeAttr(d)}" title="Play the definition" aria-label="Play the definition">${escapeHtml(sub.p)}</button>` : ""}`;
-    const asked = el.dataset.defx || "", ask = asked && findWordForm(asked, item.term);
+    const asked = el.dataset.defx || "";
     let askTr = asked ? sentenceTrFor(item, asked, el) : "";
     if (asked && !askTr && navigator.onLine) mtFetch([ asked ]).then(done => done !== null && el.isConnected && el.dataset.lookKey === item.key && fillVocabCard(el, item));
     const askWait = asked && !askTr && mtJobs.has(asked);
-    if (askTr || askWait) {
+    if (asked) {
       el.dataset.trfront = askTr;
       el.classList.add("tr-front");
     }
-    const first = asked ? (askTr ? trFrontHtml(item, el, markedTrHtml(askTr, item)) : askWait ? '<span class="cloze-trf"><span class="tr-wait">Translating…</span></span>' : "") + `<span class="vc-sent${askTr || askWait ? " cloze-src" : ""}">${linePillHtml(item, asked, false, "cloze-pill")}${askTr || askWait ? lookupOthers(vocabSentenceHtml(asked, item.term, item.card), item) : ask ? gappedHtml(asked, wordSpans(asked, item.term, ask), item) : escapeHtml(asked)}</span>` : `<span class="vc-sent vc-def">${defHead}${defText}</span>`;
+    const first = asked ? (askWait ? '<span class="cloze-trf"><span class="tr-wait">Translating…</span></span>' : trFrontHtml(item, el, markedTrHtml(askTr, item))) + `<span class="vc-sent cloze-src">${linePillHtml(item, asked, false, "cloze-pill")}${lookupOthers(vocabSentenceHtml(asked, item.term, item.card), item)}</span>` : `<span class="vc-sent vc-def">${defHead}${defText}</span>`;
     const dx = asked ? "" : item.sub ? defExample(item) : sentence;
     const second = asked ? `<span class="cloze-more cloze-own vc-def-more">${defHead}${lookupOthers(escapeHtml(d), item)}</span>${subTrHtml(item)}` : dx ? `<span class="cloze-more cloze-own">${withPill(linePillHtml(item, dx, false), lookupOthers(vocabSentenceHtml(dx, item.term, item.card), item))}</span>${sentTrHtml(item, dx, el)}` : "";
     const hm = meaningLines(item.meaning || "").filter(l => l !== d).join("\n");
@@ -22951,8 +22956,9 @@ function renderVocab() {
     lift(1);
     item = currentVocabItem();
     trPump();
-  }
-  if (item && vocabSession) {
+    trWaiting = !!item && !vocabSession.flipped && vocabSession.shownKey !== item.key && !seen.has(item.key) && !trReady(item);
+  } else trWaiting = false;
+  if (item && vocabSession && !trWaiting) {
     vocabSession.shownKey = item.key;
     const ahead = vocabSession.queue.slice(1, 6).map(k => items.find(i => i.key === k)).filter(it => it && !it.sub).map(it => vocabContext(it).sentence).filter(Boolean);
     if (ahead.length) mtFetch(ahead);
@@ -23069,6 +23075,12 @@ function renderVocab() {
     blinkOut(doneScreen);
     stage.innerHTML = "";
     window.scrollTo(0, 0);
+  }
+  if (trWaiting) {
+    stage.innerHTML = `<div class="vocab-tr-wait"><span class="tr-wait">${navigator.onLine ? "Translating…" : "Connect to the internet to load the translations"}</span></div>`;
+    wireVocabEditor(items);
+    syncVocabSound();
+    return;
   }
   showVocabDeck(stage, item);
   wireVocabEditor(items);
