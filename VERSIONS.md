@@ -147,7 +147,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-91 | `cc79fc5` | Điện thoại: công cụ hiện giá trị ngắn (1 line/15s/30s, 125%, 1.25x); video khi dừng bị làm mờ để không lộ màn hình dừng của YouTube |
 | THEATER-92 | `3e2fd1c` | Điện thoại: nút nối dòng là icon 1/2/3 vạch (Easy/Medium/Hard), không còn chữ |
 | THEATER-93 | `fb7f3ee` | Điện thoại: bỏ làm mờ video khi dừng; dải tối dưới nút chạm đáy video (hết hở viền); nút nối dòng là 1/2/3 vạch ngang bằng nhau xếp chồng |
-| THEATER-94 | `pending` | Điện thoại: nút đè lên đáy video như máy tính, bỏ dải tối phía sau |
+| THEATER-94 | `052ff6f` | Điện thoại: nút đè lên đáy video như máy tính, bỏ dải tối phía sau |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
