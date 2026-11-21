@@ -154,7 +154,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-94 | `052ff6f` | Điện thoại: nút đè lên đáy video như máy tính, bỏ dải tối phía sau |
 | THEATER-95 | `0417e42` | Video dừng thì phủ lớp tối (không mờ) để che ô của YouTube, cả điện thoại và máy tính |
 | THEATER-96 | `05350a9` | Watch: bỏ nút làm mờ chữ |
-| THEATER-97 | `pending` | Dừng video không còn phủ tối hay làm mờ gì; nút tốc độ / Easy / Aa luôn giữ kiểu tối, không bị trắng |
+| THEATER-97 | `41a9347` | Dừng video không còn phủ tối hay làm mờ gì; nút tốc độ / Easy / Aa luôn giữ kiểu tối, không bị trắng |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
