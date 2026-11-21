@@ -4798,11 +4798,31 @@ window.addEventListener("keydown", e => {
 
 const FOCUS_SCENES = 18;
 
-function pickFocusScene() {
+function nextFocusScene() {
   const root = document.documentElement, was = Number(root.dataset.fscene || 0);
-  let n = 1 + Math.floor(Math.random() * FOCUS_SCENES);
-  if (n === was) n = n % FOCUS_SCENES + 1;
-  root.dataset.fscene = String(n);
+  let n = Number(root.dataset.fnext || 0);
+  if (!n || n === was) {
+    n = 1 + Math.floor(Math.random() * FOCUS_SCENES);
+    if (n === was) n = n % FOCUS_SCENES + 1;
+    root.dataset.fnext = String(n);
+  }
+  return n;
+}
+
+function pickFocusScene() {
+  const root = document.documentElement;
+  root.dataset.fscene = String(nextFocusScene());
+  delete root.dataset.fnext;
+}
+
+function peekFocusScene() {
+  const root = document.documentElement;
+  if (!root.classList.contains("focus-on")) return () => {};
+  const was = root.dataset.fscene;
+  root.dataset.fscene = String(nextFocusScene());
+  return () => {
+    root.dataset.fscene = was;
+  };
 }
 
 function syncFocus() {
@@ -14691,7 +14711,11 @@ function dragMove(clientX, clientY) {
     } catch (err) {}
     getSelection().removeAllRanges();
     hideTooltip();
-    drag.restore = hideUnderSwipe(drag.vocab ? drag.parts : Array.from(document.getElementById("singleCardBody").children));
+    const unhide = hideUnderSwipe(drag.vocab ? drag.parts : Array.from(document.getElementById("singleCardBody").children)), unpeek = peekFocusScene();
+    drag.restore = () => {
+      unpeek();
+      unhide();
+    };
   }
   drag.dx = dx;
   const again = dx < 0;
