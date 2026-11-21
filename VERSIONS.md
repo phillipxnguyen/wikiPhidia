@@ -581,7 +581,7 @@ Hàm chính: `switchToLesson`, `setAppMode`, `syncModeButtonHighlights`, `lesson
 | FOCUS-7 | `adac075` | Điện thoại: thanh trên sát mép, không chừa chỗ cho ✕ |
 | FOCUS-8 | `abc1ae4` | Thanh trên cân hai bên: cờ cách mép trái bằng ✕ cách mép phải |
 | FOCUS-9 | `2799b23` | Thông báo streak tắt ngay khi chạm, bấm hay gõ phím; ✕ thoát focus kèm tắt luôn thông báo |
-| FOCUS-10 | `pending` | Vuốt: nền đổi sẵn sang màu của thẻ sau (chọn trước, khớp khi thẻ ra); huỷ vuốt thì về màu cũ |
+| FOCUS-10 | `6b345f3` | Vuốt: nền đổi sẵn sang màu của thẻ sau (chọn trước, khớp khi thẻ ra); huỷ vuốt thì về màu cũ |
 
 Hàm chính: `syncFocus`, `pickFocusScene`, `FOCUS_SCENES`, nút `#focusExit`.
 
