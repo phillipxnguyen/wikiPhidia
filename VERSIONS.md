@@ -345,7 +345,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-184 | `4ec4ad2` | Xoá bản dịch thì giữ trống (không tải lại, thẻ quay về câu đục lỗ); dòng note 📌 không còn bị coi là bản dịch; ô trống luôn hiện placeholder; ô dịch ghi Translation… |
 | FLASH-185 | `4d7b8d3` | Bỏ hẳn mặt trước đục lỗ (câu, ví dụ, định nghĩa); thẻ chưa có bản dịch không bao giờ hiện, chờ thì chỉ hiện Translating… trên trang; bản dịch bị xoá thì hỏi bằng nghĩa |
 | FLASH-186 | `88e0db7` | README: bỏ mọi mô tả thẻ đục lỗ của flashcard (còn lại chỉ Speaking bên Lessons) |
-| FLASH-187 | `pending` | Bản dịch câu trên thẻ (mặt trước và dưới câu ở mặt sau) cũng dùng VT323 như trong editor |
+| FLASH-187 | `b331132` | Bản dịch câu trên thẻ (mặt trước và dưới câu ở mặt sau) cũng dùng VT323 như trong editor |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
