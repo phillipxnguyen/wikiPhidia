@@ -357,6 +357,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-196 | `69b2a53` | Editor thẻ: tách Q/A (Shift+Enter 2 lần) hay gộp lại vẫn giữ màu và tra từ của các từ trong câu |
 | FLASH-197 | `3733d9a` | Editor thẻ video: chỉ câu (không còn rule Enter 2 lần) + bản dịch chỉ đọc; Speaking bỏ chữ gợi ý Answer |
 | FLASH-198 | `0e7de13` | Thanh Notes trong editor thẻ ôm trọn chữ (dấu trên, chữ thòng), khoảng cách vẫn đo trên chữ |
+| FLASH-199 | `pending` | Trả lại màu cũ khi Enter 2 lần: câu hỏi màu bài, trả lời màu chữ thường, từ của bạn trong câu hỏi màu chữ thường; vẫn giữ đánh dấu/tra từ |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
