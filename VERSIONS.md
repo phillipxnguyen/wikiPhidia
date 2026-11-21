@@ -661,6 +661,7 @@ Hàm chính: `studyingNow`, `placeStudyClock`, `STUDY_TIME_KEY`, `#focusClock`.
 | MOVE-16 | `c2f970e` | Điện thoại: chạm bất kỳ đâu trên trang học khi đang ở mặt trước là Show, mọi chế độ (kể cả pill giờ/▶, vùng câu Interpreter) |
 | MOVE-17 | `7d5df65` | Bóng ma khi xoá đổi từ xám sang tông vàng (nền vàng nhạt, ✕ hổ phách) hợp với cánh vàng |
 | MOVE-18 | `261f3e0` | Dọn tàn dư của thẻ ⏳ Waiting đã bỏ (lớp waiting trên bóng ma vuốt) |
+| MOVE-19 | `pending` | Bóng ma xoá: nền vàng đặc, đậm hơn (không trong suốt), có màu riêng cho giao diện tối |
 
 Hàm chính: `swipe`, `ghostFor`, `angelFly`, `cutLayer`, `playCut`.
 
