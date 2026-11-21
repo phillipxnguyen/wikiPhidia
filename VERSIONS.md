@@ -543,6 +543,7 @@ Hàm chính: `updateTouchBar`, `sizeTouchBar`, `#tbSound`, `#tbMore`, `tools-ope
 | TODAY-15 | `3449e4f` | Bỏ ô NEW/TO REVIEW (trùng vòng), bỏ ~phút ở vòng và ở danh sách; dòng Up next và nút ▶ (cả sidebar) tô màu theo phía: Lessons xanh dương, Vocabulary xanh lá; hover không còn chuyển trắng |
 | TODAY-16 | `cc79fc5` | Up next: mỗi dòng ghi N cards (xanh dương) / M words (xanh lá); nền và ▶ xanh dương, xanh lá, hoặc nửa-nửa khi có cả hai (bài học xen kẽ thẻ và từ) |
 | TODAY-17 | `a813837` | Dọn CSS thừa của dòng tiến độ đã bỏ khỏi hero |
+| TODAY-18 | `pending` | Dọn hàm thừa còn sót từ phần xem trước thẻ sau trong task |
 
 Hàm chính: `todayTasks`, `todayTaskCounts`, `taskQueue`, `startTaskSide`, `taskAdvance`, `leftToday`, `limitStudy`, `limitRows`.
 
