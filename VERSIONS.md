@@ -538,7 +538,7 @@ Hàm chính: `updateTouchBar`, `sizeTouchBar`, `#tbSound`, `#tbMore`, `tools-ope
 | TODAY-14 | `7aef152` | Thẻ Today: ngày cách ô to review 12px như các hàng khác; sidebar: số (148) căn giữa theo chiều dọc với nhãn TO REVIEW |
 | TODAY-15 | `3449e4f` | Bỏ ô NEW/TO REVIEW (trùng vòng), bỏ ~phút ở vòng và ở danh sách; dòng Up next và nút ▶ (cả sidebar) tô màu theo phía: Lessons xanh dương, Vocabulary xanh lá; hover không còn chuyển trắng |
 | TODAY-16 | `cc79fc5` | Up next: mỗi dòng ghi N cards (xanh dương) / M words (xanh lá); nền và ▶ xanh dương, xanh lá, hoặc nửa-nửa khi có cả hai (bài học xen kẽ thẻ và từ) |
-| TODAY-17 | `pending` | Dọn CSS thừa của dòng tiến độ đã bỏ khỏi hero |
+| TODAY-17 | `a813837` | Dọn CSS thừa của dòng tiến độ đã bỏ khỏi hero |
 
 Hàm chính: `todayTasks`, `todayTaskCounts`, `taskQueue`, `startTaskSide`, `taskAdvance`, `leftToday`, `limitStudy`, `limitRows`.
 
