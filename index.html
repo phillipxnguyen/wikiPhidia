@@ -22204,8 +22204,34 @@ function sentenceTrFor(item, text, el) {
   return machineTr(text) || machineTr(oneLine(text));
 }
 
+function trTexts(item) {
+  if (item.sub) return item.sub.kind === "def" ? (item.sub.xs || []).filter(Boolean) : item.sub.tr ? [] : [ item.sub.t ].filter(Boolean);
+  const s = vocabContext(item).sentence;
+  return s ? [ s ] : [];
+}
+
+let trPumping = false;
+
+async function trPump() {
+  if (trPumping || !navigator.onLine) return;
+  trPumping = true;
+  try {
+    for (let round = 0; round < 50 && currentView === "vocab" && vocabSession && navigator.onLine; round++) {
+      const items = lessonVocabItems(vocabSource()), byKey = new Map(items.map(i => [ i.key, i ]));
+      const need = [ ...new Set(vocabSession.queue.map(k => byKey.get(k)).filter(it => it && !trReady(it)).flatMap(trTexts)) ].filter(t => !machineTr(t) && !mtJobs.has(t) && !mtTried.has(t)).slice(0, 8);
+      if (!need.length) break;
+      await mtFetch(need);
+    }
+  } finally {
+    trPumping = false;
+  }
+}
+
 function trReady(item) {
-  if (item.sub || !navigator.onLine) return true;
+  if (!navigator.onLine) return true;
+  if (item.sub) return trTexts(item).every(t => !!sentenceTrFor(item, t, {
+    dataset: {}
+  }));
   const s = vocabContext(item).sentence;
   return !s || !!sentenceTrFor(item, s, {
     dataset: {}
@@ -22877,12 +22903,13 @@ function renderVocab() {
     };
     const lift = at => {
       if (!q[at] || seen.has(q[at]) || ready(q[at])) return;
-      const j = q.slice(at + 1, at + 12).findIndex(k => !seen.has(k) && ready(k));
+      const j = q.slice(at + 1).findIndex(k => !seen.has(k) && ready(k));
       if (j >= 0) q.splice(at, 0, q.splice(at + 1 + j, 1)[0]);
     };
     if (!vocabSession.flipped && vocabSession.shownKey !== item.key) lift(0);
     lift(1);
     item = currentVocabItem();
+    trPump();
   }
   if (item && vocabSession) {
     vocabSession.shownKey = item.key;
