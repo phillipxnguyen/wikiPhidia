@@ -660,7 +660,7 @@ Hàm chính: `studyingNow`, `placeStudyClock`, `STUDY_TIME_KEY`, `#focusClock`.
 | MOVE-15 | `43c3e79` | Vuốt: phía sau để trống ở mọi chế độ, thẻ kế tiếp chỉ hiện khi vuốt xong (bỏ xem trước thẻ sau và xem trước trong task) |
 | MOVE-16 | `c2f970e` | Điện thoại: chạm bất kỳ đâu trên trang học khi đang ở mặt trước là Show, mọi chế độ (kể cả pill giờ/▶, vùng câu Interpreter) |
 | MOVE-17 | `7d5df65` | Bóng ma khi xoá đổi từ xám sang tông vàng (nền vàng nhạt, ✕ hổ phách) hợp với cánh vàng |
-| MOVE-18 | `pending` | Dọn tàn dư của thẻ ⏳ Waiting đã bỏ (lớp waiting trên bóng ma vuốt) |
+| MOVE-18 | `261f3e0` | Dọn tàn dư của thẻ ⏳ Waiting đã bỏ (lớp waiting trên bóng ma vuốt) |
 
 Hàm chính: `swipe`, `ghostFor`, `angelFly`, `cutLayer`, `playCut`.
 
