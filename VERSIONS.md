@@ -356,6 +356,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-195 | `b12952b` | Tách thẻ: video = câu + bản dịch (có thì hiện, không thì thôi) + notes; Speaking = Q, A, notes, bỏ hết bản dịch; gợi ý Answer chỉ ở Speaking |
 | FLASH-196 | `69b2a53` | Editor thẻ: tách Q/A (Shift+Enter 2 lần) hay gộp lại vẫn giữ màu và tra từ của các từ trong câu |
 | FLASH-197 | `3733d9a` | Editor thẻ video: chỉ câu (không còn rule Enter 2 lần) + bản dịch chỉ đọc; Speaking bỏ chữ gợi ý Answer |
+| FLASH-198 | `pending` | Thanh Notes trong editor thẻ ôm trọn chữ (dấu trên, chữ thòng), khoảng cách vẫn đo trên chữ |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
