@@ -9129,8 +9129,13 @@ function renderStudy() {
 }
 
 function cardWords(row) {
-  const text = (row.q || "") + "\n" + (row.a || "");
-  return lessonVocabItems(vocabSource()).filter(i => termInText(i.term, text));
+  const text = (row.q || "") + "\n" + (row.a || ""), seen = new Set;
+  return lessonVocabItems(vocabSource()).filter(i => {
+    const k = i.tkey || normalizeVocabText(i.term);
+    if (seen.has(k) || !termInText(i.term, text)) return false;
+    seen.add(k);
+    return true;
+  });
 }
 
 function ieltsFrontHtml(row) {
