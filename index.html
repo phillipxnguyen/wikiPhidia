@@ -3367,7 +3367,7 @@ function watchCanOpen() {
 
 function watchTranslation(r) {
   const q = detectLang(r.q || "").split("-")[0];
-  return plainTextOf(r.notesHtml || escapeHtml(r.notes || "").replace(/\n/g, "<br>"), "\n").split("\n").map(x => x.trim()).filter(x => x && !/[:：]/.test(x) && detectLang(x).split("-")[0] !== q).join(" ").split(/(?<=[.!?。！？…])\s+/).filter((x, i, all) => x !== all[i - 1]).join(" ");
+  return plainTextOf(r.notesHtml || escapeHtml(r.notes || "").replace(/\n/g, "<br>"), "\n").split("\n").map(x => x.trim()).filter(x => x && /^[\p{L}\p{N}"'“‘(]/u.test(x) && !/[:：]/.test(x) && detectLang(x).split("-")[0] !== q).join(" ").split(/(?<=[.!?。！？…])\s+/).filter((x, i, all) => x !== all[i - 1]).join(" ");
 }
 
 function watchChinese() {
@@ -3397,6 +3397,25 @@ const MT_KEY = "flashcards.machineTr", MT_MAX = 4000;
 let mtStore = null;
 
 const mtPending = new Set;
+
+const TR_OFF_KEY = "flashcards.trOff";
+
+let trOffStore = null;
+
+function trOff(text) {
+  if (!trOffStore) trOffStore = readLocal(TR_OFF_KEY) || {};
+  return !!trOffStore[oneLine(text || "").normalize("NFC")];
+}
+
+function setTrOff(text, on) {
+  trOff("");
+  const k = oneLine(text || "").normalize("NFC");
+  if (!k || !!trOffStore[k] === on) return;
+  if (on) trOffStore[k] = 1; else delete trOffStore[k];
+  try {
+    localStorage.setItem(TR_OFF_KEY, JSON.stringify(trOffStore));
+  } catch (e) {}
+}
 
 function mtRead() {
   if (!mtStore) mtStore = readLocal(MT_KEY) || {};
@@ -3658,7 +3677,7 @@ const mtTried = new Set, mtJobs = new Map;
 
 async function mtFetch(texts) {
   const list = [ ...new Set(texts) ].filter(Boolean), waits = list.filter(t => mtJobs.has(t)).map(t => mtJobs.get(t));
-  const need = list.filter(t => !machineTr(t) && !mtJobs.has(t) && !mtPending.has(t) && !mtTried.has(t));
+  const need = list.filter(t => !trOff(t) && !machineTr(t) && !mtJobs.has(t) && !mtPending.has(t) && !mtTried.has(t));
   if (need.length && navigator.onLine) {
     need.forEach(t => mtTried.add(t));
     const job = translateBatch(need, detectLang(need[0]) === "vi-VN" ? "en" : "vi").catch(() => []).then(res => {
@@ -22197,6 +22216,7 @@ function subTrHtml(item) {
 
 function sentenceTrFor(item, text, el) {
   const card = item.card, same = t => oneLine(t || "").normalize("NFC") === oneLine(text).normalize("NFC");
+  if (trOff(text)) return "";
   if (same(card.q)) {
     const own = oneLine(card.a || "").trim() || watchTranslation(card);
     if (own) return own;
@@ -22210,6 +22230,14 @@ function trTexts(item) {
   return s ? [ s ] : [];
 }
 
+document.addEventListener("input", e => {
+  const host = e.target && e.target.isContentEditable ? e.target : null;
+  if (!host || !host.matches) return;
+  [ host, ...host.querySelectorAll("[data-placeholder], .vem-lens") ].filter(el => el === host ? el.matches("[data-placeholder], .vem-lens") : el.isContentEditable).forEach(el => {
+    if (!el.textContent.replace(/[\s\u200b\u2063]/g, "") && !el.querySelector("img") && el.innerHTML) el.innerHTML = "";
+  });
+}, true);
+
 let trPumping = false;
 
 async function trPump() {
@@ -22218,7 +22246,7 @@ async function trPump() {
   try {
     for (let round = 0; round < 50 && currentView === "vocab" && vocabSession && navigator.onLine; round++) {
       const items = lessonVocabItems(vocabSource()), byKey = new Map(items.map(i => [ i.key, i ]));
-      const need = [ ...new Set(vocabSession.queue.map(k => byKey.get(k)).filter(it => it && !trReady(it)).flatMap(trTexts)) ].filter(t => !machineTr(t) && !mtJobs.has(t) && !mtTried.has(t)).slice(0, 8);
+      const need = [ ...new Set(vocabSession.queue.map(k => byKey.get(k)).filter(it => it && !trReady(it)).flatMap(trTexts)) ].filter(t => !trOff(t) && !machineTr(t) && !mtJobs.has(t) && !mtTried.has(t)).slice(0, 8);
       if (!need.length) break;
       await mtFetch(need);
     }
@@ -22229,11 +22257,11 @@ async function trPump() {
 
 function trReady(item) {
   if (!navigator.onLine) return true;
-  if (item.sub) return trTexts(item).every(t => !!sentenceTrFor(item, t, {
+  if (item.sub) return trTexts(item).every(t => trOff(t) || !!sentenceTrFor(item, t, {
     dataset: {}
   }));
   const s = vocabContext(item).sentence;
-  return !s || !!sentenceTrFor(item, s, {
+  return !s || trOff(s) || !!sentenceTrFor(item, s, {
     dataset: {}
   }) || !!item.meaning && wholeSentenceCard(item, s);
 }
@@ -22718,7 +22746,7 @@ function editCtxHtml(item) {
   }) : "";
   const noted = noteSentence(item), notes = noted ? noted.rest.replace(/^(\s|<br\s*\/?>|<div>\s*<\/div>)+/i, "") : wordNotesOf(item);
   const od = !item.sub && on && vc.dataset.owndef;
-  return (od ? `<div class="ed-sub-row ed-ctx-d" contenteditable="false"><div>${lookupOthers(escapeHtml(od), item)}</div></div>` : "") + (text && text !== od ? `<div class="ed-ctx" contenteditable="false"><div class="ed-ctx-s" contenteditable="true">${lookupOthers(vocabSentenceHtml(text, item.term, item.card), item)}</div><div class="ed-ctx-tr" contenteditable="true" data-placeholder="Translation" data-was="${escapeAttr(tr)}">${escapeHtml(tr)}</div></div>` : "") + (notes ? `<div class="ed-ctx-n" contenteditable="false">${notesWithPinyin(brLines(notes), item.card)}</div>` : "");
+  return (od ? `<div class="ed-sub-row ed-ctx-d" contenteditable="false"><div>${lookupOthers(escapeHtml(od), item)}</div></div>` : "") + (text && text !== od ? `<div class="ed-ctx" contenteditable="false"><div class="ed-ctx-s" contenteditable="true">${lookupOthers(vocabSentenceHtml(text, item.term, item.card), item)}</div><div class="ed-ctx-tr" contenteditable="true" data-placeholder="Translation…" data-was="${escapeAttr(tr)}">${escapeHtml(tr)}</div></div>` : "") + (notes ? `<div class="ed-ctx-n" contenteditable="false">${notesWithPinyin(brLines(notes), item.card)}</div>` : "");
 }
 
 function updateCtxSource(item, from, to) {
@@ -22767,6 +22795,7 @@ function saveEditCtx(item) {
   }
   if (!trChanged) return;
   const target = sChanged ? next : text;
+  setTrOff(target, !value);
   if (own) {
     if (!sChanged) pushUndo("Edited the translation — " + item.term);
     item.card.a = value;
