@@ -364,7 +364,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-203 | `ff95d29` | Từ tra được trong câu đổi sang tím, không còn trùng xanh lá với câu trả lời/bản dịch |
 | FLASH-204 | `2e86cbc` | Từ tra được trong câu: vàng mù tạt thay cho tím |
 | FLASH-205 | `b1e003f` | Enter 2 lần: dòng trả lời nằm đúng chỗ dòng vừa xuống, chữ và Notes không còn nhảy |
-| FLASH-206 | `pending` | Ô thẻ dùng chung một cách căn trước và sau khi tách Q/A: không còn dịch lên dù font máy khác; mọi dòng cách nhau 28px |
+| FLASH-206 | `b3d051f` | Ô thẻ dùng chung một cách căn trước và sau khi tách Q/A: không còn dịch lên dù font máy khác; mọi dòng cách nhau 28px |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
