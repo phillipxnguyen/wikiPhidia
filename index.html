@@ -786,6 +786,7 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-card.fill.flipped .vocab-back{visibility:hidden;}
   .vocab-card:not(.flipped) .vocab-front mark:is(.vocab-hit, .vocab-own){color:inherit;background:none;font-weight:inherit;pointer-events:none;}
   .vocab-card[data-look] .vocab-front .rd{text-transform:none;letter-spacing:0;}
+  .vocab-card[data-look].fill.flipped .vocab-front > .vocab-term{font-family:var(--bf);}
   .vocab-card[data-look] .vocab-back > .vocab-back-main{font-family:var(--bf);align-items:var(--bai);text-align:var(--ba);flex-direction:var(--bd);color:var(--bc);transform:rotate(var(--br));}
   .vocab-card[data-look] .vocab-back > .vocab-back-main .vocab-ctx{color:var(--bc);font-weight:var(--bw);font-style:var(--bs);text-align:var(--ba);}
   .vocab-card[data-look] .vocab-back > .vocab-back-main .vocab-ctx:not(:has(.rd)){font-size:var(--bz);line-height:var(--bl);letter-spacing:var(--bk);}
@@ -22081,7 +22082,7 @@ function vocabViewOnly(item) {
   return !!item && !(item.meaning || "").trim();
 }
 
-const TYPE_LATIN = [ "Playfair Display", "Merriweather", "Roboto Slab", "Patrick Hand", "Mali", "Josefin Sans", "Comfortaa", "Lexend", "Oswald", "Montserrat", "Nunito", "Quicksand", "Lora", "Bitter", "Alegreya", "Baloo 2", "Prata", "Arima", "Philosopher", "Signika", "Exo 2", "Vollkorn", "Raleway", "Work Sans", "Source Serif 4", "Crimson Pro", "Literata", "Manrope", "Be Vietnam Pro", "Inter" ];
+const TYPE_LATIN = [ "Playfair Display", "Merriweather", "Roboto Slab", "Patrick Hand", "Mali", "Josefin Sans", "Comfortaa", "Lexend", "Oswald", "Montserrat", "Nunito", "Quicksand", "Lora", "Bitter", "Alegreya", "Baloo 2", "Prata", "Arima", "Philosopher", "Signika", "Exo 2", "Vollkorn", "Raleway", "Work Sans", "Source Serif 4", "Crimson Pro", "Literata", "Manrope", "Be Vietnam Pro", "Inter", "Itim", "Pangolin", "Shantell Sans", "Playpen Sans", "Chakra Petch", "Sriracha", "Grandstander", "Fuzzy Bubbles", "Bai Jamjuree", "Space Mono", "Andika", "Saira", "Pacifico", "Lobster", "Dancing Script", "Charm", "Bungee", "Sedgwick Ave", "Barlow Condensed", "Alfa Slab One", "Yeseva One", "Cormorant Garamond", "Sigmar", "Mynerve" ];
 
 const TYPE_NO_VI = [ "Gill Sans", "Futura", "Baskerville" ];
 
@@ -22100,12 +22101,14 @@ function cardType(el, item) {
   const text = (item.term || "") + (item.meaning || "");
   const all = text + " " + ((item.card && item.card.q) || "");
   const cjk = /[\u3040-\u30ff]/.test(all) ? TYPE_CJK.ja : /[\uac00-\ud7af]/.test(all) ? TYPE_CJK.ko : /[\u3400-\u9fff]/.test(all) ? TYPE_CJK.zh : null;
-  const font = vi => {
+  let used = "";
+  const font = (vi, web) => {
     let latin;
-    if (Math.random() < .3) latin = pick(vi ? TYPE_LOCAL.filter(f => !TYPE_NO_VI.includes(f)) : TYPE_LOCAL); else {
-      latin = pick(TYPE_LATIN);
+    if (!web && Math.random() < .3) latin = pick(vi ? TYPE_LOCAL.filter(f => !TYPE_NO_VI.includes(f)) : TYPE_LOCAL); else {
+      latin = pick(TYPE_LATIN.filter(f => f !== used));
       loadStudyFont(latin);
     }
+    used = latin;
     if (!cjk) return `"${latin}", ${UI_FONT}`;
     const f = pick(cjk);
     loadStudyFont(f);
@@ -22127,7 +22130,7 @@ function cardType(el, item) {
   set("--tc", textInk);
   const bz = pick(phone ? [ 22, 24, 26 ] : [ 32, 36, 40 ]), mz = pick(phone ? [ 18, 20, 22, 26 ] : [ 22, 26, 30, 36, 44 ]);
   const align = pick([ "left", "center", "center", "left" ]);
-  set("--bf", font(true));
+  set("--bf", font(true, true));
   set("--bw", pick([ "400", "400", "500", "600" ]));
   set("--bs", Math.random() < .2 ? "italic" : "normal");
   set("--bz", bz + "px");
