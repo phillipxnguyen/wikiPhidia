@@ -349,7 +349,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-188 | `222890c` | Nghĩa của từ luôn màu cam đất ở mọi chỗ (thẻ, editor, popup, List), tách khỏi màu xanh của bản dịch |
 | FLASH-189 | `d51fca1` | Bản dịch câu (thẻ và editor) đổi từ VT323 sang Handjet, pixel mảnh dễ đọc hơn |
 | FLASH-190 | `f8c403b` | Bỏ font riêng: bản dịch câu (thẻ và editor) cùng kiểu chữ với câu ở trên |
-| FLASH-191 | `pending` | Thêm ~25 font lạ mà dễ đọc (đủ dấu tiếng Việt); mặt trước và mặt sau thẻ luôn khác font, thẻ dịch đổi font khi lật |
+| FLASH-191 | `4405368` | Thêm ~25 font lạ mà dễ đọc (đủ dấu tiếng Việt); mặt trước và mặt sau thẻ luôn khác font, thẻ dịch đổi font khi lật |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
