@@ -551,6 +551,7 @@ window.onYouTubeIframeAPIReady = function(){
   .qa-row > .q-wrap{flex:1 1 auto;}
   .q-mirror{position:absolute;z-index:0;margin:0;overflow:hidden;border-style:solid;border-color:transparent;color:var(--text);pointer-events:none;}
   .q-mirror .q-slash{color:transparent;}
+  .q-mirror .q-ph{font-family:"Doto", system-ui, sans-serif;font-weight:800;color:var(--placeholder);}
   .q-mirror .q-line{color:var(--accent);}
   .q-mirror mark.vocab-own .q-line, #cardTable.notebook .cell[data-field="q"] mark.vocab-own, .paper-question mark.vocab-own{color:var(--text);}
   .q-mirrored{position:relative;z-index:1;background-color:transparent!important;color:transparent!important;-webkit-text-fill-color:transparent;caret-color:var(--text);}
@@ -12614,6 +12615,10 @@ function ownDictTts(w) {
 
 const Q_BOXES = "#qaQ, #vocabEditTerm, #editQ";
 
+function qAnswerHint(el) {
+  return el.id === "vocabEditTerm" ? "Type the meaning" : "Type the answer";
+}
+
 function qMirrorBody(el, m) {
   if (el.tagName === "TEXTAREA") {
     const t = el.value, lead = t.length - t.trimStart().length, has = t.slice(lead, lead + 1) === Q_MARK;
@@ -12622,7 +12627,7 @@ function qMirrorBody(el, m) {
       return false;
     }
     const nl = t.indexOf("\n"), end = nl < 0 ? t.length : nl;
-    m.innerHTML = escapeHtml(t.slice(0, lead)) + '<span class="q-slash">' + Q_MARK + '</span><span class="q-line">' + escapeHtml(t.slice(lead + 1, end)) + "</span>" + escapeHtml(t.slice(end)) + "​";
+    m.innerHTML = escapeHtml(t.slice(0, lead)) + '<span class="q-slash">' + Q_MARK + '</span><span class="q-line">' + escapeHtml(t.slice(lead + 1, end)) + "</span>" + escapeHtml(t.slice(end)) + (t.slice(end).trim() ? "" : `<span class="q-ph">${qAnswerHint(el)}</span>`) + "​";
     return true;
   }
   m.innerHTML = el.innerHTML;
@@ -12667,6 +12672,8 @@ function qMirrorBody(el, m) {
     t.replaceWith(sp);
     sp.append(t);
   });
+  const lines = [ ...m.children ].filter(x => /^(DIV|P)$/.test(x.tagName));
+  if (lines.length >= 2 && lines.slice(1).every(x => !x.textContent.replace(/[\s\u200b]/g, ""))) lines[1].innerHTML = `<span class="q-ph">${qAnswerHint(el)}</span>`;
   return true;
 }
 
