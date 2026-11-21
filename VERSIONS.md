@@ -377,7 +377,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-211 | `587aa7c` | Bỏ 7 font thẻ quá nghiêng, khó đọc: Sriracha, Pacifico, Lobster, Dancing Script, Charm, Sedgwick Ave, Mynerve |
 | FLASH-212 | `05350a9` | Settings: chọn font Trung/Hàn/Nhật thấy trước câu mẫu viết bằng từng font; nút công cụ gọn 1 dòng (🔁 Replace, 🧹 Clean up) |
 | FLASH-213 | `69bc0bb` | Chọn font: mỗi font một ô vuông nhỏ một chữ, một hàng, trỏ vào hiện tên |
-| FLASH-214 | `pending` | Settings: bỏ dòng Chinese/Korean/Japanese, ba hàng ô một chữ hiện luôn, bấm là chọn |
+| FLASH-214 | `5ba9106` | Settings: bỏ dòng Chinese/Korean/Japanese, ba hàng ô một chữ hiện luôn, bấm là chọn |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
