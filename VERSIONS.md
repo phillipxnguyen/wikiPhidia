@@ -376,6 +376,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-210 | `6d7c3df` | Sửa lỗi: chữ hiển thị trong ô ＋ và ô từ Vocabulary bị lệch lên so với con trỏ/bôi đen (cách căn của ô thẻ lan sang) |
 | FLASH-211 | `587aa7c` | Bỏ 7 font thẻ quá nghiêng, khó đọc: Sriracha, Pacifico, Lobster, Dancing Script, Charm, Sedgwick Ave, Mynerve |
 | FLASH-212 | `05350a9` | Settings: chọn font Trung/Hàn/Nhật thấy trước câu mẫu viết bằng từng font; nút công cụ gọn 1 dòng (🔁 Replace, 🧹 Clean up) |
+| FLASH-213 | `pending` | Chọn font: mỗi font một ô vuông nhỏ một chữ, một hàng, trỏ vào hiện tên |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 

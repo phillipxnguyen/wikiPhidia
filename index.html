@@ -2038,13 +2038,10 @@ window.onYouTubeIframeAPIReady = function(){
   .set-chev{flex:none;width:12px;height:12px;fill:none;stroke:var(--text-2);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
   button.set-font{width:100%;margin:0;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer;}
   .set-font.open .set-chev{transform:rotate(180deg);}
-  .set-meta span[data-sl]{font-size:16px;line-height:22px;color:var(--text);}
-  .set-font-opts{display:flex;flex-direction:column;gap:4px;padding:0 0 4px 72px;}
-  .set-font-opt{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:8px 12px;border:0;border-radius:12px;background:none;color:var(--text);text-align:left;cursor:pointer;}
+  .set-font-opts{display:flex;flex-wrap:wrap;gap:8px;padding:0 8px 8px;}
+  .set-font-opt{display:flex;align-items:center;justify-content:center;width:40px;height:40px;padding:0;border:0;border-radius:10px;background:color-mix(in srgb, var(--accent) 7%, transparent);color:var(--text);font-size:24px;line-height:1;cursor:pointer;}
   @media (hover:hover){.set-font-opt:hover{background:color-mix(in srgb, var(--accent) 7%, transparent);}}
   .set-font-opt.picked{background:color-mix(in srgb, var(--accent) 12%, transparent);box-shadow:inset 0 0 0 2px color-mix(in srgb, var(--accent) 40%, transparent);}
-  .set-opt-text{font-size:20px;line-height:28px;}
-  .set-opt-name{font-size:12px;line-height:16px;color:var(--text-2);}
   .set-tools button{white-space:nowrap;}
   .settings-pop [data-sl="zh"]{font-family:var(--sf-zh);}
   .settings-pop [data-sl="ja"]{font-family:var(--sf-ja);}
@@ -18899,14 +18896,14 @@ function applyStudyFonts() {
 function settingsPopHtml() {
   const shown = pendingTheme || shownTheme();
   const theme = [ [ "light", "☀️", "Light" ], [ "dark", "🌙", "Dark" ] ].map(([ k, icon, name ]) => `<button type="button" data-theme-pick="${k}" class="${k === shown ? "active" : ""}" aria-pressed="${k === shown}" aria-label="${name}" title="${name}">${icon}</button>`).join("");
-  const phrase = {
-    zh: "我在学习中文",
-    ko: "한국어를 공부해요",
-    ja: "日本語を勉強します"
+  const one = {
+    zh: "学",
+    ko: "공",
+    ja: "勉"
   };
   const fonts = STUDY_FONT_LANGS.map(([ k, name, sample, list ]) => {
-    const open = fontPickOpen === k, opt = f => `<button type="button" class="set-font-opt${(studyFonts[k] || "") === f ? " picked" : ""}" data-font-pick="${k}" data-font="${escapeAttr(f)}"><span class="set-opt-text" style="font-family:${f ? `'${escapeAttr(f)}', ` : ""}${escapeAttr(UI_FONT)}">${phrase[k]}</span><span class="set-opt-name">${escapeHtml(f || "System")}</span></button>`;
-    return `<button type="button" class="set-font${studyFonts[k] ? " picked" : ""}${open ? " open" : ""}" data-font-open="${k}" aria-expanded="${open}"><span class="set-sample" data-sl="${k}">${sample}</span><span class="set-meta"><b>${name}</b><span data-sl="${k}">${phrase[k]}</span></span><svg class="set-chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3"/></svg></button>` + (open ? `<div class="set-font-opts">${[ "" ].concat(list).map(opt).join("")}</div>` : "");
+    const open = fontPickOpen === k, opt = f => `<button type="button" class="set-font-opt${(studyFonts[k] || "") === f ? " picked" : ""}" data-font-pick="${k}" data-font="${escapeAttr(f)}" title="${escapeAttr(f || "System")}" aria-label="${escapeAttr(f || "System")}" style="font-family:${f ? `'${escapeAttr(f)}', ` : ""}${escapeAttr(UI_FONT)}">${one[k]}</button>`;
+    return `<button type="button" class="set-font${studyFonts[k] ? " picked" : ""}${open ? " open" : ""}" data-font-open="${k}" aria-expanded="${open}"><span class="set-sample" data-sl="${k}">${sample}</span><span class="set-meta"><b>${name}</b><span>${escapeHtml(studyFonts[k] || "System")}</span></span><svg class="set-chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3"/></svg></button>` + (open ? `<div class="set-font-opts">${[ "" ].concat(list).map(opt).join("")}</div>` : "");
   }).join("");
   const books = `<label class="set-font set-switch"><span class="set-sample">📚</span><span class="set-meta"><b>Library</b></span><input type="checkbox" data-library-on${readLocal(LIBRARY_ON_KEY) === true ? " checked" : ""} aria-label="Show the Library"></label>`;
   const pixel = document.documentElement.classList.contains("pixel");
