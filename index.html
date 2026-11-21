@@ -21015,6 +21015,74 @@ function startReaderBridge() {
   }, "*");
 }
 
+const NOTES_CLEAN_KEY = "flashcards.notesClean1";
+
+function copiedNoteLines(item) {
+  const card = item.card, flat = t => oneLine(t || "").normalize("NFC").toLowerCase().replace(/[\s"'“”‘’.,!?;:…—–-]+/g, " ").trim();
+  const items = noteItemsOf(wordNotesOf(item));
+  if (!items.length) return null;
+  const sentence = vocabContext(item).sentence || "";
+  const texts = [ card.q, card.a, sentence ].concat((card.parts || []).flatMap(p => [ p.q, p.a ])).filter(Boolean);
+  const pieces = new Set(texts.flatMap(t => [ t ].concat(String(t).split(/\n+/), splitIntoSentences(String(t)).map(x => x.text))).map(flat).filter(Boolean)), all = flat(texts.join(" "));
+  const trs = [ machineTr(sentence), machineTr(oneLine(sentence)), card.a, card.mt, rowMt(card) ].map(flat).filter(Boolean);
+  const ipa = t => {
+    const x = t.replace(/\b(UK|US|BrE|AmE)\b/g, " ").replace(/[\/\[\]]/g, " ").trim();
+    return x.length <= 60 && /[ˈˌːəɪʊʌæɒɔɜθðʃʒŋɑɛɹ]/u.test(x) && /^[a-zˈˌːˑəɪʊʌæɒɔɜθðʃʒŋɑɛɹɡɾʔ.\-‿() \u0303\u0329]+$/iu.test(x);
+  };
+  const plain = items.map(h => plainTextOf(h, " ").trim()), sentAt = [];
+  plain.forEach((t, i) => {
+    const n = flat(t);
+    if (n.length >= 8 && (pieces.has(n) || all.includes(n))) sentAt.push(i);
+  });
+  const lang = detectLang(sentence || card.q || "").split("-")[0];
+  const drop = plain.map((t, i) => {
+    const n = flat(t);
+    if (!n) return false;
+    if (sentAt.includes(i) || ipa(t)) return true;
+    if (trs.some(r => r === n || n.length >= 8 && r.includes(n))) return true;
+    return sentAt.includes(i - 1) && n.split(" ").length >= 4 && detectLang(t).split("-")[0] !== lang;
+  });
+  if (!drop.some(Boolean)) return null;
+  return {
+    count: drop.filter(Boolean).length,
+    html: items.filter((h, i) => !drop[i]).map(h => "<div>" + h + "</div>").join("")
+  };
+}
+
+async function cleanCopiedNotes() {
+  if (readLocal(NOTES_CLEAN_KEY)) return;
+  const jobs = [];
+  library.forEach(l => l.cards.forEach(card => vocabEntriesOf(card).forEach(e => {
+    const item = Object.assign({
+      card: card
+    }, e), got = copiedNoteLines(item);
+    if (got) jobs.push({
+      lesson: l,
+      card: card,
+      key: e.key,
+      got: got
+    });
+  })));
+  if (jobs.length) {
+    downloadJsonFile(backupText(), backupFileName().replace("-flashcards", "-before-notes-cleanup-flashcards"));
+    const touched = new Set;
+    let lines = 0;
+    jobs.forEach(j => {
+      if (!setWordNotes(j.card, j.key, j.got.html)) return;
+      lines += j.got.count;
+      touched.add(j.lesson);
+    });
+    for (const l of touched) {
+      l.updatedAt = Date.now();
+      await dbPut("lessons", l).catch(() => {});
+    }
+    if (lines) showToast("Removed " + countOf(lines, "copied note line") + " (a backup was downloaded first)");
+  }
+  try {
+    localStorage.setItem(NOTES_CLEAN_KEY, "true");
+  } catch (e) {}
+}
+
 async function initApp() {
   updateThemeButton();
   await claimActiveTab();
@@ -21026,6 +21094,7 @@ async function initApp() {
   }));
   reviewLog = (await dbGetAll("reviews")).filter(e => e && isFinite(e.ts)).sort((a, b) => a.ts - b.ts);
   renderStreakChip();
+  await cleanCopiedNotes();
   await openDefaultLesson();
   startReaderBridge();
   if (!dbAvailable) showToast("Browser storage is unavailable here");
