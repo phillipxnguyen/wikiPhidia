@@ -494,8 +494,8 @@ window.onYouTubeIframeAPIReady = function(){
   .ed-card .q-mirror .q-line{color:var(--text);}
   .ed-card .q-mirror mark.vocab-own{color:var(--vocab-own-ink);}
   .ed-card .q-mirror mark.vocab-own .q-line{color:var(--vocab-own-ink);}
-  .ed-card .edit-qa:not(:has(+ .ed-tr)) #editQ.q-whole:not(:empty)::after, .ed-card .edit-qa:not(:has(+ .ed-tr)) .q-wrap:has(> #editQ.q-whole:not(:empty)) > .q-mirror::after{content:"Translation…";display:block;margin-top:4px;font-family:"Doto", system-ui, sans-serif;font-size:18px;line-height:26px;font-weight:800;color:transparent;pointer-events:none;}
-  .ed-card .edit-qa:not(:has(+ .ed-tr)) .q-wrap:has(> #editQ.q-whole:not(:empty)) > .q-mirror::after{color:var(--placeholder);}
+  .ed-card .edit-qa:not(:has(+ .ed-tr)) #editQ.q-whole:not(.yt-ph):not(:empty)::after, .ed-card .edit-qa:not(:has(+ .ed-tr)) .q-wrap:has(> #editQ.q-whole:not(.yt-ph):not(:empty)) > .q-mirror::after{content:"Answer";display:block;margin-top:4px;font-family:"Doto", system-ui, sans-serif;font-size:18px;line-height:26px;font-weight:800;color:transparent;pointer-events:none;}
+  .ed-card .edit-qa:not(:has(+ .ed-tr)) .q-wrap:has(> #editQ.q-whole:not(.yt-ph):not(:empty)) > .q-mirror::after{color:var(--placeholder);}
   .ed-card .q-mirror mark.vocab-hit, .ed-card .q-mirror mark.vocab-hit .q-line{color:var(--vocab-ink);}
   .ed-card #editQ{color:var(--text);}
   .ed-card :is(#editQ, #qaQ, .q-mirror){font-size:20px;line-height:28px;font-weight:400;}
@@ -3449,7 +3449,7 @@ const LIST_TR_KEY = "flashcards.listTr";
 let listTrOn = readLocal(LIST_TR_KEY) === true;
 
 function rowTr(r) {
-  return hasAnswer(r) ? "" : watchTranslation(r) || rowMt(r);
+  return r.time == null || hasAnswer(r) ? "" : watchTranslation(r) || rowMt(r);
 }
 
 function paintListTr() {
@@ -3637,7 +3637,7 @@ document.addEventListener("click", e => {
 
 function preloadTranslations() {
   if (!currentLessonId || isVirtualLesson() || appMode === "vocab") return;
-  mtFill(rows.filter(r => r.uid !== EXTRA_UID && (r.q || "").trim() && !hasAnswer(r)));
+  mtFill(rows.filter(r => r.uid !== EXTRA_UID && r.time != null && (r.q || "").trim() && !hasAnswer(r)));
 }
 
 function keepRowMt(lines) {
@@ -3678,6 +3678,8 @@ async function mtFill(lines) {
       paintWatchList();
     }
     if (listTrOn) paintListTr();
+    const qa = activeEdit && document.querySelector("#editPopup .edit-qa");
+    if (qa && rowTr(activeEdit.row) && !(qa.nextElementSibling && qa.nextElementSibling.classList.contains("ed-tr"))) qa.insertAdjacentHTML("afterend", editTrHtml(activeEdit.row));
   }
 }
 
@@ -8729,7 +8731,7 @@ function buildRowTr(r) {
   if (selectedRowId === r.id) tr.classList.add("row-selected");
   const q = `<div class="cell ${r.qHidden ? "hidden" : "shown"}" data-field="q">${qCellContent(r)}</div>`;
   const wait = !!answerFill && answerFill.has(r.id) && !hasAnswer(r);
-  const trLine = (listTrOn || wait) && !groupState && !hasAnswer(r) ? `<div class="cell shown row-tr" data-field="tr" data-id="${r.id}">${wait && !rowTr(r) ? '<span class="tr-wait">Translating…</span>' : escapeHtml(rowTr(r))}</div>` : "";
+  const trLine = (listTrOn && r.time != null || wait) && !groupState && !hasAnswer(r) ? `<div class="cell shown row-tr" data-field="tr" data-id="${r.id}">${wait && !rowTr(r) ? '<span class="tr-wait">Translating…</span>' : escapeHtml(rowTr(r))}</div>` : "";
   const own = !r.aHidden && !r.qHidden ? cardNotesHtml(r) : "";
   const notes = own;
   const a = trLine || `<div class="cell ${r.aHidden ? "hidden" : "shown"}" data-field="a">${aCellContent(r)}</div>`;
@@ -13407,7 +13409,8 @@ window.addEventListener("blur", () => {
 });
 
 function editTrHtml(row) {
-  const tr = (listTrOn || !!watch && !!watch.prefs.trans) && !hasAnswer(row) ? rowTr(row) : "";
+  const tr = rowTr(row);
+  if (!tr && row.time != null && (row.q || "").trim() && !hasAnswer(row)) mtFill([ row ]);
   return tr ? `<div class="ed-tr">${escapeHtml(tr)}</div>` : "";
 }
 
@@ -13981,7 +13984,7 @@ function syncModeButtonHighlights() {
   const off = isAllLessons() || !!groupState || isVirtualLesson();
   fullBtn.hidden = off || !lessonStudyMode();
   const lt = document.getElementById("listTrans");
-  lt.hidden = off || appMode === "vocab" || !rows.some(r => r.uid !== EXTRA_UID && (r.q || "").trim() && !hasAnswer(r));
+  lt.hidden = off || appMode === "vocab" || !rows.some(r => r.uid !== EXTRA_UID && r.time != null && (r.q || "").trim() && !hasAnswer(r));
   lt.classList.toggle("active", listTrOn);
   lt.setAttribute("aria-pressed", String(listTrOn));
   const lj = document.getElementById("listJoin");
