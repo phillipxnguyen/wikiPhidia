@@ -362,7 +362,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-201 | `652c041` | Editor thẻ: thanh Notes cách chữ phía trên (câu hỏi, trả lời, bản dịch) và nút Save đúng 16px, không còn dính sát |
 | FLASH-202 | `ec0cb10` | Trả lại màu FLASH-193 (câu hỏi chữ thường, trả lời xanh lá, từ giữ màu riêng); trả lời chỉ xuống dòng như thường, không cách thêm |
 | FLASH-203 | `ff95d29` | Từ tra được trong câu đổi sang tím, không còn trùng xanh lá với câu trả lời/bản dịch |
-| FLASH-204 | `pending` | Từ tra được trong câu: vàng mù tạt thay cho tím |
+| FLASH-204 | `2e86cbc` | Từ tra được trong câu: vàng mù tạt thay cho tím |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
