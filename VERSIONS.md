@@ -146,6 +146,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-90 | `c78bdc4` | Điện thoại: theater chỉ còn Interpreter (bỏ Watch); công cụ luôn hiện, chỉ biểu tượng; chạm video là play/pause; cắt khung để không thấy tiêu đề/thẻ của YouTube |
 | THEATER-91 | `cc79fc5` | Điện thoại: công cụ hiện giá trị ngắn (1 line/15s/30s, 125%, 1.25x); video khi dừng bị làm mờ để không lộ màn hình dừng của YouTube |
 | THEATER-92 | `3e2fd1c` | Điện thoại: nút nối dòng là icon 1/2/3 vạch (Easy/Medium/Hard), không còn chữ |
+| THEATER-93 | `pending` | Điện thoại: bỏ làm mờ video khi dừng; dải tối dưới nút chạm đáy video (hết hở viền); nút nối dòng là 1/2/3 vạch ngang bằng nhau xếp chồng |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
@@ -384,6 +385,7 @@ Hàm chính: `openBlind`, `closeBlind`, `blindItems`, `blindAutoItems`, `blindLi
 | WORDS-1 | `961cf80` | Cửa sổ Words: dải tần suất, câu của từ, xoá/ẩn từ, bóng thiên thần |
 | WORDS-2 | `21c73f3` | Trang ngôn ngữ: mọi khối cách nhau 32px; From the web bỏ khung, tiêu đề như Waiting for you |
 | WORDS-3 | `68530e5` | List: dòng Similar/Opposite/Phrases có ✕ xoá; bóng xoá bọc đúng hàng và mang nội dung hàng bay đi |
+| WORDS-4 | `pending` | Similar/Opposite đổi thành Synonym/Antonym |
 
 Hàm chính: `openWords`, `closeWords`, `wordPopHtml`, `wordAct`, `hideWord`, `wordFly`.
 
