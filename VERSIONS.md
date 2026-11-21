@@ -39,6 +39,7 @@ Hàm chính: `isListenMode`, `listenBatch`, `startSequenceLoop`, `stopSequenceLo
 | SPEAK-12 | `8e2c0f1` | Sửa lỗi: danh sách từ bên phải tờ Speaking lặp một từ nhiều lần khi nhiều thẻ cùng lưu từ đó; giờ mỗi từ một lần |
 | SPEAK-13 | `1e5c337` | Số thứ tự danh sách từ: một cột rộng theo số dài nhất, căn phải theo dấu chấm, cách chữ 8px (10. trở đi không còn dính chữ) |
 | SPEAK-14 | `827abf4` | Notes trên tờ Speaking nhỏ hơn câu chính 2px: 18/26 (điện thoại 16/22) |
+| SPEAK-15 | `pending` | Bỏ mọi nút đọc TTS bên Lessons: không còn ▶ trước câu (☰ Full, Speaking) và 🔊 trong editor thẻ; video vẫn giữ ô thời gian |
 
 Hàm chính: `ieltsPaperHtml`, `ieltsFrontHtml`, `entryHidden`, `revealAction`, `render` (nhánh `groupViewStyle === "ielts"`). Cùng `ieltsHints`, `ieltsHintNext`, `ieltsHintId` (Hint).
 

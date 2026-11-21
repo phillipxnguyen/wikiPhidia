@@ -501,6 +501,7 @@ window.onYouTubeIframeAPIReady = function(){
   .ed-card > .ed-say{position:absolute;top:-9px;right:0;z-index:3;}
   .ed-card .edit-qa{display:block;margin:0;}
   .ed-card :is(#editQ, #vocabEditMain, #vocabEditTerm, #qaQ){min-height:0;margin:0;padding:0 44px 0 0;border:0;border-radius:0;background:none;box-shadow:none;outline:none;}
+  .ed-card #editQ{padding-right:0;}
   .ed-card :is(#editQ, #vocabEditMain, #vocabEditTerm, #qaQ):focus{border:0;box-shadow:none;}
   .ed-card #vocabEditMain .vem-t{font-size:28px;line-height:36px;font-weight:700;}
   .ed-card #vocabEditMain :is(.vem-t, .vem-a):empty::before{content:attr(data-placeholder);font-family:"Doto", system-ui, sans-serif;font-weight:800;color:var(--placeholder);}
@@ -9256,20 +9257,7 @@ function rowPlayBadge(r) {
     if (ytHasError) badgeClasses += " disabled";
     return `<span class="${badgeClasses}" data-id="${r.id}">${formatTime(r.time)}</span>`;
   }
-  return (r.q || "").trim() ? `<span class="loop-time say-ts" data-row="${r.id}" data-say="${escapeAttr(r.q)}" role="button" aria-label="Play this sentence">${SAY_ICONS}</span>` : "";
-}
-
-function toggleRowSay(row) {
-  const text = cleanForSpeech(row.q || ""), t = speechTrack;
-  if (t && !t.done && t.text === text && speechSynthesis.speaking) return stopAllSound();
-  if (groupState) return toggleRowPlay(row);
-  stopAllSound();
-  const utter = trackSpeech(new SpeechSynthesisUtterance(text));
-  utter.lang = resolveSpeechLang(text);
-  utter.rate = ttsSpeed;
-  const voice = pickVoice(utter.lang);
-  if (voice) utter.voice = voice;
-  speakSpeech(utter);
+  return "";
 }
 
 function cardFrontShowing(row) {
@@ -10519,12 +10507,7 @@ function handleCardAreaClick(e) {
   const cardBody = isSingleCard ? document.getElementById("singleCardBody") : container;
   if (e.target.closest(".loop-time")) {
     e.stopPropagation();
-    const sayEl = e.target.closest(".say-ts");
-    if (sayEl) {
-      const t = speechTrack;
-      if (!(t && !t.done && t.text === cleanForSpeech(row.q || "") && speechSynthesis.speaking)) soundWaitOn(sayEl);
-      toggleRowSay(row);
-    } else toggleRowPlay(row);
+    toggleRowPlay(row);
     return;
   }
   if (groupState && studyCardsHidden()) {
@@ -12465,10 +12448,8 @@ document.addEventListener("click", e => {
   if (!b) return;
   e.preventDefault();
   e.stopPropagation();
-  const row = b.dataset.edRow ? rows.find(r => r.id === Number(b.dataset.edRow)) || activeEdit && activeEdit.row : null;
-  if (row && row.time != null && cardClip(row)) return toggleRowPlay(row);
   soundWaitOn(b);
-  if (row) toggleRowSay(row); else ownDictSay(b.dataset.say);
+  ownDictSay(b.dataset.say);
 }, true);
 
 function wordAudioUrl(lang, w) {
@@ -13392,7 +13373,7 @@ function editTrHtml(row) {
 }
 
 function buildEditBoxInner(row) {
-  return `\n    <div class="od-card ed-card"><button type="button" class="od-say ed-say" data-ed-row="${row.id}" data-say="${escapeAttr(row.q || "")}" aria-label="Listen" title="Listen">${OD_SPEAK}</button><div class="edit-qa">\n      <div>\n        <div id="editQ" class="rich-editor${row.time == null ? "" : " yt-ph"}" contenteditable="true"${row.time == null ? ' data-placeholder="Question, then the Answer two lines below"' : ""} aria-label="Card">${row.time == null ? mergedCardEditHtml(row) : getEditInitialHtml(row.q, row.qHtml, row.id)}</div>\n      </div>\n      <div hidden>\n        <div id="editA" class="rich-editor" contenteditable="true">${getEditInitialHtml(row.a, row.aHtml, row.id)}</div>\n      </div>\n    </div>\n    ${editTrHtml(row)}<div class="notes-clip"><div id="editNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes">${alignMeanings(notesEditorHtml(row))}</div></div></div>\n    <div class="edit-actions">\n      <button id="editSave" class="primary">Save</button>\n    </div>\n    <div id="editDict"></div>\n  `;
+  return `\n    <div class="od-card ed-card"><div class="edit-qa">\n      <div>\n        <div id="editQ" class="rich-editor${row.time == null ? "" : " yt-ph"}" contenteditable="true"${row.time == null ? ' data-placeholder="Question, then the Answer two lines below"' : ""} aria-label="Card">${row.time == null ? mergedCardEditHtml(row) : getEditInitialHtml(row.q, row.qHtml, row.id)}</div>\n      </div>\n      <div hidden>\n        <div id="editA" class="rich-editor" contenteditable="true">${getEditInitialHtml(row.a, row.aHtml, row.id)}</div>\n      </div>\n    </div>\n    ${editTrHtml(row)}<div class="notes-clip"><div id="editNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes">${alignMeanings(notesEditorHtml(row))}</div></div></div>\n    <div class="edit-actions">\n      <button id="editSave" class="primary">Save</button>\n    </div>\n    <div id="editDict"></div>\n  `;
 }
 
 document.addEventListener("click", e => {
