@@ -367,6 +367,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-206 | `b3d051f` | Ô thẻ dùng chung một cách căn trước và sau khi tách Q/A: không còn dịch lên dù font máy khác; mọi dòng cách nhau 28px |
 | FLASH-207 | `4365087` | Màu editor thẻ về như cũ: tách Q/A thì câu hỏi chuyển xanh (biết đã sang Q/A), trả lời chữ thường; từ tra được về lại xanh lá |
 | FLASH-208 | `2bbf1bf` | Trong câu hỏi đã đổi màu, mọi từ cùng màu câu hỏi (y như Vocabulary), vẫn bấm tra được |
+| FLASH-209 | `pending` | Trong câu hỏi xanh, mọi từ (của bạn và tra được) hiện xanh lá |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
