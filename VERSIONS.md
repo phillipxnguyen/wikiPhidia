@@ -343,7 +343,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-182 | `79b45ff` | Swipe: thẻ đã lộ bên dưới luôn là thẻ hiện tiếp (không bị đổi sang thẻ đã dịch xong); editor: Return ở mọi ô (câu, ví dụ, bản dịch) là Save, ví dụ của định nghĩa lưu được, màu từ trong câu đúng như thẻ |
 | FLASH-183 | `e9a9f01` | Tự tải trước bản dịch cho cả phiên (8 câu một lượt, cả ví dụ của thẻ định nghĩa), lưu offline; thẻ chưa dịch xong chờ, thẻ có trước học trước |
 | FLASH-184 | `4ec4ad2` | Xoá bản dịch thì giữ trống (không tải lại, thẻ quay về câu đục lỗ); dòng note 📌 không còn bị coi là bản dịch; ô trống luôn hiện placeholder; ô dịch ghi Translation… |
-| FLASH-185 | `pending` | Bỏ hẳn mặt trước đục lỗ (câu, ví dụ, định nghĩa); thẻ chưa có bản dịch không bao giờ hiện, chờ thì chỉ hiện Translating… trên trang; bản dịch bị xoá thì hỏi bằng nghĩa |
+| FLASH-185 | `4d7b8d3` | Bỏ hẳn mặt trước đục lỗ (câu, ví dụ, định nghĩa); thẻ chưa có bản dịch không bao giờ hiện, chờ thì chỉ hiện Translating… trên trang; bản dịch bị xoá thì hỏi bằng nghĩa |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
