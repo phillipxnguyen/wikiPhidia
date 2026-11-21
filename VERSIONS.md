@@ -516,6 +516,7 @@ Hàm chính: `dictLoad`, `dictSlot`, `dictFit`, `showDictSite`, `hideDictOverlay
 | DATA-27 | `de174f9` | Ghi chú: mọi dòng (dòng xuống, nghĩa thêm, mục mới) cách đúng một giãn dòng, bỏ khoảng 6px thêm |
 | DATA-28 | `ca4bd69` | Notes: Shift+Return một lần là mục mới, hai lần liên tiếp là nghĩa tiếp theo trong cùng mục |
 | DATA-29 | `bd3e9a5` | Notes: Shift+Return tạo dòng cùng loại với dòng đang đứng, bấm thêm lần nữa thì đổi qua lại mục mới ↔ nghĩa tiếp |
+| DATA-30 | `pending` | ⚙️ Settings → 🧹 Clean up: dòng notes tự chép, thẻ rỗng, bản dịch lưu thừa, dung lượng; tải backup trước, Undo 1 phút; sửa lỗi coi câu ngữ cảnh riêng của từ là bản sao |
 
 Hàm chính: `newRow` (bản dịch vào notes khi tạo), `foldAnswer` + `keepsAnswer` (dòng thêm dưới câu khi sửa thẻ hoặc khi dán thì vào notes), `wordLike`, `belongsInVocab`, `isTranslationCard` (cho dòng `từ: nghĩa`), `autoSortLibrary`.
 

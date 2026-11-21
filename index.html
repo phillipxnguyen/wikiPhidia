@@ -18939,7 +18939,7 @@ function settingsPopHtml() {
   const books = `<label class="set-font set-switch"><span class="set-sample">📚</span><span class="set-meta"><b>Library</b></span><input type="checkbox" data-library-on${readLocal(LIBRARY_ON_KEY) === true ? " checked" : ""} aria-label="Show the Library"></label>`;
   const pixel = document.documentElement.classList.contains("pixel");
   const px = `<label class="set-font set-switch"><span class="set-sample">👾</span><span class="set-meta"><b>Pixel look</b></span><input type="checkbox" data-pixel-on${pixel ? " checked" : ""} aria-label="Pixel look"></label>`;
-  return `<div class="set-theme" role="group" aria-label="Theme">${theme}</div><div class="set-fonts">${px}</div><div class="set-fonts">${fonts}</div><div class="set-fonts">${books}</div><div class="set-tools"><button type="button" data-tools="replace">🔁 Find & replace</button><button type="button" data-tools="dups">👯 Duplicates</button></div>`;
+  return `<div class="set-theme" role="group" aria-label="Theme">${theme}</div><div class="set-fonts">${px}</div><div class="set-fonts">${fonts}</div><div class="set-fonts">${books}</div><div class="set-tools"><button type="button" data-tools="replace">🔁 Find & replace</button><button type="button" data-tools="dups">👯 Duplicates</button><button type="button" data-tools="clean">🧹 Clean up</button></div>`;
 }
 
 function tidyTools() {
@@ -19498,14 +19498,126 @@ window.addEventListener("keydown", e => {
 }, true);
 
 function toolPopHtml(tab) {
-  const tabs = `<div class="tool-tabs segmented"><button data-tool-tab="replace" class="${tab === "replace" ? "active" : ""}">Find & replace</button><button data-tool-tab="dups" class="${tab === "dups" ? "active" : ""}">Duplicates</button></div>`;
+  const tabs = `<div class="tool-tabs segmented"><button data-tool-tab="replace" class="${tab === "replace" ? "active" : ""}">Find & replace</button><button data-tool-tab="dups" class="${tab === "dups" ? "active" : ""}">Duplicates</button><button data-tool-tab="clean" class="${tab === "clean" ? "active" : ""}">Clean up</button></div>`;
+  if (tab === "clean") return tabs + cleanPopHtml();
   if (tab === "replace") return tabs + `<input id="toolFind" type="text" placeholder="Find" autocomplete="off"><input id="toolTo" type="text" placeholder="Replace with" autocomplete="off"><label class="tool-case"><input id="toolCase" type="checkbox"> Match case</label><div class="tool-foot"><span id="toolHits"></span><button id="toolGo" class="primary">Replace all</button></div>`;
   const groups = toolDupGroups();
   if (!groups.length) return tabs + '<p class="tool-empty">No duplicates.</p>';
   return tabs + `<div class="tool-dups">${groups.map((g, gi) => `<div class="tool-group"><div class="tool-group-head"><span>${g.length}×</span><button data-tool-keep="${gi}">Keep one</button></div>${g.map((x, xi) => `<div class="tool-item"><span><b>${escapeHtml(x.text)}</b>${x.sub ? `<i>${escapeHtml(x.sub)}</i>` : ""}</span><button data-tool-del="${gi}:${xi}" aria-label="Delete">✕</button></div>`).join("")}</div>`).join("")}</div>`;
 }
 
-let toolTab = "replace", toolGroups = [];
+let toolTab = "replace", toolGroups = [], cleanFound = null;
+
+function cleanScan() {
+  const homes = toolHomes(), notes = [], empty = [], blank = h => !plainTextOf(h || "", " ").trim();
+  homes.forEach(home => {
+    toolCardsOf(home).forEach(card => vocabEntriesOf(card).forEach(e => {
+      const item = Object.assign({
+        card: card
+      }, e), got = copiedNoteLines(item);
+      if (!got) return;
+      const kept = noteItemsOf(got.html).map(h => plainTextOf(h, " ").trim());
+      notes.push({
+        home: home,
+        card: card,
+        key: e.key,
+        got: got,
+        word: e.term,
+        lines: noteItemsOf(wordNotesOf(item)).map(h => plainTextOf(h, " ").trim()).filter(t => !kept.includes(t))
+      });
+    }));
+    home.cards.forEach(card => {
+      if (card.uid === EXTRA_UID || !blank(card.q) || !blank(card.a) || !blank(card.notesHtml || escapeHtml(card.notes || "")) || (card.parts || []).some(p => !blank(p.q) || !blank(p.a)) || card.vocab && Object.keys(card.vocab).length) return;
+      empty.push({
+        home: home,
+        card: card,
+        where: home.lesson ? home.lesson.name || "Untitled lesson" : document.getElementById("lessonName").value || "Untitled lesson"
+      });
+    });
+  });
+  const seen = new Set, walk = v => {
+    if (typeof v === "string") {
+      if (!v.trim() || v.length > 2e4) return;
+      const add = t => {
+        const k = oneLine(t || "").normalize("NFC");
+        if (k) seen.add(k);
+      };
+      add(v);
+      v.split(/\n+/).forEach(line => {
+        add(line);
+        splitIntoSentences(line).forEach(x => add(x.text));
+      });
+    } else if (Array.isArray(v)) v.forEach(walk); else if (v && typeof v === "object") Object.values(v).forEach(walk);
+  };
+  walk([ library, rows, vocabExtras ]);
+  const used = t => seen.has(oneLine(t).normalize("NFC"));
+  trOff("");
+  const mt = Object.keys(mtRead()).filter(k => !used(k)), off = Object.keys(trOffStore || {}).filter(k => !used(k));
+  return {
+    notes: notes,
+    empty: empty,
+    cache: mt.length + off.length,
+    mt: mt,
+    off: off,
+    dups: toolDupGroups().length
+  };
+}
+
+function cleanPopHtml() {
+  const f = cleanFound = cleanScan(), row = (k, title, n, list) => `<div class="tool-group"><label class="tool-group-head"><span><input type="checkbox" data-clean="${k}"${n ? " checked" : " disabled"}> ${title}</span><span>${n}</span></label>${list}</div>`;
+  const items = xs => xs.slice(0, 40).map(x => `<div class="tool-item"><span>${x}</span></div>`).join("") + (xs.length > 40 ? `<div class="tool-item"><span>… ${xs.length - 40} more</span></div>` : "");
+  const lines = f.notes.flatMap(x => x.lines.map(t => `<b>${escapeHtml(x.word)}</b>${escapeHtml(t)}`));
+  return `<p class="tool-empty" id="cleanSpace">Storage used: …</p>` + row("notes", "Note lines copied in by an older version (the card's sentence, its translation, a pronunciation)", lines.length, items(lines)) + row("empty", "Empty cards (no sentence, answer or notes)", f.empty.length, items(f.empty.map(x => escapeHtml(x.where)))) + row("cache", "Stored translations no card uses any more", f.cache, "") + `<div class="tool-group"><div class="tool-group-head"><span>Duplicate cards</span><span>${f.dups ? `<button data-tool-tab="dups">${f.dups} groups</button>` : "0"}</span></div></div><p class="tool-empty">A backup file is downloaded first; Undo also works for a minute.</p><button type="button" id="cleanGo" class="primary"${f.notes.length || f.empty.length || f.cache ? "" : " disabled"}>🧹 Clean up</button>`;
+}
+
+function cleanSpaceShow() {
+  const el = document.getElementById("cleanSpace");
+  if (!el || !navigator.storage || !navigator.storage.estimate) return el && el.remove();
+  navigator.storage.estimate().then(est => {
+    const mb = n => (n / 1048576).toFixed(1) + " MB";
+    el.textContent = "Storage used: " + mb(est.usage || 0) + (est.quota ? " of " + mb(est.quota) : "");
+  }).catch(() => el.remove());
+}
+
+async function cleanRun() {
+  const f = cleanFound;
+  if (!f) return;
+  const on = k => {
+    const box = document.querySelector(`#toolPop [data-clean="${k}"]`);
+    return !!box && box.checked;
+  };
+  const notes = on("notes") ? f.notes : [], empty = on("empty") ? f.empty : [], cache = on("cache");
+  if (!notes.length && !empty.length && !cache) return;
+  if (notes.length || empty.length) {
+    commitActiveEdit();
+    await flushAutoSave();
+    downloadJsonFile(backupText(), backupFileName().replace("-flashcards", "-before-cleanup-flashcards"));
+    const homes = [ ...new Set(notes.concat(empty).map(x => x.home)) ];
+    pushDeleteUndo("Cleaned up").others = toolBackup(homes);
+  }
+  let lines = 0;
+  notes.forEach(x => {
+    if (setWordNotes(x.card, x.key, x.got.html)) lines += x.got.count;
+  });
+  empty.forEach(x => {
+    const at = x.home.cards.indexOf(x.card);
+    if (at >= 0) x.home.cards.splice(at, 1);
+  });
+  [ ...new Set(notes.concat(empty).map(x => x.home)) ].forEach(toolSave);
+  if (cache) {
+    const st = mtRead();
+    f.mt.forEach(k => delete st[k]);
+    f.off.forEach(k => delete trOffStore[k]);
+    try {
+      localStorage.setItem(MT_KEY, JSON.stringify(st));
+      localStorage.setItem(TR_OFF_KEY, JSON.stringify(trOffStore));
+    } catch (e) {}
+  }
+  toolRefresh();
+  const said = [ lines && countOf(lines, "note line"), empty.length && countOf(empty.length, "empty card"), cache && f.cache && countOf(f.cache, "stored translation") ].filter(Boolean);
+  showToast(said.length ? "Removed " + said.join(", ") : "Nothing to clean");
+  openTools("clean");
+}
 
 function openTools(tab) {
   if (!tidyTools()) return showToast("Leave the task first");
@@ -19516,6 +19628,7 @@ function openTools(tab) {
   pop.hidden = false;
   toolGroups = toolTab === "dups" ? toolDupGroups() : [];
   pop.querySelector(".tool-box").innerHTML = toolPopHtml(toolTab);
+  if (toolTab === "clean") cleanSpaceShow();
 }
 
 function closeTools() {
@@ -19540,6 +19653,7 @@ document.getElementById("toolPop").addEventListener("click", e => {
   if (e.target.id === "toolPop") return closeTools();
   const t = e.target.closest("[data-tool-tab]");
   if (t) return openTools(t.dataset.toolTab);
+  if (e.target.closest("#cleanGo")) return cleanRun();
   const go = e.target.closest("#toolGo");
   if (go) {
     const n = toolReplaceAll(document.getElementById("toolFind").value, document.getElementById("toolTo").value, document.getElementById("toolCase").checked);
@@ -21053,11 +21167,12 @@ const NOTES_CLEAN_KEY = "flashcards.notesClean1";
 
 function copiedNoteLines(item) {
   const card = item.card, flat = t => oneLine(t || "").normalize("NFC").toLowerCase().replace(/[\s"'“”‘’.,!?;:…—–-]+/g, " ").trim();
+  if (card.uid === EXTRA_UID || !(card.q || "").trim()) return null;
   const items = noteItemsOf(wordNotesOf(item));
   if (!items.length) return null;
-  const sentence = vocabContext(item).sentence || "";
-  const texts = [ card.q, card.a, sentence ].concat((card.parts || []).flatMap(p => [ p.q, p.a ])).filter(Boolean);
+  const texts = [ card.q, card.a ].concat((card.parts || []).flatMap(p => [ p.q, p.a ])).filter(Boolean);
   const pieces = new Set(texts.flatMap(t => [ t ].concat(String(t).split(/\n+/), splitIntoSentences(String(t)).map(x => x.text))).map(flat).filter(Boolean)), all = flat(texts.join(" "));
+  const ctx = vocabContext(item).sentence || "", sentence = ctx && all.includes(flat(ctx)) ? ctx : "";
   const trs = [ machineTr(sentence), machineTr(oneLine(sentence)), card.a, card.mt, rowMt(card) ].map(flat).filter(Boolean);
   const ipa = t => {
     const x = t.replace(/\b(UK|US|BrE|AmE)\b/g, " ").replace(/[\/\[\]]/g, " ").trim();
