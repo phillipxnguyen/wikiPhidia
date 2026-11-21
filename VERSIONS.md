@@ -348,6 +348,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-187 | `b331132` | Bản dịch câu trên thẻ (mặt trước và dưới câu ở mặt sau) cũng dùng VT323 như trong editor |
 | FLASH-188 | `222890c` | Nghĩa của từ luôn màu cam đất ở mọi chỗ (thẻ, editor, popup, List), tách khỏi màu xanh của bản dịch |
 | FLASH-189 | `d51fca1` | Bản dịch câu (thẻ và editor) đổi từ VT323 sang Handjet, pixel mảnh dễ đọc hơn |
+| FLASH-190 | `pending` | Bỏ font riêng: bản dịch câu (thẻ và editor) cùng kiểu chữ với câu ở trên |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
