@@ -2443,10 +2443,6 @@ window.onYouTubeIframeAPIReady = function(){
   .w-row .w-ruby > .w-t{align-self:center;margin-bottom:0;}
   .w-listbox{position:relative;min-height:0;}
   .w-list{position:absolute;inset:0;overflow:auto;overscroll-behavior:contain;border-radius:12px;}
-  .w-sign{position:absolute;top:8px;right:8px;display:flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:10px;font-size:12px;line-height:1;font-weight:700;color:#fff;}
-  .w-row:has(> .w-sign){padding-right:36px;}
-  .w-sign.good{background:#1f9d55;}
-  .w-sign.again{background:#d64545;}
   .w-row{position:relative;display:block;padding:16px;border-bottom:1px solid var(--tw-line);color:var(--tw-dim);cursor:pointer;}
   .w-row .w-text{font-size:16px;line-height:24px;font-weight:400;color:inherit;}
   .w-row .w-py{font-size:14px;line-height:20px;font-weight:400;color:#b8a066;}
@@ -2468,6 +2464,8 @@ window.onYouTubeIframeAPIReady = function(){
   .w-row[data-st="new"] .w-t{box-shadow:inset 0 0 0 2px #7cb8ff;}
   .w-row[data-st="due"] .w-t{box-shadow:inset 0 0 0 2px #ffb35c;}
   .w-row[data-st="done"] .w-t{box-shadow:inset 0 0 0 2px #6fd18f;}
+  .w-row.graded-good .w-t{background:#1f9d55;box-shadow:none;color:#fff;}
+  .w-row.graded-again .w-t{background:#d64545;box-shadow:none;color:#fff;}
   .w-empty{padding:24px 16px;font-size:15px;line-height:22px;color:var(--tw-dim);text-align:center;}
   .watch-pop mark{background:none;color:inherit;}
   .watch-pop mark.vocab-hit{color:#7fd6a3;}
@@ -4292,8 +4290,8 @@ function paintWatchList() {
       watch.rowHtml.set(r.id, html);
     }
     const ts = `<span class="w-t">${fmtTime(r.time)}<svg class="w-ring" aria-hidden="true"><path pathLength="100"/></svg></span>`;
-    const sign = graded.has(r.id) ? watch.again && watch.again.has(r.id) ? '<span class="w-sign again" aria-label="Again">✕</span>' : '<span class="w-sign good" aria-label="Good">✓</span>' : "";
-    return `<div class="w-row${r.id === watch.extraId ? " extra" : ""}" data-i="${i}" data-id="${r.id}">${sign}${html.includes('<div class="w-py">') ? html.replace('<div class="w-py">', '<div class="w-py">' + ts) : html.replace(/<div class="w-text( w-ruby)?">/, m => m + ts)}</div>`;
+    const mark = graded.has(r.id) ? watch.again && watch.again.has(r.id) ? " graded-again" : " graded-good" : "";
+    return `<div class="w-row${r.id === watch.extraId ? " extra" : ""}${mark}" data-i="${i}" data-id="${r.id}">${html.includes('<div class="w-py">') ? html.replace('<div class="w-py">', '<div class="w-py">' + ts) : html.replace(/<div class="w-text( w-ruby)?">/, m => m + ts)}</div>`;
   }).join("");
   const keep = lb.querySelector(".w-list") ? lb.querySelector(".w-list").scrollTop : 0;
   lb.innerHTML = `<div class="w-list">${items || '<div class="w-empty">Nothing left to study in this video today. It still plays; what you answered Again comes back here when it is due.</div>'}</div>`;
