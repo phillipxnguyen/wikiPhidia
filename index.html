@@ -494,8 +494,6 @@ window.onYouTubeIframeAPIReady = function(){
   .ed-card .q-mirror .q-line{color:var(--text);}
   .ed-card .q-mirror mark.vocab-own{color:var(--vocab-own-ink);}
   .ed-card .q-mirror mark.vocab-own .q-line{color:var(--vocab-own-ink);}
-  .ed-card .edit-qa:not(:has(+ .ed-tr)) #editQ.q-whole:not(.yt-ph):not(:empty)::after, .ed-card .edit-qa:not(:has(+ .ed-tr)) .q-wrap:has(> #editQ.q-whole:not(.yt-ph):not(:empty)) > .q-mirror::after{content:"Answer";display:block;margin-top:4px;font-family:"Doto", system-ui, sans-serif;font-size:18px;line-height:26px;font-weight:800;color:transparent;pointer-events:none;}
-  .ed-card .edit-qa:not(:has(+ .ed-tr)) .q-wrap:has(> #editQ.q-whole:not(.yt-ph):not(:empty)) > .q-mirror::after{color:var(--placeholder);}
   .ed-card .q-mirror mark.vocab-hit, .ed-card .q-mirror mark.vocab-hit .q-line{color:var(--vocab-ink);}
   .ed-card #editQ{color:var(--text);}
   .ed-card :is(#editQ, #qaQ, .q-mirror){font-size:20px;line-height:28px;font-weight:400;}
@@ -13064,7 +13062,7 @@ function notesEditorHtml(row) {
 
 function commitActiveEdit(keep) {
   if (!activeEdit) return;
-  const merged = splitMergedCardHtml(stripVocabHighlights(activeEdit.editQ.innerHTML));
+  const merged = activeEdit.row.time == null ? splitMergedCardHtml(stripVocabHighlights(activeEdit.editQ.innerHTML)) : null;
   let newQHtml = cleanPunctHtml(sanitizeHtml(merged ? merged.q : stripVocabHighlights(editorHtml(activeEdit.editQ)), "br"));
   let newQ = cleanPunct(plainTextOf(newQHtml, "\n"));
   let newAHtml = cleanPunctHtml(sanitizeHtml(merged ? merged.a : stripVocabHighlights(editorHtml(activeEdit.editA)), "br"));
@@ -13260,7 +13258,7 @@ function qRuleText(t) {
 
 document.addEventListener("input", e => {
   const el = e.target;
-  if (e.isComposing || !el.matches || !el.matches("#qaQ, #vocabEditTerm, #editQ")) return;
+  if (e.isComposing || !el.matches || !el.matches("#qaQ, #vocabEditTerm, #editQ") || el.id === "editQ" && activeEdit && activeEdit.row.time != null) return;
   if (el.tagName === "TEXTAREA") {
     const was = el.selectionStart, next = qRuleText(el.value);
     if (!next) return;
@@ -13435,13 +13433,13 @@ window.addEventListener("blur", () => {
 });
 
 function editTrHtml(row) {
-  const tr = rowTr(row);
+  const tr = row.time == null ? "" : hasAnswer(row) ? oneLine(row.a || "") : rowTr(row);
   if (!tr && row.time != null && (row.q || "").trim() && !hasAnswer(row)) mtFill([ row ]);
   return tr ? `<div class="ed-tr">${escapeHtml(tr)}</div>` : "";
 }
 
 function buildEditBoxInner(row) {
-  return `\n    <div class="od-card ed-card"><button type="button" class="od-say ed-say" data-ed-row="${row.id}" data-say="${escapeAttr(row.q || "")}" aria-label="Listen" title="Listen">${OD_SPEAK}</button><div class="edit-qa">\n      <div>\n        <div id="editQ" class="rich-editor${row.time == null ? "" : " yt-ph"}" contenteditable="true"${row.time == null ? ' data-placeholder="Question, then the Answer two lines below"' : ""} aria-label="Card">${mergedCardEditHtml(row)}</div>\n      </div>\n      <div hidden>\n        <div id="editA" class="rich-editor" contenteditable="true">${getEditInitialHtml(row.a, row.aHtml, row.id)}</div>\n      </div>\n    </div>\n    ${editTrHtml(row)}<div class="notes-clip"><div id="editNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes">${alignMeanings(notesEditorHtml(row))}</div></div></div>\n    <div class="edit-actions">\n      <button id="editSave" class="primary">Save</button>\n    </div>\n    <div id="editDict"></div>\n  `;
+  return `\n    <div class="od-card ed-card"><button type="button" class="od-say ed-say" data-ed-row="${row.id}" data-say="${escapeAttr(row.q || "")}" aria-label="Listen" title="Listen">${OD_SPEAK}</button><div class="edit-qa">\n      <div>\n        <div id="editQ" class="rich-editor${row.time == null ? "" : " yt-ph"}" contenteditable="true"${row.time == null ? ' data-placeholder="Question, then the Answer two lines below"' : ""} aria-label="Card">${row.time == null ? mergedCardEditHtml(row) : getEditInitialHtml(row.q, row.qHtml, row.id)}</div>\n      </div>\n      <div hidden>\n        <div id="editA" class="rich-editor" contenteditable="true">${getEditInitialHtml(row.a, row.aHtml, row.id)}</div>\n      </div>\n    </div>\n    ${editTrHtml(row)}<div class="notes-clip"><div id="editNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes">${alignMeanings(notesEditorHtml(row))}</div></div></div>\n    <div class="edit-actions">\n      <button id="editSave" class="primary">Save</button>\n    </div>\n    <div id="editDict"></div>\n  `;
 }
 
 document.addEventListener("click", e => {
@@ -13887,7 +13885,10 @@ function wireEditBox(host, row) {
   activeEdit.originalA = plainTextOf(editA.innerHTML, "\n");
   activeEdit.originalAHtml = sanitizeHtml(stripVocabHighlights(editorHtml(editA)), "br");
   {
-    const parts = splitMergedCardHtml(stripVocabHighlights(editQ.innerHTML));
+    const parts = row.time == null ? splitMergedCardHtml(stripVocabHighlights(editQ.innerHTML)) : {
+      q: stripVocabHighlights(editorHtml(editQ)),
+      a: stripVocabHighlights(editorHtml(editA))
+    };
     activeEdit.originalQHtml = cleanPunctHtml(sanitizeHtml(parts.q, "br"));
     activeEdit.originalQ = cleanPunct(plainTextOf(activeEdit.originalQHtml, "\n"));
     activeEdit.originalAHtml = cleanPunctHtml(sanitizeHtml(parts.a, "br"));
