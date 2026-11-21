@@ -2771,8 +2771,6 @@ window.onYouTubeIframeAPIReady = function(){
   .set-tools button{flex:1;}
   .today-new{color:var(--new-color);font-weight:600;}
   .today-due{color:var(--due-color);font-weight:600;}
-  .under-done{display:flex;align-items:center;justify-content:center;box-sizing:border-box;width:100%;height:100%;min-height:200px;font-size:20px;line-height:28px;font-weight:700;color:var(--text-2);}
-  .vocab-deck > .under-done{position:absolute;inset:0 0 16px;}
   .stats-title{font-size:24px;font-weight:700;letter-spacing:-.015em;margin:4px 0 18px;}
   .both-modes{width:fit-content;background:var(--blend);-webkit-background-clip:text;background-clip:text;color:transparent;}
   .lesson-totals{display:flex;gap:16px;-webkit-user-select:none;user-select:none;font-size:14px;color:var(--text-2);font-variant-numeric:tabular-nums;}
@@ -14688,7 +14686,7 @@ function dragMove(clientX, clientY) {
     } catch (err) {}
     getSelection().removeAllRanges();
     hideTooltip();
-    drag.restore = taskRun && taskModeChanges() && taskPeek() || (drag.vocab ? hideUnderSwipe(drag.parts) : showNextUnderSwipe());
+    drag.restore = hideUnderSwipe(drag.vocab ? drag.parts : Array.from(document.getElementById("singleCardBody").children));
   }
   drag.dx = dx;
   const again = dx < 0;
@@ -14715,17 +14713,6 @@ function vocabDragStart(e) {
 
 function hideUnderSwipe(parts) {
   const el = parts[0];
-  if (el && el.id === "vocabCard") {
-    const pending = document.querySelector(".vocab-deck > .vocab-card.pending");
-    el.style.visibility = "hidden";
-    el.style.opacity = "0";
-    if (pending) pending.style.opacity = "1"; else el.insertAdjacentHTML("afterend", underDoneHtml());
-    return () => {
-      el.style.visibility = "";
-      el.style.opacity = "";
-      if (pending) pending.style.opacity = ""; else el.parentElement && el.parentElement.querySelectorAll(":scope > .under-done").forEach(x => x.remove());
-    };
-  }
   const prop = el && el.tagName === "TR" ? "display" : "visibility";
   const saved = parts.map(el => [ el, el.style[prop], el.style.opacity ]);
   parts.forEach(el => {
@@ -14736,22 +14723,6 @@ function hideUnderSwipe(parts) {
     el.style[prop] = v;
     el.style.opacity = o;
   });
-}
-
-function showNextUnderSwipe() {
-  const entryCopy = r => Object.assign({}, r, {
-    qHidden: entryHidden(r).q,
-    aHidden: entryHidden(r).a
-  });
-  const next = (taskRun && taskRun.queue ? [ taskNextRow() ].filter(Boolean) : singleCardQueue().slice(1, 2)).map(entryCopy)[0];
-  const body = document.getElementById("singleCardBody");
-  Array.from(body.children).forEach(el => el.style.display = "none");
-  body.insertAdjacentHTML("beforeend", next ? ieltsPaperHtml(next) : underDoneHtml());
-  return () => {};
-}
-
-function underDoneHtml() {
-  return `<div class="under-done">${taskRun ? "✓ Task done" : "🎉 All caught up!"}</div>`;
 }
 
 function endDrag(e) {
@@ -25295,7 +25266,6 @@ async function finishTask(run) {
       queue: [],
       current: null,
       opening: false,
-      peeking: false
     }),
     side: appMode === "vocab" ? "v" : "c",
     undo: undoStack.slice(),
@@ -25333,32 +25303,6 @@ function taskShowPick(run, pick) {
   return !!item;
 }
 
-function taskPeek() {
-  const run = taskRun, now = run && run.current, next = taskUpNext();
-  if (!now || !next || run.opening) return null;
-  const flipped = !!(vocabSession && vocabSession.flipped);
-  const row = now.k === "c" && rows.find(r => r.uid === now.id);
-  const hid = row ? [ row.qHidden, row.aHidden ] : null;
-  run.peeking = true;
-  taskShowPick(run, next);
-  return () => {
-    run.peeking = false;
-    if (taskRun !== run) return;
-    taskShowPick(run, now);
-    if (now.k === "v" && vocabSession) {
-      vocabSession.flipped = flipped;
-      renderVocab();
-    } else {
-      const back = rows.find(r => r.uid === now.id);
-      if (back && hid) {
-        [ back.qHidden, back.aHidden ] = hid;
-        render();
-      }
-    }
-    paintTaskBadges();
-  };
-}
-
 function taskUpNext() {
   const queue = taskRun && taskRun.queue;
   return queue && queue.find(taskShowable) || null;
@@ -25392,7 +25336,7 @@ function taskShowable(pick) {
 
 function taskRefresh() {
   const run = taskRun, l = run && run.queue && library.find(x => x.id === run.lessonId);
-  if (!l || run.opening || run.peeking || drag) return;
+  if (!l || run.opening || drag) return;
   flushAutoSave();
   const lc = leftToday(l, "cards"), lv = leftToday(l, "vocab");
   const has = (k, id) => run.current && run.current.k === k && run.current.id === id || run.queue.some(q => q.k === k && q.id === id);
