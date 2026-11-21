@@ -373,6 +373,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-208 | `2bbf1bf` | Trong câu hỏi đã đổi màu, mọi từ cùng màu câu hỏi (y như Vocabulary), vẫn bấm tra được |
 | FLASH-209 | `d2863cb` | Trong câu hỏi xanh, mọi từ (của bạn và tra được) hiện xanh lá |
 | FLASH-210 | `6d7c3df` | Sửa lỗi: chữ hiển thị trong ô ＋ và ô từ Vocabulary bị lệch lên so với con trỏ/bôi đen (cách căn của ô thẻ lan sang) |
+| FLASH-211 | `pending` | Bỏ 7 font thẻ quá nghiêng, khó đọc: Sriracha, Pacifico, Lobster, Dancing Script, Charm, Sedgwick Ave, Mynerve |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
