@@ -273,7 +273,7 @@ Only YouTube gives a lesson video times; any other link changes nothing, so a le
 
 **The line over the video is a study line like any other.** Clicking it never pauses or plays the video: you can select part of it (Shift makes a word of the selection), click a coloured word to look it up, point at it to act on it with E, Delete or ⌘C; on a phone, tapping it selects it (copy and ✕ act on it) and two quick taps edit it. Only the video itself (above the line) plays and pauses on a computer.
 
-**A blank is a plain line.** Wherever a word is cut out of a sentence (only the Speaking paper in Lessons; flashcards never have one), the blank is a thin, quiet underline (2 px, in a softened ink, square ends), never a thick rounded bar. **A blank fits what it shows.** While the word's meaning sits in the blank (the front), the blank is as wide as that meaning and no wider; once the word shows (Show, the back), it is as wide as the word. Front and back need not match. Without a meaning in it, on the Speaking paper, a sentence with one word cut out keeps that word's room: the blank is as wide as the word itself (an underline under the hidden word), so on Show the word simply appears in the blank, marked, and nothing else on the line moves, wraps or changes size.
+**No word is ever cut out.** No sentence anywhere has a blank: the Speaking paper shows a card's sentence whole, as the old Speaking did (the question, Hint, then Show), never a sentence with one word cut out or only its key word, and the flashcards never have one either.
 
 **A card is its own bundle.** A flashcard never takes its question from another lesson, a dictionary example or a word's synonyms; the same word saved in another lesson is a card of its own there.
 

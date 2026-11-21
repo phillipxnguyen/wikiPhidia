@@ -693,13 +693,9 @@ window.onYouTubeIframeAPIReady = function(){
   .vocab-card[data-look] .vocab-front > .vocab-term{position:relative;box-sizing:border-box;font-family:var(--tf);font-weight:var(--tw);font-style:var(--ts);text-transform:var(--tt);letter-spacing:var(--tk);font-size:var(--tz);line-height:var(--tl);}
   .vocab-card[data-look] .vocab-front > .vocab-term.word{font-weight:var(--tw);}
   .vocab-card:is([data-ex="cloze"], [data-ex="other"]) .vocab-front > .vocab-term{max-width:min(900px, 100%);font-size:var(--bz);line-height:var(--bl);text-transform:none;letter-spacing:0;}
-  .ielts-paper .paper-key{font-size:40px;line-height:48px;font-weight:700;text-align:center;}
   .cloze-gap{display:inline-block;width:calc(var(--gap) * 1ch);height:1em;margin:0 4px;vertical-align:-4px;border-bottom:2px solid currentColor;opacity:.55;}
   .vocab-card.fill .cloze-gap{width:auto;height:auto;margin:0;padding:0 2px;vertical-align:baseline;border-bottom:0;border-radius:0;box-shadow:inset 0 -2px 0 color-mix(in srgb, currentColor 55%, transparent);opacity:1;}
   .vocab-card.fill .cloze-word{visibility:hidden;}
-  .cloze-gap.blank-fill{width:auto;height:auto;margin:0;padding:0 2px;vertical-align:baseline;border-bottom:0;border-radius:0;box-shadow:inset 0 -2px 0 color-mix(in srgb, currentColor 55%, transparent);opacity:1;}
-  .cloze-gap.blank-fill:not(.open) .cloze-word{visibility:hidden;}
-  .cloze-gap.blank-fill.open{box-shadow:none;background:var(--word-mark);}
   .cloze-gap:has(> .cloze-hint){display:inline-grid;justify-items:center;align-items:baseline;width:auto;}
   .cloze-gap > :is(.cloze-word, .cloze-hint){grid-area:1 / 1;}
   .cloze-hint{padding:0 4px;white-space:nowrap;font-family:inherit;font-size:inherit;font-weight:600;font-style:inherit;letter-spacing:inherit;color:var(--a-text);pointer-events:none;}
@@ -8080,7 +8076,7 @@ function refreshBadges() {
 function entryHidden(row) {
   if (row && !hasAnswer(row)) return {
     q: false,
-    a: !!(row.notes || "").trim() || sentenceEx(row).kind !== "plain"
+    a: !!(row.notes || "").trim()
   };
   return {
     q: false,
@@ -9137,53 +9133,7 @@ function cardWords(row) {
   return lessonVocabItems(vocabSource()).filter(i => termInText(i.term, text));
 }
 
-const sentenceExMemo = new WeakMap;
-
-function sentenceKeyWord(row) {
-  const q = (row.q || "").normalize("NFC");
-  const own = cardWords(row).map(i => i.term).filter(t => findTermIn(q, t)).sort((a, b) => b.length - a.length)[0];
-  if (own) return own;
-  let seg = null;
-  try {
-    seg = cutWords(q, detectLang(q));
-  } catch (e) {}
-  if (!seg) return "";
-  const words = seg.filter(x => x.isWordLike && x.segment.length >= ([ ...x.segment ].some(ch => CJK_CHAR_RE.test(ch)) ? 2 : 4)).map(x => x.segment);
-  return words.length ? words[Math.floor(Math.random() * words.length)] : "";
-}
-
-function sentenceEx(row) {
-  const st = srsOf(row), memo = sentenceExMemo.get(row);
-  if (memo && memo.reps === st.reps && memo.q === row.q) return memo;
-  const word = sentenceKeyWord(row), span = word ? findTermIn((row.q || "").normalize("NFC"), word) : null;
-  const kind = span ? [ "blank", "blank", "recall" ][Math.floor(Math.random() * 3)] : "plain";
-  const out = {
-    reps: st.reps,
-    q: row.q,
-    kind: kind,
-    word: word,
-    span: span
-  };
-  sentenceExMemo.set(row, out);
-  return out;
-}
-
-function blankHint(row, word) {
-  const key = normalizeVocabText(word), own = vocabEntriesOf(row).find(e => e.tkey === key);
-  if (own) return own.meaning;
-  const lang = detectLang(word).split("-")[0], e = ownDictEntry(lang, word);
-  if (!e && navigator.onLine) ownDictFetch(lang, word);
-  return e ? e.m : "";
-}
-
-function sentenceBlankHtml(q, ex, open, row) {
-  return `<div class="cell shown paper-lines" data-field="q">${escapeHtml(q.slice(0, ex.span[0]))}<span class="cloze-gap blank-fill${open ? " open" : ""}"><span class="cloze-word">${escapeHtml(q.slice(ex.span[0], ex.span[1]))}</span>${open || !row ? "" : clozeHintHtml(blankHint(row, q.slice(ex.span[0], ex.span[1])))}</span>${escapeHtml(q.slice(ex.span[1]))}</div>`;
-}
-
 function ieltsFrontHtml(row) {
-  const ex = sentenceEx(row), q = (row.q || "").normalize("NFC");
-  if (ex.kind === "blank") return sentenceBlankHtml(q, ex, false, row);
-  if (ex.kind === "recall") return `<div class="cell shown paper-lines paper-key" data-field="q">${escapeHtml(q.slice(ex.span[0], ex.span[1]))}</div>`;
   return `<div class="cell shown paper-lines" data-field="q">${qCellContent(row)}</div>`;
 }
 
@@ -9212,7 +9162,7 @@ function ieltsPaperHtml(row) {
   const list = words.length ? "<ol>" + words.map((i, n) => `<li><span class="pn">${n + 1}.</span><b>${escapeHtml(i.term)}</b>${i.meaning ? " — " + meaningHtml(i.meaning) : ""}</li>`).join("") + "</ol>" : own;
   const notes = list ? `<aside class="paper-notes">${list}</aside>` : "";
   const extras = "";
-  if (!hasAnswer(row)) return `<article class="ielts-paper top-rings${notes ? " with-notes" : ""}"><div class="paper-body"><div class="paper-main"><div class="paper-answer">${row.aHidden ? ieltsFrontHtml(row) : sentenceEx(row).kind === "blank" ? sentenceBlankHtml((row.q || "").normalize("NFC"), sentenceEx(row), true) : `<div class="cell shown paper-lines" data-field="q">${qCellContent(row)}</div>`}</div></div>${notes}</div>` + extras + "</article>";
+  if (!hasAnswer(row)) return `<article class="ielts-paper top-rings${notes ? " with-notes" : ""}"><div class="paper-body"><div class="paper-main"><div class="paper-answer">${ieltsFrontHtml(row)}</div></div>${notes}</div>` + extras + "</article>";
   return `<article class="ielts-paper${notes ? " with-notes" : ""}">` + '<div class="paper-body"><div class="paper-main">' + `<div class="paper-question"><div class="cell shown" data-field="q">${qCellContent(row)}</div></div>` + `<div class="paper-answer">${answer}</div>` + `</div>${notes}</div>` + extras + "</article>";
 }
 
