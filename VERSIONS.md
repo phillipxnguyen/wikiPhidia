@@ -347,6 +347,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-186 | `88e0db7` | README: bỏ mọi mô tả thẻ đục lỗ của flashcard (còn lại chỉ Speaking bên Lessons) |
 | FLASH-187 | `b331132` | Bản dịch câu trên thẻ (mặt trước và dưới câu ở mặt sau) cũng dùng VT323 như trong editor |
 | FLASH-188 | `222890c` | Nghĩa của từ luôn màu cam đất ở mọi chỗ (thẻ, editor, popup, List), tách khỏi màu xanh của bản dịch |
+| FLASH-189 | `pending` | Bản dịch câu (thẻ và editor) đổi từ VT323 sang Handjet, pixel mảnh dễ đọc hơn |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
