@@ -161,6 +161,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-100 | `c1b115a` | Phím M: ☰ Full → Interpreter → Watch → ☰ Full |
 | THEATER-101 | `c32a7f7` | Watch: chấm điểm/xoá chỉ tác động lên đúng câu (nháy màu dòng, ô thời gian bật màu; xoá thành bóng ma có cánh), không quét cả màn hình |
 | THEATER-102 | `8b5fcbc` | Watch: khung phụ đề trên video cũng nháy xanh/đỏ khi chấm điểm |
+| THEATER-103 | `pending` | Watch: chấm điểm làm viền khung video sáng xanh/đỏ (thay cho hộp phụ đề) |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
