@@ -344,7 +344,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-183 | `e9a9f01` | Tự tải trước bản dịch cho cả phiên (8 câu một lượt, cả ví dụ của thẻ định nghĩa), lưu offline; thẻ chưa dịch xong chờ, thẻ có trước học trước |
 | FLASH-184 | `4ec4ad2` | Xoá bản dịch thì giữ trống (không tải lại, thẻ quay về câu đục lỗ); dòng note 📌 không còn bị coi là bản dịch; ô trống luôn hiện placeholder; ô dịch ghi Translation… |
 | FLASH-185 | `4d7b8d3` | Bỏ hẳn mặt trước đục lỗ (câu, ví dụ, định nghĩa); thẻ chưa có bản dịch không bao giờ hiện, chờ thì chỉ hiện Translating… trên trang; bản dịch bị xoá thì hỏi bằng nghĩa |
-| FLASH-186 | `pending` | README: bỏ mọi mô tả thẻ đục lỗ của flashcard (còn lại chỉ Speaking bên Lessons) |
+| FLASH-186 | `88e0db7` | README: bỏ mọi mô tả thẻ đục lỗ của flashcard (còn lại chỉ Speaking bên Lessons) |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
@@ -738,7 +738,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-89 | `9121634` | Popup từ: mỗi câu ví dụ nằm trong ô nền nhạt (12px trong, bo 12, cách 8), đáy popup không còn sát chữ |
 | LOOKUP-90 | `832f81c` | Ô câu ví dụ trong popup: nền xanh xám rõ hơn |
 | LOOKUP-91 | `68530e5` | Editor của từ: pill nghĩa của máy dịch theo từ loại để chọn/bỏ nghĩa; ô nghĩa tự gõ có placeholder kính lúp |
-| LOOKUP-92 | `pending` | Editor: bản dịch câu dùng font pixel VT323 có đủ dấu tiếng Việt (22px) |
+| LOOKUP-92 | `88e0db7` | Editor: bản dịch câu dùng font pixel VT323 có đủ dấu tiếng Việt (22px) |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
