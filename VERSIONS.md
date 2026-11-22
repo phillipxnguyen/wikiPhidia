@@ -390,6 +390,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-213 | `69bc0bb` | Chọn font: mỗi font một ô vuông nhỏ một chữ, một hàng, trỏ vào hiện tên |
 | FLASH-214 | `5ba9106` | Settings: bỏ dòng Chinese/Korean/Japanese, ba hàng ô một chữ hiện luôn, bấm là chọn |
 | FLASH-215 | `d63db9b` | Nghĩa chính dưới chữ to (editor từ, popup từ) theo màu chủ đề: xanh dương ở Lessons, xanh lá ở Vocabulary |
+| FLASH-216 | `pending` | Ô trống có gợi ý: con trỏ cao đúng bằng chữ gợi ý (không còn dài ngoằng), mọi ô; thanh Notes chuyển ra khung ngoài |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
