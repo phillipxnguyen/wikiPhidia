@@ -36,7 +36,7 @@ A browser only updates an extension fully by itself when it comes from the Chrom
 
 ## Making cards from a page
 
-**📝 Make cards from this page** in the popup (or the page's right-click menu) reads the page and lists the cards it can make, in a small box in the bottom right corner, one card under another (menus, headers and footers are left out, and so are headings and lines in Vietnamese only):
+**📝 Make cards from this page** in the popup (or the page's right-click menu) reads the page and lists the cards it can make, in a small box in the bottom right corner, one card under another (menus, headers and footers are left out, and so are headings and lines in Vietnamese only; text is read from paragraphs, list items and table rows, and also from plain boxes that hold only text, as sites like sentence dictionaries put one example per box):
 
 - a phrase with its meaning (a table row such as *an important caveat | một lưu ý quan trọng*, or a list line such as *With one caveat: với một điều kiện cần lưu ý*) becomes a word card, the phrase with that meaning, as if you had saved it yourself; a phrase that is only a word you already have (*A caveat*) is left out;
 - a sentence holding a word you already have (and a meaning for) becomes that word's card in that sentence, as when you select the word in a sentence and save it: the word with its meaning, the sentence, and the translation when the page gives it on the next line (it is the card's answer). Its meaning is the one you gave the word; a sentence the lesson already has is not added twice.

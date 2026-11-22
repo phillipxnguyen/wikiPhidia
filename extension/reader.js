@@ -1068,7 +1068,7 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
   }
   function pageItems() {
     const scope = document.querySelector("article, main, [role=main]") || document.body, out = [];
-    const blocks = [ ...scope.querySelectorAll("p, li, h1, h2, h3, h4, h5, h6, blockquote, tr, dd, figcaption") ].filter(el => !el.closest("nav, header, footer, aside, form, wkp-reader") && !el.querySelector("p, li, tr") && el.getClientRects().length);
+    const blocks = [ ...scope.querySelectorAll("p, li, h1, h2, h3, h4, h5, h6, blockquote, tr, dd, figcaption, div") ].filter(el => !el.closest("nav, header, footer, aside, form, wkp-reader") && !el.querySelector("p, li, tr, div, ul, ol, table, section, article, blockquote") && el.getClientRects().length);
     const textOf = el => (el.innerText || el.textContent || "").replace(/\s+/g, " ").trim();
     const bare = t => t.replace(/^\s*(?:\d+[.)]|[-•–])\s+/, "").trim();
     const isWordLike = t => t && t.length <= 60 && t.split(/\s+/).length <= 6 && !VI.test(t) && /\p{L}/u.test(t);
