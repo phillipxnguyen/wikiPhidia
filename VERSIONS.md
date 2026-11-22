@@ -165,7 +165,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-104 | `34e9196` | Theater nhớ chế độ (Interpreter/Watch) và mọi công tắc (loop, pinyin, dịch, tốc độ, cỡ chữ) từ lần trước, không còn mặc định |
 | THEATER-105 | `8202c5f` | Phím M: Full → theater ở chế độ lần trước → chế độ còn lại → Full |
 | THEATER-106 | `b313d5e` | Viền sáng của khung video khi chấm điểm dày hơn: 6px (trước 4px) |
-| THEATER-107 | `pending` | Viền sáng khung video khi chấm: giữ sáng ~0,5 giây rồi mờ dần, tổng 1,6 giây (trước 0,8 giây) |
+| THEATER-107 | `5d8b09f` | Viền sáng khung video khi chấm: giữ sáng ~0,5 giây rồi mờ dần, tổng 1,6 giây (trước 0,8 giây) |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
