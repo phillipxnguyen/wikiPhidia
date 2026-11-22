@@ -552,6 +552,7 @@ Hàm chính: `dictLoad`, `dictSlot`, `dictFit`, `showDictSite`, `hideDictOverlay
 | DATA-29 | `bd3e9a5` | Notes: Shift+Return tạo dòng cùng loại với dòng đang đứng, bấm thêm lần nữa thì đổi qua lại mục mới ↔ nghĩa tiếp |
 | DATA-30 | `9715139` | ⚙️ Settings → 🧹 Clean up: dòng notes tự chép, thẻ rỗng, bản dịch lưu thừa, dung lượng; tải backup trước, Undo 1 phút; sửa lỗi coi câu ngữ cảnh riêng của từ là bản sao |
 | DATA-31 | `79d1988` | Duplicates gộp vào 🧹 Clean up (bỏ tab và nút riêng): danh sách trùng với ✕ và Keep one nằm trong Clean up |
+| DATA-32 | `pending` | Sửa lỗi nặng: lưu editor từ ghi dòng pinyin vào câu tiếng Trung (mỗi lần lưu dồn thêm). Pinyin giờ không sửa/không lưu; tự dọn câu đã hỏng một lần (có backup), thêm vào Clean up |
 
 Hàm chính: `newRow` (bản dịch vào notes khi tạo), `foldAnswer` + `keepsAnswer` (dòng thêm dưới câu khi sửa thẻ hoặc khi dán thì vào notes), `wordLike`, `belongsInVocab`, `isTranslationCard` (cho dòng `từ: nghĩa`), `autoSortLibrary`.
 

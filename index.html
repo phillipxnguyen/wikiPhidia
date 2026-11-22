@@ -19509,6 +19509,7 @@ function cleanScan() {
   trOff("");
   const mt = Object.keys(mtRead()).filter(k => !used(k)), off = Object.keys(trOffStore || {}).filter(k => !used(k));
   return {
+    pinyin: pinyinJobs(homes),
     notes: notes,
     empty: empty,
     cache: mt.length + off.length,
@@ -19522,7 +19523,7 @@ function cleanPopHtml() {
   const f = cleanFound = cleanScan(), row = (k, title, n, list) => `<div class="tool-group"><label class="tool-group-head"><span><input type="checkbox" data-clean="${k}"${n ? " checked" : " disabled"}> ${title}</span><span>${n}</span></label>${list}</div>`;
   const items = xs => xs.slice(0, 40).map(x => `<div class="tool-item"><span>${x}</span></div>`).join("") + (xs.length > 40 ? `<div class="tool-item"><span>… ${xs.length - 40} more</span></div>` : "");
   const lines = f.notes.flatMap(x => x.lines.map(t => `<b>${escapeHtml(x.word)}</b>${escapeHtml(t)}`));
-  return `<p class="tool-empty" id="cleanSpace">Storage used: …</p>` + row("notes", "Note lines copied in by an older version (the card's sentence, its translation, a pronunciation)", lines.length, items(lines)) + row("empty", "Empty cards (no sentence, answer or notes)", f.empty.length, items(f.empty.map(x => escapeHtml(x.where)))) + row("cache", "Stored translations no card uses any more", f.cache, "") + `<div class="tool-group"><div class="tool-group-head"><span>Duplicate cards: ✕ deletes one, Keep one keeps the one with the most progress</span><span>${f.dups}</span></div></div>${dupListHtml()}<p class="tool-empty">A backup file is downloaded first; Undo also works for a minute.</p><button type="button" id="cleanGo" class="primary"${f.notes.length || f.empty.length || f.cache ? "" : " disabled"}>🧹 Clean up</button>`;
+  return `<p class="tool-empty" id="cleanSpace">Storage used: …</p>` + row("notes", "Note lines copied in by an older version (the card's sentence, its translation, a pronunciation)", lines.length, items(lines)) + row("pinyin", "Pinyin copied into a Chinese sentence by mistake (it is taken out, the characters stay)", f.pinyin.length, items(f.pinyin.map(x => escapeHtml(x.was.slice(0, 60)) + " → " + escapeHtml(x.now.slice(0, 40))))) + row("empty", "Empty cards (no sentence, answer or notes)", f.empty.length, items(f.empty.map(x => escapeHtml(x.where)))) + row("cache", "Stored translations no card uses any more", f.cache, "") + `<div class="tool-group"><div class="tool-group-head"><span>Duplicate cards: ✕ deletes one, Keep one keeps the one with the most progress</span><span>${f.dups}</span></div></div>${dupListHtml()}<p class="tool-empty">A backup file is downloaded first; Undo also works for a minute.</p><button type="button" id="cleanGo" class="primary"${f.notes.length || f.empty.length || f.cache || f.pinyin.length ? "" : " disabled"}>🧹 Clean up</button>`;
 }
 
 function cleanSpaceShow() {
@@ -19541,13 +19542,13 @@ async function cleanRun() {
     const box = document.querySelector(`#toolPop [data-clean="${k}"]`);
     return !!box && box.checked;
   };
-  const notes = on("notes") ? f.notes : [], empty = on("empty") ? f.empty : [], cache = on("cache");
-  if (!notes.length && !empty.length && !cache) return;
-  if (notes.length || empty.length) {
+  const notes = on("notes") ? f.notes : [], empty = on("empty") ? f.empty : [], cache = on("cache"), pinyin = on("pinyin") ? f.pinyin : [];
+  if (!notes.length && !empty.length && !cache && !pinyin.length) return;
+  if (notes.length || empty.length || pinyin.length) {
     commitActiveEdit();
     await flushAutoSave();
     downloadJsonFile(backupText(), backupFileName().replace("-flashcards", "-before-cleanup-flashcards"));
-    const homes = [ ...new Set(notes.concat(empty).map(x => x.home)) ];
+    const homes = [ ...new Set(notes.concat(empty, pinyin).map(x => x.home)) ];
     pushDeleteUndo("Cleaned up").others = toolBackup(homes);
   }
   let lines = 0;
@@ -19558,7 +19559,8 @@ async function cleanRun() {
     const at = x.home.cards.indexOf(x.card);
     if (at >= 0) x.home.cards.splice(at, 1);
   });
-  [ ...new Set(notes.concat(empty).map(x => x.home)) ].forEach(toolSave);
+  pinyin.forEach(x => x.fix());
+  [ ...new Set(notes.concat(empty, pinyin).map(x => x.home)) ].forEach(toolSave);
   if (cache) {
     const st = mtRead();
     f.mt.forEach(k => delete st[k]);
@@ -19569,7 +19571,7 @@ async function cleanRun() {
     } catch (e) {}
   }
   toolRefresh();
-  const said = [ lines && countOf(lines, "note line"), empty.length && countOf(empty.length, "empty card"), cache && f.cache && countOf(f.cache, "stored translation") ].filter(Boolean);
+  const said = [ pinyin.length && countOf(pinyin.length, "sentence") + " freed of copied pinyin", lines && countOf(lines, "note line"), empty.length && countOf(empty.length, "empty card"), cache && f.cache && countOf(f.cache, "stored translation") ].filter(Boolean);
   showToast(said.length ? "Removed " + said.join(", ") : "Nothing to clean");
   openTools("clean");
 }
@@ -21127,6 +21129,75 @@ function startReaderBridge() {
 
 const NOTES_CLEAN_KEY = "flashcards.notesClean1";
 
+const PINYIN_FIX_KEY = "flashcards.pinyinFix1";
+
+const TONE_RE = /[āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]/;
+
+function stripCopiedPinyin(text) {
+  const t = text || "";
+  if (!/[\u3400-\u9fff]/.test(t) || !TONE_RE.test(t)) return null;
+  const out = t.replace(/[A-Za-zāáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜüÜ'’,.;:!?\s-]{2,}/g, run => TONE_RE.test(run) ? "" : run).trim();
+  return out !== t && /[\u3400-\u9fff]/.test(out) ? out : null;
+}
+
+function pinyinJobs(homes) {
+  const jobs = [];
+  homes.forEach(home => {
+    home.cards.forEach(card => {
+      const q = stripCopiedPinyin(card.q);
+      if (q) jobs.push({
+        home: home,
+        was: card.q,
+        now: q,
+        fix: () => {
+          card.q = q;
+          card.qHtml = textHtml(q);
+        }
+      });
+      (card.parts || []).forEach(pt => {
+        const pq = stripCopiedPinyin(pt.q);
+        if (pq) jobs.push({
+          home: home,
+          was: pt.q,
+          now: pq,
+          fix: () => pt.q = pq
+        });
+      });
+    });
+    const dict = (home.lesson || library.find(l => l.id === currentLessonId) || {}).wordDict;
+    Object.values(dict || {}).forEach(entry => [ "defs", "ex" ].forEach(k => (entry && entry[k] || []).forEach(d => [ "t", "x" ].forEach(f => {
+      const v = stripCopiedPinyin(d[f]);
+      if (v) jobs.push({
+        home: home,
+        was: d[f],
+        now: v,
+        fix: () => d[f] = v
+      });
+    }))));
+  });
+  return jobs;
+}
+
+async function fixCopiedPinyin() {
+  if (readLocal(PINYIN_FIX_KEY)) return;
+  const jobs = pinyinJobs(library.map(l => ({
+    lesson: l,
+    cards: l.cards
+  })));
+  if (jobs.length) {
+    downloadJsonFile(backupText(), backupFileName().replace("-flashcards", "-before-pinyin-fix-flashcards"));
+    jobs.forEach(j => j.fix());
+    for (const l of new Set(jobs.map(j => j.home.lesson))) {
+      l.updatedAt = Date.now();
+      await dbPut("lessons", l).catch(() => {});
+    }
+    showToast("Took copied pinyin out of " + countOf(jobs.length, "sentence") + " (a backup was downloaded first)");
+  }
+  try {
+    localStorage.setItem(PINYIN_FIX_KEY, "true");
+  } catch (e) {}
+}
+
 function copiedNoteLines(item) {
   const card = item.card, flat = t => oneLine(t || "").normalize("NFC").toLowerCase().replace(/[\s"'“”‘’.,!?;:…—–-]+/g, " ").trim();
   if (card.uid === EXTRA_UID || !(card.q || "").trim()) return null;
@@ -21206,6 +21277,7 @@ async function initApp() {
   reviewLog = (await dbGetAll("reviews")).filter(e => e && isFinite(e.ts)).sort((a, b) => a.ts - b.ts);
   renderStreakChip();
   await cleanCopiedNotes();
+  await fixCopiedPinyin();
   await openDefaultLesson();
   startReaderBridge();
   if (!dbAvailable) showToast("Browser storage is unavailable here");
@@ -22949,7 +23021,7 @@ function editCtxHtml(item) {
   }) : "";
   const noted = noteSentence(item), notes = noted ? noted.rest.replace(/^(\s|<br\s*\/?>|<div>\s*<\/div>)+/i, "") : wordNotesOf(item);
   const od = !item.sub && on && vc.dataset.owndef;
-  return (od ? `<div class="ed-sub-row ed-ctx-d" contenteditable="false"><div>${lookupOthers(escapeHtml(od), item)}</div></div>` : "") + (text && text !== od ? `<div class="ed-ctx" contenteditable="false"><div class="ed-ctx-s" contenteditable="true">${lookupOthers(vocabSentenceHtml(text, item.term, item.card), item)}</div><div class="ed-ctx-tr" contenteditable="true" data-placeholder="Translation…" data-was="${escapeAttr(tr)}">${escapeHtml(tr)}</div></div>` : "") + (notes ? `<div class="ed-ctx-n" contenteditable="false">${notesWithPinyin(brLines(notes), item.card)}</div>` : "");
+  return (od ? `<div class="ed-sub-row ed-ctx-d" contenteditable="false"><div>${lookupOthers(escapeHtml(od), item)}</div></div>` : "") + (text && text !== od ? `<div class="ed-ctx" contenteditable="false"><div class="ed-ctx-s" contenteditable="true">${lookupOthers(vocabSentenceHtml(text, item.term, item.card), item).replace(/<span class="py-line"/g, '<span class="py-line" contenteditable="false"')}</div><div class="ed-ctx-tr" contenteditable="true" data-placeholder="Translation…" data-was="${escapeAttr(tr)}">${escapeHtml(tr)}</div></div>` : "") + (notes ? `<div class="ed-ctx-n" contenteditable="false">${notesWithPinyin(brLines(notes), item.card)}</div>` : "");
 }
 
 function updateCtxSource(item, from, to) {
@@ -22979,10 +23051,22 @@ function updateCtxSource(item, from, to) {
   return "dict";
 }
 
+function typedText(el) {
+  if (!el) return "";
+  const box = document.createElement("div"), copy = el.cloneNode(true);
+  copy.querySelectorAll(".py-line, rt, rp, [contenteditable=false]").forEach(n => n.remove());
+  box.style.cssText = "position:fixed;left:-9999px;top:0;white-space:pre-wrap";
+  box.appendChild(copy);
+  document.body.appendChild(box);
+  const out = copy.innerText;
+  box.remove();
+  return out;
+}
+
 function saveEditCtx(item) {
   const el = document.querySelector("#editPopup .ed-ctx-tr"), sEl = document.querySelector("#editPopup .ed-ctx-s"), text = editCtxText(item);
   if (!el || !text) return;
-  const value = el.innerText.replace(/\s+/g, " ").trim(), next = sEl ? sEl.innerText.replace(/\s+/g, " ").trim() : text;
+  const value = typedText(el).replace(/\s+/g, " ").trim(), next = sEl ? typedText(sEl).replace(/\s+/g, " ").trim() : text;
   const trChanged = value !== (el.dataset.was || ""), sChanged = !!next && next !== oneLine(text).trim();
   const own = oneLine(item.card.q || "").normalize("NFC") === oneLine(text).normalize("NFC");
   if (sChanged) {
@@ -23349,7 +23433,7 @@ function wireVocabEditor(items) {
     const now = lessonVocabItems(vocabSource()).find(i => i.key === key) || item;
     syncVocabEditMain(now);
     if (now.sub) {
-      const sv = vocabEditValues(), st = document.getElementById("vocabEditSubText"), text = st ? st.innerText : "", m = subMeaningValue(now, sv.meaning);
+      const sv = vocabEditValues(), st = document.getElementById("vocabEditSubText"), text = st ? typedText(st) : "", m = subMeaningValue(now, sv.meaning);
       saveEditExtras(now);
       saveSubEdit(now, text, m, now.sub.n || "");
       return renderVocab();
@@ -23488,7 +23572,7 @@ function commitVocabEdit() {
   vocabEditingKey = null;
   if (item && item.sub) {
     syncVocabEditMain(item);
-    const st = document.getElementById("vocabEditSubText"), text = st ? st.innerText : "", m = subMeaningValue(item, vocabEditValues().meaning);
+    const st = document.getElementById("vocabEditSubText"), text = st ? typedText(st) : "", m = subMeaningValue(item, vocabEditValues().meaning);
     saveEditExtras(item);
     saveSubEdit(item, text, m, item.sub.n || "");
     return true;
