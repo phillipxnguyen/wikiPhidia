@@ -173,6 +173,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-112 | `2bd51ca` | Trả lại viền sáng cả màn hình khi chấm (như THEATER-109), bỏ nhún/lắc video |
 | THEATER-113 | `385e894` | Watch: chấm điểm cho dấu ✓/✕ bật ra giữa video rồi bay về bộ đếm ✅/⏳ (ô đếm nảy), thay viền sáng |
 | THEATER-114 | `9d1d590` | Watch: dấu ✓/✕ to 120px, giữ một nhịp rồi bay đúng chỗ theo rule (✅ chỉ khi đủ 5 Good, ⏳ chỉ khi đến hạn ngay, còn lại về pill giờ của dòng) |
+| THEATER-115 | `pending` | Watch: dấu ✓/✕ hiện sẵn giữa video và bay đi ngay, không bật lên hay dừng |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
