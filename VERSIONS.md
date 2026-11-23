@@ -169,6 +169,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-108 | `029b07e` | Watch: chấm điểm làm sáng viền cả màn hình focus (xanh/đỏ) thay cho viền khung video |
 | THEATER-109 | `459364f` | Viền sáng cả màn hình khi chấm: nhanh như trước (0,8 giây, không giữ), dày hơn (12px) |
 | THEATER-110 | `1ecbffa` | Thanh trên của theater: cách mép trên và cách video đều 16px (trước dưới chỉ 8px) |
+| THEATER-111 | `pending` | Watch: chấm điểm làm video nhún (Good) hoặc lắc ngang (Again), bỏ viền màu màn hình |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
