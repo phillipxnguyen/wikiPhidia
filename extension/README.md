@@ -24,7 +24,7 @@ A browser only updates an extension fully by itself when it comes from the Chrom
 
 ## Reading
 
-- **Select a word or phrase** on any page. In the popup's header, beside the name, you choose what happens then with two small icons side by side: **字** (the default: a round green 字 appears next to the selection; click it, or press **Shift**, the same key that adds a word inside wikiPhidia) or **⚡** (the card opens as soon as you let go of the mouse, nothing else to click). Right-click → **Add “…” to wikiPhidia** works too.
+- **Select a word or phrase** on any page: its meaning shows at once in a small dark label right under it (the meaning you gave it when it is already one of your words, otherwise a translation), like the label you get by pointing at a marked word; no card opens. A round green 字 also appears next to the selection: click it, or press **Shift** (the same key that adds a word inside wikiPhidia), to open the card that saves the word.
 - A card opens next to the word, its parts evenly spaced (16 px apart, 20 px from the card's edges):
   - the word (click it to edit it in place, with no box or line around it), its **pinyin** for Chinese, and beside it 🔊 to hear it, the translate button to translate the sentence (again to hide it; **Shift** while the card is open does the same), and ✕, the three evenly spaced in the top right corner; a long word or phrase wraps onto more lines, flowing under them, instead of being cut off;
   - the meaning, in green with only a bar down its left (no box), wrapping onto more lines when it is long, translated already into your language (Vietnamese by default), with other meanings as chips to pick from; type over it freely;
@@ -59,7 +59,7 @@ On any YouTube video, click the green **字 Make a lesson** button in the bottom
 
 ## The popup
 
-- **On / Off**, the small switch in the header, between the 字 ⚡ icons and Open app: Off turns the extension off on every page at once (no 字 button, no card, no Shift, no marked words, no YouTube button; the icon shows a grey *off*, and the popup's 字 logo turns grey), and On brings it all back. Words already waiting still go into wikiPhidia either way.
+- **On / Off**, the small switch in the header, between the name and Open app: Off turns the extension off on every page at once (no 字 button, no card, no Shift, no marked words, no YouTube button; the icon shows a grey *off*, and the popup's 字 logo turns grey), and On brings it all back. Words already waiting still go into wikiPhidia either way.
 Each word sits in its own box, and the hint under the list in a tinted box, so the words are easy to tell apart.
 
 - The 字 logo shows the connection to the app, like the cloud button in wikiPhidia: a small cloud with a tick in its corner once the app has been opened and connected, a crossed-out grey cloud before that. Pointing at the logo or the name shows, after a fifth of a second, how many words and lessons it knows.

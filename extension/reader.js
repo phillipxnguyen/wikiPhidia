@@ -82,6 +82,7 @@
 *{box-sizing:border-box;}
 .wrap{--sel:#b9d4fb;--green:#1e9466;--green-soft:rgba(30,148,102,.12);--ink:#1d2330;--ink-2:#5e6878;--line:#dfe4ec;--bg:#fff;--bg-2:#f4f6fa;--answer:#1b6b44;--mark:rgba(255,206,40,.55);font:14px/20px Inter, system-ui, -apple-system, "Segoe UI", sans-serif;color:var(--ink);}
 @media (prefers-color-scheme: dark){.wrap{--sel:#2a4f80;--green:#3cc48d;--green-soft:rgba(60,196,141,.16);--ink:#e8ecf3;--ink-2:#9aa4b4;--line:#323a48;--bg:#1b2029;--bg-2:#242a35;--answer:#6fd3a0;--mark:rgba(240,190,40,.38);}}
+.look{position:fixed;max-width:320px;padding:4px 10px;border-radius:8px;background:#1d2330;color:#fff;font-size:14px;line-height:20px;box-shadow:0 4px 12px rgba(0,0,0,.25);pointer-events:none;overflow-wrap:anywhere;}
 .pick{position:fixed;display:flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border:0;border-radius:16px;background:var(--green);color:#fff;font:700 16px/20px system-ui, sans-serif;box-shadow:0 4px 12px rgba(0,0,0,.25);cursor:pointer;}
 .pick:hover{filter:brightness(1.08);}
 .card{position:fixed;width:460px;max-width:calc(100vw - 24px);padding:20px;border:1px solid var(--line);border-radius:12px;background:var(--bg);box-shadow:0 16px 40px rgba(10,20,40,.22);}
@@ -533,10 +534,28 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
 
   let pickBtn = null;
   let pickFor = null;
+  let lookEl = null, lookToken = 0;
   function hidePick() {
     if (pickBtn) pickBtn.remove();
+    if (lookEl) lookEl.remove();
     pickBtn = null;
+    lookEl = null;
     pickFor = null;
+    lookToken++;
+  }
+  function showLook(found, r) {
+    const term = found.text.replace(/\s+/g, " ").trim(), k = known.get(norm(term)), token = ++lookToken;
+    lookEl = document.createElement("div");
+    lookEl.className = "look";
+    lookEl.textContent = k && k.meaning ? k.meaning : "…";
+    lookEl.style.left = Math.round(Math.max(8, Math.min(innerWidth - 328, r.left))) + "px";
+    lookEl.style.top = Math.round(Math.min(innerHeight - 40, r.bottom + 6)) + "px";
+    wrap.appendChild(lookEl);
+    if (k && k.meaning) return;
+    chrome.runtime.sendMessage({ type: "translate", text: term, to: settings.lang }, res => {
+      if (token !== lookToken || !lookEl) return;
+      lookEl.textContent = !chrome.runtime.lastError && res && res.ok && res.text ? res.text : "No meaning found";
+    });
   }
   function showPick(found) {
     if (card) return;
@@ -552,6 +571,7 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
     pickBtn.style.left = Math.round(Math.min(innerWidth - 40, r.right + 4)) + "px";
     pickBtn.style.top = Math.round(Math.max(8, r.top - 36)) + "px";
     pickFor = found;
+    showLook(found, found.range.getBoundingClientRect());
     pickBtn.addEventListener("mousedown", e => e.preventDefault());
     pickBtn.addEventListener("click", () => {
       const f = pickFor;
@@ -869,7 +889,7 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
     if (gone() || e.composedPath().includes(host)) return;
     setTimeout(() => {
       const found = selectedText();
-      if (!found || !on()) hidePick(); else if (settings.pick === "open") openCard(found.text, found.range); else showPick(found);
+      if (!found || !on()) hidePick(); else showPick(found);
     }, 10);
   }, true);
 
