@@ -63,6 +63,10 @@
 .sents-list .hd{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:8px;}
 .sents-list .st b{font-size:14px;line-height:20px;font-weight:700;color:var(--green);}
 .sents-list .st small{font-size:13px;line-height:20px;color:var(--ink-2);}
+.sents-list .st{font-size:16px;line-height:24px;}
+.sents-list .ab{display:flex;flex-wrap:wrap;align-items:baseline;}
+.sents-list .ab-c{margin-right:4px;}
+.card :is(.alts, .srcs, .defs, .exs, .sent-wrap, .sub.sent-tr, .sub.src, .reading), .tip :is(.srcs, .defs, .exs, .tnotes, .tip-l){display:none !important;}
 .sents-list .ed{min-width:24px;margin:0 -4px;padding:0 4px;border-radius:4px;outline:none;cursor:text;}
 .sents-list .ed:focus{background:var(--bg);box-shadow:inset 0 0 0 2px var(--green);}
 .sents-list .ed:empty::before{content:attr(data-ph);color:var(--ink-2);opacity:.6;}
@@ -163,15 +167,7 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
 .sp{padding:0 0 2px;border:0;border-bottom:2px solid transparent;border-radius:0;background:none;color:var(--ink-2);font:inherit;font-size:13px;line-height:20px;font-weight:600;cursor:pointer;}
 .sp:hover{color:var(--ink);}
 .sp.on{border-bottom-color:var(--green);color:var(--ink);}
-.exs p{position:relative;padding-right:36px;}
 .sent-wrap{position:relative;}
-.sent-wrap:has(.pick-own:not([hidden])) .sent-view{padding-right:44px;}
-.pick-ex{position:absolute;top:0;right:0;display:flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:1px solid var(--line);border-radius:14px;background:var(--bg);color:var(--green);font:inherit;font-size:16px;line-height:1;font-weight:700;cursor:pointer;}
-.pick-ex[hidden]{display:none;}
-.pick-ex:hover{border-color:var(--green);}
-.pick-ex.done{border-color:var(--green);background:var(--green);color:#fff;cursor:default;}
-.sent-wrap .pick-own{top:8px;right:8px;}
-.sent-wrap:has(.sent-view[hidden]) .pick-own{display:none;}
 .dd em{display:block;margin-bottom:2px;font-style:normal;font-size:12px;line-height:16px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--green);}
 .dnote{margin:0;font-size:14px;line-height:20px;color:var(--ink-2);font-style:italic;}
 .card .defs, .card .exs, .card .srcs{margin-top:0;}
@@ -393,9 +389,8 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
       return pick ? `<button type="button" class="dd" data-m="${esc(t)}" title="Use this as the meaning">${inner}</button>` : `<span class="dd">${inner}</span>`;
     }).join("")}</div></div>`).join("") + (r && r.note ? `<p class="dnote">${esc(r.note)}</p>` : "");
   }
-  function exsHtml(list, term, own, n, pickable) {
-    const pick = x => pickable ? `<button type="button" class="pick-ex" data-t="${esc(x.t)}" data-tr="${esc(x.tr || "")}" title="Pick this sentence up into wikiPhidia" aria-label="Pick this sentence up">＋</button>` : "";
-    return (list || []).filter(x => x.t !== own).slice(0, n).map(x => `<p>${markedSentence(x.t, term)}${x.tr ? `<small>${esc(x.tr)}</small>` : ""}${pick(x)}</p>`).join("");
+  function exsHtml(list, term, own, n) {
+    return (list || []).filter(x => x.t !== own).slice(0, n).map(x => `<p>${markedSentence(x.t, term)}${x.tr ? `<small>${esc(x.tr)}</small>` : ""}</p>`).join("");
   }
   function fillDict(box, term, opts) {
     if (!dict) return;
@@ -419,7 +414,7 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
       const voiced = all.find(r => r.say.some(x => x.k === "UK") && r.say.some(x => x.k === "US")) || all.find(r => r.say.length);
       if (exsEl) {
         const exSrc = cur && cur.ex.length ? cur : all.find(r => r.ex.length);
-        exsEl.innerHTML = ownHtml + exsHtml(exSrc && exSrc.ex, term, opts.own || "", opts.own ? 2 : opts.pick ? 5 : 3, !!opts.pick);
+        exsEl.innerHTML = ownHtml + exsHtml(exSrc && exSrc.ex, term, opts.own || "", opts.own ? 2 : 3);
       }
       const src = box.querySelector(".src");
       if (src) src.textContent = cur ? cur.src : "";
@@ -647,7 +642,7 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
     card.innerHTML = `<div class="head"><span class="icons"><span class="lv" hidden></span><button class="icon say" title="Listen" aria-label="Listen">🔊</button><button class="icon tr-btn" title="Translate the sentence" aria-label="Translate the sentence"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M3 5h8M7 3v2M5 5c0 3 2 5 5 6M9 5c0 3-2 5-5 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 17l3-7 3 7M12 15h4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="icon close" title="Close (Esc)" aria-label="Close">✕</button></span><div class="term" contenteditable="plaintext-only" spellcheck="false" role="textbox" aria-label="Word"></div></div>
 <div class="reading"></div>
 <div class="body"><div class="field meaning" contenteditable="plaintext-only" role="textbox" data-placeholder="Translating…" aria-label="Meaning"></div><div class="alts"></div><div class="srcs"></div><div class="defs"></div>
-<div class="sent-wrap"><div class="sent-view"></div><button type="button" class="pick-ex pick-own" hidden title="Pick this sentence up into wikiPhidia" aria-label="Pick this sentence up">＋</button></div><textarea class="field sentence" rows="1" aria-label="Sentence" hidden></textarea><div class="sub sent-tr"></div><div class="exs"></div><div class="sub src"></div>
+<div class="sent-wrap"><div class="sent-view"></div></div><textarea class="field sentence" rows="1" aria-label="Sentence" hidden></textarea><div class="sub sent-tr"></div><div class="exs"></div><div class="sub src"></div>
 <div class="note"></div>
 <div class="foot"><button class="btn add">Add</button></div></div>`;
     wrap.appendChild(card);
@@ -701,7 +696,6 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
     const showKnown = () => {
       const kk = known.get(norm(termEl.value));
       const add = $(".add");
-      $(".pick-own").hidden = !(kk && kk.state === "app");
       if (kk && kk.state === "app") {
         note.innerHTML = `Already in wikiPhidia · <i>${esc(kk.lesson)}</i><br>${esc(kk.meaning || "")}`;
         add.disabled = true;
@@ -768,19 +762,6 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
     });
     $(".say").addEventListener("click", e => sayTip(termEl.value.trim(), card.dataset.audio, e.currentTarget));
     card.addEventListener("click", e => {
-      const pk = e.target.closest(".pick-ex");
-      if (pk) {
-        e.preventDefault();
-        if (pk.classList.contains("done")) return;
-        const t = pk.classList.contains("pick-own") ? sentEl.value.replace(/\s+/g, " ").trim() : pk.dataset.t, m = meaningEl.value.split("\n")[0].replace(/\s+/g, " ").trim() || ((known.get(norm(termEl.value)) || {}).meaning || "").split("\n")[0].trim();
-        if (!m) return toast("Give the word a meaning first");
-        queueWordSentence(termEl.value.trim(), m, t, pk.dataset.tr || "").then(() => {
-          pk.classList.add("done");
-          pk.textContent = "✓";
-          pk.title = "Picked up";
-        });
-        return;
-      }
       const dd = e.target.closest("button.dd");
       if (!dd) return;
       meaningEl.value = dd.dataset.m;
@@ -840,26 +821,6 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
       closeCard();
       toast(word.meaning ? `${t}: ${word.meaning}` : t);
     }
-  }
-
-  async function queueWordSentence(term, meaning, sentence, translation) {
-    const at = Date.now(), { pending: now } = await chrome.storage.local.get("pending");
-    const next = (now || []).concat([ {
-      id: at.toString(36) + Math.random().toString(36).slice(2, 8),
-      url: location.href,
-      title: document.title,
-      lessonId: settings.lessonId || "",
-      lessonName: settings.lessonName || articleTitle(),
-      at,
-      kind: "wsent",
-      term,
-      meaning,
-      sentence,
-      translation
-    } ]);
-    pending = next;
-    await chrome.storage.local.set({ pending: next });
-    toast("Sentence picked up for wikiPhidia");
   }
 
   let toastEl = null, toastTimer = 0;
@@ -979,7 +940,7 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
   const draftKey = () => location.origin + location.pathname + location.search;
   const VI = /[ăâđêôơưạảấầẩẫậắằẳẵặẹẻẽếềểễệỉịọỏốồổỗộớờởỡợụủứừửữựỳỵỷỹ]/i;
   const sentenceParts = text => (text.replace(/\s+/g, " ").match(/[^.!?。！？]+(?:[.!?。！？]+["'”’)\]]*|$)/g) || []).map(t => t.trim()).filter(t => t.length >= 12 && t.length <= 320 && /[\p{L}]{2}/u.test(t));
-  const itemKey = x => x.kind === "word" ? "w|" + norm(x.term) : "s|" + norm(x.word) + "|" + norm(x.t);
+  const itemKey = x => x.kind === "word" ? "w|" + norm(x.term) : "s|" + norm(x.t);
   function saveDraft() {
     chrome.storage.local.get("sentDrafts").then(({ sentDrafts }) => {
       const all = Object.assign({}, sentDrafts);
@@ -1062,7 +1023,7 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
       return esc(t).replace(new RegExp((edge ? "(?<![\\p{L}\\p{N}])" : "") + e + (edge ? "(?![\\p{L}\\p{N}])" : ""), "giu"), "<mark>$&</mark>");
     };
     const ed = (i, f, tag, html, ph) => `<${tag} class="ed" contenteditable="plaintext-only" spellcheck="false" data-i="${i}" data-f="${f}" data-ph="${ph}">${html}</${tag}>`;
-    const row = (x, i) => x.kind === "word" ? ed(i, "term", "b", esc(x.term), "Word or phrase") + ed(i, "meaning", "small", esc(x.meaning), "Meaning") : `<span class="hd">${ed(i, "word", "b", esc(x.word), "Word")}${ed(i, "meaning", "small", esc(x.meaning), "Meaning")}</span>` + ed(i, "t", "span", marked(x.t, x.word), "Sentence") + ed(i, "tr", "small", esc(x.tr || ""), "Translation");
+    const row = (x, i) => x.kind === "word" ? `<span class="ab">${ed(i, "term", "span", esc(x.term), "Word or phrase")}<span class="ab-c">:</span>${ed(i, "meaning", "span", esc(x.meaning), "Meaning")}</span>` : ed(i, "t", "span", marked(x.t, x.word), "Sentence");
     sentsEl.innerHTML = `${sents.length ? `<ul class="sents-list">${sents.map((x, i) => `<li><span class="st">${row(x, i)}</span><button type="button" class="sx" data-i="${i}" title="Leave this one out">✕</button></li>`).join("")}</ul>` : ""}<div class="sents-foot"><button type="button" class="icon" data-act="close" title="Clear and close" aria-label="Clear and close">✕</button><button type="button" class="icon" data-act="all" title="Make cards from this page" aria-label="Make cards from this page">↻</button><span class="gap"></span><button type="button" class="btn" data-act="send"${sents.length ? "" : " disabled"}>Add ${sents.length === 1 ? "1 card" : (sents.length || "") + " cards"}</button></div>`;
     wrap.appendChild(sentsEl);
   }
@@ -1091,7 +1052,11 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
       if (colon && isWordLike(colon[1]) && VI.test(colon[2])) return pushWord(colon[1], colon[2]);
       const next = blocks[i + 1] && blocks[i + 1].tagName !== "TR" ? bare(textOf(blocks[i + 1])) : "";
       const parts = sentenceParts(text), tr = parts.length === 1 && next && VI.test(next) && next.length <= 400 ? next : "";
-      parts.forEach(t => wordsIn(t).forEach(k => out.push({ kind: "sent", t, tr, word: k.term, meaning: k.meaning })));
+      parts.forEach(t => {
+        if (!/[.!?。！？]["'”’)\]]*$/.test(t)) return;
+        const k = wordsIn(t)[0];
+        if (k) out.push({ kind: "sent", t, tr, word: k.term, meaning: k.meaning });
+      });
     });
     return out;
   }
