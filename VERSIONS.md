@@ -176,7 +176,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-115 | `441a9bc` | Watch: dấu ✓/✕ hiện sẵn giữa video và bay đi ngay, không bật lên hay dừng |
 | THEATER-116 | `fcece67` | Watch: dấu bay nền trắng, ✓ xanh / ✕ đỏ |
 | THEATER-117 | `95839b1` | Watch: bỏ dấu bay; khi chấm, cả nền tối quanh video loé xanh đậm (Good) / đỏ đậm (Again) rồi về đen, pill giờ nảy |
-| THEATER-118 | `pending` | Watch: nền đổi màu đứng yên 0,6 giây rồi về đen ngay, không mờ dần |
+| THEATER-118 | `d067879` | Watch: nền đổi màu đứng yên 0,6 giây rồi về đen ngay, không mờ dần |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
