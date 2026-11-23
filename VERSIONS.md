@@ -599,6 +599,7 @@ Hàm chính: `updateTouchBar`, `sizeTouchBar`, `#tbSound`, `#tbMore`, `tools-ope
 | TODAY-17 | `a813837` | Dọn CSS thừa của dòng tiến độ đã bỏ khỏi hero |
 | TODAY-18 | `cac55d3` | Dọn hàm thừa còn sót từ phần xem trước thẻ sau trong task |
 | TODAY-19 | `72e4380` | Thông báo streak: bỏ lớp làm mờ nền; lửa vẽ bằng CSS nhiều lưỡi lập loè, có tia lửa (thay emoji 🔥) |
+| TODAY-20 | `pending` | Lửa streak về lại 🔥 hoạt hình, chuyển động sống động hơn (nhảy múa, quầng sáng phập phồng, tia lửa) |
 
 Hàm chính: `todayTasks`, `todayTaskCounts`, `taskQueue`, `startTaskSide`, `taskAdvance`, `leftToday`, `limitStudy`, `limitRows`.
 
