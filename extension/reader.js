@@ -66,7 +66,14 @@
 .sents-list .st{font-size:16px;line-height:24px;}
 .sents-list .ab{display:flex;flex-wrap:wrap;align-items:baseline;}
 .sents-list .ab-c{margin-right:4px;}
-.card :is(.alts, .srcs, .defs, .exs, .sent-wrap, .sub.sent-tr, .sub.src, .reading), .tip :is(.srcs, .defs, .exs, .tnotes, .tip-l){display:none !important;}
+.exs p{position:relative;padding-right:36px;}
+.sent-wrap:has(.pick-own:not([hidden])) .sent-view{padding-right:44px;}
+.pick-ex{position:absolute;top:0;right:0;display:flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:1px solid var(--line);border-radius:14px;background:var(--bg);color:var(--green);font:inherit;font-size:16px;line-height:1;font-weight:700;cursor:pointer;}
+.pick-ex[hidden]{display:none;}
+.pick-ex:hover{border-color:var(--green);}
+.pick-ex.done{border-color:var(--green);background:var(--green);color:#fff;cursor:default;}
+.sent-wrap .pick-own{top:8px;right:8px;}
+.sent-wrap:has(.sent-view[hidden]) .pick-own{display:none;}
 .sents-list .ed{min-width:24px;margin:0 -4px;padding:0 4px;border-radius:4px;outline:none;cursor:text;}
 .sents-list .ed:focus{background:var(--bg);box-shadow:inset 0 0 0 2px var(--green);}
 .sents-list .ed:empty::before{content:attr(data-ph);color:var(--ink-2);opacity:.6;}
@@ -82,7 +89,12 @@
 *{box-sizing:border-box;}
 .wrap{--sel:#b9d4fb;--green:#1e9466;--green-soft:rgba(30,148,102,.12);--ink:#1d2330;--ink-2:#5e6878;--line:#dfe4ec;--bg:#fff;--bg-2:#f4f6fa;--answer:#1b6b44;--mark:rgba(255,206,40,.55);font:14px/20px Inter, system-ui, -apple-system, "Segoe UI", sans-serif;color:var(--ink);}
 @media (prefers-color-scheme: dark){.wrap{--sel:#2a4f80;--green:#3cc48d;--green-soft:rgba(60,196,141,.16);--ink:#e8ecf3;--ink-2:#9aa4b4;--line:#323a48;--bg:#1b2029;--bg-2:#242a35;--answer:#6fd3a0;--mark:rgba(240,190,40,.38);}}
-.look{position:fixed;max-width:320px;padding:4px 10px;border-radius:8px;background:#1d2330;color:#fff;font-size:14px;line-height:20px;box-shadow:0 4px 12px rgba(0,0,0,.25);pointer-events:none;overflow-wrap:anywhere;}
+.look{position:fixed;display:flex;align-items:center;gap:8px;max-width:300px;padding:8px 14px;border:1px solid var(--line);border-radius:14px;background:var(--bg);color:var(--ink);font-size:15px;line-height:20px;font-weight:600;box-shadow:0 8px 24px rgba(10,20,40,.16);pointer-events:none;overflow-wrap:anywhere;animation:lookIn .16s ease-out;}
+.look::before{content:"";flex:none;width:6px;height:6px;border-radius:3px;background:var(--green);}
+.look::after{content:"";position:absolute;left:calc(var(--ax, 20px) - 6px);top:-7px;width:12px;height:12px;border-left:1px solid var(--line);border-top:1px solid var(--line);border-radius:2px 0 0;background:var(--bg);transform:rotate(45deg);}
+.look[data-up]::after{top:auto;bottom:-7px;transform:rotate(225deg);}
+.look.wait{color:var(--ink-2);font-weight:400;}
+@keyframes lookIn{from{opacity:0;transform:translateY(4px);}}
 .pick{position:fixed;display:flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border:0;border-radius:16px;background:var(--green);color:#fff;font:700 16px/20px system-ui, sans-serif;box-shadow:0 4px 12px rgba(0,0,0,.25);cursor:pointer;}
 .pick:hover{filter:brightness(1.08);}
 .card{position:fixed;width:460px;max-width:calc(100vw - 24px);padding:20px;border:1px solid var(--line);border-radius:12px;background:var(--bg);box-shadow:0 16px 40px rgba(10,20,40,.22);}
@@ -390,8 +402,9 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
       return pick ? `<button type="button" class="dd" data-m="${esc(t)}" title="Use this as the meaning">${inner}</button>` : `<span class="dd">${inner}</span>`;
     }).join("")}</div></div>`).join("") + (r && r.note ? `<p class="dnote">${esc(r.note)}</p>` : "");
   }
-  function exsHtml(list, term, own, n) {
-    return (list || []).filter(x => x.t !== own).slice(0, n).map(x => `<p>${markedSentence(x.t, term)}${x.tr ? `<small>${esc(x.tr)}</small>` : ""}</p>`).join("");
+  function exsHtml(list, term, own, n, pickable) {
+    const pick = x => pickable ? `<button type="button" class="pick-ex" data-t="${esc(x.t)}" data-tr="${esc(x.tr || "")}" title="Pick this sentence up into wikiPhidia" aria-label="Pick this sentence up">＋</button>` : "";
+    return (list || []).filter(x => x.t !== own).slice(0, n).map(x => `<p>${markedSentence(x.t, term)}${x.tr ? `<small>${esc(x.tr)}</small>` : ""}${pick(x)}</p>`).join("");
   }
   function fillDict(box, term, opts) {
     if (!dict) return;
@@ -415,7 +428,7 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
       const voiced = all.find(r => r.say.some(x => x.k === "UK") && r.say.some(x => x.k === "US")) || all.find(r => r.say.length);
       if (exsEl) {
         const exSrc = cur && cur.ex.length ? cur : all.find(r => r.ex.length);
-        exsEl.innerHTML = ownHtml + exsHtml(exSrc && exSrc.ex, term, opts.own || "", opts.own ? 2 : 3);
+        exsEl.innerHTML = ownHtml + exsHtml(exSrc && exSrc.ex, term, opts.own || "", opts.own ? 2 : opts.pick ? 5 : 3, !!opts.pick);
       }
       const src = box.querySelector(".src");
       if (src) src.textContent = cur ? cur.src : "";
@@ -451,34 +464,17 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
     });
   }
   function placeTip() {
-    if (tip && tipMark) anchorBox(tip, tipMark.getBoundingClientRect(), 8, true);
+    if (tip && tipMark) { const m = tipMark; hideTip(); showTip(m); }
   }
   function showTip(mark) {
     const k = known.get(norm(mark.textContent));
-    if (!k) return;
+    if (!k || lookEl) return;
     clearTimeout(tipHide);
     if (tipMark === mark && tip) return;
-    stopTipSound();
     mount();
-    if (!tip) {
-      tip = document.createElement("div");
-      tip.className = "tip";
-      tip.addEventListener("click", e => {
-        const b = e.target.closest(".tip-say");
-        if (b) sayTip(b.dataset.say, tip.dataset.audio, b);
-      });
-      wrap.appendChild(tip);
-    }
+    if (tip) tip.remove();
     tipMark = mark;
-    tip.dataset.audio = "";
-    delete tip.dataset.side;
-    const reading = langOf(k.term) === "zh" && window.pinyinPro ? pinyinPro.pinyin(k.term).replace(/\s+([，。？！、；：,.?!;:])/g, "$1") : "";
-    const own = k.sentence || "";
-    tip.innerHTML = `<div class="tip-top"><div class="tip-word"><b>${esc(k.term)}</b><span class="lv" hidden></span></div><button type="button" class="tip-say" data-say="${esc(k.term)}" aria-label="Listen" title="Listen">${SPEAK_ICON}</button></div><div class="tip-r">${esc(reading)}</div>${k.meaning ? `<div class="tip-m">${esc(k.meaning)}</div>` : ""}<div class="srcs"></div><div class="defs"></div><div class="exs">${own ? `<p class="own">${markedSentence(own, mark.textContent.trim() || k.term)}</p>` : ""}</div>${(n => n ? `<div class="tnotes">${esc(n)}</div>` : "")((k.notes || "").split("\n").filter(t => norm(t) !== norm(own) && norm(t) !== norm(k.lesson)).join("\n"))}<div class="tip-l"><span>${esc(k.lesson || "")}</span><span class="src"></span></div>`;
-    if (!reading) tip.querySelector(".tip-r").remove();
-    placeTip();
-    const me = mark;
-    fillDict(tip, k.term, { own, live: () => tip && tipMark === me, after: placeTip });
+    tip = lookBox(k.term, mark.getBoundingClientRect(), k.meaning);
   }
   document.addEventListener("mouseover", e => {
     if (gone()) return;
@@ -534,28 +530,43 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
 
   let pickBtn = null;
   let pickFor = null;
-  let lookEl = null, lookToken = 0;
+  let lookEl = null;
   function hidePick() {
     if (pickBtn) pickBtn.remove();
     if (lookEl) lookEl.remove();
     pickBtn = null;
     lookEl = null;
     pickFor = null;
-    lookToken++;
+  }
+  function lookBox(term, r, meaning) {
+    const el = document.createElement("div");
+    el.className = "look";
+    const put = () => {
+      const w = el.offsetWidth, h = el.offsetHeight, cx = r.left + r.width / 2, left = Math.round(Math.max(8, Math.min(innerWidth - w - 8, cx - w / 2)));
+      const up = r.bottom + 10 + h > innerHeight - 8 && r.top - 10 - h >= 8;
+      el.toggleAttribute("data-up", up);
+      el.style.left = left + "px";
+      el.style.top = Math.round(up ? r.top - 10 - h : r.bottom + 10) + "px";
+      el.style.setProperty("--ax", Math.round(Math.max(16, Math.min(w - 16, cx - left))) + "px");
+    };
+    const set = (t, wait) => {
+      el.textContent = t;
+      el.classList.toggle("wait", !!wait);
+      put();
+    };
+    wrap.appendChild(el);
+    set(meaning || "…", !meaning);
+    if (!meaning) chrome.runtime.sendMessage({ type: "translate", text: term, to: settings.lang }, res => {
+      if (!el.isConnected) return;
+      const ok = !chrome.runtime.lastError && res && res.ok && res.text;
+      set(ok ? res.text : "No meaning found", !ok);
+    });
+    return el;
   }
   function showLook(found, r) {
-    const term = found.text.replace(/\s+/g, " ").trim(), k = known.get(norm(term)), token = ++lookToken;
-    lookEl = document.createElement("div");
-    lookEl.className = "look";
-    lookEl.textContent = k && k.meaning ? k.meaning : "…";
-    lookEl.style.left = Math.round(Math.max(8, Math.min(innerWidth - 328, r.left))) + "px";
-    lookEl.style.top = Math.round(Math.min(innerHeight - 40, r.bottom + 6)) + "px";
-    wrap.appendChild(lookEl);
-    if (k && k.meaning) return;
-    chrome.runtime.sendMessage({ type: "translate", text: term, to: settings.lang }, res => {
-      if (token !== lookToken || !lookEl) return;
-      lookEl.textContent = !chrome.runtime.lastError && res && res.ok && res.text ? res.text : "No meaning found";
-    });
+    const term = found.text.replace(/\s+/g, " ").trim(), k = known.get(norm(term));
+    hideTip();
+    lookEl = lookBox(term, r, k && k.meaning);
   }
   function showPick(found) {
     if (card) return;
@@ -662,7 +673,7 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
     card.innerHTML = `<div class="head"><span class="icons"><span class="lv" hidden></span><button class="icon say" title="Listen" aria-label="Listen">🔊</button><button class="icon tr-btn" title="Translate the sentence" aria-label="Translate the sentence"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M3 5h8M7 3v2M5 5c0 3 2 5 5 6M9 5c0 3-2 5-5 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 17l3-7 3 7M12 15h4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="icon close" title="Close (Esc)" aria-label="Close">✕</button></span><div class="term" contenteditable="plaintext-only" spellcheck="false" role="textbox" aria-label="Word"></div></div>
 <div class="reading"></div>
 <div class="body"><div class="field meaning" contenteditable="plaintext-only" role="textbox" data-placeholder="Translating…" aria-label="Meaning"></div><div class="alts"></div><div class="srcs"></div><div class="defs"></div>
-<div class="sent-wrap"><div class="sent-view"></div></div><textarea class="field sentence" rows="1" aria-label="Sentence" hidden></textarea><div class="sub sent-tr"></div><div class="exs"></div><div class="sub src"></div>
+<div class="sent-wrap"><div class="sent-view"></div><button type="button" class="pick-ex pick-own" hidden title="Pick this sentence up into wikiPhidia" aria-label="Pick this sentence up">＋</button></div><textarea class="field sentence" rows="1" aria-label="Sentence" hidden></textarea><div class="sub sent-tr"></div><div class="exs"></div><div class="sub src"></div>
 <div class="note"></div>
 <div class="foot"><button class="btn add">Add</button></div></div>`;
     wrap.appendChild(card);
@@ -716,6 +727,7 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
     const showKnown = () => {
       const kk = known.get(norm(termEl.value));
       const add = $(".add");
+      $(".pick-own").hidden = !(kk && kk.state === "app");
       if (kk && kk.state === "app") {
         note.innerHTML = `Already in wikiPhidia · <i>${esc(kk.lesson)}</i><br>${esc(kk.meaning || "")}`;
         add.disabled = true;
@@ -782,6 +794,19 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
     });
     $(".say").addEventListener("click", e => sayTip(termEl.value.trim(), card.dataset.audio, e.currentTarget));
     card.addEventListener("click", e => {
+      const pk = e.target.closest(".pick-ex");
+      if (pk) {
+        e.preventDefault();
+        if (pk.classList.contains("done")) return;
+        const t = pk.classList.contains("pick-own") ? sentEl.value.replace(/\s+/g, " ").trim() : pk.dataset.t, m = meaningEl.value.split("\n")[0].replace(/\s+/g, " ").trim() || ((known.get(norm(termEl.value)) || {}).meaning || "").split("\n")[0].trim();
+        if (!m) return toast("Give the word a meaning first");
+        queueWordSentence(termEl.value.trim(), m, t, pk.dataset.tr || "").then(() => {
+          pk.classList.add("done");
+          pk.textContent = "✓";
+          pk.title = "Picked up";
+        });
+        return;
+      }
       const dd = e.target.closest("button.dd");
       if (!dd) return;
       meaningEl.value = dd.dataset.m;
@@ -960,6 +985,26 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
   const draftKey = () => location.origin + location.pathname + location.search;
   const VI = /[ăâđêôơưạảấầẩẫậắằẳẵặẹẻẽếềểễệỉịọỏốồổỗộớờởỡợụủứừửữựỳỵỷỹ]/i;
   const sentenceParts = text => (text.replace(/\s+/g, " ").match(/[^.!?。！？]+(?:[.!?。！？]+["'”’)\]]*|$)/g) || []).map(t => t.trim()).filter(t => t.length >= 12 && t.length <= 320 && /[\p{L}]{2}/u.test(t));
+  async function queueWordSentence(term, meaning, sentence, translation) {
+    const at = Date.now(), { pending: now } = await chrome.storage.local.get("pending");
+    const next = (now || []).concat([ {
+      id: at.toString(36) + Math.random().toString(36).slice(2, 8),
+      url: location.href,
+      title: document.title,
+      lessonId: settings.lessonId || "",
+      lessonName: settings.lessonName || articleTitle(),
+      at,
+      kind: "wsent",
+      term,
+      meaning,
+      sentence,
+      translation
+    } ]);
+    pending = next;
+    await chrome.storage.local.set({ pending: next });
+    toast("Sentence picked up for wikiPhidia");
+  }
+
   const itemKey = x => x.kind === "word" ? "w|" + norm(x.term) : "s|" + norm(x.t);
   function saveDraft() {
     chrome.storage.local.get("sentDrafts").then(({ sentDrafts }) => {
