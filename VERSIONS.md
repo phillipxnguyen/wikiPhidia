@@ -801,7 +801,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-90 | `832f81c` | Ô câu ví dụ trong popup: nền xanh xám rõ hơn |
 | LOOKUP-91 | `68530e5` | Editor của từ: pill nghĩa của máy dịch theo từ loại để chọn/bỏ nghĩa; ô nghĩa tự gõ có placeholder kính lúp |
 | LOOKUP-92 | `88e0db7` | Editor: bản dịch câu dùng font pixel VT323 có đủ dấu tiếng Việt (22px) |
-| LOOKUP-93 | `pending` | Extension 1.6.58: trỏ hoặc chọn từ chỉ hiện bong bóng nghĩa nhỏ (nền trắng, mũi tên, chấm xanh); thẻ thêm từ đầy đủ lại (từ điển, định nghĩa, ví dụ có ＋ nhặt câu) |
+| LOOKUP-93 | `f011ad2` | Extension 1.6.58: trỏ hoặc chọn từ chỉ hiện bong bóng nghĩa nhỏ (nền trắng, mũi tên, chấm xanh); thẻ thêm từ đầy đủ lại (từ điển, định nghĩa, ví dụ có ＋ nhặt câu) |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
