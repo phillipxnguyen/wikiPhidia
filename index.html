@@ -2562,6 +2562,8 @@ window.onYouTubeIframeAPIReady = function(){
   .screen-cut{position:fixed;inset:0;z-index:940;overflow:hidden;pointer-events:none;}
   .w-flow{position:fixed;inset:0;z-index:960;overflow:hidden;pointer-events:none;filter:url(#wGooF);}
   .w-flow > div{position:absolute;left:0;top:0;}
+  .watch-pop .w-capline.w-cap-old{position:fixed;margin:0;box-sizing:border-box;pointer-events:none;}
+  .watch-pop .w-capline.w-cap-old.tint :is(*, .w-text){color:var(--tc) !important;transition:color .12s ease-out;}
   .cut-stamp{position:absolute;left:50%;top:50%;z-index:3;display:flex;align-items:center;justify-content:center;width:200px;height:200px;border-radius:100px;border:8px solid currentColor;font-size:112px;line-height:112px;font-weight:900;opacity:0;pointer-events:none;}
   .cut-stamp.good{color:#ffffff;background:#1f9d55;border-color:#ffffff;box-shadow:0 12px 32px rgba(20,120,60,.4);}
   .cut-stamp.again{color:#ffffff;background:#d64545;border-color:#ffffff;box-shadow:0 12px 32px rgba(160,30,30,.4);}
@@ -4372,28 +4374,102 @@ function watchGrade(isAgain, now1) {
     if (!watch) return;
     if (taskRun && taskRun.theater && (!q.length || taskRun.day && dayRunOver())) return taskTheaterDone();
     paintWatchList();
+    const capNow = !cabin && !reducedMotion() && document.querySelector("#watchPop .w-capline"), snap = capNow && capNow.textContent.trim() ? capNow.cloneNode(true) : null;
+    if (snap) {
+      const cr = capNow.getBoundingClientRect();
+      snap.removeAttribute("data-id");
+      snap.inert = true;
+      snap.classList.add("w-cap-old");
+      Object.assign(snap.style, {
+        left: Math.round(cr.left) + "px",
+        top: Math.round(cr.top) + "px",
+        width: Math.ceil(cr.width) + 1 + "px",
+        height: Math.ceil(cr.height) + "px"
+      });
+      capNow.parentNode.appendChild(snap);
+    }
     const ni = watch.lines.findIndex(x => x.id === nextId);
     if (ni >= 0) watchSeek(ni);
     paintWatchCounts();
-    if (!cabin && !reducedMotion()) requestAnimationFrame(() => watchSuck(r.id, isAgain));
+    if (snap) requestAnimationFrame(() => watchSuck(r.id, isAgain, snap));
   };
   if (reducedMotion() || !cabin) after(); else setTimeout(after, 240);
 }
 
-function watchSuck(id, isAgain) {
-  const cap = document.querySelector("#watchPop .w-capline"), lst = document.querySelector("#watchPop .w-list"), pill = document.querySelector(`#watchPop .w-row[data-id="${id}"] .w-t`);
-  if (!cap || !lst || !pill) return;
+function watchSuck(id, isAgain, snap) {
+  const lst = document.querySelector("#watchPop .w-list"), pill = document.querySelector(`#watchPop .w-row[data-id="${id}"] .w-t`), cap = document.querySelector("#watchPop .w-capline:not(.w-cap-old)");
   const rg = document.createRange();
-  rg.selectNodeContents(cap);
-  const t = rg.getBoundingClientRect().width ? rg.getBoundingClientRect() : cap.getBoundingClientRect(), p = pill.getBoundingClientRect(), l = lst.getBoundingClientRect();
-  if (!t.width || p.bottom < l.top || p.top > l.bottom) return;
+  rg.selectNodeContents(snap);
+  const t = rg.getBoundingClientRect(), p = pill && pill.getBoundingClientRect(), l = lst && lst.getBoundingClientRect();
+  if (!p || !t.width || p.bottom < l.top || p.top > l.bottom) return snap.remove();
   if (!document.getElementById("wGoo")) document.body.insertAdjacentHTML("beforeend", '<svg id="wGoo" width="0" height="0" aria-hidden="true" style="position:absolute"><filter id="wGooF"><feGaussianBlur in="SourceGraphic" stdDeviation="6" result="b"/><feColorMatrix in="b" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -10" result="g"/><feComposite in="SourceGraphic" in2="g" operator="atop"/></filter></svg>');
   const box = document.createElement("div"), col = isAgain ? "#d64545" : "#1f9d55";
   box.className = "w-flow";
   document.body.appendChild(box);
   const x0 = Math.round(t.left + t.width / 2), x1 = Math.round(p.left + p.width / 2), y1 = Math.round(p.top + p.height / 2);
-  const yb = Math.round(t.bottom + 6), c2x = x1 - Math.round(Math.min(160, Math.abs(x1 - x0) * .4)), n = 30;
-  const pathFrom = sx => `path("M ${sx} ${yb} C ${sx + Math.round((x1 - sx) * .55)} ${yb}, ${c2x} ${y1}, ${x1} ${y1}")`;
+  const yb = Math.round(t.bottom + 8), c2x = x1 - Math.round(Math.min(160, Math.abs(x1 - x0) * .4)), n = 30;
+  const path = `path("M ${x0} ${yb} C ${x0 + Math.round((x1 - x0) * .55)} ${yb}, ${c2x} ${y1}, ${x1} ${y1}")`;
+  if (cap) cap.animate([ {
+    opacity: 0
+  }, {
+    opacity: 0,
+    offset: .62
+  }, {
+    opacity: 1
+  } ], {
+    duration: 640,
+    easing: "ease-out"
+  });
+  snap.style.setProperty("--tc", col);
+  snap.classList.add("tint");
+  snap.animate([ {
+    transform: "none",
+    opacity: 1
+  }, {
+    transform: "none",
+    opacity: 1,
+    offset: .3
+  }, {
+    transform: "translateY(6px) scaleY(.85)",
+    opacity: 0
+  } ], {
+    duration: 380,
+    easing: "ease-in",
+    fill: "forwards"
+  }).finished.catch(() => {}).finally(() => snap.remove());
+  const bar = document.createElement("div");
+  Object.assign(bar.style, {
+    left: Math.round(t.left) + "px",
+    top: yb - 4 + "px",
+    width: Math.round(t.width) + "px",
+    height: "8px",
+    borderRadius: "4px",
+    background: col
+  });
+  box.appendChild(bar);
+  bar.animate([ {
+    transform: "scale(1, 0)",
+    opacity: 0
+  }, {
+    transform: "scale(1, 1)",
+    opacity: .9,
+    offset: .35
+  }, {
+    transform: `scale(${Math.min(1, 24 / t.width)}, 2.6)`,
+    opacity: .9
+  } ], {
+    duration: 360,
+    delay: 80,
+    easing: "cubic-bezier(.6, 0, .4, 1)",
+    fill: "both"
+  }).finished.then(() => bar.animate([ {
+    opacity: .9
+  }, {
+    opacity: 0
+  } ], {
+    duration: 120,
+    fill: "forwards"
+  })).catch(() => {});
   const flows = Array.from({
     length: n
   }, (_, i) => {
@@ -4403,7 +4479,7 @@ function watchSuck(id, isAgain) {
       height: z + "px",
       borderRadius: z + "px",
       background: col,
-      offsetPath: pathFrom(Math.round(t.right - 4 - (t.width - 8) * i / (n - 1))),
+      offsetPath: path,
       offsetRotate: "0deg",
       offsetDistance: "0%"
     });
@@ -4425,8 +4501,8 @@ function watchSuck(id, isAgain) {
       opacity: 0,
       transform: "scale(.4)"
     } ], {
-      duration: 700,
-      delay: i * 8,
+      duration: 640,
+      delay: 400 + i * 6,
       easing: "cubic-bezier(.45, 0, .35, 1)",
       fill: "both"
     }).finished;
