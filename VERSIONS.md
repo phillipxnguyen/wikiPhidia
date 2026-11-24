@@ -192,6 +192,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-131 | `4408160` | Watch: gom hết cả ô phụ đề (phủ kín ô), luôn dồn về mép phía pill, độ cao điểm gom và nhịp từng phần ngẫu nhiên |
 | THEATER-132 | `ee79941` | Watch: chất lỏng luôn nằm dưới mọi phụ đề, kể cả dòng kế tiếp đang hiện, không bao giờ đè lên chữ |
 | THEATER-133 | `f11d1e4` | Watch: phụ đề + chất lỏng là một khối; phụ đề kế tiếp chỉ hiện khi dòng chảy đã rời chỗ đó, không còn che dòng chảy |
+| THEATER-134 | `pending` | Watch: phụ đề đổi A→B ngay như cũ; ô phụ đề hoá chất lỏng nằm dưới chữ B, trên nền ô, rồi rút về phía pill |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
