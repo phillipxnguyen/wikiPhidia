@@ -209,6 +209,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-148 | `5eb90a4` | Watch: sửa dòng chảy rơi vào pill câu kế tiếp (list cuộn); giờ bám đúng pill câu vừa chấm |
 | THEATER-149 | `1869dda` | Watch/Interpreter: màn học xong chờ dòng chảy và pill đầy xong, rồi list/video mờ dần và thông báo hiện dần |
 | THEATER-150 | `d4ca148` | Interpreter: màn học xong cũng chờ hiệu ứng chấm cuối xong rồi mờ dần/hiện dần như Watch |
+| THEATER-151 | `pending` | Watch: khi pill khuất (chữ to), dòng chảy vào phần câu còn thấy và cả câu loé xanh/đỏ rồi về bình thường |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 

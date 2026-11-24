@@ -2584,6 +2584,9 @@ window.onYouTubeIframeAPIReady = function(){
   .w-drop{position:absolute;width:20px;height:20px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.35);}
   .w-stream{position:absolute;left:0;top:0;overflow:visible;}
   .w-t.filling{isolation:isolate;color:#ffffff;transition:color .3s ease;}
+  .w-row .w-text, .w-row .w-text *, .w-row .w-tr{transition:color .35s ease;}
+  .w-row.w-flash-good :is(.w-text, .w-text *, .w-tr){color:#4ade80 !important;}
+  .w-row.w-flash-again :is(.w-text, .w-text *, .w-tr){color:#ff7a7a !important;}
   .w-t-fill{position:absolute;inset:0;z-index:-1;border-radius:12px;}
   @media (min-width:821px), (hover:hover){.watch-pop:not(.cabin) .w-cap{display:none;}}
   .cut-stamp{position:absolute;left:50%;top:50%;z-index:3;display:flex;align-items:center;justify-content:center;width:200px;height:200px;border-radius:100px;border:8px solid currentColor;font-size:112px;line-height:112px;font-weight:900;opacity:0;pointer-events:none;}
@@ -4507,11 +4510,38 @@ function pillFill(id, isAgain, from) {
   });
 }
 
+function watchAim(id) {
+  const lst = document.querySelector("#watchPop .w-list"), row = document.querySelector(`#watchPop .w-row[data-id="${id}"]`), pill = row && row.querySelector(".w-t");
+  if (!lst || !row || !pill) return null;
+  const l = lst.getBoundingClientRect(), p = pill.getBoundingClientRect(), r = row.getBoundingClientRect();
+  if (p.top >= l.top && p.bottom <= l.bottom) return {
+    x: Math.round(p.left + p.width / 2),
+    y: Math.round(p.top + p.height / 2),
+    pill: true
+  };
+  const top = Math.max(r.top, l.top), bottom = Math.min(r.bottom, l.bottom);
+  if (bottom - top < 8) return null;
+  return {
+    x: Math.round(r.left + 24),
+    y: Math.round(top + Math.min(24, (bottom - top) / 2)),
+    pill: false
+  };
+}
+
+function watchRowFlash(id, isAgain) {
+  const row = document.querySelector(`#watchPop .w-row[data-id="${id}"]`);
+  if (!row) return;
+  row.classList.add(isAgain ? "w-flash-again" : "w-flash-good");
+  setTimeout(() => row.classList.remove("w-flash-again", "w-flash-good"), 700);
+}
+
 function watchSuck(id, isAgain, vr) {
-  const lst = document.querySelector("#watchPop .w-list"), pill = document.querySelector(`#watchPop .w-row[data-id="${id}"] .w-t`);
-  const p = pill && pill.getBoundingClientRect(), l = lst && lst.getBoundingClientRect();
-  if (!p || !vr.width || p.bottom < l.top || p.top > l.bottom) return pillLand(id, isAgain);
-  const col = isAgain ? "#d64545" : "#1f9d55", box = document.createElement("div"), cx = Math.round(vr.left + vr.width * (.2 + Math.random() * .6)), cy = Math.round(vr.top + vr.height * (.3 + Math.random() * .45)), x1 = Math.round(p.left + p.width / 2), y1 = Math.round(p.top + p.height / 2);
+  const aim = watchAim(id);
+  if (!aim || !vr.width) {
+    pillLand(id, isAgain);
+    return watchRowFlash(id, isAgain);
+  }
+  const col = isAgain ? "#d64545" : "#1f9d55", box = document.createElement("div"), cx = Math.round(vr.left + vr.width * (.2 + Math.random() * .6)), cy = Math.round(vr.top + vr.height * (.3 + Math.random() * .45)), x1 = aim.x, y1 = aim.y;
   box.className = "w-splash";
   document.body.appendChild(box);
   const drop = document.createElement("div"), ns = "http://www.w3.org/2000/svg", svg = document.createElementNS(ns, "svg");
@@ -4556,13 +4586,18 @@ function watchSuck(id, isAgain, vr) {
     easing: "ease-out",
     fill: "forwards"
   });
-  setTimeout(() => pillFill(id, isAgain, from), Math.round(60 + dur * len / (len + 220)));
+  setTimeout(() => {
+    const now = watchAim(id);
+    if (now && now.pill) return pillFill(id, isAgain, from);
+    pillLand(id, isAgain);
+    watchRowFlash(id, isAgain);
+  }, Math.round(60 + dur * len / (len + 220)));
   let last = d;
   const follow = () => {
     if (!box.isConnected) return;
-    const row = document.querySelector(`#watchPop .w-row[data-id="${id}"] .w-t`);
-    if (row) {
-      const q = row.getBoundingClientRect(), nd = route(Math.round(q.left + q.width / 2), Math.round(q.top + q.height / 2));
+    const q = watchAim(id);
+    if (q) {
+      const nd = route(q.x, q.y);
       if (nd !== last) {
         last = nd;
         strokes.forEach(([ path ]) => path.setAttribute("d", nd));
