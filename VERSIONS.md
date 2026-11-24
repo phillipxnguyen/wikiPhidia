@@ -843,7 +843,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-93 | `f011ad2` | Extension 1.6.58: trỏ hoặc chọn từ chỉ hiện bong bóng nghĩa nhỏ (nền trắng, mũi tên, chấm xanh); thẻ thêm từ đầy đủ lại (từ điển, định nghĩa, ví dụ có ＋ nhặt câu) |
 | LOOKUP-94 | `1a57c5e` | Extension 1.6.59: bong bóng nghĩa bỏ chấm xanh trang trí |
 | LOOKUP-95 | `df50850` | Extension 1.6.60: trả lại 2 nút 字 / ⚡ (hiện nút hay mở thẻ ngay) ở đầu popup |
-| LOOKUP-96 | `pending` | Extension 1.6.61: bảng gom câu tự hiện ở góc phải dưới khi trang có câu làm thẻ được; câu đã gửi/bỏ không hiện lại |
+| LOOKUP-96 | `131bdb4` | Extension 1.6.61: bảng gom câu tự hiện ở góc phải dưới khi trang có câu làm thẻ được; câu đã gửi/bỏ không hiện lại |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
