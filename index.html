@@ -4428,11 +4428,13 @@ function watchSuck(id, isAgain, snap) {
     easing: "ease-in",
     fill: "forwards"
   }).finished.catch(() => {}).finally(() => snap.remove());
-  const x1 = Math.round(p.left + p.width / 2), y1 = Math.round(p.top + p.height / 2), z = Math.round(Math.min(sr.height, 56));
-  const colsN = Math.max(60, Math.round(sr.width / 3));
+  const x1 = Math.round(p.left + p.width / 2), y1 = Math.round(p.top + p.height / 2), z = Math.round(Math.min(sr.height, 28));
+  const rowsN = Math.max(1, Math.ceil((sr.height - z) / (z * .6)) + 1), colsN = Math.max(Math.ceil(90 / rowsN), Math.round(sr.width / 6));
   const pts = [];
-  for (let i = 0; i < colsN; i++) pts.push([ Math.round(sr.left + z / 2 + (sr.width - z) * i / (colsN - 1)), Math.round(sr.top + sr.height / 2) ]);
-  const side = Math.floor(Math.random() * 4), u = Math.random(), gx = Math.round(side < 2 ? sr.left + z / 2 + (sr.width - z) * u : side === 2 ? sr.left + z / 2 : sr.right - z / 2), gy = Math.round(side === 0 ? sr.top : side === 1 ? sr.bottom : sr.top + sr.height / 2);
+  for (let i = 0; i < colsN; i++) for (let j = 0; j < rowsN; j++) pts.push([ Math.round(sr.left + z / 2 + (sr.width - z) * i / (colsN - 1)), Math.round(rowsN === 1 ? sr.top + sr.height / 2 : sr.top + z / 2 + (sr.height - z) * j / (rowsN - 1)) ]);
+  const inX = x1 >= sr.left && x1 <= sr.right, inY = y1 >= sr.top && y1 <= sr.bottom, jit = (a, b) => Math.round(a + Math.random() * (b - a));
+  const gx = inX ? jit(Math.max(sr.left + z / 2, x1 - 40), Math.min(sr.right - z / 2, x1 + 40)) : x1 > sr.right ? Math.round(sr.right - z / 2) : Math.round(sr.left + z / 2);
+  const gy = inY || !inX ? jit(sr.top + z / 2, sr.bottom - z / 2) : y1 > sr.bottom ? Math.round(sr.bottom - z / 2) : Math.round(sr.top + z / 2);
   const order = pts.map(([ x, y ]) => Math.hypot(gx - x, gy - y)).map((d, i) => [ d, i ]).sort((a, b) => a[0] - b[0]).map(([, i]) => i), rank = [];
   order.forEach((i, k) => rank[i] = k);
   const flows = pts.map(([ x0, y0 ], k) => {
@@ -4476,7 +4478,7 @@ function watchSuck(id, isAgain, snap) {
       transform: `scale(${Math.min(1, 8 / z)})`
     } ], {
       duration: 860,
-      delay: Math.round(20 + 260 * rank[k] / Math.max(1, pts.length - 1)),
+      delay: Math.max(0, Math.round(20 + 260 * rank[k] / Math.max(1, pts.length - 1) + (Math.random() - .5) * 24)),
       fill: "both"
     }).finished;
   });
