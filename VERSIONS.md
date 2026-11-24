@@ -210,7 +210,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-149 | `1869dda` | Watch/Interpreter: màn học xong chờ dòng chảy và pill đầy xong, rồi list/video mờ dần và thông báo hiện dần |
 | THEATER-150 | `d4ca148` | Interpreter: màn học xong cũng chờ hiệu ứng chấm cuối xong rồi mờ dần/hiện dần như Watch |
 | THEATER-151 | `b8f7d16` | Watch: khi pill khuất (chữ to), dòng chảy vào phần câu còn thấy và cả câu loé xanh/đỏ rồi về bình thường |
-| THEATER-152 | `pending` | Watch: cả câu đổi xanh/đỏ trong lúc pill đầy, về bình thường cùng lúc pill đầy xong |
+| THEATER-152 | `df50850` | Watch: cả câu đổi xanh/đỏ trong lúc pill đầy, về bình thường cùng lúc pill đầy xong |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
@@ -842,7 +842,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-92 | `88e0db7` | Editor: bản dịch câu dùng font pixel VT323 có đủ dấu tiếng Việt (22px) |
 | LOOKUP-93 | `f011ad2` | Extension 1.6.58: trỏ hoặc chọn từ chỉ hiện bong bóng nghĩa nhỏ (nền trắng, mũi tên, chấm xanh); thẻ thêm từ đầy đủ lại (từ điển, định nghĩa, ví dụ có ＋ nhặt câu) |
 | LOOKUP-94 | `1a57c5e` | Extension 1.6.59: bong bóng nghĩa bỏ chấm xanh trang trí |
-| LOOKUP-95 | `pending` | Extension 1.6.60: trả lại 2 nút 字 / ⚡ (hiện nút hay mở thẻ ngay) ở đầu popup |
+| LOOKUP-95 | `df50850` | Extension 1.6.60: trả lại 2 nút 字 / ⚡ (hiện nút hay mở thẻ ngay) ở đầu popup |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
