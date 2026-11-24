@@ -203,7 +203,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-142 | `9212028` | Watch: giọt rơi ở chỗ ngẫu nhiên trên video; học hết thì video dừng, ẩn list, chỉ còn thẻ xong, tự quay lại khi có câu đến hạn |
 | THEATER-143 | `8291952` | Interpreter cũng có thẻ học xong / Back in a moment như Watch (dừng video, ẩn phụ đề) |
 | THEATER-144 | `dcb4c35` | Watch: học xong vẫn giữ ô list (bảng tối rỗng); giọt nảy lên rồi thành dòng chảy (đầu dày, đuôi thon) vào pill |
-| THEATER-145 | `pending` | Watch: bỏ nảy và gợn sóng; giọt hiện dần ở chỗ ngẫu nhiên rồi chảy thành dòng vào pill |
+| THEATER-145 | `f46f936` | Watch: bỏ nảy và gợn sóng; giọt hiện dần ở chỗ ngẫu nhiên rồi chảy thành dòng vào pill |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
