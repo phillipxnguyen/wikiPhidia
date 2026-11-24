@@ -199,6 +199,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-138 | `1f4d920` | Watch (máy tính): bỏ phụ đề trên video và ô cỡ chữ; khi chấm, viền video xanh/đỏ chạy quanh khung, gom về một điểm ngẫu nhiên phía list rồi chảy vào pill giờ |
 | THEATER-139 | `34a2728` | Watch: ô cỡ chữ quay lại, giờ chỉnh cỡ chữ của list (16/20/24px, pill giữ nguyên) |
 | THEATER-140 | `47a52ab` | Watch: học hết thì hiện thẻ xong trên video (All caught up / Back in a moment / Daily limit + nút Study N more today) như các chế độ khác |
+| THEATER-141 | `pending` | Watch: thay viền chảy bằng giọt rơi giữa video + gợn sóng, nảy lên bay vào pill; pill đầy dần từ dưới lên khi giọt tới |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
