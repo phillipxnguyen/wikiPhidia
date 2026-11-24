@@ -181,7 +181,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-120 | `79be32c` | Watch: bỏ hết hiệu ứng chấm, chỉ còn pill giờ đổi màu |
 | THEATER-121 | `aeb8ea2` | Watch: khi chấm, một bản trong mờ của khung video bị hút dần vào pill giờ của dòng (chậm rồi nhanh, co lại), pill phồng nhẹ khi nhận |
 | THEATER-122 | `19589ff` | Watch: thay cú hút cả khung bằng dòng chất lỏng chảy mượt từ phụ đề vào pill giờ |
-| THEATER-123 | `pending` | Watch: dòng chảy rút ngay từ dưới dòng phụ đề (từ cuối về đầu), không gom giọt đè lên chữ |
+| THEATER-123 | `91cea7f` | Watch: dòng chảy rút ngay từ dưới dòng phụ đề (từ cuối về đầu), không gom giọt đè lên chữ |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
