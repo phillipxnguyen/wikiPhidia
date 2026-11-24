@@ -190,6 +190,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-129 | `b9c5f52` | Watch: chất lỏng nằm dưới chữ phụ đề (chữ vẫn đọc được), rút ra mượt, thon dần thành dòng vào pill giờ |
 | THEATER-130 | `f852afd` | Watch: cả ô chất lỏng gom hết về một điểm ngẫu nhiên trên mép ô (gần trước, xa sau) rồi mới thành dòng chảy vào pill |
 | THEATER-131 | `4408160` | Watch: gom hết cả ô phụ đề (phủ kín ô), luôn dồn về mép phía pill, độ cao điểm gom và nhịp từng phần ngẫu nhiên |
+| THEATER-132 | `pending` | Watch: chất lỏng luôn nằm dưới mọi phụ đề, kể cả dòng kế tiếp đang hiện, không bao giờ đè lên chữ |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
