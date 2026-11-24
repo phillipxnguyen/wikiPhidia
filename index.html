@@ -4399,48 +4399,19 @@ function watchSuck(id, isAgain, snap) {
   const lst = document.querySelector("#watchPop .w-list"), pill = document.querySelector(`#watchPop .w-row[data-id="${id}"] .w-t`), cap = document.querySelector("#watchPop .w-capline:not(.w-cap-old)");
   const sr = snap.getBoundingClientRect(), p = pill && pill.getBoundingClientRect(), l = lst && lst.getBoundingClientRect();
   if (!p || !sr.width || p.bottom < l.top || p.top > l.bottom) return snap.remove();
-  if (!document.getElementById("wGoo")) document.body.insertAdjacentHTML("beforeend", '<svg id="wGoo" width="0" height="0" aria-hidden="true" style="position:absolute"><filter id="wGooF"><feGaussianBlur in="SourceGraphic" stdDeviation="7" result="b"/><feColorMatrix in="b" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -10" result="g"/><feComposite in="SourceGraphic" in2="g" operator="atop"/></filter></svg>');
-  const col = isAgain ? "#d64545" : "#1f9d55", w = Math.round(sr.width), h = Math.round(sr.height), cx = w / 2, cy = h / 2, R = 14, n = 20, rnd = (a, b) => a + Math.random() * (b - a);
-  const box = document.createElement("div"), blob = document.createElement("div");
+  if (!document.getElementById("wGoo")) document.body.insertAdjacentHTML("beforeend", '<svg id="wGoo" width="0" height="0" aria-hidden="true" style="position:absolute"><filter id="wGooF"><feGaussianBlur in="SourceGraphic" stdDeviation="9" result="b"/><feColorMatrix in="b" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 24 -11" result="g"/><feComposite in="SourceGraphic" in2="g" operator="atop"/></filter></svg>');
+  const col = isAgain ? "#d64545" : "#1f9d55", box = document.createElement("div");
   box.className = "w-flow";
-  Object.assign(blob.style, {
-    left: Math.round(sr.left) + "px",
-    top: Math.round(sr.top) + "px",
-    width: w + "px",
-    height: h + "px",
-    background: col
-  });
-  box.appendChild(blob);
   document.body.appendChild(box);
-  const per = 2 * (w + h), pts = Array.from({
-    length: n
-  }, (_, i) => {
-    let d = per * i / n;
-    if (d < w) return [ d, 0 ];
-    d -= w;
-    if (d < h) return [ w, d ];
-    d -= h;
-    if (d < w) return [ w - d, h ];
-    return [ 0, h - (d - w) ];
-  });
-  const end = pts.map(([ x, y ]) => {
-    const a = Math.atan2(y - cy, x - cx);
-    return [ cx + Math.cos(a) * R, cy + Math.sin(a) * R ];
-  });
-  const mid = pts.map(([ x, y ], i) => {
-    const k = rnd(.1, .9);
-    return [ x + (end[i][0] - x) * k, y + (end[i][1] - y) * k ];
-  });
-  const poly = list => `polygon(${list.map(([ x, y ]) => Math.round(x) + "px " + Math.round(y) + "px").join(", ")})`;
   if (cap) cap.animate([ {
     opacity: 0
   }, {
     opacity: 0,
-    offset: .5
+    offset: .4
   }, {
     opacity: 1
   } ], {
-    duration: 560,
+    duration: 520,
     easing: "ease-out"
   });
   snap.animate([ {
@@ -4448,75 +4419,48 @@ function watchSuck(id, isAgain, snap) {
   }, {
     opacity: 0
   } ], {
-    duration: 160,
+    duration: 140,
     fill: "forwards"
   }).finished.catch(() => {}).finally(() => snap.remove());
-  blob.animate([ {
-    clipPath: poly(pts),
-    opacity: 0
-  }, {
-    clipPath: poly(pts),
-    opacity: .9,
-    offset: .15
-  }, {
-    clipPath: poly(mid),
-    opacity: .9,
-    offset: .55
-  }, {
-    clipPath: poly(end),
-    opacity: .9
-  } ], {
-    duration: 420,
-    easing: "cubic-bezier(.5, 0, .4, 1)",
-    fill: "forwards"
-  }).finished.then(() => blob.animate([ {
-    opacity: .9
-  }, {
-    opacity: 0
-  } ], {
-    duration: 160,
-    fill: "forwards"
-  })).catch(() => {});
-  const x0 = Math.round(sr.left + cx), y0 = Math.round(sr.top + cy), x1 = Math.round(p.left + p.width / 2), y1 = Math.round(p.top + p.height / 2), c2x = x1 - Math.round(Math.min(160, Math.abs(x1 - x0) * .4));
-  const path = `path("M ${x0} ${y0} C ${x0 + Math.round((x1 - x0) * .55)} ${y0}, ${c2x} ${y1}, ${x1} ${y1}")`;
-  const flows = Array.from({
-    length: 30
-  }, (_, i) => {
-    const d = document.createElement("div"), z = Math.round(24 - i * .45);
+  const x1 = Math.round(p.left + p.width / 2), y1 = Math.round(p.top + p.height / 2), z = Math.round(Math.min(28, Math.max(16, sr.height / 2 + 4)));
+  const rowsN = Math.max(1, Math.round(sr.height / z)), colsN = Math.max(Math.ceil(44 / rowsN), Math.round(sr.width / (z * .6)));
+  const pts = [];
+  for (let i = 0; i < colsN; i++) for (let j = 0; j < rowsN; j++) pts.push([ Math.round(sr.left + z / 2 + (sr.width - z) * i / (colsN - 1)), Math.round(sr.top + (rowsN === 1 ? sr.height / 2 : z / 2 + (sr.height - z) * j / (rowsN - 1))) ]);
+  const order = pts.map(([ x, y ]) => Math.hypot(x1 - x, y1 - y)).map((d, i) => [ d, i ]).sort((a, b) => a[0] - b[0]).map(([, i]) => i), rank = [];
+  order.forEach((i, k) => rank[i] = k);
+  const flows = pts.map(([ x0, y0 ], k) => {
+    const d = document.createElement("div"), c2x = x1 - Math.round(Math.min(160, Math.abs(x1 - x0) * .4));
     Object.assign(d.style, {
       width: z + "px",
       height: z + "px",
       borderRadius: z + "px",
       background: col,
-      offsetPath: path,
+      offsetPath: `path("M ${x0} ${y0} C ${x0 + Math.round((x1 - x0) * .55)} ${y0}, ${c2x} ${y1}, ${x1} ${y1}")`,
       offsetRotate: "0deg",
       offsetDistance: "0%"
     });
     box.appendChild(d);
     return d.animate([ {
       offsetDistance: "0%",
-      opacity: 0
-    }, {
-      offsetDistance: "3%",
       opacity: .9,
-      offset: .06
+      transform: "scale(1)"
     }, {
-      offsetDistance: "92%",
+      offsetDistance: "90%",
       opacity: .9,
-      transform: "scale(1)",
-      offset: .88
+      transform: "scale(.7)",
+      offset: .86
     }, {
       offsetDistance: "100%",
       opacity: 0,
-      transform: "scale(.4)"
+      transform: "scale(.35)"
     } ], {
-      duration: 640,
-      delay: 340 + i * 6,
-      easing: "cubic-bezier(.45, 0, .35, 1)",
+      duration: 620,
+      delay: Math.round(40 + 280 * rank[k] / Math.max(1, pts.length - 1)),
+      easing: "cubic-bezier(.4, 0, .3, 1)",
       fill: "both"
     }).finished;
   });
-  flows[0].then(() => pill.animate([ {
+  Promise.race(flows).then(() => pill.animate([ {
     transform: "scale(1)"
   }, {
     transform: "scale(1.2)",
