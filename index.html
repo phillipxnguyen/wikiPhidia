@@ -4432,42 +4432,51 @@ function watchSuck(id, isAgain, snap) {
   const colsN = Math.max(60, Math.round(sr.width / 3));
   const pts = [];
   for (let i = 0; i < colsN; i++) pts.push([ Math.round(sr.left + z / 2 + (sr.width - z) * i / (colsN - 1)), Math.round(sr.top + sr.height / 2) ]);
-  const order = pts.map(([ x, y ]) => Math.hypot(x1 - x, y1 - y)).map((d, i) => [ d, i ]).sort((a, b) => a[0] - b[0]).map(([, i]) => i), rank = [];
+  const side = Math.floor(Math.random() * 4), u = Math.random(), gx = Math.round(side < 2 ? sr.left + z / 2 + (sr.width - z) * u : side === 2 ? sr.left + z / 2 : sr.right - z / 2), gy = Math.round(side === 0 ? sr.top : side === 1 ? sr.bottom : sr.top + sr.height / 2);
+  const order = pts.map(([ x, y ]) => Math.hypot(gx - x, gy - y)).map((d, i) => [ d, i ]).sort((a, b) => a[0] - b[0]).map(([, i]) => i), rank = [];
   order.forEach((i, k) => rank[i] = k);
   const flows = pts.map(([ x0, y0 ], k) => {
-    const d = document.createElement("div"), c2x = x1 - Math.round(Math.min(160, Math.abs(x1 - x0) * .4));
+    const d = document.createElement("div"), c2x = x1 - Math.round(Math.min(160, Math.abs(x1 - gx) * .4));
     Object.assign(d.style, {
       width: z + "px",
       height: z + "px",
       borderRadius: z + "px",
       background: col,
-      offsetPath: `path("M ${x0} ${y0} C ${x0 + Math.round((x1 - x0) * .55)} ${y0}, ${c2x} ${y1}, ${x1} ${y1}")`,
+      offsetPath: `path("M ${x0} ${y0} L ${gx} ${gy} C ${gx + Math.round((x1 - gx) * .55)} ${gy}, ${c2x} ${y1}, ${x1} ${y1}")`,
       offsetRotate: "0deg",
       offsetDistance: "0%"
     });
     box.appendChild(d);
+    const l1 = Math.hypot(gx - x0, gy - y0), l2 = Math.hypot(x1 - gx, y1 - gy) * 1.15, f = l1 / (l1 + l2), tf = Math.max(.04, Math.min(.5, f * 1.6)), t2 = Math.min(.7, tf + .14), pc = v => Math.round(v * 1000) / 10 + "%";
     return d.animate([ {
       offsetDistance: "0%",
       opacity: .9,
-      transform: "scale(1)"
+      transform: "scale(1)",
+      easing: "cubic-bezier(.45, 0, .55, 1)"
     }, {
-      offsetDistance: "12%",
+      offsetDistance: pc(f),
+      opacity: .9,
+      transform: "scale(1)",
+      offset: tf,
+      easing: "ease-in"
+    }, {
+      offsetDistance: pc(Math.min(.6, f + .1)),
       opacity: .9,
       transform: `scale(${Math.min(1, 22 / z)})`,
-      offset: .25
+      offset: t2,
+      easing: "ease-in-out"
     }, {
-      offsetDistance: "90%",
+      offsetDistance: "92%",
       opacity: .9,
       transform: `scale(${Math.min(1, 16 / z)})`,
-      offset: .86
+      offset: .9
     }, {
       offsetDistance: "100%",
       opacity: 0,
       transform: `scale(${Math.min(1, 8 / z)})`
     } ], {
-      duration: 620,
-      delay: Math.round(40 + 240 * rank[k] / Math.max(1, pts.length - 1)),
-      easing: "cubic-bezier(.4, 0, .3, 1)",
+      duration: 860,
+      delay: Math.round(20 + 260 * rank[k] / Math.max(1, pts.length - 1)),
       fill: "both"
     }).finished;
   });
