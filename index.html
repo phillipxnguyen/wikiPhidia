@@ -2489,9 +2489,13 @@ window.onYouTubeIframeAPIReady = function(){
   .w-row.graded-good .w-t{background:#1f9d55;box-shadow:none;color:#fff;}
   .w-row.graded-again .w-t{background:#d64545;box-shadow:none;color:#fff;}
   .w-empty{padding:24px 16px;font-size:15px;line-height:22px;color:var(--tw-dim);text-align:center;}
-  .watch-pop.w-is-done :is(.w-list, .w-cap){visibility:hidden;}
+  .watch-pop :is(.w-list, .w-cap, .w-video > :not(.w-done)){transition:opacity .45s ease;}
+  .watch-pop .w-listbox{transition:background-color .45s ease;}
+  .watch-pop.w-is-done :is(.w-list, .w-cap){opacity:0;pointer-events:none;}
+  .w-done{animation:wDoneIn .5s ease .35s both;}
+  @keyframes wDoneIn{from{opacity:0;transform:translateY(8px);}}
   .watch-pop.w-is-done:not(.cabin) .w-listbox{position:relative;align-self:start;overflow:hidden;border-radius:12px;background:var(--tw-panel);}
-  .watch-pop.w-is-done:not(.cabin) .w-video > *{visibility:hidden;}
+  .watch-pop.w-is-done:not(.cabin) .w-video > :not(.w-done){opacity:0;}
   .w-listbox .w-done-card{background:none;-webkit-backdrop-filter:none;backdrop-filter:none;}
   .w-done{position:absolute;inset:0;z-index:4;display:flex;align-items:center;justify-content:center;padding:16px;pointer-events:none;}
   .w-done-card{position:relative;overflow:hidden;max-width:420px;padding:24px 32px;border-radius:16px;background:rgba(0,0,0,.72);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);color:#ffffff;text-align:center;pointer-events:auto;}
@@ -4354,6 +4358,11 @@ function paintWatchDone() {
     if (ni >= 0) watchSeek(ni, true);
     return;
   }
+  const wait = (watch.flowUntil || 0) - performance.now();
+  if (!old && wait > 0) {
+    watch.doneTimer = setTimeout(() => watch && paintWatchDone(), Math.round(wait) + 60);
+    return;
+  }
   pop.classList.add("w-is-done");
   lb.style.height = watch.prefs.cabin ? "" : Math.round(vid.getBoundingClientRect().height) + "px";
   const now = Date.now(), ready = watch.lines.filter(r => cardReady(r, "Listen", now)), more = heldMore(ready, limitRows(ready), r => srsOf(r, "Listen"));
@@ -4440,7 +4449,10 @@ function watchGrade(isAgain, now1) {
   const after = () => {
     document.getElementById("watchPop").classList.remove("cut-hold");
     if (!watch) return;
-    if (!cabin && !reducedMotion()) (watch.pillWait || (watch.pillWait = new Set)).add(r.id);
+    if (!cabin && !reducedMotion()) {
+      (watch.pillWait || (watch.pillWait = new Set)).add(r.id);
+      watch.flowUntil = performance.now() + 1400;
+    }
     if (taskRun && taskRun.theater && (!q.length || taskRun.day && dayRunOver())) return taskTheaterDone();
     paintWatchList();
     const vidNow = !cabin && !reducedMotion() && document.querySelector("#watchPop .w-video"), snap = vidNow ? vidNow.getBoundingClientRect() : null;
