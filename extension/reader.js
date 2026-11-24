@@ -27,6 +27,7 @@
   const norm = s => (s || "").replace(/\s+/g, " ").trim().toLowerCase();
   const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" })[c]);
   const on = () => settings.enabled !== false;
+  let autoTimer = 0;
   const marking = () => on() && settings.highlight;
   const langOf = s => KANA.test(s) ? "ja" : CJK.test(s) ? "zh" : HANGUL.test(s) ? "ko" : "";
   const alive = () => {
@@ -296,6 +297,7 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
       markedKeys = new Set(known.keys());
     } else markedKeys = null;
     watch();
+    autoSoon();
   }
   function rescan() {
     clearTimeout(rescanTimer);
@@ -316,6 +318,7 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
       observer.disconnect();
       scopes.forEach(n => highlightIn(n));
       watch();
+      autoSoon();
     }, 700);
   });
   const watch = () => {
@@ -1037,6 +1040,23 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
     paintSents(true);
     return n;
   }
+  function autoSoon() {
+    clearTimeout(autoTimer);
+    autoTimer = setTimeout(autoCollect, 1500);
+  }
+  async function autoCollect() {
+    if (gone() || !on() || !matcher) return;
+    const { sentsSeen } = await chrome.storage.local.get("sentsSeen"), seen = new Set(sentsSeen && sentsSeen[draftKey()] || []);
+    const items = pageItems().filter(x => !seen.has(itemKey(x)));
+    if (items.length) addItems(items);
+  }
+  async function markSeen(keys) {
+    if (!keys.length) return;
+    const { sentsSeen } = await chrome.storage.local.get("sentsSeen"), all = Object.assign({}, sentsSeen), k = draftKey();
+    all[k] = [ ...new Set((all[k] || []).concat(keys)) ].slice(-400);
+    const keep = Object.keys(all).slice(-40);
+    chrome.storage.local.set({ sentsSeen: Object.fromEntries(keep.map(x => [ x, all[x] ])) });
+  }
   function collect() {
     const n = addItems(pageItems());
     toast(n ? `${n} card${n === 1 ? "" : "s"} found` : "Nothing new to make cards from on this page");
@@ -1052,6 +1072,7 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
         if (!b) return;
         if (b.classList.contains("sx")) {
           const list = sentsEl.querySelector(".sents-list"), top = list ? list.scrollTop : 0;
+          markSeen(sents.slice(Number(b.dataset.i), Number(b.dataset.i) + 1).map(itemKey));
           sents.splice(Number(b.dataset.i), 1);
           saveDraft();
           paintSents();
@@ -1062,6 +1083,7 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
         if (b.dataset.act === "all") return collect();
         if (b.dataset.act === "send") return sendSents();
         if (b.dataset.act === "close") {
+          markSeen(sents.map(itemKey));
           sents = [];
           saveDraft();
           sentsEl.remove();
@@ -1137,6 +1159,7 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
       at
     }, x.kind === "word" ? { term: x.term, meaning: x.meaning, sentence: "" } : { kind: "wsent", term: x.word, meaning: x.meaning, sentence: x.t, translation: x.tr })));
     const n = sents.length;
+    markSeen(sents.map(itemKey));
     pending = next;
     await chrome.storage.local.set({ pending: next });
     sents = [];
