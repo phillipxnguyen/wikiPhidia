@@ -2490,7 +2490,9 @@ window.onYouTubeIframeAPIReady = function(){
   .w-row.graded-again .w-t{background:#d64545;box-shadow:none;color:#fff;}
   .w-empty{padding:24px 16px;font-size:15px;line-height:22px;color:var(--tw-dim);text-align:center;}
   .watch-pop.w-is-done :is(.w-list, .w-cap){visibility:hidden;}
-  .watch-pop.w-is-done .w-listbox{border-radius:12px;background:var(--tw-panel);}
+  .watch-pop.w-is-done:not(.cabin) .w-listbox{position:relative;align-self:start;overflow:hidden;border-radius:12px;background:var(--tw-panel);}
+  .watch-pop.w-is-done:not(.cabin) .w-video > *{visibility:hidden;}
+  .w-listbox .w-done-card{background:none;-webkit-backdrop-filter:none;backdrop-filter:none;}
   .w-done{position:absolute;inset:0;z-index:4;display:flex;align-items:center;justify-content:center;padding:16px;pointer-events:none;}
   .w-done-card{position:relative;overflow:hidden;max-width:420px;padding:24px 32px;border-radius:16px;background:rgba(0,0,0,.72);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);color:#ffffff;text-align:center;pointer-events:auto;}
   .w-done-emoji{font-size:48px;line-height:60px;}
@@ -4325,8 +4327,10 @@ function paintWatchList() {
     return `<div class="w-row${r.id === watch.extraId ? " extra" : ""}${mark}" data-i="${i}" data-id="${r.id}">${html.includes('<div class="w-py">') ? html.replace('<div class="w-py">', '<div class="w-py">' + ts) : html.replace(/<div class="w-text( w-ruby)?">/, m => m + ts)}</div>`;
   }).join("");
   const keep = lb.querySelector(".w-list") ? lb.querySelector(".w-list").scrollTop : 0;
+  const keepDone = lb.querySelector(".w-done");
   lb.innerHTML = `<div class="w-list">${items || '<div class="w-empty">Nothing left to study in this video today. It still plays; what you answered Again comes back here when it is due.</div>'}</div>`;
   lb.querySelector(".w-list").scrollTop = keep;
+  if (keepDone) lb.appendChild(keepDone);
   watch.countSig = "";
   paintWatchCounts();
   paintWatchLine(false);
@@ -4334,12 +4338,16 @@ function paintWatchList() {
 }
 
 function paintWatchDone() {
-  const vid = document.querySelector("#watchPop .w-video"), old = vid && vid.querySelector(".w-done");
-  if (!vid) return;
-  const pop = document.getElementById("watchPop");
+  const pop = document.getElementById("watchPop"), vid = pop.querySelector(".w-video"), lb = pop.querySelector(".w-listbox"), host = watch.prefs.cabin ? vid : lb;
+  if (!vid || !lb) return;
+  let old = pop.querySelector(".w-done");
+  if (old && old.parentNode !== host) {
+    host.appendChild(old);
+  }
   clearTimeout(watch.doneTimer);
   if (!watch.queue || watch.queue.length) {
     pop.classList.remove("w-is-done");
+    lb.style.height = "";
     if (!old) return;
     old.remove();
     const ni = watch.queue ? watch.lines.findIndex(x => x.id === watch.queue[0]) : -1;
@@ -4347,6 +4355,7 @@ function paintWatchDone() {
     return;
   }
   pop.classList.add("w-is-done");
+  lb.style.height = watch.prefs.cabin ? "" : Math.round(vid.getBoundingClientRect().height) + "px";
   const now = Date.now(), ready = watch.lines.filter(r => cardReady(r, "Listen", now)), more = heldMore(ready, limitRows(ready), r => srsOf(r, "Listen"));
   const next = watch.lines.map(r => srsOf(r, "Listen")).filter(st => st.reps && st.due > now).map(st => st.due).sort((a, b) => a - b)[0];
   const text = finishText(more.total, studiedToday(watch.lines, false), next, "line", watch.lines.map(r => srsOf(r, "Listen")));
@@ -4368,7 +4377,7 @@ function paintWatchDone() {
   el.className = "w-done";
   el.innerHTML = html;
   el.dataset.html = html;
-  vid.appendChild(el);
+  host.appendChild(el);
   try {
     watch.player.pauseVideo();
   } catch (e) {}
