@@ -4512,7 +4512,7 @@ function watchSuck(id, isAgain, vr) {
   svg.setAttribute("height", innerHeight);
   box.appendChild(svg);
   const c2x = x1 - Math.round((x1 - cx) * .25), c2y = Math.min(cy, y1) - 120, dl = Math.hypot(x1 - c2x, y1 - c2y) || 1, from = [ (x1 - c2x) / dl, (y1 - c2y) / dl ];
-  const d = `M ${cx} ${cy} C ${cx + Math.round((x1 - cx) * .3)} ${cy - 160}, ${c2x} ${c2y}, ${x1} ${y1}`;
+  const route = (ex, ey) => `M ${cx} ${cy} C ${cx + Math.round((ex - cx) * .3)} ${cy - 160}, ${ex - Math.round((ex - cx) * .25)} ${Math.min(cy, ey) - 120}, ${ex} ${ey}`, d = route(x1, y1);
   const strokes = [ [ 6, 220 ], [ 12, 70 ], [ 18, 18 ] ].map(([ w, seg ]) => {
     const path = document.createElementNS(ns, "path");
     path.setAttribute("d", d);
@@ -4544,6 +4544,20 @@ function watchSuck(id, isAgain, vr) {
     fill: "forwards"
   });
   setTimeout(() => pillFill(id, isAgain, from), Math.round(60 + dur * len / (len + 220)));
+  let last = d;
+  const follow = () => {
+    if (!box.isConnected) return;
+    const row = document.querySelector(`#watchPop .w-row[data-id="${id}"] .w-t`);
+    if (row) {
+      const q = row.getBoundingClientRect(), nd = route(Math.round(q.left + q.width / 2), Math.round(q.top + q.height / 2));
+      if (nd !== last) {
+        last = nd;
+        strokes.forEach(([ path ]) => path.setAttribute("d", nd));
+      }
+    }
+    requestAnimationFrame(follow);
+  };
+  requestAnimationFrame(follow);
   Promise.all(strokes.map(([ path, seg ]) => path.animate([ {
     strokeDashoffset: seg
   }, {
