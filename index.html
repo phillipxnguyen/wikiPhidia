@@ -4391,35 +4391,9 @@ function watchSuck(id, isAgain) {
   const box = document.createElement("div"), col = isAgain ? "#d64545" : "#1f9d55";
   box.className = "w-flow";
   document.body.appendChild(box);
-  const x0 = Math.round(t.left + t.width / 2), y0 = Math.round(t.top + t.height / 2), x1 = Math.round(p.left + p.width / 2), y1 = Math.round(p.top + p.height / 2);
-  const melt = document.createElement("div");
-  Object.assign(melt.style, {
-    left: Math.round(t.left) + "px",
-    top: Math.round(t.top) + "px",
-    width: Math.round(t.width) + "px",
-    height: Math.round(t.height) + "px",
-    background: col
-  });
-  box.appendChild(melt);
-  melt.animate([ {
-    transform: "scale(1, 1)",
-    opacity: 0,
-    borderRadius: "12px"
-  }, {
-    transform: "scale(1, 1)",
-    opacity: .5,
-    borderRadius: "16px",
-    offset: .3
-  }, {
-    transform: `scale(${Math.min(1, 28 / t.width)}, ${Math.min(1, 28 / t.height)})`,
-    opacity: .9,
-    borderRadius: "999px"
-  } ], {
-    duration: 260,
-    easing: "cubic-bezier(.5, 0, .7, 1)",
-    fill: "forwards"
-  });
-  const path = `path("M ${x0} ${y0} C ${x0 + Math.round((x1 - x0) * .55)} ${y0}, ${x1 - Math.round(Math.min(160, Math.abs(x1 - x0) * .4))} ${y1}, ${x1} ${y1}")`, n = 30;
+  const x0 = Math.round(t.left + t.width / 2), x1 = Math.round(p.left + p.width / 2), y1 = Math.round(p.top + p.height / 2);
+  const yb = Math.round(t.bottom + 6), c2x = x1 - Math.round(Math.min(160, Math.abs(x1 - x0) * .4)), n = 30;
+  const pathFrom = sx => `path("M ${sx} ${yb} C ${sx + Math.round((x1 - sx) * .55)} ${yb}, ${c2x} ${y1}, ${x1} ${y1}")`;
   const flows = Array.from({
     length: n
   }, (_, i) => {
@@ -4429,7 +4403,7 @@ function watchSuck(id, isAgain) {
       height: z + "px",
       borderRadius: z + "px",
       background: col,
-      offsetPath: path,
+      offsetPath: pathFrom(Math.round(t.right - 4 - (t.width - 8) * i / (n - 1))),
       offsetRotate: "0deg",
       offsetDistance: "0%"
     });
@@ -4452,19 +4426,11 @@ function watchSuck(id, isAgain) {
       transform: "scale(.4)"
     } ], {
       duration: 700,
-      delay: 200 + i * 6,
+      delay: i * 8,
       easing: "cubic-bezier(.45, 0, .35, 1)",
       fill: "both"
     }).finished;
   });
-  setTimeout(() => melt.animate([ {
-    opacity: .9
-  }, {
-    opacity: 0
-  } ], {
-    duration: 120,
-    fill: "forwards"
-  }), 260);
   flows[0].then(() => pill.animate([ {
     transform: "scale(1)"
   }, {
