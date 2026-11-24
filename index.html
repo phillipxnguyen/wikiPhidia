@@ -2560,12 +2560,8 @@ window.onYouTubeIframeAPIReady = function(){
   html.focus-on.in-task .main-inner{padding:0;border-radius:0;background:none;box-shadow:none;}
   @media (max-width:820px) and (hover:none){html.focus-on .focus-exit{display:none;}html.focus-on .toolbar-flag{cursor:pointer;pointer-events:auto;}}
   .screen-cut{position:fixed;inset:0;z-index:940;overflow:hidden;pointer-events:none;}
-  .w-flow{position:fixed;inset:0;z-index:960;overflow:hidden;pointer-events:none;filter:url(#wGooF);}
-  .w-flow > div{position:absolute;left:0;top:0;}
-  .w-cap .w-capline.w-cap-flow{-webkit-backdrop-filter:none;backdrop-filter:none;}
-  .w-cap .w-capline.w-cap-flow > *{position:relative;z-index:1;}
-  .w-cap .w-capline.w-cap-morph{background:transparent;}
-  .w-cap-bg{position:fixed;border-radius:12px;background:rgba(0,0,0,.66);pointer-events:none;}
+  .w-drain{position:fixed;left:0;top:0;z-index:960;pointer-events:none;overflow:visible;}
+  @media (min-width:821px), (hover:hover){.watch-pop:not(.cabin) :is(.w-cap, .w-size){display:none;}}
   .cut-stamp{position:absolute;left:50%;top:50%;z-index:3;display:flex;align-items:center;justify-content:center;width:200px;height:200px;border-radius:100px;border:8px solid currentColor;font-size:112px;line-height:112px;font-weight:900;opacity:0;pointer-events:none;}
   .cut-stamp.good{color:#ffffff;background:#1f9d55;border-color:#ffffff;box-shadow:0 12px 32px rgba(20,120,60,.4);}
   .cut-stamp.again{color:#ffffff;background:#d64545;border-color:#ffffff;box-shadow:0 12px 32px rgba(160,30,30,.4);}
@@ -4377,7 +4373,7 @@ function watchGrade(isAgain, now1) {
     if (!cabin && !reducedMotion()) (watch.pillWait || (watch.pillWait = new Set)).add(r.id);
     if (taskRun && taskRun.theater && (!q.length || taskRun.day && dayRunOver())) return taskTheaterDone();
     paintWatchList();
-    const capNow = !cabin && !reducedMotion() && document.querySelector("#watchPop .w-capline"), snap = capNow && capNow.textContent.trim() ? capNow.getBoundingClientRect() : null;
+    const vidNow = !cabin && !reducedMotion() && document.querySelector("#watchPop .w-video"), snap = vidNow ? vidNow.getBoundingClientRect() : null;
     const ni = watch.lines.findIndex(x => x.id === nextId);
     if (ni >= 0) watchSeek(ni);
     paintWatchCounts();
@@ -4386,121 +4382,65 @@ function watchGrade(isAgain, now1) {
   if (reducedMotion() || !cabin) after(); else setTimeout(after, 240);
 }
 
-let watchFlowMorph = false;
-
 function pillLand(id, isAgain) {
   if (!watch || !watch.pillWait || !watch.pillWait.delete(id)) return;
   const row = document.querySelector(`#watchPop .w-row[data-id="${id}"]`);
   if (row && watch.graded && watch.graded.has(id)) row.classList.add(watch.again && watch.again.has(id) ? "graded-again" : "graded-good");
 }
 
-function watchSuck(id, isAgain, snap) {
-  const lst = document.querySelector("#watchPop .w-list"), pill = document.querySelector(`#watchPop .w-row[data-id="${id}"] .w-t`), cap = document.querySelector("#watchPop .w-capline");
-  const nr = cap && cap.textContent.trim() ? cap.getBoundingClientRect() : snap, sr = watchFlowMorph ? snap : nr, p = pill && pill.getBoundingClientRect(), l = lst && lst.getBoundingClientRect();
-  if (!cap || !p || !sr.width || p.bottom < l.top || p.top > l.bottom) return pillLand(id, isAgain);
-  if (!document.getElementById("wGoo")) document.body.insertAdjacentHTML("beforeend", '<svg id="wGoo" width="0" height="0" aria-hidden="true" style="position:absolute"><filter id="wGooF"><feGaussianBlur in="SourceGraphic" stdDeviation="6" result="b"/><feColorMatrix in="b" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -8" result="g"/><feComposite in="SourceGraphic" in2="g" operator="atop"/></filter></svg>');
-  const col = isAgain ? "#d64545" : "#1f9d55", box = document.createElement("div");
-  box.className = "w-flow";
-  box.style.zIndex = "auto";
-  cap.after(box);
-  cap.classList.add("w-cap-flow");
-  if (watchFlowMorph && nr !== sr) {
-    const bg = document.createElement("div"), at = r => ({
-      left: Math.round(r.left) + "px",
-      top: Math.round(r.top) + "px",
-      width: Math.round(r.width) + "px",
-      height: Math.round(r.height) + "px"
-    });
-    bg.className = "w-cap-bg";
-    box.before(bg);
-    cap.classList.add("w-cap-morph");
-    bg.animate([ at(sr), at(nr) ], {
-      duration: 360,
-      easing: "cubic-bezier(.3, 0, .2, 1)",
-      fill: "forwards"
-    }).finished.catch(() => {}).finally(() => {
-      cap.classList.remove("w-cap-morph");
-      bg.remove();
-    });
-  }
-  const x1 = Math.round(p.left + p.width / 2), y1 = Math.round(p.top + p.height / 2), z = Math.round(Math.min(sr.height, 28));
-  const rowsN = Math.max(1, Math.ceil((sr.height - z) / (z * .6)) + 1), colsN = Math.max(Math.ceil(56 / rowsN), Math.round(sr.width / 10));
-  const pts = [];
-  for (let i = 0; i < colsN; i++) for (let j = 0; j < rowsN; j++) pts.push([ Math.round(sr.left + z / 2 + (sr.width - z) * i / (colsN - 1)), Math.round(rowsN === 1 ? sr.top + sr.height / 2 : sr.top + z / 2 + (sr.height - z) * j / (rowsN - 1)) ]);
-  const inX = x1 >= sr.left && x1 <= sr.right, inY = y1 >= sr.top && y1 <= sr.bottom, jit = (a, b) => Math.round(a + Math.random() * (b - a));
-  const gx = inX ? jit(Math.max(sr.left + z / 2, x1 - 40), Math.min(sr.right - z / 2, x1 + 40)) : x1 > sr.right ? Math.round(sr.right - z / 2) : Math.round(sr.left + z / 2);
-  const gy = inY || !inX ? jit(sr.top + z / 2, sr.bottom - z / 2) : y1 > sr.bottom ? Math.round(sr.bottom - z / 2) : Math.round(sr.top + z / 2);
-  const order = pts.map(([ x, y ]) => Math.hypot(gx - x, gy - y)).map((d, i) => [ d, i ]).sort((a, b) => a[0] - b[0]).map(([, i]) => i), rank = [];
-  order.forEach((i, k) => rank[i] = k);
-  const bx = Math.floor(Math.min(sr.left, p.left) - 24), by = Math.floor(Math.min(sr.top, p.top) - 24);
-  Object.assign(box.style, {
-    inset: "auto",
-    left: bx + "px",
-    top: by + "px",
-    width: Math.ceil(Math.max(sr.right, p.right) + 24 - bx) + "px",
-    height: Math.ceil(Math.max(sr.bottom, p.bottom) + 24 - by) + "px"
-  });
-  const flows = pts.map(([ ax, ay ], k) => {
-    const x0 = ax - bx, y0 = ay - by, hx = gx - bx, hy = gy - by, ex = x1 - bx, ey = y1 - by;
-    const d = document.createElement("div"), c2x = ex - Math.round(Math.min(160, Math.abs(x1 - gx) * .4));
-    Object.assign(d.style, {
-      width: z + "px",
-      height: z + "px",
-      borderRadius: z + "px",
-      background: col,
-      offsetPath: `path("M ${x0} ${y0} L ${hx} ${hy} C ${hx + Math.round((ex - hx) * .55)} ${hy}, ${c2x} ${ey}, ${ex} ${ey}")`,
-      offsetRotate: "0deg",
-      offsetDistance: "0%"
-    });
-    box.appendChild(d);
-    const l1 = Math.hypot(hx - x0, hy - y0), l2 = Math.hypot(x1 - gx, y1 - gy) * 1.15, f = l1 / (l1 + l2), tf = Math.max(.04, Math.min(.5, f * 1.6)), t2 = Math.min(.7, tf + .14), pc = v => Math.round(v * 1000) / 10 + "%";
-    return d.animate([ {
-      offsetDistance: "0%",
-      opacity: .9,
-      transform: "scale(1)",
-      easing: "cubic-bezier(.45, 0, .55, 1)"
+function watchSuck(id, isAgain, vr) {
+  const lst = document.querySelector("#watchPop .w-list"), pill = document.querySelector(`#watchPop .w-row[data-id="${id}"] .w-t`);
+  const p = pill && pill.getBoundingClientRect(), l = lst && lst.getBoundingClientRect();
+  if (!p || !vr.width || p.bottom < l.top || p.top > l.bottom) return pillLand(id, isAgain);
+  const ns = "http://www.w3.org/2000/svg", svg = document.createElementNS(ns, "svg"), col = isAgain ? "#d64545" : "#1f9d55", jit = (a, b) => Math.round(a + Math.random() * (b - a));
+  svg.setAttribute("class", "w-drain");
+  svg.setAttribute("width", innerWidth);
+  svg.setAttribute("height", innerHeight);
+  document.body.appendChild(svg);
+  const L = Math.round(vr.left) + 3, T = Math.round(vr.top) + 3, R = Math.round(vr.right) - 3, B = Math.round(vr.bottom) - 3, gy = jit(T + 24, B - 24), oy = jit(T + 24, B - 24), x1 = Math.round(p.left + p.width / 2), y1 = Math.round(p.top + p.height / 2);
+  const tail = `C ${R + Math.round((x1 - R) * .55)} ${gy}, ${x1 - Math.round(Math.min(120, (x1 - R) * .4))} ${y1}, ${x1} ${y1}`;
+  const routes = [ `M ${L} ${oy} L ${L} ${T} L ${R} ${T} L ${R} ${gy} ${tail}`, `M ${L} ${oy} L ${L} ${B} L ${R} ${B} L ${R} ${gy} ${tail}` ];
+  const ring = [ oy - T + (R - L) + (gy - T), B - oy + (R - L) + (B - gy) ];
+  let first = Infinity;
+  const runs = routes.map((d, i) => {
+    const path = document.createElementNS(ns, "path");
+    path.setAttribute("d", d);
+    path.setAttribute("fill", "none");
+    path.setAttribute("stroke", col);
+    path.setAttribute("stroke-width", "6");
+    path.setAttribute("stroke-linecap", "round");
+    path.setAttribute("stroke-linejoin", "round");
+    svg.appendChild(path);
+    const total = Math.ceil(path.getTotalLength()), seg = ring[i], dur = jit(820, 980);
+    path.style.strokeDasharray = `${seg} ${total + seg}`;
+    first = Math.min(first, dur * (total - seg) / total);
+    return path.animate([ {
+      strokeDashoffset: 0
     }, {
-      offsetDistance: pc(f),
-      opacity: .9,
-      transform: "scale(1)",
-      offset: tf,
-      easing: "ease-in"
-    }, {
-      offsetDistance: pc(Math.min(.6, f + .1)),
-      opacity: .9,
-      transform: `scale(${Math.min(1, 22 / z)})`,
-      offset: t2,
-      easing: "ease-in-out"
-    }, {
-      offsetDistance: "92%",
-      opacity: .9,
-      transform: `scale(${Math.min(1, 16 / z)})`,
-      offset: .9
-    }, {
-      offsetDistance: "100%",
-      opacity: 0,
-      transform: `scale(${Math.min(1, 8 / z)})`
+      strokeDashoffset: -total
     } ], {
-      duration: 860,
-      delay: Math.max(0, Math.round(20 + 200 * rank[k] / Math.max(1, pts.length - 1) + (Math.random() - .5) * 24)),
-      fill: "both"
+      duration: dur,
+      easing: "cubic-bezier(.45, 0, .55, 1)",
+      fill: "forwards"
     }).finished;
   });
-  Promise.race(flows).then(() => pillLand(id, isAgain)).then(() => pill.isConnected && pill.animate([ {
-    transform: "scale(1)"
-  }, {
-    transform: "scale(1.2)",
-    offset: .4
-  }, {
-    transform: "scale(1)"
-  } ], {
-    duration: 420,
-    easing: "ease-out"
-  })).catch(() => {});
-  Promise.all(flows).catch(() => {}).finally(() => {
+  setTimeout(() => {
     pillLand(id, isAgain);
-    box.remove();
-    if (!document.querySelector("#watchPop .w-flow")) cap.classList.remove("w-cap-flow");
+    if (pill.isConnected) pill.animate([ {
+      transform: "scale(1)"
+    }, {
+      transform: "scale(1.2)",
+      offset: .4
+    }, {
+      transform: "scale(1)"
+    } ], {
+      duration: 420,
+      easing: "ease-out"
+    });
+  }, Math.round(first));
+  Promise.all(runs).catch(() => {}).finally(() => {
+    pillLand(id, isAgain);
+    svg.remove();
   });
 }
 
