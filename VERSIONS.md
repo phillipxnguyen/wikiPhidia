@@ -183,7 +183,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-122 | `19589ff` | Watch: thay cú hút cả khung bằng dòng chất lỏng chảy mượt từ phụ đề vào pill giờ |
 | THEATER-123 | `91cea7f` | Watch: dòng chảy rút ngay từ dưới dòng phụ đề (từ cuối về đầu), không gom giọt đè lên chữ |
 | THEATER-124 | `0441e00` | Watch: chữ phụ đề vừa chấm đổi xanh/đỏ, tan thành giọt dưới chữ rồi chảy vào pill giờ; phụ đề kế tiếp hiện dần thay chỗ |
-| THEATER-125 | `pending` | Watch: ô phụ đề vừa chấm đổi xanh/đỏ, vo lại như tờ giấy (mép gom không đều) thành cục rồi xoay bay vào pill giờ |
+| THEATER-125 | `678aa53` | Watch: ô phụ đề vừa chấm đổi xanh/đỏ, vo lại như tờ giấy (mép gom không đều) thành cục rồi xoay bay vào pill giờ |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
