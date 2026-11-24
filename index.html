@@ -2560,10 +2560,9 @@ window.onYouTubeIframeAPIReady = function(){
   html.focus-on.in-task .main-inner{padding:0;border-radius:0;background:none;box-shadow:none;}
   @media (max-width:820px) and (hover:none){html.focus-on .focus-exit{display:none;}html.focus-on .toolbar-flag{cursor:pointer;pointer-events:auto;}}
   .screen-cut{position:fixed;inset:0;z-index:940;overflow:hidden;pointer-events:none;}
-  .w-flow{position:fixed;inset:0;z-index:960;overflow:hidden;pointer-events:none;filter:url(#wGooF);}
-  .w-flow > div{position:absolute;left:0;top:0;}
   .watch-pop .w-capline.w-cap-old{position:fixed;margin:0;box-sizing:border-box;pointer-events:none;}
-  .watch-pop .w-capline.w-cap-old.tint :is(*, .w-text){color:var(--tc) !important;transition:color .12s ease-out;}
+  .watch-pop .w-capline.w-cap-old.tint{background:radial-gradient(circle at 35% 30%, rgba(255,255,255,.28), transparent 70%), var(--tc) !important;-webkit-backdrop-filter:none !important;backdrop-filter:none !important;transition:background-color .12s ease-out;}
+  .watch-pop .w-capline.w-cap-old.tint *{color:#ffffff !important;}
   .cut-stamp{position:absolute;left:50%;top:50%;z-index:3;display:flex;align-items:center;justify-content:center;width:200px;height:200px;border-radius:100px;border:8px solid currentColor;font-size:112px;line-height:112px;font-weight:900;opacity:0;pointer-events:none;}
   .cut-stamp.good{color:#ffffff;background:#1f9d55;border-color:#ffffff;box-shadow:0 12px 32px rgba(20,120,60,.4);}
   .cut-stamp.again{color:#ffffff;background:#d64545;border-color:#ffffff;box-shadow:0 12px 32px rgba(160,30,30,.4);}
@@ -4398,116 +4397,70 @@ function watchGrade(isAgain, now1) {
 
 function watchSuck(id, isAgain, snap) {
   const lst = document.querySelector("#watchPop .w-list"), pill = document.querySelector(`#watchPop .w-row[data-id="${id}"] .w-t`), cap = document.querySelector("#watchPop .w-capline:not(.w-cap-old)");
-  const rg = document.createRange();
-  rg.selectNodeContents(snap);
-  const t = rg.getBoundingClientRect(), p = pill && pill.getBoundingClientRect(), l = lst && lst.getBoundingClientRect();
-  if (!p || !t.width || p.bottom < l.top || p.top > l.bottom) return snap.remove();
-  if (!document.getElementById("wGoo")) document.body.insertAdjacentHTML("beforeend", '<svg id="wGoo" width="0" height="0" aria-hidden="true" style="position:absolute"><filter id="wGooF"><feGaussianBlur in="SourceGraphic" stdDeviation="6" result="b"/><feColorMatrix in="b" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -10" result="g"/><feComposite in="SourceGraphic" in2="g" operator="atop"/></filter></svg>');
-  const box = document.createElement("div"), col = isAgain ? "#d64545" : "#1f9d55";
-  box.className = "w-flow";
-  document.body.appendChild(box);
-  const x0 = Math.round(t.left + t.width / 2), x1 = Math.round(p.left + p.width / 2), y1 = Math.round(p.top + p.height / 2);
-  const yb = Math.round(t.bottom + 8), c2x = x1 - Math.round(Math.min(160, Math.abs(x1 - x0) * .4)), n = 30;
-  const path = `path("M ${x0} ${yb} C ${x0 + Math.round((x1 - x0) * .55)} ${yb}, ${c2x} ${y1}, ${x1} ${y1}")`;
+  const sr = snap.getBoundingClientRect(), p = pill && pill.getBoundingClientRect(), l = lst && lst.getBoundingClientRect();
+  if (!p || !sr.width || p.bottom < l.top || p.top > l.bottom) return snap.remove();
+  const col = isAgain ? "#d64545" : "#1f9d55", w = sr.width, h = sr.height, cx = w / 2, cy = h / 2, R = Math.min(30, h / 2 + 8), n = 18, rnd = (a, b) => a + Math.random() * (b - a);
+  const per = 2 * (w + h), pts = Array.from({
+    length: n
+  }, (_, i) => {
+    let d = per * i / n;
+    if (d < w) return [ d, 0 ];
+    d -= w;
+    if (d < h) return [ w, d ];
+    d -= h;
+    if (d < w) return [ w - d, h ];
+    return [ 0, h - (d - w) ];
+  });
+  const end = pts.map(([ x, y ]) => {
+    const a = Math.atan2(y - cy, x - cx), r = R * rnd(.55, 1.15);
+    return [ cx + Math.cos(a) * r, cy + Math.sin(a) * r ];
+  });
+  const mid = pts.map(([ x, y ], i) => {
+    const k = rnd(.15, .85);
+    return [ x + (end[i][0] - x) * k + rnd(-6, 6), y + (end[i][1] - y) * k + rnd(-6, 6) ];
+  });
+  const poly = list => `polygon(${list.map(([ x, y ]) => Math.round(x) + "px " + Math.round(y) + "px").join(", ")})`;
+  snap.style.setProperty("--tc", col);
+  snap.style.transformOrigin = Math.round(cx) + "px " + Math.round(cy) + "px";
+  snap.classList.add("tint");
   if (cap) cap.animate([ {
     opacity: 0
   }, {
     opacity: 0,
-    offset: .62
+    offset: .5
   }, {
     opacity: 1
   } ], {
-    duration: 640,
+    duration: 560,
     easing: "ease-out"
   });
-  snap.style.setProperty("--tc", col);
-  snap.classList.add("tint");
+  const tx = Math.round(p.left + p.width / 2 - (sr.left + cx)), ty = Math.round(p.top + p.height / 2 - (sr.top + cy)), sc = Math.max(.3, p.height / (2 * R));
   snap.animate([ {
-    transform: "none",
-    opacity: 1
+    clipPath: poly(pts)
   }, {
-    transform: "none",
-    opacity: 1,
-    offset: .3
+    clipPath: poly(mid),
+    offset: .45
   }, {
-    transform: "translateY(6px) scaleY(.85)",
-    opacity: 0
+    clipPath: poly(end)
   } ], {
     duration: 380,
-    easing: "ease-in",
+    easing: "cubic-bezier(.5, 0, .3, 1)",
     fill: "forwards"
-  }).finished.catch(() => {}).finally(() => snap.remove());
-  const bar = document.createElement("div");
-  Object.assign(bar.style, {
-    left: Math.round(t.left) + "px",
-    top: yb - 4 + "px",
-    width: Math.round(t.width) + "px",
-    height: "8px",
-    borderRadius: "4px",
-    background: col
-  });
-  box.appendChild(bar);
-  bar.animate([ {
-    transform: "scale(1, 0)",
-    opacity: 0
+  }).finished.then(() => snap.animate([ {
+    transform: "translate(0, 0) rotate(0deg) scale(1)",
+    opacity: 1
   }, {
-    transform: "scale(1, 1)",
-    opacity: .9,
-    offset: .35
+    transform: `translate(${Math.round(tx * .45)}px, ${Math.round(ty * .45 - 40)}px) rotate(${isAgain ? -200 : 200}deg) scale(.8)`,
+    opacity: 1,
+    offset: .5
   }, {
-    transform: `scale(${Math.min(1, 24 / t.width)}, 2.6)`,
-    opacity: .9
+    transform: `translate(${tx}px, ${ty}px) rotate(${isAgain ? -400 : 400}deg) scale(${sc})`,
+    opacity: .6
   } ], {
-    duration: 360,
-    delay: 80,
-    easing: "cubic-bezier(.6, 0, .4, 1)",
-    fill: "both"
-  }).finished.then(() => bar.animate([ {
-    opacity: .9
-  }, {
-    opacity: 0
-  } ], {
-    duration: 120,
+    duration: 460,
+    easing: "cubic-bezier(.45, 0, .55, 1)",
     fill: "forwards"
-  })).catch(() => {});
-  const flows = Array.from({
-    length: n
-  }, (_, i) => {
-    const d = document.createElement("div"), z = Math.round(22 - i * .4);
-    Object.assign(d.style, {
-      width: z + "px",
-      height: z + "px",
-      borderRadius: z + "px",
-      background: col,
-      offsetPath: path,
-      offsetRotate: "0deg",
-      offsetDistance: "0%"
-    });
-    box.appendChild(d);
-    return d.animate([ {
-      offsetDistance: "0%",
-      opacity: 0
-    }, {
-      offsetDistance: "4%",
-      opacity: .9,
-      offset: .08
-    }, {
-      offsetDistance: "92%",
-      opacity: .9,
-      transform: "scale(1)",
-      offset: .88
-    }, {
-      offsetDistance: "100%",
-      opacity: 0,
-      transform: "scale(.4)"
-    } ], {
-      duration: 640,
-      delay: 400 + i * 6,
-      easing: "cubic-bezier(.45, 0, .35, 1)",
-      fill: "both"
-    }).finished;
-  });
-  flows[0].then(() => pill.animate([ {
+  }).finished).then(() => pill.animate([ {
     transform: "scale(1)"
   }, {
     transform: "scale(1.2)",
@@ -4515,10 +4468,9 @@ function watchSuck(id, isAgain, snap) {
   }, {
     transform: "scale(1)"
   } ], {
-    duration: 420,
+    duration: 360,
     easing: "ease-out"
-  })).catch(() => {});
-  Promise.all(flows).catch(() => {}).finally(() => box.remove());
+  })).catch(() => {}).finally(() => snap.remove());
 }
 
 document.getElementById("watchPop").addEventListener("mouseover", e => {
