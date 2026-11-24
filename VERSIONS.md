@@ -196,7 +196,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-135 | `206a372` | Watch: hết lag hiệu ứng chảy (bộ lọc chỉ phủ vùng giữa phụ đề và pill thay vì cả màn hình, ít giọt hơn) |
 | THEATER-136 | `191c28c` | Watch: lớp chất lỏng lấy đúng cỡ ô phụ đề đang hiện, không lòi ra khi câu trước dài hơn |
 | THEATER-137 | `8da2d0c` | Watch: pill giờ chỉ đổi xanh/đỏ khi dòng chảy tới, không tô sẵn |
-| THEATER-138 | `pending` | Watch (máy tính): bỏ phụ đề trên video và ô cỡ chữ; khi chấm, viền video xanh/đỏ chạy quanh khung, gom về một điểm ngẫu nhiên phía list rồi chảy vào pill giờ |
+| THEATER-138 | `1f4d920` | Watch (máy tính): bỏ phụ đề trên video và ô cỡ chữ; khi chấm, viền video xanh/đỏ chạy quanh khung, gom về một điểm ngẫu nhiên phía list rồi chảy vào pill giờ |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
