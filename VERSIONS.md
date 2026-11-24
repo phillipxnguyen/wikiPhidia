@@ -180,7 +180,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-119 | `be595cc` | Watch: chấm dùng lại cú lướt Good/Again của Vocab, nằm trên nền đen dưới mọi thứ khác (xanh lướt phải, đỏ lướt trái) |
 | THEATER-120 | `79be32c` | Watch: bỏ hết hiệu ứng chấm, chỉ còn pill giờ đổi màu |
 | THEATER-121 | `aeb8ea2` | Watch: khi chấm, một bản trong mờ của khung video bị hút dần vào pill giờ của dòng (chậm rồi nhanh, co lại), pill phồng nhẹ khi nhận |
-| THEATER-122 | `pending` | Watch: thay cú hút cả khung bằng dòng chất lỏng chảy mượt từ phụ đề vào pill giờ |
+| THEATER-122 | `19589ff` | Watch: thay cú hút cả khung bằng dòng chất lỏng chảy mượt từ phụ đề vào pill giờ |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
