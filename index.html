@@ -1835,7 +1835,7 @@ window.onYouTubeIframeAPIReady = function(){
     overflow:hidden;
     margin-bottom:16px;
   }
-  .session-complete .confetti-piece{
+  :is(.session-complete, .w-done-card) .confetti-piece{
     position:absolute;z-index:0;top:-12px;width:8px;height:8px;border-radius:2px;pointer-events:none;
     animation-name:confetti-fall;animation-timing-function:ease-in;animation-iteration-count:infinite;
   }
@@ -2489,6 +2489,12 @@ window.onYouTubeIframeAPIReady = function(){
   .w-row.graded-good .w-t{background:#1f9d55;box-shadow:none;color:#fff;}
   .w-row.graded-again .w-t{background:#d64545;box-shadow:none;color:#fff;}
   .w-empty{padding:24px 16px;font-size:15px;line-height:22px;color:var(--tw-dim);text-align:center;}
+  .w-done{position:absolute;inset:0;z-index:4;display:flex;align-items:center;justify-content:center;padding:16px;pointer-events:none;}
+  .w-done-card{position:relative;overflow:hidden;max-width:420px;padding:24px 32px;border-radius:16px;background:rgba(0,0,0,.72);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);color:#ffffff;text-align:center;pointer-events:auto;}
+  .w-done-emoji{font-size:48px;line-height:60px;}
+  .w-done-title{margin-top:8px;font-size:22px;line-height:32px;font-weight:700;}
+  .w-done-sub{margin-top:4px;font-size:14px;line-height:20px;color:#c8c8c8;}
+  .w-done-card > :not(.confetti-piece){position:relative;z-index:1;}
   .watch-pop mark{background:none;color:inherit;}
   .watch-pop mark.vocab-hit{color:#7fd6a3;}
   .watch-pop mark.vocab-own{color:#8ab4ff;}
@@ -4318,6 +4324,30 @@ function paintWatchList() {
   watch.countSig = "";
   paintWatchCounts();
   paintWatchLine(false);
+  paintWatchDone();
+}
+
+function paintWatchDone() {
+  const vid = document.querySelector("#watchPop .w-video"), old = vid && vid.querySelector(".w-done");
+  if (!vid) return;
+  if (watch.prefs.cabin || !watch.queue || watch.queue.length) return old && old.remove();
+  const now = Date.now(), ready = watch.lines.filter(r => cardReady(r, "Listen", now)), more = heldMore(ready, limitRows(ready), r => srsOf(r, "Listen"));
+  const next = watch.lines.map(r => srsOf(r, "Listen")).filter(st => st.reps && st.due > now).map(st => st.due).sort((a, b) => a - b)[0];
+  const text = finishText(more.total, studiedToday(watch.lines, false), next, "line", watch.lines.map(r => srsOf(r, "Listen")));
+  const html = `<div class="w-done-card"><div class="w-done-emoji">${text.emoji}</div><div class="w-done-title">${escapeHtml(text.title)}</div><div class="w-done-sub">${escapeHtml(text.sub)}</div>${more.total ? moreButtonHtml(more) : ""}</div>`;
+  if (old) {
+    if (old.dataset.html !== html) {
+      old.innerHTML = html;
+      old.dataset.html = html;
+    }
+    return;
+  }
+  const el = document.createElement("div");
+  el.className = "w-done";
+  el.innerHTML = html;
+  el.dataset.html = html;
+  vid.appendChild(el);
+  if (text.emoji === "🎉" && !reducedMotion()) addConfetti(el.firstElementChild);
 }
 
 function paintWatchCounts() {
