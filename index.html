@@ -2489,6 +2489,7 @@ window.onYouTubeIframeAPIReady = function(){
   .w-row.graded-good .w-t{background:#1f9d55;box-shadow:none;color:#fff;}
   .w-row.graded-again .w-t{background:#d64545;box-shadow:none;color:#fff;}
   .w-empty{padding:24px 16px;font-size:15px;line-height:22px;color:var(--tw-dim);text-align:center;}
+  .watch-pop.w-is-done .w-listbox{visibility:hidden;}
   .w-done{position:absolute;inset:0;z-index:4;display:flex;align-items:center;justify-content:center;padding:16px;pointer-events:none;}
   .w-done-card{position:relative;overflow:hidden;max-width:420px;padding:24px 32px;border-radius:16px;background:rgba(0,0,0,.72);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);color:#ffffff;text-align:center;pointer-events:auto;}
   .w-done-emoji{font-size:48px;line-height:60px;}
@@ -4334,10 +4335,26 @@ function paintWatchList() {
 function paintWatchDone() {
   const vid = document.querySelector("#watchPop .w-video"), old = vid && vid.querySelector(".w-done");
   if (!vid) return;
-  if (watch.prefs.cabin || !watch.queue || watch.queue.length) return old && old.remove();
+  const pop = document.getElementById("watchPop");
+  clearTimeout(watch.doneTimer);
+  if (watch.prefs.cabin || !watch.queue || watch.queue.length) {
+    pop.classList.remove("w-is-done");
+    if (!old) return;
+    old.remove();
+    const ni = watch.queue ? watch.lines.findIndex(x => x.id === watch.queue[0]) : -1;
+    if (ni >= 0 && !watch.prefs.cabin) watchSeek(ni, true);
+    return;
+  }
+  pop.classList.add("w-is-done");
   const now = Date.now(), ready = watch.lines.filter(r => cardReady(r, "Listen", now)), more = heldMore(ready, limitRows(ready), r => srsOf(r, "Listen"));
   const next = watch.lines.map(r => srsOf(r, "Listen")).filter(st => st.reps && st.due > now).map(st => st.due).sort((a, b) => a - b)[0];
   const text = finishText(more.total, studiedToday(watch.lines, false), next, "line", watch.lines.map(r => srsOf(r, "Listen")));
+  if (next) watch.doneTimer = setTimeout(() => {
+    if (!watch) return;
+    watch.countSig = "";
+    watchQueueSync();
+    paintWatchList();
+  }, Math.max(1000, Math.min(60000, next - now + 500)));
   const html = `<div class="w-done-card"><div class="w-done-emoji">${text.emoji}</div><div class="w-done-title">${escapeHtml(text.title)}</div><div class="w-done-sub">${escapeHtml(text.sub)}</div>${more.total ? moreButtonHtml(more) : ""}</div>`;
   if (old) {
     if (old.dataset.html !== html) {
@@ -4351,6 +4368,9 @@ function paintWatchDone() {
   el.innerHTML = html;
   el.dataset.html = html;
   vid.appendChild(el);
+  try {
+    watch.player.pauseVideo();
+  } catch (e) {}
   if (text.emoji === "🎉" && !reducedMotion()) addConfetti(el.firstElementChild);
 }
 
@@ -4470,7 +4490,7 @@ function watchSuck(id, isAgain, vr) {
   const lst = document.querySelector("#watchPop .w-list"), pill = document.querySelector(`#watchPop .w-row[data-id="${id}"] .w-t`);
   const p = pill && pill.getBoundingClientRect(), l = lst && lst.getBoundingClientRect();
   if (!p || !vr.width || p.bottom < l.top || p.top > l.bottom) return pillLand(id, isAgain);
-  const col = isAgain ? "#d64545" : "#1f9d55", box = document.createElement("div"), cx = Math.round(vr.left + vr.width / 2), cy = Math.round(vr.top + vr.height / 2), x1 = Math.round(p.left + p.width / 2), y1 = Math.round(p.top + p.height / 2);
+  const col = isAgain ? "#d64545" : "#1f9d55", box = document.createElement("div"), cx = Math.round(vr.left + vr.width * (.2 + Math.random() * .6)), cy = Math.round(vr.top + vr.height * (.3 + Math.random() * .45)), x1 = Math.round(p.left + p.width / 2), y1 = Math.round(p.top + p.height / 2);
   box.className = "w-splash";
   document.body.appendChild(box);
   [ 0, 140, 280 ].forEach((delay, i) => {
