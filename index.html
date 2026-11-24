@@ -4399,10 +4399,14 @@ function watchSuck(id, isAgain, snap) {
   const lst = document.querySelector("#watchPop .w-list"), pill = document.querySelector(`#watchPop .w-row[data-id="${id}"] .w-t`), cap = document.querySelector("#watchPop .w-capline:not(.w-cap-old)");
   const sr = snap.getBoundingClientRect(), p = pill && pill.getBoundingClientRect(), l = lst && lst.getBoundingClientRect();
   if (!p || !sr.width || p.bottom < l.top || p.top > l.bottom) return snap.remove();
-  if (!document.getElementById("wGoo")) document.body.insertAdjacentHTML("beforeend", '<svg id="wGoo" width="0" height="0" aria-hidden="true" style="position:absolute"><filter id="wGooF"><feGaussianBlur in="SourceGraphic" stdDeviation="4" result="b"/><feColorMatrix in="b" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7" result="g"/><feComposite in="SourceGraphic" in2="g" operator="atop"/></filter></svg>');
+  if (!document.getElementById("wGoo")) document.body.insertAdjacentHTML("beforeend", '<svg id="wGoo" width="0" height="0" aria-hidden="true" style="position:absolute"><filter id="wGooF"><feGaussianBlur in="SourceGraphic" stdDeviation="6" result="b"/><feColorMatrix in="b" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -8" result="g"/><feComposite in="SourceGraphic" in2="g" operator="atop"/></filter></svg>');
   const col = isAgain ? "#d64545" : "#1f9d55", box = document.createElement("div");
   box.className = "w-flow";
-  document.body.appendChild(box);
+  box.style.zIndex = "auto";
+  snap.before(box);
+  snap.style.background = "none";
+  snap.style.backdropFilter = "none";
+  snap.style.webkitBackdropFilter = "none";
   if (cap) cap.animate([ {
     opacity: 0
   }, {
@@ -4419,13 +4423,15 @@ function watchSuck(id, isAgain, snap) {
   }, {
     opacity: 0
   } ], {
-    duration: 140,
+    duration: 260,
+    delay: 160,
+    easing: "ease-in",
     fill: "forwards"
   }).finished.catch(() => {}).finally(() => snap.remove());
-  const x1 = Math.round(p.left + p.width / 2), y1 = Math.round(p.top + p.height / 2), z = 12;
-  const colsN = Math.max(64, Math.round(sr.width / 4));
+  const x1 = Math.round(p.left + p.width / 2), y1 = Math.round(p.top + p.height / 2), z = Math.round(Math.min(sr.height, 56));
+  const colsN = Math.max(60, Math.round(sr.width / 3));
   const pts = [];
-  for (let i = 0; i < colsN; i++) pts.push([ Math.round(sr.left + z / 2 + (sr.width - z) * i / (colsN - 1)), Math.round(sr.bottom - z / 2) ]);
+  for (let i = 0; i < colsN; i++) pts.push([ Math.round(sr.left + z / 2 + (sr.width - z) * i / (colsN - 1)), Math.round(sr.top + sr.height / 2) ]);
   const order = pts.map(([ x, y ]) => Math.hypot(x1 - x, y1 - y)).map((d, i) => [ d, i ]).sort((a, b) => a[0] - b[0]).map(([, i]) => i), rank = [];
   order.forEach((i, k) => rank[i] = k);
   const flows = pts.map(([ x0, y0 ], k) => {
@@ -4445,14 +4451,19 @@ function watchSuck(id, isAgain, snap) {
       opacity: .9,
       transform: "scale(1)"
     }, {
+      offsetDistance: "12%",
+      opacity: .9,
+      transform: `scale(${Math.min(1, 22 / z)})`,
+      offset: .25
+    }, {
       offsetDistance: "90%",
       opacity: .9,
-      transform: "scale(1)",
+      transform: `scale(${Math.min(1, 16 / z)})`,
       offset: .86
     }, {
       offsetDistance: "100%",
       opacity: 0,
-      transform: "scale(.35)"
+      transform: `scale(${Math.min(1, 8 / z)})`
     } ], {
       duration: 620,
       delay: Math.round(40 + 240 * rank[k] / Math.max(1, pts.length - 1)),
