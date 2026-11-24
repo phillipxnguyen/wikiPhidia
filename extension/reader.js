@@ -913,7 +913,7 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
     if (gone() || e.composedPath().includes(host)) return;
     setTimeout(() => {
       const found = selectedText();
-      if (!found || !on()) hidePick(); else showPick(found);
+      if (!found || !on()) hidePick(); else if (settings.pick === "open") openCard(found.text, found.range); else showPick(found);
     }, 10);
   }, true);
 

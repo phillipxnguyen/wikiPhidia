@@ -66,6 +66,10 @@ function paintSettings() {
   $("highlight").checked = !!s.highlight;
   $("enabled").checked = s.enabled !== false;
   document.body.classList.toggle("off", s.enabled === false);
+  document.querySelectorAll(".pick-mode").forEach(b => {
+    b.classList.toggle("on", b.dataset.pick === s.pick);
+    b.setAttribute("aria-checked", b.dataset.pick === s.pick);
+  });
   $("shift").checked = !!s.shift;
   $("youtube").checked = s.youtube !== false;
   $("appUrl").value = s.appUrl;
@@ -122,6 +126,7 @@ $("pendingList").addEventListener("change", async e => {
 
 $("enabled").addEventListener("change", e => saveSettings({ enabled: e.target.checked }).then(paintSettings));
 [ "highlight", "shift", "youtube" ].forEach(id => $(id).addEventListener("change", e => saveSettings({ [id]: e.target.checked })));
+document.querySelectorAll(".pick-mode").forEach(b => b.addEventListener("click", () => saveSettings({ pick: b.dataset.pick }).then(paintSettings)));
 $("lang").addEventListener("change", e => saveSettings({ lang: e.target.value }));
 $("appUrl").addEventListener("change", e => saveSettings({ appUrl: e.target.value.trim() || DEFAULTS.appUrl }));
 $("lesson").addEventListener("change", e => {

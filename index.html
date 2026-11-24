@@ -2585,8 +2585,8 @@ window.onYouTubeIframeAPIReady = function(){
   .w-stream{position:absolute;left:0;top:0;overflow:visible;}
   .w-t.filling{isolation:isolate;color:#ffffff;transition:color .3s ease;}
   .w-row .w-text, .w-row .w-text *, .w-row .w-tr{transition:color .35s ease;}
-  .w-row.w-flash-good :is(.w-text, .w-text *, .w-tr){color:#4ade80 !important;}
-  .w-row.w-flash-again :is(.w-text, .w-text *, .w-tr){color:#ff7a7a !important;}
+  .w-row.w-flash-good :is(.w-text, .w-text *:not(.w-t, .w-t *), .w-tr){color:#4ade80 !important;}
+  .w-row.w-flash-again :is(.w-text, .w-text *:not(.w-t, .w-t *), .w-tr){color:#ff7a7a !important;}
   .w-t-fill{position:absolute;inset:0;z-index:-1;border-radius:12px;}
   @media (min-width:821px), (hover:hover){.watch-pop:not(.cabin) .w-cap{display:none;}}
   .cut-stamp{position:absolute;left:50%;top:50%;z-index:3;display:flex;align-items:center;justify-content:center;width:200px;height:200px;border-radius:100px;border:8px solid currentColor;font-size:112px;line-height:112px;font-weight:900;opacity:0;pointer-events:none;}
@@ -4483,6 +4483,7 @@ function pillFill(id, isAgain, from) {
   fill.style.background = isAgain ? "#d64545" : "#1f9d55";
   pill.prepend(fill);
   pill.classList.add("filling");
+  row.classList.add(isAgain ? "w-flash-again" : "w-flash-good");
   const w = pill.offsetWidth, h = pill.offsetHeight, dx = from ? from[0] : 0, dy = from ? from[1] : 1, k = Math.min(dx ? w / 2 / Math.abs(dx) : Infinity, dy ? h / 2 / Math.abs(dy) : Infinity), px = Math.round(w / 2 - dx * k), py = Math.round(h / 2 - dy * k), big = Math.ceil(Math.hypot(w, h));
   fill.animate([ {
     clipPath: `circle(0px at ${px}px ${py}px)`
@@ -4496,6 +4497,8 @@ function pillFill(id, isAgain, from) {
     pillLand(id, isAgain);
     pill.classList.remove("filling");
     fill.remove();
+    const now = document.querySelector(`#watchPop .w-row[data-id="${id}"]`);
+    if (now) now.classList.remove("w-flash-again", "w-flash-good");
     pill.animate([ {
       transform: "scale(1)"
     }, {
@@ -4532,7 +4535,7 @@ function watchRowFlash(id, isAgain) {
   const row = document.querySelector(`#watchPop .w-row[data-id="${id}"]`);
   if (!row) return;
   row.classList.add(isAgain ? "w-flash-again" : "w-flash-good");
-  setTimeout(() => row.classList.remove("w-flash-again", "w-flash-good"), 700);
+  setTimeout(() => row.classList.remove("w-flash-again", "w-flash-good"), 520);
 }
 
 function watchSuck(id, isAgain, vr) {
