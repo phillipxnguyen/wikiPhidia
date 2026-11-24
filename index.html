@@ -4394,7 +4394,7 @@ function watchSuck(id, isAgain, snap) {
   cap.after(box);
   cap.classList.add("w-cap-flow");
   const x1 = Math.round(p.left + p.width / 2), y1 = Math.round(p.top + p.height / 2), z = Math.round(Math.min(sr.height, 28));
-  const rowsN = Math.max(1, Math.ceil((sr.height - z) / (z * .6)) + 1), colsN = Math.max(Math.ceil(90 / rowsN), Math.round(sr.width / 6));
+  const rowsN = Math.max(1, Math.ceil((sr.height - z) / (z * .6)) + 1), colsN = Math.max(Math.ceil(56 / rowsN), Math.round(sr.width / 10));
   const pts = [];
   for (let i = 0; i < colsN; i++) for (let j = 0; j < rowsN; j++) pts.push([ Math.round(sr.left + z / 2 + (sr.width - z) * i / (colsN - 1)), Math.round(rowsN === 1 ? sr.top + sr.height / 2 : sr.top + z / 2 + (sr.height - z) * j / (rowsN - 1)) ]);
   const inX = x1 >= sr.left && x1 <= sr.right, inY = y1 >= sr.top && y1 <= sr.bottom, jit = (a, b) => Math.round(a + Math.random() * (b - a));
@@ -4402,19 +4402,28 @@ function watchSuck(id, isAgain, snap) {
   const gy = inY || !inX ? jit(sr.top + z / 2, sr.bottom - z / 2) : y1 > sr.bottom ? Math.round(sr.bottom - z / 2) : Math.round(sr.top + z / 2);
   const order = pts.map(([ x, y ]) => Math.hypot(gx - x, gy - y)).map((d, i) => [ d, i ]).sort((a, b) => a[0] - b[0]).map(([, i]) => i), rank = [];
   order.forEach((i, k) => rank[i] = k);
-  const flows = pts.map(([ x0, y0 ], k) => {
-    const d = document.createElement("div"), c2x = x1 - Math.round(Math.min(160, Math.abs(x1 - gx) * .4));
+  const bx = Math.floor(Math.min(sr.left, p.left) - 24), by = Math.floor(Math.min(sr.top, p.top) - 24);
+  Object.assign(box.style, {
+    inset: "auto",
+    left: bx + "px",
+    top: by + "px",
+    width: Math.ceil(Math.max(sr.right, p.right) + 24 - bx) + "px",
+    height: Math.ceil(Math.max(sr.bottom, p.bottom) + 24 - by) + "px"
+  });
+  const flows = pts.map(([ ax, ay ], k) => {
+    const x0 = ax - bx, y0 = ay - by, hx = gx - bx, hy = gy - by, ex = x1 - bx, ey = y1 - by;
+    const d = document.createElement("div"), c2x = ex - Math.round(Math.min(160, Math.abs(x1 - gx) * .4));
     Object.assign(d.style, {
       width: z + "px",
       height: z + "px",
       borderRadius: z + "px",
       background: col,
-      offsetPath: `path("M ${x0} ${y0} L ${gx} ${gy} C ${gx + Math.round((x1 - gx) * .55)} ${gy}, ${c2x} ${y1}, ${x1} ${y1}")`,
+      offsetPath: `path("M ${x0} ${y0} L ${hx} ${hy} C ${hx + Math.round((ex - hx) * .55)} ${hy}, ${c2x} ${ey}, ${ex} ${ey}")`,
       offsetRotate: "0deg",
       offsetDistance: "0%"
     });
     box.appendChild(d);
-    const l1 = Math.hypot(gx - x0, gy - y0), l2 = Math.hypot(x1 - gx, y1 - gy) * 1.15, f = l1 / (l1 + l2), tf = Math.max(.04, Math.min(.5, f * 1.6)), t2 = Math.min(.7, tf + .14), pc = v => Math.round(v * 1000) / 10 + "%";
+    const l1 = Math.hypot(hx - x0, hy - y0), l2 = Math.hypot(x1 - gx, y1 - gy) * 1.15, f = l1 / (l1 + l2), tf = Math.max(.04, Math.min(.5, f * 1.6)), t2 = Math.min(.7, tf + .14), pc = v => Math.round(v * 1000) / 10 + "%";
     return d.animate([ {
       offsetDistance: "0%",
       opacity: .9,
@@ -4443,7 +4452,7 @@ function watchSuck(id, isAgain, snap) {
       transform: `scale(${Math.min(1, 8 / z)})`
     } ], {
       duration: 860,
-      delay: Math.max(0, Math.round(20 + 260 * rank[k] / Math.max(1, pts.length - 1) + (Math.random() - .5) * 24)),
+      delay: Math.max(0, Math.round(20 + 200 * rank[k] / Math.max(1, pts.length - 1) + (Math.random() - .5) * 24)),
       fill: "both"
     }).finished;
   });
