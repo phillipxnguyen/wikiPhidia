@@ -4458,7 +4458,7 @@ function pillLand(id, isAgain) {
   if (row && watch.graded && watch.graded.has(id)) row.classList.add(watch.again && watch.again.has(id) ? "graded-again" : "graded-good");
 }
 
-function pillFill(id, isAgain) {
+function pillFill(id, isAgain, from) {
   if (!watch || !watch.pillWait || !watch.pillWait.has(id)) return;
   const row = document.querySelector(`#watchPop .w-row[data-id="${id}"]`), pill = row && row.querySelector(".w-t");
   if (!pill) return pillLand(id, isAgain);
@@ -4467,13 +4467,11 @@ function pillFill(id, isAgain) {
   fill.style.background = isAgain ? "#d64545" : "#1f9d55";
   pill.prepend(fill);
   pill.classList.add("filling");
+  const w = pill.offsetWidth, h = pill.offsetHeight, dx = from ? from[0] : 0, dy = from ? from[1] : 1, k = Math.min(dx ? w / 2 / Math.abs(dx) : Infinity, dy ? h / 2 / Math.abs(dy) : Infinity), px = Math.round(w / 2 - dx * k), py = Math.round(h / 2 - dy * k), big = Math.ceil(Math.hypot(w, h));
   fill.animate([ {
-    clipPath: "inset(100% 0 0 0 round 12px)"
+    clipPath: `circle(0px at ${px}px ${py}px)`
   }, {
-    clipPath: "inset(40% 0 0 0 round 12px)",
-    offset: .5
-  }, {
-    clipPath: "inset(0 0 0 0 round 12px)"
+    clipPath: `circle(${big}px at ${px}px ${py}px)`
   } ], {
     duration: 520,
     easing: "cubic-bezier(.3, 0, .3, 1)",
@@ -4513,7 +4511,8 @@ function watchSuck(id, isAgain, vr) {
   svg.setAttribute("width", innerWidth);
   svg.setAttribute("height", innerHeight);
   box.appendChild(svg);
-  const d = `M ${cx} ${cy} C ${cx + Math.round((x1 - cx) * .3)} ${cy - 160}, ${x1 - Math.round((x1 - cx) * .25)} ${Math.min(cy, y1) - 120}, ${x1} ${y1}`;
+  const c2x = x1 - Math.round((x1 - cx) * .25), c2y = Math.min(cy, y1) - 120, dl = Math.hypot(x1 - c2x, y1 - c2y) || 1, from = [ (x1 - c2x) / dl, (y1 - c2y) / dl ];
+  const d = `M ${cx} ${cy} C ${cx + Math.round((x1 - cx) * .3)} ${cy - 160}, ${c2x} ${c2y}, ${x1} ${y1}`;
   const strokes = [ [ 6, 220 ], [ 12, 70 ], [ 18, 18 ] ].map(([ w, seg ]) => {
     const path = document.createElementNS(ns, "path");
     path.setAttribute("d", d);
@@ -4530,32 +4529,31 @@ function watchSuck(id, isAgain, vr) {
     path.style.strokeDashoffset = seg;
   });
   drop.animate([ {
-    transform: "scale(.2)",
+    transform: "scale(.3)",
     opacity: 0
   }, {
     transform: "scale(1)",
     opacity: 1,
-    offset: .75
+    offset: .4
   }, {
-    transform: "scale(1)",
-    opacity: 1
+    transform: "scale(.6)",
+    opacity: 0
   } ], {
-    duration: 400,
+    duration: 320,
     easing: "ease-out",
     fill: "forwards"
-  }).finished.then(() => {
-    drop.remove();
-    setTimeout(() => pillFill(id, isAgain), Math.round(dur * .86));
-    return Promise.all(strokes.map(([ path, seg ]) => path.animate([ {
-      strokeDashoffset: seg
-    }, {
-      strokeDashoffset: seg - len - 220
-    } ], {
-      duration: dur,
-      easing: "cubic-bezier(.4, 0, .5, 1)",
-      fill: "forwards"
-    }).finished));
-  }).catch(() => pillLand(id, isAgain)).finally(() => setTimeout(() => box.remove(), 200));
+  });
+  setTimeout(() => pillFill(id, isAgain, from), Math.round(60 + dur * len / (len + 220)));
+  Promise.all(strokes.map(([ path, seg ]) => path.animate([ {
+    strokeDashoffset: seg
+  }, {
+    strokeDashoffset: seg - len - 220
+  } ], {
+    duration: dur,
+    delay: 60,
+    easing: "cubic-bezier(.4, 0, .5, 1)",
+    fill: "both"
+  }).finished)).catch(() => pillLand(id, isAgain)).finally(() => setTimeout(() => box.remove(), 200));
 }
 
 document.getElementById("watchPop").addEventListener("mouseover", e => {
