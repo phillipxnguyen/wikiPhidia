@@ -1175,6 +1175,14 @@ window.onYouTubeIframeAPIReady = function(){
   .toolbar #listJoin{box-sizing:border-box;height:var(--tb-h);padding:0 12px 0 36px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%237a8494' stroke-width='1.8' stroke-linecap='round'%3E%3Cpath d='M3 5h14M3 10h14M3 15h9'/%3E%3C/svg%3E") 12px 50% / 18px 18px no-repeat;color:var(--text);font:inherit;font-size:15px;cursor:pointer;}
   .toolbar #listJoin[hidden]{display:none;}
   .tr-wait{font-family:"Doto", system-ui, sans-serif;font-weight:800;color:var(--placeholder);}
+  .tr-search{position:relative;display:flex;flex-direction:column;gap:12px;width:min(560px, 100%);padding:4px 0;}
+  .tr-search i{display:block;height:16px;border-radius:8px;background:linear-gradient(90deg, color-mix(in srgb, currentColor 10%, transparent) 0%, color-mix(in srgb, currentColor 26%, transparent) 50%, color-mix(in srgb, currentColor 10%, transparent) 100%) 0 0 / 200% 100%;animation:trShine 1.6s linear infinite;}
+  .tr-search i:nth-child(2){width:84%;animation-delay:.2s;}
+  .tr-search i:nth-child(3){width:56%;animation-delay:.4s;}
+  .tr-search b{position:absolute;top:0;left:0;width:28px;height:28px;border:4px solid currentColor;border-radius:50%;opacity:.55;animation:trSeek 2.4s ease-in-out infinite;}
+  .tr-search b::after{content:"";position:absolute;right:-10px;bottom:-8px;width:12px;height:4px;border-radius:2px;background:currentColor;transform:rotate(45deg);}
+  @keyframes trShine{from{background-position:100% 0;}to{background-position:-100% 0;}}
+  @keyframes trSeek{0%{left:0;top:0;}25%{left:calc(50% - 16px);top:28px;}50%{left:calc(100% - 40px);top:0;}75%{left:calc(25% - 8px);top:28px;}100%{left:0;top:0;}}
   .tr-menu{position:fixed;z-index:2100;padding:4px;border:1px solid var(--border);border-radius:12px;background:var(--surface);box-shadow:var(--shadow-md);}
   .tr-menu button{display:block;height:36px;padding:0 14px;border:0;border-radius:8px;background:none;color:var(--text);font-size:14px;line-height:20px;font-weight:600;white-space:nowrap;}
   @media (hover:hover){.tr-menu button:hover{background:var(--surface-2);}}
@@ -22940,6 +22948,8 @@ function sentTrHtml(item, text, el) {
   return `<span class="cloze-more cloze-notes vc-sub-tr">${escapeHtml(tr)}</span>`;
 }
 
+const TR_SEARCH = '<span class="tr-search" role="status" aria-label="Translating"><i></i><i></i><i></i><b></b></span>';
+
 function trFrontHtml(item, el, html) {
   return `<span class="cloze-trf">${html}</span>`;
 }
@@ -23003,7 +23013,7 @@ function fillVocabCard(el, item) {
     const waiting = !tr && !el.dataset.listen && mtJobs.has(text);
     el.dataset.trfront = tr;
     el.classList.toggle("tr-front", !el.dataset.listen);
-    const trf = el.dataset.listen ? "" : waiting ? '<span class="cloze-trf"><span class="tr-wait">Translating…</span></span>' : trFrontHtml(item, el, markedTrHtml(tr, item));
+    const trf = el.dataset.listen ? "" : waiting ? '<span class="cloze-trf">' + TR_SEARCH + '</span>' : trFrontHtml(item, el, markedTrHtml(tr, item));
     const backTr = subTrHtml(item) ? "" : el.dataset.listen ? sentTrHtml(item, text, el) : tr ? `<span class="cloze-more cloze-notes vc-sub-tr">${escapeHtml(tr)}</span>` : "";
     const sent = trf + `<span class="cloze-src${el.dataset.listen ? " vc-sent" : ""}">${spy ? `<span class="cloze-more cloze-spy py-line">${linePillHtml(item, text, !otherGap)}${escapeHtml(spy)}</span>` : linePillHtml(item, text, !otherGap, "cloze-pill")}${gappedHtml(text, spans, item)}</span>`;
     const xm = item.meaning || "";
@@ -23024,7 +23034,7 @@ function fillVocabCard(el, item) {
       el.dataset.trfront = askTr;
       el.classList.add("tr-front");
     }
-    const first = asked ? (askWait ? '<span class="cloze-trf"><span class="tr-wait">Translating…</span></span>' : trFrontHtml(item, el, markedTrHtml(askTr, item))) + `<span class="vc-sent cloze-src">${linePillHtml(item, asked, false, "cloze-pill")}${lookupOthers(vocabSentenceHtml(asked, item.term, item.card), item)}</span>` : `<span class="vc-sent vc-def">${defHead}${defText}</span>`;
+    const first = asked ? (askWait ? '<span class="cloze-trf">' + TR_SEARCH + '</span>' : trFrontHtml(item, el, markedTrHtml(askTr, item))) + `<span class="vc-sent cloze-src">${linePillHtml(item, asked, false, "cloze-pill")}${lookupOthers(vocabSentenceHtml(asked, item.term, item.card), item)}</span>` : `<span class="vc-sent vc-def">${defHead}${defText}</span>`;
     const dx = asked ? "" : item.sub ? defExample(item) : sentence;
     const second = asked ? `<span class="cloze-more cloze-own vc-def-more">${defHead}${lookupOthers(escapeHtml(d), item)}</span>${subTrHtml(item)}` : dx ? `<span class="cloze-more cloze-own">${withPill(linePillHtml(item, dx, false), lookupOthers(vocabSentenceHtml(dx, item.term, item.card), item))}</span>${sentTrHtml(item, dx, el)}` : "";
     const hm = meaningLines(item.meaning || "").filter(l => l !== d).join("\n");
@@ -23738,7 +23748,7 @@ function renderVocab() {
     window.scrollTo(0, 0);
   }
   if (trWaiting) {
-    stage.innerHTML = `<div class="vocab-tr-wait"><span class="tr-wait">${navigator.onLine ? "Translating…" : "Connect to the internet to load the translations"}</span></div>`;
+    stage.innerHTML = `<div class="vocab-tr-wait">${navigator.onLine ? TR_SEARCH : '<span class="tr-wait">Connect to the internet to load the translations</span>'}</div>`;
     wireVocabEditor(items);
     syncVocabSound();
     return;
