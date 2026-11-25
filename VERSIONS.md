@@ -54,6 +54,7 @@ Hàm chính: `isListenMode`, `listenBatch`, `startSequenceLoop`, `stopSequenceLo
 | SPEAK-27 | `46ce14e` | Ô sửa: dòng Q chỉ lớn hơn A 2px (20/18) như mọi nơi; dấu - đầu dòng từ bị bỏ |
 | SPEAK-28 | `03beaf0` | Rule từ đơn giản: mọi dòng `từ: nghĩa` trong Notes là từ (gạch đầu dòng hay dòng thường), dòng khác là ghi chú; bỏ điều kiện cả danh sách phải là từ |
 | SPEAK-29 | `49d2a14` | Trả lại sổ còng phía trên: thẻ chỉ một câu (không có câu trả lời) là câu thường mực đen trên tờ còng trên, cả ☰ Full; thẻ có câu trả lời còng trái |
+| SPEAK-30 | `ae0d984` | Câu hỏi lớn hơn câu trả lời 6px ở mọi nơi: tờ giấy và list 26/20, ô sửa và điện thoại 24/18 |
 
 Hàm chính: `ieltsPaperHtml`, `ieltsFrontHtml`, `entryHidden`, `revealAction`, `render` (nhánh `groupViewStyle === "ielts"`). Cùng `ieltsHints`, `ieltsHintNext`, `ieltsHintId` (Hint).
 
