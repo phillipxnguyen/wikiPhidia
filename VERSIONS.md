@@ -56,6 +56,7 @@ Hàm chính: `isListenMode`, `listenBatch`, `startSequenceLoop`, `stopSequenceLo
 | SPEAK-29 | `49d2a14` | Trả lại sổ còng phía trên: thẻ chỉ một câu (không có câu trả lời) là câu thường mực đen trên tờ còng trên, cả ☰ Full; thẻ có câu trả lời còng trái |
 | SPEAK-30 | `ae0d984` | Câu hỏi lớn hơn câu trả lời 6px ở mọi nơi: tờ giấy và list 26/20, ô sửa và điện thoại 24/18 |
 | SPEAK-31 | `d065cfb` | Câu hỏi to hơn 6px chỉ trên tờ Speaking (26/20, điện thoại 24/18); list và ô sửa trả về như cũ |
+| SPEAK-32 | `7b27273` | Từ nằm trong câu hỏi giữ màu xanh lá/xanh dương như mọi nơi (không còn mực đen) |
 
 Hàm chính: `ieltsPaperHtml`, `ieltsFrontHtml`, `entryHidden`, `revealAction`, `render` (nhánh `groupViewStyle === "ielts"`). Cùng `ieltsHints`, `ieltsHintNext`, `ieltsHintId` (Hint).
 
