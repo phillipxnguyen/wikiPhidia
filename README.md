@@ -95,6 +95,7 @@ The shared rules of the whole app, one line each. They hold in every mode (☰ F
 5. Labels are in the pixel type: in the word popup everything but the word, its meanings and their chips (＋ Add, Save, ✓ In your words, NOUN and the other word classes, the Notes and Translating… hints); the word and its meanings stay in the normal type.
 6. A word's meaning shown on pointing (in every list, sentence and the theater) is a bubble of the opposite brightness to what is around it: dark with white writing on the light theme, white with dark writing (and a thin grey edge) on the dark theme and in the theater; always semibold 15 px, with the same 10 px of room above, below and on both sides of the writing (measured on the letters), 14 px corners and a soft shadow, like the extension's meaning bubble, so it stands out on any background.
 7. A card's question is mustard yellow everywhere (never purple) (in the card editor once it is split from its answer, on the notebook page and on the Speaking paper), never the lesson's colour or the green or blue of looked-up words; in the card editor it is 4 px larger than its answer lines (24 px).
+8. A card's words beside its sentence (the notes on the notebook page and the Speaking paper) are listed in the order they have in the card's notes, as in the editor, never reordered; a long one wraps under its own text, its number standing alone on the left.
 
 ### 9. Movement
 1. Good tints the page green and sends it right; Again tints it red and sends it left; Delete flies off marked ✕; every flight has its own shape and corners.

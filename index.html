@@ -1697,9 +1697,9 @@ window.onYouTubeIframeAPIReady = function(){
   .paper-notes{min-width:180px;padding-left:20px;border-left:2px solid var(--paper-rule);font-size:18px;line-height:26px;}
   .paper-notes li + li, .paper-notes .card-notes :is(div, p, li) + :is(div, p, li), #cardTable.notebook .card-notes :is(div, p, li) + :is(div, p, li), :is(.paper-notes, #cardTable.notebook) .card-notes :is(:is(ul, ol) + *, * + :is(ul, ol)){margin-top:0;}
   .paper-notes .card-notes{padding:0;font-size:inherit;line-height:inherit;}
-  .paper-notes li{padding-left:0;}
+  .paper-notes li{--pi:calc(round(up, calc(var(--pnd, 1) * 1ch + .5ch), 1px) + 8px);padding-left:var(--pi);text-indent:calc(-1 * var(--pi));}
   .paper-notes li::before{content:none;}
-  .paper-notes .pn{display:inline-block;min-width:round(up, calc(var(--pnd, 1) * 1ch + .5ch), 1px);margin-right:8px;text-align:right;font-variant-numeric:tabular-nums;}
+  .paper-notes .pn{display:inline-block;text-indent:0;min-width:round(up, calc(var(--pnd, 1) * 1ch + .5ch), 1px);margin-right:8px;text-align:right;font-variant-numeric:tabular-nums;}
   @media (max-width:600px){
     .ielts-paper.with-notes .paper-body{grid-template-columns:minmax(0, 1fr);}
     .paper-notes{margin-top:24px;padding:0;border:0;}
@@ -9361,12 +9361,18 @@ function renderStudy() {
 
 function cardWords(row) {
   const text = (row.q || "") + "\n" + (row.a || ""), seen = new Set;
-  return lessonVocabItems(vocabSource()).filter(i => {
+  const list = lessonVocabItems(vocabSource()).filter(i => {
     const k = i.tkey || normalizeVocabText(i.term);
     if (seen.has(k) || !termInText(i.term, text)) return false;
     seen.add(k);
     return true;
   });
+  const lines = plainTextOf(row.notesHtml || escapeHtml(row.notes || ""), "\n").split("\n").map(l => normalizeVocabText(l.split(/[:：—–=]/)[0] || ""));
+  const at = i => {
+    const k = i.tkey || normalizeVocabText(i.term), n = lines.indexOf(k);
+    return n < 0 ? Infinity : n;
+  };
+  return list.map((i, n) => [ i, at(i), n ]).sort((a, b) => a[1] - b[1] || a[2] - b[2]).map(x => x[0]);
 }
 
 function ieltsFrontHtml(row) {
