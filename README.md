@@ -37,6 +37,7 @@ The shared rules of the whole app, one line each. They hold in every mode (☰ F
 13. Every line of that list is a card of its own, with its own 🆕 ⏳ ✅ state and ✕; grouping is only to find them. Definitions are never translated (no line under them, on the card, in the list or in the editor), so you read them in their own language; an example with no meaning of yours shows the machine translation of its text until you type one.
 14. A click on a card (double-tap on a phone) opens its small popup: the card's text and its meaning, nothing else. What you change is kept when the dictionary is looked up again, and the card keeps its progress.
 15. Sentences are never paired by the word alone: a card shows another card's sentence only when the same word is saved there with the same meaning; a definition card shows only the examples the dictionary gives for that definition.
+16. Each meaning shows once among the meaning pills of the word popup and the editors, wherever it comes from (your cards or the dictionary); the one in use is ringed.
 
 ### 3. Studying and scheduling
 1. 🆕 New is never studied, ⏳ Due has come for review, ✅ Done is remembered five times in a row; the three counts only ever count the cards and words up for study right now (within the daily limits), never everything of that kind, so a card just graded leaves them until its time comes again.

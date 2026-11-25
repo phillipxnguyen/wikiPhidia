@@ -11913,6 +11913,17 @@ function myMeaningsFor(w, lang, skip) {
   return out.slice(0, 8);
 }
 
+function onceChips(html) {
+  const box = document.createElement("div"), seen = new Set;
+  box.innerHTML = html;
+  box.querySelectorAll(".od-term").forEach(b => {
+    const k = foldMeaning(b.dataset.m || b.textContent);
+    if (seen.has(k)) b.remove(); else seen.add(k);
+  });
+  box.querySelectorAll(".od-group").forEach(g => !g.querySelector(".od-term") && g.remove());
+  return box.innerHTML;
+}
+
 function myMeaningsHtml(w, lang, skip) {
   const list = myMeaningsFor(w, lang, skip);
   return list.length ? `<div class="od-group od-mine"><span class="od-pos od-lens" title="Meanings you gave this word on your cards">${OD_LENS}</span><div class="od-terms">${list.map(t => `<span role="button" tabindex="0" class="od-term" data-m="${escapeAttr(t)}" title="Make this the meaning; click it again to change it">${escapeHtml(t)}</span>`).join("")}</div></div>` : "";
@@ -12006,7 +12017,7 @@ function ownDictCardHtml(lang, w, ctx) {
     terms: e.alts
   } ] : []) : [];
   const body = (!e ? "" : `<button type="button" class="od-main" data-m="${escapeAttr(e.m)}" title="Add with this meaning">${escapeHtml(e.m)}</button>`) + myMeaningsHtml(w, lang, "") + groups.map(g => `<div class="od-group">${g.pos ? `<span class="od-pos">${escapeHtml(g.pos)}</span>` : ""}<div class="od-terms">${g.terms.map(t => `<span role="button" tabindex="0" class="od-term" data-m="${escapeAttr(t)}" title="Make this the meaning; click it again to change it">${escapeHtml(t)}</span>`).join("")}</div></div>`).join("") + (e && e.en || []).map(g => `<div class="od-group">${g.pos ? `<span class="od-pos">${escapeHtml(g.pos)}</span>` : ""}<div class="od-terms">${g.terms.map(t => `<span role="button" tabindex="0" class="od-term" data-m="${escapeAttr(t)}" title="Make this the meaning; click it again to change it">${escapeHtml(t)}</span>`).join("")}</div></div>`).join("");
-  const act = '<span class="od-acts"></span>';
+  const act = '<span class="od-acts"></span>', chips = onceChips(body);
   const pool = appSentencesFor(w, ctx && ctx.row, 30), zt = ctx && ctx.zoneText || "", spot = t => zt.indexOf(oneLine(t));
   const seen = zt ? pool.filter(t => spot(t) >= 0).sort((a, b) => spot(a) - spot(b)) : [];
   const mine = seen.concat(pool.filter(t => !seen.includes(t))).slice(0, 2), world = dictSrcSentences(lang, w).filter(t => !mine.includes(t)).slice(0, 3 - mine.length);
@@ -12019,7 +12030,7 @@ function ownDictCardHtml(lang, w, ctx) {
   }).join("")}</div>` : "";
   const say = `<button type="button" class="od-say" data-say="${escapeAttr(w)}" aria-label="Listen" title="Listen">${OD_SPEAK}</button>`;
   const top = odLong(w) ? `${act}<div class="od-word">${say}<b>${escapeHtml(w)}</b></div>` : `<div class="od-word"><b>${escapeHtml(w)}</b></div><div class="od-right">${levelHtml(lang, w)}${say}${act}</div>`;
-  return `<article class="od-card${odLong(w) ? " od-long" : ""}" data-w="${escapeAttr(w)}"><header class="od-top">${top}</header>${py ? `<div class="od-py">${py}</div>` : ""}<div class="od-body">${body}</div>${exHtml}</article>`;
+  return `<article class="od-card${odLong(w) ? " od-long" : ""}" data-w="${escapeAttr(w)}"><header class="od-top">${top}</header>${py ? `<div class="od-py">${py}</div>` : ""}<div class="od-body">${chips}</div>${exHtml}</article>`;
 }
 
 function wordStems(key) {
@@ -23470,7 +23481,7 @@ function vocabEditorHtml(item) {
   const groups = odLong(item.term) ? [] : wordViGroups(item.tkey, item.term).filter(g => g.terms && g.terms.length);
   const own = odLong(item.term) ? "" : myMeaningsHtml(item.term, ownDictLang(item.term, item.card), "");
   const pills = groups.length || own ? `<div class="ed-means">${own}${groups.map(g => `<div class="od-group">${g.pos ? `<span class="od-pos">${escapeHtml(g.pos)}</span>` : ""}<div class="od-terms">${g.terms.map(t => `<span role="button" tabindex="0" class="od-term" data-m="${escapeAttr(t)}">${escapeHtml(t)}</span>`).join("")}</div></div>`).join("")}</div>` : "";
-  return '<div class="vocab-editor">' + `<div class="od-card ed-card">${levelHtml(ownDictLang(item.term, item.card), item.term, "ed-lv")}${say}${area}${main}${pills}${editCtxHtml(item)}</div>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
+  return '<div class="vocab-editor">' + `<div class="od-card ed-card">${levelHtml(ownDictLang(item.term, item.card), item.term, "ed-lv")}${say}${area}${main}${onceChips(pills)}${editCtxHtml(item)}</div>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
 }
 
 function syncVocabEditMain(item) {
