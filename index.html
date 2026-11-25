@@ -1337,6 +1337,7 @@ window.onYouTubeIframeAPIReady = function(){
   .hover-tooltip.lookup-tip{max-width:300px;padding:12px;border:1px solid var(--tip-bd);border-radius:14px;background:var(--tip-bg);color:var(--tip-ink);box-shadow:0 8px 24px rgba(10,20,40,.22);text-align:left;font-size:15px;line-height:20px;font-weight:600;white-space:normal;}
   .hover-tooltip.lookup-tip .tip-m{margin-top:8px;text-box:trim-both cap alphabetic;}
   .hover-tooltip.lookup-tip .tip-m:first-child{margin-top:0;}
+  .hover-tooltip.lookup-tip .tip-py + .tip-m{margin-top:12px;}
   .hover-tooltip.lookup-tip .tip-py{font-size:15px;line-height:20px;font-weight:600;letter-spacing:.02em;color:var(--q-ink);text-box:trim-both cap alphabetic;}
   .flag-peek{position:fixed;left:0;top:38%;z-index:1600;width:184px;height:96px;pointer-events:none;transform-origin:0 8px;animation:fpRun 2400ms cubic-bezier(.3, 0, .3, 1) forwards;}
   .fp-pole{position:absolute;left:0;top:4px;width:184px;height:8px;border-radius:4px;background:linear-gradient(#a0703f, #6b4423);box-shadow:0 2px 6px rgba(0,0,0,.25);}
@@ -1775,6 +1776,7 @@ window.onYouTubeIframeAPIReady = function(){
   .od-float .od-ex{gap:8px;padding-top:0;border-top:0;}
   .od-float .od-ex p{padding:12px;border-radius:12px;background:rgba(90,120,170,.14);}
   .od-float .od-body > .od-group + .od-group{margin-top:-10px;}
+  .od-float .od-body > .od-group:not(:has(.od-term:not(.od-cur))) + .od-group{margin-top:0;}
   .od-done{cursor:pointer;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:16px;background:color-mix(in srgb, var(--a-label) 14%, transparent);font-size:0 !important;}
   .od-done::before{content:"✓";font-size:16px;line-height:20px;font-weight:800;}
   .od-float .od-long .od-mean-in{font-size:18px;line-height:26px;font-weight:600;}
@@ -1800,9 +1802,9 @@ window.onYouTubeIframeAPIReady = function(){
   .ed-card > .ed-lv{position:absolute;top:-2px;right:40px;z-index:3;}
   .ed-card:has(.vem-t.long) > .ed-lv{top:-5px;}
   .ed-card #vocabEditMain .vem-t{padding-right:var(--lv-w, 0px);}
-  .od-pos{flex:none;min-width:44px;padding:11px 6px;text-box:trim-both ex alphabetic;border-radius:6px;background:color-mix(in srgb, var(--text) 7%, transparent);color:var(--od-soft);font-size:18px;line-height:26px;font-weight:700;text-transform:lowercase;text-align:center;}
+  .od-pos{flex:none;display:flex;align-items:center;justify-content:center;box-sizing:border-box;min-width:44px;height:32px;padding:0 6px;border-radius:6px;background:color-mix(in srgb, var(--text) 7%, transparent);color:var(--od-soft);font-size:18px;line-height:26px;font-weight:700;text-transform:lowercase;text-align:center;}
   .od-terms{display:flex;flex-wrap:wrap;gap:6px;min-width:0;}
-  .od-term{display:inline-block;padding:9px 12px;text-box:trim-both cap alphabetic;border:1px solid var(--od-line);border-radius:16px;background:var(--od-bg);color:var(--text);font:inherit;font-size:18px;line-height:26px;cursor:pointer;transition:border-color .15s, color .15s;}
+  .od-term{display:inline-flex;align-items:center;box-sizing:border-box;height:32px;padding:0 12px;border:1px solid var(--od-line);border-radius:16px;background:var(--od-bg);color:var(--text);font:inherit;font-size:18px;line-height:26px;cursor:pointer;transition:border-color .15s, color .15s;}
   @media (hover:hover){.od-term:hover{color:var(--accent);border-color:var(--accent);}}
   .od-term[contenteditable="true"]{cursor:text;outline:none;}
   .od-ex{display:flex;flex-direction:column;gap:6px;}
@@ -12124,6 +12126,16 @@ function onceChips(html) {
   return box.innerHTML;
 }
 
+function alignPosLabels(root) {
+  const labels = root ? [ ...root.querySelectorAll(".od-group > .od-pos") ].filter(p => p.offsetParent) : [];
+  root && root.querySelectorAll(".od-group").forEach(g => g.style.paddingLeft = "");
+  labels.forEach(p => p.style.width = "");
+  if (!labels.length) return;
+  const w = Math.ceil(Math.max(...labels.map(p => p.getBoundingClientRect().width)));
+  labels.forEach(p => p.style.width = w + "px");
+  root.querySelectorAll(".od-group").forEach(g => !g.querySelector(":scope > .od-pos") && (g.style.paddingLeft = w + 8 + "px"));
+}
+
 function myMeaningsHtml(w, lang, skip) {
   const list = myMeaningsFor(w, lang, skip);
   return list.length ? `<div class="od-group od-mine"><span class="od-pos od-lens" title="Meanings you gave this word on your cards">${OD_LENS}</span><div class="od-terms">${list.map(t => `<span role="button" tabindex="0" class="od-term" data-m="${escapeAttr(t)}" title="Make this the meaning; click it again to change it">${escapeHtml(t)}</span>`).join("")}</div></div>` : "";
@@ -12435,6 +12447,7 @@ function paintOwnDictFloat() {
   const sync = () => {
     const parts = meaningLines(input.value), now = parts.join("\n");
     card.querySelectorAll(".od-term").forEach(b => b.classList.toggle("od-cur", parts.includes(b.dataset.m)));
+    alignPosLabels(card);
     if (!save) return;
     const changed = now !== (found ? found.meaning : "") || !!notes && notes.innerHTML !== oldNotes || !!found && title.textContent.replace(/\s+/g, " ").trim() !== found.term;
     save.hidden = !changed;
@@ -24057,6 +24070,7 @@ function wireVocabEditor(items) {
   const markMeans = () => {
     const a = main && main.querySelector(".vem-a"), have = a ? a.innerText.split("\n").map(foldMeaning).filter(Boolean) : [];
     document.querySelectorAll("#editPopup .ed-means .od-term").forEach(b => b.classList.toggle("od-cur", have.includes(foldMeaning(b.dataset.m))));
+    alignPosLabels(document.querySelector("#editPopup .ed-means"));
   };
   if (main) main.addEventListener("input", () => {
     syncVocabEditMain(item);
