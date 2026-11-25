@@ -479,6 +479,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-225 | `a5b82eb` | Từ không có câu nào: mặt trước là Podcast (đọc to), không bao giờ hiện chữ gốc; mặt trước chỉ có chữ khi là bản dịch |
 | FLASH-226 | `536fa1c` | Không tải được bản dịch câu (máy dịch lỗi/chặn): thẻ không chờ mãi, chuyển sang mặt Podcast đọc to |
 | FLASH-227 | `73d4c86` | Thứ tự học: mọi thẻ ôn (đến hạn, Done, vừa Again) xáo ngẫu nhiên tuyệt đối, cả phiên học theo ngôn ngữ; chỉ thẻ mới theo thứ tự (Lessons cũng vậy) |
+| FLASH-228 | `f82ce36` | Đổi ngôn ngữ khi học: lá cờ có cán hé vào từ mép trái, nghiêng xuống, vẫy rồi rút về |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
@@ -894,6 +895,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-102 | `f30087a` | Popup từ: đang gõ thì không vẽ lại (không mất con trỏ); extension 1.6.66: khoảng cách các phần đều 16px, thẻ không nhảy khi đang gõ |
 | LOOKUP-103 | `44bdef9` | Pill cấp độ (B1, TOPIK…) và nhãn từ loại (noun, verb) căn giữa đúng theo chữ |
 | LOOKUP-104 | `12808f6` | Mỗi nghĩa chỉ hiện một chip trong popup và ô sửa (nghĩa của bạn và của từ điển không lặp lại) |
+| LOOKUP-105 | `f82ce36` | Tooltip rê chuột: pinyin trên, nghĩa dưới, không còn nháy/trống; pinyin màu cam câu hỏi (không trùng màu nghĩa); popup luôn có pinyin chữ Hán; nghĩa đang dùng không lặp lại thành chip; extension 1.6.68 có pinyin |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
