@@ -222,7 +222,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-157 | `deedf8d` | Nhãn nghĩa: khoảng quanh chữ đều 12px bốn phía (app + extension 1.6.63) |
 | THEATER-158 | `c01b6f6` | Nhãn nghĩa: khoảng quanh chữ 8px (app + extension 1.6.64) |
 | THEATER-159 | `2ae8464` | Nhãn nghĩa: khoảng quanh chữ 10px (app + extension 1.6.65) |
-| THEATER-160 | `pending` | Nhãn nghĩa: khoảng quanh chữ 12px (app + extension 1.6.67) |
+| THEATER-160 | `37d3b57` | Nhãn nghĩa: khoảng quanh chữ 12px (app + extension 1.6.67) |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
