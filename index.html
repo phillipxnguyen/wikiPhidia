@@ -569,7 +569,7 @@ window.onYouTubeIframeAPIReady = function(){
   .q-mirror{position:absolute;z-index:0;margin:0;overflow:hidden;border-style:solid;border-color:transparent;color:var(--text);pointer-events:none;}
   .q-mirror .q-ph{font-family:"Doto", system-ui, sans-serif;font-weight:800;color:var(--placeholder);}
   .q-mirror .q-line{color:var(--q-ink);}
-  #cardTable.notebook .cell[data-field="q"] mark.vocab-own, .paper-question mark.vocab-own{color:var(--text);}
+  #cardTable.notebook .cell[data-field="q"] mark:is(.vocab-own, .vocab-hit), .paper-question mark:is(.vocab-own, .vocab-hit){color:var(--text);}
   .q-mirrored{position:relative;z-index:1;background-color:transparent!important;color:transparent!important;-webkit-text-fill-color:transparent;caret-color:var(--text);}
   .q-mirrored *{color:transparent!important;-webkit-text-fill-color:transparent;}
   .q-mirrored::placeholder{-webkit-text-fill-color:var(--placeholder);}
@@ -1737,10 +1737,12 @@ window.onYouTubeIframeAPIReady = function(){
   .od-card.ed-card{padding:0;border:0;border-radius:0;background:none;box-shadow:none;}
   .od-card.ed-card, .od-float .od-card, .od-float .od-body{gap:16px;}
   .ed-card > :not(.ed-say), .ed-card .edit-qa, .ed-card .notes-clip, .ed-card :is(#editNotes, #qaNotes), .od-float .od-card > *, .od-float .od-body > *{margin-top:0;margin-bottom:0;}
-  .ed-card #editNotes{position:relative;padding-top:0;padding-bottom:0;border-left-color:transparent;text-box-trim:trim-both;text-box-edge:cap alphabetic;}
-  .ed-card .notes-clip:has(> #editNotes)::before{content:"";position:absolute;top:-6px;bottom:-6px;left:0;z-index:1;width:4px;background:color-mix(in srgb, var(--accent) 45%, transparent);pointer-events:none;}
-  .ed-card .notes-clip:has(> #editNotes:focus)::before{background:var(--accent);}
-  .ed-card .edit-qa + .notes-clip{margin-top:6px;}
+  .ed-card :is(#editNotes, #qaNotes){position:relative;padding-top:0;padding-bottom:0;border-left-color:transparent;text-box-trim:trim-both;text-box-edge:cap alphabetic;}
+  .ed-card .notes-clip:has(> :is(#editNotes, #qaNotes))::before{content:"";position:absolute;top:-6px;bottom:-6px;left:0;z-index:1;width:4px;background:color-mix(in srgb, var(--accent) 45%, transparent);pointer-events:none;}
+  .ed-card .notes-clip:has(> :is(#editNotes, #qaNotes):focus)::before{background:var(--accent);}
+  .ed-card :is(.edit-qa, .qa-row) + .notes-clip{margin-top:6px;}
+  #quickAdd:not([data-kind="listen"]) .ed-card #qaQ{display:block;margin:-7px 0;}
+  #quickAdd > .vocab-editor-actions{margin-top:12px;}
   .ed-card .ed-tr + .notes-clip{margin-top:-3px;}
   .ed-card .edit-qa + .ed-tr{margin-top:-6px;}
   .ed-card :is(#editQ, .q-mirror) > div + div{margin-top:0;}
@@ -13292,6 +13294,14 @@ function notesEditorHtml(row) {
   return html;
 }
 
+function boldNoteWords(box) {
+  const takenKeys = new Set;
+  box.querySelectorAll("li").forEach(li => {
+    if (isVocabItem(li)) takenKeys.add(normalizeVocabText(noteItemTerm(li))); else if (!underWordLine(li) && NOTE_VOCAB_ITEM_RE.test(ownLiTextNodes(li).map(n => n.nodeValue).join("")) && !noteItemIsDuplicate(li, takenKeys)) boldVocabItem(li);
+  });
+  if (box.textContent.trim() && !box.querySelector("*")) box.innerHTML = "<div>" + box.innerHTML + "</div>";
+}
+
 function commitActiveEdit(keep) {
   if (!activeEdit) return;
   const merged = activeEdit.row.time == null ? splitMergedCardHtml(stripVocabHighlights(activeEdit.editQ.innerHTML)) : null;
@@ -13299,11 +13309,7 @@ function commitActiveEdit(keep) {
   let newQ = cleanPunct(plainTextOf(newQHtml, "\n"));
   let newAHtml = cleanPunctHtml(sanitizeHtml(merged ? merged.a : stripVocabHighlights(editorHtml(activeEdit.editA)), "br"));
   let newA = cleanPunct(plainTextOf(newAHtml, "\n"));
-  const takenKeys = new Set;
-  if (!keep) activeEdit.editNotes.querySelectorAll("li").forEach(li => {
-    if (isVocabItem(li)) takenKeys.add(normalizeVocabText(noteItemTerm(li))); else if (!underWordLine(li) && NOTE_VOCAB_ITEM_RE.test(ownLiTextNodes(li).map(n => n.nodeValue).join("")) && !noteItemIsDuplicate(li, takenKeys)) boldVocabItem(li);
-  });
-  if (!keep && activeEdit.editNotes.textContent.trim() && !activeEdit.editNotes.querySelector("*")) activeEdit.editNotes.innerHTML = "<div>" + activeEdit.editNotes.innerHTML + "</div>";
+  if (!keep) boldNoteWords(activeEdit.editNotes);
   const notesNow = flatVocabLists(editorHtml(activeEdit.editNotes));
   const newNotes = plainTextOf(notesNow, "\n");
   const newNotesHtml = plainTextOf(notesNow, "\n").trim() ? sanitizeHtml(notesNow) : "";
@@ -13673,7 +13679,8 @@ function saveQuickAdd() {
       return document.getElementById("qaTime").focus();
     }
     const row = newRow(qa.q, listen ? "" : qa.a, time);
-    const html = sanitizeHtml(editorHtml(notes));
+    boldNoteWords(notes);
+    const html = sanitizeHtml(flatVocabLists(editorHtml(notes)));
     if (plainTextOf(html, "\n").trim()) {
       row.notesHtml = html;
       row.notes = plainTextOf(html, "\n");
@@ -15217,8 +15224,18 @@ function oneLine(text) {
   return (text || "").replace(/(\S)\s*\n\s*(?=(\S))/g, (...m) => m[1] + (UNSPACED_RE.test(m[1]) && UNSPACED_RE.test(m[2]) ? "" : " ")).replace(/\s+/g, " ").trim();
 }
 
+function dictCap(text, max) {
+  const over = t => encodeURIComponent(t).length > max || t.length > 1000;
+  if (!over(text)) return text;
+  let cut = text;
+  while (cut && over(cut)) cut = cut.slice(0, Math.floor(cut.length * .8));
+  const stop = cut.search(/[.!?。！？…][^.!?。！？…]*$/) + 1, space = cut.lastIndexOf(" ");
+  const end = stop > cut.length / 2 ? stop : space > cut.length / 2 ? space : cut.length;
+  return cut.slice(0, end).trim();
+}
+
 function dictUrlFor(text, row) {
-  text = cleanPunct(oneLine((text || "").replace(/\u2063/g, "")));
+  text = dictCap(cleanPunct(oneLine((text || "").replace(/\u2063/g, ""))), 1800);
   if (!text) return null;
   const script = cjkScriptFor(text, row);
   if (script === "zh") return "https://chinesedictionary.mobi/?handler=QueryWorddict&mwdqb=" + encodeURIComponent(text);
