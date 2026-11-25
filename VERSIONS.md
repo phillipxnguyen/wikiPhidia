@@ -237,6 +237,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-159 | `2ae8464` | Nhãn nghĩa: khoảng quanh chữ 10px (app + extension 1.6.65) |
 | THEATER-160 | `37d3b57` | Nhãn nghĩa: khoảng quanh chữ 12px (app + extension 1.6.67) |
 | THEATER-161 | `ca0c352` | Bật tắt pinyin/nghĩa hoặc đổi cỡ chữ: câu đang học luôn ở trong tầm mắt trong list |
+| THEATER-162 | `da004a5` | Giọt màu Again/Good vẫn chảy vào list khi câu vừa chấm đã trôi khỏi tầm mắt (chảy vào mép list phía có câu) |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
