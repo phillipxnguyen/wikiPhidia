@@ -854,6 +854,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-97 | `2042899` | Extension 1.6.62: bong bóng nghĩa ngược màu nền (trang sáng → bong bóng tối), đồng bộ với app |
 | LOOKUP-98 | `f481e11` | Popup và editor của từ: mỗi từ một nghĩa, bấm pill là thay nghĩa; nhấn đúp pill để sửa ngay trên pill (con trỏ chữ, không khung); hàng kính lúp có cả nghĩa gốc |
 | LOOKUP-99 | `ac7077e` | Con trỏ chữ trong ô trống có placeholder: cao hơn chữ một chút, căn giữa theo chữ, như con trỏ thường |
+| LOOKUP-100 | `pending` | Ô kính lúp trước nghĩa của bạn gọn như ô noun/verb (không rộng thênh thang) |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
