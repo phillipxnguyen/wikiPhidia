@@ -465,6 +465,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-217 | `a993e55` | Flashcard: nội dung luôn căn giữa theo chiều dọc, kể cả khi có phần tử khác chen vào mặt thẻ |
 | FLASH-218 | `e2b9eaf` | Bỏ các font bo tròn mềm quá và font khó đọc (15 font); pill nghĩa: bấm lần nữa để sửa, con trỏ đặt đúng chỗ bấm (bỏ nhấn đúp) |
 | FLASH-219 | `5d749f1` | Toàn màn hình: mọi loại flashcard (cả thẻ chỉ có từ) đều cao bằng khoảng trống, nội dung nằm giữa thay vì dính lên trên |
+| FLASH-220 | `6cb408d` | Câu có từ ở dạng khác (came across / come across) vẫn hỏi bằng bản dịch câu, không còn hiện mỗi từ |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
