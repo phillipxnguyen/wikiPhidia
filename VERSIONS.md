@@ -50,6 +50,7 @@ Hàm chính: `isListenMode`, `listenBatch`, `startSequenceLoop`, `stopSequenceLo
 | SPEAK-23 | `4168fd2` | Dọn hàm thừa còn lại sau SPEAK-22 |
 | SPEAK-24 | `0d9c527` | Ô ＋ thêm thẻ lề đều như ô sửa (16px quanh chữ, Notes và Save cách đều); thẻ dài (cả bài hát) không còn làm trang từ điển báo Bad Request; dòng từ gõ trong Notes của ô ＋ thành từ của thẻ khi Save; từ trong câu hỏi trên tờ giấy là mực thường |
 | SPEAK-25 | `31f7f24` | Dòng `từ: nghĩa` đã có trong Notes của thẻ tự thành từ khi mở app (câu được tô màu, Notes thành danh sách từ đánh số); ghi chú thường trên tờ giấy xuống dòng thẳng dưới chữ |
+| SPEAK-26 | `b18212a` | Dòng `từ: nghĩa` trong Notes dạng dòng thường (có hoặc không có •) cũng thành từ của thẻ: tô màu, lookup, thẻ Vocabulary |
 
 Hàm chính: `ieltsPaperHtml`, `ieltsFrontHtml`, `entryHidden`, `revealAction`, `render` (nhánh `groupViewStyle === "ielts"`). Cùng `ieltsHints`, `ieltsHintNext`, `ieltsHintId` (Hint).
 
@@ -66,6 +67,7 @@ Hàm chính: `ieltsPaperHtml`, `ieltsFrontHtml`, `entryHidden`, `revealAction`, 
 | FULL-8 | `e711572` | Bản dịch đã có trong Notes thì chỉ hiện một lần (không thêm dòng dịch xanh, không dịch máy lại), trong danh sách và ô sửa |
 | FULL-9 | `d29dbc4` | Bản dịch nằm trong Notes của câu video được chuyển hẳn thành bản dịch của câu (xanh, giãn dòng như dịch máy); trong list, dịch không còn nằm cạnh câu ngắn; ô sửa giãn dòng dịch đều |
 | FULL-10 | `021e4d9` | Bấm ＋ mở luôn ô thẻ, con trỏ ở dòng Q (Lessons và Vocabulary); Esc khi ô trống đóng cửa sổ thêm |
+| FULL-11 | `b18212a` | 🌐 lại ẩn/hiện mọi bản dịch (cả bản đã lưu); bản dịch câu video sửa được trong ô sửa, chỉ dịch lại khi câu Q đổi |
 
 Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `selectRow`, `clearRowSelection`, `updateSelBar`.
 
