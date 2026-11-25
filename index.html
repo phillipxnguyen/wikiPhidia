@@ -14242,8 +14242,9 @@ function cardKind(r, mode, now) {
 function dueScoreCompare(mode) {
   const now = Date.now();
   const position = new Map(rows.map((r, i) => [ r.id, i ]));
+  const pool = k => k === 0 ? 1 : k;
   return (a, b) => {
-    const ka = cardKind(a, mode, now), kb = cardKind(b, mode, now);
+    const ka = pool(cardKind(a, mode, now)), kb = pool(cardKind(b, mode, now));
     if (ka !== kb) return ka - kb;
     if (ka === 2) return position.get(a.id) - position.get(b.id);
     if (ka === 3) return srsOf(a, mode).due - srsOf(b, mode).due;
@@ -22224,7 +22225,10 @@ function startVocabSession() {
     const since = rows[0].wordSince || 0, graded = new Set(reviewLog.filter(e => e.mode === "Vocab" && e.word && e.ts >= since).map(e => e.word));
     vocabSession = {
       lessonId: currentLessonId,
-      queue: drill.filter(k => !graded.has(k) && items.some(i => i.key === k)),
+      queue: shuffleReviewSlots(drill.filter(k => !graded.has(k) && items.some(i => i.key === k)), k => {
+        const it = items.find(i => i.key === k);
+        return !!it && !!vocabStateOf(it).reps;
+      }),
       flipped: false,
       pending: [],
       drill: true
@@ -22237,6 +22241,7 @@ function startVocabSession() {
     kind: vocabKind(vocabStateOf(item), now),
     shuffle: Math.random()
   })).filter(p => vocabStateOf(p.item).due <= now);
+  picked.forEach(p => p.kind === 0 && (p.kind = 1));
   picked.sort((a, b) => a.kind - b.kind || (a.kind === 2 ? a.at - b.at : a.shuffle - b.shuffle));
   let allowed = limitVocab(picked.map(p => p.item));
   const dueCount = allowed.filter(i => vocabStateOf(i).reps).length;
