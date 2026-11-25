@@ -242,6 +242,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-160 | `37d3b57` | Nhãn nghĩa: khoảng quanh chữ 12px (app + extension 1.6.67) |
 | THEATER-161 | `ca0c352` | Bật tắt pinyin/nghĩa hoặc đổi cỡ chữ: câu đang học luôn ở trong tầm mắt trong list |
 | THEATER-162 | `da004a5` | Giọt màu Again/Good vẫn chảy vào list khi câu vừa chấm đã trôi khỏi tầm mắt (chảy vào mép list phía có câu) |
+| THEATER-163 | `9889217` | Watch: trả lại phụ đề trên video, có nút bật/tắt (mặc định bật); bật thì giọt màu chảy từ phụ đề vào ô giờ, tắt thì chảy từ video |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
@@ -896,6 +897,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-103 | `44bdef9` | Pill cấp độ (B1, TOPIK…) và nhãn từ loại (noun, verb) căn giữa đúng theo chữ |
 | LOOKUP-104 | `12808f6` | Mỗi nghĩa chỉ hiện một chip trong popup và ô sửa (nghĩa của bạn và của từ điển không lặp lại) |
 | LOOKUP-105 | `f82ce36` | Tooltip rê chuột: pinyin trên, nghĩa dưới, không còn nháy/trống; pinyin màu cam câu hỏi (không trùng màu nghĩa); popup luôn có pinyin chữ Hán; nghĩa đang dùng không lặp lại thành chip; extension 1.6.68 có pinyin |
+| LOOKUP-106 | `9889217` | Ô sửa câu video: bản dịch 18/28 như câu trả lời (trước bị to hơn câu), khoảng cách câu → dịch → Notes → Save đều |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
