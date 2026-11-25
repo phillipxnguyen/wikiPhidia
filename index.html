@@ -22925,12 +22925,16 @@ async function trPump() {
   }
 }
 
+function trGaveUp(t) {
+  return mtTried.has(t) && !mtJobs.has(t);
+}
+
 function trReady(item) {
-  if (item.sub) return trTexts(item).every(t => trOff(t) || !!sentenceTrFor(item, t, {
+  if (item.sub) return trTexts(item).every(t => trOff(t) || trGaveUp(t) || !!sentenceTrFor(item, t, {
     dataset: {}
   }));
   const s = vocabContext(item).sentence;
-  return !s || trOff(s) || !!sentenceTrFor(item, s, {
+  return !s || trOff(s) || trGaveUp(s) || !!sentenceTrFor(item, s, {
     dataset: {}
   }) || !!item.meaning && wholeSentenceCard(item, s);
 }
@@ -23020,6 +23024,10 @@ function fillVocabCard(el, item) {
   el.dataset.trfront = "";
   if (ex === "cloze" && gap || otherGap) {
     const text = otherGap ? el.dataset.other : sentence, span = otherGap || gap;
+    if (!el.dataset.listen && "speechSynthesis" in window && !sentenceTrFor(item, text, el) && trGaveUp(text)) {
+      el.dataset.listen = "1";
+      el.dataset.scene = wordSceneFor(item, el.dataset.scene || null);
+    }
     const spans = wordSpans(text, item.term, span);
     const noted = noteSentence(item), notes = noted ? noted.rest.replace(/^(\s|<br\s*\/?>|<div>\s*<\/div>)+/i, "") : wordNotesOf(item);
     const spy = cjkScriptFor(text, item.card) === "zh" ? pinyinLine(text) : "";
