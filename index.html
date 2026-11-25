@@ -4473,42 +4473,6 @@ function pillLand(id, isAgain) {
   if (row && watch.graded && watch.graded.has(id)) row.classList.add(watch.again && watch.again.has(id) ? "graded-again" : "graded-good");
 }
 
-function pillFill(id, isAgain, from) {
-  if (!watch || !watch.pillWait || !watch.pillWait.has(id)) return;
-  const row = document.querySelector(`#watchPop .w-row[data-id="${id}"]`), pill = row && row.querySelector(".w-t");
-  if (!pill) return pillLand(id, isAgain);
-  const fill = document.createElement("span");
-  fill.className = "w-t-fill";
-  fill.style.background = isAgain ? "#d64545" : "#1f9d55";
-  pill.prepend(fill);
-  pill.classList.add("filling");
-  const w = pill.offsetWidth, h = pill.offsetHeight, dx = from ? from[0] : 0, dy = from ? from[1] : 1, k = Math.min(dx ? w / 2 / Math.abs(dx) : Infinity, dy ? h / 2 / Math.abs(dy) : Infinity), px = Math.round(w / 2 - dx * k), py = Math.round(h / 2 - dy * k), big = Math.ceil(Math.hypot(w, h));
-  fill.animate([ {
-    clipPath: `circle(0px at ${px}px ${py}px)`
-  }, {
-    clipPath: `circle(${big}px at ${px}px ${py}px)`
-  } ], {
-    duration: 520,
-    easing: "cubic-bezier(.3, 0, .3, 1)",
-    fill: "forwards"
-  }).finished.catch(() => {}).finally(() => {
-    pillLand(id, isAgain);
-    pill.classList.remove("filling");
-    fill.remove();
-    pill.animate([ {
-      transform: "scale(1)"
-    }, {
-      transform: "scale(1.15)",
-      offset: .4
-    }, {
-      transform: "scale(1)"
-    } ], {
-      duration: 320,
-      easing: "ease-out"
-    });
-  });
-}
-
 function watchAim(id) {
   const lst = document.querySelector("#watchPop .w-list"), row = document.querySelector(`#watchPop .w-row[data-id="${id}"]`), pill = row && row.querySelector(".w-t");
   if (!lst || !row || !pill) return null;
@@ -4527,27 +4491,50 @@ function watchAim(id) {
   };
 }
 
-function watchRowPour(id, isAgain, ax, ay) {
-  const row = document.querySelector(`#watchPop .w-row[data-id="${id}"]`);
-  if (!row) return;
-  const r = row.getBoundingClientRect(), pour = document.createElement("span"), x = Math.round(ax - r.left), y = Math.round(ay - r.top), big = Math.ceil(Math.hypot(Math.max(x, r.width - x), Math.max(y, r.height - y)));
+function watchPour(id, isAgain, from) {
+  const aim = watchAim(id), row = document.querySelector(`#watchPop .w-row[data-id="${id}"]`), pill = row && row.querySelector(".w-t");
+  if (!aim || !row || !pill || !watch || !watch.pillWait || !watch.pillWait.has(id)) return pillLand(id, isAgain);
+  const r = row.getBoundingClientRect(), p = pill.getBoundingClientRect();
+  let ex = aim.x, ey = aim.y;
+  if (aim.pill) {
+    const dx = from[0], dy = from[1], k = Math.min(dx ? p.width / 2 / Math.abs(dx) : Infinity, dy ? p.height / 2 / Math.abs(dy) : Infinity);
+    ex = Math.round(p.left + p.width / 2 - dx * k);
+    ey = Math.round(p.top + p.height / 2 - dy * k);
+  }
+  const big = Math.ceil(Math.max(...[ [ r.left, r.top ], [ r.right, r.top ], [ r.left, r.bottom ], [ r.right, r.bottom ] ].map(([ x, y ]) => Math.hypot(x - ex, y - ey))));
+  const spread = (el, box) => el.animate([ {
+    clipPath: `circle(0px at ${Math.round(ex - box.left)}px ${Math.round(ey - box.top)}px)`
+  }, {
+    clipPath: `circle(${big}px at ${Math.round(ex - box.left)}px ${Math.round(ey - box.top)}px)`
+  } ], {
+    duration: 640,
+    easing: "cubic-bezier(.3, 0, .3, 1)",
+    fill: "forwards"
+  }).finished;
+  const pour = document.createElement("span");
   pour.className = "w-row-pour";
   pour.style.background = isAgain ? "rgba(214,69,69,.32)" : "rgba(31,157,85,.32)";
   row.prepend(pour);
-  pour.animate([ {
-    clipPath: `circle(0px at ${x}px ${y}px)`,
+  spread(pour, r).then(() => pour.animate([ {
     opacity: 1
   }, {
-    clipPath: `circle(${big}px at ${x}px ${y}px)`,
-    opacity: 1,
-    offset: .55
-  }, {
-    clipPath: `circle(${big}px at ${x}px ${y}px)`,
     opacity: 0
   } ], {
-    duration: 1000,
-    easing: "ease-out"
-  }).finished.catch(() => {}).finally(() => pour.remove());
+    duration: 380,
+    easing: "ease-out",
+    fill: "forwards"
+  }).finished).catch(() => {}).finally(() => pour.remove());
+  if (!aim.pill) return pillLand(id, isAgain);
+  const fill = document.createElement("span");
+  fill.className = "w-t-fill";
+  fill.style.background = isAgain ? "#d64545" : "#1f9d55";
+  pill.prepend(fill);
+  pill.classList.add("filling");
+  spread(fill, p).catch(() => {}).finally(() => {
+    pillLand(id, isAgain);
+    pill.classList.remove("filling");
+    fill.remove();
+  });
 }
 
 function watchSuck(id, isAgain, vr) {
@@ -4599,10 +4586,7 @@ function watchSuck(id, isAgain, vr) {
     fill: "forwards"
   });
   setTimeout(() => {
-    const now = watchAim(id);
-    if (now) watchRowPour(id, isAgain, now.x, now.y);
-    if (now && now.pill) return pillFill(id, isAgain, from);
-    pillLand(id, isAgain);
+    watchPour(id, isAgain, from);
   }, Math.round(60 + dur * len / (len + 220)));
   let last = d;
   const follow = () => {
