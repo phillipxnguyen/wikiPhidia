@@ -898,6 +898,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-104 | `12808f6` | Mỗi nghĩa chỉ hiện một chip trong popup và ô sửa (nghĩa của bạn và của từ điển không lặp lại) |
 | LOOKUP-105 | `f82ce36` | Tooltip rê chuột: pinyin trên, nghĩa dưới, không còn nháy/trống; pinyin màu cam câu hỏi (không trùng màu nghĩa); popup luôn có pinyin chữ Hán; nghĩa đang dùng không lặp lại thành chip; extension 1.6.68 có pinyin |
 | LOOKUP-106 | `9889217` | Ô sửa câu video: bản dịch 18/28 như câu trả lời (trước bị to hơn câu), khoảng cách câu → dịch → Notes → Save đều |
+| LOOKUP-107 | `319ed51` | Chip nghĩa cân đối: nhãn từ loại và chip cùng cao 32px, nhãn cùng rộng nên các hàng chip thẳng cột, cách nghĩa 16px; tooltip pinyin–nghĩa cách đều như lề |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
