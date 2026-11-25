@@ -45,6 +45,7 @@ Hàm chính: `isListenMode`, `listenBatch`, `startSequenceLoop`, `stopSequenceLo
 | SPEAK-18 | `06d560e` | Editor thẻ: xuống dòng/dòng trống giữa các dòng trả lời không còn tự nhân đôi khi lưu (1 → 2 → 4), xoá được |
 | SPEAK-19 | `99c81b3` | Trang giấy: danh sách từ theo đúng thứ tự trong Notes của thẻ; dòng dài xuống dòng thụt vào dưới chữ, số đứng riêng |
 | SPEAK-20 | `2d4b3b8` | Câu hỏi (Q) đổi sang cam đất #c0582a |
+| SPEAK-21 | `pending` | Editor thẻ: xoá dòng trống không còn gộp các dòng phía trên thành câu hỏi; quy tắc 2 lần xuống dòng chỉ áp khi vừa gõ tại con trỏ |
 
 Hàm chính: `ieltsPaperHtml`, `ieltsFrontHtml`, `entryHidden`, `revealAction`, `render` (nhánh `groupViewStyle === "ielts"`). Cùng `ieltsHints`, `ieltsHintNext`, `ieltsHintId` (Hint).
 

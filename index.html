@@ -13492,14 +13492,15 @@ document.addEventListener("paste", e => {
   }));
 });
 
-function qRuleText(t) {
+function qRuleText(t, at) {
   const lead = t.length - t.trimStart().length, has = t.slice(lead, lead + 1) === Q_MARK;
   if (has) return t.includes("\n") ? null : {
     text: t.slice(0, lead) + t.slice(lead + 1),
     caret: -1
   };
-  const lines = t.split("\n"), k = lines.findIndex((l, n) => n > 0 && !l.trim() && lines.slice(0, n).some(x => x.trim()));
-  if (k < 0 || k + 1 >= lines.length) return null;
+  if (at == null) return null;
+  const lines = t.split("\n"), line = t.slice(0, at).split("\n").length - 1, k = [ line, line - 1 ].find(n => n > 0 && n + 1 < lines.length && !lines[n].trim() && lines.slice(0, n).some(x => x.trim()));
+  if (k == null) return null;
   const q = lines.slice(0, k).map(l => l.trim()).filter(Boolean).join(" "), head = Q_MARK + q + "\n";
   return {
     text: head + lines.slice(k + 1).join("\n"),
@@ -13510,8 +13511,9 @@ function qRuleText(t) {
 document.addEventListener("input", e => {
   const el = e.target;
   if (e.isComposing || !el.matches || !el.matches("#qaQ, #vocabEditTerm, #editQ") || el.id === "editQ" && activeEdit && activeEdit.row.time != null) return;
+  const breaking = /^insert(LineBreak|Paragraph)$/.test(e.inputType || "");
   if (el.tagName === "TEXTAREA") {
-    const was = el.selectionStart, next = qRuleText(el.value);
+    const was = el.selectionStart, next = qRuleText(el.value, breaking ? was : null);
     if (!next) return;
     el.value = next.text;
     const at = next.caret < 0 ? Math.max(0, was - 1) : next.caret;
@@ -13519,8 +13521,7 @@ document.addEventListener("input", e => {
     fitTextarea(el);
     return;
   }
-  const raw = el.innerText, text = raw.endsWith("\n\n") ? raw.slice(0, -1) : raw, next = qRuleText(text);
-  if (!next) return;
+  const raw = el.innerText, text = raw.endsWith("\n\n") ? raw.slice(0, -1) : raw;
   const sel = getSelection(), r0 = sel.rangeCount ? sel.getRangeAt(0) : null;
   let was = 0;
   if (r0 && el.contains(r0.startContainer)) {
@@ -13529,6 +13530,20 @@ document.addEventListener("input", e => {
     pre.setEnd(r0.startContainer, r0.startOffset);
     was = pre.toString().length;
   }
+  let caretAt = null;
+  if (breaking && r0 && el.contains(r0.startContainer)) {
+    const mark = document.createRange();
+    mark.setStart(el, 0);
+    mark.setEnd(r0.startContainer, r0.startOffset);
+    const box = document.createElement("div");
+    box.appendChild(mark.cloneContents());
+    box.style.cssText = "position:fixed;left:-9999px;top:0;white-space:pre-wrap";
+    document.body.appendChild(box);
+    caretAt = box.innerText.length;
+    box.remove();
+  }
+  const next = qRuleText(text, caretAt);
+  if (!next) return;
   if (el.id === "editQ" && activeEdit) {
     const skip = activeEdit.row && activeEdit.row.id, lit = t => t ? highlightVocabInHtml(escapeHtml(t), skip) : "<br>", lines = next.text.split("\n");
     const split = lines[0].startsWith(Q_MARK);
