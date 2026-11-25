@@ -13634,7 +13634,13 @@ document.addEventListener("click", e => {
 
 document.getElementById("btnSingleCard").onclick = e => {
   e.stopPropagation();
+  openQuickAdd();
+};
+
+function openQuickAdd() {
   if (!currentLessonId || isVirtualLesson()) return;
+  const q = document.getElementById("qaQ");
+  if (!document.getElementById("quickAdd").hidden) return q.focus();
   document.getElementById("btnSingleCard").hidden = true;
   document.getElementById("quickAdd").hidden = false;
   const at = mediaPlayerReady() ? Math.floor(ytPlayer.getCurrentTime() || 0) : null;
@@ -13643,8 +13649,9 @@ document.getElementById("btnSingleCard").onclick = e => {
   timeBox.placeholder = at == null ? "00:00" : clockText(at);
   timeBox.dataset.at = at == null ? "" : at;
   syncAddLook();
-  fitTextarea(document.getElementById("qaQ"));
-};
+  fitTextarea(q);
+  q.focus();
+}
 
 function closeQuickAdd(quiet) {
   const box = document.getElementById("quickAdd");
@@ -13734,7 +13741,9 @@ document.getElementById("quickAdd").addEventListener("keydown", e => {
   if (e.key !== "Escape") return;
   e.preventDefault();
   e.stopPropagation();
-  closeQuickAdd(!document.getElementById("addPopup").hidden);
+  const inPopup = !document.getElementById("addPopup").hidden;
+  if (inPopup && !document.getElementById("qaQ").value.trim() && !document.getElementById("qaNotes").textContent.trim()) return closeAddPopup();
+  closeQuickAdd(inPopup);
 });
 
 function openEdit(tr, row) {
@@ -31693,6 +31702,7 @@ function openAddPopup() {
   document.getElementById("addPopTitle").textContent = name;
   placeAddForm("popup");
   document.getElementById("addPopup").hidden = false;
+  openQuickAdd();
 }
 
 function closeAddPopup() {
