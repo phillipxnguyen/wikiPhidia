@@ -44,7 +44,7 @@ Hàm chính: `isListenMode`, `listenBatch`, `startSequenceLoop`, `stopSequenceLo
 | SPEAK-17 | `f30087a` | Câu hỏi (Q) đổi từ tím sang vàng mù tạt (không dùng tím) |
 | SPEAK-18 | `06d560e` | Editor thẻ: xuống dòng/dòng trống giữa các dòng trả lời không còn tự nhân đôi khi lưu (1 → 2 → 4), xoá được |
 | SPEAK-19 | `99c81b3` | Trang giấy: danh sách từ theo đúng thứ tự trong Notes của thẻ; dòng dài xuống dòng thụt vào dưới chữ, số đứng riêng |
-| SPEAK-20 | `pending` | Câu hỏi (Q) đổi sang cam đất #c0582a |
+| SPEAK-20 | `2d4b3b8` | Câu hỏi (Q) đổi sang cam đất #c0582a |
 
 Hàm chính: `ieltsPaperHtml`, `ieltsFrontHtml`, `entryHidden`, `revealAction`, `render` (nhánh `groupViewStyle === "ielts"`). Cùng `ieltsHints`, `ieltsHintNext`, `ieltsHintId` (Hint).
 
