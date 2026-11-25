@@ -551,7 +551,7 @@ window.onYouTubeIframeAPIReady = function(){
   @media (max-width:600px){.ed-card #vocabEditMain .vem-t:not(.long){font-size:24px;line-height:32px;}}
   .ed-card .notes-clip::after{display:none;}
   .ed-card :is(#editNotes, #qaNotes){min-height:0;padding:2px 0 2px 12px;border:0;border-left:4px solid color-mix(in srgb, var(--accent) 45%, transparent);border-radius:0;background:none;box-shadow:none;}
-  .ed-card .ed-tr{font-size:18px;line-height:26px;color:var(--a-text);}
+  .ed-card .ed-tr{font-size:18px;line-height:28px;color:var(--a-text);}
   .ed-card :is(#editNotes, #qaNotes):focus{border-left-color:var(--accent);box-shadow:none;}
   .ed-card :is(#editNotes, #qaNotes):not(:empty):not(.clip-list)::before{display:none;}
   .ed-card :is(#editNotes, #qaNotes) li.clip-li{margin-left:0;}
@@ -1741,8 +1741,8 @@ window.onYouTubeIframeAPIReady = function(){
   .ed-card .notes-clip:has(> #editNotes)::before{content:"";position:absolute;top:-6px;bottom:-6px;left:0;z-index:1;width:4px;background:color-mix(in srgb, var(--accent) 45%, transparent);pointer-events:none;}
   .ed-card .notes-clip:has(> #editNotes:focus)::before{background:var(--accent);}
   .ed-card .edit-qa + .notes-clip{margin-top:6px;}
-  .ed-card .ed-tr + .notes-clip{margin-top:-1px;}
-  .ed-card .edit-qa + .ed-tr{margin-top:-12px;}
+  .ed-card .ed-tr + .notes-clip{margin-top:-3px;}
+  .ed-card .edit-qa + .ed-tr{margin-top:-6px;}
   .ed-card :is(#editQ, .q-mirror) > div + div{margin-top:0;}
   .ed-card :is(#editQ, .q-mirror) > div:not(:first-child)::before{content:"\200b";font-size:20px;}
   .ed-card :is(#editQ, .q-wrap:has(> #editQ) > .q-mirror){text-box:trim-both cap alphabetic;}
@@ -2942,8 +2942,8 @@ window.onYouTubeIframeAPIReady = function(){
   .rich-editor{min-height:calc(1lh + 18px);}
   :is(#editNotes, #qaNotes){min-height:calc(1lh + 18px);}
   #cardTable.full-list:not(.notebook) .cell{font-size:22px;line-height:30px;}
-  #cardTable.full-list:not(.notebook) .cell:is([data-field="a"], [data-field="tr"]){font-size:20px;}
-  #cardTable.full-list:not(.notebook) .cell{margin-top:12px;margin-bottom:12px;}
+  #cardTable.full-list:not(.notebook) .cell:is([data-field="a"], [data-field="tr"]){font-size:20px;line-height:28px;}
+  #cardTable.full-list:not(.notebook) .cell{display:block;width:fit-content;margin-top:12px;margin-bottom:12px;}
   #cardTable.full-list:not(.notebook) .cell + .cell{margin-top:-18px;}
   #cardTable.full-list:not(.notebook) .card-notes{margin-top:-13px;padding-bottom:16px;}
   #cardTable.full-list:not(.notebook) .cell:is([data-field="a"], [data-field="tr"]) + .card-notes{margin-top:-14px;}
@@ -2953,7 +2953,7 @@ window.onYouTubeIframeAPIReady = function(){
   #cardTable.full-list:not(.notebook) .card-notes, .vocab-list-meaning .card-notes{font-size:20px;line-height:28px;}
   @media (max-width:600px){
     :is(.rich-editor, #editQ, #editA, .vocab-editor textarea, #editNotes, #qaNotes), #cardTable.full-list:not(.notebook) .cell, .vocab-list-row[data-key] > *, #cardTable.notebook .cell[data-field="q"], .paper-question{font-size:20px;line-height:28px;}
-    #cardTable.full-list:not(.notebook) .cell:is([data-field="a"], [data-field="tr"]), .vocab-list-row[data-key] > .vocab-list-meaning{font-size:18px;}
+    #cardTable.full-list:not(.notebook) .cell:is([data-field="a"], [data-field="tr"]), .vocab-list-row[data-key] > .vocab-list-meaning{font-size:18px;line-height:25px;}
     #cardTable.full-list:not(.notebook) .cell + .cell{margin-top:-17px;}
     #cardTable.full-list:not(.notebook) .card-notes{margin-top:-12px;}
     #cardTable.full-list:not(.notebook) .cell:is([data-field="a"], [data-field="tr"]) + .card-notes{margin-top:-14px;}
@@ -3403,6 +3403,49 @@ function watchLines() {
 
 function watchCanOpen() {
   return appMode !== "vocab" && !!currentLessonId && (!isVirtualLesson() || !!taskRun && !!taskRun.theater) && watchLines().some(r => cardClip(r));
+}
+
+function liftNoteTranslation(r) {
+  if (!r || r.time == null || (r.a || "").trim() || !(r.notes || r.notesHtml || "").trim()) return false;
+  const lang = detectLang(r.q || "").split("-")[0];
+  const box = document.createElement("div");
+  box.innerHTML = r.notesHtml || escapeHtml(r.notes || "").replace(/\n/g, "<br>");
+  const flat = n => n.nodeType === 1 && /^(DIV|P)$/.test(n.tagName) && !n.querySelector("li, ul, ol, b, strong");
+  [ ...box.childNodes ].forEach(n => {
+    if (!flat(n)) return;
+    n.after(document.createElement("br"));
+    n.replaceWith(...n.childNodes);
+  });
+  [ ...box.childNodes ].forEach(n => {
+    if (n.nodeType !== 3 || !n.nodeValue.includes("\n")) return;
+    n.nodeValue.split("\n").forEach((t, k) => {
+      if (k) n.before(document.createElement("br"));
+      n.before(document.createTextNode(t));
+    });
+    n.remove();
+  });
+  const isTr = t => !!t && !/[:：]/.test(t) && /\p{L}/u.test(t) && detectLang(t).split("-")[0] !== lang;
+  const lines = [ [] ];
+  [ ...box.childNodes ].forEach(n => {
+    if (n.nodeName === "BR") lines.push([]), lines[lines.length - 1].br = n; else if (n.nodeType === 1 && /^(UL|OL|DIV|P|LI|H\d)$/.test(n.tagName)) lines.push([ n ], []); else lines[lines.length - 1].push(n);
+  });
+  const taken = [];
+  lines.forEach(nodes => {
+    if (!nodes.length || nodes.some(n => n.nodeType === 1 && !/^(SPAN|I|EM|U|MARK)$/.test(n.tagName))) return;
+    const t = nodes.map(n => n.textContent).join("").replace(/\s+/g, " ").trim();
+    if (!isTr(t)) return;
+    taken.push(t.replace(/^[\s,，、;；.。…-]+/, ""));
+    nodes.forEach(n => n.remove());
+    if (nodes.br) nodes.br.remove();
+  });
+  const tr = taken.filter(Boolean).join(" ");
+  if (!tr) return false;
+  r.a = tr;
+  r.aHtml = textHtml(tr);
+  const left = plainTextOf(box.innerHTML, "\n").trim() ? box.innerHTML.replace(/^(\s|<br\s*\/?>)+/i, "").replace(/(\s|<br\s*\/?>)+$/i, "") : "";
+  r.notesHtml = left;
+  r.notes = left ? plainTextOf(left, "\n") : "";
+  return true;
 }
 
 function watchTranslation(r) {
@@ -8936,7 +8979,7 @@ function buildRowTr(r) {
   const trLine = (listTrOn && r.time != null || wait) && !groupState && !hasAnswer(r) && !watchTranslation(r) ? `<div class="cell shown row-tr" data-field="tr" data-id="${r.id}">${wait && !listTr(r) ? '<span class="tr-wait">Translating…</span>' : escapeHtml(listTr(r))}</div>` : "";
   const own = !r.aHidden && !r.qHidden ? cardNotesHtml(r) : "";
   const notes = own;
-  const a = trLine || `<div class="cell ${r.aHidden ? "hidden" : "shown"}" data-field="a">${aCellContent(r)}</div>`;
+  const a = trLine || `<div class="cell ${r.aHidden ? "hidden" : "shown"}${r.time != null ? " row-tr" : ""}" data-field="a">${aCellContent(r)}</div>`;
   tr.innerHTML = document.getElementById("cardTable").classList.contains("no-answer-col") ? `<td class="q-col" colspan="2">${q}${hasAnswer(r) || trLine ? a : ""}${notes}</td>` : `<td class="q-col">${q}</td><td class="a-col">${hasAnswer(r) || trLine ? a : ""}${notes}</td>`;
   dictPreloadObserver.observe(tr);
   return tr;
@@ -13300,6 +13343,7 @@ function commitActiveEdit(keep) {
     });
     return;
   }
+  if (liftNoteTranslation(activeEdit.row)) scheduleAutoSave();
   hideDictOverlay();
   activeEdit = null;
   closeEditPopup();
@@ -15871,6 +15915,7 @@ function planImport(entries, forPreview) {
         r.notes = e.notes;
         r.notesHtml = escapeHtml(e.notes);
       }
+      if (!forPreview) liftNoteTranslation(r);
       newRows.push(r);
       isNew.add(r);
       index(r);
@@ -15891,6 +15936,7 @@ function planImport(entries, forPreview) {
       }
       if (e.notes && !notesOf(r).trim()) {
         filledExisting = fill(r, "notes", e.notes) || filledExisting;
+        liftNoteTranslation(r);
         filled.notes = true;
       }
     });
@@ -16291,6 +16337,7 @@ function normalizeCard(c) {
       mtq: typeof c.mtq === "string" ? c.mtq : ""
     } : {})
   };
+  liftNoteTranslation(card);
   if (time == null && !card.a.trim() && card.q.includes("\n")) {
     const parts = splitMergedCardHtml(card.qHtml);
     card.qHtml = parts.q;
