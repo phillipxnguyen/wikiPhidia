@@ -22997,7 +22997,7 @@ function fillVocabCard(el, item) {
   if (el.dataset.lookKey !== item.key) {
     const other = item.sub && item.sub.kind === "ex" ? item.sub.t : "";
     const od = !item.sub && !viewOnly && !whole && "speechSynthesis" in window ? ownDefLines(item) : [], useOd = od.length > 0 && Math.random() < .5;
-    let ex = item.sub && item.sub.kind === "def" || useOd ? "def" : whole ? "sent" : other ? "other" : gap ? "cloze" : "word";
+    let ex = item.sub && item.sub.kind === "def" || useOd ? "def" : whole ? "sent" : other && findWordForm(other, item.term) ? "other" : gap ? "cloze" : "word";
     el.dataset.owndef = useOd ? od[Math.floor(Math.random() * od.length)] : "";
     el.dataset.other = other;
     const xs = ex === "def" && item.sub ? item.sub.xs || [] : [];
@@ -23008,7 +23008,7 @@ function fillVocabCard(el, item) {
     el.dataset.ex = ex;
     const wholeTr = whole && !!(meaningLines(item.meaning || "").length || sentenceTrFor(item, sentence, el));
     if (whole && !wholeTr && sentence) mtFetch([ sentence ]);
-    el.dataset.listen = "speechSynthesis" in window && (whole && !wholeTr || ex === "def" && !el.dataset.defx) ? "1" : "";
+    el.dataset.listen = "speechSynthesis" in window && (whole && !wholeTr || ex === "def" && !el.dataset.defx || ex === "word" && !viewOnly) ? "1" : "";
     el.dataset.scene = el.dataset.listen ? wordSceneFor(item, el.dataset.scene || null) : "";
     delete el.dataset.said;
     delete el.dataset.listenText;
