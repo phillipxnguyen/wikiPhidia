@@ -64,6 +64,7 @@ Hàm chính: `ieltsPaperHtml`, `ieltsFrontHtml`, `entryHidden`, `revealAction`, 
 | FULL-7 | `263aa9b` | Khoảng cách đều: trên/dưới mỗi dòng như nhau, câu → dịch → notes → list từ cách đều, thẳng lề trái với câu |
 | FULL-8 | `e711572` | Bản dịch đã có trong Notes thì chỉ hiện một lần (không thêm dòng dịch xanh, không dịch máy lại), trong danh sách và ô sửa |
 | FULL-9 | `d29dbc4` | Bản dịch nằm trong Notes của câu video được chuyển hẳn thành bản dịch của câu (xanh, giãn dòng như dịch máy); trong list, dịch không còn nằm cạnh câu ngắn; ô sửa giãn dòng dịch đều |
+| FULL-10 | `021e4d9` | Bấm ＋ mở luôn ô thẻ, con trỏ ở dòng Q (Lessons và Vocabulary); Esc khi ô trống đóng cửa sổ thêm |
 
 Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `selectRow`, `clearRowSelection`, `updateSelBar`.
 
