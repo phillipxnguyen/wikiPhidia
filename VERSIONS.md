@@ -52,6 +52,7 @@ Hàm chính: `isListenMode`, `listenBatch`, `startSequenceLoop`, `stopSequenceLo
 | SPEAK-25 | `31f7f24` | Dòng `từ: nghĩa` đã có trong Notes của thẻ tự thành từ khi mở app (câu được tô màu, Notes thành danh sách từ đánh số); ghi chú thường trên tờ giấy xuống dòng thẳng dưới chữ |
 | SPEAK-26 | `b18212a` | Dòng `từ: nghĩa` trong Notes dạng dòng thường (có hoặc không có •) cũng thành từ của thẻ: tô màu, lookup, thẻ Vocabulary |
 | SPEAK-27 | `46ce14e` | Ô sửa: dòng Q chỉ lớn hơn A 2px (20/18) như mọi nơi; dấu - đầu dòng từ bị bỏ |
+| SPEAK-28 | `03beaf0` | Rule từ đơn giản: mọi dòng `từ: nghĩa` trong Notes là từ (gạch đầu dòng hay dòng thường), dòng khác là ghi chú; bỏ điều kiện cả danh sách phải là từ |
 
 Hàm chính: `ieltsPaperHtml`, `ieltsFrontHtml`, `entryHidden`, `revealAction`, `render` (nhánh `groupViewStyle === "ielts"`). Cùng `ieltsHints`, `ieltsHintNext`, `ieltsHintId` (Hint).
 
