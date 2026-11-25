@@ -215,6 +215,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-154 | `4178919` | Watch: pill và khung câu đầy cùng một vòng màu lan từ chỗ chảy vào (đồng bộ); bỏ nảy pill |
 | THEATER-155 | `1c51abf` | Nhãn nghĩa khi trỏ vào từ: bong bóng trắng chữ đậm 15px (như extension), rõ trên nền tối |
 | THEATER-156 | `b02d02f` | Nhãn nghĩa: nền sáng thì bong bóng tối, nền tối/theater thì bong bóng trắng |
+| THEATER-157 | `pending` | Nhãn nghĩa: khoảng quanh chữ đều 12px bốn phía (app + extension 1.6.63) |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
