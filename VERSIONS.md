@@ -473,6 +473,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-223 | `684a2b5` | Hiệu ứng chờ dịch: khối chữ cùng hệ chữ của thẻ (Hán, kana, Hangul, Latin) đổi liên tục như đang giải mã, sóng sáng hình thoi lan từ giữa ra, cân đối |
 | FLASH-224 | `aa1388f` | Bỏ các font bo tròn / viết tay: Patrick Hand, Nunito, Shantell Sans, Andika, M PLUS Rounded, Zen Maru Gothic, Gowun Dodum |
 | FLASH-225 | `a5b82eb` | Từ không có câu nào: mặt trước là Podcast (đọc to), không bao giờ hiện chữ gốc; mặt trước chỉ có chữ khi là bản dịch |
+| FLASH-226 | `536fa1c` | Không tải được bản dịch câu (máy dịch lỗi/chặn): thẻ không chờ mãi, chuyển sang mặt Podcast đọc to |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
