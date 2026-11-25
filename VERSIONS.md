@@ -848,6 +848,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-94 | `1a57c5e` | Extension 1.6.59: bong bóng nghĩa bỏ chấm xanh trang trí |
 | LOOKUP-95 | `df50850` | Extension 1.6.60: trả lại 2 nút 字 / ⚡ (hiện nút hay mở thẻ ngay) ở đầu popup |
 | LOOKUP-96 | `131bdb4` | Extension 1.6.61: bảng gom câu tự hiện ở góc phải dưới khi trang có câu làm thẻ được; câu đã gửi/bỏ không hiện lại |
+| LOOKUP-97 | `pending` | Extension 1.6.62: bong bóng nghĩa ngược màu nền (trang sáng → bong bóng tối), đồng bộ với app |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
