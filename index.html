@@ -13309,28 +13309,42 @@ function listNoteLines(box) {
     if (d.previousSibling && d.previousSibling.nodeName !== "BR" && d.previousSibling.textContent.trim()) d.before(document.createElement("br"));
     d.replaceWith(...d.childNodes);
   });
-  const lines = [], cur = [];
-  const flush = () => {
-    if (cur.length) lines.push(cur.splice(0));
+  const lines = [];
+  let cur = [];
+  const flush = br => {
+    if (cur.length) lines.push({ nodes: cur, br: br });
+    cur = [];
   };
-  for (const n of [ ...box.childNodes ]) {
-    if (n.nodeName === "BR") flush(); else if (n.nodeType === 1 && /^(DIV|P)$/.test(n.tagName)) {
+  [ ...box.childNodes ].forEach(n => {
+    if (n.nodeName === "BR") return flush(n);
+    if (n.nodeType === 1 && /^(DIV|P)$/.test(n.tagName) && !n.querySelector("li, ul, ol, div, p")) {
       flush();
-      if (n.querySelector("li, ul, ol, div, p")) return;
-      lines.push([ n ]);
-    } else if (n.nodeType === 1 && !/^(SPAN|B|STRONG|I|EM|U|MARK|FONT)$/.test(n.tagName)) return; else cur.push(n);
-  }
-  flush();
-  const text = l => l.map(n => n.textContent).join("").replace(/\s+/g, " ").trim().replace(/^[•·\-*–—]\s*/, "");
-  const full = lines.filter(l => text(l));
-  if (!full.length || !full.every(l => NOTE_VOCAB_ITEM_RE.test(text(l)))) return;
-  const ul = document.createElement("ul");
-  full.forEach(l => {
-    const li = document.createElement("li");
-    li.textContent = text(l);
-    ul.append(li);
+      return lines.push({ nodes: [ n ] });
+    }
+    if (n.nodeType === 1 && !/^(SPAN|B|STRONG|I|EM|U|MARK|FONT)$/.test(n.tagName)) return flush();
+    cur.push(n);
   });
-  box.replaceChildren(ul);
+  flush();
+  const text = l => l.nodes.map(n => n.textContent).join("").replace(/\s+/g, " ").trim().replace(/^[•·\-*–—]\s*/, "");
+  let ul = null, last = null;
+  lines.forEach(l => {
+    const t = text(l);
+    if (!NOTE_VOCAB_ITEM_RE.test(t)) return ul = null;
+    const li = document.createElement("li");
+    li.textContent = t;
+    if (!ul || last && last.nextSibling !== l.nodes[0] && !(last.nextSibling && last.nextSibling.nodeName === "BR" && last.nextSibling.nextSibling === l.nodes[0])) {
+      ul = document.createElement("ul");
+      l.nodes[0].before(ul);
+    }
+    ul.append(li);
+    l.nodes.forEach(n => n.remove());
+    if (l.br) l.br.remove();
+    last = ul;
+  });
+  box.querySelectorAll(":scope > ul + ul").forEach(u => {
+    u.previousElementSibling.append(...u.childNodes);
+    u.remove();
+  });
 }
 
 function boldNoteWords(box) {
@@ -13394,7 +13408,6 @@ function commitActiveEdit(keep) {
     });
     return;
   }
-  if (liftNoteTranslation(activeEdit.row)) scheduleAutoSave();
   hideDictOverlay();
   activeEdit = null;
   closeEditPopup();
