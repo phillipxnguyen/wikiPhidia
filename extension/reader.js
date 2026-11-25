@@ -88,8 +88,8 @@
 .ghost{flex:none;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit;cursor:pointer;}
 .ghost:hover{border-color:var(--green);color:var(--green);}
 *{box-sizing:border-box;}
-.wrap{--sel:#b9d4fb;--green:#1e9466;--green-soft:rgba(30,148,102,.12);--ink:#1d2330;--ink-2:#5e6878;--line:#dfe4ec;--bg:#fff;--bg-2:#f4f6fa;--answer:#1b6b44;--mark:rgba(255,206,40,.55);font:14px/20px Inter, system-ui, -apple-system, "Segoe UI", sans-serif;color:var(--ink);}
-@media (prefers-color-scheme: dark){.wrap{--sel:#2a4f80;--green:#3cc48d;--green-soft:rgba(60,196,141,.16);--ink:#e8ecf3;--ink-2:#9aa4b4;--line:#323a48;--bg:#1b2029;--bg-2:#242a35;--answer:#6fd3a0;--mark:rgba(240,190,40,.38);}}
+.wrap{--py:#c0582a;--py-on-ink:#f0a070;--sel:#b9d4fb;--green:#1e9466;--green-soft:rgba(30,148,102,.12);--ink:#1d2330;--ink-2:#5e6878;--line:#dfe4ec;--bg:#fff;--bg-2:#f4f6fa;--answer:#1b6b44;--mark:rgba(255,206,40,.55);font:14px/20px Inter, system-ui, -apple-system, "Segoe UI", sans-serif;color:var(--ink);}
+@media (prefers-color-scheme: dark){.wrap{--py:#f0a070;--py-on-ink:#c0582a;--sel:#2a4f80;--green:#3cc48d;--green-soft:rgba(60,196,141,.16);--ink:#e8ecf3;--ink-2:#9aa4b4;--line:#323a48;--bg:#1b2029;--bg-2:#242a35;--answer:#6fd3a0;--mark:rgba(240,190,40,.38);}}
 .look{position:fixed;max-width:300px;padding:12px;text-box:trim-both cap alphabetic;border:1px solid var(--ink);border-radius:14px;background:var(--ink);color:var(--bg);font-size:15px;line-height:20px;font-weight:600;box-shadow:0 8px 24px rgba(10,20,40,.16);pointer-events:none;overflow-wrap:anywhere;animation:lookIn .16s ease-out;}
 .look::after{content:"";position:absolute;left:calc(var(--ax, 20px) - 6px);top:-7px;width:12px;height:12px;border-left:1px solid var(--ink);border-top:1px solid var(--ink);border-radius:2px 0 0;background:var(--ink);transform:rotate(45deg);}
 .look[data-up]::after{top:auto;bottom:-7px;transform:rotate(225deg);}
@@ -104,7 +104,7 @@
 .term{display:block;min-height:30px;padding:0;margin:0;border:0;border-radius:0;font-size:22px;line-height:30px;font-weight:700;color:var(--ink);background:none;outline:none;cursor:text;overflow-wrap:anywhere;}
 .icon{flex:none;display:flex;align-items:center;justify-content:center;height:30px;padding:0 6px;border:0;border-radius:8px;background:none;color:var(--ink-2);font-size:16px;line-height:20px;cursor:pointer;}
 .icon:hover{background:var(--bg-2);color:var(--ink);}
-.reading{margin-top:4px;font-size:14px;line-height:20px;color:var(--green);}
+.reading{margin-top:4px;font-size:14px;line-height:20px;color:var(--py);}
 .reading:empty{display:none;}
 .body{display:flex;flex-direction:column;gap:16px;margin-top:16px;}
 .body > div:empty:not(.meaning){display:none;}
@@ -143,7 +143,8 @@ textarea[hidden], .sent-view[hidden]{display:none;}
 .tip-say svg{width:20px;height:20px;}
 .tip-say path{fill:currentColor;}
 .tip-say path + path{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;}
-.tip-r{font-size:16px;line-height:22px;color:var(--green);}
+.tip-r{font-size:16px;line-height:22px;color:var(--py);}
+.look .lk-py{display:block;margin-bottom:8px;font-weight:600;color:var(--py-on-ink);}
 .tip-m{font-size:18px;line-height:26px;font-weight:700;color:var(--answer);overflow-wrap:anywhere;}
 .tip-ex{margin:8px 0 0;font-size:18px;line-height:26px;color:var(--ink);overflow-wrap:anywhere;}
 .tip-ex mark{padding:0 2px;border-radius:4px;background:var(--mark);color:inherit;font-weight:700;}
@@ -439,6 +440,7 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
       if (lvd) setLv(lvd.lv, /^N/.test(lvd.lv) ? "JLPT " + lvd.lv : "CEFR " + lvd.lv);
       const rd = box.querySelector(".tip-r, .reading"), rr = all.find(r => r.reading);
       if (rd && rr && !rd.textContent) rd.textContent = rr.reading;
+      if (rd && !rd.textContent && /[\u3400-\u9fff]/.test(term) && !/[\u3040-\u30ff]/.test(term) && window.pinyinPro) rd.textContent = pinyinPro.pinyin(term);
       const au = voiced && (voiced.say.find(x => x.k === "US" && x.audio) || voiced.say.find(x => x.audio));
       box.dataset.audio = au ? au.audio : "";
       opts.after && opts.after();
@@ -552,8 +554,15 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
       el.style.top = Math.round(up ? r.top - 10 - h : r.bottom + 10) + "px";
       el.style.setProperty("--ax", Math.round(Math.max(16, Math.min(w - 16, cx - left))) + "px");
     };
+    const py = /[\u3400-\u9fff]/.test(term) && !/[\u3040-\u30ff]/.test(term) && term.length <= 12 && window.pinyinPro ? pinyinPro.pinyin(term) : "";
     const set = (t, wait) => {
       el.textContent = t;
+      if (py) {
+        const r = document.createElement("span");
+        r.className = "lk-py";
+        r.textContent = py;
+        el.prepend(r);
+      }
       el.classList.toggle("wait", !!wait);
       put();
     };

@@ -559,7 +559,8 @@ window.onYouTubeIframeAPIReady = function(){
   .ed-card :is(#editNotes, #qaNotes):empty{padding-left:12px;}
   .vocab-editor .ed-card > .ed-say{top:-6px;}
   .vocab-editor .ed-card:has(.vem-t.long) > .ed-say{top:-9px;}
-  .ed-card .od-term.od-cur{border-color:var(--mean);color:var(--mean);}
+  .ed-card .od-term.od-cur{display:none;}
+  .ed-card .od-group:not(:has(.od-term:not(.od-cur))){display:none;}
   .ed-card .ed-means{display:flex;flex-direction:column;gap:8px;}
   .ed-card #vocabEditMain .vem-a.vem-lens:empty::before{content:"";display:inline-block;width:1cap;height:1cap;vertical-align:baseline;background:var(--placeholder);-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='8.5' cy='8.5' r='5'/%3E%3Cpath d='M12.5 12.5L17 17'/%3E%3C/svg%3E") center / contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='8.5' cy='8.5' r='5'/%3E%3Cpath d='M12.5 12.5L17 17'/%3E%3C/svg%3E") center / contain no-repeat;}
   .ed-card .od-pos{font-family:"Doto", system-ui, sans-serif;font-weight:800;}
@@ -1336,6 +1337,14 @@ window.onYouTubeIframeAPIReady = function(){
   .hover-tooltip.lookup-tip{max-width:300px;padding:12px;border:1px solid var(--tip-bd);border-radius:14px;background:var(--tip-bg);color:var(--tip-ink);box-shadow:0 8px 24px rgba(10,20,40,.22);text-align:left;font-size:15px;line-height:20px;font-weight:600;white-space:normal;}
   .hover-tooltip.lookup-tip .tip-m{margin-top:8px;text-box:trim-both cap alphabetic;}
   .hover-tooltip.lookup-tip .tip-m:first-child{margin-top:0;}
+  .hover-tooltip.lookup-tip .tip-py{font-size:15px;line-height:20px;font-weight:600;letter-spacing:.02em;color:var(--q-ink);text-box:trim-both cap alphabetic;}
+  .flag-peek{position:fixed;left:0;top:38%;z-index:1600;width:184px;height:96px;pointer-events:none;transform-origin:0 8px;animation:fpRun 2400ms cubic-bezier(.3, 0, .3, 1) forwards;}
+  .fp-pole{position:absolute;left:0;top:4px;width:184px;height:8px;border-radius:4px;background:linear-gradient(#a0703f, #6b4423);box-shadow:0 2px 6px rgba(0,0,0,.25);}
+  .fp-cloth{position:absolute;left:88px;top:12px;width:88px;height:60px;border-radius:2px;background:var(--flag) center / cover;box-shadow:0 4px 12px rgba(0,0,0,.25);transform-origin:50% 0;animation:fpWave 600ms ease-in-out infinite alternate;overflow:hidden;}
+  .fp-cloth::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg, rgba(0,0,0,.18), rgba(255,255,255,.22), rgba(0,0,0,.18), rgba(255,255,255,.22)) 0 0 / 200% 100%;animation:fpFold 900ms linear infinite;}
+  @keyframes fpRun{0%{transform:translateX(-192px) rotate(16deg);}20%{transform:translateX(-8px) rotate(16deg);}80%{transform:translateX(-8px) rotate(16deg);}100%{transform:translateX(-192px) rotate(16deg);}}
+  @keyframes fpWave{from{transform:skewX(-6deg) scaleY(.96);}to{transform:skewX(6deg) scaleY(1);}}
+  @keyframes fpFold{from{background-position:0 0;}to{background-position:-200% 0;}}
   .hover-tooltip.lookup-tip small{display:block;margin-top:6px;font-size:12px;line-height:16px;font-style:italic;font-weight:400;color:var(--tip-muted);}
   #addForm{padding:16px;}
   #addForm > .add-single{margin-bottom:16px;}
@@ -1732,7 +1741,8 @@ window.onYouTubeIframeAPIReady = function(){
   .od-float .od-notes:focus{border-left-color:var(--accent);box-shadow:none;}
   .od-float .od-notes:empty::before{content:attr(data-placeholder);color:var(--placeholder);}
   .od-float :is(.od-add, .od-done, .od-pos), .od-float .od-notes:empty::before{font-family:"Doto", system-ui, sans-serif;font-weight:800;}
-  .od-float .od-term.od-cur{border-color:var(--mean);color:var(--mean);}
+  .od-float .od-term.od-cur{display:none;}
+  .od-float .od-group:not(:has(.od-term:not(.od-cur))){display:none;}
   .od-card{position:relative;display:flex;flex-direction:column;gap:8px;padding:16px;border:1px solid var(--od-line);border-radius:16px;background:var(--od-card);transition:border-color .2s, box-shadow .2s, background-color .2s;}
   .od-top{display:flex;align-items:center;justify-content:space-between;gap:12px;}
   .od-word{display:flex;align-items:center;gap:8px;min-width:0;}
@@ -1778,12 +1788,7 @@ window.onYouTubeIframeAPIReady = function(){
   @media (hover:hover){.od-add:hover{transform:translateY(-1px);box-shadow:0 6px 16px color-mix(in srgb, var(--accent) 40%, transparent);}}
   .od-add:active{transform:none;}
   .od-done{flex:none;font-size:13px;line-height:20px;font-weight:700;color:var(--a-label);}
-  .od-py{font-size:18px;line-height:26px;font-weight:600;letter-spacing:.02em;}
-  .od-t1{color:#e5484d;}
-  .od-t2{color:#e08a1e;}
-  .od-t3{color:#2f9e6b;}
-  .od-t4{color:#2f7dd1;}
-  .od-t0{color:var(--od-soft);}
+  .od-py{font-size:18px;line-height:26px;font-weight:600;letter-spacing:.02em;color:var(--q-ink);}
   .od-body{display:flex;flex-direction:column;gap:8px;}
   .od-main{align-self:flex-start;padding:0;border:0;background:none;color:var(--od-mean);font:inherit;font-size:18px;line-height:26px;font-weight:700;text-align:left;cursor:pointer;}
   .od-group{display:flex;align-items:flex-start;gap:8px;}
@@ -9811,11 +9816,23 @@ function flagUrl(cc) {
   return `url("data:image/svg+xml,${encodeURIComponent(FLAG_SVGS[cc])}")`;
 }
 
+function flagPeek(cc) {
+  if (reducedMotion() || !FLAG_SVGS[cc]) return;
+  document.querySelectorAll(".flag-peek").forEach(el => el.remove());
+  const el = document.createElement("div");
+  el.className = "flag-peek";
+  el.setAttribute("aria-hidden", "true");
+  el.innerHTML = `<i class="fp-pole"></i><i class="fp-cloth" style='--flag:${flagUrl(cc)}'></i>`;
+  document.body.appendChild(el);
+  el.addEventListener("animationend", e => e.target === el && el.remove());
+}
+
 function showFlags(langs) {
   let ccs = [ ...new Set(langs.map(l => LANG_COUNTRY[l]).filter(Boolean)) ].slice(0, 5);
   if (!ccs.length) ccs = MANY_FLAGS.map(l => LANG_COUNTRY[l]);
   const key = ccs.join(",");
   if (shownFlags === key) return;
+  if (ccs.length === 1 && shownFlags && !shownFlags.includes(",") && (groupState || taskRun || watch || currentView === "vocab" && vocabSession)) flagPeek(ccs[0]);
   shownFlags = key;
   const n = ccs.length, SLOPE = Math.tan(10 * Math.PI / 180), H = 24, STEP = n > 3 ? 22 : 36;
   const ropeY = x => 3 + (x - 3) * SLOPE;
@@ -10165,12 +10182,24 @@ function keepTipOnScreen(tip, anchorTop) {
   if (r.right > document.documentElement.clientWidth - 4) tip.style.left = Math.round(Math.max(4, document.documentElement.clientWidth - 4 - r.width) + window.scrollX) + "px";
 }
 
+function tipReading(term) {
+  const t = (term || "").trim();
+  if (!t || t.length > 12) return "";
+  const script = cjkScriptFor(t, null) || (HAN_RE.test(t) ? "zh" : null);
+  if (script === "ja") {
+    const ja = japaneseFor(t);
+    return ja && ja.reading !== t ? ja.reading : "";
+  }
+  return script === "zh" ? getPinyin(t) || "" : "";
+}
+
 function showMeaningTip(anchor, meaning, term) {
-  if (!meaning) return hideTooltip();
+  const reading = tipReading(term || anchor.textContent);
+  if (!meaning && !reading) return hideTooltip();
   const tip = getTooltipEl();
-  showTooltip(anchor, meaning);
+  showTooltip(anchor, meaning || reading);
   tip.classList.add("lookup-tip");
-  tip.innerHTML = (odLong(term || anchor.textContent) ? [ meaning ] : meaningLines(meaning)).map(m => `<div class="tip-m">${escapeHtml(m)}</div>`).join("");
+  tip.innerHTML = (reading ? `<div class="tip-py">${escapeHtml(reading)}</div>` : "") + (meaning ? (odLong(term || anchor.textContent) ? [ meaning ] : meaningLines(meaning)).map(m => `<div class="tip-m">${escapeHtml(m)}</div>`).join("") : "");
   const a = anchor.getBoundingClientRect(), t = tip.getBoundingClientRect();
   tip.style.left = Math.round(Math.max(4, a.left + a.width / 2 - t.width / 2) + window.scrollX) + "px";
   keepTipOnScreen(tip, a.top);
@@ -10609,6 +10638,7 @@ function handleCardAreaMousemove(e) {
     if (mine) hideTooltip();
     return;
   }
+  if (markWordAt(e.target) || sentenceWordAt(e.clientX, e.clientY)) return;
   if (showMarkPinyin(e.target, unit)) return;
   if (sentencePinyinMode()) {
     if (!showSentencePinyin(unit, e.clientX, e.clientY) && mine) hideTooltip();
@@ -10671,6 +10701,7 @@ document.addEventListener("mousemove", e => {
   const tip = hoverTooltip;
   const showing = tip && tip.style.display === "block" && tip.anchor && tip.anchor.closest && tip.anchor.closest(PINYIN_SEL);
   const el = e.target.closest(PINYIN_SEL);
+  if (el && (markWordAt(e.target) || sentenceWordAt(e.clientX, e.clientY))) return;
   if (el && cjkAtPoint(e.clientX, e.clientY, el)) {
     if (showMarkPinyin(e.target, el)) return;
     if (showing && tip.anchor === el) return;
@@ -11917,15 +11948,12 @@ function ownDictPrefetch(text, row) {
 }
 
 function ownDictReadingHtml(lang, w) {
-  if (lang !== "zh" || typeof pinyinPro === "undefined") return "";
+  const zh = lang === "zh" || lang !== "ja" && lang !== "ko" && HAN_RE.test(w) && !KANA_RE.test(w);
+  if (!zh || typeof pinyinPro === "undefined") return "";
   try {
-    const syl = pinyinPro.pinyin(w, {
+    return pinyinPro.pinyin(w, {
       type: "array"
-    }), tones = pinyinPro.pinyin(w, {
-      pattern: "num",
-      type: "array"
-    });
-    return syl.map((x, k) => `<span class="od-t${/^[1-4]$/.test(String(tones[k])) ? tones[k] : "0"}">${escapeHtml(x)}</span>`).join(" ");
+    }).map(x => escapeHtml(x)).join(" ");
   } catch (e) {
     return "";
   }
