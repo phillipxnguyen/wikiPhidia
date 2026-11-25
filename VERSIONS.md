@@ -42,6 +42,7 @@ Hàm chính: `isListenMode`, `listenBatch`, `startSequenceLoop`, `stopSequenceLo
 | SPEAK-15 | `4cc5934` | Bỏ mọi nút đọc TTS bên Lessons: không còn ▶ trước câu (☰ Full, Speaking) và 🔊 trong editor thẻ; video vẫn giữ ô thời gian |
 | SPEAK-16 | `9810a75` | Câu hỏi (Q) màu tím riêng ở mọi nơi (editor, notebook, paper), khác màu từ tra; Q trong editor to 24px |
 | SPEAK-17 | `f30087a` | Câu hỏi (Q) đổi từ tím sang vàng mù tạt (không dùng tím) |
+| SPEAK-18 | `pending` | Editor thẻ: xuống dòng/dòng trống giữa các dòng trả lời không còn tự nhân đôi khi lưu (1 → 2 → 4), xoá được |
 
 Hàm chính: `ieltsPaperHtml`, `ieltsFrontHtml`, `entryHidden`, `revealAction`, `render` (nhánh `groupViewStyle === "ielts"`). Cùng `ieltsHints`, `ieltsHintNext`, `ieltsHintId` (Hint).
 
