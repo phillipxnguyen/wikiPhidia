@@ -60,6 +60,7 @@ Hàm chính: `ieltsPaperHtml`, `ieltsFrontHtml`, `entryHidden`, `revealAction`, 
 | FULL-5 | `0ab30de` | Thanh của list bỏ nút phát YouTube và tốc độ, chỉ còn đếm và 🌐 |
 | FULL-6 | `de95b47` | Khoảng trên/dưới mỗi dòng bằng nhau (12px, điện thoại 10px) |
 | FULL-7 | `263aa9b` | Khoảng cách đều: trên/dưới mỗi dòng như nhau, câu → dịch → notes → list từ cách đều, thẳng lề trái với câu |
+| FULL-8 | `e711572` | Bản dịch đã có trong Notes thì chỉ hiện một lần (không thêm dòng dịch xanh, không dịch máy lại), trong danh sách và ô sửa |
 
 Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `selectRow`, `clearRowSelection`, `updateSelBar`.
 
