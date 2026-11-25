@@ -41,6 +41,7 @@ Hàm chính: `isListenMode`, `listenBatch`, `startSequenceLoop`, `stopSequenceLo
 | SPEAK-14 | `827abf4` | Notes trên tờ Speaking nhỏ hơn câu chính 2px: 18/26 (điện thoại 16/22) |
 | SPEAK-15 | `4cc5934` | Bỏ mọi nút đọc TTS bên Lessons: không còn ▶ trước câu (☰ Full, Speaking) và 🔊 trong editor thẻ; video vẫn giữ ô thời gian |
 | SPEAK-16 | `9810a75` | Câu hỏi (Q) màu tím riêng ở mọi nơi (editor, notebook, paper), khác màu từ tra; Q trong editor to 24px |
+| SPEAK-17 | `pending` | Câu hỏi (Q) đổi từ tím sang vàng mù tạt (không dùng tím) |
 
 Hàm chính: `ieltsPaperHtml`, `ieltsFrontHtml`, `entryHidden`, `revealAction`, `render` (nhánh `groupViewStyle === "ielts"`). Cùng `ieltsHints`, `ieltsHintNext`, `ieltsHintId` (Hint).
 
@@ -857,6 +858,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-99 | `ac7077e` | Con trỏ chữ trong ô trống có placeholder: cao hơn chữ một chút, căn giữa theo chữ, như con trỏ thường |
 | LOOKUP-100 | `fe36fde` | Ô kính lúp trước nghĩa của bạn gọn như ô noun/verb (không rộng thênh thang) |
 | LOOKUP-101 | `0342e3f` | Mọi ô có placeholder: xoá chữ hay gõ lại không làm xê dịch dòng trên dưới (placeholder một dòng, cắt theo cạnh ô; đo theo chữ của ô) |
+| LOOKUP-102 | `pending` | Popup từ: đang gõ thì không vẽ lại (không mất con trỏ); extension 1.6.66: khoảng cách các phần đều 16px, thẻ không nhảy khi đang gõ |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 

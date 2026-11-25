@@ -107,6 +107,7 @@
 .reading{margin-top:4px;font-size:14px;line-height:20px;color:var(--green);}
 .reading:empty{display:none;}
 .body{display:flex;flex-direction:column;gap:16px;margin-top:16px;}
+.body > div:empty:not(.meaning){display:none;}
 .field{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit;font-size:16px;line-height:22px;outline:none;resize:none;}
 .field:focus{border-color:var(--green);box-shadow:0 0 0 3px var(--green-soft);}
 .field.meaning{padding:4px 0 4px 12px;border:0;border-left:4px solid color-mix(in srgb, var(--green) 45%, transparent);border-radius:0;background:none;color:var(--answer);font-size:18px;line-height:26px;}
@@ -184,7 +185,7 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
 .dd em{display:block;margin-bottom:2px;font-style:normal;font-size:12px;line-height:16px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--green);}
 .dnote{margin:0;font-size:14px;line-height:20px;color:var(--ink-2);font-style:italic;}
 .card .defs, .card .exs, .card .srcs{margin-top:0;}
-.card .foot{position:sticky;bottom:-20px;z-index:1;margin:0 -20px -20px;padding:12px 20px 20px;background:var(--bg);}
+.card .foot{position:sticky;bottom:-20px;z-index:1;margin:0 -20px -20px;padding:4px 20px 20px;background:var(--bg);}
 .card{max-height:calc(100vh - 16px);overflow-y:auto;overscroll-behavior:contain;}
 .yt{position:fixed;left:16px;bottom:16px;display:flex;align-items:center;gap:8px;height:40px;padding:0 16px 0 6px;border:0;border-radius:20px;background:var(--green);color:#fff;font:700 14px/20px Inter, system-ui, sans-serif;box-shadow:0 6px 18px rgba(0,0,0,.3);cursor:pointer;}
 .yt:hover{filter:brightness(1.08);}
@@ -679,6 +680,9 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
 <div class="note"></div>
 <div class="foot"><button class="btn add">Add</button></div></div>`;
     wrap.appendChild(card);
+    card.addEventListener("focusout", () => setTimeout(() => {
+      if (card && !(root.activeElement && card.contains(root.activeElement))) anchorBox(card, card.anchor, 10, false, true);
+    }, 0));
     const $ = s => card.querySelector(s);
     const termEl = $(".term"), meaningEl = $(".meaning"), sentEl = $(".sentence"), readingEl = $(".reading"), note = $(".note");
     // The word and the meaning wrap instead of being cut off; they are still read and set as values.
@@ -752,7 +756,7 @@ button.dd:hover{border-color:var(--green);color:var(--green);}
       lv.textContent = "";
       lv.hidden = true;
       card.dataset.audio = "";
-      if (t) fillDict(card, t, { pick: true, live: () => card && token === dictToken, after: () => card && anchorBox(card, card.anchor, 10, false, true) });
+      if (t) fillDict(card, t, { pick: true, live: () => card && token === dictToken, after: () => card && !(root.activeElement && card.contains(root.activeElement) && root.activeElement.matches("textarea, input, [contenteditable]")) && anchorBox(card, card.anchor, 10, false, true) });
     };
     const lookUp = () => {
       const t = termEl.value.trim();

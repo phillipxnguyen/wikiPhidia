@@ -1326,9 +1326,9 @@ window.onYouTubeIframeAPIReady = function(){
     white-space:pre-line;
     display:none;
   }
-  :root{--q-ink:#7c3aed;}
-  @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--q-ink:#b794f6;}}
-  :root[data-theme="dark"]{--q-ink:#b794f6;}
+  :root{--q-ink:#a8730f;}
+  @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--q-ink:#e8b84a;}}
+  :root[data-theme="dark"]{--q-ink:#e8b84a;}
   :root{--tip-bg:#1d2330;--tip-ink:#ffffff;--tip-bd:#1d2330;--tip-muted:#b8c0cc;}
   @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--tip-bg:#ffffff;--tip-ink:#1d2330;--tip-bd:#dfe4ec;--tip-muted:#5e6878;}}
   :root[data-theme="dark"], html.theater-on{--tip-bg:#ffffff;--tip-ink:#1d2330;--tip-bd:#dfe4ec;--tip-muted:#5e6878;}
@@ -12138,6 +12138,19 @@ function splitLineAtCaret(box) {
 function paintOwnDictFloat() {
   const pop = ownDictFloat, shown = pop && pop.ctx;
   if (!pop || !shown) return;
+  const busy = document.activeElement;
+  if (pop.isConnected && busy && pop.contains(busy) && busy.matches(".od-mean-in, .od-notes, .od-word b, .od-term[contenteditable=true]")) {
+    if (!pop.waitPaint) {
+      pop.waitPaint = true;
+      busy.addEventListener("focusout", () => setTimeout(() => {
+        pop.waitPaint = false;
+        if (ownDictFloat === pop) paintOwnDictFloat();
+      }, 250), {
+        once: true
+      });
+    }
+    return;
+  }
   const w = pop.dataset.w, have = pop.dataset.mode === "have", found = have ? ownDictFindWord(w) : null;
   const was = pop.querySelector(".od-mean-in"), typed = was && was.dataset.dirty ? was.value : null, focused = was && document.activeElement === was;
   const wasNotes = pop.querySelector(".od-notes"), typedNotes = wasNotes && wasNotes.dataset.dirty ? wasNotes.innerHTML : null;
