@@ -471,6 +471,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-221 | `01e3d72` | Mặt trước chờ bản dịch: ba vạch mờ có ánh sáng quét qua và kính lúp đi tìm, thay chữ Translating… |
 | FLASH-222 | `c376b2b` | Hiệu ứng chờ cân đối: ba vạch bằng nhau căn giữa, sáng quét cùng lúc, kính lúp đi qua lại trên vạch giữa |
 | FLASH-223 | `684a2b5` | Hiệu ứng chờ dịch: khối chữ cùng hệ chữ của thẻ (Hán, kana, Hangul, Latin) đổi liên tục như đang giải mã, sóng sáng hình thoi lan từ giữa ra, cân đối |
+| FLASH-224 | `aa1388f` | Bỏ các font bo tròn / viết tay: Patrick Hand, Nunito, Shantell Sans, Andika, M PLUS Rounded, Zen Maru Gothic, Gowun Dodum |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
