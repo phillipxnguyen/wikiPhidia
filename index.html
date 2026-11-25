@@ -552,6 +552,7 @@ window.onYouTubeIframeAPIReady = function(){
   .ed-card .notes-clip::after{display:none;}
   .ed-card :is(#editNotes, #qaNotes){min-height:0;padding:2px 0 2px 12px;border:0;border-left:4px solid color-mix(in srgb, var(--accent) 45%, transparent);border-radius:0;background:none;box-shadow:none;}
   .ed-card .ed-tr{font-size:18px;line-height:28px;color:var(--a-text);}
+  .ed-card #editA.ed-tr{min-height:0;margin:0;padding:0;border:0;border-radius:0;background:none;box-shadow:none;outline:none;}
   .ed-card :is(#editNotes, #qaNotes):focus{border-left-color:var(--accent);box-shadow:none;}
   .ed-card :is(#editNotes, #qaNotes):not(:empty):not(.clip-list)::before{display:none;}
   .ed-card :is(#editNotes, #qaNotes) li.clip-li{margin-left:0;}
@@ -3756,7 +3757,11 @@ async function mtFill(lines) {
     }
     if (listTrOn) paintListTr();
     const qa = activeEdit && document.querySelector("#editPopup .edit-qa");
-    if (qa && listTr(activeEdit.row) && !(qa.nextElementSibling && qa.nextElementSibling.classList.contains("ed-tr"))) qa.insertAdjacentHTML("afterend", editTrHtml(activeEdit.row));
+    const box = qa && activeEdit.row.time != null && !hasAnswer(activeEdit.row) && document.getElementById("editA"), mt = activeEdit && listTr(activeEdit.row);
+    if (box && mt && document.activeElement !== box && !box.textContent.trim()) {
+      box.textContent = mt;
+      box.dataset.mt = mt;
+    }
   }
 }
 
@@ -8982,7 +8987,8 @@ function buildRowTr(r) {
   const own = !r.aHidden && !r.qHidden ? cardNotesHtml(r) : "";
   const notes = own;
   const a = trLine || `<div class="cell ${r.aHidden ? "hidden" : "shown"}${r.time != null ? " row-tr" : ""}" data-field="a">${aCellContent(r)}</div>`;
-  tr.innerHTML = document.getElementById("cardTable").classList.contains("no-answer-col") ? `<td class="q-col" colspan="2">${q}${hasAnswer(r) || trLine ? a : ""}${notes}</td>` : `<td class="q-col">${q}</td><td class="a-col">${hasAnswer(r) || trLine ? a : ""}${notes}</td>`;
+  const showA = trLine || hasAnswer(r) && (r.time == null || listTrOn || !!groupState);
+  tr.innerHTML = document.getElementById("cardTable").classList.contains("no-answer-col") ? `<td class="q-col" colspan="2">${q}${showA ? a : ""}${notes}</td>` : `<td class="q-col">${q}</td><td class="a-col">${showA ? a : ""}${notes}</td>`;
   dictPreloadObserver.observe(tr);
   return tr;
 }
@@ -13294,7 +13300,37 @@ function notesEditorHtml(row) {
   return html;
 }
 
+function listNoteLines(box) {
+  box.querySelectorAll("li > :is(div, p)").forEach(d => {
+    if (d.previousSibling && d.previousSibling.nodeName !== "BR" && d.previousSibling.textContent.trim()) d.before(document.createElement("br"));
+    d.replaceWith(...d.childNodes);
+  });
+  const lines = [], cur = [];
+  const flush = () => {
+    if (cur.length) lines.push(cur.splice(0));
+  };
+  for (const n of [ ...box.childNodes ]) {
+    if (n.nodeName === "BR") flush(); else if (n.nodeType === 1 && /^(DIV|P)$/.test(n.tagName)) {
+      flush();
+      if (n.querySelector("li, ul, ol, div, p")) return;
+      lines.push([ n ]);
+    } else if (n.nodeType === 1 && !/^(SPAN|B|STRONG|I|EM|U|MARK|FONT)$/.test(n.tagName)) return; else cur.push(n);
+  }
+  flush();
+  const text = l => l.map(n => n.textContent).join("").replace(/\s+/g, " ").trim().replace(/^[•·\-*–—]\s*/, "");
+  const full = lines.filter(l => text(l));
+  if (!full.length || !full.every(l => NOTE_VOCAB_ITEM_RE.test(text(l)))) return;
+  const ul = document.createElement("ul");
+  full.forEach(l => {
+    const li = document.createElement("li");
+    li.textContent = text(l);
+    ul.append(li);
+  });
+  box.replaceChildren(ul);
+}
+
 function boldNoteWords(box) {
+  listNoteLines(box);
   const takenKeys = new Set;
   box.querySelectorAll("li").forEach(li => {
     if (isVocabItem(li)) takenKeys.add(normalizeVocabText(noteItemTerm(li))); else if (!underWordLine(li) && NOTE_VOCAB_ITEM_RE.test(ownLiTextNodes(li).map(n => n.nodeValue).join("")) && !noteItemIsDuplicate(li, takenKeys)) boldVocabItem(li);
@@ -13309,6 +13345,11 @@ function commitActiveEdit(keep) {
   let newQ = cleanPunct(plainTextOf(newQHtml, "\n"));
   let newAHtml = cleanPunctHtml(sanitizeHtml(merged ? merged.a : stripVocabHighlights(editorHtml(activeEdit.editA)), "br"));
   let newA = cleanPunct(plainTextOf(newAHtml, "\n"));
+  if (activeEdit.row.time != null) {
+    const mt = activeEdit.editA.dataset.mt || "";
+    if (!hasAnswer(activeEdit.row) && mt && oneLine(newA) === oneLine(cleanPunct(mt))) newA = newAHtml = "";
+    if (newQ !== activeEdit.originalQ && newA === activeEdit.originalA) newA = newAHtml = "";
+  }
   if (!keep) boldNoteWords(activeEdit.editNotes);
   const notesNow = flatVocabLists(editorHtml(activeEdit.editNotes));
   const newNotes = plainTextOf(notesNow, "\n");
@@ -13616,13 +13657,15 @@ window.addEventListener("blur", () => {
 });
 
 function editTrHtml(row) {
-  const tr = row.time == null ? "" : hasAnswer(row) ? oneLine(row.a || "") : listTr(row);
-  if (!tr && row.time != null && (row.q || "").trim() && !hasAnswer(row) && !watchTranslation(row)) mtFill([ row ]);
-  return tr ? `<div class="ed-tr">${escapeHtml(tr)}</div>` : "";
+  if (row.time == null) return "";
+  const mt = hasAnswer(row) ? "" : listTr(row);
+  if (!mt && (row.q || "").trim() && !hasAnswer(row) && !watchTranslation(row)) mtFill([ row ]);
+  const body = hasAnswer(row) ? getEditInitialHtml(row.a, row.aHtml, row.id) : escapeHtml(mt);
+  return `<div id="editA" class="rich-editor ed-tr" contenteditable="true" data-placeholder="Translation" data-mt="${escapeAttr(mt)}" aria-label="Translation">${body}</div>`;
 }
 
 function buildEditBoxInner(row) {
-  return `\n    <div class="od-card ed-card"><div class="edit-qa">\n      <div>\n        <div id="editQ" class="rich-editor${row.time == null ? "" : " yt-ph"}" contenteditable="true"${row.time == null ? ' data-placeholder="Question, then the Answer on the next line"' : ""} aria-label="Card">${row.time == null ? mergedCardEditHtml(row) : getEditInitialHtml(row.q, row.qHtml, row.id)}</div>\n      </div>\n      <div hidden>\n        <div id="editA" class="rich-editor" contenteditable="true">${getEditInitialHtml(row.a, row.aHtml, row.id)}</div>\n      </div>\n    </div>\n    ${editTrHtml(row)}<div class="notes-clip"><div id="editNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes">${alignMeanings(notesEditorHtml(row))}</div></div></div>\n    <div class="edit-actions">\n      <button id="editSave" class="primary">Save</button>\n    </div>\n    <div id="editDict"></div>\n  `;
+  return `\n    <div class="od-card ed-card"><div class="edit-qa">\n      <div>\n        <div id="editQ" class="rich-editor${row.time == null ? "" : " yt-ph"}" contenteditable="true"${row.time == null ? ' data-placeholder="Question, then the Answer on the next line"' : ""} aria-label="Card">${row.time == null ? mergedCardEditHtml(row) : getEditInitialHtml(row.q, row.qHtml, row.id)}</div>\n      </div>\n      ${row.time == null ? `<div hidden>\n        <div id="editA" class="rich-editor" contenteditable="true">${getEditInitialHtml(row.a, row.aHtml, row.id)}</div>\n      </div>` : ""}\n    </div>\n    ${editTrHtml(row)}<div class="notes-clip"><div id="editNotes" class="rich-editor" contenteditable="true" data-placeholder="Notes">${alignMeanings(notesEditorHtml(row))}</div></div></div>\n    <div class="edit-actions">\n      <button id="editSave" class="primary">Save</button>\n    </div>\n    <div id="editDict"></div>\n  `;
 }
 
 document.addEventListener("click", e => {
@@ -14092,6 +14135,10 @@ function wireEditBox(host, row) {
     activeEdit.originalQ = cleanPunct(plainTextOf(activeEdit.originalQHtml, "\n"));
     activeEdit.originalAHtml = cleanPunctHtml(sanitizeHtml(parts.a, "br"));
     activeEdit.originalA = cleanPunct(plainTextOf(activeEdit.originalAHtml, "\n"));
+    if (row.time != null && !hasAnswer(row)) {
+      activeEdit.originalA = "";
+      activeEdit.originalAHtml = "";
+    }
   }
   activeEdit.originalNotes = plainTextOf(editorHtml(editNotes), "\n");
   activeEdit.originalNotesHtml = sanitizeHtml(editorHtml(editNotes));
@@ -14210,7 +14257,7 @@ function syncModeButtonHighlights() {
   const off = isAllLessons() || !!groupState || isVirtualLesson();
   fullBtn.hidden = off || !lessonStudyMode();
   const lt = document.getElementById("listTrans");
-  lt.hidden = off || appMode === "vocab" || !rows.some(r => r.uid !== EXTRA_UID && r.time != null && (r.q || "").trim() && !hasAnswer(r));
+  lt.hidden = off || appMode === "vocab" || !rows.some(r => r.uid !== EXTRA_UID && r.time != null && (r.q || "").trim());
   lt.classList.toggle("active", listTrOn);
   lt.setAttribute("aria-pressed", String(listTrOn));
   const lj = document.getElementById("listJoin");
@@ -16364,7 +16411,7 @@ function normalizeCard(c) {
     } : {})
   };
   liftNoteTranslation(card);
-  if (/<li/i.test(card.notesHtml)) {
+  if (card.notesHtml && /[:：=＝]/.test(card.notes || card.notesHtml)) {
     const box = document.createElement("div");
     box.innerHTML = card.notesHtml;
     boldNoteWords(box);
