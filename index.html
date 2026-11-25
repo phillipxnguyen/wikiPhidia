@@ -3480,13 +3480,13 @@ const LIST_TR_KEY = "flashcards.listTr";
 
 let listTrOn = readLocal(LIST_TR_KEY) === true;
 
-function rowTr(r) {
-  return r.time == null || hasAnswer(r) ? "" : watchTranslation(r) || rowMt(r);
+function listTr(r) {
+  return r.time == null || hasAnswer(r) || watchTranslation(r) ? "" : rowMt(r);
 }
 
 function paintListTr() {
   document.querySelectorAll("#tbody .row-tr[data-id]").forEach(el => {
-    const r = rows.find(x => x.id === Number(el.dataset.id)), t = r ? rowTr(r) : "";
+    const r = rows.find(x => x.id === Number(el.dataset.id)), t = r ? listTr(r) : "";
     if (el.textContent !== t) el.textContent = t;
   });
 }
@@ -3711,7 +3711,7 @@ async function mtFill(lines) {
     }
     if (listTrOn) paintListTr();
     const qa = activeEdit && document.querySelector("#editPopup .edit-qa");
-    if (qa && rowTr(activeEdit.row) && !(qa.nextElementSibling && qa.nextElementSibling.classList.contains("ed-tr"))) qa.insertAdjacentHTML("afterend", editTrHtml(activeEdit.row));
+    if (qa && listTr(activeEdit.row) && !(qa.nextElementSibling && qa.nextElementSibling.classList.contains("ed-tr"))) qa.insertAdjacentHTML("afterend", editTrHtml(activeEdit.row));
   }
 }
 
@@ -8933,7 +8933,7 @@ function buildRowTr(r) {
   if (selectedRowId === r.id) tr.classList.add("row-selected");
   const q = `<div class="cell ${r.qHidden ? "hidden" : "shown"}" data-field="q">${qCellContent(r)}</div>`;
   const wait = !!answerFill && answerFill.has(r.id) && !hasAnswer(r);
-  const trLine = (listTrOn && r.time != null || wait) && !groupState && !hasAnswer(r) ? `<div class="cell shown row-tr" data-field="tr" data-id="${r.id}">${wait && !rowTr(r) ? '<span class="tr-wait">Translating…</span>' : escapeHtml(rowTr(r))}</div>` : "";
+  const trLine = (listTrOn && r.time != null || wait) && !groupState && !hasAnswer(r) && !watchTranslation(r) ? `<div class="cell shown row-tr" data-field="tr" data-id="${r.id}">${wait && !listTr(r) ? '<span class="tr-wait">Translating…</span>' : escapeHtml(listTr(r))}</div>` : "";
   const own = !r.aHidden && !r.qHidden ? cardNotesHtml(r) : "";
   const notes = own;
   const a = trLine || `<div class="cell ${r.aHidden ? "hidden" : "shown"}" data-field="a">${aCellContent(r)}</div>`;
@@ -13570,8 +13570,8 @@ window.addEventListener("blur", () => {
 });
 
 function editTrHtml(row) {
-  const tr = row.time == null ? "" : hasAnswer(row) ? oneLine(row.a || "") : rowTr(row);
-  if (!tr && row.time != null && (row.q || "").trim() && !hasAnswer(row)) mtFill([ row ]);
+  const tr = row.time == null ? "" : hasAnswer(row) ? oneLine(row.a || "") : listTr(row);
+  if (!tr && row.time != null && (row.q || "").trim() && !hasAnswer(row) && !watchTranslation(row)) mtFill([ row ]);
   return tr ? `<div class="ed-tr">${escapeHtml(tr)}</div>` : "";
 }
 
