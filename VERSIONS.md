@@ -47,6 +47,7 @@ Hàm chính: `isListenMode`, `listenBatch`, `startSequenceLoop`, `stopSequenceLo
 | SPEAK-20 | `2d4b3b8` | Câu hỏi (Q) đổi sang cam đất #c0582a |
 | SPEAK-21 | `e8ee937` | Editor thẻ: xoá dòng trống không còn gộp các dòng phía trên thành câu hỏi; quy tắc 2 lần xuống dòng chỉ áp khi vừa gõ tại con trỏ |
 | SPEAK-22 | `307e6ef` | Dòng đầu của thẻ luôn là câu hỏi, từ dòng 2 là câu trả lời (Vocabulary: từ rồi nghĩa); bỏ quy tắc 2 lần xuống dòng, ký tự ẩn đánh dấu câu hỏi và tờ giấy gáy trên cho thẻ không có câu hỏi; thẻ cũ được tách lại khi mở |
+| SPEAK-23 | `4168fd2` | Dọn hàm thừa còn lại sau SPEAK-22 |
 
 Hàm chính: `ieltsPaperHtml`, `ieltsFrontHtml`, `entryHidden`, `revealAction`, `render` (nhánh `groupViewStyle === "ielts"`). Cùng `ieltsHints`, `ieltsHintNext`, `ieltsHintId` (Hint).
 
