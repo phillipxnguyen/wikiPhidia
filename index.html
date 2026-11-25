@@ -4294,14 +4294,35 @@ function syncWatchPills() {
   });
 }
 
+function watchRowAnchor() {
+  const list = document.querySelector("#watchPop .w-list"), r = watch && watch.lines[watch.at];
+  const row = list && r ? list.querySelector(`.w-row[data-id="${r.id}"]`) : null;
+  return row ? {
+    id: r.id,
+    top: row.getBoundingClientRect().top - list.getBoundingClientRect().top
+  } : null;
+}
+
+function watchKeepRow(a) {
+  const list = document.querySelector("#watchPop .w-list"), row = list && a ? list.querySelector(`.w-row[data-id="${a.id}"]`) : null;
+  if (!row) return;
+  const lr = list.getBoundingClientRect();
+  if (a.top >= 0 && a.top + row.getBoundingClientRect().height <= lr.height) list.scrollTop += Math.round(row.getBoundingClientRect().top - lr.top - a.top);
+  const now = row.getBoundingClientRect();
+  if (now.top < lr.top || now.bottom > lr.bottom) list.scrollTop += Math.round(now.top - lr.top - Math.max(0, (lr.height - now.height) / 2));
+}
+
 function watchPrefChanged(k) {
-  const p = watch.prefs, box = document.getElementById("watchPop");
+  const p = watch.prefs, box = document.getElementById("watchPop"), anchor = watchRowAnchor();
   saveWatchPrefs();
   syncWatchPills();
   box.classList.toggle("cabin", !!p.cabin);
   box.classList.toggle("with-list", !p.cabin);
   watchModeTabs();
-  requestAnimationFrame(placeTheater);
+  requestAnimationFrame(() => {
+    placeTheater();
+    watchKeepRow(anchor);
+  });
   if (k === "trans" || k === "cabin" || k === "pin") {
     if (p.trans || p.cabin) mtFill(watch.lines);
     watch.rowHtml = null;
@@ -4378,10 +4399,11 @@ function paintWatchList() {
     const mark = graded.has(r.id) && !(watch.pillWait && watch.pillWait.has(r.id)) ? watch.again && watch.again.has(r.id) ? " graded-again" : " graded-good" : "";
     return `<div class="w-row${r.id === watch.extraId ? " extra" : ""}${mark}" data-i="${i}" data-id="${r.id}">${html.includes('<div class="w-py">') ? html.replace('<div class="w-py">', '<div class="w-py">' + ts) : html.replace(/<div class="w-text( w-ruby)?">/, m => m + ts)}</div>`;
   }).join("");
-  const keep = lb.querySelector(".w-list") ? lb.querySelector(".w-list").scrollTop : 0;
+  const oldList = lb.querySelector(".w-list"), keep = oldList ? oldList.scrollTop : 0, anchor = watchRowAnchor();
   const keepDone = lb.querySelector(".w-done");
   lb.innerHTML = `<div class="w-list">${items || '<div class="w-empty">Nothing left to study in this video today. It still plays; what you answered Again comes back here when it is due.</div>'}</div>`;
   lb.querySelector(".w-list").scrollTop = keep;
+  watchKeepRow(anchor);
   if (keepDone) lb.appendChild(keepDone);
   watch.countSig = "";
   paintWatchCounts();
@@ -5029,7 +5051,9 @@ document.getElementById("watchPop").addEventListener("change", e => {
   if (watch && e.target.matches(".w-size")) {
     watch.prefs.size = Number(e.target.value);
     saveWatchPrefs();
+    const anchor = watchRowAnchor();
     document.getElementById("watchPop").dataset.size = watch.prefs.size;
+    watchKeepRow(anchor);
     return e.target.blur();
   }
   if (!watch || !e.target.matches(".w-rate")) return;
