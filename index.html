@@ -1262,7 +1262,9 @@ window.onYouTubeIframeAPIReady = function(){
   #cardTable.notebook td.a-col{grid-row:2;}
   #cardTable.notebook .cell{display:block;max-width:none;margin:0;padding:0;border-radius:2px;color:var(--paper-ink);}
   #cardTable.notebook .cell[data-field="q"]{padding-bottom:6px;font-size:22px;font-weight:400;line-height:var(--line);color:var(--q-ink);}
-  #cardTable.notebook .cell:is([data-field="a"], [data-field="tr"]){font-size:20px;line-height:var(--line);background-image:linear-gradient(to bottom, transparent calc(var(--line) - 1px), var(--paper-rule) calc(var(--line) - 1px));background-size:100% var(--line);}
+  #cardTable.notebook td.one-only .cell[data-field="q"]{text-box:normal;padding-bottom:0;font-weight:400;color:var(--paper-ink);}
+  #cardTable.notebook :is(td.one-only .cell[data-field="q"], td.one-only .cell[data-field="q"]){font-size:22px;}
+  #cardTable.notebook :is(.cell:is([data-field="a"], [data-field="tr"]), td.one-only .cell[data-field="q"]){font-size:20px;line-height:var(--line);background-image:linear-gradient(to bottom, transparent calc(var(--line) - 1px), var(--paper-rule) calc(var(--line) - 1px));background-size:100% var(--line);}
   #cardTable.notebook tbody tr.row-selected, #cardTable.notebook tbody tr.row-playing{background:color-mix(in srgb, var(--paper-mark) 45%, transparent) !important;}
   html.touch #cardTable.notebook tbody tr.row-selected > td:first-child{box-shadow:none;}
   html.touch #cardTable.notebook tbody tr.row-selected .cell.shown[data-field="q"]{color:var(--paper-ink);}
@@ -1671,6 +1673,14 @@ window.onYouTubeIframeAPIReady = function(){
 
   .ielts-paper::before, #cardTable.notebook tbody::before{content:"";position:absolute;z-index:1;pointer-events:none;}
   .ielts-paper::before, #cardTable.notebook tbody::before{top:16px;bottom:16px;left:-8px;width:32px;border:0;background:var(--ring-left) 0 0 / 32px 36px, radial-gradient(circle at 26px 18px, #1f2633 6px, transparent 6px) 0 0 / 32px 36px;background-repeat:no-repeat space;}
+  .ielts-paper.top-rings{--page-x:32px;max-width:none;min-height:0;margin-top:0;padding:36px var(--page-x) 24px;}
+  @media (min-width:601px){.ielts-paper.top-rings.with-notes .paper-notes{padding-top:9px;}}
+  .ielts-paper.top-rings .paper-body{width:auto;margin:0;}
+  .ielts-paper.top-rings.with-notes .paper-body{width:auto;margin:0;}
+  #cardTable.notebook.top-rings{--page-x:32px;}
+  #cardTable.notebook.top-rings tbody{padding-top:24px;}
+  @media (max-width:600px){#cardTable.notebook.top-rings tbody{padding-top:25px;}}
+  .ielts-paper.top-rings::before, #cardTable.notebook.top-rings tbody::before{top:-8px;bottom:auto;width:auto;left:24px;right:24px;height:32px;border:0;background:var(--ring-top) 0 0 / 36px 32px, radial-gradient(circle at 18px 26px, #1f2633 6px, transparent 6px) 0 0 / 36px 32px;background-repeat:space no-repeat;}
   .ielts-paper .cell.hidden.paper-hint, .ielts-paper .cell.hidden.paper-hint:hover{font-style:normal;color:var(--paper-ink);}
   .paper-hint ol, .paper-notes > ol{margin:0;padding:0;list-style:none;counter-reset:paper-n;}
   .paper-hint li, .paper-notes > ol > li{position:relative;padding-left:2em;counter-increment:paper-n;}
@@ -2968,7 +2978,8 @@ window.onYouTubeIframeAPIReady = function(){
     #cardTable.full-list .card-notes, #cardTable.full-list:not(.notebook) .card-notes, #cardTable.notebook .card-notes, .vocab-list-meaning .card-notes{font-size:18px;line-height:25px;}
     .paper-notes{font-size:16px;line-height:22px;}
     #cardTable.notebook, .ielts-paper{--line:32px;}
-    #cardTable.notebook .cell:is([data-field="a"], [data-field="tr"]), .ielts-paper .paper-lines, .ielts-paper .paper-prompt, .ielts-paper .cell.shown.paper-lines:hover, .ielts-paper .cell.hidden.paper-prompt:hover{font-size:18px;}
+    #cardTable.notebook :is(.cell:is([data-field="a"], [data-field="tr"]), td.one-only .cell[data-field="a"]), .ielts-paper .paper-lines, .ielts-paper .paper-prompt, .ielts-paper .cell.shown.paper-lines:hover, .ielts-paper .cell.hidden.paper-prompt:hover{font-size:18px;}
+    #cardTable.notebook :is(td.one-only .cell[data-field="q"], td.one-only .cell[data-field="q"]){font-size:20px;}
   }
   .brand-switch, .stats-table th.num{line-height:22px;}
   #cardTable .cell{line-height:25px;}
@@ -9020,7 +9031,7 @@ function buildRowTr(r) {
   const notes = own;
   const a = trLine || `<div class="cell ${r.aHidden ? "hidden" : "shown"}${r.time != null ? " row-tr" : ""}" data-field="a">${aCellContent(r)}</div>`;
   const showA = trLine || hasAnswer(r) && (r.time == null || listTrOn || !!groupState);
-  tr.innerHTML = document.getElementById("cardTable").classList.contains("no-answer-col") ? `<td class="q-col" colspan="2">${q}${showA ? a : ""}${notes}</td>` : `<td class="q-col">${q}</td><td class="a-col">${showA ? a : ""}${notes}</td>`;
+  tr.innerHTML = document.getElementById("cardTable").classList.contains("no-answer-col") ? `<td class="q-col" colspan="2">${q}${showA ? a : ""}${notes}</td>` : r.time == null && !hasAnswer(r) ? `<td class="q-col"></td><td class="a-col one-only">${q}${trLine}${notes}</td>` : `<td class="q-col">${q}</td><td class="a-col">${showA ? a : ""}${notes}</td>`;
   dictPreloadObserver.observe(tr);
   return tr;
 }
@@ -9461,7 +9472,7 @@ function ieltsPaperHtml(row) {
   const list = words.length ? `<ol style="--pnd:${String(words.length).length}">` + words.map((i, n) => `<li><span class="pn">${n + 1}.</span><b>${escapeHtml(i.term)}</b>${i.meaning ? " — " + meaningHtml(i.meaning) : ""}</li>`).join("") + "</ol>" : own;
   const notes = list ? `<aside class="paper-notes">${list}</aside>` : "";
   const extras = "";
-  if (!hasAnswer(row)) return `<article class="ielts-paper${notes ? " with-notes" : ""}"><div class="paper-body"><div class="paper-main"><div class="paper-question"><div class="cell shown" data-field="q">${qCellContent(row)}</div></div></div>${notes}</div>` + extras + "</article>";
+  if (!hasAnswer(row)) return `<article class="ielts-paper top-rings${notes ? " with-notes" : ""}"><div class="paper-body"><div class="paper-main"><div class="paper-answer"><div class="cell shown paper-lines" data-field="q">${qCellContent(row)}</div></div></div>${notes}</div>` + extras + "</article>";
   return `<article class="ielts-paper${notes ? " with-notes" : ""}">` + '<div class="paper-body"><div class="paper-main">' + `<div class="paper-question"><div class="cell shown" data-field="q">${qCellContent(row)}</div></div>` + `<div class="paper-answer">${answer}</div>` + `</div>${notes}</div>` + extras + "</article>";
 }
 
@@ -14355,6 +14366,7 @@ function applyColumnLayout() {
   const noAnswer = isVideoLesson() || !!groupState;
   table.classList.toggle("notebook", !groupState && !isVideoLesson());
   table.classList.toggle("no-answer-col", noAnswer);
+  table.classList.toggle("top-rings", !groupState && !isVideoLesson() && !rows.some(hasAnswer));
   const headTh = table.querySelector("thead th:not(.a-col)");
   table.classList.toggle("full-list", !groupState);
   headTh.colSpan = noAnswer || !groupState ? 2 : 1;
