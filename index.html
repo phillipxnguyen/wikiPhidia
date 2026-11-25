@@ -11878,7 +11878,7 @@ function myMeaningsFor(w, lang, skip) {
 
 function myMeaningsHtml(w, lang, skip) {
   const list = myMeaningsFor(w, lang, skip);
-  return list.length ? `<div class="od-group od-mine"><span class="od-pos od-lens" title="Meanings you gave this word on your cards">${OD_LENS}</span><div class="od-terms">${list.map(t => `<span role="button" tabindex="0" class="od-term" data-m="${escapeAttr(t)}" title="Add this meaning to the meaning line">${escapeHtml(t)}</span>`).join("")}</div></div>` : "";
+  return list.length ? `<div class="od-group od-mine"><span class="od-pos od-lens" title="Meanings you gave this word on your cards">${OD_LENS}</span><div class="od-terms">${list.map(t => `<span role="button" tabindex="0" class="od-term" data-m="${escapeAttr(t)}" title="Make this the meaning; click it again to change it">${escapeHtml(t)}</span>`).join("")}</div></div>` : "";
 }
 
 function guessPos(d) {
@@ -11968,7 +11968,7 @@ function ownDictCardHtml(lang, w, ctx) {
     pos: "",
     terms: e.alts
   } ] : []) : [];
-  const body = (!e ? "" : `<button type="button" class="od-main" data-m="${escapeAttr(e.m)}" title="Add with this meaning">${escapeHtml(e.m)}</button>`) + myMeaningsHtml(w, lang, "") + groups.map(g => `<div class="od-group">${g.pos ? `<span class="od-pos">${escapeHtml(g.pos)}</span>` : ""}<div class="od-terms">${g.terms.map(t => `<span role="button" tabindex="0" class="od-term" data-m="${escapeAttr(t)}" title="Add this meaning to the meaning line">${escapeHtml(t)}</span>`).join("")}</div></div>`).join("") + (e && e.en || []).map(g => `<div class="od-group">${g.pos ? `<span class="od-pos">${escapeHtml(g.pos)}</span>` : ""}<div class="od-terms">${g.terms.map(t => `<span role="button" tabindex="0" class="od-term" data-m="${escapeAttr(t)}" title="Add this meaning to the meaning line">${escapeHtml(t)}</span>`).join("")}</div></div>`).join("");
+  const body = (!e ? "" : `<button type="button" class="od-main" data-m="${escapeAttr(e.m)}" title="Add with this meaning">${escapeHtml(e.m)}</button>`) + myMeaningsHtml(w, lang, "") + groups.map(g => `<div class="od-group">${g.pos ? `<span class="od-pos">${escapeHtml(g.pos)}</span>` : ""}<div class="od-terms">${g.terms.map(t => `<span role="button" tabindex="0" class="od-term" data-m="${escapeAttr(t)}" title="Make this the meaning; click it again to change it">${escapeHtml(t)}</span>`).join("")}</div></div>`).join("") + (e && e.en || []).map(g => `<div class="od-group">${g.pos ? `<span class="od-pos">${escapeHtml(g.pos)}</span>` : ""}<div class="od-terms">${g.terms.map(t => `<span role="button" tabindex="0" class="od-term" data-m="${escapeAttr(t)}" title="Make this the meaning; click it again to change it">${escapeHtml(t)}</span>`).join("")}</div></div>`).join("");
   const act = '<span class="od-acts"></span>';
   const pool = appSentencesFor(w, ctx && ctx.row, 30), zt = ctx && ctx.zoneText || "", spot = t => zt.indexOf(oneLine(t));
   const seen = zt ? pool.filter(t => spot(t) >= 0).sort((a, b) => spot(a) - spot(b)) : [];
@@ -12337,6 +12337,7 @@ document.addEventListener("click", e => {
   const chip = e.target.closest(".od-term"), input = fl.querySelector(".od-mean-in");
   if (chip && input) {
     if (chip.isContentEditable) return;
+    if (chip.classList.contains("od-cur")) return editMeaningPill(chip, e);
     input.value = chip.dataset.m;
     input.dataset.dirty = "1";
     input.dispatchEvent(new Event("input", {
@@ -12369,16 +12370,18 @@ function meaningTarget(chip) {
   return null;
 }
 
-document.addEventListener("dblclick", e => {
-  const chip = e.target.closest && e.target.closest(".od-float .od-term, #editPopup .ed-means .od-term");
+function editMeaningPill(chip, e) {
   const put = chip && meaningTarget(chip);
   if (!put) return;
-  e.preventDefault();
   chip.contentEditable = "true";
   chip.spellcheck = false;
   chip.focus();
-  const r = document.createRange();
-  r.selectNodeContents(chip);
+  let r = document.caretRangeFromPoint ? document.caretRangeFromPoint(e.clientX, e.clientY) : null;
+  if (!r || !chip.contains(r.startContainer)) {
+    r = document.createRange();
+    r.selectNodeContents(chip);
+    r.collapse(false);
+  }
   getSelection().removeAllRanges();
   getSelection().addRange(r);
   const onInput = () => put(chip.textContent.replace(/\s+/g, " ").trim());
@@ -12405,7 +12408,7 @@ document.addEventListener("dblclick", e => {
   chip.addEventListener("blur", done, {
     once: true
   });
-});
+}
 
 document.addEventListener("keydown", e => {
   if (!e.target.closest || !e.target.closest(".od-mean-in, .od-notes, .od-word b")) return;
@@ -22641,7 +22644,7 @@ function vocabViewOnly(item) {
   return !!item && !(item.meaning || "").trim();
 }
 
-const TYPE_LATIN = [ "Playfair Display", "Merriweather", "Roboto Slab", "Patrick Hand", "Mali", "Josefin Sans", "Comfortaa", "Lexend", "Oswald", "Montserrat", "Nunito", "Quicksand", "Lora", "Bitter", "Alegreya", "Baloo 2", "Prata", "Arima", "Philosopher", "Signika", "Exo 2", "Vollkorn", "Raleway", "Work Sans", "Source Serif 4", "Crimson Pro", "Literata", "Manrope", "Be Vietnam Pro", "Inter", "Itim", "Pangolin", "Shantell Sans", "Playpen Sans", "Chakra Petch", "Grandstander", "Fuzzy Bubbles", "Bai Jamjuree", "Space Mono", "Andika", "Saira", "Bungee", "Barlow Condensed", "Alfa Slab One", "Yeseva One", "Cormorant Garamond", "Sigmar" ];
+const TYPE_LATIN = [ "Playfair Display", "Merriweather", "Roboto Slab", "Patrick Hand", "Josefin Sans", "Lexend", "Oswald", "Montserrat", "Nunito", "Lora", "Bitter", "Alegreya", "Prata", "Philosopher", "Signika", "Exo 2", "Vollkorn", "Raleway", "Work Sans", "Source Serif 4", "Crimson Pro", "Literata", "Manrope", "Be Vietnam Pro", "Inter", "Shantell Sans", "Chakra Petch", "Bai Jamjuree", "Space Mono", "Andika", "Saira", "Barlow Condensed" ];
 
 const TYPE_NO_VI = [ "Gill Sans", "Futura", "Baskerville" ];
 
@@ -23765,10 +23768,11 @@ function wireVocabEditor(items) {
     syncVocabEditMain(item);
     markMeans();
   });
-  document.querySelectorAll("#editPopup .ed-means .od-term").forEach(b => b.addEventListener("click", () => {
+  document.querySelectorAll("#editPopup .ed-means .od-term").forEach(b => b.addEventListener("click", ev => {
     const a = main && main.querySelector(".vem-a");
     if (!a) return;
     if (b.isContentEditable) return;
+    if (b.classList.contains("od-cur")) return editMeaningPill(b, ev);
     a.innerHTML = `<div>${escapeHtml(b.dataset.m)}</div>`;
     main.dispatchEvent(new Event("input", {
       bubbles: true
