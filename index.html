@@ -552,7 +552,7 @@ window.onYouTubeIframeAPIReady = function(){
   .ed-card .notes-clip::after{display:none;}
   .ed-card :is(#editNotes, #qaNotes){min-height:0;padding:2px 0 2px 12px;border:0;border-left:4px solid color-mix(in srgb, var(--accent) 45%, transparent);border-radius:0;background:none;box-shadow:none;}
   .ed-card .ed-tr{font-size:18px;line-height:28px;color:var(--a-text);}
-  .ed-card #editA.ed-tr{min-height:0;margin:0;padding:0;border:0;border-radius:0;background:none;box-shadow:none;outline:none;}
+  .ed-card #editA.ed-tr{min-height:0;margin:0;padding:0;border:0;border-radius:0;background:none;box-shadow:none;outline:none;font-size:18px;line-height:28px;text-box:trim-both cap alphabetic;}
   .ed-card :is(#editNotes, #qaNotes):focus{border-left-color:var(--accent);box-shadow:none;}
   .ed-card :is(#editNotes, #qaNotes):not(:empty):not(.clip-list)::before{display:none;}
   .ed-card :is(#editNotes, #qaNotes) li.clip-li{margin-left:0;}
@@ -1767,8 +1767,8 @@ window.onYouTubeIframeAPIReady = function(){
   .ed-card :is(.edit-qa, .qa-row) + .notes-clip{margin-top:6px;}
   #quickAdd:not([data-kind="listen"]) .ed-card #qaQ{display:block;margin:-7px 0;}
   #quickAdd > .vocab-editor-actions{margin-top:12px;}
-  .ed-card .ed-tr + .notes-clip{margin-top:-3px;}
-  .ed-card .edit-qa + .ed-tr{margin-top:-6px;}
+  .ed-card .ed-tr + .notes-clip{margin-top:6px;}
+  .ed-card .edit-qa + .ed-tr{margin-top:-1px;}
   .ed-card :is(#editQ, .q-mirror) > div + div{margin-top:0;}
   .ed-card :is(#editQ, .q-mirror) > div:not(:first-child)::before{content:"\200b";font-size:20px;}
   .ed-card :is(#editQ, .q-wrap:has(> #editQ) > .q-mirror){text-box:trim-both cap alphabetic;}
@@ -2605,7 +2605,15 @@ window.onYouTubeIframeAPIReady = function(){
   .w-row:has(> .w-row-pour){isolation:isolate;}
   .w-row-pour{position:absolute;inset:0;z-index:-1;pointer-events:none;}
   .w-t-fill{position:absolute;inset:0;z-index:-1;border-radius:12px;}
-  @media (min-width:821px), (hover:hover){.watch-pop:not(.cabin) .w-cap{display:none;}}
+  .w-flow{position:fixed;inset:0;z-index:960;overflow:hidden;pointer-events:none;filter:url(#wGooF);}
+  .w-flow > div{position:absolute;left:0;top:0;}
+  .w-cap .w-capline.w-cap-flow{-webkit-backdrop-filter:none;backdrop-filter:none;}
+  .w-cap .w-capline.w-cap-flow > *{position:relative;z-index:1;}
+  .w-cap .w-capline.w-cap-morph{background:transparent;}
+  .w-cap-bg{position:fixed;border-radius:12px;background:rgba(0,0,0,.66);pointer-events:none;}
+  @media (min-width:821px), (hover:hover){.watch-pop:not(.cabin):not(.w-sub) .w-cap{display:none;}}
+  .watch-pop.cabin .w-pill[data-w="sub"]{display:none;}
+  @media (max-width:820px) and (hover:none){.watch-pop .w-pill[data-w="sub"]{display:none;}}
   .cut-stamp{position:absolute;left:50%;top:50%;z-index:3;display:flex;align-items:center;justify-content:center;width:200px;height:200px;border-radius:100px;border:8px solid currentColor;font-size:112px;line-height:112px;font-weight:900;opacity:0;pointer-events:none;}
   .cut-stamp.good{color:#ffffff;background:#1f9d55;border-color:#ffffff;box-shadow:0 12px 32px rgba(20,120,60,.4);}
   .cut-stamp.again{color:#ffffff;background:#d64545;border-color:#ffffff;box-shadow:0 12px 32px rgba(160,30,30,.4);}
@@ -3401,6 +3409,7 @@ function watchPrefs() {
   } catch (e) {}
   return Object.assign({
     pin: true,
+    sub: true,
     trans: false,
     auto: false,
     loop: false,
@@ -4338,6 +4347,7 @@ function watchPrefChanged(k) {
   syncWatchPills();
   box.classList.toggle("cabin", !!p.cabin);
   box.classList.toggle("with-list", !p.cabin);
+  box.classList.toggle("w-sub", !!p.sub);
   watchModeTabs();
   requestAnimationFrame(() => {
     placeTheater();
@@ -4366,12 +4376,12 @@ function paintWatch() {
   watch.rowHtml = null;
   box.querySelector(".w-topbar .toolbar-flag").innerHTML = document.getElementById("studyFlag").innerHTML;
   box.dataset.size = p.size || 100;
-  box.className = "watch-pop" + (p.cabin ? "" : " with-list") + (p.pin && watchChinese() ? " pinned" : "") + (p.cabin ? " cabin" : "");
+  box.className = "watch-pop" + (p.cabin ? "" : " with-list") + (p.pin && watchChinese() ? " pinned" : "") + (p.cabin ? " cabin" : "") + (p.sub ? " w-sub" : "");
   watchModeTabs();
   if (p.trans || p.cabin) mtFill(watch.lines);
   watch.countSig = "";
   const pill = (k, title, label) => `<button type="button" class="w-pill${p[k] ? " on" : ""}" data-w="${k}" aria-pressed="${!!p[k]}" title="${title}">${label}</button>`;
-  const tools = `${pill("loop", "Loop the line being said", '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 9V8a3 3 0 0 1 3-3h8M13 3l2 2-2 2M16 11v1a3 3 0 0 1-3 3H5M7 17l-2-2 2-2"/></svg>')}${watchChinese() ? pill("pin", "Pinyin", "拼") : ""}${pill("trans", "The translation (the lesson's own, or a machine translation when the line has none)", '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M3 10h14M10 3c2.6 2.6 2.6 11.4 0 14M10 3c-2.6 2.6-2.6 11.4 0 14"/></svg>')}<select class="w-join" aria-label="Join lines" title="How long a stretch you study at once: Easy one line, Medium 15 s, Hard 30 s">${[ [ 0, "Easy" ], [ 15, "Medium" ], [ 30, "Hard" ] ].map(([v, t]) => `<option value="${v}"${v === Math.min(30, joinedSeconds()) ? " selected" : ""}>${t}</option>`).join("")}</select><select class="w-size" aria-label="${p.cabin ? "Subtitle size" : "Text size of the list"}" title="${p.cabin ? "Subtitle size" : "Text size of the list"}">${[ 100, 125, 150 ].map(v => `<option value="${v}"${v === (p.size || 100) ? " selected" : ""}>${v}%</option>`).join("")}</select><select class="w-rate" aria-label="Speed" title="Speed">${[ ...document.getElementById("playbackSpeed").options ].map(o => `<option value="${o.value}"${Number(o.value) === p.rate ? " selected" : ""}>${o.textContent}</option>`).join("")}</select>`;
+  const tools = `${pill("loop", "Loop the line being said", '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 9V8a3 3 0 0 1 3-3h8M13 3l2 2-2 2M16 11v1a3 3 0 0 1-3 3H5M7 17l-2-2 2-2"/></svg>')}${pill("sub", "The line over the video", '<svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2" y="4" width="16" height="12" rx="2"/><path d="M5 12h6M13 12h2M5 9h2M9 9h6"/></svg>')}${watchChinese() ? pill("pin", "Pinyin", "拼") : ""}${pill("trans", "The translation (the lesson's own, or a machine translation when the line has none)", '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M3 10h14M10 3c2.6 2.6 2.6 11.4 0 14M10 3c-2.6 2.6-2.6 11.4 0 14"/></svg>')}<select class="w-join" aria-label="Join lines" title="How long a stretch you study at once: Easy one line, Medium 15 s, Hard 30 s">${[ [ 0, "Easy" ], [ 15, "Medium" ], [ 30, "Hard" ] ].map(([v, t]) => `<option value="${v}"${v === Math.min(30, joinedSeconds()) ? " selected" : ""}>${t}</option>`).join("")}</select><select class="w-size" aria-label="${p.cabin ? "Subtitle size" : "Text size of the list"}" title="${p.cabin ? "Subtitle size" : "Text size of the list"}">${[ 100, 125, 150 ].map(v => `<option value="${v}"${v === (p.size || 100) ? " selected" : ""}>${v}%</option>`).join("")}</select><select class="w-rate" aria-label="Speed" title="Speed">${[ ...document.getElementById("playbackSpeed").options ].map(o => `<option value="${o.value}"${Number(o.value) === p.rate ? " selected" : ""}>${o.textContent}</option>`).join("")}</select>`;
   box.querySelector(".w-ctl-l").innerHTML = tools;
   syncWatchPills();
   box.querySelector(".w-ctl-c").innerHTML = "";
@@ -4547,10 +4557,11 @@ function watchGrade(isAgain, now1) {
     if (taskRun && taskRun.theater && (!q.length || taskRun.day && dayRunOver())) return taskTheaterDone();
     paintWatchList();
     const vidNow = !cabin && !reducedMotion() && document.querySelector("#watchPop .w-video"), snap = vidNow ? vidNow.getBoundingClientRect() : null;
+    const capNow = snap && watch.prefs.sub && document.querySelector("#watchPop .w-capline"), capSnap = capNow && capNow.offsetParent && capNow.textContent.trim() ? capNow.getBoundingClientRect() : null;
     const ni = watch.lines.findIndex(x => x.id === nextId);
     if (ni >= 0) watchSeek(ni);
     paintWatchCounts();
-    if (snap) requestAnimationFrame(() => watchSuck(r.id, isAgain, snap)); else pillLand(r.id, isAgain);
+    if (capSnap) requestAnimationFrame(() => watchSuckCap(r.id, isAgain, capSnap)); else if (snap) requestAnimationFrame(() => watchSuck(r.id, isAgain, snap)); else pillLand(r.id, isAgain);
   };
   if (reducedMotion() || !cabin) after(); else setTimeout(after, 240);
 }
@@ -4626,6 +4637,124 @@ function watchPour(id, isAgain, from) {
     pillLand(id, isAgain);
     pill.classList.remove("filling");
     fill.remove();
+  });
+}
+
+let watchFlowMorph = false;
+
+function pillLand(id, isAgain) {
+  if (!watch || !watch.pillWait || !watch.pillWait.delete(id)) return;
+  const row = document.querySelector(`#watchPop .w-row[data-id="${id}"]`);
+  if (row && watch.graded && watch.graded.has(id)) row.classList.add(watch.again && watch.again.has(id) ? "graded-again" : "graded-good");
+}
+
+function watchSuckCap(id, isAgain, snap) {
+  const lst = document.querySelector("#watchPop .w-list"), pill = document.querySelector(`#watchPop .w-row[data-id="${id}"] .w-t`), cap = document.querySelector("#watchPop .w-capline");
+  const nr = cap && cap.textContent.trim() ? cap.getBoundingClientRect() : snap, sr = watchFlowMorph ? snap : nr, p = pill && pill.getBoundingClientRect(), l = lst && lst.getBoundingClientRect();
+  if (!cap || !p || !sr.width || p.bottom < l.top || p.top > l.bottom) return pillLand(id, isAgain);
+  if (!document.getElementById("wGoo")) document.body.insertAdjacentHTML("beforeend", '<svg id="wGoo" width="0" height="0" aria-hidden="true" style="position:absolute"><filter id="wGooF"><feGaussianBlur in="SourceGraphic" stdDeviation="6" result="b"/><feColorMatrix in="b" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -8" result="g"/><feComposite in="SourceGraphic" in2="g" operator="atop"/></filter></svg>');
+  const col = isAgain ? "#d64545" : "#1f9d55", box = document.createElement("div");
+  box.className = "w-flow";
+  box.style.zIndex = "auto";
+  cap.after(box);
+  cap.classList.add("w-cap-flow");
+  if (watchFlowMorph && nr !== sr) {
+    const bg = document.createElement("div"), at = r => ({
+      left: Math.round(r.left) + "px",
+      top: Math.round(r.top) + "px",
+      width: Math.round(r.width) + "px",
+      height: Math.round(r.height) + "px"
+    });
+    bg.className = "w-cap-bg";
+    box.before(bg);
+    cap.classList.add("w-cap-morph");
+    bg.animate([ at(sr), at(nr) ], {
+      duration: 360,
+      easing: "cubic-bezier(.3, 0, .2, 1)",
+      fill: "forwards"
+    }).finished.catch(() => {}).finally(() => {
+      cap.classList.remove("w-cap-morph");
+      bg.remove();
+    });
+  }
+  const x1 = Math.round(p.left + p.width / 2), y1 = Math.round(p.top + p.height / 2), z = Math.round(Math.min(sr.height, 28));
+  const rowsN = Math.max(1, Math.ceil((sr.height - z) / (z * .6)) + 1), colsN = Math.max(Math.ceil(56 / rowsN), Math.round(sr.width / 10));
+  const pts = [];
+  for (let i = 0; i < colsN; i++) for (let j = 0; j < rowsN; j++) pts.push([ Math.round(sr.left + z / 2 + (sr.width - z) * i / (colsN - 1)), Math.round(rowsN === 1 ? sr.top + sr.height / 2 : sr.top + z / 2 + (sr.height - z) * j / (rowsN - 1)) ]);
+  const inX = x1 >= sr.left && x1 <= sr.right, inY = y1 >= sr.top && y1 <= sr.bottom, jit = (a, b) => Math.round(a + Math.random() * (b - a));
+  const gx = inX ? jit(Math.max(sr.left + z / 2, x1 - 40), Math.min(sr.right - z / 2, x1 + 40)) : x1 > sr.right ? Math.round(sr.right - z / 2) : Math.round(sr.left + z / 2);
+  const gy = inY || !inX ? jit(sr.top + z / 2, sr.bottom - z / 2) : y1 > sr.bottom ? Math.round(sr.bottom - z / 2) : Math.round(sr.top + z / 2);
+  const order = pts.map(([ x, y ]) => Math.hypot(gx - x, gy - y)).map((d, i) => [ d, i ]).sort((a, b) => a[0] - b[0]).map(([, i]) => i), rank = [];
+  order.forEach((i, k) => rank[i] = k);
+  const bx = Math.floor(Math.min(sr.left, p.left) - 24), by = Math.floor(Math.min(sr.top, p.top) - 24);
+  Object.assign(box.style, {
+    inset: "auto",
+    left: bx + "px",
+    top: by + "px",
+    width: Math.ceil(Math.max(sr.right, p.right) + 24 - bx) + "px",
+    height: Math.ceil(Math.max(sr.bottom, p.bottom) + 24 - by) + "px"
+  });
+  const flows = pts.map(([ ax, ay ], k) => {
+    const x0 = ax - bx, y0 = ay - by, hx = gx - bx, hy = gy - by, ex = x1 - bx, ey = y1 - by;
+    const d = document.createElement("div"), c2x = ex - Math.round(Math.min(160, Math.abs(x1 - gx) * .4));
+    Object.assign(d.style, {
+      width: z + "px",
+      height: z + "px",
+      borderRadius: z + "px",
+      background: col,
+      offsetPath: `path("M ${x0} ${y0} L ${hx} ${hy} C ${hx + Math.round((ex - hx) * .55)} ${hy}, ${c2x} ${ey}, ${ex} ${ey}")`,
+      offsetRotate: "0deg",
+      offsetDistance: "0%"
+    });
+    box.appendChild(d);
+    const l1 = Math.hypot(hx - x0, hy - y0), l2 = Math.hypot(x1 - gx, y1 - gy) * 1.15, f = l1 / (l1 + l2), tf = Math.max(.04, Math.min(.5, f * 1.6)), t2 = Math.min(.7, tf + .14), pc = v => Math.round(v * 1000) / 10 + "%";
+    return d.animate([ {
+      offsetDistance: "0%",
+      opacity: .9,
+      transform: "scale(1)",
+      easing: "cubic-bezier(.45, 0, .55, 1)"
+    }, {
+      offsetDistance: pc(f),
+      opacity: .9,
+      transform: "scale(1)",
+      offset: tf,
+      easing: "ease-in"
+    }, {
+      offsetDistance: pc(Math.min(.6, f + .1)),
+      opacity: .9,
+      transform: `scale(${Math.min(1, 22 / z)})`,
+      offset: t2,
+      easing: "ease-in-out"
+    }, {
+      offsetDistance: "92%",
+      opacity: .9,
+      transform: `scale(${Math.min(1, 16 / z)})`,
+      offset: .9
+    }, {
+      offsetDistance: "100%",
+      opacity: 0,
+      transform: `scale(${Math.min(1, 8 / z)})`
+    } ], {
+      duration: 860,
+      delay: Math.max(0, Math.round(20 + 200 * rank[k] / Math.max(1, pts.length - 1) + (Math.random() - .5) * 24)),
+      fill: "both"
+    }).finished;
+  });
+  Promise.race(flows).then(() => pillLand(id, isAgain)).then(() => pill.isConnected && pill.animate([ {
+    transform: "scale(1)"
+  }, {
+    transform: "scale(1.2)",
+    offset: .4
+  }, {
+    transform: "scale(1)"
+  } ], {
+    duration: 420,
+    easing: "ease-out"
+  })).catch(() => {});
+  Promise.all(flows).catch(() => {}).finally(() => {
+    pillLand(id, isAgain);
+    box.remove();
+    if (!document.querySelector("#watchPop .w-flow")) cap.classList.remove("w-cap-flow");
   });
 }
 
