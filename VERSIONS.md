@@ -48,6 +48,7 @@ Hàm chính: `isListenMode`, `listenBatch`, `startSequenceLoop`, `stopSequenceLo
 | SPEAK-21 | `e8ee937` | Editor thẻ: xoá dòng trống không còn gộp các dòng phía trên thành câu hỏi; quy tắc 2 lần xuống dòng chỉ áp khi vừa gõ tại con trỏ |
 | SPEAK-22 | `307e6ef` | Dòng đầu của thẻ luôn là câu hỏi, từ dòng 2 là câu trả lời (Vocabulary: từ rồi nghĩa); bỏ quy tắc 2 lần xuống dòng, ký tự ẩn đánh dấu câu hỏi và tờ giấy gáy trên cho thẻ không có câu hỏi; thẻ cũ được tách lại khi mở |
 | SPEAK-23 | `4168fd2` | Dọn hàm thừa còn lại sau SPEAK-22 |
+| SPEAK-24 | `0d9c527` | Ô ＋ thêm thẻ lề đều như ô sửa (16px quanh chữ, Notes và Save cách đều); thẻ dài (cả bài hát) không còn làm trang từ điển báo Bad Request; dòng từ gõ trong Notes của ô ＋ thành từ của thẻ khi Save; từ trong câu hỏi trên tờ giấy là mực thường |
 
 Hàm chính: `ieltsPaperHtml`, `ieltsFrontHtml`, `entryHidden`, `revealAction`, `render` (nhánh `groupViewStyle === "ielts"`). Cùng `ieltsHints`, `ieltsHintNext`, `ieltsHintId` (Hint).
 
