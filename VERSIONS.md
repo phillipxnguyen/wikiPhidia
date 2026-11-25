@@ -852,7 +852,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-95 | `df50850` | Extension 1.6.60: trả lại 2 nút 字 / ⚡ (hiện nút hay mở thẻ ngay) ở đầu popup |
 | LOOKUP-96 | `131bdb4` | Extension 1.6.61: bảng gom câu tự hiện ở góc phải dưới khi trang có câu làm thẻ được; câu đã gửi/bỏ không hiện lại |
 | LOOKUP-97 | `2042899` | Extension 1.6.62: bong bóng nghĩa ngược màu nền (trang sáng → bong bóng tối), đồng bộ với app |
-| LOOKUP-98 | `pending` | Popup và editor của từ: mỗi từ một nghĩa, bấm pill là thay nghĩa; nhấn đúp pill để sửa ngay trên pill (con trỏ chữ, không khung); hàng kính lúp có cả nghĩa gốc |
+| LOOKUP-98 | `f481e11` | Popup và editor của từ: mỗi từ một nghĩa, bấm pill là thay nghĩa; nhấn đúp pill để sửa ngay trên pill (con trỏ chữ, không khung); hàng kính lúp có cả nghĩa gốc |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
