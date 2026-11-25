@@ -569,7 +569,7 @@ window.onYouTubeIframeAPIReady = function(){
   .q-mirror{position:absolute;z-index:0;margin:0;overflow:hidden;border-style:solid;border-color:transparent;color:var(--text);pointer-events:none;}
   .q-mirror .q-ph{font-family:"Doto", system-ui, sans-serif;font-weight:800;color:var(--placeholder);}
   .q-mirror .q-line{color:var(--q-ink);}
-  #cardTable.notebook .cell[data-field="q"] mark:is(.vocab-own, .vocab-hit), .paper-question mark:is(.vocab-own, .vocab-hit){color:var(--text);}
+  #cardTable.notebook .cell[data-field="q"] mark:is(.vocab-own, .vocab-hit), .ielts-paper .paper-question mark:is(.vocab-own, .vocab-hit){color:var(--text);}
   .q-mirrored{position:relative;z-index:1;background-color:transparent!important;color:transparent!important;-webkit-text-fill-color:transparent;caret-color:var(--text);}
   .q-mirrored *{color:transparent!important;-webkit-text-fill-color:transparent;}
   .q-mirrored::placeholder{-webkit-text-fill-color:var(--placeholder);}
@@ -1667,9 +1667,9 @@ window.onYouTubeIframeAPIReady = function(){
   .ielts-paper::before, #cardTable.notebook tbody::before{content:"";position:absolute;z-index:1;pointer-events:none;}
   .ielts-paper::before, #cardTable.notebook tbody::before{top:16px;bottom:16px;left:-8px;width:32px;border:0;background:var(--ring-left) 0 0 / 32px 36px, radial-gradient(circle at 26px 18px, #1f2633 6px, transparent 6px) 0 0 / 32px 36px;background-repeat:no-repeat space;}
   .ielts-paper .cell.hidden.paper-hint, .ielts-paper .cell.hidden.paper-hint:hover{font-style:normal;color:var(--paper-ink);}
-  .paper-hint ol, .paper-notes ol{margin:0;padding:0;list-style:none;counter-reset:paper-n;}
-  .paper-hint li, .paper-notes li{position:relative;padding-left:2em;counter-increment:paper-n;}
-  .paper-hint li::before, .paper-notes li::before{content:counter(paper-n) ".";position:absolute;left:0;}
+  .paper-hint ol, .paper-notes > ol{margin:0;padding:0;list-style:none;counter-reset:paper-n;}
+  .paper-hint li, .paper-notes > ol > li{position:relative;padding-left:2em;counter-increment:paper-n;}
+  .paper-hint li::before, .paper-notes > ol > li::before{content:counter(paper-n) ".";position:absolute;left:0;}
   .paper-question{display:flex;gap:12px;margin-bottom:6px;font-size:22px;line-height:var(--line);font-weight:400;color:var(--q-ink);}
   .ielts-paper .paper-question .cell{color:var(--q-ink);}
   .ielts-paper .cell{padding:0;font-size:inherit;color:inherit;text-align:left;border-radius:0;}
@@ -1684,8 +1684,8 @@ window.onYouTubeIframeAPIReady = function(){
   .paper-notes{min-width:180px;padding-left:20px;border-left:2px solid var(--paper-rule);font-size:18px;line-height:26px;}
   .paper-notes li + li, .paper-notes .card-notes :is(div, p, li) + :is(div, p, li), #cardTable.notebook .card-notes :is(div, p, li) + :is(div, p, li), :is(.paper-notes, #cardTable.notebook) .card-notes :is(:is(ul, ol) + *, * + :is(ul, ol)){margin-top:0;}
   .paper-notes .card-notes{padding:0;font-size:inherit;line-height:inherit;}
-  .paper-notes li{--pi:calc(round(up, calc(var(--pnd, 1) * 1ch + .5ch), 1px) + 8px);padding-left:var(--pi);text-indent:calc(-1 * var(--pi));}
-  .paper-notes li::before{content:none;}
+  .paper-notes > ol > li{--pi:calc(round(up, calc(var(--pnd, 1) * 1ch + .5ch), 1px) + 8px);padding-left:var(--pi);text-indent:calc(-1 * var(--pi));}
+  .paper-notes > ol > li::before{content:none;}
   .paper-notes .pn{display:inline-block;text-indent:0;min-width:round(up, calc(var(--pnd, 1) * 1ch + .5ch), 1px);margin-right:8px;text-align:right;font-variant-numeric:tabular-nums;}
   @media (max-width:600px){
     .ielts-paper.with-notes .paper-body{grid-template-columns:minmax(0, 1fr);}
@@ -16364,6 +16364,16 @@ function normalizeCard(c) {
     } : {})
   };
   liftNoteTranslation(card);
+  if (/<li/i.test(card.notesHtml)) {
+    const box = document.createElement("div");
+    box.innerHTML = card.notesHtml;
+    boldNoteWords(box);
+    const html = sanitizeHtml(flatVocabLists(box.innerHTML));
+    if (html !== card.notesHtml) {
+      card.notesHtml = html;
+      card.notes = plainTextOf(html, "\n");
+    }
+  }
   if (time == null && !card.a.trim() && card.q.includes("\n")) {
     const parts = splitMergedCardHtml(card.qHtml);
     card.qHtml = parts.q;
