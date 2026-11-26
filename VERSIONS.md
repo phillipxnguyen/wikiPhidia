@@ -275,6 +275,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-193 | `a54258a` | Câu bên list không còn tràn màu cả hàng: chỉ pill đổ màu từ giữa ra (0,36 giây) |
 | THEATER-194 | `040183f` | Búa đập có lực hơn: vung nhanh dần có nhoè, chạm thì hơi bẹp rồi nảy ngược lên, tia lửa bắn ra từ chỗ đập; vẫn chạm sau ~0,12 giây, không rung |
 | THEATER-195 | `9447b9b` | Pill không còn hiệu ứng: đúng lúc búa chạm thì đổi màu xanh/đỏ bình thường; xoá code đổ màu cũ |
+| THEATER-196 | `0a72d75` | Búa đập chỗ ngẫu nhiên trên video, có khi lấn sang list tối đa 120px; góc vung hơi khác mỗi lần; vẫn Good phải, Again trái |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
