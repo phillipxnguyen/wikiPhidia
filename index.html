@@ -3783,7 +3783,7 @@ document.addEventListener("click", e => {
 
 function preloadTranslations() {
   if (!currentLessonId || isVirtualLesson() || appMode === "vocab") return;
-  if (listVi()) return viTrFill();
+  if (viTrLang()) return viTrFill();
   mtFill(rows.filter(r => r.uid !== EXTRA_UID && r.time != null && (r.q || "").trim() && !hasAnswer(r)));
 }
 
@@ -3871,16 +3871,7 @@ document.getElementById("listJoin").onchange = e => {
   render();
 };
 
-document.getElementById("listTrans").onclick = e => {
-  if (listVi()) return listTrMenu(e.currentTarget);
-  listTrOn = !listTrOn;
-  try {
-    localStorage.setItem(LIST_TR_KEY, JSON.stringify(listTrOn));
-  } catch (err) {}
-  e.currentTarget.blur();
-  render();
-  if (listTrOn) preloadTranslations();
-};
+document.getElementById("listTrans").onclick = e => listTrMenu(e.currentTarget);
 
 function watchWordsHtml(html, lang, pin) {
   const box = document.createElement("div");
@@ -3930,7 +3921,7 @@ function watchWordsHtml(html, lang, pin) {
   return box.innerHTML;
 }
 
-const VI_TR_LANGS = [ "en", "zh-CN", "ko", "ja" ], VI_TR_KEY = "flashcards.viTr", TR_GLOBE = '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M3 10h14M10 3c2.6 2.6 2.6 11.4 0 14M10 3c-2.6 2.6-2.6 11.4 0 14"/></svg>';
+const VI_TR_LANGS = [ "vi", "en", "zh-CN", "ko", "ja" ], VI_TR_KEY = "flashcards.viTr", TR_GLOBE = '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M3 10h14M10 3c2.6 2.6 2.6 11.4 0 14M10 3c-2.6 2.6-2.6 11.4 0 14"/></svg>';
 
 let viTrStore = null;
 
@@ -3946,9 +3937,39 @@ function watchVi() {
   return watch.viAuto;
 }
 
+function lessonViNow() {
+  return watch ? watchVi() : listVi();
+}
+
+function lessonOwnLang() {
+  if (lessonViNow()) return "vi";
+  const l = studyLang !== "auto" ? studyLang : autoDetectLangs((watch ? watch.lines : rows).map(r => r.q))[0] || "";
+  return l.startsWith("zh") ? "zh-CN" : l;
+}
+
+function trChoices() {
+  const own = lessonOwnLang();
+  return (own === "en" ? [ "vi", "en", "zh-CN", "ko", "ja" ] : [ "en", "vi", "zh-CN", "ko", "ja" ]).filter(x => x !== own);
+}
+
+function trTarget() {
+  const l = library.find(x => x.id === currentLessonId), own = lessonOwnLang(), t = l && VI_TR_LANGS.includes(l.trLang) && l.trLang !== own ? l.trLang : "";
+  return own === "vi" ? t : t || (own === "vi" ? "en" : "vi");
+}
+
 function viTrLang() {
-  const l = library.find(x => x.id === currentLessonId);
-  return l && VI_TR_LANGS.includes(l.trLang) ? l.trLang : "";
+  const t = trTarget();
+  return lessonViNow() ? t : t === "vi" ? "" : t;
+}
+
+function trShownNow(where) {
+  if (lessonViNow()) return trTarget();
+  return (where === "list" ? listTrOn : !!watch && !!watch.prefs.trans) ? trTarget() : "";
+}
+
+function trIcon(where) {
+  const cc = LANG_COUNTRY[trShownNow(where)];
+  return cc ? `<i class="flag-dot" style='--flag:${flagUrl(cc)}'></i>` : TR_GLOBE;
 }
 
 function viTrOf(tl, text) {
@@ -3979,7 +4000,7 @@ function listViTr(r) {
 }
 
 async function viTrFill() {
-  const tl = viTrLang(), lines = watch ? watch.lines : listVi() ? rows.filter(r => r.time != null) : [];
+  const tl = viTrLang(), lines = watch ? watch.lines : rows.filter(r => r.time != null);
   if (!lines.length || !tl || !navigator.onLine) return;
   const need = [ ...new Set(lines.map(r => oneLine(r.q || ""))) ].filter(t => t && !viSame(tl, t) && !viTrOf(tl, t) && !viTrPending.has(tl + "\u0001" + t));
   if (!need.length) return;
@@ -4002,23 +4023,39 @@ async function viTrFill() {
       paintWatchList();
       paintWatchLine();
     }
-    if (listVi()) render();
+    if (!watch) render();
   }
 }
 
-function setViTrLang(tl) {
+function setViTrLang(tl, where) {
   const l = library.find(x => x.id === currentLessonId);
   if (!l) return;
-  if (VI_TR_LANGS.includes(tl)) l.trLang = tl; else delete l.trLang;
+  if (lessonViNow()) {
+    if (VI_TR_LANGS.includes(tl)) l.trLang = tl; else delete l.trLang;
+  } else {
+    if (VI_TR_LANGS.includes(tl)) l.trLang = tl;
+    if (where === "list") {
+      listTrOn = !!tl;
+      try {
+        localStorage.setItem(LIST_TR_KEY, JSON.stringify(listTrOn));
+      } catch (err) {}
+    } else if (watch) {
+      watch.prefs.trans = !!tl;
+      saveWatchPrefs();
+    }
+  }
   scheduleAutoSave();
   if (watch) paintWatch();
   render();
-  viTrFill();
+  if (viTrLang()) viTrFill(); else if (tl) {
+    if (watch) mtFill(watch.lines);
+    if (!watch) preloadTranslations();
+  }
 }
 
-function viTrButtons() {
-  const tl = viTrLang();
-  return [ "" ].concat(VI_TR_LANGS).map(l => `<button type="button" role="menuitemradio" aria-checked="${l === tl}" data-trl="${l}">${l ? `<i class="flag-dot" style='--flag:${flagUrl(LANG_COUNTRY[l])}'></i>` : TR_GLOBE}</button>`).join("");
+function viTrButtons(where) {
+  const tl = trShownNow(where);
+  return [ "" ].concat(trChoices()).map(l => `<button type="button" role="menuitemradio" aria-checked="${l === tl}" data-trl="${l}">${l ? `<i class="flag-dot" style='--flag:${flagUrl(LANG_COUNTRY[l])}'></i>` : TR_GLOBE}</button>`).join("");
 }
 
 function listTrMenu(btn) {
@@ -4028,7 +4065,7 @@ function listTrMenu(btn) {
   menu.id = "listTrMenu";
   menu.className = "w-trmenu list-trmenu";
   menu.setAttribute("role", "menu");
-  menu.innerHTML = viTrButtons();
+  menu.innerHTML = viTrButtons("list");
   document.body.appendChild(menu);
   menu.style.left = Math.round(Math.min(innerWidth - menu.offsetWidth - 8, b.right - menu.offsetWidth)) + "px";
   menu.style.top = Math.round(b.bottom + 8) + "px";
@@ -4040,7 +4077,7 @@ document.addEventListener("click", e => {
   const pick = e.target.closest && e.target.closest("#listTrMenu [data-trl]");
   if (pick) {
     menu.remove();
-    return setViTrLang(pick.dataset.trl);
+    return setViTrLang(pick.dataset.trl, "list");
   }
   if (!menu.contains(e.target) && !(e.target.closest && e.target.closest("#listTrans"))) menu.remove();
 }, true);
@@ -4053,17 +4090,17 @@ function viLineHtml(r) {
 }
 
 function viTrPill() {
-  const tl = viTrLang(), cc = tl && LANG_COUNTRY[tl];
-  return `<button type="button" class="w-pill w-trpick${tl ? " on" : ""}" data-w="trpick" aria-haspopup="menu" aria-pressed="${!!tl}">${cc ? `<i class="flag-dot" style='--flag:${flagUrl(cc)}'></i>` : TR_GLOBE}</button>`;
+  const on = !!trShownNow("w"), k = watchVi() ? "trpick" : "trans";
+  return `<button type="button" class="w-pill w-trpick${on ? " on" : ""}" data-w="${k}" aria-haspopup="menu" aria-pressed="${on}" title="Translation">${trIcon("w")}</button>`;
 }
 
 function viTrMenu(btn) {
   const box = document.getElementById("watchPop"), old = box.querySelector(".w-trmenu");
   if (old) return old.remove();
-  const menu = document.createElement("div"), tl = viTrLang(), b = btn.getBoundingClientRect(), pop = box.getBoundingClientRect();
+  const menu = document.createElement("div"), b = btn.getBoundingClientRect(), pop = box.getBoundingClientRect();
   menu.className = "w-trmenu";
   menu.setAttribute("role", "menu");
-  menu.innerHTML = viTrButtons();
+  menu.innerHTML = viTrButtons("w");
   box.appendChild(menu);
   menu.style.left = Math.round(b.left - pop.left + b.width / 2 - menu.offsetWidth / 2) + "px";
   menu.style.top = Math.round(b.top - pop.top - menu.offsetHeight - 8) + "px";
@@ -4071,7 +4108,8 @@ function viTrMenu(btn) {
 
 function watchLineHtml(r) {
   if (watchVi()) return viLineHtml(r);
-  const p = watch.prefs, pin = p.pin && watchChinese() && typeof pinyinPro !== "undefined", tr = p.trans ? watchLineTr(r) : "", wait = p.trans && !tr && !!answerFill && answerFill.has(r.id);
+  const p = watch.prefs, pin = p.pin && watchChinese() && typeof pinyinPro !== "undefined", otl = viTrLang(), osrc = oneLine(r.q || "");
+  const tr = !p.trans ? "" : otl ? viSame(otl, osrc) ? "" : viTrOf(otl, osrc) : watchLineTr(r), wait = p.trans && !tr && (otl ? !viSame(otl, osrc) && viTrPending.has(otl + "\u0001" + osrc) : !!answerFill && answerFill.has(r.id));
   const lang = detectLang(r.q || "").split("-")[0];
   const text = watchWordsHtml(highlightVocabInHtml(r.qHtml || escapeHtml(r.q), r.id), lang, pin && /[\u3400-\u9fff]/.test(r.q || ""));
   return `<div class="w-text${pin ? " w-ruby" : ""}">${text}</div>` + (wait ? '<div class="w-tr tr-wait">Translating…</div>' : tr ? `<div class="w-tr">${escapeHtml(tr)}</div>` : "");
@@ -4428,8 +4466,12 @@ async function cabinSay(r, text) {
   speechSynthesis.cancel();
   watch.waitSince = performance.now();
   const token = watch.sayToken = (watch.sayToken || 0) + 1;
-  let tr = text || watchLineTr(r);
-  if (!tr) {
+  const otl = !text && viTrLang(), osrc = oneLine(r.q || "");
+  let tr = text || (otl ? viSame(otl, osrc) ? osrc : viTrOf(otl, osrc) : watchLineTr(r));
+  if (!tr && otl) {
+    await viTrFill();
+    tr = viTrOf(otl, osrc);
+  } else if (!tr) {
     await mtFill([ r ]);
     tr = watchLineTr(r);
   }
@@ -4563,7 +4605,8 @@ function watchToggle() {
 function syncWatchPills() {
   const p = watch.prefs;
   document.querySelectorAll("#watchPop .w-pill[data-w]").forEach(b => {
-    const on = b.dataset.w === "trpick" ? !!viTrLang() : b.dataset.w === "sub" && watchVi() ? !p.cabin : !!p[b.dataset.w];
+    const tr = b.dataset.w === "trpick" || b.dataset.w === "trans", on = tr ? !!trShownNow("w") : b.dataset.w === "sub" && watchVi() ? !p.cabin : !!p[b.dataset.w];
+    if (tr && b.innerHTML !== trIcon("w")) b.innerHTML = trIcon("w");
     b.classList.toggle("on", on);
     b.setAttribute("aria-pressed", String(on));
   });
@@ -4601,7 +4644,7 @@ function watchPrefChanged(k) {
     watchKeepRow(anchor);
   });
   if (k === "trans" || k === "cabin" || k === "pin") {
-    if (!watchVi() && (p.trans || p.cabin)) mtFill(watch.lines);
+    if (viTrLang()) viTrFill(); else if (!watchVi() && (p.trans || p.cabin)) mtFill(watch.lines);
     watch.rowHtml = null;
     paintWatchList();
     paintWatchLine();
@@ -4626,10 +4669,10 @@ function paintWatch() {
   box.dataset.size = p.size || 100;
   box.className = "watch-pop" + (p.cabin ? "" : " with-list") + (p.pin && watchChinese() ? " pinned" : "") + (p.cabin ? " cabin" : "") + (p.sub ? " w-sub" : "") + (watchVi() ? " w-vi" : "");
   watchModeTabs();
-  if (watchVi()) viTrFill(); else if (p.trans || p.cabin) mtFill(watch.lines);
+  if (viTrLang()) viTrFill(); else if (!watchVi() && (p.trans || p.cabin)) mtFill(watch.lines);
   watch.countSig = "";
   const pill = (k, title, label) => `<button type="button" class="w-pill${p[k] ? " on" : ""}" data-w="${k}" aria-pressed="${!!p[k]}" title="${title}">${label}</button>`;
-  const tools = `<span class="w-grp-show w-grp">${pill("sub", "The line over the video", '<svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2" y="4" width="16" height="12" rx="2"/><path d="M5 12h6M13 12h2M5 9h2M9 9h6"/></svg>')}${watchChinese() ? pill("pin", "Pinyin", "拼") : ""}${(watchVi() ? viTrPill() : pill("trans", "The translation (the lesson's own, or a machine translation when the line has none)", TR_GLOBE))}</span><select class="w-join" aria-label="Join lines" title="How long a stretch you study at once: Easy one line, Medium 15 s, Hard 30 s">${[ [ 0, "Easy" ], [ 15, "Medium" ], [ 30, "Hard" ] ].map(([v, t]) => `<option value="${v}"${v === Math.min(30, joinedSeconds()) ? " selected" : ""}>${t}</option>`).join("")}</select><select class="w-size" aria-label="${p.cabin ? "Subtitle size" : "Text size of the list"}" title="${p.cabin ? "Subtitle size" : "Text size of the list"}">${[ 100, 125, 150 ].map(v => `<option value="${v}"${v === (p.size || 100) ? " selected" : ""}>${v}%</option>`).join("")}</select><span class="w-grp-loop w-grp">${pill("loop", "Loop the line being said", '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 9V8a3 3 0 0 1 3-3h8M13 3l2 2-2 2M16 11v1a3 3 0 0 1-3 3H5M7 17l-2-2 2-2"/></svg>')}</span><select class="w-rate" aria-label="Speed" title="Speed">${[ ...document.getElementById("playbackSpeed").options ].map(o => `<option value="${o.value}"${Number(o.value) === p.rate ? " selected" : ""}>${o.textContent}</option>`).join("")}</select>`;
+  const tools = `<span class="w-grp-show w-grp">${pill("sub", "The line over the video", '<svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2" y="4" width="16" height="12" rx="2"/><path d="M5 12h6M13 12h2M5 9h2M9 9h6"/></svg>')}${watchChinese() ? pill("pin", "Pinyin", "拼") : ""}${viTrPill()}</span><select class="w-join" aria-label="Join lines" title="How long a stretch you study at once: Easy one line, Medium 15 s, Hard 30 s">${[ [ 0, "Easy" ], [ 15, "Medium" ], [ 30, "Hard" ] ].map(([v, t]) => `<option value="${v}"${v === Math.min(30, joinedSeconds()) ? " selected" : ""}>${t}</option>`).join("")}</select><select class="w-size" aria-label="${p.cabin ? "Subtitle size" : "Text size of the list"}" title="${p.cabin ? "Subtitle size" : "Text size of the list"}">${[ 100, 125, 150 ].map(v => `<option value="${v}"${v === (p.size || 100) ? " selected" : ""}>${v}%</option>`).join("")}</select><span class="w-grp-loop w-grp">${pill("loop", "Loop the line being said", '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 9V8a3 3 0 0 1 3-3h8M13 3l2 2-2 2M16 11v1a3 3 0 0 1-3 3H5M7 17l-2-2 2-2"/></svg>')}</span><select class="w-rate" aria-label="Speed" title="Speed">${[ ...document.getElementById("playbackSpeed").options ].map(o => `<option value="${o.value}"${Number(o.value) === p.rate ? " selected" : ""}>${o.textContent}</option>`).join("")}</select>`;
   box.querySelector(".w-ctl-l").innerHTML = tools;
   syncWatchPills();
   box.querySelector(".w-ctl-c").innerHTML = "";
@@ -5208,7 +5251,7 @@ document.getElementById("watchPop").addEventListener("click", e => {
   const trMenu = document.querySelector("#watchPop .w-trmenu"), trl = e.target.closest("[data-trl]");
   if (trl) {
     trMenu.remove();
-    return setViTrLang(trl.dataset.trl);
+    return setViTrLang(trl.dataset.trl, "w");
   }
   if (trMenu && !trMenu.contains(e.target) && !e.target.closest('[data-w="trpick"]')) trMenu.remove();
   const b = e.target.closest("[data-w]"), cap = !watch.prefs.cabin || e.target.closest(".w-capline.reveal") ? e.target.closest(".w-capline[data-id]") : null, row = e.target.closest(".w-row") || cap;
@@ -5272,7 +5315,7 @@ document.getElementById("watchPop").addEventListener("click", e => {
     watchPrefChanged("cabin");
     return watchSeek(Math.max(0, watch.at), !watch.prefs.cabin);
   }
-  if (k === "trpick") return viTrMenu(b);
+  if (k === "trpick" || k === "trans") return viTrMenu(b);
   if (k === "sub" && watchVi()) return viSwitchMode();
   watch.prefs[k] = !watch.prefs[k];
   saveWatchPrefs();
@@ -9322,11 +9365,12 @@ function buildRowTr(r) {
   const q = `<div class="cell ${r.qHidden ? "hidden" : "shown"}" data-field="q">${qCellContent(r)}</div>`;
   const wait = !!answerFill && answerFill.has(r.id) && !hasAnswer(r);
   const vi = r.time != null && !groupState && listVi(), viTr = vi ? listViTr(r) : "", viWait = vi && !viTr && !viSame(viTrLang(), oneLine(r.q || "")) && viTrPending.has(viTrLang() + "\u0001" + oneLine(r.q || ""));
-  const trLine = vi ? viTr || viWait ? `<div class="cell shown row-tr" data-field="tr" data-id="${r.id}">${viTr ? escapeHtml(viTr) : '<span class="tr-wait">Translating…</span>'}</div>` : "" : (listTrOn && r.time != null || wait) && !groupState && !hasAnswer(r) && !watchTranslation(r) ? `<div class="cell shown row-tr" data-field="tr" data-id="${r.id}">${wait && !listTr(r) ? '<span class="tr-wait">Translating…</span>' : escapeHtml(listTr(r))}</div>` : "";
+  const otl = !vi && listTrOn && r.time != null && !groupState ? viTrLang() : "", oTr = otl ? listViTr(r) : "", oWait = !!otl && !oTr && !viSame(otl, oneLine(r.q || "")) && viTrPending.has(otl + "\u0001" + oneLine(r.q || ""));
+  const trLine = vi || otl ? (vi ? viTr : oTr) || (vi ? viWait : oWait) ? `<div class="cell shown row-tr" data-field="tr" data-id="${r.id}">${vi ? viTr ? escapeHtml(viTr) : '<span class="tr-wait">Translating…</span>' : oTr ? escapeHtml(oTr) : '<span class="tr-wait">Translating…</span>'}</div>` : "" : (listTrOn && r.time != null || wait) && !groupState && !hasAnswer(r) && !watchTranslation(r) ? `<div class="cell shown row-tr" data-field="tr" data-id="${r.id}">${wait && !listTr(r) ? '<span class="tr-wait">Translating…</span>' : escapeHtml(listTr(r))}</div>` : "";
   const own = !r.aHidden && !r.qHidden ? cardNotesHtml(r) : "";
   const notes = own;
   const a = trLine || `<div class="cell ${r.aHidden ? "hidden" : "shown"}${r.time != null ? " row-tr" : ""}" data-field="a">${aCellContent(r)}</div>`;
-  const showA = trLine || !vi && hasAnswer(r) && (r.time == null || listTrOn || !!groupState);
+  const showA = trLine || !vi && !otl && hasAnswer(r) && (r.time == null || listTrOn || !!groupState);
   tr.innerHTML = document.getElementById("cardTable").classList.contains("no-answer-col") ? `<td class="q-col" colspan="2">${q}${showA ? a : ""}${notes}</td>` : r.time == null && !hasAnswer(r) ? `<td class="q-col"></td><td class="a-col one-only">${q}${trLine}${notes}</td>` : `<td class="q-col">${q}</td><td class="a-col">${showA ? a : ""}${notes}</td>`;
   dictPreloadObserver.observe(tr);
   return tr;
@@ -14676,11 +14720,11 @@ function syncModeButtonHighlights() {
   fullBtn.hidden = off || !lessonStudyMode();
   const lt = document.getElementById("listTrans");
   lt.hidden = off || appMode === "vocab" || !rows.some(r => r.uid !== EXTRA_UID && r.time != null && (r.q || "").trim());
-  const vi = !lt.hidden && listVi(), cc = vi && LANG_COUNTRY[viTrLang()], icon = cc ? `<i class="flag-dot" style='--flag:${flagUrl(cc)}'></i>` : TR_GLOBE;
+  const icon = lt.hidden ? TR_GLOBE : trIcon("list"), on = !lt.hidden && !!trShownNow("list");
   if (lt.innerHTML !== icon) lt.innerHTML = icon;
-  lt.classList.toggle("active", vi ? !!cc : listTrOn);
-  lt.setAttribute("aria-pressed", String(vi ? !!cc : listTrOn));
-  lt.setAttribute("aria-haspopup", vi ? "menu" : "false");
+  lt.classList.toggle("active", on);
+  lt.setAttribute("aria-pressed", String(on));
+  lt.setAttribute("aria-haspopup", "menu");
   const lj = document.getElementById("listJoin");
   lj.hidden = off || appMode === "vocab" || !rows.some(r => r.time != null);
   if (!lj.hidden) lj.value = String(Math.min(30, joinedSeconds()));
