@@ -4649,7 +4649,7 @@ function watchPour(id, isAgain, from) {
 function watchSuck(id, isAgain, vr, cr) {
   const aim = watchAim(id), src = cr || vr, cap = cr && document.querySelector("#watchPop .w-capline");
   if (!aim || !src.width) return pillLand(id, isAgain);
-  const rnd = (a, b) => a + Math.random() * (b - a), w = Math.round(Math.min(src.width, rnd(180, 280))), h = Math.round(Math.min(Math.max(src.height, 72), rnd(60, 100)));
+  const rnd = (a, b) => a + Math.random() * (b - a), w = Math.round(Math.min(src.width, rnd(120, 180))), h = Math.round(Math.min(Math.max(src.height, 56), rnd(44, 64)));
   const mx = Math.round(src.left + w / 2 + (src.width - w) * Math.random()), my = Math.round(cr ? src.top + src.height / 2 + rnd(-8, 8) : src.top + src.height * rnd(.3, .75));
   const sr = {
     left: mx - Math.round(w / 2),
@@ -4679,7 +4679,7 @@ function watchSuck(id, isAgain, vr, cr) {
   const cnt = Math.max(40, Math.round(w * h / 150)), tilt = rnd(-.35, .35);
   for (let k = 0; k < cnt; k++) {
     const a = Math.random() * Math.PI * 2, q = Math.sqrt(Math.random()) * rnd(.7, 1), ex = Math.cos(a) * q * (w - z) / 2, ey = Math.sin(a) * q * (h - z) / 2;
-    pts.push([ Math.round(mx + ex - ey * tilt), Math.round(my + ey + ex * tilt * h / w), Math.round(z * rnd(.65, 1.15)) ]);
+    pts.push([ Math.round(mx + ex - ey * tilt), Math.round(my + ey + ex * tilt * h / w) ]);
   }
   const inX = x1 >= sr.left && x1 <= sr.right, inY = y1 >= sr.top && y1 <= sr.bottom, jit = (a, b) => Math.round(a + Math.random() * (b - a));
   const gx = inX ? jit(Math.max(sr.left + z / 2, x1 - 40), Math.min(sr.right - z / 2, x1 + 40)) : x1 > sr.right ? Math.round(sr.right - z / 2) : Math.round(sr.left + z / 2);
@@ -4694,49 +4694,36 @@ function watchSuck(id, isAgain, vr, cr) {
     width: Math.ceil(Math.max(sr.right, p.right) + 24 - bx) + "px",
     height: Math.ceil(Math.max(sr.bottom, p.bottom) + 24 - by) + "px"
   });
-  const flows = pts.map(([ ax, ay, zz ], k) => {
+  const flows = pts.map(([ ax, ay ], k) => {
     const x0 = ax - bx, y0 = ay - by, hx = gx - bx, hy = gy - by, ex = x1 - bx, ey = y1 - by;
     const d = document.createElement("div"), c2x = ex - Math.round(Math.min(160, Math.abs(x1 - gx) * .4));
     Object.assign(d.style, {
-      width: zz + "px",
-      height: zz + "px",
-      borderRadius: zz + "px",
+      width: z + "px",
+      height: z + "px",
+      borderRadius: z + "px",
       background: col,
-      offsetPath: `path("M ${x0} ${y0} L ${hx} ${hy} C ${hx + Math.round((ex - hx) * .55)} ${hy}, ${c2x} ${ey}, ${ex} ${ey}")`,
+      offsetPath: `path("M ${x0} ${y0} C ${hx} ${hy}, ${c2x} ${ey}, ${ex} ${ey}")`,
       offsetRotate: "0deg",
       offsetDistance: "0%"
     });
     box.appendChild(d);
-    const l1 = Math.hypot(hx - x0, hy - y0), l2 = Math.hypot(x1 - gx, y1 - gy) * 1.15, f = l1 / (l1 + l2), tf = Math.max(.04, Math.min(.5, f * 1.6)), t2 = Math.min(.7, tf + .14), pc = v => Math.round(v * 1000) / 10 + "%";
     return d.animate([ {
       offsetDistance: "0%",
       opacity: .9,
-      transform: "scale(1)",
-      easing: "cubic-bezier(.45, 0, .55, 1)"
+      transform: "scale(1)"
     }, {
-      offsetDistance: pc(f),
-      opacity: .9,
-      transform: "scale(1)",
-      offset: tf,
-      easing: "ease-in"
-    }, {
-      offsetDistance: pc(Math.min(.6, f + .1)),
-      opacity: .9,
-      transform: `scale(${Math.min(1, 22 / z)})`,
-      offset: t2,
-      easing: "ease-in-out"
-    }, {
-      offsetDistance: "92%",
+      offsetDistance: "88%",
       opacity: .9,
       transform: `scale(${Math.min(1, 16 / z)})`,
-      offset: .9
+      offset: .88
     }, {
       offsetDistance: "100%",
       opacity: 0,
       transform: `scale(${Math.min(1, 8 / z)})`
     } ], {
-      duration: 860,
-      delay: Math.max(0, Math.round(20 + 200 * rank[k] / Math.max(1, pts.length - 1) + (Math.random() - .5) * 24)),
+      duration: 720,
+      delay: Math.max(0, Math.round(120 * rank[k] / Math.max(1, pts.length - 1) + (Math.random() - .5) * 16)),
+      easing: "cubic-bezier(.4, 0, .6, 1)",
       fill: "both"
     }).finished;
   });
