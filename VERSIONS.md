@@ -261,6 +261,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-179 | `bb9fb2d` | Một kiểu dòng chảy duy nhất: có sub thì chảy ra từ sub, không sub thì từ video; chảy liên tục đến khi hàng và pill đầy mới rút; bỏ chất lỏng gom |
 | THEATER-180 | `b9daf47` | Dòng chảy nhiều nước như cũ (đợt nước 3 lớp), bơm liên tục từng đợt đến khi hàng và pill đầy mới dừng |
 | THEATER-181 | `3543096` | Chất lỏng gom như bản có sub cũ nhưng chỉ từ một vùng nhỏ (tối đa 120×40px) trên sub, hoặc trên video khi không có sub; bỏ dòng bơm |
+| THEATER-182 | `6a12966` | Vùng gom to hơn (180–280 × 60–100px) và ngẫu nhiên: kích thước, hình, độ nghiêng, vị trí, giọt rải ngẫu nhiên to nhỏ khác nhau |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
