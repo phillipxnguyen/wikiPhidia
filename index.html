@@ -1803,6 +1803,7 @@ window.onYouTubeIframeAPIReady = function(){
   .ed-card #vocabEditMain .vem-t{padding-right:var(--lv-w, 0px);}
   .od-pos{flex:none;display:flex;align-items:center;justify-content:center;box-sizing:border-box;min-width:44px;height:32px;padding:0 6px;border-radius:6px;background:color-mix(in srgb, var(--text) 7%, transparent);color:var(--od-soft);font-size:18px;line-height:26px;font-weight:700;text-transform:lowercase;text-align:center;}
   .od-terms{display:flex;flex-wrap:wrap;gap:6px;min-width:0;}
+  .od-term.od-block{height:auto;min-height:32px;padding:2px 12px;white-space:pre-line;text-align:left;}
   .od-term{display:inline-flex;align-items:center;box-sizing:border-box;height:32px;padding:0 12px;border:1px solid var(--od-line);border-radius:16px;background:var(--od-bg);color:var(--text);font:inherit;font-size:18px;line-height:26px;cursor:pointer;transition:border-color .15s, color .15s;}
   @media (hover:hover){.od-term:hover{color:var(--accent);border-color:var(--accent);}}
   .od-term[contenteditable="true"]{cursor:text;outline:none;}
@@ -12165,15 +12166,14 @@ function odLong(w) {
 
 const OD_LENS = '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5"/><path d="M12.5 12.5L17 17"/></svg>';
 
-function myMeaningsFor(w, lang, skip) {
-  const key = normalizeVocabText(w), out = [], have = new Set(meaningLines(skip || "").map(m => m.toLowerCase()));
-  const take = it => it.tkey === key && meaningLines(it.meaning || "").forEach(m => {
-    const k = m.toLowerCase();
-    if (!have.has(k)) {
-      have.add(k);
-      out.push(m);
-    }
-  });
+function myMeaningsFor(w, lang) {
+  const key = normalizeVocabText(w), out = [], have = new Set;
+  const take = it => {
+    const block = it.tkey === key ? meaningLines(it.meaning || "").join("\n") : "", k = foldMeaning(block);
+    if (!block || have.has(k)) return;
+    have.add(k);
+    out.push(block);
+  };
   lessonVocabItems(vocabSource()).forEach(take);
   library.forEach(l => {
     if (isVirtualId(l.id) || l.id === currentLessonId || bookHidden(l)) return;
@@ -12203,9 +12203,9 @@ function alignPosLabels(root) {
   root.querySelectorAll(".od-group").forEach(g => !g.querySelector(":scope > .od-pos") && (g.style.paddingLeft = w + 8 + "px"));
 }
 
-function myMeaningsHtml(w, lang, skip) {
-  const list = myMeaningsFor(w, lang, skip);
-  return list.length ? `<div class="od-group od-mine"><span class="od-pos od-lens" title="Meanings you gave this word on your cards">${OD_LENS}</span><div class="od-terms">${list.map(t => `<span role="button" tabindex="0" class="od-term" data-m="${escapeAttr(t)}" title="Make this the meaning; click it again to change it">${escapeHtml(t)}</span>`).join("")}</div></div>` : "";
+function myMeaningsHtml(w, lang) {
+  const list = myMeaningsFor(w, lang);
+  return list.length ? `<div class="od-group od-mine"><span class="od-pos od-lens" title="Meanings you gave this word on your cards">${OD_LENS}</span><div class="od-terms">${list.map(t => `<span role="button" tabindex="0" class="od-term od-block" data-m="${escapeAttr(t)}" title="Make this the meaning; click it again to change it">${escapeHtml(t)}</span>`).join("")}</div></div>` : "";
 }
 
 function guessPos(d) {
@@ -12295,7 +12295,7 @@ function ownDictCardHtml(lang, w, ctx) {
     pos: "",
     terms: e.alts
   } ] : []) : [];
-  const body = (!e ? "" : `<button type="button" class="od-main" data-m="${escapeAttr(e.m)}" title="Add with this meaning">${escapeHtml(e.m)}</button>`) + myMeaningsHtml(w, lang, "") + groups.map(g => `<div class="od-group">${g.pos ? `<span class="od-pos">${escapeHtml(g.pos)}</span>` : ""}<div class="od-terms">${g.terms.map(t => `<span role="button" tabindex="0" class="od-term" data-m="${escapeAttr(t)}" title="Make this the meaning; click it again to change it">${escapeHtml(t)}</span>`).join("")}</div></div>`).join("") + (e && e.en || []).map(g => `<div class="od-group">${g.pos ? `<span class="od-pos">${escapeHtml(g.pos)}</span>` : ""}<div class="od-terms">${g.terms.map(t => `<span role="button" tabindex="0" class="od-term" data-m="${escapeAttr(t)}" title="Make this the meaning; click it again to change it">${escapeHtml(t)}</span>`).join("")}</div></div>`).join("");
+  const body = (!e ? "" : `<button type="button" class="od-main" data-m="${escapeAttr(e.m)}" title="Add with this meaning">${escapeHtml(e.m)}</button>`) + myMeaningsHtml(w, lang) + groups.map(g => `<div class="od-group">${g.pos ? `<span class="od-pos">${escapeHtml(g.pos)}</span>` : ""}<div class="od-terms">${g.terms.map(t => `<span role="button" tabindex="0" class="od-term" data-m="${escapeAttr(t)}" title="Make this the meaning; click it again to change it">${escapeHtml(t)}</span>`).join("")}</div></div>`).join("") + (e && e.en || []).map(g => `<div class="od-group">${g.pos ? `<span class="od-pos">${escapeHtml(g.pos)}</span>` : ""}<div class="od-terms">${g.terms.map(t => `<span role="button" tabindex="0" class="od-term" data-m="${escapeAttr(t)}" title="Make this the meaning; click it again to change it">${escapeHtml(t)}</span>`).join("")}</div></div>`).join("");
   const act = '<span class="od-acts"></span>', chips = onceChips(body);
   const pool = appSentencesFor(w, ctx && ctx.row, 30), zt = ctx && ctx.zoneText || "", spot = t => zt.indexOf(oneLine(t));
   const seen = zt ? pool.filter(t => spot(t) >= 0).sort((a, b) => spot(a) - spot(b)) : [];
@@ -12511,9 +12511,16 @@ function paintOwnDictFloat() {
   if (typed != null) input.dataset.dirty = "1";
   if (notes && typedNotes != null) notes.dataset.dirty = "1";
   pop.oldNotes = oldNotes;
+  const origBlock = found ? meaningLines(found.meaning).join("\n") : "", live = origBlock ? [ ...card.querySelectorAll(".od-mine .od-term") ].find(b => b.dataset.m === origBlock) : null;
+  if (live) live.classList.add("od-live");
   const sync = () => {
     const parts = meaningLines(input.value), now = parts.join("\n");
-    card.querySelectorAll(".od-term").forEach(b => b.classList.toggle("od-cur", parts.includes(b.dataset.m)));
+    card.querySelectorAll(".od-term:not(.od-block)").forEach(b => b.classList.toggle("od-cur", parts.includes(b.dataset.m)));
+    if (live && !live.isContentEditable) {
+      live.dataset.m = now;
+      live.textContent = now;
+      live.hidden = !now;
+    }
     alignPosLabels(card);
     if (!save) return;
     const changed = now !== (found ? found.meaning : "") || !!notes && notes.innerHTML !== oldNotes || !!found && title.textContent.replace(/\s+/g, " ").trim() !== found.term;
@@ -12666,7 +12673,7 @@ document.addEventListener("click", e => {
   const chip = e.target.closest(".od-term"), input = fl.querySelector(".od-mean-in");
   if (chip && input) {
     if (chip.isContentEditable) return;
-    if (chip.classList.contains("od-cur")) return editMeaningPill(chip, e);
+    if (chip.classList.contains("od-cur") || chip.classList.contains("od-live")) return editMeaningPill(chip, e);
     input.value = chip.dataset.m;
     input.dataset.dirty = "1";
     input.dispatchEvent(new Event("input", {
@@ -12691,7 +12698,7 @@ function meaningTarget(chip) {
   };
   const main = chip.closest("#editPopup") && document.getElementById("vocabEditMain"), a = main && main.querySelector(".vem-a");
   if (a) return t => {
-    a.innerHTML = `<div>${escapeHtml(t)}</div>`;
+    a.innerHTML = t.split("\n").map(x => `<div>${escapeHtml(x)}</div>`).join("");
     main.dispatchEvent(new Event("input", {
       bubbles: true
     }));
@@ -12713,16 +12720,22 @@ function editMeaningPill(chip, e) {
   }
   getSelection().removeAllRanges();
   getSelection().addRange(r);
-  const onInput = () => put(chip.textContent.replace(/\s+/g, " ").trim());
+  const pillText = () => chip.innerText.split("\n").map(x => x.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n");
+  const onInput = () => put(pillText());
   const onKey = ev => {
     ev.stopPropagation();
+    if (ev.key === "Enter" && ev.shiftKey && !ev.isComposing) {
+      ev.preventDefault();
+      document.execCommand("insertLineBreak");
+      return;
+    }
     if (ev.key === "Enter" || ev.key === "Escape") {
       ev.preventDefault();
       chip.blur();
     }
   };
   const done = () => {
-    const t = chip.textContent.replace(/\s+/g, " ").trim();
+    const t = pillText();
     chip.contentEditable = "false";
     if (t) {
       chip.dataset.m = t;
@@ -13044,7 +13057,7 @@ function ownDictFloatDelete() {
 window.addEventListener("keydown", e => {
   if (!ownDictFloat || e.key !== "Enter" || e.shiftKey || e.isComposing || e.keyCode === 229 || e.repeat) return;
   const t = e.target, inPop = t.closest && t.closest(".od-float");
-  if (!inPop && t.closest && t.closest("input, textarea, select, [contenteditable=true]")) return;
+  if (!inPop && t.closest && t.closest("input, textarea, select, [contenteditable=true]") || inPop && t.closest(".od-term[contenteditable=true]")) return;
   e.preventDefault();
   e.stopImmediatePropagation();
   const b = ownDictFloat.querySelector(".od-acts .od-add:not([hidden])");
@@ -23839,7 +23852,7 @@ function vocabEditorHtml(item) {
   const main = `<div id="vocabEditMain" class="rich-editor" contenteditable="true" aria-label="The word, then its meanings, one per line"><div class="vem-t${odLong(item.term) ? " long" : ""}" data-placeholder="Word">${escapeHtml(item.term)}</div><div class="vem-a vem-lens">${(odLong(item.term) ? [ item.meaning ] : meaningLines(item.meaning)).filter(Boolean).map(l => `<div>${escapeHtml(l)}</div>`).join("")}</div></div>`;
   const say = `<button type="button" class="od-say ed-say" data-say="${escapeAttr(item.term)}" aria-label="Listen" title="Listen">${OD_SPEAK}</button>`;
   const groups = odLong(item.term) ? [] : wordViGroups(item.tkey, item.term).filter(g => g.terms && g.terms.length);
-  const own = odLong(item.term) ? "" : myMeaningsHtml(item.term, ownDictLang(item.term, item.card), "");
+  const own = odLong(item.term) ? "" : myMeaningsHtml(item.term, ownDictLang(item.term, item.card));
   const pills = groups.length || own ? `<div class="ed-means">${own}${groups.map(g => `<div class="od-group">${g.pos ? `<span class="od-pos">${escapeHtml(g.pos)}</span>` : ""}<div class="od-terms">${g.terms.map(t => `<span role="button" tabindex="0" class="od-term" data-m="${escapeAttr(t)}">${escapeHtml(t)}</span>`).join("")}</div></div>`).join("")}</div>` : "";
   return '<div class="vocab-editor">' + `<div class="od-card ed-card">${levelHtml(ownDictLang(item.term, item.card), item.term, "ed-lv")}${say}${area}${main}${onceChips(pills)}${editCtxHtml(item)}</div>` + '<div class="vocab-editor-actions"><button id="vocabEditSave" class="primary">Save</button></div>' + "</div>";
 }
@@ -24171,10 +24184,16 @@ function wireVocabEditor(items) {
   };
   document.getElementById("vocabEditSave").onclick = save;
 
-  const main = document.getElementById("vocabEditMain");
+  const main = document.getElementById("vocabEditMain"), ownBlock = item ? meaningLines(item.meaning || "").join("\n") : "", liveOwn = ownBlock ? [ ...document.querySelectorAll("#editPopup .ed-means .od-mine .od-term") ].find(b => b.dataset.m === ownBlock) : null;
+  if (liveOwn) liveOwn.classList.add("od-live");
   const markMeans = () => {
-    const a = main && main.querySelector(".vem-a"), have = a ? a.innerText.split("\n").map(foldMeaning).filter(Boolean) : [];
-    document.querySelectorAll("#editPopup .ed-means .od-term").forEach(b => b.classList.toggle("od-cur", have.includes(foldMeaning(b.dataset.m))));
+    const a = main && main.querySelector(".vem-a"), lines = a ? a.innerText.split("\n").map(x => x.replace(/\s+/g, " ").trim()).filter(Boolean) : [], have = lines.map(foldMeaning);
+    document.querySelectorAll("#editPopup .ed-means .od-term:not(.od-block)").forEach(b => b.classList.toggle("od-cur", have.includes(foldMeaning(b.dataset.m))));
+    if (liveOwn && !liveOwn.isContentEditable) {
+      liveOwn.dataset.m = lines.join("\n");
+      liveOwn.textContent = lines.join("\n");
+      liveOwn.hidden = !lines.length;
+    }
     alignPosLabels(document.querySelector("#editPopup .ed-means"));
   };
   if (main) main.addEventListener("input", () => {
@@ -24185,8 +24204,8 @@ function wireVocabEditor(items) {
     const a = main && main.querySelector(".vem-a");
     if (!a) return;
     if (b.isContentEditable) return;
-    if (b.classList.contains("od-cur")) return editMeaningPill(b, ev);
-    a.innerHTML = `<div>${escapeHtml(b.dataset.m)}</div>`;
+    if (b.classList.contains("od-cur") || b.classList.contains("od-live")) return editMeaningPill(b, ev);
+    a.innerHTML = b.dataset.m.split("\n").map(x => `<div>${escapeHtml(x)}</div>`).join("");
     main.dispatchEvent(new Event("input", {
       bubbles: true
     }));
