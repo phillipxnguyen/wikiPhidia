@@ -4734,10 +4734,13 @@ function watchSuckCap(id, isAgain, snap, lines) {
   }
   const x1 = Math.round(p.left + p.width / 2), y1 = Math.round(p.top + p.height / 2), z = Math.round(Math.min(textBox ? Math.min(...lines.map(l => l.height)) : sr.height, 28));
   const pts = [];
-  if (textBox) lines.forEach(l => {
-    const n = Math.max(2, Math.round(l.width / 10)), y = Math.round(l.top + l.height / 2);
-    for (let i = 0; i < n; i++) pts.push([ Math.round(l.left + z / 2 + Math.max(0, l.width - z) * i / (n - 1)), y ]);
-  }); else {
+  if (textBox) {
+    const total = lines.reduce((t, l) => t + l.width, 0) || 1, want = Math.max(72, Math.round(total / 8));
+    lines.forEach(l => {
+      const rowsL = Math.max(1, Math.ceil((l.height - z) / (z * .6)) + 1), n = Math.max(4, Math.round(want * l.width / total / rowsL));
+      for (let i = 0; i < n; i++) for (let j = 0; j < rowsL; j++) pts.push([ Math.round(l.left + z / 2 + Math.max(0, l.width - z) * i / (n - 1)), Math.round(rowsL === 1 ? l.top + l.height / 2 : l.top + z / 2 + (l.height - z) * j / (rowsL - 1)) ]);
+    });
+  } else {
     const rowsN = Math.max(1, Math.ceil((sr.height - z) / (z * .6)) + 1), colsN = Math.max(Math.ceil(56 / rowsN), Math.round(sr.width / 10));
     for (let i = 0; i < colsN; i++) for (let j = 0; j < rowsN; j++) pts.push([ Math.round(sr.left + z / 2 + (sr.width - z) * i / (colsN - 1)), Math.round(rowsN === 1 ? sr.top + sr.height / 2 : sr.top + z / 2 + (sr.height - z) * j / (rowsN - 1)) ]);
   }
