@@ -22915,16 +22915,14 @@ function vocabViewOnly(item) {
   return !!item && !(item.meaning || "").trim();
 }
 
-const TYPE_LATIN = [ "Playfair Display", "Merriweather", "Roboto Slab", "Josefin Sans", "Lexend", "Oswald", "Montserrat", "Lora", "Bitter", "Alegreya", "Prata", "Philosopher", "Signika", "Exo 2", "Vollkorn", "Raleway", "Work Sans", "Source Serif 4", "Crimson Pro", "Literata", "Manrope", "Be Vietnam Pro", "Inter", "Chakra Petch", "Bai Jamjuree", "Space Mono", "Saira", "Barlow Condensed" ];
+const TYPE_LATIN = [ "Inter", "Be Vietnam Pro", "Manrope", "Lexend", "Work Sans", "Montserrat", "Source Serif 4", "Literata", "Lora", "Merriweather", "Bitter", "Roboto Slab" ];
 
-const TYPE_NO_VI = [ "Gill Sans", "Futura", "Baskerville" ];
-
-const TYPE_LOCAL = [ "Georgia", "Avenir Next", "Trebuchet MS", "Palatino", "Gill Sans", "Futura", "Optima", "Baskerville", "Verdana", "Helvetica Neue" ];
+const TYPE_LOCAL = [ "Georgia", "Avenir Next", "Helvetica Neue", "Verdana" ];
 
 const TYPE_CJK = {
-  zh: [ "Noto Sans SC", "Noto Serif SC", "ZCOOL XiaoWei", "LXGW WenKai TC" ],
-  ko: [ "Noto Sans KR", "Noto Serif KR", "Nanum Gothic", "Nanum Myeongjo", "Gowun Batang", "IBM Plex Sans KR" ],
-  ja: [ "Noto Sans JP", "Noto Serif JP", "Zen Kaku Gothic New", "Sawarabi Mincho" ]
+  zh: [ "Noto Sans SC", "Noto Serif SC" ],
+  ko: [ "Noto Sans KR", "Noto Serif KR", "Nanum Gothic", "IBM Plex Sans KR" ],
+  ja: [ "Noto Sans JP", "Noto Serif JP", "Zen Kaku Gothic New" ]
 };
 
 const INK_FAMILIES = [ [ "#1d2433", "#1f2937" ], [ "#1f4d3a", "#2f4f1f" ], [ "#0b5563" ], [ "#8a1c4a", "#9f1239" ], [ "#5b2a86" ] ];
@@ -22935,9 +22933,9 @@ function cardType(el, item) {
   const all = text + " " + ((item.card && item.card.q) || "");
   const cjk = /[\u3040-\u30ff]/.test(all) ? TYPE_CJK.ja : /[\uac00-\ud7af]/.test(all) ? TYPE_CJK.ko : /[\u3400-\u9fff]/.test(all) ? TYPE_CJK.zh : null;
   let used = "";
-  const font = (vi, web) => {
+  const font = web => {
     let latin;
-    if (!web && Math.random() < .3) latin = pick(vi ? TYPE_LOCAL.filter(f => !TYPE_NO_VI.includes(f)) : TYPE_LOCAL); else {
+    if (!web && Math.random() < .3) latin = pick(TYPE_LOCAL); else {
       latin = pick(TYPE_LATIN.filter(f => f !== used));
       loadStudyFont(latin);
     }
@@ -22951,7 +22949,7 @@ function cardType(el, item) {
   const big = el.dataset.look === "poster" ? phone ? [ 48, 56, 64 ] : [ 80, 96, 112, 128 ] : phone ? [ 28, 32, 36, 40 ] : [ 40, 48, 56, 64, 72 ];
   const tz = pick(big);
   const set = (k, v) => el.style.setProperty(k, v);
-  set("--tf", font(true));
+  set("--tf", font());
   set("--tw", pick([ "400", "500", "600", "700", "800" ]));
   set("--ts", Math.random() < .25 ? "italic" : "normal");
   set("--tt", latin && Math.random() < .25 ? "uppercase" : "none");
@@ -22963,7 +22961,7 @@ function cardType(el, item) {
   set("--tc", textInk);
   const bz = pick(phone ? [ 22, 24, 26 ] : [ 32, 36, 40 ]), mz = pick(phone ? [ 18, 20, 22, 26 ] : [ 22, 26, 30, 36, 44 ]);
   const align = pick([ "left", "center", "center", "left" ]);
-  set("--bf", font(true, true));
+  set("--bf", font(true));
   set("--bw", pick([ "400", "400", "500", "600" ]));
   set("--bs", Math.random() < .2 ? "italic" : "normal");
   set("--bz", bz + "px");
