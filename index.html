@@ -2612,9 +2612,6 @@ window.onYouTubeIframeAPIReady = function(){
   .w-cap .w-capline.w-cap-flow{-webkit-backdrop-filter:none;backdrop-filter:none;}
   .w-cap .w-capline.w-cap-flow > *{position:relative;z-index:1;}
   .w-cap .w-capline.w-cap-morph{background:transparent;}
-  #watchPop .w-cap-ghost{position:fixed;margin:0;max-width:none;max-height:none;box-sizing:border-box;overflow:hidden;pointer-events:none;}
-  #watchPop .w-cap-ghost, #watchPop .w-cap-ghost > *{background:none;-webkit-backdrop-filter:none;backdrop-filter:none;outline:none;}
-  #watchPop .w-cap-ghost > *{position:relative;z-index:1;overflow:hidden;}
   .w-cap-bg{position:fixed;border-radius:12px;background:rgba(0,0,0,.66);pointer-events:none;}
   @media (min-width:821px), (hover:hover){.watch-pop:not(.cabin):not(.w-sub) .w-cap{display:none;}}
   .watch-pop.cabin .w-pill[data-w="sub"]{display:none;}
@@ -4570,24 +4567,11 @@ function watchGrade(isAgain, now1) {
     if (taskRun && taskRun.theater && (!q.length || taskRun.day && dayRunOver())) return taskTheaterDone();
     paintWatchList();
     const vidNow = !cabin && !reducedMotion() && document.querySelector("#watchPop .w-video"), snap = vidNow ? vidNow.getBoundingClientRect() : null;
-    const capNow = snap && watch.prefs.sub && document.querySelector("#watchPop .w-capline"), capSnap = capNow && capNow.offsetParent && capNow.textContent.trim() ? capNow.getBoundingClientRect() : null, ghost = capSnap && capNow.cloneNode(true);
-    if (ghost) {
-      ghost.removeAttribute("data-id");
-      ghost.classList.remove("row-selected", "cap-over", "w-cap-flow", "w-cap-morph");
-      ghost.classList.add("w-cap-ghost");
-      ghost.setAttribute("aria-hidden", "true");
-      Object.assign(ghost.style, {
-        left: Math.round(capSnap.left) + "px",
-        top: Math.round(capSnap.top) + "px",
-        width: Math.round(capSnap.width) + "px",
-        height: Math.round(capSnap.height) + "px"
-      });
-      capNow.after(ghost);
-    }
+    const capNow = snap && watch.prefs.sub && document.querySelector("#watchPop .w-capline"), capSnap = capNow && capNow.offsetParent && capNow.textContent.trim() ? capNow.getBoundingClientRect() : null;
     const ni = watch.lines.findIndex(x => x.id === nextId);
     if (ni >= 0) watchSeek(ni);
     paintWatchCounts();
-    if (capSnap) requestAnimationFrame(() => watchSuckCap(r.id, isAgain, capSnap, ghost)); else if (snap) requestAnimationFrame(() => watchSuck(r.id, isAgain, snap)); else pillLand(r.id, isAgain);
+    if (capSnap) requestAnimationFrame(() => watchSuckCap(r.id, isAgain, capSnap)); else if (snap) requestAnimationFrame(() => watchSuck(r.id, isAgain, snap)); else pillLand(r.id, isAgain);
   };
   if (reducedMotion() || !cabin) after(); else setTimeout(after, 240);
 }
@@ -4674,9 +4658,21 @@ function pillLand(id, isAgain) {
   if (row && watch.graded && watch.graded.has(id)) row.classList.add(watch.again && watch.again.has(id) ? "graded-again" : "graded-good");
 }
 
-function watchSuckCap(id, isAgain, snap, ghost) {
-  const cap = document.querySelector("#watchPop .w-capline:not(.w-cap-ghost)"), aim = watchAim(id);
-  const nr = cap && cap.textContent.trim() ? cap.getBoundingClientRect() : snap, sr = ghost || watchFlowMorph ? snap : nr, p = aim && {
+function capSpan(a, b) {
+  const left = Math.round(Math.min(a.left, b.left) - 8), top = Math.round(Math.min(a.top, b.top) - 8), right = Math.round(Math.max(a.right, b.right) + 8), bottom = Math.round(Math.max(a.bottom, b.bottom) + 8);
+  return {
+    left,
+    top,
+    right,
+    bottom,
+    width: right - left,
+    height: bottom - top
+  };
+}
+
+function watchSuckCap(id, isAgain, snap) {
+  const cap = document.querySelector("#watchPop .w-capline"), aim = watchAim(id);
+  const nr = cap && cap.textContent.trim() ? cap.getBoundingClientRect() : snap, sr = watchFlowMorph ? snap : capSpan(snap, nr), p = aim && {
     left: aim.x,
     right: aim.x,
     top: aim.y,
@@ -4684,32 +4680,7 @@ function watchSuckCap(id, isAgain, snap, ghost) {
     width: 0,
     height: 0
   };
-  if (!cap || !p || !sr.width) {
-    if (ghost) ghost.remove();
-    return pillLand(id, isAgain);
-  }
-  if (ghost) {
-    ghost.animate([ {
-      opacity: 1
-    }, {
-      opacity: 0
-    } ], {
-      duration: 420,
-      easing: "ease-in",
-      fill: "forwards"
-    }).finished.catch(() => {}).finally(() => ghost.remove());
-    cap.animate([ {
-      opacity: 0
-    }, {
-      opacity: 0,
-      offset: .5
-    }, {
-      opacity: 1
-    } ], {
-      duration: 720,
-      easing: "ease-out"
-    });
-  }
+  if (!cap || !p || !sr.width) return pillLand(id, isAgain);
   if (!document.getElementById("wGoo")) document.body.insertAdjacentHTML("beforeend", '<svg id="wGoo" width="0" height="0" aria-hidden="true" style="position:absolute"><filter id="wGooF"><feGaussianBlur in="SourceGraphic" stdDeviation="6" result="b"/><feColorMatrix in="b" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -8" result="g"/><feComposite in="SourceGraphic" in2="g" operator="atop"/></filter></svg>');
   const col = isAgain ? "#d64545" : "#1f9d55", box = document.createElement("div");
   box.className = "w-flow";
