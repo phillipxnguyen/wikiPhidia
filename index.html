@@ -4560,7 +4560,7 @@ function watchGrade(isAgain, now1) {
     if (!watch) return;
     if (!cabin && !reducedMotion()) {
       (watch.pillWait || (watch.pillWait = new Set)).add(r.id);
-      watch.flowUntil = performance.now() + 1400;
+      watch.flowUntil = performance.now() + 900;
     }
     if (taskRun && taskRun.theater && (!q.length || taskRun.day && dayRunOver())) return taskTheaterDone();
     paintWatchList();
@@ -4654,35 +4654,30 @@ function watchHammer(id, isAgain) {
   const vid = document.querySelector("#watchPop .w-video"), vr = vid && vid.getBoundingClientRect();
   if (!vr || !vr.width) return pillLand(id, isAgain);
   const left = isAgain, dir = left ? 1 : -1, col = isAgain ? "#d64545" : "#1f9d55", grip = isAgain ? [ "#f07070", "#c43c3c", "#7e1f1f" ] : [ "#5fd38d", "#1f9d55", "#0f5c31" ];
-  const cx = Math.round(vr.left + vr.width / 2 - dir * vr.width / 8), cy = Math.round(vr.top + vr.height * .55), px = left ? cx - 227 : cx - 53, py = cy - 116, out = left ? -(px + 300) : innerWidth - px + 20;
+  const cx = Math.round(vr.left + vr.width / 2 - dir * vr.width / 8), cy = Math.round(vr.top + vr.height * .55), px = left ? cx - 227 : cx - 53, py = cy - 116;
   const hm = document.createElement("div");
   hm.className = "w-hammer " + (left ? "from-left" : "from-right");
   hm.innerHTML = HAMMER_SVG(grip);
   hm.style.left = px + "px";
   hm.style.top = py + "px";
   document.body.appendChild(hm);
-  const up = -dir * 55, at = (x, a) => `translateX(${x}px) rotate(${a}deg)`;
   hm.animate([ {
-    transform: at(out, up)
+    transform: `rotate(${-dir * 50}deg)`,
+    opacity: 1,
+    easing: "cubic-bezier(.5, 0, 1, 1)"
   }, {
-    transform: at(0, up),
-    offset: .3,
-    easing: "ease-out"
+    transform: "rotate(0deg)",
+    opacity: 1,
+    offset: .3
   }, {
-    transform: at(0, up - dir * 15),
-    offset: .45,
-    easing: "cubic-bezier(.7, 0, 1, .5)"
+    transform: "rotate(0deg)",
+    opacity: 1,
+    offset: .55
   }, {
-    transform: at(0, 0),
-    offset: .56
-  }, {
-    transform: at(0, up * .2),
-    offset: .68,
-    easing: "ease-in"
-  }, {
-    transform: at(out, up)
+    transform: "rotate(0deg)",
+    opacity: 0
   } ], {
-    duration: 960,
+    duration: 400,
     fill: "forwards"
   }).finished.catch(() => {}).finally(() => hm.remove());
   setTimeout(() => {
@@ -4721,23 +4716,8 @@ function watchHammer(id, isAgain) {
       easing: "ease-out",
       fill: "forwards"
     }).finished.catch(() => {}).finally(() => flash.remove());
-    const v = document.querySelector("#watchPop .w-video");
-    if (v) v.animate([ {
-      transform: "none"
-    }, {
-      transform: `translate(${dir * 6}px, 10px) scale(.98)`
-    }, {
-      transform: `translate(${-dir * 4}px, -4px)`
-    }, {
-      transform: `translate(${dir * 2}px, 2px)`
-    }, {
-      transform: "none"
-    } ], {
-      duration: 380,
-      easing: "ease-out"
-    });
     watchPour(id, isAgain, [ 0, 1 ]);
-  }, 538);
+  }, 120);
 }
 
 document.getElementById("watchPop").addEventListener("mouseover", e => {
