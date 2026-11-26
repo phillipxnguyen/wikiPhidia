@@ -293,6 +293,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-210 | `81205ef` | Búa to hơn (448×192px); chỗ đập luôn chọn sao cho lúc chạm cả búa, kể cả cán, nằm trọn trong màn hình |
 | THEATER-211 | `a807de6` | Búa đập chậm lại: lấy đà lùi một chút rồi mới vung, chạm sau 0,36 giây, cả cú 1 giây |
 | THEATER-212 | `45a16b7` | Thanh nút dưới video cân lại: sub, 🌐 · Easy, 125% · 拼, loop |
+| THEATER-213 | `e00f051` | Thanh nút dưới video gom theo việc: một viên chung (sub, 拼, 🌐) · Easy, 125% · loop riêng một viên |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
