@@ -4649,7 +4649,7 @@ function watchPour(id, isAgain, from) {
 function watchSuck(id, isAgain, vr, cr) {
   const aim = watchAim(id), src = cr || vr, cap = cr && document.querySelector("#watchPop .w-capline");
   if (!aim || !src.width) return pillLand(id, isAgain);
-  const rnd = (a, b) => a + Math.random() * (b - a), w = Math.round(Math.min(src.width, rnd(120, 180))), h = Math.round(Math.min(Math.max(src.height, 56), rnd(44, 64)));
+  const rnd = (a, b) => a + Math.random() * (b - a), w = Math.round(Math.min(src.width, rnd(60, 170))), h = Math.round(Math.min(Math.max(src.height, 56), rnd(28, 56)));
   const mx = Math.round(src.left + w / 2 + (src.width - w) * Math.random()), my = Math.round(cr ? src.top + src.height / 2 + rnd(-8, 8) : src.top + src.height * rnd(.3, .75));
   const sr = {
     left: mx - Math.round(w / 2),
@@ -4674,12 +4674,12 @@ function watchSuck(id, isAgain, vr, cr) {
     cap.after(box);
     cap.classList.add("w-cap-flow");
   } else document.body.appendChild(box);
-  const x1 = Math.round(p.left + p.width / 2), y1 = Math.round(p.top + p.height / 2), z = Math.round(Math.min(sr.height, 28));
+  const x1 = Math.round(p.left + p.width / 2), y1 = Math.round(p.top + p.height / 2), z = Math.round(Math.min(sr.height, 22));
   const pts = [];
-  const cnt = Math.max(40, Math.round(w * h / 150)), tilt = rnd(-.35, .35);
+  const cnt = Math.max(24, Math.round(w * h / 110)), tilt = rnd(-.35, .35);
   for (let k = 0; k < cnt; k++) {
     const a = Math.random() * Math.PI * 2, q = Math.sqrt(Math.random()) * rnd(.7, 1), ex = Math.cos(a) * q * (w - z) / 2, ey = Math.sin(a) * q * (h - z) / 2;
-    pts.push([ Math.round(mx + ex - ey * tilt), Math.round(my + ey + ex * tilt * h / w) ]);
+    pts.push([ Math.round(mx + ex - ey * tilt), Math.round(my + ey + ex * tilt * h / w), Math.round(z * rnd(.5, 1.1)) ]);
   }
   const inX = x1 >= sr.left && x1 <= sr.right, inY = y1 >= sr.top && y1 <= sr.bottom, jit = (a, b) => Math.round(a + Math.random() * (b - a));
   const gx = inX ? jit(Math.max(sr.left + z / 2, x1 - 40), Math.min(sr.right - z / 2, x1 + 40)) : x1 > sr.right ? Math.round(sr.right - z / 2) : Math.round(sr.left + z / 2);
@@ -4694,13 +4694,13 @@ function watchSuck(id, isAgain, vr, cr) {
     width: Math.ceil(Math.max(sr.right, p.right) + 24 - bx) + "px",
     height: Math.ceil(Math.max(sr.bottom, p.bottom) + 24 - by) + "px"
   });
-  const flows = pts.map(([ ax, ay ], k) => {
+  const flows = pts.map(([ ax, ay, zz ], k) => {
     const x0 = ax - bx, y0 = ay - by, hx = gx - bx, hy = gy - by, ex = x1 - bx, ey = y1 - by;
     const d = document.createElement("div"), c2x = ex - Math.round(Math.min(160, Math.abs(x1 - gx) * .4));
     Object.assign(d.style, {
-      width: z + "px",
-      height: z + "px",
-      borderRadius: z + "px",
+      width: zz + "px",
+      height: zz + "px",
+      borderRadius: zz + "px",
       background: col,
       offsetPath: `path("M ${x0} ${y0} C ${hx} ${hy}, ${c2x} ${ey}, ${ex} ${ey}")`,
       offsetRotate: "0deg",
