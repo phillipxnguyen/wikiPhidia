@@ -91,6 +91,7 @@ async function grabTracks() {
   const base = t => t.languageCode.split("-")[0];
   const title = resp && resp.videoDetails && resp.videoDetails.title || document.title.replace(/ - YouTube$/, "");
   const script = /[぀-ヿ]/.test(title) ? "ja" : /[가-힯]/.test(title) ? "ko" : /[一-鿿]/.test(title) ? "zh" : /\bkorean\b/i.test(title) ? "ko" : /\bjapanese\b/i.test(title) ? "ja" : /\b(chinese|mandarin)\b/i.test(title) ? "zh" : "";
+  const titleVi = /[ăâđêôơưạảấầẩẫậắằẳẵặẹẻẽếềểễệỉịọỏốồổỗộớờởỡợụủứừửữựỳỵỷỹ]/i.test(title);
   const inLang = l => {
     const list = tracks.filter(t => base(t) === l);
     return list.find(t => t.kind !== "asr") || list[0];
@@ -161,6 +162,7 @@ async function grabTracks() {
   return {
     id: id,
     title: title,
+    videoLang: script || (titleVi ? "vi" : spoken ? base(spoken) : ""),
     best: found.indexOf(best),
     tracks: found.map(t => ({
       name: t.name,

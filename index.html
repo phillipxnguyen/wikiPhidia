@@ -1878,7 +1878,13 @@ window.onYouTubeIframeAPIReady = function(){
   #ytDialog .paused-card{position:relative;box-sizing:border-box;width:min(400px, 100%);}
   .dialog-x{position:absolute;top:8px;right:8px;width:44px;height:44px;min-height:0;padding:0;border-radius:22px;font-size:22px;line-height:44px;}
   @media (hover:hover){.dialog-x:hover{background:var(--danger-soft);color:var(--danger);}}
-  #ytTrack{display:block;width:100%;margin-bottom:10px;}
+  #ytTrack{display:block;flex:1;min-width:0;width:100%;}
+  .yt-pick{display:flex;gap:8px;align-items:stretch;margin-bottom:10px;}
+  .yt-flag{flex:none;position:relative;width:56px;padding:0;border:2px solid transparent;border-radius:8px;background:var(--surface-2);cursor:pointer;overflow:hidden;}
+  .yt-flag > i{position:absolute;left:10px;top:8px;right:10px;bottom:8px;border-radius:2px;background:var(--flag) center / cover;box-shadow:0 2px 6px rgba(0,0,0,.2);transform-origin:0 50%;animation:fpWave 600ms ease-in-out infinite alternate;}
+  .yt-flag > i::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg, rgba(0,0,0,.18), rgba(255,255,255,.22), rgba(0,0,0,.18), rgba(255,255,255,.22)) 0 0 / 200% 100%;animation:fpFold 900ms linear infinite;}
+  .yt-flag[aria-pressed="true"]{border-color:var(--accent);background:color-mix(in srgb, var(--accent) 14%, var(--surface-2));}
+  @media (prefers-reduced-motion: reduce){.yt-flag > i, .yt-flag > i::after{animation:none;}}
   .yt-btns > *{flex:1;min-width:0;}
   .yt-btns button{width:100%;padding-left:8px;padding-right:8px;}
   .yt-tr{position:relative;}
@@ -2417,6 +2423,12 @@ window.onYouTubeIframeAPIReady = function(){
   .w-ctl-c{display:none;}
   .w-ctl-r{display:none;}
   @container (max-width:430px){.w-ctl{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 8px;}.w-ctl-l{flex-wrap:nowrap;}}
+  .w-trmenu{position:absolute;z-index:40;display:flex;gap:2px;padding:4px;border-radius:12px;background:rgba(24,24,24,.96);box-shadow:0 8px 24px rgba(0,0,0,.5);}
+  .w-trmenu button{display:inline-flex;align-items:center;justify-content:center;width:40px;height:36px;padding:0;border:0;border-radius:8px;background:none;color:var(--tw-ink);cursor:pointer;}
+  .w-trmenu button[aria-checked="true"]{background:rgba(255,255,255,.18);}
+  .w-trmenu svg, .w-trpick svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+  .w-trmenu .flag-dot, .w-trpick .flag-dot{margin:0;}
+  @media (hover:hover){.w-trmenu button:hover{background:rgba(255,255,255,.1);}}
   .w-pill{display:inline-flex;align-items:center;justify-content:center;flex:none;min-width:36px;height:36px;box-sizing:border-box;padding:0 6px;border:0;border-radius:18px;background:transparent;color:var(--tw-ink);font-size:15px;line-height:20px;font-weight:700;white-space:nowrap;cursor:pointer;}
   .w-pill svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
   .w-pill.on{background:#ffffff;color:#0f0f0f;}
@@ -3071,7 +3083,7 @@ window.onYouTubeIframeAPIReady = function(){
     <div class="emoji">🎬</div>
     <h2 id="ytDialogTitle">YouTube subtitles</h2>
     <p id="ytDialogText">Getting the subtitles…</p>
-    <select id="ytTrack" aria-label="Subtitles language" disabled></select>
+    <div class="yt-pick"><select id="ytTrack" aria-label="Subtitles language" disabled></select><button id="ytFlag" type="button" class="yt-flag" hidden aria-pressed="false" title="The video's language: use its flag for this lesson"><i></i></button></div>
     <div class="cloud-row yt-btns"><button id="ytOnlySubs" disabled>Subtitles only</button><div class="yt-tr"><button id="ytWithTranslation" class="primary" aria-haspopup="menu" aria-expanded="false" disabled>With translation ▾</button><div id="ytTransMenu" class="yt-menu" role="menu" hidden></div></div></div>
   </div>
 </div>
@@ -3482,7 +3494,7 @@ function watchTranslation(r) {
 }
 
 function watchChinese() {
-  return watch.lines.some(r => /[㐀-鿿]/.test(r.q));
+  return watchVi() ? viTrLang() === "zh-CN" || watch.lines.some(r => /[㐀-鿿]/.test(r.q)) : watch.lines.some(r => /[㐀-鿿]/.test(r.q));
 }
 
 function pinyinLine(text) {
@@ -3885,7 +3897,91 @@ function watchWordsHtml(html, lang, pin) {
   return box.innerHTML;
 }
 
+const VI_TR_LANGS = [ "en", "zh-CN", "ko", "ja" ], VI_TR_KEY = "flashcards.viTr", TR_GLOBE = '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M3 10h14M10 3c2.6 2.6 2.6 11.4 0 14M10 3c-2.6 2.6-2.6 11.4 0 14"/></svg>';
+
+let viTrStore = null;
+
+const viTrPending = new Set;
+
+function watchVi() {
+  return !!watch && (studyLang === "vi" || studyLang === "auto" && autoDetectLangs(watch.lines.map(r => r.q))[0] === "vi");
+}
+
+function viTrLang() {
+  const l = library.find(x => x.id === currentLessonId);
+  return l && VI_TR_LANGS.includes(l.trLang) ? l.trLang : "";
+}
+
+function viTrOf(tl, text) {
+  if (!viTrStore) viTrStore = readLocal(VI_TR_KEY) || {};
+  return viTrStore[tl + "\u0001" + text] || "";
+}
+
+function viSame(tl, text) {
+  return !tl || detectLang(text || "").split("-")[0] === tl.split("-")[0];
+}
+
+async function viTrFill() {
+  const tl = viTrLang();
+  if (!watch || !tl || !navigator.onLine) return;
+  const need = [ ...new Set(watch.lines.map(r => oneLine(r.q || ""))) ].filter(t => t && !viSame(tl, t) && !viTrOf(tl, t) && !viTrPending.has(tl + "\u0001" + t));
+  if (!need.length) return;
+  need.forEach(t => viTrPending.add(tl + "\u0001" + t));
+  for (let i = 0; i < need.length; i += 8) {
+    const part = need.slice(i, i + 8), res = await translateBatch(part, tl).catch(() => []);
+    viTrOf("", "");
+    part.forEach((t, k) => {
+      viTrPending.delete(tl + "\u0001" + t);
+      if (res[k] && res[k] !== t) viTrStore[tl + "\u0001" + t] = res[k];
+    });
+    const keys = Object.keys(viTrStore);
+    if (keys.length > MT_MAX) keys.slice(0, keys.length - MT_MAX).forEach(k => delete viTrStore[k]);
+    try {
+      localStorage.setItem(VI_TR_KEY, JSON.stringify(viTrStore));
+    } catch (e) {}
+    if (watch && viTrLang() === tl) {
+      watch.rowHtml = null;
+      paintWatchList();
+      paintWatchLine();
+    }
+  }
+}
+
+function setViTrLang(tl) {
+  const l = library.find(x => x.id === currentLessonId);
+  if (!l || !watch) return;
+  if (VI_TR_LANGS.includes(tl)) l.trLang = tl; else delete l.trLang;
+  scheduleAutoSave();
+  paintWatch();
+  viTrFill();
+}
+
+function viLineHtml(r) {
+  const tl = viTrLang(), src = oneLine(r.q || ""), main = viSame(tl, src) ? "" : viTrOf(tl, src), wait = !!tl && !main && !viSame(tl, src) && viTrPending.has(tl + "\u0001" + src);
+  const text = main || src, lang = detectLang(text).split("-")[0], pin = watch.prefs.pin && typeof pinyinPro !== "undefined" && /[\u3400-\u9fff]/.test(text);
+  const html = watchWordsHtml(highlightVocabInHtml(main ? escapeHtml(main) : r.qHtml || escapeHtml(r.q), r.id), lang, pin);
+  return `<div class="w-text${pin ? " w-ruby" : ""}">${html}</div>` + (main ? `<div class="w-tr">${escapeHtml(src)}</div>` : wait ? '<div class="w-tr tr-wait">Translating…</div>' : "");
+}
+
+function viTrPill() {
+  const tl = viTrLang(), cc = tl && LANG_COUNTRY[tl];
+  return `<button type="button" class="w-pill w-trpick${tl ? " on" : ""}" data-w="trpick" aria-haspopup="menu" aria-pressed="${!!tl}">${cc ? `<i class="flag-dot" style='--flag:${flagUrl(cc)}'></i>` : TR_GLOBE}</button>`;
+}
+
+function viTrMenu(btn) {
+  const box = document.getElementById("watchPop"), old = box.querySelector(".w-trmenu");
+  if (old) return old.remove();
+  const menu = document.createElement("div"), tl = viTrLang(), b = btn.getBoundingClientRect(), pop = box.getBoundingClientRect();
+  menu.className = "w-trmenu";
+  menu.setAttribute("role", "menu");
+  menu.innerHTML = [ "" ].concat(VI_TR_LANGS).map(l => `<button type="button" role="menuitemradio" aria-checked="${l === tl}" data-trl="${l}">${l ? `<i class="flag-dot" style='--flag:${flagUrl(LANG_COUNTRY[l])}'></i>` : TR_GLOBE}</button>`).join("");
+  box.appendChild(menu);
+  menu.style.left = Math.round(b.left - pop.left + b.width / 2 - menu.offsetWidth / 2) + "px";
+  menu.style.top = Math.round(b.top - pop.top - menu.offsetHeight - 8) + "px";
+}
+
 function watchLineHtml(r) {
+  if (watchVi()) return viLineHtml(r);
   const p = watch.prefs, pin = p.pin && watchChinese() && typeof pinyinPro !== "undefined", tr = p.trans ? watchLineTr(r) : "", wait = p.trans && !tr && !!answerFill && answerFill.has(r.id);
   const lang = detectLang(r.q || "").split("-")[0];
   const text = watchWordsHtml(highlightVocabInHtml(r.qHtml || escapeHtml(r.q), r.id), lang, pin && /[\u3400-\u9fff]/.test(r.q || ""));
@@ -4358,7 +4454,7 @@ function watchPrefChanged(k) {
     watchKeepRow(anchor);
   });
   if (k === "trans" || k === "cabin" || k === "pin") {
-    if (p.trans || p.cabin) mtFill(watch.lines);
+    if (!watchVi() && (p.trans || p.cabin)) mtFill(watch.lines);
     watch.rowHtml = null;
     paintWatchList();
     paintWatchLine();
@@ -4382,10 +4478,10 @@ function paintWatch() {
   box.dataset.size = p.size || 100;
   box.className = "watch-pop" + (p.cabin ? "" : " with-list") + (p.pin && watchChinese() ? " pinned" : "") + (p.cabin ? " cabin" : "") + (p.sub ? " w-sub" : "");
   watchModeTabs();
-  if (p.trans || p.cabin) mtFill(watch.lines);
+  if (watchVi()) viTrFill(); else if (p.trans || p.cabin) mtFill(watch.lines);
   watch.countSig = "";
   const pill = (k, title, label) => `<button type="button" class="w-pill${p[k] ? " on" : ""}" data-w="${k}" aria-pressed="${!!p[k]}" title="${title}">${label}</button>`;
-  const tools = `${pill("loop", "Loop the line being said", '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 9V8a3 3 0 0 1 3-3h8M13 3l2 2-2 2M16 11v1a3 3 0 0 1-3 3H5M7 17l-2-2 2-2"/></svg>')}${pill("sub", "The line over the video", '<svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2" y="4" width="16" height="12" rx="2"/><path d="M5 12h6M13 12h2M5 9h2M9 9h6"/></svg>')}${watchChinese() ? pill("pin", "Pinyin", "拼") : ""}${pill("trans", "The translation (the lesson's own, or a machine translation when the line has none)", '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M3 10h14M10 3c2.6 2.6 2.6 11.4 0 14M10 3c-2.6 2.6-2.6 11.4 0 14"/></svg>')}<select class="w-join" aria-label="Join lines" title="How long a stretch you study at once: Easy one line, Medium 15 s, Hard 30 s">${[ [ 0, "Easy" ], [ 15, "Medium" ], [ 30, "Hard" ] ].map(([v, t]) => `<option value="${v}"${v === Math.min(30, joinedSeconds()) ? " selected" : ""}>${t}</option>`).join("")}</select><select class="w-size" aria-label="${p.cabin ? "Subtitle size" : "Text size of the list"}" title="${p.cabin ? "Subtitle size" : "Text size of the list"}">${[ 100, 125, 150 ].map(v => `<option value="${v}"${v === (p.size || 100) ? " selected" : ""}>${v}%</option>`).join("")}</select><select class="w-rate" aria-label="Speed" title="Speed">${[ ...document.getElementById("playbackSpeed").options ].map(o => `<option value="${o.value}"${Number(o.value) === p.rate ? " selected" : ""}>${o.textContent}</option>`).join("")}</select>`;
+  const tools = `${pill("loop", "Loop the line being said", '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 9V8a3 3 0 0 1 3-3h8M13 3l2 2-2 2M16 11v1a3 3 0 0 1-3 3H5M7 17l-2-2 2-2"/></svg>')}${pill("sub", "The line over the video", '<svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2" y="4" width="16" height="12" rx="2"/><path d="M5 12h6M13 12h2M5 9h2M9 9h6"/></svg>')}${watchChinese() ? pill("pin", "Pinyin", "拼") : ""}${(watchVi() ? viTrPill() : pill("trans", "The translation (the lesson's own, or a machine translation when the line has none)", TR_GLOBE))}<select class="w-join" aria-label="Join lines" title="How long a stretch you study at once: Easy one line, Medium 15 s, Hard 30 s">${[ [ 0, "Easy" ], [ 15, "Medium" ], [ 30, "Hard" ] ].map(([v, t]) => `<option value="${v}"${v === Math.min(30, joinedSeconds()) ? " selected" : ""}>${t}</option>`).join("")}</select><select class="w-size" aria-label="${p.cabin ? "Subtitle size" : "Text size of the list"}" title="${p.cabin ? "Subtitle size" : "Text size of the list"}">${[ 100, 125, 150 ].map(v => `<option value="${v}"${v === (p.size || 100) ? " selected" : ""}>${v}%</option>`).join("")}</select><select class="w-rate" aria-label="Speed" title="Speed">${[ ...document.getElementById("playbackSpeed").options ].map(o => `<option value="${o.value}"${Number(o.value) === p.rate ? " selected" : ""}>${o.textContent}</option>`).join("")}</select>`;
   box.querySelector(".w-ctl-l").innerHTML = tools;
   syncWatchPills();
   box.querySelector(".w-ctl-c").innerHTML = "";
@@ -4954,6 +5050,12 @@ function fmtTime(t) {
 
 document.getElementById("watchPop").addEventListener("click", e => {
   if (!watch || watch.capMoved) return;
+  const trMenu = document.querySelector("#watchPop .w-trmenu"), trl = e.target.closest("[data-trl]");
+  if (trl) {
+    trMenu.remove();
+    return setViTrLang(trl.dataset.trl);
+  }
+  if (trMenu && !trMenu.contains(e.target) && !e.target.closest('[data-w="trpick"]')) trMenu.remove();
   const b = e.target.closest("[data-w]"), cap = !watch.prefs.cabin || e.target.closest(".w-capline.reveal") ? e.target.closest(".w-capline[data-id]") : null, row = e.target.closest(".w-row") || cap;
   const mk = row && e.target.closest("mark.vocab-hit, mark.vocab-own");
   if (mk && getSelection().isCollapsed) {
@@ -5021,6 +5123,7 @@ document.getElementById("watchPop").addEventListener("click", e => {
     watchPrefChanged("cabin");
     return watchSeek(Math.max(0, watch.at), !watch.prefs.cabin);
   }
+  if (k === "trpick") return viTrMenu(b);
   watch.prefs[k] = !watch.prefs[k];
   saveWatchPrefs();
   watchPrefChanged(k);
@@ -16557,6 +16660,9 @@ function normalizeLesson(data, fileName) {
       url: typeof data.pdf.url === "string" && /^https?:\/\//i.test(data.pdf.url) ? data.pdf.url : ""
     } : null,
     vocabOnly: !!data.vocabOnly,
+    ...(VI_TR_LANGS.includes(data.trLang) ? {
+      trLang: data.trLang
+    } : {}),
     ...(bookRef(data.book) ? {
       book: bookRef(data.book)
     } : {}),
@@ -16839,6 +16945,9 @@ function serializeCurrentLesson() {
     vocabOnly: !!(prev && prev.vocabOnly),
     ...(prev && prev.book ? {
       book: prev.book
+    } : {}),
+    ...(prev && VI_TR_LANGS.includes(prev.trLang) ? {
+      trLang: prev.trLang
     } : {}),
     ...(prev && prev.web ? {
       web: prev.web
@@ -21057,6 +21166,7 @@ function chooseYouTubeImport(how) {
   importFromYouTube({
     id: d.id,
     title: d.title,
+    flag: ytImport.flag || "",
     lang: track.lang,
     target: target,
     lines: (Array.isArray(track.lines) ? track.lines : []).map((e, i) => ({
@@ -21131,7 +21241,26 @@ function syncYouTubeTrackNote() {
   const opts = subs.map(([l, t]) => [ "t:" + d.tracks.indexOf(t), `<span>${escapeHtml(String(t.name || name(l)))}</span>`, l, "sub" ]).concat(langs.slice().reverse().map(l => [ "auto:" + l, "Translate automatically → " + name(l), l ]));
   document.getElementById("ytTransMenu").innerHTML = opts.map(([v, label, , kind]) => `<button role="menuitem" data-trans="${v}"${kind ? ` class="${kind}"` : ""}>${label}</button>`).join("");
   document.getElementById("ytDialogText").textContent = "Make a lesson from this video's subtitles.";
+  const flag = document.getElementById("ytFlag"), vl = ytVideoLang(d), own = YT_STUDY_LANGS[base(track)] || YT_STUDY_LANGS[track.lang];
+  flag.hidden = !vl || vl === own;
+  if (flag.hidden) ytImport.flag = null;
+  flag.setAttribute("aria-pressed", String(!flag.hidden && ytImport.flag === vl));
+  if (!flag.hidden) flag.firstChild.style.setProperty("--flag", flagUrl(LANG_COUNTRY[vl]));
 }
+
+function ytVideoLang(d) {
+  const t = String(d.title || ""), raw = String(d.videoLang || "");
+  const guess = raw || (/[ăâđêôơưạảấầẩẫậắằẳẵặẹẻẽếềểễệỉịọỏốồổỗộớờởỡợụủứừửữựỳỵỷỹ]/i.test(t) ? "vi" : /[぀-ヿ]/.test(t) ? "ja" : /[가-힯]/.test(t) ? "ko" : /[一-鿿]/.test(t) ? "zh" : "");
+  const l = YT_STUDY_LANGS[guess] || YT_STUDY_LANGS[guess.split("-")[0]];
+  return l && LANG_COUNTRY[l] ? l : "";
+}
+
+document.getElementById("ytFlag").onclick = e => {
+  const d = ytImport && ytImport.data, vl = d && ytVideoLang(d);
+  if (!vl) return;
+  ytImport.flag = ytImport.flag === vl ? null : vl;
+  e.currentTarget.setAttribute("aria-pressed", String(ytImport.flag === vl));
+};
 
 document.getElementById("ytTrack").addEventListener("change", syncYouTubeTrackNote);
 
@@ -21194,7 +21323,7 @@ async function importFromYouTube(d, translate) {
     showView("study");
     return finishYouTubeImport("Already in your lessons");
   }
-  const studyLang = YT_STUDY_LANGS[d.lang] || YT_STUDY_LANGS[String(d.lang).split("-")[0]] || "auto";
+  const studyLang = VALID_STUDY_LANGS.includes(d.flag) && d.flag !== "auto" ? d.flag : YT_STUDY_LANGS[d.lang] || YT_STUDY_LANGS[String(d.lang).split("-")[0]] || "auto";
   const cards = d.lines.filter(l => l && typeof l.q === "string" && l.q.trim() && isFinite(Number(l.t))).map(l => ({
     q: l.q.trim().slice(0, 2e3),
     a: typeof l.a === "string" ? l.a.trim().slice(0, 2e3) : "",
