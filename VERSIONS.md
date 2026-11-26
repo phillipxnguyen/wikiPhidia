@@ -285,6 +285,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-202 | `5f7b464` | Bản dịch dưới sub trong Watch: màu trắng, cỡ chữ cùng tỉ lệ như Interpreter (video hẹp: 17/20/24px thay vì 13/17/21px) |
 | THEATER-203 | `332489d` | Kiểm tra: nút cờ dịch (video tiếng Việt) không còn tắt sáng khi bấm nút khác; menu cờ đóng khi vẽ lại theater; nhận diện tiếng Việt chỉ tính một lần cho mỗi bộ câu |
 | THEATER-204 | `0e7dcf4` | Video tiếng Việt: nút 🌐 ở trang list (dưới video) cũng mở hàng cờ, dùng chung lựa chọn với theater; mỗi câu hiện bản dịch sang ngôn ngữ đã chọn bên dưới |
+| THEATER-205 | `80120a2` | Tạm dừng thay vì dừng hẳn: mở ô sửa thẻ, ô ＋, popup từ, phát âm từ hay hộp thoại khi video đang chạy chỉ tạm dừng; đóng hết là video tự chạy tiếp (mọi mode, cả trang list); video đang dừng sẵn thì giữ nguyên |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
