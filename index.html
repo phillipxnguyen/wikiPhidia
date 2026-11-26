@@ -17134,9 +17134,11 @@ function unswallowLines(cards) {
 }
 
 function foldJoinDupes(cards, ser) {
-  const key = c => Math.round(Number(c.time) * 10) + "\u0001" + oneLine(c.q || "");
+  const key = c => (c.srcLessonId || "") + "\u0001" + Math.round(Number(c.time) * 10) + "\u0001" + oneLine(c.q || "");
   const owner = new Map;
-  cards.forEach(c => c.time != null && c.src && c.src.length && c.src.forEach((raw, i) => raw && raw.time != null && owner.set(key(raw), [ c, i ])));
+  cards.forEach(c => c.time != null && c.src && c.src.length && c.src.forEach((raw, i) => raw && raw.time != null && owner.set(key(Object.assign({
+    srcLessonId: c.srcLessonId
+  }, raw)), [ c, i ])));
   if (!owner.size) return cards;
   const out = cards.filter(c => {
     if (c.time == null || c.src && c.src.length) return true;
@@ -17694,7 +17696,7 @@ function openLesson(lesson) {
     return r;
   });
   const sig = rows.map(r => r.q).join("\u0001");
-  rows = unswallowLines(foldJoinDupes(rows, serializeCard));
+  if (!isVirtualId(lesson.id)) rows = unswallowLines(foldJoinDupes(rows, serializeCard));
   if (rows.map(r => r.q).join("\u0001") !== sig) queueMicrotask(() => currentLessonId === lesson.id && scheduleAutoSave());
   const playable = url => !!extractYouTubeId(url || "") || /(^|\.)(tiktok|douyin)\.com\//i.test((url || "").replace(/^https?:\/\//i, ""));
   if (!isVirtualId(lesson.id) && !playable(lesson.mediaUrl) && rows.some(r => r.time != null)) {
