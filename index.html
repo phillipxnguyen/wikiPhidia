@@ -2600,10 +2600,18 @@ window.onYouTubeIframeAPIReady = function(){
   html.focus-on.in-task .main-inner{padding:0;border-radius:0;background:none;box-shadow:none;}
   @media (max-width:820px) and (hover:none){html.focus-on .focus-exit{display:none;}html.focus-on .toolbar-flag{cursor:pointer;pointer-events:auto;}}
   .screen-cut{position:fixed;inset:0;z-index:940;overflow:hidden;pointer-events:none;}
-  .w-flow{position:fixed;inset:0;z-index:960;overflow:hidden;pointer-events:none;filter:url(#wGooF);}
-  .w-flow > div{position:absolute;left:0;top:0;}
-  .w-cap .w-capline.w-cap-flow{-webkit-backdrop-filter:none;backdrop-filter:none;}
-  .w-cap .w-capline.w-cap-flow > *{position:relative;z-index:1;}
+  .w-hammer{position:fixed;z-index:960;width:240px;height:88px;pointer-events:none;filter:drop-shadow(0 6px 10px rgba(0,0,0,.45));}
+  .w-hammer > i{position:absolute;display:flex;align-items:center;justify-content:center;font-style:normal;}
+  .w-hammer > .w-hm-stick{top:40px;width:200px;height:8px;border-radius:4px;background:linear-gradient(#a0703f, #6b4423);}
+  .w-hammer > .w-hm-head{top:0;width:56px;height:88px;border-radius:8px;color:#ffffff;font-size:32px;font-weight:700;box-shadow:inset 0 -8px 0 rgba(0,0,0,.18);}
+  .w-hammer.from-left{transform-origin:0 44px;}
+  .w-hammer.from-left > .w-hm-stick{left:0;}
+  .w-hammer.from-left > .w-hm-head{right:0;}
+  .w-hammer.from-right{transform-origin:240px 44px;}
+  .w-hammer.from-right > .w-hm-stick{right:0;}
+  .w-hammer.from-right > .w-hm-head{left:0;}
+  .w-hit{position:fixed;z-index:959;width:24px;height:24px;margin:-12px 0 0 -12px;border-radius:12px;border:4px solid;pointer-events:none;}
+  #watchPop .w-cap-ghost{position:fixed;z-index:958;margin:0;max-width:none;max-height:none;box-sizing:border-box;overflow:hidden;pointer-events:none;outline:none;}
   .w-t.filling{isolation:isolate;color:#ffffff;transition:color .3s ease;}
   .w-row:has(> .w-row-pour){isolation:isolate;}
   .w-row-pour{position:absolute;inset:0;z-index:-1;pointer-events:none;}
@@ -4562,11 +4570,24 @@ function watchGrade(isAgain, now1) {
     if (taskRun && taskRun.theater && (!q.length || taskRun.day && dayRunOver())) return taskTheaterDone();
     paintWatchList();
     const vidNow = !cabin && !reducedMotion() && document.querySelector("#watchPop .w-video"), snap = vidNow ? vidNow.getBoundingClientRect() : null;
-    const capNow = snap && watch.prefs.sub && document.querySelector("#watchPop .w-capline"), capSnap = capNow && capNow.offsetParent && capNow.textContent.trim() ? capNow.getBoundingClientRect() : null;
+    const capNow = snap && watch.prefs.sub && document.querySelector("#watchPop .w-capline"), capSnap = capNow && capNow.offsetParent && capNow.textContent.trim() ? capNow.getBoundingClientRect() : null, ghost = capSnap && capNow.cloneNode(true);
+    if (ghost) {
+      ghost.removeAttribute("data-id");
+      ghost.classList.remove("row-selected", "cap-over");
+      ghost.classList.add("w-cap-ghost");
+      ghost.setAttribute("aria-hidden", "true");
+      Object.assign(ghost.style, {
+        left: Math.round(capSnap.left) + "px",
+        top: Math.round(capSnap.top) + "px",
+        width: Math.round(capSnap.width) + "px",
+        height: Math.round(capSnap.height) + "px"
+      });
+      capNow.after(ghost);
+    }
     const ni = watch.lines.findIndex(x => x.id === nextId);
     if (ni >= 0) watchSeek(ni);
     paintWatchCounts();
-    if (snap) requestAnimationFrame(() => watchSuck(r.id, isAgain, snap, capSnap)); else pillLand(r.id, isAgain);
+    if (snap) requestAnimationFrame(() => watchHammer(r.id, isAgain, ghost)); else pillLand(r.id, isAgain);
   };
   if (reducedMotion() || !cabin) after(); else setTimeout(after, 240);
 }
@@ -4646,107 +4667,124 @@ function watchPour(id, isAgain, from) {
   });
 }
 
-function watchSuck(id, isAgain, vr, cr) {
-  const aim = watchAim(id), src = cr || vr, cap = cr && document.querySelector("#watchPop .w-capline");
-  if (!aim || !src.width) return pillLand(id, isAgain);
-  const rnd = (a, b) => a + Math.random() * (b - a), w = Math.round(Math.min(src.width, rnd(20, 40))), h = Math.round(Math.min(Math.max(src.height, 20), rnd(14, 20)));
-  const mx = Math.round(src.left + w / 2 + (src.width - w) * Math.random()), my = Math.round(cr ? src.top + src.height / 2 + rnd(-8, 8) : src.top + src.height * rnd(.3, .75));
-  const sr = {
-    left: mx - Math.round(w / 2),
-    right: mx - Math.round(w / 2) + w,
-    top: my - Math.round(h / 2),
-    bottom: my - Math.round(h / 2) + h,
-    width: w,
-    height: h
-  }, p = {
+function watchHammer(id, isAgain, ghost) {
+  const aim = watchAim(id), row = document.querySelector(`#watchPop .w-row[data-id="${id}"]`), lst = document.querySelector("#watchPop .w-list");
+  if (!aim || !row) {
+    if (ghost) ghost.remove();
+    return pillLand(id, isAgain);
+  }
+  const cap = ghost && document.querySelector("#watchPop .w-capline:not(.w-cap-ghost)"), rr = row.getBoundingClientRect(), lr = lst ? lst.getBoundingClientRect() : rr, seen = rr.bottom > lr.top + 8 && rr.top < lr.bottom - 8;
+  let hitEl = ghost;
+  if (!hitEl && seen) {
+    hitEl = row.cloneNode(true);
+    hitEl.removeAttribute("data-id");
+    hitEl.classList.remove("row-selected");
+    hitEl.classList.add("w-cap-ghost");
+    hitEl.setAttribute("aria-hidden", "true");
+    Object.assign(hitEl.style, {
+      left: Math.round(rr.left) + "px",
+      top: Math.round(rr.top) + "px",
+      width: Math.round(rr.width) + "px",
+      height: Math.round(rr.height) + "px",
+      background: (() => {
+        for (let el = row; el; el = el.parentElement) {
+          const c = getComputedStyle(el).backgroundColor;
+          if (c && c !== "transparent" && !/rgba\(.*, 0\)$/.test(c)) return c;
+        }
+        return "#111111";
+      })()
+    });
+    document.getElementById("watchPop").appendChild(hitEl);
+  }
+  const tr = hitEl ? hitEl.getBoundingClientRect() : {
     left: aim.x,
-    right: aim.x,
     top: aim.y,
-    bottom: aim.y,
     width: 0,
     height: 0
-  };
-  if (!document.getElementById("wGoo")) document.body.insertAdjacentHTML("beforeend", '<svg id="wGoo" width="0" height="0" aria-hidden="true" style="position:absolute"><filter id="wGooF"><feGaussianBlur in="SourceGraphic" stdDeviation="6" result="b"/><feColorMatrix in="b" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -8" result="g"/><feComposite in="SourceGraphic" in2="g" operator="atop"/></filter></svg>');
-  const col = isAgain ? "#d64545" : "#1f9d55", box = document.createElement("div");
-  box.className = "w-flow";
-  if (cap) {
-    box.style.zIndex = "auto";
-    cap.after(box);
-    cap.classList.add("w-cap-flow");
-  } else document.body.appendChild(box);
-  const x1 = Math.round(p.left + p.width / 2), y1 = Math.round(p.top + p.height / 2), z = 18;
-  const pts = [];
-  const cnt = 36, tilt = rnd(-.35, .35);
-  for (let k = 0; k < cnt; k++) {
-    const a = Math.random() * Math.PI * 2, q = Math.sqrt(Math.random()) * rnd(.7, 1), ex = Math.cos(a) * q * (w - z) / 2, ey = Math.sin(a) * q * (h - z) / 2;
-    pts.push([ Math.round(mx + ex - ey * tilt), Math.round(my + ey + ex * tilt * h / w), Math.round(z * rnd(.75, 1)) ]);
-  }
-  const order = pts.map(([ x, y ]) => Math.hypot(x1 - x, y1 - y)).map((d, i) => [ d, i ]).sort((a, b) => a[0] - b[0]).map(([, i]) => i), rank = [];
-  order.forEach((i, k) => rank[i] = k);
-  const k1 = rnd(.2, .4), k2 = rnd(.6, .85), b1 = rnd(-.35, .35), b2 = rnd(-.2, .2), cap140 = v => Math.max(-140, Math.min(140, v));
-  const ctl = (ex, ey) => {
-    const dx = ex - mx, dy = ey - my, L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L, o1 = cap140(b1 * L), o2 = cap140(b2 * L);
-    return [ mx + dx * k1 + nx * o1, my + dy * k1 + ny * o1, mx + dx * k2 + nx * o2, my + dy * k2 + ny * o2 ];
-  };
-  const jit = pts.map(() => [ rnd(-3, 3), rnd(-3, 3), rnd(-2, 2), rnd(-2, 2) ]);
-  const route = (k, ex, ey) => {
-    const [ c1x, c1y, c2x, c2y ] = ctl(ex, ey), j = jit[k], r = Math.round;
-    return `path("M ${pts[k][0]} ${pts[k][1]} C ${r(c1x + j[0])} ${r(c1y + j[1])}, ${r(c2x + j[2])} ${r(c2y + j[3])}, ${ex} ${ey}")`;
-  };
-  const drops = pts.map(([ ax, ay, zz ], k) => {
-    const d = document.createElement("div");
-    Object.assign(d.style, {
-      width: zz + "px",
-      height: zz + "px",
-      borderRadius: zz + "px",
-      background: col,
-      offsetPath: route(k, x1, y1),
-      offsetRotate: "0deg",
-      offsetDistance: "0%"
-    });
-    box.appendChild(d);
-    return d;
-  });
-  let tx = x1, ty = y1;
-  const follow = () => {
-    if (!box.isConnected) return;
-    const q = watchAim(id);
-    if (q && (q.x !== tx || q.y !== ty)) {
-      tx = q.x;
-      ty = q.y;
-      drops.forEach((d, k) => d.style.offsetPath = route(k, tx, ty));
-    }
-    requestAnimationFrame(follow);
-  };
-  requestAnimationFrame(follow);
-  const flows = drops.map((d, k) => d.animate([ {
-    offsetDistance: "0%",
-    opacity: .9,
-    transform: "scale(1)"
+  }, cx = Math.round(tr.left + tr.width / 2), cy = Math.round(tr.top + tr.height / 2), left = isAgain, dir = left ? 1 : -1;
+  const col = isAgain ? "#d64545" : "#1f9d55", hm = document.createElement("div"), px = left ? cx - 212 : cx - 28, py = cy - 44, out = left ? -(px + 260) : innerWidth - px + 20;
+  hm.className = "w-hammer " + (left ? "from-left" : "from-right");
+  hm.innerHTML = '<i class="w-hm-stick"></i><i class="w-hm-head"></i>';
+  const head = hm.querySelector(".w-hm-head");
+  head.style.background = col;
+  head.textContent = isAgain ? "✕" : "✓";
+  hm.style.left = px + "px";
+  hm.style.top = py + "px";
+  document.body.appendChild(hm);
+  const up = -dir * 55, at = (x, a) => `translateX(${x}px) rotate(${a}deg)`;
+  hm.animate([ {
+    transform: at(out, up)
   }, {
-    offsetDistance: "94%",
-    opacity: .9,
-    transform: `scale(${Math.min(1, 16 / z)})`,
-    offset: .94
+    transform: at(0, up),
+    offset: .3,
+    easing: "ease-out"
   }, {
-    offsetDistance: "100%",
-    opacity: .9,
-    transform: `scale(${Math.min(1, 10 / z)})`
+    transform: at(0, up - dir * 15),
+    offset: .45,
+    easing: "cubic-bezier(.7, 0, 1, .5)"
+  }, {
+    transform: at(0, 0),
+    offset: .56
+  }, {
+    transform: at(0, up * .2),
+    offset: .68,
+    easing: "ease-in"
+  }, {
+    transform: at(out, up)
   } ], {
-    duration: 680,
-    delay: Math.round(200 * rank[k] / Math.max(1, pts.length - 1)),
-    easing: "cubic-bezier(.4, 0, .5, 1)",
-    fill: "both"
-  }).finished.then(() => d.remove()));
-  Promise.race(flows).then(() => {
-    const [, , c2x, c2y] = ctl(tx, ty), dl = Math.hypot(tx - c2x, ty - c2y) || 1;
-    watchPour(id, isAgain, [ (tx - c2x) / dl, (ty - c2y) / dl ]);
-  }).catch(() => {});
-  Promise.all(flows).catch(() => {}).finally(() => {
-    pillLand(id, isAgain);
-    box.remove();
-    if (cap && !document.querySelector("#watchPop .w-flow")) cap.classList.remove("w-cap-flow");
+    duration: 960,
+    fill: "forwards"
+  }).finished.catch(() => {}).finally(() => hm.remove());
+  if (hitEl) hitEl.style.visibility = "visible";
+  if (cap) cap.animate([ {
+    opacity: 0
+  }, {
+    opacity: 0,
+    offset: .6
+  }, {
+    opacity: 1
+  } ], {
+    duration: 900
   });
+  setTimeout(() => {
+    if (!watch) return;
+    const hit = document.createElement("div");
+    hit.className = "w-hit";
+    hit.style.borderColor = col;
+    hit.style.left = cx + "px";
+    hit.style.top = cy + "px";
+    document.body.appendChild(hit);
+    hit.animate([ {
+      transform: "scale(1)",
+      opacity: 1
+    }, {
+      transform: "scale(6)",
+      opacity: 0
+    } ], {
+      duration: 420,
+      easing: "ease-out",
+      fill: "forwards"
+    }).finished.catch(() => {}).finally(() => hit.remove());
+    if (hitEl) {
+      [ hitEl, ...hitEl.querySelectorAll("*") ].forEach(x => x.style.color = col);
+      hitEl.animate([ {
+        transform: "none",
+        opacity: 1
+      }, {
+        transform: "scale(1.04, .7)",
+        opacity: 1,
+        offset: .12
+      }, {
+        transform: `translate(${dir * 240}px, ${Math.round(innerHeight / 2)}px) rotate(${dir * 28}deg)`,
+        opacity: 0
+      } ], {
+        duration: 640,
+        easing: "cubic-bezier(.3, 0, .8, .6)",
+        fill: "forwards"
+      }).finished.catch(() => {}).finally(() => hitEl.remove());
+    }
+    watchPour(id, isAgain, [ 0, 1 ]);
+  }, 538);
 }
 
 document.getElementById("watchPop").addEventListener("mouseover", e => {
