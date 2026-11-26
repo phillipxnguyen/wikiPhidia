@@ -4225,7 +4225,7 @@ function watchTime() {
 function paintWatchSound(state) {
   const btn = document.querySelector("#watchPop .w-sound");
   if (!btn || !watch) return;
-  const cap = document.querySelector("#watchPop .w-capline"), hidden = watch.prefs.cabin && cap && !cap.classList.contains("reveal");
+  const cap = document.querySelector("#watchPop .w-capline"), hidden = watch.prefs.cabin && cap && !cap.classList.contains("reveal") && !watchVi();
   const L = watch.lines, r = L[watch.at], next = L[watch.at + 1];
   let p = hidden ? speechProgress() : null;
   if (p != null || state === 1) document.documentElement.classList.add("zap-spent");
@@ -4248,6 +4248,19 @@ function paintWatchSound(state) {
 function watchSoundBtn() {
   const cap = document.querySelector("#watchPop .w-capline");
   if (watch.prefs.cabin && cap && !cap.classList.contains("reveal")) {
+    if (watchVi()) {
+      let on = false;
+      try {
+        on = watch.player.getPlayerState() === YT.PlayerState.PLAYING;
+      } catch (e) {}
+      if (on) {
+        try {
+          watch.player.pauseVideo();
+        } catch (e) {}
+        return;
+      }
+      return watchHearAgain();
+    }
     if (speechSynthesis.speaking) return speechSynthesis.cancel();
     return watchHearAgain();
   }
@@ -4366,7 +4379,7 @@ function watchRestoreAt(id, back) {
 
 function watchSeek(i, play) {
   if (!watch || !watch.lines[i]) return;
-  const cabin = watch.prefs.cabin && !play;
+  const cabin = watch.prefs.cabin && !play && !watchVi();
   videoActionSeq++;
   watch.at = i;
   watch.pausedAt = cabin ? i : -1;
@@ -4385,11 +4398,11 @@ function watchSeek(i, play) {
   updateTouchBar();
 }
 
-async function cabinSay(r) {
+async function cabinSay(r, text) {
   speechSynthesis.cancel();
   watch.waitSince = performance.now();
   const token = watch.sayToken = (watch.sayToken || 0) + 1;
-  let tr = watchLineTr(r);
+  let tr = text || watchLineTr(r);
   if (!tr) {
     await mtFill([ r ]);
     tr = watchLineTr(r);
@@ -4437,14 +4450,29 @@ function watchShownFront() {
 function watchHearAgain() {
   const r = watch && watch.lines[watch.at], cap = document.querySelector("#watchPop .w-capline");
   if (!r) return;
-  if (watch.prefs.cabin && cap && !cap.classList.contains("reveal")) return cabinSay(r);
-  watchSeek(watch.at, true);
+  if (watch.prefs.cabin && cap && !cap.classList.contains("reveal") && !watchVi()) return cabinSay(r);
+  watchSeek(watch.at, !watchVi());
+}
+
+function viMainText(r) {
+  const src = oneLine(r.q || ""), tl = viTrLang();
+  return viSame(tl, src) ? src : viTrOf(tl, src) || src;
 }
 
 function cabinReveal() {
   const line = document.querySelector("#watchPop .w-capline");
   if (!watch || !line || line.classList.contains("reveal")) return;
   speechSynthesis.cancel();
+  if (watchVi()) {
+    try {
+      watch.player.pauseVideo();
+    } catch (e) {}
+    watch.pausedAt = watch.at;
+    line.classList.add("reveal");
+    if (watch.lines[watch.at]) cabinSay(watch.lines[watch.at], viMainText(watch.lines[watch.at]));
+    updateTouchBar();
+    return;
+  }
   watchSeek(Math.max(0, watch.at), true);
   line.classList.add("reveal");
   updateTouchBar();
