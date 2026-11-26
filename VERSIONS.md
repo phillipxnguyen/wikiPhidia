@@ -246,6 +246,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-164 | `9cd0d55` | Dòng chảy từ phụ đề về đúng chỗ như khi không có phụ đề (ô giờ hoặc mép list), rồi loang ra dòng và tô ô giờ giống hệt |
 | THEATER-165 | `d25fd68` | Câu đã chấm (xanh/đỏ) không còn bị phát lại do loop hay lặp câu đang hiện |
 | THEATER-166 | `2954f0c` | Xoá câu đang học: nhảy ngay sang câu chờ học tiếp theo, không còn quay lại câu phía trên |
+| THEATER-167 | `24e19f5` | Dòng chảy từ phụ đề lấy giọt theo từng dòng chữ, đúng bề rộng chữ của dòng đó (không còn giọt từ chỗ trống cạnh dòng ngắn) |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
