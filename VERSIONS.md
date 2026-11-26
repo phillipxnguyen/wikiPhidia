@@ -278,6 +278,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-196 | `0a72d75` | Búa đập chỗ ngẫu nhiên trên video, có khi lấn sang list tối đa 120px; góc vung hơi khác mỗi lần; vẫn Good phải, Again trái |
 | THEATER-197 | `2116b81` | Búa to hơn 30% (364×156px) |
 | THEATER-198 | `13d7ba7` | Kiểm tra: búa co theo bề rộng màn hình (điện thoại nhỏ lại, máy tính giữ 364px) để trên điện thoại không dồn chỗ đập về mép phải |
+| THEATER-199 | `a2c4871` | Bỏ phần co búa cho điện thoại (THEATER-198); điện thoại không có Watch nên không hiện búa, pill chỉ đổi màu |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
