@@ -266,6 +266,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-184 | `2b636c0` | Giọt lại to nhỏ ngẫu nhiên, nhỏ hơn (tối đa 22px); vùng ban đầu nhỏ và ngẫu nhiên (60–170 × 28–56px); vẫn đi ngay |
 | THEATER-185 | `66a8f4b` | Chất lỏng chảy theo đường cong của dòng chảy không-sub cũ và bám theo pill khi list dịch chuyển, nên luôn về đúng đích rồi mới đổ màu |
 | THEATER-186 | `6200e27` | Không vồng lên cao nữa: mỗi lần chấm dòng chảy cong ngẫu nhiên nhẹ về đích, từng giọt lệch nhau một chút cho tự nhiên; vẫn bám pill |
+| THEATER-187 | `f5af491` | Chỉ một dòng chảy mảnh liền mạch (36 giọt nối đuôi từ một điểm nhỏ ngẫu nhiên), không đứt, không ồ ạt; vẫn cong ngẫu nhiên và bám pill |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
