@@ -705,6 +705,7 @@ Hàm chính: `dictLoad`, `dictSlot`, `dictFit`, `showDictSite`, `hideDictOverlay
 | DATA-36 | `83b78b7` | Sửa bug câu nhảy lung tung giữa Easy/Medium/Hard (DATA-35 làm câu đầu nuốt cả đoạn gộp): chỉ trả chữ sửa về khi nằm gọn trong một câu; bài đã hỏng tự sửa khi mở (tách câu bị nuốt, bỏ câu trùng, giữ từ) |
 | DATA-37 | `50fc2b2` | Sửa tiếp: bài đã hỏng được dọn mỗi khi mở (dữ liệu trong máy không đi qua bước kiểm tra lúc nạp); câu dài trùng được xét trước các câu ngắn cùng giây |
 | DATA-38 | `4fb5933` | Sửa màu từ sau khi đổi mức: đoạn gộp dùng danh sách từ cũ (trước khi đổi) nên từ của chính nó hiện xanh dương như từ chỗ khác; giờ làm mới ngay khi đổi mức và khi thêm từ |
+| DATA-39 | `877404b` | Kiểm tra: phần dọn câu trùng/bị nuốt chỉ chạy trong một bài, không đụng sang bài khác khi học All lessons hay task |
 
 Hàm chính: `newRow` (bản dịch vào notes khi tạo), `foldAnswer` + `keepsAnswer` (dòng thêm dưới câu khi sửa thẻ hoặc khi dán thì vào notes), `wordLike`, `belongsInVocab`, `isTranslationCard` (cho dòng `từ: nghĩa`), `autoSortLibrary`.
 
