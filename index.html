@@ -2606,6 +2606,7 @@ window.onYouTubeIframeAPIReady = function(){
   .w-hammer.from-right{transform-origin:280px 60px;}
   .w-hammer.from-right > svg{transform:scaleX(-1);}
   .w-flash{position:fixed;z-index:958;border-radius:12px;pointer-events:none;}
+  .w-spark{position:fixed;z-index:961;border-radius:50%;pointer-events:none;box-shadow:0 0 6px rgba(255,230,150,.9);}
   .w-t.filling{isolation:isolate;color:#ffffff;transition:color .3s ease;}
   .w-t-fill{position:absolute;inset:0;z-index:-1;border-radius:12px;}
   @media (min-width:821px), (hover:hover){.watch-pop:not(.cabin):not(.w-sub) .w-cap{display:none;}}
@@ -4634,23 +4635,47 @@ function watchHammer(id, isAgain) {
   hm.style.left = px + "px";
   hm.style.top = py + "px";
   document.body.appendChild(hm);
+  const sh = "drop-shadow(0 8px 12px rgba(0,0,0,.5))", rot = a => `rotate(${-dir * a}deg)`;
   hm.animate([ {
-    transform: `rotate(${-dir * 50}deg)`,
+    transform: rot(60),
+    filter: `${sh} blur(0px)`,
     opacity: 1,
-    easing: "cubic-bezier(.5, 0, 1, 1)"
+    easing: "cubic-bezier(.55, 0, 1, .45)"
   }, {
-    transform: "rotate(0deg)",
+    transform: rot(24),
+    filter: `${sh} blur(2px)`,
     opacity: 1,
-    offset: .3
+    offset: .15,
+    easing: "cubic-bezier(.4, 0, 1, 1)"
   }, {
-    transform: "rotate(0deg)",
+    transform: `${rot(0)} scale(1.02, .97)`,
+    filter: `${sh} blur(0px)`,
     opacity: 1,
-    offset: .55
+    offset: .22,
+    easing: "cubic-bezier(.2, .8, .4, 1)"
   }, {
-    transform: "rotate(0deg)",
+    transform: rot(16),
+    filter: `${sh} blur(0px)`,
+    opacity: 1,
+    offset: .36,
+    easing: "ease-in-out"
+  }, {
+    transform: rot(3),
+    filter: `${sh} blur(0px)`,
+    opacity: 1,
+    offset: .52,
+    easing: "ease-out"
+  }, {
+    transform: rot(7),
+    filter: `${sh} blur(0px)`,
+    opacity: 1,
+    offset: .7
+  }, {
+    transform: rot(12),
+    filter: `${sh} blur(0px)`,
     opacity: 0
   } ], {
-    duration: 400,
+    duration: 560,
     fill: "forwards"
   }).finished.catch(() => {}).finally(() => hm.remove());
   setTimeout(() => {
@@ -4665,6 +4690,34 @@ function watchHammer(id, isAgain) {
       background: `radial-gradient(circle at ${cx - Math.round(vr.left)}px ${cy - Math.round(vr.top)}px, ${col}, transparent 70%)`
     });
     document.body.append(flash);
+    for (let k = 0; k < 12; k++) {
+      const sp = document.createElement("div"), a = -Math.PI / 2 + (Math.random() - .5) * 2.6, d = 60 + Math.random() * 80, sz = 4 + Math.floor(Math.random() * 4);
+      sp.className = "w-spark";
+      Object.assign(sp.style, {
+        left: cx + "px",
+        top: cy + "px",
+        width: sz + "px",
+        height: sz + "px",
+        background: k % 3 ? "#fff3c4" : col
+      });
+      document.body.appendChild(sp);
+      const ex = Math.round(Math.cos(a) * d), ey = Math.round(Math.sin(a) * d);
+      sp.animate([ {
+        transform: "translate(0px, 0px)",
+        opacity: 1
+      }, {
+        transform: `translate(${Math.round(ex * .7)}px, ${Math.round(ey * .7)}px)`,
+        opacity: 1,
+        offset: .5
+      }, {
+        transform: `translate(${ex}px, ${ey + 24}px)`,
+        opacity: 0
+      } ], {
+        duration: 320 + Math.floor(Math.random() * 160),
+        easing: "cubic-bezier(.1, .7, .4, 1)",
+        fill: "forwards"
+      }).finished.catch(() => {}).finally(() => sp.remove());
+    }
     flash.animate([ {
       opacity: .6
     }, {
@@ -4675,7 +4728,7 @@ function watchHammer(id, isAgain) {
       fill: "forwards"
     }).finished.catch(() => {}).finally(() => flash.remove());
     watchPour(id, isAgain);
-  }, 120);
+  }, 123);
 }
 
 document.getElementById("watchPop").addEventListener("mouseover", e => {
