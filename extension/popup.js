@@ -45,7 +45,7 @@ function paintPending() {
 <div class="meta">Example for ${esc((w.words || []).join(", "))}</div>
 <button class="del" title="Remove" aria-label="Remove">✕</button></div>` : `<div class="item" data-id="${esc(w.id)}">
 <div class="term">${esc(w.term)}<span class="reading">${esc(reading(w.term))}</span></div>
-<input class="edit meaning" value="${esc(w.meaning)}" placeholder="Meaning" aria-label="Meaning">
+<input class="edit meaning" autocapitalize="off" autocorrect="off" value="${esc(w.meaning)}" placeholder="Meaning" aria-label="Meaning">
 ${w.sentence ? `<div class="sentence">${esc(w.sentence)}</div>` : ""}
 <div class="meta">${esc(w.lessonName || "")}${w.title && w.title !== w.lessonName ? " · " + esc(w.title) : ""}</div>
 <button class="del" title="Remove" aria-label="Remove">✕</button></div>`).join("");

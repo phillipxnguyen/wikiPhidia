@@ -14198,6 +14198,16 @@ function scheduleFollow() {
 
 if (window.visualViewport) window.visualViewport.addEventListener("resize", scheduleFollow);
 
+function noAutoCaps(el) {
+  if (!el || !el.matches || !el.matches("input, textarea, [contenteditable]:not([contenteditable=false])") || el.getAttribute("autocapitalize") === "off") return;
+  el.setAttribute("autocapitalize", "off");
+  el.setAttribute("autocorrect", "off");
+}
+
+document.addEventListener("focusin", e => noAutoCaps(e.target), true);
+
+document.addEventListener("pointerdown", e => noAutoCaps(e.target && e.target.closest && e.target.closest("input, textarea, [contenteditable]")), true);
+
 document.addEventListener("focusin", e => {
   if (followedBox && e.target.closest && e.target.closest(".edit-row, .vocab-editor")) scheduleFollow();
 });
