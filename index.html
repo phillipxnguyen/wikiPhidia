@@ -10723,7 +10723,7 @@ function vocabLookupSig() {
 }
 
 function vocabLookup() {
-  if (vocabLookupChecked && vocabLookupCache) return vocabLookupCache;
+  if (vocabLookupChecked && vocabLookupCache && vocabLookupCache.rowsRef === rows) return vocabLookupCache;
   vocabLookupChecked = true;
   Promise.resolve().then(() => vocabLookupChecked = false);
   const sig = vocabLookupSig();
@@ -10746,6 +10746,7 @@ function vocabLookup() {
       terms: terms
     };
   }
+  vocabLookupCache.rowsRef = rows;
   return vocabLookupCache;
 }
 
@@ -17181,6 +17182,7 @@ function joinLessonLines(sec) {
   });
   pushUndo("Join lines");
   rows = list;
+  vocabLookupChecked = false;
   scheduleAutoSave();
   if (watch) {
     const was = watch.lines[watch.at], t = was ? was.time : 0;
@@ -31822,6 +31824,7 @@ function refreshWordMarks() {
 }
 
 function putVocabHtml(row, html) {
+  vocabLookupChecked = false;
   const before = vocabKeysOf(row);
   row.notesHtml = html;
   row.notes = plainTextOf(html, "\n");
