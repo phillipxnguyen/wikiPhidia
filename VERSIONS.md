@@ -294,6 +294,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-211 | `a807de6` | Búa đập chậm lại: lấy đà lùi một chút rồi mới vung, chạm sau 0,36 giây, cả cú 1 giây |
 | THEATER-212 | `45a16b7` | Thanh nút dưới video cân lại: sub, 🌐 · Easy, 125% · 拼, loop |
 | THEATER-213 | `e00f051` | Thanh nút dưới video gom theo việc: một viên chung (sub, 拼, 🌐) · Easy, 125% · loop riêng một viên |
+| THEATER-214 | `58d4ab4` | Mọi bài YouTube: nút 🌐 (trong theater và ngoài list) chọn ngôn ngữ dịch bằng hàng cờ, trừ ngôn ngữ của bài; bài khác ưu tiên 🇬🇧 rồi 🇻🇳, bài English ưu tiên 🇻🇳 |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
