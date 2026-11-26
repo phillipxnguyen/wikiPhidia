@@ -2607,8 +2607,6 @@ window.onYouTubeIframeAPIReady = function(){
   .w-hammer.from-right > svg{transform:scaleX(-1);}
   .w-flash{position:fixed;z-index:958;border-radius:12px;pointer-events:none;}
   .w-t.filling{isolation:isolate;color:#ffffff;transition:color .3s ease;}
-  .w-row:has(> .w-row-pour){isolation:isolate;}
-  .w-row-pour{position:absolute;inset:0;z-index:-1;pointer-events:none;}
   .w-t-fill{position:absolute;inset:0;z-index:-1;border-radius:12px;}
   @media (min-width:821px), (hover:hover){.watch-pop:not(.cabin):not(.w-sub) .w-cap{display:none;}}
   .watch-pop.cabin .w-pill[data-w="sub"]{display:none;}
@@ -4600,47 +4598,23 @@ function watchAim(id) {
   };
 }
 
-function watchPour(id, isAgain, from) {
+function watchPour(id, isAgain) {
   const aim = watchAim(id), row = document.querySelector(`#watchPop .w-row[data-id="${id}"]`), pill = row && row.querySelector(".w-t");
-  if (!aim || !row || !pill || !watch || !watch.pillWait || !watch.pillWait.has(id)) return Promise.resolve(pillLand(id, isAgain));
-  const r = row.getBoundingClientRect(), p = pill.getBoundingClientRect();
-  let ex = aim.x, ey = aim.y;
-  if (aim.pill) {
-    const dx = from[0], dy = from[1], k = Math.min(dx ? p.width / 2 / Math.abs(dx) : Infinity, dy ? p.height / 2 / Math.abs(dy) : Infinity);
-    ex = Math.round(p.left + p.width / 2 - dx * k);
-    ey = Math.round(p.top + p.height / 2 - dy * k);
-  }
-  const big = Math.ceil(Math.max(...[ [ r.left, r.top ], [ r.right, r.top ], [ r.left, r.bottom ], [ r.right, r.bottom ] ].map(([ x, y ]) => Math.hypot(x - ex, y - ey))));
-  const spread = (el, box) => el.animate([ {
-    clipPath: `circle(0px at ${Math.round(ex - box.left)}px ${Math.round(ey - box.top)}px)`
-  }, {
-    clipPath: `circle(${big}px at ${Math.round(ex - box.left)}px ${Math.round(ey - box.top)}px)`
-  } ], {
-    duration: 640,
-    easing: "cubic-bezier(.3, 0, .3, 1)",
-    fill: "forwards"
-  }).finished;
-  const pour = document.createElement("span");
-  pour.className = "w-row-pour";
-  pour.style.background = isAgain ? "rgba(214,69,69,.32)" : "rgba(31,157,85,.32)";
-  row.prepend(pour);
-  const poured = spread(pour, r);
-  poured.then(() => pour.animate([ {
-    opacity: 1
-  }, {
-    opacity: 0
-  } ], {
-    duration: 380,
-    easing: "ease-out",
-    fill: "forwards"
-  }).finished).catch(() => {}).finally(() => pour.remove());
-  if (!aim.pill) return poured.catch(() => {}).then(() => pillLand(id, isAgain));
-  const fill = document.createElement("span");
+  if (!aim || !aim.pill || !pill || !watch || !watch.pillWait || !watch.pillWait.has(id)) return Promise.resolve(pillLand(id, isAgain));
+  const p = pill.getBoundingClientRect(), fill = document.createElement("span"), w = Math.round(p.width / 2), h = Math.round(p.height / 2), big = Math.ceil(Math.hypot(w, h));
   fill.className = "w-t-fill";
   fill.style.background = isAgain ? "#d64545" : "#1f9d55";
   pill.prepend(fill);
   pill.classList.add("filling");
-  return spread(fill, p).catch(() => {}).finally(() => {
+  return fill.animate([ {
+    clipPath: `circle(0px at ${w}px ${h}px)`
+  }, {
+    clipPath: `circle(${big}px at ${w}px ${h}px)`
+  } ], {
+    duration: 360,
+    easing: "cubic-bezier(.3, 0, .3, 1)",
+    fill: "forwards"
+  }).finished.catch(() => {}).finally(() => {
     pillLand(id, isAgain);
     pill.classList.remove("filling");
     fill.remove();
@@ -4700,7 +4674,7 @@ function watchHammer(id, isAgain) {
       easing: "ease-out",
       fill: "forwards"
     }).finished.catch(() => {}).finally(() => flash.remove());
-    watchPour(id, isAgain, [ 0, 1 ]);
+    watchPour(id, isAgain);
   }, 120);
 }
 
