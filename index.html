@@ -5122,9 +5122,7 @@ document.getElementById("watchPop").addEventListener("click", e => {
   const b = e.target.closest("[data-w]"), cap = !watch.prefs.cabin || e.target.closest(".w-capline.reveal") ? e.target.closest(".w-capline[data-id]") : null, row = e.target.closest(".w-row") || cap;
   const mk = row && e.target.closest("mark.vocab-hit, mark.vocab-own");
   if (mk && getSelection().isCollapsed) {
-    try {
-      watch.player.pauseVideo();
-    } catch (err) {}
+    holdPlayback();
     hideTooltip();
     return markLookup(mk, rows.find(r => r.id === Number(row.dataset.id)));
   }
@@ -5132,9 +5130,7 @@ document.getElementById("watchPop").addEventListener("click", e => {
   const ww = row && e.target.closest(".w-w");
   if (ww) {
     const r = watch.lines.find(x => x.id === Number(row.dataset.id));
-    try {
-      watch.player.pauseVideo();
-    } catch (err) {}
+    holdPlayback();
     hideTooltip();
     return openWordFloat(ww.getBoundingClientRect(), ww.dataset.w, {
       lang: detectLang(ww.dataset.w).split("-")[0],
@@ -5160,9 +5156,7 @@ document.getElementById("watchPop").addEventListener("click", e => {
     }
     if (row === cap && isTouch()) return;
     if (row === cap) {
-      try {
-        watch.player.pauseVideo();
-      } catch (err) {}
+      holdPlayback();
       return openEditPopup(watch.lines.find(x => x.id === Number(cap.dataset.id)));
     }
     return watchSeek(Number(row.dataset.i));
@@ -5414,7 +5408,65 @@ function stopAllSound() {
   }, 0);
 }
 
+let playHold = null;
+
+function playBusy() {
+  const shown = id => {
+    const el = document.getElementById(id);
+    return !!el && !el.hidden;
+  };
+  return shown("editPopup") || shown("quickAdd") || dialogOpen() || !!ownDictFloat || !!wordAudio || speechSynthesis.speaking && !speechSynthesis.paused;
+}
+
+function holdPlayback() {
+  const p = watch && watch.player ? watch.player : ytPlayer;
+  if (playHold) return true;
+  if (!p || typeof p.getPlayerState !== "function" || typeof YT === "undefined") return false;
+  let on = false;
+  try {
+    on = p.getPlayerState() === YT.PlayerState.PLAYING;
+  } catch (e) {}
+  if (!on) return false;
+  if (p === ytPlayer) {
+    expectingProgrammaticPause = true;
+    clearTimeout(expectingProgrammaticPauseTimer);
+    expectingProgrammaticPauseTimer = setTimeout(() => {
+      expectingProgrammaticPause = false;
+    }, 800);
+  }
+  try {
+    p.pauseVideo();
+  } catch (e) {}
+  const hold = {
+    player: p,
+    since: performance.now()
+  };
+  hold.timer = setInterval(() => {
+    if (playHold !== hold) return clearInterval(hold.timer);
+    let st = -1;
+    try {
+      st = p.getPlayerState();
+    } catch (e) {}
+    if (st !== YT.PlayerState.PAUSED && performance.now() - hold.since > 600 || st === YT.PlayerState.ENDED || watch && p !== watch.player || !watch && p !== ytPlayer) return dropPlayHold();
+    if (playBusy()) return;
+    dropPlayHold();
+    videoActionSeq++;
+    try {
+      p.playVideo();
+    } catch (e) {}
+  }, 250);
+  playHold = hold;
+  return true;
+}
+
+function dropPlayHold() {
+  if (!playHold) return;
+  clearInterval(playHold.timer);
+  playHold = null;
+}
+
 function haltAllPlayback() {
+  dropPlayHold();
   passThen = null;
   stopTts();
   if (loopInterval) {
@@ -12484,6 +12536,7 @@ function paintOwnDictFloat() {
 }
 
 function openOwnDictFloat(el, mode, word, ctx) {
+  holdPlayback();
   closeOwnDictFloat();
   const shown = ctx, host = document.body;
   if (!shown) return;
@@ -12861,9 +12914,7 @@ document.addEventListener("click", e => {
   e.preventDefault();
   e.stopImmediatePropagation();
   hideTooltip();
-  if (watch && mz.closest("#watchPop")) try {
-    watch.player.pauseVideo();
-  } catch (err) {}
+  holdPlayback();
   openWordFloat(rect, found ? found.term : term, ctx);
 }, true);
 
@@ -13117,7 +13168,7 @@ function playWordAudio(w, lang, onEnd, onFail) {
 
 function ownDictSay(w) {
   stopVocabSound();
-  haltAllPlayback();
+  if (holdPlayback()) stopTts(); else haltAllPlayback();
   speechSynthesis.cancel();
   syncVocabSound();
   soundHeard = true;
@@ -13937,6 +13988,7 @@ document.getElementById("btnSingleCard").onclick = e => {
 };
 
 function openQuickAdd() {
+  holdPlayback();
   if (!currentLessonId || isVirtualLesson()) return;
   const q = document.getElementById("qaQ");
   if (!document.getElementById("quickAdd").hidden) return q.focus();
@@ -14168,6 +14220,7 @@ document.querySelector("#editPopup .le-tabs").addEventListener("click", e => {
 });
 
 function openEditPopup(row) {
+  holdPlayback();
   hideTooltip();
   if (activeEdit && activeEdit.row.id !== row.id) {
     commitActiveEdit();
@@ -32079,6 +32132,7 @@ document.addEventListener("keydown", e => {
 }, true);
 
 function openAddPopup() {
+  holdPlayback();
   if (!currentLessonId || isVirtualLesson()) return;
   commitActiveEdit();
   const name = (document.getElementById("lessonName").value || "").trim() || "Untitled lesson";
