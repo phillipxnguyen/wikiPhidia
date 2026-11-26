@@ -17104,7 +17104,7 @@ function splitJoinedCard(c) {
 }
 
 function unswallowLines(cards) {
-  const timed = cards.filter(c => c.time != null && !(c.src && c.src.length) && (c.q || "").trim()).sort((x, y) => x.time - y.time), gone = new Set;
+  const timed = cards.filter(c => c.time != null && !(c.src && c.src.length) && (c.q || "").trim()).sort((x, y) => x.time - y.time || oneLine(y.q).length - oneLine(x.q).length), gone = new Set;
   timed.forEach((c, i) => {
     const q = oneLine(c.q), next = [];
     for (let k = i + 1; k < timed.length && k <= i + 6 && timed[k].time - c.time < 30; k++) next.push(timed[k]);
@@ -17691,6 +17691,9 @@ function openLesson(lesson) {
     Object.assign(r, normalizeCard(c));
     return r;
   });
+  const sig = rows.map(r => r.q).join("\u0001");
+  rows = unswallowLines(foldJoinDupes(rows, serializeCard));
+  if (rows.map(r => r.q).join("\u0001") !== sig) queueMicrotask(() => currentLessonId === lesson.id && scheduleAutoSave());
   const playable = url => !!extractYouTubeId(url || "") || /(^|\.)(tiktok|douyin)\.com\//i.test((url || "").replace(/^https?:\/\//i, ""));
   if (!isVirtualId(lesson.id) && !playable(lesson.mediaUrl) && rows.some(r => r.time != null)) {
     rows.forEach(r => r.time = null);
