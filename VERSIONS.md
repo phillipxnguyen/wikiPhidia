@@ -272,6 +272,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-190 | `65dd196` | Búa đập ngay (hiện sẵn tư thế giơ, chạm sau 0,12 giây, tắt sau 0,4 giây), không bay vào, không rung video |
 | THEATER-191 | `e2ce6a4` | Bỏ vòng sóng; búa để lại vết nứt như kính vỡ trên video (mỗi lần một kiểu), giữ nền loé màu |
 | THEATER-192 | `e8c97c1` | Bỏ vết nứt; búa đập chỉ còn nền loé xanh/đỏ |
+| THEATER-193 | `a54258a` | Câu bên list không còn tràn màu cả hàng: chỉ pill đổ màu từ giữa ra (0,36 giây) |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
