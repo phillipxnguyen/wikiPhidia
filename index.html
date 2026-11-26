@@ -4663,20 +4663,39 @@ function watchSuck(id, isAgain, vr, cr) {
   box.appendChild(svg);
   const c2x = x1 - Math.round((x1 - cx) * .25), c2y = Math.min(cy, y1) - 120, dl = Math.hypot(x1 - c2x, y1 - c2y) || 1, from = [ (x1 - c2x) / dl, (y1 - c2y) / dl ];
   const route = (ex, ey) => `M ${cx} ${cy} C ${cx + Math.round((ex - cx) * .3)} ${cy - 160}, ${ex - Math.round((ex - cx) * .25)} ${Math.min(cy, ey) - 120}, ${ex} ${ey}`, d = route(x1, y1);
-  const line = w => {
-    const path = document.createElementNS(ns, "path");
-    path.setAttribute("d", d);
-    path.setAttribute("pathLength", "1000");
-    path.setAttribute("fill", "none");
-    path.setAttribute("stroke", col);
-    path.setAttribute("stroke-width", w);
-    path.setAttribute("stroke-linecap", "round");
-    svg.appendChild(path);
-    return path;
+  const probe = document.createElementNS(ns, "path");
+  probe.setAttribute("d", d);
+  const len0 = Math.ceil(probe.getTotalLength());
+  let last = d, full = false;
+  const live = new Set, dur = 620;
+  const shoot = () => {
+    const strokes = [ [ 6, 220 ], [ 12, 70 ], [ 18, 18 ] ].map(([ w, seg ]) => {
+      const path = document.createElementNS(ns, "path");
+      path.setAttribute("d", last);
+      path.setAttribute("fill", "none");
+      path.setAttribute("stroke", col);
+      path.setAttribute("stroke-width", w);
+      path.setAttribute("stroke-linecap", "round");
+      svg.appendChild(path);
+      const len = Math.ceil(path.getTotalLength());
+      path.style.strokeDasharray = `${seg} ${len + 480}`;
+      path.style.strokeDashoffset = seg;
+      live.add(path);
+      return path.animate([ {
+        strokeDashoffset: seg
+      }, {
+        strokeDashoffset: seg - len - 220
+      } ], {
+        duration: dur,
+        easing: "cubic-bezier(.4, 0, .5, 1)",
+        fill: "both"
+      }).finished.finally(() => {
+        live.delete(path);
+        path.remove();
+      });
+    });
+    return Promise.all(strokes);
   };
-  const stream = line(8), head = line(16), paths = [ stream, head ];
-  stream.style.strokeDasharray = "1000 1000";
-  head.style.strokeDasharray = "1 1001";
   drop.animate([ {
     transform: "scale(.3)",
     opacity: 0
@@ -4688,7 +4707,6 @@ function watchSuck(id, isAgain, vr, cr) {
     easing: "ease-out",
     fill: "forwards"
   });
-  let last = d;
   const follow = () => {
     if (!box.isConnected) return;
     const q = watchAim(id);
@@ -4696,51 +4714,36 @@ function watchSuck(id, isAgain, vr, cr) {
       const nd = route(q.x, q.y);
       if (nd !== last) {
         last = nd;
-        paths.forEach(path => path.setAttribute("d", nd));
+        live.forEach(path => path.setAttribute("d", nd));
       }
     }
     requestAnimationFrame(follow);
   };
   requestAnimationFrame(follow);
-  const grow = {
-    duration: 480,
-    delay: 60,
-    easing: "cubic-bezier(.4, 0, .6, 1)",
-    fill: "both"
+  const shots = [];
+  const pump = () => {
+    if (full || !box.isConnected) return;
+    shots.push(shoot().catch(() => {}));
+    setTimeout(pump, 110);
   };
-  Promise.all([ stream.animate([ {
-    strokeDashoffset: 1000
-  }, {
-    strokeDashoffset: 0
-  } ], grow).finished, head.animate([ {
-    strokeDashoffset: 0
-  }, {
-    strokeDashoffset: -999
-  } ], grow).finished ]).then(() => {
-    head.remove();
-    return watchPour(id, isAgain, from);
-  }).then(() => {
-    drop.animate([ {
-      transform: "scale(1)",
-      opacity: 1
-    }, {
-      transform: "scale(.3)",
-      opacity: 0
-    } ], {
-      duration: 320,
-      easing: "ease-in",
-      fill: "forwards"
+  setTimeout(pump, 60);
+  setTimeout(() => {
+    Promise.resolve(watchPour(id, isAgain, from)).catch(() => pillLand(id, isAgain)).finally(() => {
+      full = true;
+      drop.animate([ {
+        transform: "scale(1)",
+        opacity: 1
+      }, {
+        transform: "scale(.3)",
+        opacity: 0
+      } ], {
+        duration: 320,
+        easing: "ease-in",
+        fill: "forwards"
+      });
+      Promise.all(shots).finally(() => box.remove());
     });
-    return stream.animate([ {
-      strokeDashoffset: 0
-    }, {
-      strokeDashoffset: -1000
-    } ], {
-      duration: 360,
-      easing: "cubic-bezier(.4, 0, .8, .6)",
-      fill: "forwards"
-    }).finished;
-  }).catch(() => pillLand(id, isAgain)).finally(() => box.remove());
+  }, Math.round(60 + dur * len0 / (len0 + 220)));
 }
 
 document.getElementById("watchPop").addEventListener("mouseover", e => {
