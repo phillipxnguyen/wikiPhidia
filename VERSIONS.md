@@ -281,6 +281,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-199 | `a2c4871` | Bỏ phần co búa cho điện thoại (THEATER-198); điện thoại không có Watch nên không hiện búa, pill chỉ đổi màu |
 | THEATER-200 | `3a67d98` | Video tiếng Việt (cờ 🇻🇳): nút 🌐 mở hàng cờ (🌐 🇬🇧 🇨🇳 🇰🇷 🇯🇵, không chữ), nhớ theo bài; bản dịch sang ngôn ngữ đã chọn là dòng chính, câu gốc nhỏ bên cạnh; hộp import có cờ vẫy gợi ý ngôn ngữ của video (extension 1.6.69 gửi ngôn ngữ video) |
 | THEATER-201 | `203a007` | Watch: sub và bản dịch chung 1 ô, bản dịch xuống dưới (màu xanh như list); búa chỉ đập trong video, đỏ thiên bên trái, xanh thiên bên phải |
+| THEATER-202 | `5f7b464` | Bản dịch dưới sub trong Watch: màu trắng, cỡ chữ cùng tỉ lệ như Interpreter (video hẹp: 17/20/24px thay vì 13/17/21px) |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
