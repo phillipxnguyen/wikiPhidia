@@ -2607,8 +2607,6 @@ window.onYouTubeIframeAPIReady = function(){
   .w-hammer.from-right > svg{transform:scaleX(-1);}
   .w-flash{position:fixed;z-index:958;border-radius:12px;pointer-events:none;}
   .w-spark{position:fixed;z-index:961;border-radius:50%;pointer-events:none;box-shadow:0 0 6px rgba(255,230,150,.9);}
-  .w-t.filling{isolation:isolate;color:#ffffff;transition:color .3s ease;}
-  .w-t-fill{position:absolute;inset:0;z-index:-1;border-radius:12px;}
   @media (min-width:821px), (hover:hover){.watch-pop:not(.cabin):not(.w-sub) .w-cap{display:none;}}
   .watch-pop.cabin .w-pill[data-w="sub"]{display:none;}
   @media (max-width:820px) and (hover:none){.watch-pop .w-pill[data-w="sub"]{display:none;}}
@@ -4577,51 +4575,6 @@ function pillLand(id, isAgain) {
   if (row && watch.graded && watch.graded.has(id)) row.classList.add(watch.again && watch.again.has(id) ? "graded-again" : "graded-good");
 }
 
-function watchAim(id) {
-  const lst = document.querySelector("#watchPop .w-list"), row = document.querySelector(`#watchPop .w-row[data-id="${id}"]`), pill = row && row.querySelector(".w-t");
-  if (!lst || !row || !pill) return null;
-  const l = lst.getBoundingClientRect(), p = pill.getBoundingClientRect(), r = row.getBoundingClientRect();
-  if (p.top >= l.top && p.bottom <= l.bottom) return {
-    x: Math.round(p.left + p.width / 2),
-    y: Math.round(p.top + p.height / 2),
-    pill: true
-  };
-  const top = Math.max(r.top, l.top), bottom = Math.min(r.bottom, l.bottom);
-  if (bottom - top < 8) return {
-    x: Math.round(Math.min(l.right - 24, Math.max(l.left + 24, p.left + p.width / 2))),
-    y: Math.round(r.bottom <= l.top ? l.top + 8 : l.bottom - 8),
-    pill: false
-  };
-  return {
-    x: Math.round(r.left + 24),
-    y: Math.round(top + Math.min(24, (bottom - top) / 2)),
-    pill: false
-  };
-}
-
-function watchPour(id, isAgain) {
-  const aim = watchAim(id), row = document.querySelector(`#watchPop .w-row[data-id="${id}"]`), pill = row && row.querySelector(".w-t");
-  if (!aim || !aim.pill || !pill || !watch || !watch.pillWait || !watch.pillWait.has(id)) return Promise.resolve(pillLand(id, isAgain));
-  const p = pill.getBoundingClientRect(), fill = document.createElement("span"), w = Math.round(p.width / 2), h = Math.round(p.height / 2), big = Math.ceil(Math.hypot(w, h));
-  fill.className = "w-t-fill";
-  fill.style.background = isAgain ? "#d64545" : "#1f9d55";
-  pill.prepend(fill);
-  pill.classList.add("filling");
-  return fill.animate([ {
-    clipPath: `circle(0px at ${w}px ${h}px)`
-  }, {
-    clipPath: `circle(${big}px at ${w}px ${h}px)`
-  } ], {
-    duration: 360,
-    easing: "cubic-bezier(.3, 0, .3, 1)",
-    fill: "forwards"
-  }).finished.catch(() => {}).finally(() => {
-    pillLand(id, isAgain);
-    pill.classList.remove("filling");
-    fill.remove();
-  });
-}
-
 const HAMMER_SVG = grip => `<svg viewBox="0 0 280 120" aria-hidden="true"><defs><linearGradient id="hmWood" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d9a066"/><stop offset=".45" stop-color="#a86b34"/><stop offset="1" stop-color="#6e421c"/></linearGradient><linearGradient id="hmGrip" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${grip[0]}"/><stop offset=".5" stop-color="${grip[1]}"/><stop offset="1" stop-color="${grip[2]}"/></linearGradient><linearGradient id="hmSteel" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#5b636b"/><stop offset=".35" stop-color="#eef1f4"/><stop offset=".6" stop-color="#a3acb4"/><stop offset="1" stop-color="#4b5258"/></linearGradient><linearGradient id="hmFace" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9aa3ab"/><stop offset="1" stop-color="#3e444a"/></linearGradient></defs><rect x="4" y="50" width="226" height="20" rx="10" fill="url(#hmWood)"/><path d="M40 56 C90 54 150 58 210 55" stroke="#6e421c" stroke-opacity=".35" stroke-width="2" fill="none"/><path d="M60 64 C110 66 170 62 214 65" stroke="#f0c48c" stroke-opacity=".35" stroke-width="2" fill="none"/><rect x="0" y="46" width="96" height="28" rx="14" fill="url(#hmGrip)"/><path d="M16 48 V72 M30 48 V72 M44 48 V72 M58 48 V72 M72 48 V72 M86 48 V72" stroke="#000000" stroke-opacity=".2" stroke-width="2"/><path d="M214 40 L214 16 Q214 4 226 2 L250 2 Q238 8 238 20 L238 40 Z" fill="url(#hmSteel)"/><path d="M222 2 L230 16 L238 2 Z" fill="#2c3136"/><rect x="210" y="36" width="34" height="50" rx="4" fill="url(#hmSteel)"/><rect x="204" y="82" width="46" height="34" rx="6" fill="url(#hmSteel)"/><rect x="204" y="110" width="46" height="8" rx="4" fill="url(#hmFace)"/><rect x="208" y="86" width="6" height="22" rx="3" fill="#ffffff" fill-opacity=".55"/></svg>`;
 
 function watchHammer(id, isAgain) {
@@ -4727,7 +4680,7 @@ function watchHammer(id, isAgain) {
       easing: "ease-out",
       fill: "forwards"
     }).finished.catch(() => {}).finally(() => flash.remove());
-    watchPour(id, isAgain);
+    pillLand(id, isAgain);
   }, 123);
 }
 
