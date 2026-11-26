@@ -257,6 +257,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-175 | `0608c16` | Sửa: chất lỏng phủ đúng khung sub của câu vừa chấm (trước đó khung đặt theo câu kế tiếp nên giọt bị cắt) |
 | THEATER-176 | `205aafe` | Trả lại chất lỏng gốc, gom từ khung sub của câu B (câu hiện ra sau khi chấm); bỏ logic A/B |
 | THEATER-177 | `5ccdf26` | Câu A tan thành chất lỏng: chữ câu vừa chấm mờ dần trên chất lỏng gom từ khung của nó, câu B hiện ra sau |
+| THEATER-178 | `165fe89` | Chất lỏng gom từ khung tràn viền, bao trùm cả câu A và câu B (rộng hơn mỗi bên 8px); bỏ kiểu chữ A tan |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
