@@ -3904,7 +3904,13 @@ let viTrStore = null;
 const viTrPending = new Set;
 
 function watchVi() {
-  return !!watch && (studyLang === "vi" || studyLang === "auto" && autoDetectLangs(watch.lines.map(r => r.q))[0] === "vi");
+  if (!watch) return false;
+  if (studyLang !== "auto") return studyLang === "vi";
+  if (watch.viSig !== watch.sig) {
+    watch.viSig = watch.sig;
+    watch.viAuto = autoDetectLangs(watch.lines.map(r => r.q))[0] === "vi";
+  }
+  return watch.viAuto;
 }
 
 function viTrLang() {
@@ -3929,7 +3935,7 @@ async function viTrFill() {
   need.forEach(t => viTrPending.add(tl + "\u0001" + t));
   for (let i = 0; i < need.length; i += 8) {
     const part = need.slice(i, i + 8), res = await translateBatch(part, tl).catch(() => []);
-    viTrOf("", "");
+    if (!viTrStore) viTrStore = readLocal(VI_TR_KEY) || {};
     part.forEach((t, k) => {
       viTrPending.delete(tl + "\u0001" + t);
       if (res[k] && res[k] !== t) viTrStore[tl + "\u0001" + t] = res[k];
@@ -4417,7 +4423,7 @@ function watchToggle() {
 function syncWatchPills() {
   const p = watch.prefs;
   document.querySelectorAll("#watchPop .w-pill[data-w]").forEach(b => {
-    const on = !!p[b.dataset.w];
+    const on = b.dataset.w === "trpick" ? !!viTrLang() : !!p[b.dataset.w];
     b.classList.toggle("on", on);
     b.setAttribute("aria-pressed", String(on));
   });
@@ -4472,6 +4478,7 @@ function watchModeTabs() {
 
 function paintWatch() {
   const p = watch.prefs, box = document.getElementById("watchPop");
+  box.querySelectorAll(".w-trmenu").forEach(m => m.remove());
   watchQueueSync();
   watch.rowHtml = null;
   box.querySelector(".w-topbar .toolbar-flag").innerHTML = document.getElementById("studyFlag").innerHTML;
