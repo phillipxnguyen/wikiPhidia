@@ -243,6 +243,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-161 | `ca0c352` | Bật tắt pinyin/nghĩa hoặc đổi cỡ chữ: câu đang học luôn ở trong tầm mắt trong list |
 | THEATER-162 | `da004a5` | Giọt màu Again/Good vẫn chảy vào list khi câu vừa chấm đã trôi khỏi tầm mắt (chảy vào mép list phía có câu) |
 | THEATER-163 | `9889217` | Watch: trả lại phụ đề trên video, có nút bật/tắt (mặc định bật); bật thì giọt màu chảy từ phụ đề vào ô giờ, tắt thì chảy từ video |
+| THEATER-164 | `9cd0d55` | Dòng chảy từ phụ đề về đúng chỗ như khi không có phụ đề (ô giờ hoặc mép list), rồi loang ra dòng và tô ô giờ giống hệt |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
