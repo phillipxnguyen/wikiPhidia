@@ -696,6 +696,7 @@ Hàm chính: `dictLoad`, `dictSlot`, `dictFit`, `showDictSite`, `hideDictOverlay
 | DATA-31 | `79d1988` | Duplicates gộp vào 🧹 Clean up (bỏ tab và nút riêng): danh sách trùng với ✕ và Keep one nằm trong Clean up |
 | DATA-32 | `10d135f` | Sửa lỗi nặng: lưu editor từ ghi dòng pinyin vào câu tiếng Trung (mỗi lần lưu dồn thêm). Pinyin giờ không sửa/không lưu; tự dọn câu đã hỏng một lần (có backup), thêm vào Clean up |
 | DATA-33 | `8292638` | Bỏ hẳn tự viết hoa / tự sửa chữ: mọi ô nhập trong app và extension (1.6.70) tắt autocapitalize và autocorrect |
+| DATA-34 | `ef45286` | Sửa mất dữ liệu khi đổi Easy/Medium/Hard: từ tra/thêm ở câu gộp giữ lại, trả về đúng câu chứa từ; tiến độ mỗi mức vẫn riêng |
 
 Hàm chính: `newRow` (bản dịch vào notes khi tạo), `foldAnswer` + `keepsAnswer` (dòng thêm dưới câu khi sửa thẻ hoặc khi dán thì vào notes), `wordLike`, `belongsInVocab`, `isTranslationCard` (cho dòng `từ: nghĩa`), `autoSortLibrary`.
 
