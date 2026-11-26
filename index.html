@@ -16921,7 +16921,7 @@ function normalizeLesson(data, fileName) {
     importHistory: Array.isArray(data.importHistory) ? data.importHistory.filter(h => h && typeof h === "object" && h.date) : [],
     createdAt: Number(data.createdAt) || now,
     updatedAt: Number(data.updatedAt) || now,
-    cards: data.cards.filter(c => c && typeof c === "object").map(normalizeCard),
+    cards: unswallowLines(foldJoinDupes(data.cards.filter(c => c && typeof c === "object").map(normalizeCard), c => c)),
     extraWords: normalizeExtras(data.extraWords),
     pdf: data.pdf && typeof data.pdf.name === "string" && data.pdf.name ? {
       name: data.pdf.name,
@@ -17033,28 +17033,24 @@ function splitJoinedCard(c) {
       });
       return r;
     });
-    const was = joinSentences(back.map(r => r.q)), text = oneLine(c.q || "");
-    if (text && text !== oneLine(was)) {
-      let pos = 0;
-      const spots = back.map(r => {
-        const t = oneLine(r.q || ""), at = t ? text.indexOf(t, pos) : -1;
-        if (at < 0) return null;
-        pos = at + t.length;
-        return [ at, pos ];
+    const qs = back.map(r => oneLine(r.q || "")), was = oneLine(joinSentences(qs)), text = oneLine(c.q || "");
+    if (text && text !== was) {
+      let a = 0, b = 0;
+      while (a < was.length && a < text.length && was[a] === text[a]) a++;
+      while (b < was.length - a && b < text.length - a && was[was.length - 1 - b] === text[text.length - 1 - b]) b++;
+      let at = 0;
+      const span = qs.map(q => {
+        const from = was.indexOf(q, at), to = from + q.length;
+        at = Math.max(at, to);
+        return [ from, to ];
       });
-      for (let k = 0; k < back.length; k++) {
-        if (spots[k]) continue;
-        let e = k;
-        while (e + 1 < back.length && !spots[e + 1]) e++;
-        const from = k ? spots[k - 1] ? spots[k - 1][1] : 0 : 0, to = e + 1 < back.length ? spots[e + 1][0] : text.length;
-        const sents = text.slice(from, to).trim().split(/(?<=[.!?。！？…])\s+/).filter(Boolean), n = e - k + 1;
-        for (let j = 0; j < n; j++) {
-          const piece = (j === n - 1 ? sents.slice(j) : sents.slice(j, j + 1)).join(" ").trim(), r = back[k + j];
-          if (!piece) continue;
-          r.q = piece;
-          r.qHtml = textHtml(piece);
+      const k = span.findIndex(([ from, to ]) => from >= 0 && a >= from && was.length - b <= to);
+      if (k >= 0 && span.every(([ from ]) => from >= 0)) {
+        const [ from, to ] = span[k], piece = text.slice(from, text.length - (was.length - to)).trim();
+        if (piece) {
+          back[k].q = piece;
+          back[k].qHtml = textHtml(piece);
         }
-        k = e;
       }
     }
     const nowTerms = new Set(vocabEntriesOf(c).map(e => e.tkey));
@@ -17107,7 +17103,56 @@ function splitJoinedCard(c) {
   return out;
 }
 
+function unswallowLines(cards) {
+  const timed = cards.filter(c => c.time != null && !(c.src && c.src.length) && (c.q || "").trim()).sort((x, y) => x.time - y.time), gone = new Set;
+  timed.forEach((c, i) => {
+    const q = oneLine(c.q), next = [];
+    for (let k = i + 1; k < timed.length && k <= i + 6 && timed[k].time - c.time < 30; k++) next.push(timed[k]);
+    for (let n = next.length; n >= 1; n--) {
+      const tail = oneLine(joinSentences(next.slice(0, n).map(x => oneLine(x.q))));
+      if (tail.length < 2 || q.length < tail.length || !q.endsWith(tail)) continue;
+      const head = q.slice(0, q.length - tail.length).trim();
+      if (head) {
+        c.q = head;
+        c.qHtml = textHtml(head);
+        break;
+      }
+      if (n < 2) continue;
+      vocabEntriesOf(c).forEach(e => {
+        const home = next.slice(0, n).find(x => findWordForm(x.q || "", e.term)) || next[0];
+        if (vocabEntriesOf(home).some(x => x.key === e.key)) return;
+        const html = vocabLineHtml(home, e.term, e.meaning);
+        home.notesHtml = html;
+        home.notes = plainTextOf(html, "\n");
+      });
+      gone.add(c);
+      break;
+    }
+  });
+  return gone.size ? cards.filter(c => !gone.has(c)) : cards;
+}
+
+function foldJoinDupes(cards, ser) {
+  const key = c => Math.round(Number(c.time) * 10) + "\u0001" + oneLine(c.q || "");
+  const owner = new Map;
+  cards.forEach(c => c.time != null && c.src && c.src.length && c.src.forEach((raw, i) => raw && raw.time != null && owner.set(key(raw), [ c, i ])));
+  if (!owner.size) return cards;
+  const out = cards.filter(c => {
+    if (c.time == null || c.src && c.src.length) return true;
+    const hit = owner.get(key(c));
+    if (!hit) return true;
+    const [m, i] = hit, fresh = ser(c), old = m.src[i];
+    m.src = m.src.slice();
+    m.src[i] = old && old.jsrs && !fresh.jsrs ? Object.assign({}, fresh, {
+      jsrs: old.jsrs
+    }) : fresh;
+    return false;
+  });
+  return out.length === cards.length ? cards : out;
+}
+
 function joinLessonLines(sec) {
+  rows = foldJoinDupes(rows, serializeCard);
   let list = rows.flatMap(r => r.time != null ? splitJoinedCard(r).map(c => {
     if (r.srcLessonId) c.srcLessonId = r.srcLessonId;
     return c;
