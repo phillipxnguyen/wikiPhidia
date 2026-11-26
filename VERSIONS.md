@@ -268,6 +268,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-186 | `6200e27` | Không vồng lên cao nữa: mỗi lần chấm dòng chảy cong ngẫu nhiên nhẹ về đích, từng giọt lệch nhau một chút cho tự nhiên; vẫn bám pill |
 | THEATER-187 | `f5af491` | Chỉ một dòng chảy mảnh liền mạch (36 giọt nối đuôi từ một điểm nhỏ ngẫu nhiên), không đứt, không ồ ạt; vẫn cong ngẫu nhiên và bám pill |
 | THEATER-188 | `b1420f6` | Bỏ dòng chảy: chấm là một cây búa to cỡ cán cờ, Good (✓ xanh) từ phải, Again (✕ đỏ) từ trái, đập 1 phát vào câu (sub hoặc hàng trong list) cho văng ra, rồi hàng và pill đổ màu |
+| THEATER-189 | `1386c43` | Búa thật hơn (đầu thép có móc, cán gỗ, tay cầm xanh/đỏ), đập vào chính video YouTube (video giật, loé màu, vòng sóng); list không bị đập, chỉ đổ màu hàng và pill |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
