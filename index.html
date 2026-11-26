@@ -16981,16 +16981,26 @@ function joinedSeconds() {
 }
 
 function splitJoinedCard(c) {
-  if (c.src && c.src.length) return c.src.map((raw, i) => {
-    const r = Object.assign(newRow(raw.q, raw.a, raw.time), normalizeCard(raw));
-    if (!i && c.srs && Object.values(c.srs).some(st => st && st.reps)) r.jsrs = Object.assign({}, r.jsrs, {
-      [c.uid]: c.srs
+  if (c.src && c.src.length) {
+    const back = c.src.map((raw, i) => {
+      const r = Object.assign(newRow(raw.q, raw.a, raw.time), normalizeCard(raw));
+      if (!i && c.srs && Object.values(c.srs).some(st => st && st.reps)) r.jsrs = Object.assign({}, r.jsrs, {
+        [c.uid]: c.srs
+      });
+      return r;
     });
-    Object.keys(c.vocab || {}).forEach(k => {
+    const had = new Set(back.flatMap(r => vocabEntriesOf(r).map(e => e.key)));
+    vocabEntriesOf(c).forEach(e => {
+      if (had.has(e.key)) return;
+      const r = back[Math.max(0, back.findIndex(x => findWordForm(x.q || "", e.term)))], html = vocabLineHtml(r, e.term, e.meaning);
+      r.notesHtml = html;
+      r.notes = plainTextOf(html, "\n");
+    });
+    back.forEach(r => Object.keys(c.vocab || {}).forEach(k => {
       if (vocabEntriesOf(r).some(e => e.key === k) || /^[wx]:/.test(k) && findWordForm(r.q || "", k.slice(2).split("|")[0].split("\u0001")[0])) r.vocab[k] = c.vocab[k];
-    });
-    return r;
-  });
+    }));
+    return back;
+  }
   const parts = (c.parts || []).filter(pt => (pt.q || "").trim());
   if (parts.length < 2) return [ c ];
   const box = document.createElement("div");
