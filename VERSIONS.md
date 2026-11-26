@@ -263,6 +263,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-181 | `3543096` | Chất lỏng gom như bản có sub cũ nhưng chỉ từ một vùng nhỏ (tối đa 120×40px) trên sub, hoặc trên video khi không có sub; bỏ dòng bơm |
 | THEATER-182 | `6a12966` | Vùng gom to hơn (180–280 × 60–100px) và ngẫu nhiên: kích thước, hình, độ nghiêng, vị trí, giọt rải ngẫu nhiên to nhỏ khác nhau |
 | THEATER-183 | `5c1a0e0` | Giọt đều cỡ, đi ngay theo đường cong mượt không chờ gom đủ; vùng nhỏ hơn (120–180 × 44–64px), vẫn ngẫu nhiên hình và chỗ |
+| THEATER-184 | `2b636c0` | Giọt lại to nhỏ ngẫu nhiên, nhỏ hơn (tối đa 22px); vùng ban đầu nhỏ và ngẫu nhiên (60–170 × 28–56px); vẫn đi ngay |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
