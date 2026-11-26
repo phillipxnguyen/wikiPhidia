@@ -292,7 +292,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-209 | `3ac74e7` | Animation chuyển YouTube/Interpreter mượt hơn: video đẩy/kéo list, sub đổi cỡ theo, thanh trên đứng yên, các nút dưới trượt chỗ (loop thu/phóng) thay vì mờ dần |
 | THEATER-210 | `81205ef` | Búa to hơn (448×192px); chỗ đập luôn chọn sao cho lúc chạm cả búa, kể cả cán, nằm trọn trong màn hình |
 | THEATER-211 | `a807de6` | Búa đập chậm lại: lấy đà lùi một chút rồi mới vung, chạm sau 0,36 giây, cả cú 1 giây |
-| THEATER-212 | `45a16b7` | Thanh nút dưới video cân lại: sub, 🌐 | Easy, 125% | 拼, loop |
+| THEATER-212 | `45a16b7` | Thanh nút dưới video cân lại: sub, 🌐 · Easy, 125% · 拼, loop |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
