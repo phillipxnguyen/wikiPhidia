@@ -4683,15 +4683,24 @@ function watchSuck(id, isAgain, vr, cr) {
   }
   const order = pts.map(([ x, y ]) => Math.hypot(x1 - x, y1 - y)).map((d, i) => [ d, i ]).sort((a, b) => a[0] - b[0]).map(([, i]) => i), rank = [];
   order.forEach((i, k) => rank[i] = k);
-  const route = (ax, ay, ex, ey) => `path("M ${ax} ${ay} C ${mx + Math.round((ex - mx) * .3)} ${my - 160}, ${ex - Math.round((ex - mx) * .25)} ${Math.min(my, ey) - 120}, ${ex} ${ey}")`;
-  const drops = pts.map(([ ax, ay, zz ]) => {
+  const k1 = rnd(.2, .4), k2 = rnd(.6, .85), b1 = rnd(-.35, .35), b2 = rnd(-.2, .2), cap140 = v => Math.max(-140, Math.min(140, v));
+  const ctl = (ex, ey) => {
+    const dx = ex - mx, dy = ey - my, L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L, o1 = cap140(b1 * L), o2 = cap140(b2 * L);
+    return [ mx + dx * k1 + nx * o1, my + dy * k1 + ny * o1, mx + dx * k2 + nx * o2, my + dy * k2 + ny * o2 ];
+  };
+  const jit = pts.map(() => [ rnd(-12, 12), rnd(-12, 12), rnd(-8, 8), rnd(-8, 8) ]);
+  const route = (k, ex, ey) => {
+    const [ c1x, c1y, c2x, c2y ] = ctl(ex, ey), j = jit[k], r = Math.round;
+    return `path("M ${pts[k][0]} ${pts[k][1]} C ${r(c1x + j[0])} ${r(c1y + j[1])}, ${r(c2x + j[2])} ${r(c2y + j[3])}, ${ex} ${ey}")`;
+  };
+  const drops = pts.map(([ ax, ay, zz ], k) => {
     const d = document.createElement("div");
     Object.assign(d.style, {
       width: zz + "px",
       height: zz + "px",
       borderRadius: zz + "px",
       background: col,
-      offsetPath: route(ax, ay, x1, y1),
+      offsetPath: route(k, x1, y1),
       offsetRotate: "0deg",
       offsetDistance: "0%"
     });
@@ -4705,7 +4714,7 @@ function watchSuck(id, isAgain, vr, cr) {
     if (q && (q.x !== tx || q.y !== ty)) {
       tx = q.x;
       ty = q.y;
-      drops.forEach((d, k) => d.style.offsetPath = route(pts[k][0], pts[k][1], tx, ty));
+      drops.forEach((d, k) => d.style.offsetPath = route(k, tx, ty));
     }
     requestAnimationFrame(follow);
   };
@@ -4730,7 +4739,7 @@ function watchSuck(id, isAgain, vr, cr) {
     fill: "both"
   }).finished.then(() => d.remove()));
   Promise.race(flows).then(() => {
-    const c2x = tx - Math.round((tx - mx) * .25), c2y = Math.min(my, ty) - 120, dl = Math.hypot(tx - c2x, ty - c2y) || 1;
+    const [, , c2x, c2y] = ctl(tx, ty), dl = Math.hypot(tx - c2x, ty - c2y) || 1;
     watchPour(id, isAgain, [ (tx - c2x) / dl, (ty - c2y) / dl ]);
   }).catch(() => {});
   Promise.all(flows).catch(() => {}).finally(() => {
