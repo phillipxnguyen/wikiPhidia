@@ -4651,9 +4651,16 @@ function pillLand(id, isAgain) {
 }
 
 function watchSuckCap(id, isAgain, snap) {
-  const lst = document.querySelector("#watchPop .w-list"), pill = document.querySelector(`#watchPop .w-row[data-id="${id}"] .w-t`), cap = document.querySelector("#watchPop .w-capline");
-  const nr = cap && cap.textContent.trim() ? cap.getBoundingClientRect() : snap, sr = watchFlowMorph ? snap : nr, p = pill && pill.getBoundingClientRect(), l = lst && lst.getBoundingClientRect();
-  if (!cap || !p || !sr.width || p.bottom < l.top || p.top > l.bottom) return pillLand(id, isAgain);
+  const cap = document.querySelector("#watchPop .w-capline"), aim = watchAim(id);
+  const nr = cap && cap.textContent.trim() ? cap.getBoundingClientRect() : snap, sr = watchFlowMorph ? snap : nr, p = aim && {
+    left: aim.x,
+    right: aim.x,
+    top: aim.y,
+    bottom: aim.y,
+    width: 0,
+    height: 0
+  };
+  if (!cap || !p || !sr.width) return pillLand(id, isAgain);
   if (!document.getElementById("wGoo")) document.body.insertAdjacentHTML("beforeend", '<svg id="wGoo" width="0" height="0" aria-hidden="true" style="position:absolute"><filter id="wGooF"><feGaussianBlur in="SourceGraphic" stdDeviation="6" result="b"/><feColorMatrix in="b" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -8" result="g"/><feComposite in="SourceGraphic" in2="g" operator="atop"/></filter></svg>');
   const col = isAgain ? "#d64545" : "#1f9d55", box = document.createElement("div");
   box.className = "w-flow";
@@ -4742,17 +4749,10 @@ function watchSuckCap(id, isAgain, snap) {
       fill: "both"
     }).finished;
   });
-  Promise.race(flows).then(() => pillLand(id, isAgain)).then(() => pill.isConnected && pill.animate([ {
-    transform: "scale(1)"
-  }, {
-    transform: "scale(1.2)",
-    offset: .4
-  }, {
-    transform: "scale(1)"
-  } ], {
-    duration: 420,
-    easing: "ease-out"
-  })).catch(() => {});
+  Promise.race(flows).then(() => {
+    const dl = Math.hypot(x1 - gx, y1 - gy) || 1;
+    watchPour(id, isAgain, [ (x1 - gx) / dl, (y1 - gy) / dl ]);
+  }).catch(() => {});
   Promise.all(flows).catch(() => {}).finally(() => {
     pillLand(id, isAgain);
     box.remove();
