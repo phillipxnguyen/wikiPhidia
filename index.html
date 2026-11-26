@@ -2459,6 +2459,7 @@ window.onYouTubeIframeAPIReady = function(){
   .w-stage.w-edge .w-cap .w-capline:not(:has(> .w-tr)), .w-stage.w-edge .w-cap .w-capline:has(> .w-tr) > *{background-image:linear-gradient(90deg, rgba(255,255,255,.24), transparent 48px, transparent calc(100% - 48px), rgba(255,255,255,.24));}
   @media (min-width:821px), (hover:hover){.watch-pop{padding-bottom:0;}.watch-pop .w-main{gap:0;}.watch-pop .w-ctl{height:72px;}}
   .w-capline{display:flex;flex-direction:column;align-items:center;gap:4px;max-width:900px;}
+  .w-capline > *{text-wrap:balance;}
   .w-capline[hidden]{display:none;}
   .w-text{font-size:22px;line-height:30px;font-weight:600;color:#ffffff;}
   .w-py{font-size:15px;line-height:22px;font-weight:500;color:#e8c46a;-webkit-user-select:none;user-select:none;}
@@ -4567,11 +4568,11 @@ function watchGrade(isAgain, now1) {
     if (taskRun && taskRun.theater && (!q.length || taskRun.day && dayRunOver())) return taskTheaterDone();
     paintWatchList();
     const vidNow = !cabin && !reducedMotion() && document.querySelector("#watchPop .w-video"), snap = vidNow ? vidNow.getBoundingClientRect() : null;
-    const capNow = snap && watch.prefs.sub && document.querySelector("#watchPop .w-capline"), capSnap = capNow && capNow.offsetParent && capNow.textContent.trim() ? capNow.getBoundingClientRect() : null, capLines = capSnap ? capLineRects(capNow) : null;
+    const capNow = snap && watch.prefs.sub && document.querySelector("#watchPop .w-capline"), capSnap = capNow && capNow.offsetParent && capNow.textContent.trim() ? capNow.getBoundingClientRect() : null;
     const ni = watch.lines.findIndex(x => x.id === nextId);
     if (ni >= 0) watchSeek(ni);
     paintWatchCounts();
-    if (capSnap) requestAnimationFrame(() => watchSuckCap(r.id, isAgain, capSnap, capLines)); else if (snap) requestAnimationFrame(() => watchSuck(r.id, isAgain, snap)); else pillLand(r.id, isAgain);
+    if (capSnap) requestAnimationFrame(() => watchSuckCap(r.id, isAgain, capSnap)); else if (snap) requestAnimationFrame(() => watchSuck(r.id, isAgain, snap)); else pillLand(r.id, isAgain);
   };
   if (reducedMotion() || !cabin) after(); else setTimeout(after, 240);
 }
@@ -4658,47 +4659,9 @@ function pillLand(id, isAgain) {
   if (row && watch.graded && watch.graded.has(id)) row.classList.add(watch.again && watch.again.has(id) ? "graded-again" : "graded-good");
 }
 
-function capLineRects(cap) {
-  const lines = [], rects = [], walk = document.createTreeWalker(cap, NodeFilter.SHOW_TEXT);
-  for (let n = walk.nextNode(); n; n = walk.nextNode()) {
-    if (!n.nodeValue.trim()) continue;
-    const range = document.createRange();
-    range.selectNodeContents(n);
-    rects.push(...range.getClientRects());
-  }
-  rects.filter(r => r.width > 1 && r.height > 1).sort((a, b) => a.top - b.top).forEach(r => {
-    const mid = (r.top + r.bottom) / 2, line = lines.find(l => mid > l.top && mid < l.bottom);
-    if (line) {
-      line.left = Math.min(line.left, r.left);
-      line.right = Math.max(line.right, r.right);
-      line.top = Math.min(line.top, r.top);
-      line.bottom = Math.max(line.bottom, r.bottom);
-    } else lines.push({
-      left: r.left,
-      right: r.right,
-      top: r.top,
-      bottom: r.bottom
-    });
-  });
-  return lines.map(l => Object.assign(l, {
-    width: l.right - l.left,
-    height: l.bottom - l.top
-  }));
-}
-
-function watchSuckCap(id, isAgain, snap, lines) {
+function watchSuckCap(id, isAgain, snap) {
   const cap = document.querySelector("#watchPop .w-capline"), aim = watchAim(id);
-  const textBox = lines && lines.length ? {
-    left: Math.min(...lines.map(l => l.left)),
-    right: Math.max(...lines.map(l => l.right)),
-    top: Math.min(...lines.map(l => l.top)),
-    bottom: Math.max(...lines.map(l => l.bottom))
-  } : null;
-  if (textBox) Object.assign(textBox, {
-    width: textBox.right - textBox.left,
-    height: textBox.bottom - textBox.top
-  });
-  const nr = textBox || (cap && cap.textContent.trim() ? cap.getBoundingClientRect() : snap), sr = watchFlowMorph && !textBox ? snap : nr, p = aim && {
+  const nr = cap && cap.textContent.trim() ? cap.getBoundingClientRect() : snap, sr = watchFlowMorph ? snap : nr, p = aim && {
     left: aim.x,
     right: aim.x,
     top: aim.y,
@@ -4732,18 +4695,10 @@ function watchSuckCap(id, isAgain, snap, lines) {
       bg.remove();
     });
   }
-  const x1 = Math.round(p.left + p.width / 2), y1 = Math.round(p.top + p.height / 2), z = Math.round(Math.min(textBox ? Math.min(...lines.map(l => l.height)) : sr.height, 28));
+  const x1 = Math.round(p.left + p.width / 2), y1 = Math.round(p.top + p.height / 2), z = Math.round(Math.min(sr.height, 28));
+  const rowsN = Math.max(1, Math.ceil((sr.height - z) / (z * .6)) + 1), colsN = Math.max(Math.ceil(56 / rowsN), Math.round(sr.width / 10));
   const pts = [];
-  if (textBox) {
-    const total = lines.reduce((t, l) => t + l.width, 0) || 1, want = Math.max(72, Math.round(total / 8));
-    lines.forEach(l => {
-      const rowsL = Math.max(1, Math.ceil((l.height - z) / (z * .6)) + 1), n = Math.max(4, Math.round(want * l.width / total / rowsL));
-      for (let i = 0; i < n; i++) for (let j = 0; j < rowsL; j++) pts.push([ Math.round(l.left + z / 2 + Math.max(0, l.width - z) * i / (n - 1)), Math.round(rowsL === 1 ? l.top + l.height / 2 : l.top + z / 2 + (l.height - z) * j / (rowsL - 1)) ]);
-    });
-  } else {
-    const rowsN = Math.max(1, Math.ceil((sr.height - z) / (z * .6)) + 1), colsN = Math.max(Math.ceil(56 / rowsN), Math.round(sr.width / 10));
-    for (let i = 0; i < colsN; i++) for (let j = 0; j < rowsN; j++) pts.push([ Math.round(sr.left + z / 2 + (sr.width - z) * i / (colsN - 1)), Math.round(rowsN === 1 ? sr.top + sr.height / 2 : sr.top + z / 2 + (sr.height - z) * j / (rowsN - 1)) ]);
-  }
+  for (let i = 0; i < colsN; i++) for (let j = 0; j < rowsN; j++) pts.push([ Math.round(sr.left + z / 2 + (sr.width - z) * i / (colsN - 1)), Math.round(rowsN === 1 ? sr.top + sr.height / 2 : sr.top + z / 2 + (sr.height - z) * j / (rowsN - 1)) ]);
   const inX = x1 >= sr.left && x1 <= sr.right, inY = y1 >= sr.top && y1 <= sr.bottom, jit = (a, b) => Math.round(a + Math.random() * (b - a));
   const gx = inX ? jit(Math.max(sr.left + z / 2, x1 - 40), Math.min(sr.right - z / 2, x1 + 40)) : x1 > sr.right ? Math.round(sr.right - z / 2) : Math.round(sr.left + z / 2);
   const gy = inY || !inX ? jit(sr.top + z / 2, sr.bottom - z / 2) : y1 > sr.bottom ? Math.round(sr.bottom - z / 2) : Math.round(sr.top + z / 2);
@@ -5024,7 +4979,24 @@ function watchPhone() {
   return matchMedia("(max-width:820px) and (hover:none)").matches;
 }
 
+function balanceCap(line) {
+  if (!line || line.hidden || !line.offsetParent) return;
+  line.querySelectorAll(":scope > :is(.w-text, .w-tr)").forEach(el => {
+    el.style.maxWidth = "";
+    const h = el.offsetHeight, w = Math.ceil(el.getBoundingClientRect().width);
+    if (!h || !w) return;
+    let lo = Math.floor(w / 3), hi = w;
+    while (hi - lo > 2) {
+      const mid = Math.round((lo + hi) / 2);
+      el.style.maxWidth = mid + "px";
+      if (el.offsetHeight > h) lo = mid; else hi = mid;
+    }
+    el.style.maxWidth = hi < w ? hi + "px" : "";
+  });
+}
+
 function placeWatchCap() {
+  balanceCap(document.querySelector("#watchPop .w-capline"));
   const box = document.getElementById("watchPop"), cap = box && box.querySelector(".w-cap"), stage = cap && cap.parentElement;
   if (!watch || !cap || !stage) return;
   const y = watch.prefs.capY;
