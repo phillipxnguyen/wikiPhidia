@@ -290,6 +290,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-207 | `8e25be1` | Video tiếng Việt: gộp Watch và Interpreter, nút sub chuyển đổi (bật = Watch, tắt = Interpreter) có animation video phóng to/thu nhỏ, list trượt ra/vào; ẩn công tắc mode trên thanh trên |
 | THEATER-208 | `fbaa7fb` | Đổi tên mode Watch thành YouTube (nút mode, README) |
 | THEATER-209 | `3ac74e7` | Animation chuyển YouTube/Interpreter mượt hơn: video đẩy/kéo list, sub đổi cỡ theo, thanh trên đứng yên, các nút dưới trượt chỗ (loop thu/phóng) thay vì mờ dần |
+| THEATER-210 | `81205ef` | Búa to hơn (448×192px); chỗ đập luôn chọn sao cho lúc chạm cả búa, kể cả cán, nằm trọn trong màn hình |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
