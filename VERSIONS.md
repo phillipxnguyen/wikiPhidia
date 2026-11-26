@@ -57,6 +57,7 @@ Hàm chính: `isListenMode`, `listenBatch`, `startSequenceLoop`, `stopSequenceLo
 | SPEAK-30 | `ae0d984` | Câu hỏi lớn hơn câu trả lời 6px ở mọi nơi: tờ giấy và list 26/20, ô sửa và điện thoại 24/18 |
 | SPEAK-31 | `d065cfb` | Câu hỏi to hơn 6px chỉ trên tờ Speaking (26/20, điện thoại 24/18); list và ô sửa trả về như cũ |
 | SPEAK-32 | `7b27273` | Từ nằm trong câu hỏi giữ màu xanh lá/xanh dương như mọi nơi (không còn mực đen) |
+| SPEAK-33 | `84b20a0` | Câu hỏi (Q) in đậm, màu chữ thường thay cho màu cam; pinyin vẫn giữ màu cam riêng |
 
 Hàm chính: `ieltsPaperHtml`, `ieltsFrontHtml`, `entryHidden`, `revealAction`, `render` (nhánh `groupViewStyle === "ielts"`). Cùng `ieltsHints`, `ieltsHintNext`, `ieltsHintId` (Hint).
 
