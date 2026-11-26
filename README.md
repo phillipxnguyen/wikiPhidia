@@ -20,7 +20,7 @@ The shared rules of the whole app, one line each. They hold in every mode (☰ F
 7. Text is kept clean: only ordinary punctuation in questions and answers.
 8. Nothing moves a card between Lessons and Vocabulary: both read the same cards and notes, so there is no move key or button; where a new card goes is settled once, when it is added.
 9. A video lesson keeps its subtitle lines as they are; joining them into stretches (15 s, 30 s or 1 min) is your choice, made for the whole lesson at once, and can be undone (Easy).
-10. Easy, Medium and Hard are three separate ways to study the same video: each keeps its own 🆕 ⏳ ✅ (a line learnt in Easy is new again in Medium's longer stretch, and the other way round), but everything else is shared and never lost when you switch: a word you look up or add, its meaning and notes, in any of the three, stays on the sentence it belongs to and shows in the other two.
+10. Easy, Medium and Hard are three separate ways to study the same video: each keeps its own 🆕 ⏳ ✅ (a line learnt in Easy is new again in Medium's longer stretch, and the other way round), but everything else is shared and never lost when you switch: a joined stretch is only its sentences shown together, so whatever you do on it goes back to them: a word you look up, add, change or delete lands on (or leaves) the sentence it belongs to, and a sentence you correct in the stretch is corrected in its own line, in all three levels.
 
 ### 2. Words, look-ups and notes
 1. Your words are every word of every lesson; between Chinese, Japanese and Korean, which share characters, only words of the same language count (a Japanese word may still be marked in a line of kanji alone).

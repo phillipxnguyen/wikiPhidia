@@ -16989,6 +16989,38 @@ function splitJoinedCard(c) {
       });
       return r;
     });
+    const was = joinSentences(back.map(r => r.q)), text = oneLine(c.q || "");
+    if (text && text !== oneLine(was)) {
+      let pos = 0;
+      const spots = back.map(r => {
+        const t = oneLine(r.q || ""), at = t ? text.indexOf(t, pos) : -1;
+        if (at < 0) return null;
+        pos = at + t.length;
+        return [ at, pos ];
+      });
+      for (let k = 0; k < back.length; k++) {
+        if (spots[k]) continue;
+        let e = k;
+        while (e + 1 < back.length && !spots[e + 1]) e++;
+        const from = k ? spots[k - 1] ? spots[k - 1][1] : 0 : 0, to = e + 1 < back.length ? spots[e + 1][0] : text.length;
+        const sents = text.slice(from, to).trim().split(/(?<=[.!?。！？…])\s+/).filter(Boolean), n = e - k + 1;
+        for (let j = 0; j < n; j++) {
+          const piece = (j === n - 1 ? sents.slice(j) : sents.slice(j, j + 1)).join(" ").trim(), r = back[k + j];
+          if (!piece) continue;
+          r.q = piece;
+          r.qHtml = textHtml(piece);
+        }
+        k = e;
+      }
+    }
+    const nowTerms = new Set(vocabEntriesOf(c).map(e => e.tkey));
+    back.forEach(r => vocabEntriesOf(r).filter(e => !nowTerms.has(e.tkey)).forEach(e => {
+      const next = rewrittenVocabNotes(r, e, null, null);
+      if (!next) return;
+      r.notes = next.notes;
+      r.notesHtml = next.notesHtml;
+      if (r.vocab) delete r.vocab[e.key];
+    }));
     const had = new Set(back.flatMap(r => vocabEntriesOf(r).map(e => e.key)));
     vocabEntriesOf(c).forEach(e => {
       if (had.has(e.key)) return;
