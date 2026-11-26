@@ -481,6 +481,7 @@ Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefC
 | FLASH-226 | `536fa1c` | Không tải được bản dịch câu (máy dịch lỗi/chặn): thẻ không chờ mãi, chuyển sang mặt Podcast đọc to |
 | FLASH-227 | `73d4c86` | Thứ tự học: mọi thẻ ôn (đến hạn, Done, vừa Again) xáo ngẫu nhiên tuyệt đối, cả phiên học theo ngôn ngữ; chỉ thẻ mới theo thứ tự (Lessons cũng vậy) |
 | FLASH-228 | `f82ce36` | Đổi ngôn ngữ khi học: lá cờ có cán hé vào từ mép trái, nghiêng xuống, vẫy rồi rút về |
+| FLASH-229 | `b01bffa` | Chỉ giữ font dễ đọc: 12 font web (Inter, Be Vietnam Pro, Manrope, Lexend, Work Sans, Montserrat, Source Serif 4, Literata, Lora, Merriweather, Bitter, Roboto Slab), 4 font máy, Noto cho Trung/Hàn/Nhật |
 
 Hàm chính: `buildVocabCard`, `fillVocabCard`, `otherLessonSentence`, `fetchWorld`, `worldSentences`, `worldFits`, `vocabBackInner`, `flipVocab`, `flyVocab`, `gradeVocab`, `settleVocabCard`, `showVocabDeck`, `fitVocabCards`, `CARD_LOOKS`, `cardType`, `TYPE_LATIN`, `TYPE_CJK`.
 
