@@ -12599,16 +12599,9 @@ function paintOwnDictFloat() {
   if (typed != null) input.dataset.dirty = "1";
   if (notes && typedNotes != null) notes.dataset.dirty = "1";
   pop.oldNotes = oldNotes;
-  const origBlock = found ? meaningLines(found.meaning).join("\n") : "", live = origBlock ? [ ...card.querySelectorAll(".od-mine .od-term") ].find(b => b.dataset.m === origBlock) : null;
-  if (live) live.classList.add("od-live");
   const sync = () => {
-    const parts = meaningLines(input.value), now = parts.join("\n");
-    card.querySelectorAll(".od-term:not(.od-block)").forEach(b => b.classList.toggle("od-cur", parts.includes(b.dataset.m)));
-    if (live && !live.isContentEditable) {
-      live.dataset.m = now;
-      live.textContent = now;
-      live.hidden = !now;
-    }
+    const parts = meaningLines(input.value), now = parts.join("\n"), whole = foldMeaning(now);
+    card.querySelectorAll(".od-term").forEach(b => b.classList.toggle("od-cur", b.classList.contains("od-block") ? foldMeaning(b.dataset.m) === whole : parts.includes(b.dataset.m)));
     alignPosLabels(card);
     if (!save) return;
     const changed = now !== (found ? found.meaning : "") || !!notes && notes.innerHTML !== oldNotes || !!found && title.textContent.replace(/\s+/g, " ").trim() !== found.term;
@@ -12761,7 +12754,7 @@ document.addEventListener("click", e => {
   const chip = e.target.closest(".od-term"), input = fl.querySelector(".od-mean-in");
   if (chip && input) {
     if (chip.isContentEditable) return;
-    if (chip.classList.contains("od-cur") || chip.classList.contains("od-live")) return editMeaningPill(chip, e);
+    if (chip.classList.contains("od-cur")) return editMeaningPill(chip, e);
     input.value = chip.dataset.m;
     input.dataset.dirty = "1";
     input.dispatchEvent(new Event("input", {
@@ -24272,16 +24265,11 @@ function wireVocabEditor(items) {
   };
   document.getElementById("vocabEditSave").onclick = save;
 
-  const main = document.getElementById("vocabEditMain"), ownBlock = item ? meaningLines(item.meaning || "").join("\n") : "", liveOwn = ownBlock ? [ ...document.querySelectorAll("#editPopup .ed-means .od-mine .od-term") ].find(b => b.dataset.m === ownBlock) : null;
-  if (liveOwn) liveOwn.classList.add("od-live");
+  const main = document.getElementById("vocabEditMain");
   const markMeans = () => {
     const a = main && main.querySelector(".vem-a"), lines = a ? a.innerText.split("\n").map(x => x.replace(/\s+/g, " ").trim()).filter(Boolean) : [], have = lines.map(foldMeaning);
-    document.querySelectorAll("#editPopup .ed-means .od-term:not(.od-block)").forEach(b => b.classList.toggle("od-cur", have.includes(foldMeaning(b.dataset.m))));
-    if (liveOwn && !liveOwn.isContentEditable) {
-      liveOwn.dataset.m = lines.join("\n");
-      liveOwn.textContent = lines.join("\n");
-      liveOwn.hidden = !lines.length;
-    }
+    const whole = foldMeaning(lines.join("\n"));
+    document.querySelectorAll("#editPopup .ed-means .od-term").forEach(b => b.classList.toggle("od-cur", b.classList.contains("od-block") ? foldMeaning(b.dataset.m) === whole : have.includes(foldMeaning(b.dataset.m))));
     alignPosLabels(document.querySelector("#editPopup .ed-means"));
   };
   if (main) main.addEventListener("input", () => {
@@ -24292,7 +24280,7 @@ function wireVocabEditor(items) {
     const a = main && main.querySelector(".vem-a");
     if (!a) return;
     if (b.isContentEditable) return;
-    if (b.classList.contains("od-cur") || b.classList.contains("od-live")) return editMeaningPill(b, ev);
+    if (b.classList.contains("od-cur")) return editMeaningPill(b, ev);
     a.innerHTML = b.dataset.m.split("\n").map(x => `<div>${escapeHtml(x)}</div>`).join("");
     main.dispatchEvent(new Event("input", {
       bubbles: true
