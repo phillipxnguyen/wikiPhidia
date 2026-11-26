@@ -4681,55 +4681,57 @@ function watchSuck(id, isAgain, vr, cr) {
     const a = Math.random() * Math.PI * 2, q = Math.sqrt(Math.random()) * rnd(.7, 1), ex = Math.cos(a) * q * (w - z) / 2, ey = Math.sin(a) * q * (h - z) / 2;
     pts.push([ Math.round(mx + ex - ey * tilt), Math.round(my + ey + ex * tilt * h / w), Math.round(z * rnd(.5, 1.1)) ]);
   }
-  const inX = x1 >= sr.left && x1 <= sr.right, inY = y1 >= sr.top && y1 <= sr.bottom, jit = (a, b) => Math.round(a + Math.random() * (b - a));
-  const gx = inX ? jit(Math.max(sr.left + z / 2, x1 - 40), Math.min(sr.right - z / 2, x1 + 40)) : x1 > sr.right ? Math.round(sr.right - z / 2) : Math.round(sr.left + z / 2);
-  const gy = inY || !inX ? jit(sr.top + z / 2, sr.bottom - z / 2) : y1 > sr.bottom ? Math.round(sr.bottom - z / 2) : Math.round(sr.top + z / 2);
-  const order = pts.map(([ x, y ]) => Math.hypot(gx - x, gy - y)).map((d, i) => [ d, i ]).sort((a, b) => a[0] - b[0]).map(([, i]) => i), rank = [];
+  const order = pts.map(([ x, y ]) => Math.hypot(x1 - x, y1 - y)).map((d, i) => [ d, i ]).sort((a, b) => a[0] - b[0]).map(([, i]) => i), rank = [];
   order.forEach((i, k) => rank[i] = k);
-  const bx = Math.floor(Math.min(sr.left, p.left) - 24), by = Math.floor(Math.min(sr.top, p.top) - 24);
-  Object.assign(box.style, {
-    inset: "auto",
-    left: bx + "px",
-    top: by + "px",
-    width: Math.ceil(Math.max(sr.right, p.right) + 24 - bx) + "px",
-    height: Math.ceil(Math.max(sr.bottom, p.bottom) + 24 - by) + "px"
-  });
-  const flows = pts.map(([ ax, ay, zz ], k) => {
-    const x0 = ax - bx, y0 = ay - by, hx = gx - bx, hy = gy - by, ex = x1 - bx, ey = y1 - by;
-    const d = document.createElement("div"), c2x = ex - Math.round(Math.min(160, Math.abs(x1 - gx) * .4));
+  const route = (ax, ay, ex, ey) => `path("M ${ax} ${ay} C ${mx + Math.round((ex - mx) * .3)} ${my - 160}, ${ex - Math.round((ex - mx) * .25)} ${Math.min(my, ey) - 120}, ${ex} ${ey}")`;
+  const drops = pts.map(([ ax, ay, zz ]) => {
+    const d = document.createElement("div");
     Object.assign(d.style, {
       width: zz + "px",
       height: zz + "px",
       borderRadius: zz + "px",
       background: col,
-      offsetPath: `path("M ${x0} ${y0} C ${hx} ${hy}, ${c2x} ${ey}, ${ex} ${ey}")`,
+      offsetPath: route(ax, ay, x1, y1),
       offsetRotate: "0deg",
       offsetDistance: "0%"
     });
     box.appendChild(d);
-    return d.animate([ {
-      offsetDistance: "0%",
-      opacity: .9,
-      transform: "scale(1)"
-    }, {
-      offsetDistance: "88%",
-      opacity: .9,
-      transform: `scale(${Math.min(1, 16 / z)})`,
-      offset: .88
-    }, {
-      offsetDistance: "100%",
-      opacity: 0,
-      transform: `scale(${Math.min(1, 8 / z)})`
-    } ], {
-      duration: 720,
-      delay: Math.max(0, Math.round(120 * rank[k] / Math.max(1, pts.length - 1) + (Math.random() - .5) * 16)),
-      easing: "cubic-bezier(.4, 0, .6, 1)",
-      fill: "both"
-    }).finished;
+    return d;
   });
+  let tx = x1, ty = y1;
+  const follow = () => {
+    if (!box.isConnected) return;
+    const q = watchAim(id);
+    if (q && (q.x !== tx || q.y !== ty)) {
+      tx = q.x;
+      ty = q.y;
+      drops.forEach((d, k) => d.style.offsetPath = route(pts[k][0], pts[k][1], tx, ty));
+    }
+    requestAnimationFrame(follow);
+  };
+  requestAnimationFrame(follow);
+  const flows = drops.map((d, k) => d.animate([ {
+    offsetDistance: "0%",
+    opacity: .9,
+    transform: "scale(1)"
+  }, {
+    offsetDistance: "94%",
+    opacity: .9,
+    transform: `scale(${Math.min(1, 16 / z)})`,
+    offset: .94
+  }, {
+    offsetDistance: "100%",
+    opacity: .9,
+    transform: `scale(${Math.min(1, 10 / z)})`
+  } ], {
+    duration: 680,
+    delay: Math.max(0, Math.round(120 * rank[k] / Math.max(1, pts.length - 1) + (Math.random() - .5) * 16)),
+    easing: "cubic-bezier(.4, 0, .5, 1)",
+    fill: "both"
+  }).finished.then(() => d.remove()));
   Promise.race(flows).then(() => {
-    const dl = Math.hypot(x1 - gx, y1 - gy) || 1;
-    watchPour(id, isAgain, [ (x1 - gx) / dl, (y1 - gy) / dl ]);
+    const c2x = tx - Math.round((tx - mx) * .25), c2y = Math.min(my, ty) - 120, dl = Math.hypot(tx - c2x, ty - c2y) || 1;
+    watchPour(id, isAgain, [ (tx - c2x) / dl, (ty - c2y) / dl ]);
   }).catch(() => {});
   Promise.all(flows).catch(() => {}).finally(() => {
     pillLand(id, isAgain);
