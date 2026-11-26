@@ -2605,7 +2605,7 @@ window.onYouTubeIframeAPIReady = function(){
   .w-hammer.from-left{transform-origin:0 60px;}
   .w-hammer.from-right{transform-origin:280px 60px;}
   .w-hammer.from-right > svg{transform:scaleX(-1);}
-  .w-flash{position:fixed;z-index:958;border-radius:12px;pointer-events:none;}
+  .w-flash{position:fixed;z-index:958;border-radius:50%;pointer-events:none;}
   .w-spark{position:fixed;z-index:961;border-radius:50%;pointer-events:none;box-shadow:0 0 6px rgba(255,230,150,.9);}
   @media (min-width:821px), (hover:hover){.watch-pop:not(.cabin):not(.w-sub) .w-cap{display:none;}}
   .watch-pop.cabin .w-pill[data-w="sub"]{display:none;}
@@ -4581,16 +4581,16 @@ function watchHammer(id, isAgain) {
   const vid = document.querySelector("#watchPop .w-video"), vr = vid && vid.getBoundingClientRect();
   if (!vr || !vr.width) return pillLand(id, isAgain);
   const left = isAgain, dir = left ? 1 : -1, col = isAgain ? "#d64545" : "#1f9d55", grip = isAgain ? [ "#f07070", "#c43c3c", "#7e1f1f" ] : [ "#5fd38d", "#1f9d55", "#0f5c31" ];
-  const cx = Math.round(vr.left + vr.width / 2 - dir * vr.width / 8), cy = Math.round(vr.top + vr.height * .55), px = left ? cx - 227 : cx - 53, py = cy - 116;
+  const rx = Math.round(vr.left + vr.width * (.2 + Math.random() * .8) + Math.random() * 120), cx = left ? Math.max(rx, 240) : Math.min(rx, innerWidth - 80), cy = Math.round(vr.top + vr.height * (.3 + Math.random() * .5)), px = left ? cx - 227 : cx - 53, py = cy - 116;
   const hm = document.createElement("div");
   hm.className = "w-hammer " + (left ? "from-left" : "from-right");
   hm.innerHTML = HAMMER_SVG(grip);
   hm.style.left = px + "px";
   hm.style.top = py + "px";
   document.body.appendChild(hm);
-  const sh = "drop-shadow(0 8px 12px rgba(0,0,0,.5))", rot = a => `rotate(${-dir * a}deg)`;
+  const swing = Math.round(52 + Math.random() * 16), sh = "drop-shadow(0 8px 12px rgba(0,0,0,.5))", rot = a => `rotate(${-dir * a}deg)`;
   hm.animate([ {
-    transform: rot(60),
+    transform: rot(swing),
     filter: `${sh} blur(0px)`,
     opacity: 1,
     easing: "cubic-bezier(.55, 0, 1, .45)"
@@ -4635,12 +4635,13 @@ function watchHammer(id, isAgain) {
     if (!watch) return;
     const flash = document.createElement("div");
     flash.className = "w-flash";
+    const fr = Math.round(vr.height * .6);
     Object.assign(flash.style, {
-      left: Math.round(vr.left) + "px",
-      top: Math.round(vr.top) + "px",
-      width: Math.round(vr.width) + "px",
-      height: Math.round(vr.height) + "px",
-      background: `radial-gradient(circle at ${cx - Math.round(vr.left)}px ${cy - Math.round(vr.top)}px, ${col}, transparent 70%)`
+      left: cx - fr + "px",
+      top: cy - fr + "px",
+      width: fr * 2 + "px",
+      height: fr * 2 + "px",
+      background: `radial-gradient(circle, ${col}, transparent 70%)`
     });
     document.body.append(flash);
     for (let k = 0; k < 12; k++) {
