@@ -2607,7 +2607,7 @@ window.onYouTubeIframeAPIReady = function(){
   .w-row:has(> .w-row-pour){isolation:isolate;}
   .w-row-pour{position:absolute;inset:0;z-index:-1;pointer-events:none;}
   .w-t-fill{position:absolute;inset:0;z-index:-1;border-radius:12px;}
-  .w-wash{position:fixed;z-index:960;border-radius:12px;pointer-events:none;}
+  .w-wash{position:fixed;z-index:960;pointer-events:none;}
   @media (min-width:821px), (hover:hover){.watch-pop:not(.cabin):not(.w-sub) .w-cap{display:none;}}
   .watch-pop.cabin .w-pill[data-w="sub"]{display:none;}
   @media (max-width:820px) and (hover:none){.watch-pop .w-pill[data-w="sub"]{display:none;}}
@@ -4562,11 +4562,11 @@ function watchGrade(isAgain, now1) {
     if (taskRun && taskRun.theater && (!q.length || taskRun.day && dayRunOver())) return taskTheaterDone();
     paintWatchList();
     const vidNow = !cabin && !reducedMotion() && document.querySelector("#watchPop .w-video"), snap = vidNow ? vidNow.getBoundingClientRect() : null;
-    const capNow = snap && watch.prefs.sub && document.querySelector("#watchPop .w-capline"), capSnap = capNow && capNow.offsetParent && capNow.textContent.trim() ? capNow.getBoundingClientRect() : null;
+    const capNow = snap && watch.prefs.sub && document.querySelector("#watchPop .w-capline"), capSnap = capNow && capNow.offsetParent && capNow.textContent.trim() ? capLineRects(capNow) : null;
     const ni = watch.lines.findIndex(x => x.id === nextId);
     if (ni >= 0) watchSeek(ni);
     paintWatchCounts();
-    if (capSnap) requestAnimationFrame(() => watchSuckCap(r.id, isAgain, capSnap)); else if (snap) requestAnimationFrame(() => watchSuck(r.id, isAgain, snap)); else pillLand(r.id, isAgain);
+    if (capSnap && capSnap.length) requestAnimationFrame(() => watchSuckCap(r.id, isAgain, capSnap)); else if (snap) requestAnimationFrame(() => watchSuck(r.id, isAgain, snap)); else pillLand(r.id, isAgain);
   };
   if (reducedMotion() || !cabin) after(); else setTimeout(after, 240);
 }
@@ -4645,36 +4645,73 @@ function watchPour(id, isAgain, from) {
   });
 }
 
-function watchSuckCap(id, isAgain, sr) {
+function capLineRects(cap) {
+  const rects = [], lines = [], walk = document.createTreeWalker(cap, NodeFilter.SHOW_TEXT);
+  for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+    if (!n.nodeValue.trim()) continue;
+    const range = document.createRange();
+    range.selectNodeContents(n);
+    rects.push(...range.getClientRects());
+  }
+  rects.filter(r => r.width > 1 && r.height > 1).sort((a, b) => a.top - b.top).forEach(r => {
+    const mid = (r.top + r.bottom) / 2, line = lines.find(l => mid > l.top && mid < l.bottom);
+    if (!line) return lines.push({
+      left: r.left,
+      right: r.right,
+      top: r.top,
+      bottom: r.bottom
+    });
+    line.left = Math.min(line.left, r.left);
+    line.right = Math.max(line.right, r.right);
+    line.top = Math.min(line.top, r.top);
+    line.bottom = Math.max(line.bottom, r.bottom);
+  });
+  return lines.map(l => ({
+    left: Math.round(l.left - 8),
+    right: Math.round(l.right + 8),
+    top: Math.round(l.top - 2),
+    bottom: Math.round(l.bottom + 2)
+  }));
+}
+
+function watchSuckCap(id, isAgain, lines) {
   const aim = watchAim(id);
-  if (!aim || !sr || !sr.width) return pillLand(id, isAgain);
-  const col = isAgain ? "#d64545" : "#1f9d55", right = aim.x > sr.right, left = aim.x < sr.left;
-  const gx = Math.round(right ? sr.right - 12 : left ? sr.left + 12 : Math.max(sr.left + 12, Math.min(sr.right - 12, aim.x)));
-  const gy = Math.round(right || left ? sr.top + sr.height / 2 : aim.y > sr.bottom ? sr.bottom - 12 : sr.top + 12);
-  const wash = document.createElement("div"), far = Math.ceil(Math.max(...[ [ sr.left, sr.top ], [ sr.right, sr.top ], [ sr.left, sr.bottom ], [ sr.right, sr.bottom ] ].map(([ x, y ]) => Math.hypot(x - gx, y - gy))));
+  if (!aim || !lines.length) return pillLand(id, isAgain);
+  const col = isAgain ? "#d64545" : "#1f9d55", last = lines[lines.length - 1];
+  const L = Math.min(...lines.map(l => l.left)), T = lines[0].top, R = Math.max(...lines.map(l => l.right)), B = last.bottom;
+  const toRight = aim.x >= (last.left + last.right) / 2, gx = toRight ? last.right : last.left, gy = Math.round((last.top + last.bottom) / 2);
+  const poly = (l, t, r, b) => `inset(${t - T}px ${R - r}px ${B - b}px ${l - L}px round 12px)`;
+  const frames = [ {
+    clipPath: poly(lines[0].left, lines[0].top, lines[0].right, lines[0].bottom),
+    opacity: 0
+  }, {
+    clipPath: poly(lines[0].left, lines[0].top, lines[0].right, lines[0].bottom),
+    opacity: .85
+  } ];
+  lines.slice(1).forEach(l => frames.push({
+    clipPath: poly(l.left, l.top, l.right, l.bottom),
+    opacity: .85
+  }));
+  const tail = Math.round((last.bottom - last.top) / 4);
+  frames.push({
+    clipPath: poly(toRight ? gx - 2 : gx, gy - tail, toRight ? gx : gx + 2, gy + tail),
+    opacity: .9
+  });
+  frames.forEach((f, k) => f.offset = k === 0 ? 0 : k === 1 ? .2 : .2 + .8 * (k - 1) / (frames.length - 2));
+  const wash = document.createElement("div");
   wash.className = "w-wash";
   Object.assign(wash.style, {
-    left: Math.round(sr.left) + "px",
-    top: Math.round(sr.top) + "px",
-    width: Math.round(sr.width) + "px",
-    height: Math.round(sr.height) + "px",
+    left: L + "px",
+    top: T + "px",
+    width: R - L + "px",
+    height: B - T + "px",
     background: col
   });
   document.body.appendChild(wash);
-  const at = r => `circle(${r}px at ${gx - Math.round(sr.left)}px ${gy - Math.round(sr.top)}px)`;
-  wash.animate([ {
-    clipPath: at(far),
-    opacity: 0
-  }, {
-    clipPath: at(far),
-    opacity: .55,
-    offset: .25
-  }, {
-    clipPath: at(0),
-    opacity: .9
-  } ], {
-    duration: 640,
-    easing: "cubic-bezier(.5, 0, .7, 1)",
+  const dur = 380 + 220 * lines.length;
+  wash.animate(frames, {
+    duration: dur,
+    easing: "cubic-bezier(.45, 0, .55, 1)",
     fill: "forwards"
   }).finished.catch(() => {}).finally(() => wash.remove());
   setTimeout(() => watchSuck(id, isAgain, {
@@ -4684,7 +4721,7 @@ function watchSuckCap(id, isAgain, sr) {
     bottom: gy + 1,
     width: 2,
     height: 2
-  }), 420);
+  }), dur - 120);
 }
 
 function watchSuck(id, isAgain, vr) {
