@@ -2600,9 +2600,10 @@ window.onYouTubeIframeAPIReady = function(){
   html.focus-on.in-task .main-inner{padding:0;border-radius:0;background:none;box-shadow:none;}
   @media (max-width:820px) and (hover:none){html.focus-on .focus-exit{display:none;}html.focus-on .toolbar-flag{cursor:pointer;pointer-events:auto;}}
   .screen-cut{position:fixed;inset:0;z-index:940;overflow:hidden;pointer-events:none;}
-  .w-splash{position:fixed;inset:0;z-index:960;overflow:hidden;pointer-events:none;}
-  .w-drop{position:absolute;width:20px;height:20px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.35);}
-  .w-stream{position:absolute;left:0;top:0;overflow:visible;}
+  .w-flow{position:fixed;inset:0;z-index:960;overflow:hidden;pointer-events:none;filter:url(#wGooF);}
+  .w-flow > div{position:absolute;left:0;top:0;}
+  .w-cap .w-capline.w-cap-flow{-webkit-backdrop-filter:none;backdrop-filter:none;}
+  .w-cap .w-capline.w-cap-flow > *{position:relative;z-index:1;}
   .w-t.filling{isolation:isolate;color:#ffffff;transition:color .3s ease;}
   .w-row:has(> .w-row-pour){isolation:isolate;}
   .w-row-pour{position:absolute;inset:0;z-index:-1;pointer-events:none;}
@@ -4556,7 +4557,7 @@ function watchGrade(isAgain, now1) {
     if (!watch) return;
     if (!cabin && !reducedMotion()) {
       (watch.pillWait || (watch.pillWait = new Set)).add(r.id);
-      watch.flowUntil = performance.now() + 1800;
+      watch.flowUntil = performance.now() + 1400;
     }
     if (taskRun && taskRun.theater && (!q.length || taskRun.day && dayRunOver())) return taskTheaterDone();
     paintWatchList();
@@ -4646,104 +4647,104 @@ function watchPour(id, isAgain, from) {
 }
 
 function watchSuck(id, isAgain, vr, cr) {
-  const aim = watchAim(id), src = cr || vr;
+  const aim = watchAim(id), src = cr || vr, cap = cr && document.querySelector("#watchPop .w-capline");
   if (!aim || !src.width) return pillLand(id, isAgain);
-  const col = isAgain ? "#d64545" : "#1f9d55", box = document.createElement("div"), cx = Math.round(src.left + src.width * (.2 + Math.random() * .6)), cy = Math.round(cr ? cr.top + cr.height / 2 : vr.top + vr.height * (.3 + Math.random() * .45)), x1 = aim.x, y1 = aim.y;
-  box.className = "w-splash";
-  document.body.appendChild(box);
-  const drop = document.createElement("div"), ns = "http://www.w3.org/2000/svg", svg = document.createElementNS(ns, "svg");
-  drop.className = "w-drop";
-  drop.style.background = col;
-  drop.style.left = cx - 10 + "px";
-  drop.style.top = cy - 10 + "px";
-  box.appendChild(drop);
-  svg.setAttribute("class", "w-stream");
-  svg.setAttribute("width", innerWidth);
-  svg.setAttribute("height", innerHeight);
-  box.appendChild(svg);
-  const c2x = x1 - Math.round((x1 - cx) * .25), c2y = Math.min(cy, y1) - 120, dl = Math.hypot(x1 - c2x, y1 - c2y) || 1, from = [ (x1 - c2x) / dl, (y1 - c2y) / dl ];
-  const route = (ex, ey) => `M ${cx} ${cy} C ${cx + Math.round((ex - cx) * .3)} ${cy - 160}, ${ex - Math.round((ex - cx) * .25)} ${Math.min(cy, ey) - 120}, ${ex} ${ey}`, d = route(x1, y1);
-  const probe = document.createElementNS(ns, "path");
-  probe.setAttribute("d", d);
-  const len0 = Math.ceil(probe.getTotalLength());
-  let last = d, full = false;
-  const live = new Set, dur = 620;
-  const shoot = () => {
-    const strokes = [ [ 6, 220 ], [ 12, 70 ], [ 18, 18 ] ].map(([ w, seg ]) => {
-      const path = document.createElementNS(ns, "path");
-      path.setAttribute("d", last);
-      path.setAttribute("fill", "none");
-      path.setAttribute("stroke", col);
-      path.setAttribute("stroke-width", w);
-      path.setAttribute("stroke-linecap", "round");
-      svg.appendChild(path);
-      const len = Math.ceil(path.getTotalLength());
-      path.style.strokeDasharray = `${seg} ${len + 480}`;
-      path.style.strokeDashoffset = seg;
-      live.add(path);
-      return path.animate([ {
-        strokeDashoffset: seg
-      }, {
-        strokeDashoffset: seg - len - 220
-      } ], {
-        duration: dur,
-        easing: "cubic-bezier(.4, 0, .5, 1)",
-        fill: "both"
-      }).finished.finally(() => {
-        live.delete(path);
-        path.remove();
-      });
-    });
-    return Promise.all(strokes);
+  const w = Math.round(Math.min(src.width, 120)), h = Math.round(Math.min(src.height, 40)), mx = Math.round(src.left + w / 2 + (src.width - w) * (.2 + Math.random() * .6)), my = Math.round(cr ? src.top + src.height / 2 : src.top + src.height * (.3 + Math.random() * .45));
+  const sr = {
+    left: mx - Math.round(w / 2),
+    right: mx - Math.round(w / 2) + w,
+    top: my - Math.round(h / 2),
+    bottom: my - Math.round(h / 2) + h,
+    width: w,
+    height: h
+  }, p = {
+    left: aim.x,
+    right: aim.x,
+    top: aim.y,
+    bottom: aim.y,
+    width: 0,
+    height: 0
   };
-  drop.animate([ {
-    transform: "scale(.3)",
-    opacity: 0
-  }, {
-    transform: "scale(1)",
-    opacity: 1
-  } ], {
-    duration: 200,
-    easing: "ease-out",
-    fill: "forwards"
+  if (!document.getElementById("wGoo")) document.body.insertAdjacentHTML("beforeend", '<svg id="wGoo" width="0" height="0" aria-hidden="true" style="position:absolute"><filter id="wGooF"><feGaussianBlur in="SourceGraphic" stdDeviation="6" result="b"/><feColorMatrix in="b" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -8" result="g"/><feComposite in="SourceGraphic" in2="g" operator="atop"/></filter></svg>');
+  const col = isAgain ? "#d64545" : "#1f9d55", box = document.createElement("div");
+  box.className = "w-flow";
+  if (cap) {
+    box.style.zIndex = "auto";
+    cap.after(box);
+    cap.classList.add("w-cap-flow");
+  } else document.body.appendChild(box);
+  const x1 = Math.round(p.left + p.width / 2), y1 = Math.round(p.top + p.height / 2), z = Math.round(Math.min(sr.height, 28));
+  const rowsN = Math.max(1, Math.ceil((sr.height - z) / (z * .6)) + 1), colsN = Math.max(Math.ceil(56 / rowsN), Math.round(sr.width / 10));
+  const pts = [];
+  for (let i = 0; i < colsN; i++) for (let j = 0; j < rowsN; j++) pts.push([ Math.round(sr.left + z / 2 + (sr.width - z) * i / (colsN - 1)), Math.round(rowsN === 1 ? sr.top + sr.height / 2 : sr.top + z / 2 + (sr.height - z) * j / (rowsN - 1)) ]);
+  const inX = x1 >= sr.left && x1 <= sr.right, inY = y1 >= sr.top && y1 <= sr.bottom, jit = (a, b) => Math.round(a + Math.random() * (b - a));
+  const gx = inX ? jit(Math.max(sr.left + z / 2, x1 - 40), Math.min(sr.right - z / 2, x1 + 40)) : x1 > sr.right ? Math.round(sr.right - z / 2) : Math.round(sr.left + z / 2);
+  const gy = inY || !inX ? jit(sr.top + z / 2, sr.bottom - z / 2) : y1 > sr.bottom ? Math.round(sr.bottom - z / 2) : Math.round(sr.top + z / 2);
+  const order = pts.map(([ x, y ]) => Math.hypot(gx - x, gy - y)).map((d, i) => [ d, i ]).sort((a, b) => a[0] - b[0]).map(([, i]) => i), rank = [];
+  order.forEach((i, k) => rank[i] = k);
+  const bx = Math.floor(Math.min(sr.left, p.left) - 24), by = Math.floor(Math.min(sr.top, p.top) - 24);
+  Object.assign(box.style, {
+    inset: "auto",
+    left: bx + "px",
+    top: by + "px",
+    width: Math.ceil(Math.max(sr.right, p.right) + 24 - bx) + "px",
+    height: Math.ceil(Math.max(sr.bottom, p.bottom) + 24 - by) + "px"
   });
-  const follow = () => {
-    if (!box.isConnected) return;
-    const q = watchAim(id);
-    if (q) {
-      const nd = route(q.x, q.y);
-      if (nd !== last) {
-        last = nd;
-        live.forEach(path => path.setAttribute("d", nd));
-      }
-    }
-    requestAnimationFrame(follow);
-  };
-  requestAnimationFrame(follow);
-  const shots = [];
-  const pump = () => {
-    if (full || !box.isConnected) return;
-    shots.push(shoot().catch(() => {}));
-    setTimeout(pump, 110);
-  };
-  setTimeout(pump, 60);
-  setTimeout(() => {
-    Promise.resolve(watchPour(id, isAgain, from)).catch(() => pillLand(id, isAgain)).finally(() => {
-      full = true;
-      drop.animate([ {
-        transform: "scale(1)",
-        opacity: 1
-      }, {
-        transform: "scale(.3)",
-        opacity: 0
-      } ], {
-        duration: 320,
-        easing: "ease-in",
-        fill: "forwards"
-      });
-      Promise.all(shots).finally(() => box.remove());
+  const flows = pts.map(([ ax, ay ], k) => {
+    const x0 = ax - bx, y0 = ay - by, hx = gx - bx, hy = gy - by, ex = x1 - bx, ey = y1 - by;
+    const d = document.createElement("div"), c2x = ex - Math.round(Math.min(160, Math.abs(x1 - gx) * .4));
+    Object.assign(d.style, {
+      width: z + "px",
+      height: z + "px",
+      borderRadius: z + "px",
+      background: col,
+      offsetPath: `path("M ${x0} ${y0} L ${hx} ${hy} C ${hx + Math.round((ex - hx) * .55)} ${hy}, ${c2x} ${ey}, ${ex} ${ey}")`,
+      offsetRotate: "0deg",
+      offsetDistance: "0%"
     });
-  }, Math.round(60 + dur * len0 / (len0 + 220)));
+    box.appendChild(d);
+    const l1 = Math.hypot(hx - x0, hy - y0), l2 = Math.hypot(x1 - gx, y1 - gy) * 1.15, f = l1 / (l1 + l2), tf = Math.max(.04, Math.min(.5, f * 1.6)), t2 = Math.min(.7, tf + .14), pc = v => Math.round(v * 1000) / 10 + "%";
+    return d.animate([ {
+      offsetDistance: "0%",
+      opacity: .9,
+      transform: "scale(1)",
+      easing: "cubic-bezier(.45, 0, .55, 1)"
+    }, {
+      offsetDistance: pc(f),
+      opacity: .9,
+      transform: "scale(1)",
+      offset: tf,
+      easing: "ease-in"
+    }, {
+      offsetDistance: pc(Math.min(.6, f + .1)),
+      opacity: .9,
+      transform: `scale(${Math.min(1, 22 / z)})`,
+      offset: t2,
+      easing: "ease-in-out"
+    }, {
+      offsetDistance: "92%",
+      opacity: .9,
+      transform: `scale(${Math.min(1, 16 / z)})`,
+      offset: .9
+    }, {
+      offsetDistance: "100%",
+      opacity: 0,
+      transform: `scale(${Math.min(1, 8 / z)})`
+    } ], {
+      duration: 860,
+      delay: Math.max(0, Math.round(20 + 200 * rank[k] / Math.max(1, pts.length - 1) + (Math.random() - .5) * 24)),
+      fill: "both"
+    }).finished;
+  });
+  Promise.race(flows).then(() => {
+    const dl = Math.hypot(x1 - gx, y1 - gy) || 1;
+    watchPour(id, isAgain, [ (x1 - gx) / dl, (y1 - gy) / dl ]);
+  }).catch(() => {});
+  Promise.all(flows).catch(() => {}).finally(() => {
+    pillLand(id, isAgain);
+    box.remove();
+    if (cap && !document.querySelector("#watchPop .w-flow")) cap.classList.remove("w-cap-flow");
+  });
 }
 
 document.getElementById("watchPop").addEventListener("mouseover", e => {
