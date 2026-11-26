@@ -962,6 +962,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-107 | `319ed51` | Chip nghĩa cân đối: nhãn từ loại và chip cùng cao 32px, nhãn cùng rộng nên các hàng chip thẳng cột, cách nghĩa 16px; tooltip pinyin–nghĩa cách đều như lề |
 | LOOKUP-108 | `d93b75d` | Hàng 🔍: mỗi thẻ một pill chứa đủ các nghĩa (xuống dòng trong cùng pill); pill của từ đang sửa giữ lại và đồng bộ theo nghĩa ở trên khi gõ; sửa pill có Shift+Return xuống dòng, Return không còn đóng popup |
 | LOOKUP-109 | `c1f3c02` | Hàng 🔍 chỉ hiện nghĩa khác với nghĩa đang có ở trên; pill trùng thì ẩn (vẫn gom nhiều nghĩa một pill, Shift+Return khi sửa pill) |
+| LOOKUP-110 | `9f4ef70` | Nghĩa thành hàng 🔍: mỗi nghĩa một pill có X để xoá, bấm chữ để sửa; bấm 🔍 mới hiện ô Type the meaning; bấm pill từ loại là thêm vào 🔍 (popup từ và ô sửa từ Vocabulary) |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
