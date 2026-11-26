@@ -2630,13 +2630,24 @@ window.onYouTubeIframeAPIReady = function(){
   .watch-pop.w-vi.cabin .w-pill[data-w="sub"]{display:inline-flex;}
   .watch-pop.w-morph .w-video{view-transition-name:w-vid;}
   .watch-pop.w-morph .w-listbox{view-transition-name:w-list;}
-  .watch-pop.w-morph .w-ctl{view-transition-name:w-ctl;}
-  ::view-transition-group(w-vid), ::view-transition-group(w-ctl){animation-duration:480ms;animation-timing-function:cubic-bezier(.3, 0, .2, 1);}
-  ::view-transition-old(w-vid), ::view-transition-new(w-vid), ::view-transition-old(w-ctl), ::view-transition-new(w-ctl){animation-duration:480ms;height:100%;object-fit:cover;}
-  ::view-transition-old(w-list){animation:wListOut 400ms cubic-bezier(.4, 0, 1, 1) forwards;}
-  ::view-transition-new(w-list){animation:wListIn 480ms cubic-bezier(0, 0, .2, 1) both;}
-  @keyframes wListOut{to{transform:translateX(64px);opacity:0;}}
-  @keyframes wListIn{from{transform:translateX(64px);opacity:0;}}
+  .watch-pop.w-morph .w-topbar{view-transition-name:w-top;}
+  .watch-pop.w-morph .w-cap .w-capline{view-transition-name:w-cap;}
+  ::view-transition-group(*){animation-duration:480ms;animation-timing-function:cubic-bezier(.3, 0, .2, 1);}
+  ::view-transition-group(w-vid){z-index:1;}
+  ::view-transition-group(w-cap){z-index:2;}
+  ::view-transition-group(w-top){z-index:3;animation:none;}
+  ::view-transition-old(w-top){display:none;}
+  ::view-transition-new(w-top){animation:none;}
+  ::view-transition-old(w-vid), ::view-transition-new(w-vid){height:100%;object-fit:cover;animation-duration:480ms;}
+  ::view-transition-old(w-cap), ::view-transition-new(w-cap){height:100%;animation-duration:480ms;}
+  ::view-transition-old(w-list){animation:wListOut 480ms cubic-bezier(.3, 0, .2, 1) forwards;}
+  ::view-transition-new(w-list){animation:wListIn 480ms cubic-bezier(.3, 0, .2, 1) both;}
+  ::view-transition-old(wc-loop){animation:wcOut 240ms cubic-bezier(.4, 0, 1, 1) forwards;}
+  ::view-transition-new(wc-loop){animation:wcIn 360ms cubic-bezier(.2, 0, .2, 1) both;}
+  @keyframes wListOut{to{transform:translateX(110%);}}
+  @keyframes wListIn{from{transform:translateX(110%);}}
+  @keyframes wcOut{to{transform:scale(0);}}
+  @keyframes wcIn{from{transform:scale(0);}}
   @media (max-width:820px) and (hover:none){.watch-pop .w-pill[data-w="sub"]{display:none;}}
   .cut-stamp{position:absolute;left:50%;top:50%;z-index:3;display:flex;align-items:center;justify-content:center;width:200px;height:200px;border-radius:100px;border:8px solid currentColor;font-size:112px;line-height:112px;font-weight:900;opacity:0;pointer-events:none;}
   .cut-stamp.good{color:#ffffff;background:#1f9d55;border-color:#ffffff;box-shadow:0 12px 32px rgba(20,120,60,.4);}
@@ -4478,9 +4489,20 @@ function viSwitchMode() {
     watchSeek(Math.max(0, watch.at), !watch.prefs.cabin);
   };
   if (!document.startViewTransition || reducedMotion()) return go();
+  const tools = [ ...box.querySelectorAll(".w-ctl-l > *, .w-ctl-c > *, .w-ctl-r > *") ];
+  const used = new Set;
+  tools.forEach((el, k) => {
+    let n = "wc-" + String(el.dataset.w || String(el.className).split(" ")[0] || k).replace(/[^\w-]/g, "");
+    if (used.has(n)) n += "-" + k;
+    used.add(n);
+    el.style.viewTransitionName = n;
+  });
   box.classList.add("w-morph");
   const t = document.startViewTransition(go);
-  t.finished.catch(() => {}).finally(() => box.classList.remove("w-morph"));
+  t.finished.catch(() => {}).finally(() => {
+    box.classList.remove("w-morph");
+    tools.forEach(el => el.style.viewTransitionName = "");
+  });
 }
 
 function viMainText(r) {
