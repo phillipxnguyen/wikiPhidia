@@ -252,6 +252,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-170 | `2fd1148` | Bỏ cân dòng phụ đề: dòng giữ độ rộng tự nhiên; dòng chảy lấy cả khung phụ đề |
 | THEATER-171 | `d0638dc` | Cách mới: cả khung phụ đề nhuộm xanh/đỏ, rút màu về một điểm ở mép phía list, từ đó một dòng chảy (như khi không có phụ đề) về ô giờ; xoá code giọt cũ |
 | THEATER-172 | `6a51242` | Màu chạy theo từng dòng phụ đề: dòng A rồi thu nhỏ/nở ra theo bề rộng dòng B, gom về cuối dòng cuối phía list rồi bay thành một dòng chảy |
+| THEATER-173 | `33d6ecd` | Trả lại hiệu ứng chất lỏng gom từ phụ đề (giọt dính phủ khung phụ đề, về đích như dòng chảy thường); bỏ kiểu nhuộm theo dòng |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
