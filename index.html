@@ -1794,13 +1794,12 @@ window.onYouTubeIframeAPIReady = function(){
   .od-main{align-self:flex-start;padding:0;border:0;background:none;color:var(--od-mean);font:inherit;font-size:18px;line-height:26px;font-weight:700;text-align:left;cursor:pointer;}
   .od-group{display:flex;align-items:flex-start;gap:8px;}
   .od-lens{display:inline-flex;align-items:center;justify-content:center;}
-  .od-group.od-lensrow{align-items:center;}
   .od-lp-list{display:contents;}
   .od-term.od-lp{position:relative;cursor:text;color:var(--od-mean, var(--text));}
   .od-lp-t{outline:none;}
   @media (hover:hover){.od-term.od-lp:hover > .od-lp-x{display:block;}}
   html.touch .od-term.od-lp > .od-lp-x{display:block;}
-  .od-lens-in{flex:1;min-width:96px;height:32px;box-sizing:border-box;padding:3px 4px;outline:none;color:var(--od-mean, var(--text));font-size:18px;line-height:26px;white-space:nowrap;overflow:hidden;}
+  .od-lens-in{flex:1;min-width:168px;height:32px;box-sizing:border-box;padding:3px 4px;outline:none;color:var(--od-mean, var(--text));font-size:18px;line-height:26px;white-space:nowrap;overflow:hidden;}
   .od-lensrow:not(.typing):has(.od-lp) .od-lens-in{display:none;}
   .od-lensrow .od-pos.od-lens{cursor:pointer;}
   .od-lens-in:empty::before{content:attr(data-placeholder);color:var(--placeholder);font-family:"Doto", system-ui, sans-serif;font-weight:800;}
@@ -17238,6 +17237,23 @@ function unswallowLines(cards) {
   return gone.size ? cards.filter(c => !gone.has(c)) : cards;
 }
 
+function newerSrs(a, b) {
+  if (!a || !b) return b || a;
+  const out = {};
+  new Set(Object.keys(a).concat(Object.keys(b))).forEach(m => {
+    const x = a[m], y = b[m];
+    out[m] = y && (!x || srsStamp(y) >= srsStamp(x)) ? y : x;
+  });
+  return out;
+}
+
+function newerJsrs(a, b) {
+  if (!a || !b) return b || a;
+  const out = Object.assign({}, a);
+  Object.keys(b).forEach(k => out[k] = newerSrs(a[k], b[k]));
+  return out;
+}
+
 function foldJoinDupes(cards, ser) {
   const key = c => (c.srcLessonId || "") + "\u0001" + Math.round(Number(c.time) * 10) + "\u0001" + oneLine(c.q || "");
   const owner = new Map;
@@ -17251,8 +17267,9 @@ function foldJoinDupes(cards, ser) {
     if (!hit) return true;
     const [m, i] = hit, fresh = ser(c), old = m.src[i];
     m.src = m.src.slice();
-    m.src[i] = old && old.jsrs && !fresh.jsrs ? Object.assign({}, fresh, {
-      jsrs: old.jsrs
+    m.src[i] = old ? Object.assign({}, fresh, {
+      srs: newerSrs(old.srs, fresh.srs),
+      jsrs: newerJsrs(old.jsrs, fresh.jsrs)
     }) : fresh;
     return false;
   });
@@ -21177,8 +21194,20 @@ function mergeLessons(a, b) {
     cards.splice(at, 0, c);
     known.add(c.uid);
   });
+  const baseUids = new Set(base.cards.map(c => c.uid)), key = c => Math.round(Number(c.time) * 10) + "\u0001" + oneLine(c.q || "");
+  const baseKeys = new Map(base.cards.filter(c => c.time != null && !(c.src && c.src.length)).map(c => [ key(c), c ]));
+  const kept = cards.filter(c => {
+    if (baseUids.has(c.uid) || !(c.src && c.src.length) || c.time == null) return true;
+    const parts = c.src.map(raw => raw && baseKeys.get(key(raw)));
+    if (!parts.some(Boolean)) return true;
+    const first = parts.find(Boolean);
+    if (c.srs && Object.values(c.srs).some(st => st && st.reps)) first.jsrs = newerJsrs(first.jsrs, {
+      [c.uid]: c.srs
+    });
+    return false;
+  });
   return Object.assign({}, base, {
-    cards: dedupeCards(cards),
+    cards: foldJoinDupes(dedupeCards(kept), c => c),
     gone: gone,
     updatedAt: Date.now()
   });
