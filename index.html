@@ -4567,11 +4567,11 @@ function watchGrade(isAgain, now1) {
     if (taskRun && taskRun.theater && (!q.length || taskRun.day && dayRunOver())) return taskTheaterDone();
     paintWatchList();
     const vidNow = !cabin && !reducedMotion() && document.querySelector("#watchPop .w-video"), snap = vidNow ? vidNow.getBoundingClientRect() : null;
-    const capNow = snap && watch.prefs.sub && document.querySelector("#watchPop .w-capline"), capSnap = capNow && capNow.offsetParent && capNow.textContent.trim() ? capNow.getBoundingClientRect() : null, capLines = capSnap ? capLineRects(capNow) : null;
+    const capNow = snap && watch.prefs.sub && document.querySelector("#watchPop .w-capline"), capSnap = capNow && capNow.offsetParent && capNow.textContent.trim() ? capNow.getBoundingClientRect() : null;
     const ni = watch.lines.findIndex(x => x.id === nextId);
     if (ni >= 0) watchSeek(ni);
     paintWatchCounts();
-    if (capSnap) requestAnimationFrame(() => watchSuckCap(r.id, isAgain, capSnap, capLines)); else if (snap) requestAnimationFrame(() => watchSuck(r.id, isAgain, snap)); else pillLand(r.id, isAgain);
+    if (capSnap) requestAnimationFrame(() => watchSuckCap(r.id, isAgain, capSnap)); else if (snap) requestAnimationFrame(() => watchSuck(r.id, isAgain, snap)); else pillLand(r.id, isAgain);
   };
   if (reducedMotion() || !cabin) after(); else setTimeout(after, 240);
 }
@@ -4658,36 +4658,9 @@ function pillLand(id, isAgain) {
   if (row && watch.graded && watch.graded.has(id)) row.classList.add(watch.again && watch.again.has(id) ? "graded-again" : "graded-good");
 }
 
-function capLineRects(cap) {
-  const rects = [], lines = [], walk = document.createTreeWalker(cap, NodeFilter.SHOW_TEXT);
-  for (let n = walk.nextNode(); n; n = walk.nextNode()) {
-    if (!n.nodeValue.trim()) continue;
-    const range = document.createRange();
-    range.selectNodeContents(n);
-    rects.push(...range.getClientRects());
-  }
-  rects.filter(r => r.width > 1 && r.height > 1).sort((a, b) => a.top - b.top).forEach(r => {
-    const mid = (r.top + r.bottom) / 2, line = lines.find(l => mid > l.top && mid < l.bottom);
-    if (!line) return lines.push({
-      left: r.left,
-      right: r.right,
-      top: r.top,
-      bottom: r.bottom
-    });
-    line.left = Math.min(line.left, r.left);
-    line.right = Math.max(line.right, r.right);
-    line.top = Math.min(line.top, r.top);
-    line.bottom = Math.max(line.bottom, r.bottom);
-  });
-  return lines.map(l => Object.assign(l, {
-    width: l.right - l.left,
-    height: l.bottom - l.top
-  }));
-}
-
-function watchSuckCap(id, isAgain, snap, lines) {
+function watchSuckCap(id, isAgain, snap) {
   const cap = document.querySelector("#watchPop .w-capline"), aim = watchAim(id);
-  const nr = cap && cap.textContent.trim() ? cap.getBoundingClientRect() : snap, sr = snap, p = aim && {
+  const nr = cap && cap.textContent.trim() ? cap.getBoundingClientRect() : snap, sr = watchFlowMorph ? snap : nr, p = aim && {
     left: aim.x,
     right: aim.x,
     top: aim.y,
@@ -4721,14 +4694,13 @@ function watchSuckCap(id, isAgain, snap, lines) {
       bg.remove();
     });
   }
-  const A = lines && lines.length > 1 ? lines[0] : null, gr = A ? lines[lines.length - 1] : sr, src = A || sr;
-  const x1 = Math.round(p.left + p.width / 2), y1 = Math.round(p.top + p.height / 2), z = Math.round(Math.min(src.height, 28));
-  const rowsN = Math.max(1, Math.ceil((src.height - z) / (z * .6)) + 1), colsN = Math.max(Math.ceil(56 / rowsN), Math.round(src.width / 10));
-  const pts = [], via = (ax, ay) => A ? lines.slice(1).map(l => [ Math.round(l.left + (ax - A.left) / (A.width || 1) * l.width), Math.round(ay + (l.top + l.bottom - A.top - A.bottom) / 2) ]) : [];
-  if (A) for (let i = 0; i < colsN; i++) for (let j = 0; j < rowsN; j++) pts.push([ Math.round(A.left + z / 2 + (A.width - z) * i / (colsN - 1)), Math.round(rowsN === 1 ? A.top + A.height / 2 : A.top + z / 2 + (A.height - z) * j / (rowsN - 1)) ]); else for (let i = 0; i < colsN; i++) for (let j = 0; j < rowsN; j++) pts.push([ Math.round(sr.left + z / 2 + (sr.width - z) * i / (colsN - 1)), Math.round(rowsN === 1 ? sr.top + sr.height / 2 : sr.top + z / 2 + (sr.height - z) * j / (rowsN - 1)) ]);
-  const inX = x1 >= gr.left && x1 <= gr.right, inY = y1 >= gr.top && y1 <= gr.bottom, jit = (a, b) => Math.round(a + Math.random() * (b - a));
-  const gx = inX ? jit(Math.max(gr.left + z / 2, x1 - 40), Math.min(gr.right - z / 2, x1 + 40)) : x1 > gr.right ? Math.round(gr.right - z / 2) : Math.round(gr.left + z / 2);
-  const gy = inY || !inX ? jit(gr.top + z / 2, Math.max(gr.top + z / 2, gr.bottom - z / 2)) : y1 > gr.bottom ? Math.round(gr.bottom - z / 2) : Math.round(gr.top + z / 2);
+  const x1 = Math.round(p.left + p.width / 2), y1 = Math.round(p.top + p.height / 2), z = Math.round(Math.min(sr.height, 28));
+  const rowsN = Math.max(1, Math.ceil((sr.height - z) / (z * .6)) + 1), colsN = Math.max(Math.ceil(56 / rowsN), Math.round(sr.width / 10));
+  const pts = [];
+  for (let i = 0; i < colsN; i++) for (let j = 0; j < rowsN; j++) pts.push([ Math.round(sr.left + z / 2 + (sr.width - z) * i / (colsN - 1)), Math.round(rowsN === 1 ? sr.top + sr.height / 2 : sr.top + z / 2 + (sr.height - z) * j / (rowsN - 1)) ]);
+  const inX = x1 >= sr.left && x1 <= sr.right, inY = y1 >= sr.top && y1 <= sr.bottom, jit = (a, b) => Math.round(a + Math.random() * (b - a));
+  const gx = inX ? jit(Math.max(sr.left + z / 2, x1 - 40), Math.min(sr.right - z / 2, x1 + 40)) : x1 > sr.right ? Math.round(sr.right - z / 2) : Math.round(sr.left + z / 2);
+  const gy = inY || !inX ? jit(sr.top + z / 2, sr.bottom - z / 2) : y1 > sr.bottom ? Math.round(sr.bottom - z / 2) : Math.round(sr.top + z / 2);
   const order = pts.map(([ x, y ]) => Math.hypot(gx - x, gy - y)).map((d, i) => [ d, i ]).sort((a, b) => a[0] - b[0]).map(([, i]) => i), rank = [];
   order.forEach((i, k) => rank[i] = k);
   const bx = Math.floor(Math.min(sr.left, p.left) - 24), by = Math.floor(Math.min(sr.top, p.top) - 24);
@@ -4740,19 +4712,19 @@ function watchSuckCap(id, isAgain, snap, lines) {
     height: Math.ceil(Math.max(sr.bottom, p.bottom) + 24 - by) + "px"
   });
   const flows = pts.map(([ ax, ay ], k) => {
-    const x0 = ax - bx, y0 = ay - by, hx = gx - bx, hy = gy - by, ex = x1 - bx, ey = y1 - by, mids = via(ax, ay).map(([ vx, vy ]) => [ vx - bx, vy - by ]);
+    const x0 = ax - bx, y0 = ay - by, hx = gx - bx, hy = gy - by, ex = x1 - bx, ey = y1 - by;
     const d = document.createElement("div"), c2x = ex - Math.round(Math.min(160, Math.abs(x1 - gx) * .4));
     Object.assign(d.style, {
       width: z + "px",
       height: z + "px",
       borderRadius: z + "px",
       background: col,
-      offsetPath: `path("M ${x0} ${y0}${mids.map(([ vx, vy ]) => ` L ${vx} ${vy}`).join("")} L ${hx} ${hy} C ${hx + Math.round((ex - hx) * .55)} ${hy}, ${c2x} ${ey}, ${ex} ${ey}")`,
+      offsetPath: `path("M ${x0} ${y0} L ${hx} ${hy} C ${hx + Math.round((ex - hx) * .55)} ${hy}, ${c2x} ${ey}, ${ex} ${ey}")`,
       offsetRotate: "0deg",
       offsetDistance: "0%"
     });
     box.appendChild(d);
-    const l1 = [ [ x0, y0 ] ].concat(mids, [ [ hx, hy ] ]).reduce((t, q, k, all) => k ? t + Math.hypot(q[0] - all[k - 1][0], q[1] - all[k - 1][1]) : 0, 0), l2 = Math.hypot(x1 - gx, y1 - gy) * 1.15, f = l1 / (l1 + l2), tf = Math.max(.04, Math.min(.5, f * 1.6)), t2 = Math.min(.7, tf + .14), pc = v => Math.round(v * 1000) / 10 + "%";
+    const l1 = Math.hypot(hx - x0, hy - y0), l2 = Math.hypot(x1 - gx, y1 - gy) * 1.15, f = l1 / (l1 + l2), tf = Math.max(.04, Math.min(.5, f * 1.6)), t2 = Math.min(.7, tf + .14), pc = v => Math.round(v * 1000) / 10 + "%";
     return d.animate([ {
       offsetDistance: "0%",
       opacity: .9,
