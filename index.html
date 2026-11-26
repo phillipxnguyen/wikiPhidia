@@ -2626,6 +2626,17 @@ window.onYouTubeIframeAPIReady = function(){
   .w-spark{position:fixed;z-index:961;border-radius:50%;pointer-events:none;box-shadow:0 0 6px rgba(255,230,150,.9);}
   @media (min-width:821px), (hover:hover){.watch-pop:not(.cabin):not(.w-sub) .w-cap{display:none;}}
   .watch-pop.cabin .w-pill[data-w="sub"]{display:none;}
+  .watch-pop.w-vi .w-modes{display:none;}
+  .watch-pop.w-vi.cabin .w-pill[data-w="sub"]{display:inline-flex;}
+  .watch-pop.w-morph .w-video{view-transition-name:w-vid;}
+  .watch-pop.w-morph .w-listbox{view-transition-name:w-list;}
+  .watch-pop.w-morph .w-ctl{view-transition-name:w-ctl;}
+  ::view-transition-group(w-vid), ::view-transition-group(w-ctl){animation-duration:480ms;animation-timing-function:cubic-bezier(.3, 0, .2, 1);}
+  ::view-transition-old(w-vid), ::view-transition-new(w-vid), ::view-transition-old(w-ctl), ::view-transition-new(w-ctl){animation-duration:480ms;height:100%;object-fit:cover;}
+  ::view-transition-old(w-list){animation:wListOut 400ms cubic-bezier(.4, 0, 1, 1) forwards;}
+  ::view-transition-new(w-list){animation:wListIn 480ms cubic-bezier(0, 0, .2, 1) both;}
+  @keyframes wListOut{to{transform:translateX(64px);opacity:0;}}
+  @keyframes wListIn{from{transform:translateX(64px);opacity:0;}}
   @media (max-width:820px) and (hover:none){.watch-pop .w-pill[data-w="sub"]{display:none;}}
   .cut-stamp{position:absolute;left:50%;top:50%;z-index:3;display:flex;align-items:center;justify-content:center;width:200px;height:200px;border-radius:100px;border:8px solid currentColor;font-size:112px;line-height:112px;font-weight:900;opacity:0;pointer-events:none;}
   .cut-stamp.good{color:#ffffff;background:#1f9d55;border-color:#ffffff;box-shadow:0 12px 32px rgba(20,120,60,.4);}
@@ -4454,6 +4465,24 @@ function watchHearAgain() {
   watchSeek(watch.at, !watchVi());
 }
 
+function viSwitchMode() {
+  const box = document.getElementById("watchPop");
+  const go = () => {
+    watch.prefs.cabin = !watch.prefs.cabin;
+    watch.prefs.sub = true;
+    const capl = document.querySelector("#watchPop .w-capline");
+    if (capl) capl.classList.remove("reveal");
+    hideTooltip();
+    watchPrefChanged("cabin");
+    placeTheater();
+    watchSeek(Math.max(0, watch.at), !watch.prefs.cabin);
+  };
+  if (!document.startViewTransition || reducedMotion()) return go();
+  box.classList.add("w-morph");
+  const t = document.startViewTransition(go);
+  t.finished.catch(() => {}).finally(() => box.classList.remove("w-morph"));
+}
+
 function viMainText(r) {
   const src = oneLine(r.q || ""), tl = viTrLang();
   return viSame(tl, src) ? src : viTrOf(tl, src) || src;
@@ -4508,7 +4537,7 @@ function watchToggle() {
 function syncWatchPills() {
   const p = watch.prefs;
   document.querySelectorAll("#watchPop .w-pill[data-w]").forEach(b => {
-    const on = b.dataset.w === "trpick" ? !!viTrLang() : !!p[b.dataset.w];
+    const on = b.dataset.w === "trpick" ? !!viTrLang() : b.dataset.w === "sub" && watchVi() ? !p.cabin : !!p[b.dataset.w];
     b.classList.toggle("on", on);
     b.setAttribute("aria-pressed", String(on));
   });
@@ -4539,6 +4568,7 @@ function watchPrefChanged(k) {
   box.classList.toggle("cabin", !!p.cabin);
   box.classList.toggle("with-list", !p.cabin);
   box.classList.toggle("w-sub", !!p.sub);
+  box.classList.toggle("w-vi", watchVi());
   watchModeTabs();
   requestAnimationFrame(() => {
     placeTheater();
@@ -4568,7 +4598,7 @@ function paintWatch() {
   watch.rowHtml = null;
   box.querySelector(".w-topbar .toolbar-flag").innerHTML = document.getElementById("studyFlag").innerHTML;
   box.dataset.size = p.size || 100;
-  box.className = "watch-pop" + (p.cabin ? "" : " with-list") + (p.pin && watchChinese() ? " pinned" : "") + (p.cabin ? " cabin" : "") + (p.sub ? " w-sub" : "");
+  box.className = "watch-pop" + (p.cabin ? "" : " with-list") + (p.pin && watchChinese() ? " pinned" : "") + (p.cabin ? " cabin" : "") + (p.sub ? " w-sub" : "") + (watchVi() ? " w-vi" : "");
   watchModeTabs();
   if (watchVi()) viTrFill(); else if (p.trans || p.cabin) mtFill(watch.lines);
   watch.countSig = "";
@@ -5210,6 +5240,7 @@ document.getElementById("watchPop").addEventListener("click", e => {
     return watchSeek(Math.max(0, watch.at), !watch.prefs.cabin);
   }
   if (k === "trpick") return viTrMenu(b);
+  if (k === "sub" && watchVi()) return viSwitchMode();
   watch.prefs[k] = !watch.prefs[k];
   saveWatchPrefs();
   watchPrefChanged(k);
