@@ -965,6 +965,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-109 | `c1f3c02` | Hàng 🔍 chỉ hiện nghĩa khác với nghĩa đang có ở trên; pill trùng thì ẩn (vẫn gom nhiều nghĩa một pill, Shift+Return khi sửa pill) |
 | LOOKUP-110 | `9f4ef70` | Nghĩa thành hàng 🔍: mỗi nghĩa một pill có X để xoá, bấm chữ để sửa; bấm 🔍 mới hiện ô Type the meaning; bấm pill từ loại là thêm vào 🔍 (popup từ và ô sửa từ Vocabulary) |
 | LOOKUP-111 | `8336ade` | Ô Type the meaning nằm ngay sau 🔍, trước các pill; không co lại giữa lúc bấm X (tránh bấm trượt) |
+| LOOKUP-112 | `7806c0a` | Ô Type the meaning có dáng như pill: cao 32px, lề trái phải 12px, bo tròn 16px, viền nét đứt, viền liền khi đang gõ |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
