@@ -1799,7 +1799,7 @@ window.onYouTubeIframeAPIReady = function(){
   .od-lp-t{outline:none;}
   @media (hover:hover){.od-term.od-lp:hover > .od-lp-x{display:block;}}
   html.touch .od-term.od-lp > .od-lp-x{display:block;}
-  .od-lens-in{flex:1;min-width:168px;height:32px;box-sizing:border-box;padding:3px 4px;outline:none;color:var(--od-mean, var(--text));font-size:18px;line-height:26px;white-space:nowrap;overflow:hidden;}
+  .od-lens-in{flex:none;min-width:168px;max-width:100%;height:32px;box-sizing:border-box;padding:3px 4px;outline:none;color:var(--od-mean, var(--text));font-size:18px;line-height:26px;white-space:nowrap;overflow:hidden;}
   .od-lensrow:not(.typing):has(.od-lp) .od-lens-in{display:none;}
   .od-lensrow .od-pos.od-lens{cursor:pointer;}
   .od-lens-in:empty::before{content:attr(data-placeholder);color:var(--placeholder);font-family:"Doto", system-ui, sans-serif;font-weight:800;}
@@ -12308,7 +12308,7 @@ function odLong(w) {
 const OD_LENS = '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5"/><path d="M12.5 12.5L17 17"/></svg>';
 
 function lensRowHtml() {
-  return `<div class="od-group od-lensrow"><span class="od-pos od-lens" title="The meanings">${OD_LENS}</span><div class="od-terms"><span class="od-lp-list"></span><span class="od-lens-in" contenteditable="true" spellcheck="false" autocapitalize="off" autocorrect="off" role="textbox" aria-label="Add a meaning" data-placeholder="Type the meaning"></span></div></div>`;
+  return `<div class="od-group od-lensrow"><span class="od-pos od-lens" title="The meanings">${OD_LENS}</span><div class="od-terms"><span class="od-lens-in" contenteditable="true" spellcheck="false" autocapitalize="off" autocorrect="off" role="textbox" aria-label="Add a meaning" data-placeholder="Type the meaning"></span><span class="od-lp-list"></span></div></div>`;
 }
 
 function paintLensPills(row, lines) {
@@ -12386,7 +12386,9 @@ function wireLens(row, get, set, onEnterEmpty) {
   });
   typed.addEventListener("blur", () => {
     add();
-    if (!typed.textContent.trim()) row.classList.remove("typing");
+    setTimeout(() => {
+      if (!typed.textContent.trim() && !row.contains(document.activeElement)) row.classList.remove("typing");
+    }, 300);
   });
 }
 
