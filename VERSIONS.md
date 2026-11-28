@@ -833,6 +833,7 @@ Hàm chính: `studyingNow`, `placeStudyClock`, `STUDY_TIME_KEY`, `#focusClock`.
 | MOVE-23 | `f37a373` | Xoá: kiếm katana mảnh lướt nhanh, vệt trắng mảnh loé rồi tắt (bỏ đường đỏ), hai nửa tách ngay sau đó |
 | MOVE-24 | `ddf94a4` | Xoá như cắt giấy: bỏ vệt sáng (cả khi chém cả màn hình), hai mép tách ra theo đường cắt với bóng mờ nhẹ rồi rơi |
 | MOVE-25 | `e35374b` | Kiếm xoá chém từ ngoài màn hình vào (bên phải sang trái), cầm xiên như nhát chém thật, chậm hơn; đường cắt giấy giữ nguyên |
+| MOVE-26 | `c0aa48a` | Kiếm xoá lướt dọc theo đường cắt như chém trái cây, mỗi lần một hướng khác (xiên ngẫu nhiên tới 35°, từ trái hoặc phải), từ ngoài màn hình vào |
 
 Hàm chính: `swipe`, `ghostFor`, `angelFly`, `cutLayer`, `playCut`.
 
