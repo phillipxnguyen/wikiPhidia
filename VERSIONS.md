@@ -830,6 +830,7 @@ Hàm chính: `studyingNow`, `placeStudyClock`, `STUDY_TIME_KEY`, `#focusClock`.
 | MOVE-20 | `34e9196` | Bóng ma xoá cùng một màu vàng sáng ở cả giao diện sáng và tối (như xanh/đỏ của Good/Again) |
 | MOVE-21 | `5723625` | Xoá ở mọi chỗ là chém đôi tại chỗ (vệt chém sáng viền đỏ, hai nửa rơi ra hai phía), bỏ hẳn cánh thiên thần; chém cả màn hình giữ nguyên |
 | MOVE-22 | `94b95f8` | Xoá thiết kế lại: thanh kiếm thép quét ngang chém đôi chính món đó tại chỗ (bản sao thật, nền đặc), vệt chém mở ra ngay dưới mũi kiếm, hai nửa rơi ra rồi biến mất |
+| MOVE-23 | `f37a373` | Xoá: kiếm katana mảnh lướt nhanh, vệt trắng mảnh loé rồi tắt (bỏ đường đỏ), hai nửa tách ngay sau đó |
 
 Hàm chính: `swipe`, `ghostFor`, `angelFly`, `cutLayer`, `playCut`.
 
