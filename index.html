@@ -1851,8 +1851,6 @@ window.onYouTubeIframeAPIReady = function(){
   .swipe-ghost.again.mark, .swipe-ghost.delete, .touch-bar .tb-again.tb-mark{-webkit-text-stroke:.04em currentColor;}
   .swipe-ghost.delete{color:var(--text);border-color:currentColor;}
   .swipe-ghost.to-vocab{color:#1e9466;border-color:currentColor;}
-  .swipe-ghost.slice{overflow:visible;border:1px solid var(--ghost-bd);border-radius:12px;background:var(--ghost-bg);color:var(--ghost-ink);-webkit-text-stroke:0;}
-  .swipe-ghost.slice.copy{justify-content:flex-start;padding:8px;font-size:16px;font-weight:400;line-height:24px;color:var(--text);text-align:left;}
   .swipe-ghost.copy > *{flex:1;min-width:0;background:none;padding:0;}
   .session-complete{
     display:none;
@@ -2667,6 +2665,11 @@ window.onYouTubeIframeAPIReady = function(){
   .cut-tint.again{background:rgba(214,69,69,.38);}
   .cut-tint.lift{background:rgba(37,99,201,.32);}
   .screen-cut:has(> .cut-tint){box-shadow:0 24px 64px rgba(0,0,0,.35);}
+  .slice-layer{position:fixed;inset:0;z-index:1500;pointer-events:none;}
+  .slice-sword{position:fixed;z-index:1502;width:364px;height:52px;pointer-events:none;transform-origin:182px 26px;}
+  .slice-sword > svg{display:block;width:364px;height:52px;}
+  .slice-stage{position:absolute;inset:0;}
+  .cut-slash.slice-slash{position:fixed;z-index:1501;height:4px;margin-top:-1px;border-radius:2px;background:#ffffff;box-shadow:0 0 0 2px #d64545, 0 0 14px 4px rgba(214,69,69,.55);}
   .cut-slash{position:absolute;z-index:4;height:8px;margin-top:-2px;border-radius:4px;background:#ffffff;box-shadow:0 0 0 2px rgba(214,69,69,.9), 0 0 16px 6px rgba(255,255,255,.95), 0 0 48px 16px rgba(214,69,69,.55);pointer-events:none;}
   .b2-radio{display:grid;grid-template-columns:minmax(0, 1fr) 96px;grid-template-rows:minmax(0, 1fr) 32px;gap:12px;width:320px;max-width:100%;height:180px;box-sizing:border-box;padding:20px;border-radius:24px;background:linear-gradient(#8a5a33, #6b4426);box-shadow:inset 0 -6px 0 rgba(0,0,0,.25), 0 20px 40px rgba(0,0,0,.4);}
   .b2-grille{grid-row:1 / 3;border-radius:14px;background:radial-gradient(circle, #2b1d14 2px, transparent 3px) 0 0 / 10px 10px, #c49a6c;}
@@ -15411,15 +15414,16 @@ function swipe(parts, dir, update, next, label = dir > 0 ? "Good" : "Again") {
       return;
     }
   }
-  const ghost = dragGhost || (motion ? ghostFor(parts) : null);
+  const sliced = motion && label === "Delete";
+  if (sliced) {
+    if (dragGhost) dragGhost.remove();
+    dragGhost = null;
+    sliceAway(parts);
+  }
+  const ghost = sliced ? null : dragGhost || (motion ? ghostFor(parts) : null);
   const from = dragGhost && dragGhost.style.transform || "none";
   dragGhost = null;
-  if (ghost && label === "Delete") {
-    ghost.classList.remove("good", "again");
-    ghost.classList.add("delete", "slice");
-    if (ghost.copyHtml) ghost.innerHTML = ghost.copyHtml; else ghost.textContent = "✕";
-    sliceGhost(ghost, from);
-  } else if (ghost) {
+  if (ghost) {
     ghost.classList.remove("good", "again");
     ghost.classList.add(label === "Delete" ? "delete" : label === "Vocab" ? "to-vocab" : dir > 0 ? "good" : "again");
     ghost.textContent = label === "Delete" ? "✕" : label === "Vocab" ? "字" : gradeMark(dir < 0);
@@ -20266,80 +20270,162 @@ function wordTarget() {
   } : null;
 }
 
-function sliceGhost(ghost, from = "none") {
-  const r = ghost.getBoundingClientRect(), w = r.width, h = r.height, base = from === "none" ? "" : from + " ";
-  const bottom = ghost.cloneNode(true);
-  ghost.after(bottom);
-  ghost.style.clipPath = "polygon(0 0, 100% 0, 100% 38%, 0 62%)";
-  bottom.style.clipPath = "polygon(0 62%, 100% 38%, 100% 100%, 0 100%)";
-  const len = Math.ceil(Math.hypot(w, h * .24)) + 24, slash = document.createElement("div");
-  slash.className = "cut-slash";
-  Object.assign(slash.style, {
-    position: "fixed",
-    zIndex: "1600",
-    left: Math.round(r.left + w / 2 - len / 2) + "px",
-    top: Math.round(r.top + h / 2 - 2) + "px",
-    width: len + "px",
-    height: "6px",
-    transform: `rotate(${Math.round(Math.atan2(-h * .24, w) * 1800 / Math.PI) / 10}deg)`
-  });
-  document.body.appendChild(slash);
-  slash.animate([ {
-    clipPath: "inset(0 100% 0 0)",
-    opacity: 1
-  }, {
-    clipPath: "inset(0 0 0 0)",
-    opacity: 1,
-    offset: .3
-  }, {
-    clipPath: "inset(0 0 0 0)",
-    opacity: 1,
-    offset: .6
-  }, {
-    clipPath: "inset(0 0 0 0)",
-    opacity: 0
-  } ], {
-    duration: 520,
-    easing: "ease-out",
-    fill: "forwards"
-  }).finished.then(() => slash.remove(), () => slash.remove());
-  const fall = (el, to) => el.animate([ {
-    transform: from,
-    opacity: 1
-  }, {
-    transform: from,
-    opacity: 1,
-    offset: .2
-  }, {
-    transform: base + to,
-    opacity: 0
-  } ], {
-    duration: 640,
-    delay: 80,
-    easing: "cubic-bezier(.4, 0, .8, .5)",
-    fill: "forwards"
-  }).finished.then(() => el.remove(), () => el.remove());
-  fall(ghost, `translate(${-Math.round(24 + w * .04)}px, ${-Math.round(40 + h * .5)}px) rotate(-7deg)`);
-  fall(bottom, `translate(${Math.round(24 + w * .04)}px, ${Math.round(64 + h * .7)}px) rotate(9deg)`);
-}
+const SWORD_SVG = '<svg viewBox="0 0 280 40" aria-hidden="true"><defs><linearGradient id="swBlade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4f7fa"/><stop offset=".48" stop-color="#c3ccd4"/><stop offset=".52" stop-color="#8d97a1"/><stop offset="1" stop-color="#d9e0e6"/></linearGradient><linearGradient id="swGold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f3d27a"/><stop offset="1" stop-color="#a6741f"/></linearGradient><linearGradient id="swGrip" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5a3a22"/><stop offset=".5" stop-color="#2f1d10"/><stop offset="1" stop-color="#4a2f1a"/></linearGradient></defs><path d="M70 15 L254 15 L278 20 L254 25 L70 25 Z" fill="url(#swBlade)" stroke="#6f7983" stroke-width="1"/><path d="M76 20 L250 20" stroke="#ffffff" stroke-opacity=".7" stroke-width="1"/><rect x="62" y="4" width="8" height="32" rx="3" fill="url(#swGold)"/><rect x="18" y="14" width="44" height="12" rx="4" fill="url(#swGrip)"/><path d="M26 14v12M34 14v12M42 14v12M50 14v12" stroke="#000000" stroke-opacity=".25" stroke-width="2"/><circle cx="12" cy="20" r="8" fill="url(#swGold)"/></svg>';
 
-function wordFly(el) {
-  if (reducedMotion()) return;
-  const r = el.getBoundingClientRect();
-  const ghost = document.createElement("div");
-  ghost.className = "swipe-ghost row delete slice";
-  Object.assign(ghost.style, {
+function liveCopy(el) {
+  const r = el.getBoundingClientRect(), stage = document.createElement("div");
+  stage.className = "slice-stage";
+  stage.inert = true;
+  stage.setAttribute("aria-hidden", "true");
+  let cur = stage, box = null;
+  const chain = [];
+  for (let a = el.parentElement; a && a !== document.body && a !== document.documentElement; a = a.parentElement) chain.unshift(a);
+  chain.forEach(a => {
+    const sh = a.cloneNode(false);
+    sh.removeAttribute("hidden");
+    if (/^(TABLE|TBODY|THEAD)$/.test(a.tagName)) {
+      if (a.tagName === "TABLE") {
+        box = sh;
+        Object.assign(sh.style, {
+          position: "absolute",
+          left: Math.round(r.left) + "px",
+          top: Math.round(r.top) + "px",
+          width: Math.round(r.width) + "px",
+          margin: "0"
+        });
+      } else sh.style.cssText = "";
+    } else sh.style.cssText = "display:contents";
+    cur.appendChild(sh);
+    cur = sh;
+  });
+  const c = el.cloneNode(true);
+  c.style.visibility = "visible";
+  const clear = v => !v || v === "transparent" || /rgba\([^)]*,\s*0\)$/.test(v);
+  if (clear(getComputedStyle(el).backgroundColor)) {
+    let a = el.parentElement, bg = "";
+    while (a && !bg) {
+      const v = getComputedStyle(a).backgroundColor;
+      if (!clear(v)) bg = v;
+      a = a.parentElement;
+    }
+    c.style.backgroundColor = bg || getComputedStyle(document.body).backgroundColor;
+  }
+  if (c.tagName === "TR") {
+    const cells = [ ...el.children ], copies = [ ...c.children ];
+    copies.forEach((td, i) => cells[i] && (td.style.width = Math.round(cells[i].getBoundingClientRect().width) + "px"));
+    c.style.height = Math.round(r.height) + "px";
+  } else if (!box) Object.assign(c.style, {
+    position: "absolute",
     left: Math.round(r.left) + "px",
     top: Math.round(r.top) + "px",
     width: Math.round(r.width) + "px",
     height: Math.round(r.height) + "px",
-    zIndex: "1500",
-    borderRadius: getComputedStyle(el).borderTopLeftRadius
+    margin: "0",
+    boxSizing: "border-box"
   });
-  ghost.textContent = "✕";
-  document.body.appendChild(ghost);
-  el.style.visibility = "hidden";
-  sliceGhost(ghost);
+  cur.appendChild(c);
+  return stage;
+}
+
+function sliceAway(parts) {
+  if (reducedMotion()) return false;
+  const shown = parts.filter(el => el && el.isConnected && el.getBoundingClientRect().height > 1);
+  if (!shown.length) return false;
+  const rs = shown.map(el => el.getBoundingClientRect()), L = Math.min(...rs.map(r => r.left)), T = Math.min(...rs.map(r => r.top)), R = Math.max(...rs.map(r => r.right)), B = Math.max(...rs.map(r => r.bottom));
+  if (T > innerHeight || B < 0) return false;
+  const w = R - L, h = B - T, yA = Math.round(T + h * .62), yB = Math.round(T + h * .38), xl = Math.round(L), xr = Math.round(R);
+  const half = top => {
+    const layer = document.createElement("div");
+    layer.className = "slice-layer";
+    shown.forEach(el => layer.appendChild(liveCopy(el)));
+    layer.style.clipPath = top ? `polygon(${xl - 2}px ${Math.round(T) - 2}px, ${xr + 2}px ${Math.round(T) - 2}px, ${xr + 2}px ${yB}px, ${xl - 2}px ${yA}px)` : `polygon(${xl - 2}px ${yA}px, ${xr + 2}px ${yB}px, ${xr + 2}px ${Math.round(B) + 2}px, ${xl - 2}px ${Math.round(B) + 2}px)`;
+    document.body.appendChild(layer);
+    return layer;
+  };
+  const up = half(true), down = half(false);
+  const len = Math.ceil(Math.hypot(w, yA - yB)) + 32, slash = document.createElement("div");
+  slash.className = "cut-slash slice-slash";
+  Object.assign(slash.style, {
+    left: Math.round(L + w / 2 - len / 2) + "px",
+    top: Math.round(T + h / 2 - 3) + "px",
+    width: len + "px",
+    transform: `rotate(${Math.round(Math.atan2(yB - yA, w) * 1800 / Math.PI) / 10}deg)`
+  });
+  document.body.appendChild(slash);
+  const deg = Math.round(Math.atan2(yB - yA, w) * 1800 / Math.PI) / 10, cx = Math.round(L + w / 2), cy = Math.round(T + h / 2), reach = Math.round(len / 2 + 182), run = 300, cut = Math.round(run * len / (2 * reach));
+  const sword = document.createElement("div");
+  sword.className = "slice-sword";
+  sword.innerHTML = SWORD_SVG;
+  Object.assign(sword.style, {
+    left: cx - 182 + "px",
+    top: cy - 26 + "px"
+  });
+  document.body.appendChild(sword);
+  const at = (d, tilt) => `rotate(${deg}deg) translateX(${d}px) rotate(${tilt}deg)`;
+  sword.animate([ {
+    transform: at(-reach, -6),
+    opacity: 1,
+    filter: "drop-shadow(0 6px 8px rgba(0,0,0,.35))"
+  }, {
+    transform: at(Math.round(len / 2 - 182), 0),
+    opacity: 1,
+    filter: "drop-shadow(0 6px 8px rgba(0,0,0,.35))",
+    offset: cut / run
+  }, {
+    transform: at(reach, 6),
+    opacity: 0,
+    filter: "drop-shadow(0 6px 8px rgba(0,0,0,.35))"
+  } ], {
+    duration: run,
+    easing: "linear",
+    fill: "forwards"
+  }).finished.then(() => sword.remove(), () => sword.remove());
+  slash.animate([ {
+    clipPath: "inset(-16px 100% -16px -16px)",
+    opacity: 1,
+    easing: "linear"
+  }, {
+    clipPath: "inset(-16px -16px -16px -16px)",
+    opacity: 1,
+    offset: cut / 600
+  }, {
+    clipPath: "inset(-16px -16px -16px -16px)",
+    opacity: 1,
+    offset: Math.min(.9, (cut + 160) / 600)
+  }, {
+    clipPath: "inset(-16px -16px -16px -16px)",
+    opacity: 0
+  } ], {
+    duration: 600,
+    easing: "linear",
+    fill: "forwards"
+  }).finished.then(() => slash.remove(), () => slash.remove());
+  const origin = `${Math.round(L + w / 2)}px ${Math.round(T + h / 2)}px`, fall = (el, to) => {
+    el.style.transformOrigin = origin;
+    el.animate([ {
+      transform: "none",
+      opacity: 1
+    }, {
+      transform: "none",
+      opacity: 1,
+      offset: .22
+    }, {
+      transform: to,
+      opacity: 0
+    } ], {
+      duration: 700,
+      delay: cut + 40,
+      easing: "cubic-bezier(.4, 0, .8, .5)",
+      fill: "forwards"
+    }).finished.then(() => el.remove(), () => el.remove());
+  };
+  fall(up, `translate(${-Math.round(20 + w * .03)}px, ${-Math.round(36 + h * .45)}px) rotate(-5deg)`);
+  fall(down, `translate(${Math.round(20 + w * .03)}px, ${Math.round(56 + h * .65)}px) rotate(7deg)`);
+  return true;
+}
+
+function wordFly(el) {
+  if (sliceAway([ el ])) el.style.visibility = "hidden";
 }
 
 function wordAct(act) {
