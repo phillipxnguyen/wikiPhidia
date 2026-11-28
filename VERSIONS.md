@@ -828,6 +828,7 @@ Hàm chính: `studyingNow`, `placeStudyClock`, `STUDY_TIME_KEY`, `#focusClock`.
 | MOVE-18 | `261f3e0` | Dọn tàn dư của thẻ ⏳ Waiting đã bỏ (lớp waiting trên bóng ma vuốt) |
 | MOVE-19 | `f6de400` | Bóng ma xoá: nền vàng đặc, đậm hơn (không trong suốt), có màu riêng cho giao diện tối |
 | MOVE-20 | `34e9196` | Bóng ma xoá cùng một màu vàng sáng ở cả giao diện sáng và tối (như xanh/đỏ của Good/Again) |
+| MOVE-21 | `5723625` | Xoá ở mọi chỗ là chém đôi tại chỗ (vệt chém sáng viền đỏ, hai nửa rơi ra hai phía), bỏ hẳn cánh thiên thần; chém cả màn hình giữ nguyên |
 
 Hàm chính: `swipe`, `ghostFor`, `angelFly`, `cutLayer`, `playCut`.
 
