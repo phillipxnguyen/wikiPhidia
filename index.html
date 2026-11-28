@@ -1851,10 +1851,9 @@ window.onYouTubeIframeAPIReady = function(){
   .swipe-ghost.again.mark, .swipe-ghost.delete, .touch-bar .tb-again.tb-mark{-webkit-text-stroke:.04em currentColor;}
   .swipe-ghost.delete{color:var(--text);border-color:currentColor;}
   .swipe-ghost.to-vocab{color:#1e9466;border-color:currentColor;}
-  .swipe-ghost.angel{overflow:visible;border:1px solid var(--ghost-bd);border-radius:12px;background:var(--ghost-bg);color:var(--ghost-ink);-webkit-text-stroke:0;}
-  .swipe-ghost.angel.copy{justify-content:flex-start;padding:8px;font-size:16px;font-weight:400;line-height:24px;color:var(--text);text-align:left;}
+  .swipe-ghost.slice{overflow:visible;border:1px solid var(--ghost-bd);border-radius:12px;background:var(--ghost-bg);color:var(--ghost-ink);-webkit-text-stroke:0;}
+  .swipe-ghost.slice.copy{justify-content:flex-start;padding:8px;font-size:16px;font-weight:400;line-height:24px;color:var(--text);text-align:left;}
   .swipe-ghost.copy > *{flex:1;min-width:0;background:none;padding:0;}
-  @media (prefers-reduced-motion: reduce){html .wl-wing{animation:none;}}
   .session-complete{
     display:none;
     position:relative;
@@ -2868,13 +2867,6 @@ window.onYouTubeIframeAPIReady = function(){
   .wl-close:active, html.pixel .wl-close:active{background:color-mix(in srgb, var(--text) 14%, transparent);color:var(--text);}
   @media (hover:hover){.wl-close:hover, html.pixel .wl-close:hover{background:color-mix(in srgb, var(--text) 14%, transparent);color:var(--text);}}
   @media (min-width:761px){.word-box:has(.wl-main.picked) .wl-close{top:calc(var(--wp) + 8px);right:calc(var(--wp) + 8px);}}
-  .wl-wing{--w:var(--wing, 44px);position:absolute;top:var(--wing-y, 50%);width:var(--w);height:var(--w);margin-top:calc(var(--w) / -2);font-style:normal;filter:drop-shadow(0 0 3px color-mix(in srgb, var(--due-color) 60%, transparent)) drop-shadow(0 0 10px color-mix(in srgb, var(--due-color) 40%, transparent));}
-  .wl-wing > b{display:block;width:100%;height:100%;background:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='1 0 48 48'><path d='M2 20C8 9 26 6 46 12C43 18 40 20 36 21C38 25 35 28 31 28C32 32 28 35 24 34C24 38 19 40 15 38C10 37 5 33 2 28Z' fill='%23fff8e8' stroke='%23d9a441' stroke-width='2' stroke-linejoin='round'/><path d='M10 21C19 18 28 17 38 15M10 26C17 25 24 25 31 25M9 30C14 31 19 31 23 31' fill='none' stroke='%23d9a441' stroke-width='1.5' stroke-linecap='round'/></svg>") center / contain no-repeat;}
-  .wl-wing.l{right:100%;transform-origin:100% 50%;animation:wingL .5s ease-in-out infinite alternate;}
-  .wl-wing.l > b{transform:scaleX(-1);}
-  .wl-wing.r{left:100%;transform-origin:0 50%;animation:wingR .5s ease-in-out infinite alternate;}
-  @keyframes wingL{from{transform:rotate(15deg);}to{transform:rotate(-15deg);}}
-  @keyframes wingR{from{transform:rotate(-15deg);}to{transform:rotate(15deg);}}
   .wl-main.picked .wl-words > .wl-band:first-child{margin-right:0;}
   .wl-main.picked .wl-dhead{padding-right:40px;}
   .wl-detail.enter{animation:wlIn .18s ease-out;}
@@ -15424,9 +15416,9 @@ function swipe(parts, dir, update, next, label = dir > 0 ? "Good" : "Again") {
   dragGhost = null;
   if (ghost && label === "Delete") {
     ghost.classList.remove("good", "again");
-    ghost.classList.add("delete", "angel");
+    ghost.classList.add("delete", "slice");
     if (ghost.copyHtml) ghost.innerHTML = ghost.copyHtml; else ghost.textContent = "✕";
-    angelFly(ghost, from);
+    sliceGhost(ghost, from);
   } else if (ghost) {
     ghost.classList.remove("good", "again");
     ghost.classList.add(label === "Delete" ? "delete" : label === "Vocab" ? "to-vocab" : dir > 0 ? "good" : "again");
@@ -20274,39 +20266,68 @@ function wordTarget() {
   } : null;
 }
 
-function angelFly(ghost, from = "none") {
-  const h = ghost.getBoundingClientRect().height;
-  const wing = Math.round(Math.min(64, Math.max(36, h * .6)) / 10) * 10;
-  ghost.style.setProperty("--wing", wing + "px");
-  if (ghost.style.paddingTop) ghost.style.setProperty("--wing-y", parseInt(ghost.style.paddingTop) + 25 + "px");
-  ghost.insertAdjacentHTML("beforeend", '<i class="wl-wing l" aria-hidden="true"><b></b></i><i class="wl-wing r" aria-hidden="true"><b></b></i>');
-  const base = from === "none" ? "" : from + " ";
-  ghost.animate([ {
+function sliceGhost(ghost, from = "none") {
+  const r = ghost.getBoundingClientRect(), w = r.width, h = r.height, base = from === "none" ? "" : from + " ";
+  const bottom = ghost.cloneNode(true);
+  ghost.after(bottom);
+  ghost.style.clipPath = "polygon(0 0, 100% 0, 100% 38%, 0 62%)";
+  bottom.style.clipPath = "polygon(0 62%, 100% 38%, 100% 100%, 0 100%)";
+  const len = Math.ceil(Math.hypot(w, h * .24)) + 24, slash = document.createElement("div");
+  slash.className = "cut-slash";
+  Object.assign(slash.style, {
+    position: "fixed",
+    zIndex: "1600",
+    left: Math.round(r.left + w / 2 - len / 2) + "px",
+    top: Math.round(r.top + h / 2 - 2) + "px",
+    width: len + "px",
+    height: "6px",
+    transform: `rotate(${Math.round(Math.atan2(-h * .24, w) * 1800 / Math.PI) / 10}deg)`
+  });
+  document.body.appendChild(slash);
+  slash.animate([ {
+    clipPath: "inset(0 100% 0 0)",
+    opacity: 1
+  }, {
+    clipPath: "inset(0 0 0 0)",
+    opacity: 1,
+    offset: .3
+  }, {
+    clipPath: "inset(0 0 0 0)",
+    opacity: 1,
+    offset: .6
+  }, {
+    clipPath: "inset(0 0 0 0)",
+    opacity: 0
+  } ], {
+    duration: 520,
+    easing: "ease-out",
+    fill: "forwards"
+  }).finished.then(() => slash.remove(), () => slash.remove());
+  const fall = (el, to) => el.animate([ {
     transform: from,
     opacity: 1
   }, {
-    transform: base + "translateY(-10px) scale(1.03)",
+    transform: from,
     opacity: 1,
     offset: .2
   }, {
-    transform: base + "translate(-12px, -30vh) rotate(-3deg) scale(.9)",
-    opacity: .8,
-    offset: .65
-  }, {
-    transform: base + "translate(8px, -55vh) rotate(2deg) scale(.75)",
+    transform: base + to,
     opacity: 0
   } ], {
-    duration: 750,
-    easing: "ease-in",
+    duration: 640,
+    delay: 80,
+    easing: "cubic-bezier(.4, 0, .8, .5)",
     fill: "forwards"
-  }).finished.then(() => ghost.remove(), () => ghost.remove());
+  }).finished.then(() => el.remove(), () => el.remove());
+  fall(ghost, `translate(${-Math.round(24 + w * .04)}px, ${-Math.round(40 + h * .5)}px) rotate(-7deg)`);
+  fall(bottom, `translate(${Math.round(24 + w * .04)}px, ${Math.round(64 + h * .7)}px) rotate(9deg)`);
 }
 
 function wordFly(el) {
   if (reducedMotion()) return;
   const r = el.getBoundingClientRect();
   const ghost = document.createElement("div");
-  ghost.className = "swipe-ghost row delete angel";
+  ghost.className = "swipe-ghost row delete slice";
   Object.assign(ghost.style, {
     left: Math.round(r.left) + "px",
     top: Math.round(r.top) + "px",
@@ -20318,7 +20339,7 @@ function wordFly(el) {
   ghost.textContent = "✕";
   document.body.appendChild(ghost);
   el.style.visibility = "hidden";
-  angelFly(ghost);
+  sliceGhost(ghost);
 }
 
 function wordAct(act) {
