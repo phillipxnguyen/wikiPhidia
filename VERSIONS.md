@@ -972,6 +972,7 @@ Hàm chính: `paintRing`, `dropRing`, `setDash`.
 | LOOKUP-112 | `7806c0a` | Ô Type the meaning có dáng như pill: cao 32px, lề trái phải 12px, bo tròn 16px, viền nét đứt, viền liền khi đang gõ |
 | LOOKUP-113 | `1e4b055` | Ô Type the meaning về chữ thường không viền (Return mới thành pill), cách 🔍 và pill kế bên đều 12px |
 | LOOKUP-114 | `155a84f` | Ô Type the meaning: chữ thẳng hàng với chữ trong pill (lề 12px, viền trong suốt, cao 32px); bỏ chấm xanh lạ phía trên chữ gợi ý |
+| LOOKUP-115 | `ff7cdf9` | 🔍 về cỡ nhỏ (không kéo rộng theo nhãn từ loại dài nhất); khi gõ, ô Type the meaning chiếm dòng trên, các pill xuống dòng 2; khoảng 🔍 → chữ bằng khoảng nhãn → chữ trong pill ở hàng dưới |
 
 Hàm chính: `highlightVocabInHtml`, `markLookup`, `markTip`, `showVocabPopup`, `showWordView`, `showVocabAddPopup`, `fitLookupMarks`, `fitHighlights`.
 
