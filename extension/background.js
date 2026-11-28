@@ -186,9 +186,21 @@ async function importYouTube(tabId) {
     return fail("Couldn't read this page: " + (e && e.message || e));
   }
   if (!result || result.error) return fail(result && result.error || "Couldn't get the subtitles");
-  const minutes = Number((await settings()).ytMinutes) || 0;
+  const asked = Number((await settings()).ytMinutes) || 0, minutes = [ 2, 5, 10, 15, 30 ].includes(asked) ? asked : asked === 3 ? 2 : 0;
   if (minutes > 0) {
-    const end = minutes * 60, bestTrack = result.tracks[result.best];
+    const limit = minutes * 60, bestTrack = result.tracks[result.best] || result.tracks[0], ref = (bestTrack.lines || []).slice().sort((a, b) => a.t - b.t);
+    const closes = e => /[.!?。！？…]["'”’」』)）]*$/.test(String(e.s || "").trim());
+    const last = ref.reduce((k, e, i) => e.t < limit ? i : k, -1);
+    let end = limit;
+    if (last >= 0 && !closes(ref[last])) {
+      const ahead = ref.findIndex((e, i) => i > last && e.t < limit + 60 && closes(e));
+      let back = -1;
+      for (let i = last - 1; i >= 0 && ref[i].t > limit - 60; i--) if (closes(ref[i])) {
+        back = i;
+        break;
+      }
+      if (ahead >= 0) end = ref[ahead].t + .01; else if (back >= 0) end = ref[back].t + .01;
+    }
     result.tracks.forEach(t => {
       t.lines = (t.lines || []).filter(e => e.t < end);
       t.translated = (t.translated || []).filter(e => e.t < end);

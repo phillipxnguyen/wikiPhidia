@@ -73,7 +73,7 @@ function paintSettings() {
   });
   $("shift").checked = !!s.shift;
   $("youtube").checked = s.youtube !== false;
-  $("ytMinutes").value = String([ 3, 5, 10, 15, 30 ].includes(Number(s.ytMinutes)) ? Number(s.ytMinutes) : 0);
+  $("ytMinutes").value = String([ 2, 5, 10, 15, 30 ].includes(Number(s.ytMinutes)) ? Number(s.ytMinutes) : 0);
   $("appUrl").value = s.appUrl;
   const lessons = state.app.lessons.slice().sort((a, b) => (b.words ? 1 : 0) - (a.words ? 1 : 0) || a.name.localeCompare(b.name));
   $("lesson").innerHTML = `<option value="article">🆕 New lesson</option>` + lessons.map(l => `<option value="id:${esc(l.id)}">${esc(l.name)}</option>`).join("");
