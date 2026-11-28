@@ -300,6 +300,7 @@ Hàm chính: `render`, `openEdit`, `openEditPopup`, `deleteRow`, `deleteRows`, `
 | THEATER-217 | `085989a` | Điện thoại luôn là Interpreter kể cả khi trình duyệt đã lưu chế độ YouTube (như giả lập điện thoại trên máy tính), nên câu dài nằm gọn trong khung sub và cuộn được |
 | THEATER-218 | `05fc6f3` | Điện thoại: thanh nút gọn hơn, cỡ chữ và tốc độ chỉ hiện số (100%, 1x) không icon; nút tròn về đủ 36px, cách nhau 4px |
 | THEATER-219 | `850aab3` | Extension 1.6.71: cài đặt độ dài khi import YouTube (3, 5, 10, 15, 30 phút đầu hoặc cả video), chỉ lấy sub bắt đầu trong đoạn đó |
+| THEATER-220 | `db2c2ef` | Extension 1.6.72: cắt theo câu trọn (lấy dư tối đa 1 phút để hết câu, không có thì lùi về câu trọn gần nhất); 3 phút đổi thành 2 phút |
 
 Hàm chính: `openWatch`, `closeWatch`, `syncTheater`, `paintWatch`, `watchPrefChanged`, `syncWatchPills`, `paintWatchList`, `paintWatchLine`, `paintWatchCounts`, `watchQueueSync`, `watchTick`, `watchSeek`, `watchDelete`, `watchArm`, `watchGrade`, `watchToggle`, `pinyinLine`, `watchLineHtml`, `watchLineTr`, `mtFill`, `preloadTranslations`, `rowTr`, `cabinSay`, `cabinReveal`, `watchTranslation`, `watchPrefs`, `leaveTheater`, `theaterWanted`, `theaterScene`, `THEATER_SCENES`.
 
