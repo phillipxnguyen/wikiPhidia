@@ -836,6 +836,7 @@ Hàm chính: `studyingNow`, `placeStudyClock`, `STUDY_TIME_KEY`, `#focusClock`.
 | MOVE-26 | `c0aa48a` | Kiếm xoá lướt dọc theo đường cắt như chém trái cây, mỗi lần một hướng khác (xiên ngẫu nhiên tới 35°, từ trái hoặc phải), từ ngoài màn hình vào |
 | MOVE-27 | `b0ffc09` | Xoá: đổi kiếm dài thành dao bếp ngắn (140 px); món bị xoá tách dần ngay sau mũi dao, đồng bộ với lưỡi |
 | MOVE-28 | `4bf46d5` | Xoá: lưỡi hiện ngay tại chỗ chém, không bay từ ngoài màn hình; món dài dùng kiếm dài chém dài, món ngắn dùng dao ngắn chém ngắn |
+| MOVE-29 | `6f9aa6a` | Xoá: thêm vũ khí, dài có katana, kiếm thẳng, đao cong; ngắn có dao bếp, dao găm, dao chặt; chọn ngẫu nhiên, không lặp lại liền |
 
 Hàm chính: `swipe`, `ghostFor`, `angelFly`, `cutLayer`, `playCut`.
 
