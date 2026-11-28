@@ -2669,8 +2669,6 @@ window.onYouTubeIframeAPIReady = function(){
   .slice-sword{position:fixed;z-index:1502;width:320px;height:20px;pointer-events:none;transform-origin:160px 10px;}
   .slice-sword > svg{display:block;width:320px;height:20px;}
   .slice-stage{position:absolute;inset:0;}
-  .slice-slash{position:fixed;z-index:1501;height:2px;border-radius:1px;background:#ffffff;box-shadow:0 0 0 1px rgba(148,163,184,.5), 0 0 10px 3px rgba(148,163,184,.45);pointer-events:none;}
-  .cut-slash{position:absolute;z-index:4;height:8px;margin-top:-2px;border-radius:4px;background:#ffffff;box-shadow:0 0 0 2px rgba(214,69,69,.9), 0 0 16px 6px rgba(255,255,255,.95), 0 0 48px 16px rgba(214,69,69,.55);pointer-events:none;}
   .b2-radio{display:grid;grid-template-columns:minmax(0, 1fr) 96px;grid-template-rows:minmax(0, 1fr) 32px;gap:12px;width:320px;max-width:100%;height:180px;box-sizing:border-box;padding:20px;border-radius:24px;background:linear-gradient(#8a5a33, #6b4426);box-shadow:inset 0 -6px 0 rgba(0,0,0,.25), 0 20px 40px rgba(0,0,0,.4);}
   .b2-grille{grid-row:1 / 3;border-radius:14px;background:radial-gradient(circle, #2b1d14 2px, transparent 3px) 0 0 / 10px 10px, #c49a6c;}
   .b2-dial{position:relative;justify-self:center;width:80px;height:80px;border-radius:40px;background:radial-gradient(circle, #f6e7d0 30%, #d9b98f 32%);}
@@ -15325,7 +15323,7 @@ function cutLayer(parts) {
 
 function playCut(layer, kind, mark) {
   if (!layer) return;
-  const W = window.innerWidth, H = window.innerHeight, done = el => el.remove();
+  const done = el => el.remove();
   const stamp = text => {
     if (!text) return;
     const st = document.createElement("div");
@@ -15336,50 +15334,32 @@ function playCut(layer, kind, mark) {
     layer.appendChild(st);
   };
   if (kind === "cut") {
-    const y1 = Math.round(H * .66), y2 = Math.round(H * .34), len = Math.ceil(Math.hypot(W, y1 - y2)), deg = Math.atan2(y2 - y1, W) * 180 / Math.PI;
-    const slash = document.createElement("div");
-    slash.className = "cut-slash";
-    Object.assign(slash.style, {
-      left: Math.round(W / 2 - len / 2) + "px",
-      top: Math.round(H / 2 - 2) + "px",
-      width: len + "px",
-      transform: `rotate(${deg}deg)`
-    });
-    layer.appendChild(slash);
-    slash.animate([ {
-      clipPath: "inset(0 100% 0 0)"
-    }, {
-      clipPath: "inset(0 0 0 0)"
-    } ], {
-      duration: 160,
-      easing: "cubic-bezier(.3,0,.2,1)",
-      fill: "forwards"
-    });
     const top = layer, bottom = layer.cloneNode(true);
     bottom.inert = true;
     layer.after(bottom);
     top.style.clipPath = "polygon(0 0, 100% 0, 100% 34%, 0 66%)";
     bottom.style.clipPath = "polygon(0 66%, 100% 34%, 100% 100%, 0 100%)";
-    const fall = (el, to) => el.animate([ {
+    const fall = (el, slip, to) => el.animate([ {
       transform: "none",
+      filter: "drop-shadow(0 0 0 rgba(0,0,0,0))",
       opacity: 1
     }, {
-      transform: "none",
+      transform: slip,
+      filter: "drop-shadow(0 3px 5px rgba(0,0,0,.2))",
       opacity: 1,
       offset: .15
     }, {
       transform: to,
+      filter: "drop-shadow(0 6px 10px rgba(0,0,0,.16))",
       opacity: 0
     } ], {
       duration: 680,
-      delay: 120,
+      delay: 40,
       easing: "cubic-bezier(.5,0,.9,.4)",
       fill: "forwards"
     }).finished.then(() => done(el), () => done(el));
-    top.style.filter = "drop-shadow(0 6px 10px rgba(0,0,0,.35))";
-    bottom.style.filter = "drop-shadow(0 -6px 10px rgba(0,0,0,.35))";
-    fall(top, "translate(-10vw, -30vh) rotate(-9deg)");
-    fall(bottom, "translate(10vw, 45vh) rotate(12deg)");
+    fall(top, "translate(-6px, -3px)", "translate(-10vw, -30vh) rotate(-9deg)");
+    fall(bottom, "translate(6px, 3px)", "translate(10vw, 45vh) rotate(12deg)");
     return;
   }
   stamp(mark);
@@ -20343,15 +20323,7 @@ function sliceAway(parts) {
     return layer;
   };
   const up = half(true), down = half(false);
-  const len = Math.ceil(Math.hypot(w, yA - yB)) + 32, slash = document.createElement("div");
-  slash.className = "slice-slash";
-  Object.assign(slash.style, {
-    left: Math.round(L + w / 2 - len / 2) + "px",
-    top: Math.round(T + h / 2 - 1) + "px",
-    width: len + "px",
-    transform: `rotate(${Math.round(Math.atan2(yB - yA, w) * 1800 / Math.PI) / 10}deg)`
-  });
-  document.body.appendChild(slash);
+  const len = Math.ceil(Math.hypot(w, yA - yB)) + 32;
   const deg = Math.round(Math.atan2(yB - yA, w) * 1800 / Math.PI) / 10, cx = Math.round(L + w / 2), cy = Math.round(T + h / 2), reach = Math.round(len / 2 + 160), run = 220, cut = Math.round(run * len / (2 * reach));
   const sword = document.createElement("div");
   sword.className = "slice-sword";
@@ -20380,47 +20352,30 @@ function sliceAway(parts) {
     easing: "linear",
     fill: "forwards"
   }).finished.then(() => sword.remove(), () => sword.remove());
-  const flash = cut + 200;
-  slash.animate([ {
-    clipPath: "inset(-16px 100% -16px -16px)",
-    opacity: 1
-  }, {
-    clipPath: "inset(-16px -16px -16px -16px)",
-    opacity: 1,
-    offset: cut / flash
-  }, {
-    clipPath: "inset(-16px -16px -16px -16px)",
-    opacity: 1,
-    offset: (cut + 60) / flash
-  }, {
-    clipPath: "inset(-16px -16px -16px -16px)",
-    opacity: 0
-  } ], {
-    duration: flash,
-    easing: "linear",
-    fill: "forwards"
-  }).finished.then(() => slash.remove(), () => slash.remove());
-  const origin = `${Math.round(L + w / 2)}px ${Math.round(T + h / 2)}px`, fall = (el, to) => {
+  const origin = `${Math.round(L + w / 2)}px ${Math.round(T + h / 2)}px`, fall = (el, slip, to) => {
     el.style.transformOrigin = origin;
     el.animate([ {
       transform: "none",
+      filter: "drop-shadow(0 0 0 rgba(0,0,0,0))",
       opacity: 1
     }, {
-      transform: "none",
+      transform: slip,
+      filter: "drop-shadow(0 2px 3px rgba(0,0,0,.18))",
       opacity: 1,
-      offset: .1
+      offset: .16
     }, {
       transform: to,
+      filter: "drop-shadow(0 4px 6px rgba(0,0,0,.14))",
       opacity: 0
     } ], {
       duration: 700,
-      delay: cut + 40,
+      delay: cut,
       easing: "cubic-bezier(.4, 0, .8, .5)",
       fill: "forwards"
     }).finished.then(() => el.remove(), () => el.remove());
   };
-  fall(up, `translate(${-Math.round(20 + w * .03)}px, ${-Math.round(36 + h * .45)}px) rotate(-5deg)`);
-  fall(down, `translate(${Math.round(20 + w * .03)}px, ${Math.round(56 + h * .65)}px) rotate(7deg)`);
+  fall(up, "translate(-4px, -2px)", `translate(${-Math.round(20 + w * .03)}px, ${-Math.round(36 + h * .45)}px) rotate(-5deg)`);
+  fall(down, "translate(4px, 2px)", `translate(${Math.round(20 + w * .03)}px, ${Math.round(56 + h * .65)}px) rotate(7deg)`);
   return true;
 }
 
