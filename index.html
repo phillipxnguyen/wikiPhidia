@@ -1799,7 +1799,7 @@ window.onYouTubeIframeAPIReady = function(){
   .od-lp-t{outline:none;}
   @media (hover:hover){.od-term.od-lp:hover > .od-lp-x{display:block;}}
   html.touch .od-term.od-lp > .od-lp-x{display:block;}
-  .od-lens-in{flex:none;min-width:196px;max-width:100%;height:32px;box-sizing:border-box;padding:2px 12px;border:1px solid transparent;outline:none;background:none;color:var(--od-mean, var(--text));font-size:18px;line-height:26px;white-space:nowrap;overflow:hidden;cursor:text;}
+  .od-lens-in{flex:1 0 100%;min-width:0;max-width:100%;height:32px;box-sizing:border-box;padding:2px 12px;border:1px solid transparent;outline:none;background:none;color:var(--od-mean, var(--text));font-size:18px;line-height:26px;white-space:nowrap;overflow:hidden;cursor:text;}
   .od-lensrow:not(.typing):has(.od-lp) .od-lens-in{display:none;}
   .od-lensrow .od-pos.od-lens{cursor:pointer;}
   .od-lens-in:empty::before{content:attr(data-placeholder);color:var(--placeholder);font-family:"Doto", system-ui, sans-serif;font-weight:800;}
@@ -12399,13 +12399,14 @@ function onceChips(html) {
 }
 
 function alignPosLabels(root) {
-  const labels = root ? [ ...root.querySelectorAll(".od-group > .od-pos") ].filter(p => p.offsetParent) : [];
+  const labels = root ? [ ...root.querySelectorAll(".od-group:not(.od-lensrow) > .od-pos") ].filter(p => p.offsetParent) : [];
   root && root.querySelectorAll(".od-group").forEach(g => g.style.paddingLeft = "");
+  root && root.querySelectorAll(".od-lensrow > .od-pos").forEach(p => p.style.width = "");
   labels.forEach(p => p.style.width = "");
   if (!labels.length) return;
   const w = Math.ceil(Math.max(...labels.map(p => p.getBoundingClientRect().width)));
   labels.forEach(p => p.style.width = w + "px");
-  root.querySelectorAll(".od-group").forEach(g => !g.querySelector(":scope > .od-pos") && (g.style.paddingLeft = w + 8 + "px"));
+  root.querySelectorAll(".od-group:not(.od-lensrow)").forEach(g => !g.querySelector(":scope > .od-pos") && (g.style.paddingLeft = w + 8 + "px"));
 }
 
 function guessPos(d) {
