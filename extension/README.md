@@ -57,6 +57,8 @@ The page a word was read on goes along with it: the lesson keeps it in its list 
 
 On any YouTube video, click the green **字 Make a lesson** button in the bottom-left corner (or **Make a lesson from this video** at the top of the popup, or right-click → **Make a wikiPhidia lesson from this video**). After a click the button spins and reads Making the lesson… until wikiPhidia has the video (however long the subtitles or the connection take), then reads ✓ Opened in wikiPhidia, and ✓ Lesson created (or ✓ Already in your lessons) once you have picked how to make it there; if something goes wrong it comes back and says why, and it never keeps spinning for more than two minutes. The extension reads the video's subtitles, opens wikiPhidia (or brings its tab forward), and the app shows its usual box: pick the subtitles to learn, then **Subtitles only**, or **With translation ▾** and where the translation comes from (the video's own Vietnamese or English subtitles, or an automatic translation). This replaces the *YouTube subtitles* bookmark; the bookmark still works where the extension is not installed. The button can be turned off in Settings.
 
+How much of the video goes into the lesson is set once in the popup's settings, **A YouTube lesson takes**: the first 3, 5, 10, 15 or 30 minutes, or the whole video (the default). Only the subtitles that start inside that stretch are taken, so a long video becomes a lesson you can finish.
+
 ## The popup
 
 - **On / Off**, the small switch in the header, between the 字 ⚡ icons and Open app: Off turns the extension off on every page at once (no 字 button, no card, no Shift, no marked words, no YouTube button; the icon shows a grey *off*, and the popup's 字 logo turns grey), and On brings it all back. Words already waiting still go into wikiPhidia either way.
@@ -65,7 +67,7 @@ Each word sits in its own box, and the hint under the list in a tinted box, so t
 - The 字 logo shows the connection to the app, like the cloud button in wikiPhidia: a small cloud with a tick in its corner once the app has been opened and connected, a crossed-out grey cloud before that. Pointing at the logo or the name shows, after a fifth of a second, how many words and lessons it knows.
 - **To send**: the words waiting, with their meaning editable and ✕ to drop one.
 - **Recent**: the last words sent, marked *Added* or *Already there*.
-- **Settings**: the language of the meanings, the lesson new words go into (🆕 New lesson, named after each article, or one of yours), marking known words on pages, Shift, the YouTube button, and the app's address (change it if you run wikiPhidia somewhere else; local copies on `localhost`, `127.0.0.1` or a file whose path contains `wikiPhidia` connect too).
+- **Settings**: the language of the meanings, the lesson new words go into (🆕 New lesson, named after each article, or one of yours), marking known words on pages, Shift, the YouTube button, how much of a video a YouTube lesson takes, and the app's address (change it if you run wikiPhidia somewhere else; local copies on `localhost`, `127.0.0.1` or a file whose path contains `wikiPhidia` connect too).
 
 Before a word or sentence is translated, stray marks (quotation marks of every kind, brackets, asterisks, bullets, music notes) are taken out, so the translation is not thrown off by them.
 

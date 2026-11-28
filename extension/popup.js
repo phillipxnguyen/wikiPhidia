@@ -5,6 +5,7 @@ const DEFAULTS = {
   highlight: true,
   shift: true,
   youtube: true,
+  ytMinutes: 0,
   pick: "button",
   enabled: true,
   appUrl: "https://phillipxnguyen.github.io/wikiPhidia/"
@@ -72,6 +73,7 @@ function paintSettings() {
   });
   $("shift").checked = !!s.shift;
   $("youtube").checked = s.youtube !== false;
+  $("ytMinutes").value = String([ 3, 5, 10, 15, 30 ].includes(Number(s.ytMinutes)) ? Number(s.ytMinutes) : 0);
   $("appUrl").value = s.appUrl;
   const lessons = state.app.lessons.slice().sort((a, b) => (b.words ? 1 : 0) - (a.words ? 1 : 0) || a.name.localeCompare(b.name));
   $("lesson").innerHTML = `<option value="article">🆕 New lesson</option>` + lessons.map(l => `<option value="id:${esc(l.id)}">${esc(l.name)}</option>`).join("");
@@ -126,6 +128,7 @@ $("pendingList").addEventListener("change", async e => {
 
 $("enabled").addEventListener("change", e => saveSettings({ enabled: e.target.checked }).then(paintSettings));
 [ "highlight", "shift", "youtube" ].forEach(id => $(id).addEventListener("change", e => saveSettings({ [id]: e.target.checked })));
+$("ytMinutes").addEventListener("change", e => saveSettings({ ytMinutes: Number(e.target.value) || 0 }));
 document.querySelectorAll(".pick-mode").forEach(b => b.addEventListener("click", () => saveSettings({ pick: b.dataset.pick }).then(paintSettings)));
 $("lang").addEventListener("change", e => saveSettings({ lang: e.target.value }));
 $("appUrl").addEventListener("change", e => saveSettings({ appUrl: e.target.value.trim() || DEFAULTS.appUrl }));

@@ -5,6 +5,7 @@ const DEFAULTS = {
   highlight: true,
   shift: true,
   youtube: true,
+  ytMinutes: 0,
   pick: "button",
   enabled: true,
   appUrl: "https://phillipxnguyen.github.io/wikiPhidia/"
@@ -185,6 +186,17 @@ async function importYouTube(tabId) {
     return fail("Couldn't read this page: " + (e && e.message || e));
   }
   if (!result || result.error) return fail(result && result.error || "Couldn't get the subtitles");
+  const minutes = Number((await settings()).ytMinutes) || 0;
+  if (minutes > 0) {
+    const end = minutes * 60, bestTrack = result.tracks[result.best];
+    result.tracks.forEach(t => {
+      t.lines = (t.lines || []).filter(e => e.t < end);
+      t.translated = (t.translated || []).filter(e => e.t < end);
+    });
+    result.tracks = result.tracks.filter(t => t.lines.length);
+    if (!result.tracks.length) return fail("No subtitles in the first " + minutes + " minutes of this video");
+    result.best = Math.max(0, result.tracks.indexOf(bestTrack));
+  }
   await chrome.storage.local.set({ ytPending: Object.assign({ at: Date.now() }, result) });
   say("Opening wikiPhidia…");
   await openApp();
