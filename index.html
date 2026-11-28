@@ -2666,8 +2666,8 @@ window.onYouTubeIframeAPIReady = function(){
   .cut-tint.lift{background:rgba(37,99,201,.32);}
   .screen-cut:has(> .cut-tint){box-shadow:0 24px 64px rgba(0,0,0,.35);}
   .slice-layer{position:fixed;inset:0;z-index:1500;pointer-events:none;}
-  .slice-sword{position:fixed;z-index:1502;width:320px;height:20px;pointer-events:none;transform-origin:160px 10px;filter:drop-shadow(0 4px 6px rgba(0,0,0,.25));}
-  .slice-sword > svg{display:block;width:320px;height:20px;}
+  .slice-sword{position:fixed;z-index:1502;width:140px;height:24px;pointer-events:none;transform-origin:70px 12px;filter:drop-shadow(0 4px 6px rgba(0,0,0,.25));}
+  .slice-sword > svg{display:block;width:140px;height:24px;}
   .slice-stage{position:absolute;inset:0;}
   .b2-radio{display:grid;grid-template-columns:minmax(0, 1fr) 96px;grid-template-rows:minmax(0, 1fr) 32px;gap:12px;width:320px;max-width:100%;height:180px;box-sizing:border-box;padding:20px;border-radius:24px;background:linear-gradient(#8a5a33, #6b4426);box-shadow:inset 0 -6px 0 rgba(0,0,0,.25), 0 20px 40px rgba(0,0,0,.4);}
   .b2-grille{grid-row:1 / 3;border-radius:14px;background:radial-gradient(circle, #2b1d14 2px, transparent 3px) 0 0 / 10px 10px, #c49a6c;}
@@ -20250,7 +20250,7 @@ function wordTarget() {
   } : null;
 }
 
-const SWORD_SVG = '<svg viewBox="0 0 320 20" aria-hidden="true"><defs><linearGradient id="swBlade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9aa4ae"/><stop offset=".35" stop-color="#e9eef2"/><stop offset=".6" stop-color="#ffffff"/><stop offset="1" stop-color="#b8c1ca"/></linearGradient><linearGradient id="swGrip" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a3f47"/><stop offset="1" stop-color="#16191d"/></linearGradient></defs><path d="M86 7 Q200 3 318 8 Q200 10 86 13 Z" fill="url(#swBlade)" stroke="#7c8792" stroke-width="1" stroke-linejoin="round"/><path d="M92 11 Q200 8 304 9" fill="none" stroke="#ffffff" stroke-opacity=".9" stroke-width="1"/><rect x="80" y="7" width="7" height="6" rx="1" fill="#c9a24a"/><ellipse cx="77" cy="10" rx="3" ry="8" fill="#2b2f36" stroke="#8a6d2f" stroke-width="1"/><rect x="6" y="7" width="68" height="6" rx="3" fill="url(#swGrip)"/><path d="M12 7l6 6M18 7l-6 6M26 7l6 6M32 7l-6 6M40 7l6 6M46 7l-6 6M54 7l6 6M60 7l-6 6" stroke="#cfd5db" stroke-opacity=".55" stroke-width="1"/><rect x="2" y="7" width="6" height="6" rx="2" fill="#2b2f36"/></svg>';
+const SWORD_SVG = '<svg viewBox="0 0 140 24" aria-hidden="true"><defs><linearGradient id="swBlade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#aeb7c0"/><stop offset=".3" stop-color="#eef2f5"/><stop offset=".75" stop-color="#d3dae0"/><stop offset="1" stop-color="#ffffff"/></linearGradient><linearGradient id="swGrip" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7a4a2a"/><stop offset=".5" stop-color="#5a341c"/><stop offset="1" stop-color="#3e2312"/></linearGradient></defs><path d="M52 5 L118 5 Q132 6 139 11 Q124 19 52 19 Z" fill="url(#swBlade)" stroke="#8a949e" stroke-width="1" stroke-linejoin="round"/><path d="M56 16 L128 16" stroke="#ffffff" stroke-opacity=".9" stroke-width="1"/><rect x="47" y="6" width="6" height="12" rx="1" fill="#9aa3ac"/><rect x="3" y="7" width="45" height="10" rx="5" fill="url(#swGrip)"/><circle cx="16" cy="12" r="2" fill="#d8dde2"/><circle cx="34" cy="12" r="2" fill="#d8dde2"/></svg>';
 
 function liveCopy(el) {
   const r = el.getBoundingClientRect(), stage = document.createElement("div");
@@ -20321,9 +20321,23 @@ function sliceAway(parts) {
   sliceLast = deg;
   const dir = Math.random() < .5 ? 1 : -1, rad = deg * Math.PI / 180, ux = Math.cos(rad), uy = Math.sin(rad), nx = -uy, ny = ux;
   const pt = (x, y) => `${Math.round(x)}px ${Math.round(y)}px`;
-  const half = side => {
-    const layer = document.createElement("div");
-    layer.className = "slice-layer";
+  const vx = ux * dir, vy = uy * dir, edge = (x, y) => Math.min(x ? (x > 0 ? innerWidth - cx : cx) / Math.abs(x) : Infinity, y ? (y > 0 ? innerHeight - cy : cy) / Math.abs(y) : Infinity);
+  const from = -Math.round(edge(-vx, -vy)) - 160, to = Math.round(edge(vx, vy)) + 160, reach = Math.abs(w / 2 * vx) + Math.abs(h / 2 * vy);
+  const run = Math.round((to - from) / 2.2), cut = Math.round((reach - 70 - from) / 2.2), big = 4000;
+  const strip = (s0, s1) => `polygon(${pt(cx + vx * s0 - nx * big, cy + vy * s0 - ny * big)}, ${pt(cx + vx * s1 - nx * big, cy + vy * s1 - ny * big)}, ${pt(cx + vx * s1 + nx * big, cy + vy * s1 + ny * big)}, ${pt(cx + vx * s0 + nx * big, cy + vy * s0 + ny * big)})`;
+  const sweep = (el, behind) => el.animate([ {
+    clipPath: behind ? strip(-big, from + 70) : strip(from + 70, big)
+  }, {
+    clipPath: behind ? strip(-big, to + 70) : strip(to + 70, big)
+  } ], {
+    duration: run,
+    easing: "linear",
+    fill: "forwards"
+  });
+  const half = (side, behind) => {
+    const wrap = document.createElement("div"), layer = document.createElement("div");
+    wrap.className = "slice-layer";
+    layer.className = "slice-stage";
     shown.forEach(el => layer.appendChild(liveCopy(el)));
     const box = [ [ L - 2, T - 2 ], [ R + 2, T - 2 ], [ R + 2, B + 2 ], [ L - 2, B + 2 ] ], keep = [], on = ([x, y]) => side * ((x - cx) * nx + (y - cy) * ny);
     box.forEach((p, i) => {
@@ -20332,19 +20346,21 @@ function sliceAway(parts) {
       if (a * b < 0) keep.push([ p[0] + (q[0] - p[0]) * a / (a - b), p[1] + (q[1] - p[1]) * a / (a - b) ]);
     });
     layer.style.clipPath = `polygon(${keep.map(([x, y]) => pt(x, y)).join(", ")})`;
-    document.body.appendChild(layer);
-    return layer;
+    wrap.appendChild(layer);
+    document.body.appendChild(wrap);
+    const anim = sweep(wrap, behind);
+    if (!behind) anim.finished.then(() => wrap.remove(), () => wrap.remove());
+    return wrap;
   };
-  const up = half(-1), down = half(1);
-  const vx = ux * dir, vy = uy * dir, edge = (x, y) => Math.min(x ? (x > 0 ? innerWidth - cx : cx) / Math.abs(x) : Infinity, y ? (y > 0 ? innerHeight - cy : cy) / Math.abs(y) : Infinity);
-  const from = -Math.round(edge(-vx, -vy)) - 340, to = Math.round(edge(vx, vy)) + 340, reach = Math.abs(w / 2 * vx) + Math.abs(h / 2 * vy);
-  const run = Math.round((to - from) / 2.2), cut = Math.round((reach - 160 - from) / 2.2);
+  const up = half(-1, true), down = half(1, true);
+  half(-1, false);
+  half(1, false);
   const sword = document.createElement("div");
   sword.className = "slice-sword";
   sword.innerHTML = SWORD_SVG;
   Object.assign(sword.style, {
-    left: cx - 160 + "px",
-    top: cy - 10 + "px"
+    left: cx - 70 + "px",
+    top: cy - 12 + "px"
   });
   document.body.appendChild(sword);
   const turn = deg + (dir < 0 ? 180 : 0), at = d => `translate(${Math.round(d * vx)}px, ${Math.round(d * vy)}px) rotate(${turn}deg)`;
@@ -20360,18 +20376,13 @@ function sliceAway(parts) {
   const move = (a, b, r) => `translate(${Math.round(a * vx + b * nx)}px, ${Math.round(a * vy + b * ny)}px)${r ? ` rotate(${r}deg)` : ""}`;
   const fall = (el, side) => {
     el.style.transformOrigin = pt(cx, cy);
+    el.style.transform = move(0, side * 2);
+    el.style.filter = "drop-shadow(0 2px 3px rgba(0,0,0,.18))";
     el.animate([ {
-      transform: "none",
-      filter: "drop-shadow(0 0 0 rgba(0,0,0,0))",
+      transform: move(0, side * 2),
       opacity: 1
     }, {
-      transform: move(side * 4, side * 2),
-      filter: "drop-shadow(0 2px 3px rgba(0,0,0,.18))",
-      opacity: 1,
-      offset: .16
-    }, {
       transform: move(side * Math.round(20 + w * .03), side * Math.round(side < 0 ? 36 + h * .45 : 56 + h * .65), side < 0 ? -5 : 7),
-      filter: "drop-shadow(0 4px 6px rgba(0,0,0,.14))",
       opacity: 0
     } ], {
       duration: 700,
