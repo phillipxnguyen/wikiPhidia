@@ -2666,7 +2666,7 @@ window.onYouTubeIframeAPIReady = function(){
   .cut-tint.lift{background:rgba(37,99,201,.32);}
   .screen-cut:has(> .cut-tint){box-shadow:0 24px 64px rgba(0,0,0,.35);}
   .slice-layer{position:fixed;inset:0;z-index:1500;pointer-events:none;}
-  .slice-sword{position:fixed;z-index:1502;width:320px;height:20px;pointer-events:none;transform-origin:160px 10px;}
+  .slice-sword{position:fixed;z-index:1502;width:320px;height:20px;pointer-events:none;transform-origin:160px 10px;filter:drop-shadow(0 4px 6px rgba(0,0,0,.25));}
   .slice-sword > svg{display:block;width:320px;height:20px;}
   .slice-stage{position:absolute;inset:0;}
   .b2-radio{display:grid;grid-template-columns:minmax(0, 1fr) 96px;grid-template-rows:minmax(0, 1fr) 32px;gap:12px;width:320px;max-width:100%;height:180px;box-sizing:border-box;padding:20px;border-radius:24px;background:linear-gradient(#8a5a33, #6b4426);box-shadow:inset 0 -6px 0 rgba(0,0,0,.25), 0 20px 40px rgba(0,0,0,.4);}
@@ -20324,7 +20324,9 @@ function sliceAway(parts) {
   };
   const up = half(true), down = half(false);
   const len = Math.ceil(Math.hypot(w, yA - yB)) + 32;
-  const deg = Math.round(Math.atan2(yB - yA, w) * 1800 / Math.PI) / 10, cx = Math.round(L + w / 2), cy = Math.round(T + h / 2), reach = Math.round(len / 2 + 160), run = 220, cut = Math.round(run * len / (2 * reach));
+  const rad = Math.atan2(yB - yA, w), deg = Math.round(rad * 1800 / Math.PI) / 10, cx = Math.round(L + w / 2), cy = Math.round(T + h / 2);
+  const from = Math.round((innerWidth - cx) / Math.cos(rad)) + 360, to = -Math.round(cx / Math.cos(rad)) - 360;
+  const run = Math.round((from - to) / 2.2), cut = Math.round((from + len / 2) / 2.2);
   const sword = document.createElement("div");
   sword.className = "slice-sword";
   sword.innerHTML = SWORD_SVG;
@@ -20333,20 +20335,14 @@ function sliceAway(parts) {
     top: cy - 10 + "px"
   });
   document.body.appendChild(sword);
-  const at = (d, tilt) => `rotate(${deg}deg) translateX(${d}px) rotate(${tilt}deg)`;
+  const at = (t, a) => {
+    const p = a * Math.PI / 180;
+    return `translate(${Math.round(t * Math.cos(rad) - 64 * Math.cos(p))}px, ${Math.round(t * Math.sin(rad) - 64 * Math.sin(p))}px) rotate(${a}deg)`;
+  };
   sword.animate([ {
-    transform: at(-reach, -3),
-    opacity: 1,
-    filter: "drop-shadow(0 4px 6px rgba(0,0,0,.25))"
+    transform: at(from, 104)
   }, {
-    transform: at(Math.round(len / 2 - 160), 0),
-    opacity: 1,
-    filter: "drop-shadow(0 4px 6px rgba(0,0,0,.25))",
-    offset: cut / run
-  }, {
-    transform: at(reach, 3),
-    opacity: 0,
-    filter: "drop-shadow(0 4px 6px rgba(0,0,0,.25))"
+    transform: at(to, 126)
   } ], {
     duration: run,
     easing: "linear",
