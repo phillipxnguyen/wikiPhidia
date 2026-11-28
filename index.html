@@ -20307,26 +20307,38 @@ function liveCopy(el) {
   return stage;
 }
 
+let sliceLast = 0;
+
 function sliceAway(parts) {
   if (reducedMotion()) return false;
   const shown = parts.filter(el => el && el.isConnected && el.getBoundingClientRect().height > 1);
   if (!shown.length) return false;
   const rs = shown.map(el => el.getBoundingClientRect()), L = Math.min(...rs.map(r => r.left)), T = Math.min(...rs.map(r => r.top)), R = Math.max(...rs.map(r => r.right)), B = Math.max(...rs.map(r => r.bottom));
   if (T > innerHeight || B < 0) return false;
-  const w = R - L, h = B - T, yA = Math.round(T + h * .62), yB = Math.round(T + h * .38), xl = Math.round(L), xr = Math.round(R);
-  const half = top => {
+  const w = R - L, h = B - T, cx = Math.round(L + w / 2), cy = Math.round(T + h / 2);
+  let deg;
+  do deg = Math.round(Math.random() * 70 - 35); while (Math.abs(deg) < 8 || Math.abs(deg - sliceLast) < 16);
+  sliceLast = deg;
+  const dir = Math.random() < .5 ? 1 : -1, rad = deg * Math.PI / 180, ux = Math.cos(rad), uy = Math.sin(rad), nx = -uy, ny = ux;
+  const pt = (x, y) => `${Math.round(x)}px ${Math.round(y)}px`;
+  const half = side => {
     const layer = document.createElement("div");
     layer.className = "slice-layer";
     shown.forEach(el => layer.appendChild(liveCopy(el)));
-    layer.style.clipPath = top ? `polygon(${xl - 2}px ${Math.round(T) - 2}px, ${xr + 2}px ${Math.round(T) - 2}px, ${xr + 2}px ${yB}px, ${xl - 2}px ${yA}px)` : `polygon(${xl - 2}px ${yA}px, ${xr + 2}px ${yB}px, ${xr + 2}px ${Math.round(B) + 2}px, ${xl - 2}px ${Math.round(B) + 2}px)`;
+    const box = [ [ L - 2, T - 2 ], [ R + 2, T - 2 ], [ R + 2, B + 2 ], [ L - 2, B + 2 ] ], keep = [], on = ([x, y]) => side * ((x - cx) * nx + (y - cy) * ny);
+    box.forEach((p, i) => {
+      const q = box[(i + 1) % 4], a = on(p), b = on(q);
+      if (a >= 0) keep.push(p);
+      if (a * b < 0) keep.push([ p[0] + (q[0] - p[0]) * a / (a - b), p[1] + (q[1] - p[1]) * a / (a - b) ]);
+    });
+    layer.style.clipPath = `polygon(${keep.map(([x, y]) => pt(x, y)).join(", ")})`;
     document.body.appendChild(layer);
     return layer;
   };
-  const up = half(true), down = half(false);
-  const len = Math.ceil(Math.hypot(w, yA - yB)) + 32;
-  const rad = Math.atan2(yB - yA, w), deg = Math.round(rad * 1800 / Math.PI) / 10, cx = Math.round(L + w / 2), cy = Math.round(T + h / 2);
-  const from = Math.round((innerWidth - cx) / Math.cos(rad)) + 360, to = -Math.round(cx / Math.cos(rad)) - 360;
-  const run = Math.round((from - to) / 2.2), cut = Math.round((from + len / 2) / 2.2);
+  const up = half(-1), down = half(1);
+  const vx = ux * dir, vy = uy * dir, edge = (x, y) => Math.min(x ? (x > 0 ? innerWidth - cx : cx) / Math.abs(x) : Infinity, y ? (y > 0 ? innerHeight - cy : cy) / Math.abs(y) : Infinity);
+  const from = -Math.round(edge(-vx, -vy)) - 340, to = Math.round(edge(vx, vy)) + 340, reach = Math.abs(w / 2 * vx) + Math.abs(h / 2 * vy);
+  const run = Math.round((to - from) / 2.2), cut = Math.round((reach - 160 - from) / 2.2);
   const sword = document.createElement("div");
   sword.className = "slice-sword";
   sword.innerHTML = SWORD_SVG;
@@ -20335,32 +20347,30 @@ function sliceAway(parts) {
     top: cy - 10 + "px"
   });
   document.body.appendChild(sword);
-  const at = (t, a) => {
-    const p = a * Math.PI / 180;
-    return `translate(${Math.round(t * Math.cos(rad) - 64 * Math.cos(p))}px, ${Math.round(t * Math.sin(rad) - 64 * Math.sin(p))}px) rotate(${a}deg)`;
-  };
+  const turn = deg + (dir < 0 ? 180 : 0), at = d => `translate(${Math.round(d * vx)}px, ${Math.round(d * vy)}px) rotate(${turn}deg)`;
   sword.animate([ {
-    transform: at(from, 104)
+    transform: at(from)
   }, {
-    transform: at(to, 126)
+    transform: at(to)
   } ], {
     duration: run,
     easing: "linear",
     fill: "forwards"
   }).finished.then(() => sword.remove(), () => sword.remove());
-  const origin = `${Math.round(L + w / 2)}px ${Math.round(T + h / 2)}px`, fall = (el, slip, to) => {
-    el.style.transformOrigin = origin;
+  const move = (a, b, r) => `translate(${Math.round(a * vx + b * nx)}px, ${Math.round(a * vy + b * ny)}px)${r ? ` rotate(${r}deg)` : ""}`;
+  const fall = (el, side) => {
+    el.style.transformOrigin = pt(cx, cy);
     el.animate([ {
       transform: "none",
       filter: "drop-shadow(0 0 0 rgba(0,0,0,0))",
       opacity: 1
     }, {
-      transform: slip,
+      transform: move(side * 4, side * 2),
       filter: "drop-shadow(0 2px 3px rgba(0,0,0,.18))",
       opacity: 1,
       offset: .16
     }, {
-      transform: to,
+      transform: move(side * Math.round(20 + w * .03), side * Math.round(side < 0 ? 36 + h * .45 : 56 + h * .65), side < 0 ? -5 : 7),
       filter: "drop-shadow(0 4px 6px rgba(0,0,0,.14))",
       opacity: 0
     } ], {
@@ -20370,8 +20380,8 @@ function sliceAway(parts) {
       fill: "forwards"
     }).finished.then(() => el.remove(), () => el.remove());
   };
-  fall(up, "translate(-4px, -2px)", `translate(${-Math.round(20 + w * .03)}px, ${-Math.round(36 + h * .45)}px) rotate(-5deg)`);
-  fall(down, "translate(4px, 2px)", `translate(${Math.round(20 + w * .03)}px, ${Math.round(56 + h * .65)}px) rotate(7deg)`);
+  fall(up, -1);
+  fall(down, 1);
   return true;
 }
 
